@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -15,6 +16,7 @@ import {
   Users,
   ChevronDown,
   CreditCard,
+  Crown,
 } from 'lucide-react';
 
 import {
@@ -26,7 +28,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
-  SidebarTrigger,
   SidebarFooter,
   SidebarMenuSub,
   SidebarMenuSubButton,
@@ -47,8 +48,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from '@/components/icons';
-import { cn } from '@/lib/utils';
-import * as React from 'react';
+import { useSubscription } from '@/hooks/use-subscription';
+import { Badge } from '@/components/ui/badge';
+import { format } from "date-fns";
 
 
 const navItems = [
@@ -73,6 +75,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { subscription, isPremium } = useSubscription();
+
   const isRosterActive = pathname.startsWith('/dashboard/roster');
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
   const isSubscriptionActive = pathname.startsWith('/dashboard/subscription');
@@ -166,6 +170,7 @@ export default function DashboardLayout({
                     <p className="text-sm font-medium">Guru Tangguh</p>
                     <p className="text-xs text-muted-foreground">guru@sekolah.id</p>
                   </div>
+                  {isPremium && <Badge variant="default" className="ml-auto bg-green-600 hover:bg-green-700">Premium</Badge>}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" side="right" align="end" forceMount>
@@ -180,17 +185,20 @@ export default function DashboardLayout({
                 <DropdownMenuSeparator />
                  <DropdownMenuItem asChild>
                     <Link href="/dashboard/subscription">
-                        <CreditCard className="mr-2 h-4 w-4" />Langganan Saya
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        <div>
+                            <span>Langganan Saya</span>
+                            {isPremium && subscription.expires ? (
+                                <p className="text-xs text-muted-foreground">Aktif s.d. {format(subscription.expires, "dd MMM yyyy")}</p>
+                            ) : (
+                                <p className="text-xs text-muted-foreground">Paket Gratis</p>
+                            )}
+                        </div>
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link href="/dashboard/settings">
                         <User className="mr-2 h-4 w-4" />Profil
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">
-                        <Settings className="mr-2 h-4 w-4" />Pengaturan
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

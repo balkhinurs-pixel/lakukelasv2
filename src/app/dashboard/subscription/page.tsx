@@ -11,10 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Crown, Loader2, X } from "lucide-react";
 import { createPaymentTransaction } from "@/ai/flows/payment-flow";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/hooks/use-subscription";
+import { format } from "date-fns";
 
 const premiumFeatures = [
     "Manajemen Siswa & Kelas Tanpa Batas",
@@ -36,7 +37,7 @@ const freeFeatures = [
 export default function SubscriptionPage() {
   const [loading, setLoading] = React.useState<string | null>(null);
   const { toast } = useToast();
-  const { isPremium } = useSubscription();
+  const { subscription, isPremium } = useSubscription();
 
   const handleSubscription = async (packageName: 'semester' | 'tahunan', amount: number) => {
     setLoading(packageName);
@@ -77,13 +78,30 @@ export default function SubscriptionPage() {
           Akses semua fitur premium Classroom Zephyr untuk memaksimalkan efisiensi mengajar Anda. Batalkan kapan saja.
         </p>
       </div>
+      
+      {isPremium && (
+          <Card className="max-w-2xl mx-auto border-green-200 bg-green-50">
+              <CardHeader className="text-center">
+                  <div className="mx-auto bg-green-100 p-3 rounded-full w-fit">
+                    <Crown className="h-8 w-8 text-green-700"/>
+                  </div>
+                  <CardTitle>Anda Sudah Berlangganan Paket Premium</CardTitle>
+                  <CardDescription className="text-green-800">
+                    {subscription.planName && `Paket ${subscription.planName} Anda aktif hingga ${subscription.expires ? format(subscription.expires, "dd MMMM yyyy") : ''}.`}
+                    <br/>
+                    Nikmati semua fitur tanpa batas!
+                  </CardDescription>
+              </CardHeader>
+          </Card>
+      )}
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
         {/* Free Plan Card */}
-        <Card className="flex flex-col">
-           {isPremium ? null : (
+        <Card className={`flex flex-col ${isPremium ? '' : 'border-2 border-primary shadow-lg'}`}>
+           {!isPremium && (
                 <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-                    <div className="bg-muted-foreground/80 text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">Paket Anda Saat Ini</div>
+                    <div className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">Paket Anda Saat Ini</div>
                 </div>
            )}
           <CardHeader>
@@ -98,7 +116,7 @@ export default function SubscriptionPage() {
             <ul className="space-y-2">
                 {freeFeatures.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2">
-                        {feature.included ? <Check className="h-5 w-5 text-green-500 mt-0.5" /> : <X className="h-5 w-5 text-destructive mt-0.5" />}
+                        {feature.included ? <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" /> : <X className="h-5 w-5 text-destructive mt-0.5 shrink-0" />}
                         <span className="text-muted-foreground">{feature.text}</span>
                     </li>
                 ))}
@@ -106,7 +124,7 @@ export default function SubscriptionPage() {
           </CardContent>
           <CardFooter>
             <Button className="w-full" variant="outline" disabled>
-               Aktif
+               {isPremium ? 'Tersedia' : 'Paket Aktif'}
             </Button>
           </CardFooter>
         </Card>
@@ -126,7 +144,7 @@ export default function SubscriptionPage() {
             <ul className="space-y-2">
                 {premiumFeatures.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 mt-0.5" />
+                        <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                         <span className="text-muted-foreground">{feature}</span>
                     </li>
                 ))}
@@ -157,12 +175,12 @@ export default function SubscriptionPage() {
              <ul className="space-y-2">
                 {premiumFeatures.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 mt-0.5" />
+                        <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                         <span className="text-muted-foreground">{feature}</span>
                     </li>
                 ))}
                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-500 mt-0.5" />
+                    <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                     <span className="text-muted-foreground font-semibold">Akses fitur baru lebih awal</span>
                 </li>
             </ul>

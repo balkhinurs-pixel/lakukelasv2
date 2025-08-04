@@ -172,7 +172,7 @@ export default function AdminUsersPage() {
                                 <TableCell className="font-medium">{user.name}</TableCell>
                                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                                 <TableCell>
-                                    <Badge variant={user.subscription.status === 'Premium' ? 'secondary' : 'outline'} className={user.subscription.status === 'Premium' ? 'text-green-700 bg-green-100' : ''}>
+                                    <Badge variant={user.subscription.status === 'Premium' ? 'default' : 'secondary'} className={user.subscription.status === 'Premium' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>
                                         {user.subscription.status}
                                     </Badge>
                                     {user.subscription.status === 'Premium' && (
@@ -245,5 +245,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    
