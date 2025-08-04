@@ -14,6 +14,7 @@ import {
   User,
   Users,
   ChevronDown,
+  CreditCard,
 } from 'lucide-react';
 
 import {
@@ -74,6 +75,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const isRosterActive = pathname.startsWith('/dashboard/roster');
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
+  const isSubscriptionActive = pathname.startsWith('/dashboard/subscription');
 
   return (
     <SidebarProvider>
@@ -127,6 +129,17 @@ export default function DashboardLayout({
                     </CollapsibleContent>
                 </Collapsible>
              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={isSubscriptionActive}
+                >
+                    <Link href="/dashboard/subscription">
+                        <CreditCard/>
+                        <span>Langganan</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
              <SidebarMenuItem>
                 <SidebarMenuButton
                     asChild
@@ -165,6 +178,11 @@ export default function DashboardLayout({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                 <DropdownMenuItem asChild>
+                    <Link href="/dashboard/subscription">
+                        <CreditCard className="mr-2 h-4 w-4" />Langganan Saya
+                    </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link href="/dashboard/settings">
                         <User className="mr-2 h-4 w-4" />Profil
