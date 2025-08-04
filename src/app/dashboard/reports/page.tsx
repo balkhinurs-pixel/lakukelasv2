@@ -45,6 +45,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Users, CheckCircle, Award, Download } from "lucide-react";
 import { classes, students, journalEntries } from "@/lib/placeholder-data";
 import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 // Extend jsPDF with autoTable
 interface jsPDFWithAutoTable extends jsPDF {
@@ -108,6 +109,20 @@ const detailedGrades = students.map(s => ({
     uas: Math.floor(Math.random() * 25) + 72,
 }));
 
+// Mock data from settings
+const schoolData = {
+    logo: "https://placehold.co/100x100.png",
+    name: "SMA Negeri 1 Harapan Bangsa",
+    address: "Jl. Pendidikan No. 1, Kota Cerdas, 12345",
+    headmasterName: "Dr. H. Bijaksana, M.Pd.",
+    headmasterNip: "198001012010121001",
+};
+
+const teacherData = {
+    name: "Guru Tangguh, S.Pd.",
+    nip: "199001012020121001"
+}
+
 export default function ReportsPage() {
   const [selectedClass, setSelectedClass] = React.useState("C01");
   const [selectedMonth, setSelectedMonth] = React.useState("all");
@@ -115,25 +130,78 @@ export default function ReportsPage() {
 
   const pieData = Object.entries(overallAttendance).map(([name, value]) => ({name, value}));
 
-  const downloadPdf = (title: string, head: string[][], body: any[][]) => {
+  const downloadPdf = async (title: string, head: string[][], body: any[][]) => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
-    doc.text(title, 14, 16);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 14;
+
+    // --- Add Header ---
+    try {
+        const response = await fetch(schoolData.logo);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+            const base64data = reader.result as string;
+            doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
+            
+            doc.setFontSize(14).setFont(undefined, 'bold');
+            doc.text(schoolData.name.toUpperCase(), margin + 25, margin + 8);
+            doc.setFontSize(10).setFont(undefined, 'normal');
+            doc.text(schoolData.address, margin + 25, margin + 14);
+            doc.setLineWidth(0.5);
+            doc.line(margin, margin + 25, pageWidth - margin, margin + 25);
+            
+            // --- Add Table ---
+            generateTableAndFooter(doc, title, head, body, margin, pageWidth, pageHeight);
+        };
+    } catch (error) {
+        console.error("Error fetching logo, proceeding without it.", error);
+        generateTableAndFooter(doc, title, head, body, margin, pageWidth, pageHeight);
+    }
+  }
+
+  const generateTableAndFooter = (doc: jsPDFWithAutoTable, title: string, head: string[][], body: any[][], margin: number, pageWidth: number, pageHeight: number) => {
+    doc.setFontSize(12).setFont(undefined, 'bold');
+    doc.text(title, pageWidth / 2, margin + 35, { align: 'center' });
+    
     doc.autoTable({
         head: head,
         body: body,
-        startY: 20,
+        startY: margin + 40,
         theme: 'grid',
-        headStyles: { fillColor: [22, 160, 133] },
-        styles: { fontSize: 8 },
-        columnStyles: {
-            0: {cellWidth: 'auto'},
-            1: {cellWidth: 25},
-            2: {cellWidth: 'auto'},
-            3: {cellWidth: 'auto'},
-            4: {cellWidth: 'auto'},
-        }
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        styles: { fontSize: 8, cellPadding: 2 },
     });
-    doc.save(`${title.toLowerCase().replace(/ /g, '_')}.pdf`);
+
+    // --- Add Footer ---
+    const tableEndY = (doc.lastAutoTable as any).finalY;
+    const signatureY = tableEndY + 20 > pageHeight - 50 ? pageHeight - 50 : tableEndY + 20;
+
+    const todayDate = format(new Date(), "eeee, dd MMMM yyyy", { locale: id });
+    const city = schoolData.address.split(',')[1]?.trim() || "Kota";
+
+    doc.setFontSize(10);
+    doc.text(`${city}, ${todayDate}`, pageWidth - margin, signatureY, { align: 'right' });
+    
+    const signatureXLeft = margin;
+    const signatureXRight = pageWidth - margin;
+    const signatureYBase = signatureY + 8;
+    
+    doc.text("Mengetahui,", signatureXLeft, signatureYBase, { align: 'left'});
+    doc.text("Guru Mata Pelajaran", signatureXRight, signatureYBase, { align: 'right'});
+    doc.text("Kepala Sekolah", signatureXLeft, signatureYBase, { align: 'left'});
+
+    const signatureYName = signatureYBase + 30;
+    doc.setFont(undefined, 'bold').text(schoolData.headmasterName, signatureXLeft, signatureYName, { align: 'left'});
+    doc.setFont(undefined, 'normal').text(`NIP. ${schoolData.headmasterNip}`, signatureXLeft, signatureYName + 5, { align: 'left'});
+
+    doc.setFont(undefined, 'bold').text(teacherData.name, signatureXRight, signatureYName, { align: 'right'});
+    doc.setFont(undefined, 'normal').text(`NIP. ${teacherData.nip}`, signatureXRight, signatureYName + 5, { align: 'right'});
+
+
+    doc.save(`${title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
   }
 
   return (
@@ -258,7 +326,7 @@ export default function ReportsPage() {
                                 <CardDescription>Detail kehadiran siswa per periode.</CardDescription>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => downloadPdf('Laporan Kehadiran', [['ID', 'Nama', 'Hadir', 'Sakit', 'Izin', 'Alpha', '% Hadir']], detailedAttendance.map(s => [s.id, s.name, s.hadir, s.sakit, s.izin, s.alpha, ((s.hadir/s.pertemuan)*100).toFixed(1) + '%']))}>
+                                <Button variant="outline" onClick={() => downloadPdf('Laporan Kehadiran Siswa', [['ID', 'Nama', 'Hadir', 'Sakit', 'Izin', 'Alpha', '% Hadir']], detailedAttendance.map(s => [s.id, s.name, s.hadir, s.sakit, s.izin, s.alpha, ((s.hadir/s.pertemuan)*100).toFixed(1) + '%']))}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Unduh PDF
                                 </Button>
@@ -335,7 +403,7 @@ export default function ReportsPage() {
                                <CardDescription>Detail nilai ulangan dan tugas siswa.</CardDescription>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => downloadPdf('Laporan Nilai', [['ID', 'Nama', 'UH1', 'UH2', 'Tugas 1', 'UTS', 'UAS']], detailedGrades.map(s => [s.id, s.name, s.uh1, s.uh2, s.tugas1, s.uts, s.uas]))}>
+                                <Button variant="outline" onClick={() => downloadPdf('Laporan Nilai Siswa', [['ID', 'Nama', 'UH1', 'UH2', 'Tugas 1', 'UTS', 'UAS']], detailedGrades.map(s => [s.id, s.name, s.uh1, s.uh2, s.tugas1, s.uts, s.uas]))}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Unduh PDF
                                 </Button>
@@ -432,3 +500,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
