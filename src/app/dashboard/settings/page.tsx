@@ -120,7 +120,17 @@ export default function SettingsPage() {
                             <CardTitle>Data Sekolah</CardTitle>
                             <CardDescription>Informasi ini akan digunakan pada kop laporan.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-6">
+                            <div className="space-y-2">
+                                <Label>Logo Sekolah</Label>
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="h-20 w-20 rounded-md">
+                                        <AvatarImage src="https://placehold.co/100x100.png" alt="Logo Sekolah" data-ai-hint="school building" />
+                                        <AvatarFallback>LOGO</AvatarFallback>
+                                    </Avatar>
+                                    <Button type="button" variant="outline">Ganti Logo</Button>
+                                </div>
+                            </div>
                            <div className="space-y-2">
                                 <Label htmlFor="schoolName">Nama Sekolah</Label>
                                 <Input id="schoolName" defaultValue="SMA Negeri 1 Harapan Bangsa" />
