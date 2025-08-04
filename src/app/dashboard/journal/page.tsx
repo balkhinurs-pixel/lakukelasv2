@@ -29,7 +29,7 @@ import {
     DialogTrigger,
   } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
 import { journalEntries as initialJournalEntries, classes, subjects } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
