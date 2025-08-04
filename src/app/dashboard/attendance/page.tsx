@@ -41,15 +41,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { classes, attendanceHistory as initialHistory } from "@/lib/placeholder-data";
-import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry } from "@/lib/types";
+import { classes, subjects, attendanceHistory as initialHistory } from "@/lib/placeholder-data";
+import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject } from "@/lib/types";
 
 export default function AttendancePage() {
   const searchParams = useSearchParams();
   const preselectedClassId = searchParams.get('classId');
+  const preselectedSubjectId = searchParams.get('subjectId');
 
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [selectedClass, setSelectedClass] = React.useState<Class | null>(null);
+  const [selectedSubject, setSelectedSubject] = React.useState<Subject | null>(null);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
   const [attendance, setAttendance] = React.useState<Map<string, AttendanceRecord['status']>>(new Map());
@@ -61,21 +63,29 @@ export default function AttendancePage() {
     if (preselectedClassId) {
       handleClassChange(preselectedClassId);
     }
-  }, [preselectedClassId]);
+    if (preselectedSubjectId) {
+        handleSubjectChange(preselectedSubjectId);
+    }
+  }, [preselectedClassId, preselectedSubjectId]);
 
   const handleClassChange = (classId: string) => {
     const newClass = classes.find((c) => c.id === classId) || null;
     setSelectedClass(newClass);
     setStudents(newClass ? newClass.students : []);
-    resetForm(newClass);
+    resetForm(newClass, selectedSubject);
   };
   
-  const resetForm = (newClass: Class | null) => {
+  const handleSubjectChange = (subjectId: string) => {
+      const newSubject = subjects.find(s => s.id === subjectId) || null;
+      setSelectedSubject(newSubject);
+  }
+  
+  const resetForm = (currentClass: Class | null, currentSubject: Subject | null) => {
     setEditingId(null);
     setDate(new Date());
     setMeetingNumber("");
     const newAttendance = new Map();
-    newClass?.students.forEach(student => {
+    currentClass?.students.forEach(student => {
       newAttendance.set(student.id, 'Hadir');
     });
     setAttendance(newAttendance);
@@ -86,10 +96,10 @@ export default function AttendancePage() {
   };
 
   const saveAttendance = () => {
-    if (!selectedClass || !date || !meetingNumber) {
+    if (!selectedClass || !selectedSubject || !date || !meetingNumber) {
         toast({
             title: "Gagal Menyimpan",
-            description: "Harap pilih kelas, tanggal, dan isi nomor pertemuan.",
+            description: "Harap pilih kelas, mata pelajaran, tanggal, dan isi nomor pertemuan.",
             variant: "destructive",
         });
         return;
@@ -100,6 +110,8 @@ export default function AttendancePage() {
         date,
         classId: selectedClass.id,
         className: selectedClass.name,
+        subjectId: selectedSubject.id,
+        subjectName: selectedSubject.name,
         meetingNumber: Number(meetingNumber),
         records: Array.from(attendance.entries()).map(([studentId, status]) => ({ studentId, status })),
     };
@@ -120,14 +132,16 @@ export default function AttendancePage() {
         });
     }
 
-    resetForm(selectedClass);
+    resetForm(selectedClass, selectedSubject);
   };
 
   const handleEdit = (entry: AttendanceHistoryEntry) => {
       const classToEdit = classes.find(c => c.id === entry.classId) || null;
-      if (!classToEdit) return;
+      const subjectToEdit = subjects.find(s => s.id === entry.subjectId) || null;
+      if (!classToEdit || !subjectToEdit) return;
 
       setSelectedClass(classToEdit);
+      setSelectedSubject(subjectToEdit);
       setStudents(classToEdit.students);
       setEditingId(entry.id);
       setDate(entry.date);
@@ -146,11 +160,15 @@ export default function AttendancePage() {
   const attendanceOptions: AttendanceRecord['status'][] = ['Hadir', 'Sakit', 'Izin', 'Alpha'];
 
   const filteredHistory = React.useMemo(() => {
-    if (!selectedClass) {
-        return history;
+    let result = history;
+    if (selectedClass) {
+        result = result.filter(entry => entry.classId === selectedClass.id);
     }
-    return history.filter(entry => entry.classId === selectedClass.id);
-  }, [history, selectedClass]);
+    if (selectedSubject) {
+        result = result.filter(entry => entry.subjectId === selectedSubject.id);
+    }
+    return result;
+  }, [history, selectedClass, selectedSubject]);
 
   return (
     <div className="space-y-6">
@@ -162,7 +180,7 @@ export default function AttendancePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
              <div className="space-y-2">
                 <Label>Kelas</Label>
                  <Select onValueChange={handleClassChange} value={selectedClass?.id}>
@@ -173,6 +191,21 @@ export default function AttendancePage() {
                         {classes.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                             {c.name}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+             <div className="space-y-2">
+                <Label>Mata Pelajaran</Label>
+                 <Select onValueChange={handleSubjectChange} value={selectedSubject?.id}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Pilih mata pelajaran" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {subjects.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                            {s.name}
                         </SelectItem>
                         ))}
                     </SelectContent>
@@ -260,8 +293,8 @@ export default function AttendancePage() {
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4 justify-between">
-            <Button onClick={saveAttendance} disabled={!meetingNumber}>{editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}</Button>
-            {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass)}>Batal Mengubah</Button>}
+            <Button onClick={saveAttendance} disabled={!meetingNumber || !selectedSubject}>{editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}</Button>
+            {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass, selectedSubject)}>Batal Mengubah</Button>}
           </CardFooter>
         </Card>
       )}
@@ -269,7 +302,7 @@ export default function AttendancePage() {
       <Card>
         <CardHeader>
             <CardTitle>Riwayat Presensi</CardTitle>
-            <CardDescription>Daftar presensi yang telah Anda simpan {selectedClass ? `untuk kelas ${selectedClass.name}` : ''}.</CardDescription>
+            <CardDescription>Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
         </CardHeader>
         <CardContent>
             <Table>
@@ -277,6 +310,7 @@ export default function AttendancePage() {
                     <TableRow>
                         <TableHead>Tanggal</TableHead>
                         <TableHead>Kelas</TableHead>
+                        <TableHead>Mata Pelajaran</TableHead>
                         <TableHead>Pertemuan Ke</TableHead>
                         <TableHead>Kehadiran</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
@@ -291,6 +325,7 @@ export default function AttendancePage() {
                             <TableRow key={entry.id}>
                                 <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
                                 <TableCell>{entry.className}</TableCell>
+                                <TableCell>{entry.subjectName}</TableCell>
                                 <TableCell className="text-center">{entry.meetingNumber}</TableCell>
                                 <TableCell>{hadir}/{total} ({percentage}%)</TableCell>
                                 <TableCell className="text-right">

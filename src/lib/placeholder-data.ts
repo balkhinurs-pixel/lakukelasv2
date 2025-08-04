@@ -1,4 +1,5 @@
-import type { Class, JournalEntry, ScheduleItem, Student, AttendanceHistoryEntry, GradeHistoryEntry, AttendanceRecord } from './types';
+
+import type { Class, JournalEntry, ScheduleItem, Student, AttendanceHistoryEntry, GradeHistoryEntry, AttendanceRecord, Subject } from './types';
 
 export const students: Student[] = [
   { id: 'S001', name: 'Budi Santoso', nis: '23241001', nisn: '0012345678', gender: 'Laki-laki' },
@@ -20,14 +21,25 @@ export const classes: Class[] = [
   { id: 'C04', name: 'Kelas 11-B', students: students.slice(0, 3).concat(students.slice(8, 10))},
 ];
 
+export const subjects: Subject[] = [
+    { id: 'SUBJ01', name: 'Matematika' },
+    { id: 'SUBJ02', name: 'Fisika' },
+    { id: 'SUBJ03', name: 'Biologi' },
+    { id: 'SUBJ04', name: 'Bahasa Indonesia' },
+    { id: 'SUBJ05', name: 'Bahasa Inggris' },
+    { id: 'SUBJ06', name: 'Kimia' },
+    { id: 'SUBJ07', name: 'Sejarah' },
+];
+
 export const journalEntries: JournalEntry[] = [
   {
     id: 'J01',
     date: new Date(new Date().setDate(new Date().getDate() - 1)),
-    class: 'Kelas 10-A',
-    subject: 'Matematika',
+    classId: 'C01',
+    className: 'Kelas 10-A',
+    subjectId: 'SUBJ01',
+    subjectName: 'Matematika',
     meetingNumber: 5,
-    material: 'Persamaan Linear Dua Variabel',
     learningObjectives: 'Siswa dapat menjelaskan konsep persamaan linear dua variabel dan memberikan contoh dalam kehidupan sehari-hari.',
     learningActivities: '1. Pembukaan: Doa, apersepsi tentang penggunaan aljabar.\n2. Inti: Penjelasan materi, diskusi kelompok memecahkan soal cerita, presentasi hasil.\n3. Penutup: Kesimpulan dan tugas mandiri.',
     assessment: 'Formatif: Keaktifan dalam diskusi kelompok. Sumatif: Kuis singkat di akhir pelajaran.',
@@ -36,10 +48,11 @@ export const journalEntries: JournalEntry[] = [
   {
     id: 'J02',
     date: new Date(new Date().setDate(new Date().getDate() - 1)),
-    class: 'Kelas 11-B',
-    subject: 'Fisika',
+    classId: 'C04',
+    className: 'Kelas 11-B',
+    subjectId: 'SUBJ02',
+    subjectName: 'Fisika',
     meetingNumber: 8,
-    material: 'Hukum Newton II',
     learningObjectives: 'Siswa dapat mendemonstrasikan Hukum Newton II melalui percobaan sederhana.',
     learningActivities: 'Praktikum kelompok menggunakan troli dan beban. Dilanjutkan dengan analisis data dan penyusunan laporan sederhana.',
     assessment: 'Penilaian kinerja saat praktikum dan penilaian laporan.',
@@ -47,9 +60,10 @@ export const journalEntries: JournalEntry[] = [
   {
     id: 'J03',
     date: new Date(new Date().setDate(new Date().getDate() - 2)),
-    class: 'Kelas 10-A',
-    subject: 'Bahasa Indonesia',
-    material: 'Cerpen "Robohnya Surau Kami"',
+    classId: 'C01',
+    className: 'Kelas 10-A',
+    subjectId: 'SUBJ04',
+    subjectName: 'Bahasa Indonesia',
     meetingNumber: 4,
     learningObjectives: 'Siswa dapat mengidentifikasi unsur intrinsik (tema, amanat, tokoh) dari sebuah cerpen.',
     learningActivities: 'Membaca cerpen "Robohnya Surau Kami", diskusi kelas, dan mengerjakan lembar kerja secara individu.',
@@ -69,16 +83,12 @@ export const schedule: ScheduleItem[] = [
 // --- New Placeholder History Data ---
 
 const generateAttendanceRecords = (students: Student[]): AttendanceRecord[] => {
-    return students.map((student, index) => {
-        const statuses: AttendanceRecord['status'][] = ['Hadir', 'Sakit', 'Izin', 'Alpha'];
-        // Use a deterministic way to assign status for placeholder data
-        const status = statuses[index % statuses.length]; 
-        return {
-            studentId: student.id,
-            status: status
-        };
-    });
-};
+    const statuses: AttendanceRecord['status'][] = ['Hadir', 'Hadir', 'Hadir', 'Hadir', 'Sakit', 'Izin', 'Alpha'];
+    return students.map((student, index) => ({
+      studentId: student.id,
+      status: statuses[index % statuses.length]
+    }));
+  };
 
 export const attendanceHistory: AttendanceHistoryEntry[] = [
     {
@@ -86,6 +96,8 @@ export const attendanceHistory: AttendanceHistoryEntry[] = [
         date: new Date(new Date().setDate(new Date().getDate() - 1)),
         classId: 'C01',
         className: 'Kelas 10-A',
+        subjectId: 'SUBJ01',
+        subjectName: 'Matematika',
         meetingNumber: 5,
         records: generateAttendanceRecords(classes[0].students)
     },
@@ -94,6 +106,8 @@ export const attendanceHistory: AttendanceHistoryEntry[] = [
         date: new Date(new Date().setDate(new Date().getDate() - 2)),
         classId: 'C01',
         className: 'Kelas 10-A',
+        subjectId: 'SUBJ04',
+        subjectName: 'Bahasa Indonesia',
         meetingNumber: 4,
         records: generateAttendanceRecords(classes[0].students)
     },
@@ -102,6 +116,8 @@ export const attendanceHistory: AttendanceHistoryEntry[] = [
         date: new Date(new Date().setDate(new Date().getDate() - 1)),
         classId: 'C02',
         className: 'Kelas 10-B',
+        subjectId: 'SUBJ07',
+        subjectName: 'Sejarah',
         meetingNumber: 3,
         records: generateAttendanceRecords(classes[1].students)
     }
@@ -113,6 +129,8 @@ export const gradeHistory: GradeHistoryEntry[] = [
         date: new Date(new Date().setDate(new Date().getDate() - 3)),
         classId: 'C01',
         className: 'Kelas 10-A',
+        subjectId: 'SUBJ01',
+        subjectName: 'Matematika',
         assessmentType: 'Ulangan Harian 1 - Aljabar',
         records: classes[0].students.map(s => ({ studentId: s.id, score: Math.floor(Math.random() * 30) + 70 }))
     },
@@ -121,6 +139,8 @@ export const gradeHistory: GradeHistoryEntry[] = [
         date: new Date(new Date().setDate(new Date().getDate() - 5)),
         classId: 'C01',
         className: 'Kelas 10-A',
+        subjectId: 'SUBJ01',
+        subjectName: 'Matematika',
         assessmentType: 'Tugas Proyek - Fungsi Kuadrat',
         records: classes[0].students.map(s => ({ studentId: s.id, score: Math.floor(Math.random() * 20) + 75 }))
     },
@@ -129,6 +149,8 @@ export const gradeHistory: GradeHistoryEntry[] = [
         date: new Date(new Date().setDate(new Date().getDate() - 4)),
         classId: 'C02',
         className: 'Kelas 10-B',
+        subjectId: 'SUBJ04',
+        subjectName: 'Bahasa Indonesia',
         assessmentType: 'Ulangan Harian 1 - Teks Prosedur',
         records: classes[1].students.map(s => ({ studentId: s.id, score: Math.floor(Math.random() * 25) + 72 }))
     }

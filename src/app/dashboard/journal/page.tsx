@@ -30,7 +30,7 @@ import {
   } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
-import { journalEntries as initialJournalEntries, classes } from "@/lib/placeholder-data";
+import { journalEntries as initialJournalEntries, classes, subjects } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -40,12 +40,12 @@ import { useToast } from "@/hooks/use-toast";
 import type { JournalEntry } from "@/lib/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-type NewJournalEntry = Omit<JournalEntry, 'id' | 'date'>;
+type NewJournalEntry = Omit<JournalEntry, 'id' | 'date' | 'className' | 'subjectName'>;
 
 export default function JournalPage() {
   const searchParams = useSearchParams();
-  const preselectedClass = searchParams.get('class');
-  const preselectedSubject = searchParams.get('subject');
+  const preselectedClassId = searchParams.get('classId');
+  const preselectedSubjectId = searchParams.get('subjectId');
   const openDialog = searchParams.get('openDialog');
 
   const [journalEntries, setJournalEntries] = React.useState<JournalEntry[]>(initialJournalEntries);
@@ -54,10 +54,11 @@ export default function JournalPage() {
   const [selectedEntry, setSelectedEntry] = React.useState<JournalEntry | null>(null);
   const [editingEntry, setEditingEntry] = React.useState<JournalEntry | null>(null);
   const [filterClass, setFilterClass] = React.useState<string>("all");
+  const [filterSubject, setFilterSubject] = React.useState<string>("all");
 
   const initialFormState: NewJournalEntry = {
-    class: "",
-    subject: "",
+    classId: "",
+    subjectId: "",
     meetingNumber: undefined,
     learningObjectives: "",
     learningActivities: "",
@@ -75,15 +76,18 @@ export default function JournalPage() {
   }, [openDialog]);
 
   React.useEffect(() => {
-      if (isFormDialogOpen && preselectedClass && preselectedSubject && !editingEntry) {
+      if (isFormDialogOpen && preselectedClassId && preselectedSubjectId && !editingEntry) {
           setNewEntry(prev => ({
               ...prev,
-              class: preselectedClass || "",
-              subject: preselectedSubject || "",
+              classId: preselectedClassId || "",
+              subjectId: preselectedSubjectId || "",
           }));
-          setFilterClass(preselectedClass || "all");
+          const selectedClass = classes.find(c => c.id === preselectedClassId);
+          if (selectedClass) {
+            setFilterClass(selectedClass.id || "all");
+          }
       }
-  }, [isFormDialogOpen, preselectedClass, preselectedSubject, editingEntry]);
+  }, [isFormDialogOpen, preselectedClassId, preselectedSubjectId, editingEntry]);
 
 
   const handleOpenAddDialog = () => {
@@ -95,8 +99,8 @@ export default function JournalPage() {
   const handleOpenEditDialog = (entry: JournalEntry) => {
     setEditingEntry(entry);
     setNewEntry({
-      class: entry.class,
-      subject: entry.subject,
+      classId: entry.classId,
+      subjectId: entry.subjectId,
       meetingNumber: entry.meetingNumber,
       learningObjectives: entry.learningObjectives,
       learningActivities: entry.learningActivities,
@@ -110,19 +114,33 @@ export default function JournalPage() {
   const handleDeleteEntry = (entryId: string) => {
       setJournalEntries(journalEntries.filter(entry => entry.id !== entryId));
       toast({ title: "Sukses", description: "Jurnal berhasil dihapus.", variant: "destructive" });
+      setIsViewDialogOpen(false);
   }
 
   const handleSaveJournal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEntry.class || !newEntry.subject || !newEntry.learningObjectives || !newEntry.learningActivities) {
+    if (!newEntry.classId || !newEntry.subjectId || !newEntry.learningObjectives || !newEntry.learningActivities) {
         toast({ title: "Gagal", description: "Mohon isi semua kolom yang wajib diisi.", variant: "destructive" });
+        return;
+    }
+
+    const selectedClass = classes.find(c => c.id === newEntry.classId);
+    const selectedSubject = subjects.find(s => s.id === newEntry.subjectId);
+
+    if(!selectedClass || !selectedSubject) {
+        toast({ title: "Gagal", description: "Kelas atau mapel tidak valid.", variant: "destructive" });
         return;
     }
 
     if (editingEntry) {
         // Update existing entry
         const updatedEntries = journalEntries.map(entry => 
-            entry.id === editingEntry.id ? { ...editingEntry, ...newEntry } : entry
+            entry.id === editingEntry.id ? { 
+                ...editingEntry, 
+                ...newEntry, 
+                className: selectedClass.name, 
+                subjectName: selectedSubject.name 
+            } : entry
         );
         setJournalEntries(updatedEntries);
         toast({ title: "Sukses", description: "Jurnal mengajar berhasil diperbarui." });
@@ -132,6 +150,8 @@ export default function JournalPage() {
             id: `J${Date.now()}`,
             date: new Date(),
             ...newEntry,
+            className: selectedClass.name,
+            subjectName: selectedSubject.name,
             meetingNumber: newEntry.meetingNumber || undefined,
         };
         setJournalEntries([newJournalEntry, ...journalEntries]);
@@ -149,11 +169,15 @@ export default function JournalPage() {
   }
 
   const filteredEntries = React.useMemo(() => {
-    if (filterClass === "all") {
-        return journalEntries;
+    let result = journalEntries;
+    if (filterClass !== "all") {
+        result = result.filter(entry => entry.classId === filterClass);
     }
-    return journalEntries.filter(entry => entry.class === filterClass);
-  }, [journalEntries, filterClass]);
+    if (filterSubject !== "all") {
+        result = result.filter(entry => entry.subjectId === filterSubject);
+    }
+    return result;
+  }, [journalEntries, filterClass, filterSubject]);
 
   return (
     <div className="space-y-6">
@@ -181,13 +205,13 @@ export default function JournalPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="class">Kelas</Label>
-                                <Select value={newEntry.class} onValueChange={(value) => setNewEntry({...newEntry, class: value})} required>
+                                <Select value={newEntry.classId} onValueChange={(value) => setNewEntry({...newEntry, classId: value})} required>
                                     <SelectTrigger id="class">
                                         <SelectValue placeholder="Pilih kelas" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classes.map((c) => (
-                                        <SelectItem key={c.id} value={c.name}>
+                                        <SelectItem key={c.id} value={c.id}>
                                             {c.name}
                                         </SelectItem>
                                         ))}
@@ -196,7 +220,18 @@ export default function JournalPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="subject">Mata Pelajaran</Label>
-                                <Input id="subject" placeholder="e.g. Matematika Wajib" value={newEntry.subject} onChange={(e) => setNewEntry({...newEntry, subject: e.target.value})} required/>
+                                 <Select value={newEntry.subjectId} onValueChange={(value) => setNewEntry({...newEntry, subjectId: value})} required>
+                                    <SelectTrigger id="subject">
+                                        <SelectValue placeholder="Pilih mapel" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {subjects.map((s) => (
+                                        <SelectItem key={s.id} value={s.id}>
+                                            {s.name}
+                                        </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -243,7 +278,7 @@ export default function JournalPage() {
                         Entri jurnal mengajar yang telah Anda simpan sebelumnya.
                     </CardDescription>
                 </div>
-                <div className="w-full md:w-auto">
+                <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                     <Select value={filterClass} onValueChange={setFilterClass}>
                         <SelectTrigger className="w-full md:w-[200px]">
                             <SelectValue placeholder="Filter berdasarkan kelas" />
@@ -251,7 +286,18 @@ export default function JournalPage() {
                         <SelectContent>
                             <SelectItem value="all">Semua Kelas</SelectItem>
                             {classes.map(c => (
-                                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={filterSubject} onValueChange={setFilterSubject}>
+                        <SelectTrigger className="w-full md:w-[200px]">
+                            <SelectValue placeholder="Filter berdasarkan mapel" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua Mapel</SelectItem>
+                            {subjects.map(s => (
+                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -275,8 +321,8 @@ export default function JournalPage() {
                     {format(entry.date, "dd MMM yyyy")}
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">{entry.subject}</div>
-                    <div className="text-sm text-muted-foreground">{entry.class} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
+                    <div className="font-medium">{entry.subjectName}</div>
+                    <div className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
                   </TableCell>
                   <TableCell>
                      <p className="line-clamp-2 text-sm text-muted-foreground">{entry.learningObjectives}</p>
@@ -290,7 +336,7 @@ export default function JournalPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleViewEntry(entry)}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Lihat Detail
+                                <Eye className="mr-2 h-4 w-4" /> Lihat Detail
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleOpenEditDialog(entry)}>
                                 <Edit className="mr-2 h-4 w-4" /> Ubah
@@ -316,7 +362,7 @@ export default function JournalPage() {
             <DialogHeader>
                 <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
                 <DialogDescription>
-                    {selectedEntry?.subject} - {selectedEntry?.class} ({selectedEntry ? format(selectedEntry.date, "eeee, dd MMMM yyyy") : ''}) {selectedEntry?.meetingNumber ? ` - Pertemuan ${selectedEntry.meetingNumber}` : ''}
+                    {selectedEntry?.subjectName} - {selectedEntry?.className} ({selectedEntry ? format(selectedEntry.date, "eeee, dd MMMM yyyy") : ''}) {selectedEntry?.meetingNumber ? ` - Pertemuan ${selectedEntry.meetingNumber}` : ''}
                 </DialogDescription>
             </DialogHeader>
             {selectedEntry && (
@@ -339,11 +385,18 @@ export default function JournalPage() {
                     </div>
                  </div>
             )}
-            <DialogFooter className="justify-between">
-                <Button variant="outline" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)}>
-                    <Edit className="mr-2 h-4 w-4"/> Ubah Jurnal
-                </Button>
-                <Button variant="secondary" onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
+            <DialogFooter className="justify-between pt-4 border-t">
+                <div>
+                  <Button variant="destructive" onClick={() => selectedEntry && handleDeleteEntry(selectedEntry.id)}>
+                      <Trash2 className="mr-2 h-4 w-4"/> Hapus
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)}>
+                      <Edit className="mr-2 h-4 w-4"/> Ubah
+                  </Button>
+                  <Button variant="secondary" onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
+                </div>
             </DialogFooter>
         </DialogContent>
       </Dialog>

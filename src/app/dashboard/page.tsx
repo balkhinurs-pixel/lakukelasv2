@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ClipboardCheck, BookText, Users, Clock, ArrowRight } from "lucide-react";
 import Link from 'next/link';
-import { journalEntries, schedule, classes } from "@/lib/placeholder-data";
+import { journalEntries, schedule, classes, subjects } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import type { ScheduleItem } from "@/lib/types";
 
@@ -64,9 +64,11 @@ export default function DashboardPage() {
     const getNextAction = (item: ScheduleItem) => {
         const status = taskStatus[item.id] || 'pending';
         const classData = classes.find(c => c.name === item.class);
+        const subjectData = subjects.find(s => s.name === item.subject);
         const classId = classData?.id;
+        const subjectId = subjectData?.id;
 
-        if (!classId) return null;
+        if (!classId || !subjectId) return null;
 
         const commonButtonProps = {
             size: "sm",
@@ -75,7 +77,7 @@ export default function DashboardPage() {
 
         const linkParams = new URLSearchParams({
             classId: classId,
-            subject: item.subject,
+            subjectId: subjectId,
         });
 
         if (status === 'pending') {
@@ -98,8 +100,8 @@ export default function DashboardPage() {
         }
         if (status === 'nilai_done') {
              const journalParams = new URLSearchParams({
-                class: item.class,
-                subject: item.subject,
+                classId: classId,
+                subjectId: subjectId,
                 openDialog: "true"
             });
             return (
@@ -197,12 +199,9 @@ export default function DashboardPage() {
                 {journalEntries.slice(0, 5).map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell>
-                      <div className="font-medium">{entry.subject}</div>
-                      <div className="text-sm text-muted-foreground hidden md:inline">
-                        {entry.material}
-                      </div>
+                      <div className="font-medium">{entry.subjectName}</div>
                     </TableCell>
-                    <TableCell>{entry.class}</TableCell>
+                    <TableCell>{entry.className}</TableCell>
                     <TableCell className="text-right">
                       {format(entry.date, "dd MMM yyyy")}
                     </TableCell>

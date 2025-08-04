@@ -44,7 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Users, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck } from "lucide-react";
-import { classes, students, journalEntries } from "@/lib/placeholder-data";
+import { classes, students, subjects, journalEntries } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -132,7 +132,8 @@ const teacherData = {
 }
 
 export default function ReportsPage() {
-  const [selectedClass, setSelectedClass] = React.useState("C01");
+  const [selectedClass, setSelectedClass] = React.useState("all");
+  const [selectedSubject, setSelectedSubject] = React.useState("all");
   const [selectedMonth, setSelectedMonth] = React.useState("all");
   const [selectedSemester, setSelectedSemester] = React.useState("all");
   const { isPremium, limits } = useSubscription();
@@ -417,7 +418,17 @@ export default function ReportsPage() {
                                     <SelectValue placeholder="Pilih kelas" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="all">Semua Kelas</SelectItem>
                                     {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                                <SelectTrigger className="w-full md:w-[200px]">
+                                    <SelectValue placeholder="Pilih Mapel" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Mapel</SelectItem>
+                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -494,7 +505,17 @@ export default function ReportsPage() {
                                     <SelectValue placeholder="Pilih kelas" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="all">Semua Kelas</SelectItem>
                                     {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                                <SelectTrigger className="w-full md:w-[200px]">
+                                    <SelectValue placeholder="Pilih Mapel" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Mapel</SelectItem>
+                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -540,7 +561,7 @@ export default function ReportsPage() {
                                 <CardTitle>Laporan Jurnal Mengajar</CardTitle>
                                 <CardDescription>Arsip semua jurnal mengajar yang telah Anda buat.</CardDescription>
                             </div>
-                            <Button variant="outline" onClick={() => handleDownloadClick('Laporan Jurnal Mengajar', [['Tanggal', 'Info', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), `${j.class} - ${j.subject} (P-${j.meetingNumber})`, j.learningObjectives, j.learningActivities]))} disabled={!isPremium}>
+                            <Button variant="outline" onClick={() => handleDownloadClick('Laporan Jurnal Mengajar', [['Tanggal', 'Info', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), `${j.className} - ${j.subjectName} (P-${j.meetingNumber})`, j.learningObjectives, j.learningActivities]))} disabled={!isPremium}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Unduh PDF
                             </Button>
@@ -562,8 +583,8 @@ export default function ReportsPage() {
                                 {format(entry.date, "dd MMM yyyy")}
                                 </TableCell>
                                 <TableCell>
-                                    <div className="font-medium">{entry.subject}</div>
-                                    <div className="text-sm text-muted-foreground">{entry.class} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
+                                    <div className="font-medium">{entry.subjectName}</div>
+                                    <div className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
                                     <p className="line-clamp-2">{entry.learningObjectives}</p>

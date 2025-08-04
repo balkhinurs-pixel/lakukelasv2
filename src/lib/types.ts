@@ -1,3 +1,4 @@
+
 export interface Student {
   id: string;
   name: string;
@@ -10,6 +11,11 @@ export interface Class {
   id: string;
   name: string;
   students: Student[];
+}
+
+export interface Subject {
+  id: string;
+  name: string;
 }
 
 export interface AttendanceRecord {
@@ -25,14 +31,15 @@ export interface GradeRecord {
 export interface JournalEntry {
   id: string;
   date: Date;
-  class: string;
-  subject: string;
+  classId: string;
+  className: string;
+  subjectId: string;
+  subjectName: string;
   meetingNumber?: number;
   learningObjectives: string;
   learningActivities: string;
   assessment?: string;
   reflection?: string;
-  material?: string;
 }
 
 export interface ScheduleItem {
@@ -51,6 +58,8 @@ export interface AttendanceHistoryEntry {
   date: Date;
   classId: string;
   className: string;
+  subjectId: string;
+  subjectName: string;
   meetingNumber: number;
   records: AttendanceRecord[];
 }
@@ -60,6 +69,8 @@ export interface GradeHistoryEntry {
     date: Date;
     classId: string;
     className: string;
+    subjectId: string;
+    subjectName: string;
     assessmentType: string;
     records: GradeRecord[];
 }

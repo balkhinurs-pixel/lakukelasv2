@@ -39,16 +39,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { classes, gradeHistory as initialHistory } from "@/lib/placeholder-data";
-import type { Student, Class, GradeHistoryEntry, GradeRecord } from "@/lib/types";
+import { classes, subjects, gradeHistory as initialHistory } from "@/lib/placeholder-data";
+import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
 
 export default function GradesPage() {
   const searchParams = useSearchParams();
   const preselectedClassId = searchParams.get('classId');
-  const preselectedSubject = searchParams.get('subject');
+  const preselectedSubjectId = searchParams.get('subjectId');
 
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [selectedClass, setSelectedClass] = React.useState<Class | null>(null);
+  const [selectedSubject, setSelectedSubject] = React.useState<Subject | null>(null);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [grades, setGrades] = React.useState<Map<string, number | string>>(new Map());
   const [assessmentType, setAssessmentType] = React.useState<string>("");
@@ -61,10 +62,14 @@ export default function GradesPage() {
     if (preselectedClassId) {
       handleClassChange(preselectedClassId);
     }
-    if (preselectedSubject) {
-        setAssessmentType(`Tugas Harian - ${preselectedSubject}`);
+    if (preselectedSubjectId) {
+        const subject = subjects.find(s => s.id === preselectedSubjectId);
+        if (subject) {
+            setSelectedSubject(subject);
+            setAssessmentType(`Tugas Harian - ${subject.name}`);
+        }
     }
-  }, [preselectedClassId, preselectedSubject]);
+  }, [preselectedClassId, preselectedSubjectId]);
 
   const handleClassChange = (classId: string) => {
     const newClass = classes.find((c) => c.id === classId) || null;
@@ -73,10 +78,15 @@ export default function GradesPage() {
     resetForm(newClass);
   };
   
+  const handleSubjectChange = (subjectId: string) => {
+      const newSubject = subjects.find(s => s.id === subjectId) || null;
+      setSelectedSubject(newSubject);
+  }
+
   const resetForm = (newClass: Class | null) => {
     setEditingId(null);
     setDate(new Date());
-    setAssessmentType(preselectedSubject ? `Tugas Harian - ${preselectedSubject}` : "");
+    setAssessmentType(selectedSubject ? `Tugas Harian - ${selectedSubject.name}` : "");
     const newGrades = new Map();
     newClass?.students.forEach(student => {
       newGrades.set(student.id, "");
@@ -90,10 +100,10 @@ export default function GradesPage() {
   };
 
   const saveGrades = () => {
-    if (!selectedClass || !date || !assessmentType) {
+    if (!selectedClass || !selectedSubject || !date || !assessmentType) {
         toast({
             title: "Gagal Menyimpan",
-            description: "Harap pilih kelas, tanggal, dan isi jenis penilaian.",
+            description: "Harap pilih kelas, mata pelajaran, tanggal, dan isi jenis penilaian.",
             variant: "destructive",
         });
         return;
@@ -104,6 +114,8 @@ export default function GradesPage() {
         date,
         classId: selectedClass.id,
         className: selectedClass.name,
+        subjectId: selectedSubject.id,
+        subjectName: selectedSubject.name,
         assessmentType: assessmentType,
         records: Array.from(grades.entries()).map(([studentId, score]) => ({ studentId, score })),
     };
@@ -126,9 +138,11 @@ export default function GradesPage() {
   
   const handleEdit = (entry: GradeHistoryEntry) => {
       const classToEdit = classes.find(c => c.id === entry.classId) || null;
-      if (!classToEdit) return;
+      const subjectToEdit = subjects.find(s => s.id === entry.subjectId) || null;
+      if (!classToEdit || !subjectToEdit) return;
 
       setSelectedClass(classToEdit);
+      setSelectedSubject(subjectToEdit);
       setStudents(classToEdit.students);
       setEditingId(entry.id);
       setDate(entry.date);
@@ -144,11 +158,15 @@ export default function GradesPage() {
   }
 
   const filteredHistory = React.useMemo(() => {
-    if (!selectedClass) {
-        return history;
+    let result = history;
+    if (selectedClass) {
+        result = result.filter(entry => entry.classId === selectedClass.id);
     }
-    return history.filter(entry => entry.classId === selectedClass.id);
-  }, [history, selectedClass]);
+    if (selectedSubject) {
+        result = result.filter(entry => entry.subjectId === selectedSubject.id);
+    }
+    return result;
+  }, [history, selectedClass, selectedSubject]);
 
   return (
     <div className="space-y-6">
@@ -160,7 +178,7 @@ export default function GradesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
                 <Label>Kelas</Label>
                 <Select onValueChange={handleClassChange} value={selectedClass?.id}>
@@ -174,6 +192,21 @@ export default function GradesPage() {
                       </SelectItem>
                     ))}
                   </SelectContent>
+                </Select>
+            </div>
+             <div className="space-y-2">
+                <Label>Mata Pelajaran</Label>
+                 <Select onValueChange={handleSubjectChange} value={selectedSubject?.id}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Pilih mata pelajaran" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {subjects.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
                 </Select>
             </div>
             <div className="space-y-2">
@@ -247,7 +280,7 @@ export default function GradesPage() {
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4 justify-between">
-            <Button onClick={saveGrades} disabled={!assessmentType}>{editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}</Button>
+            <Button onClick={saveGrades} disabled={!assessmentType || !selectedSubject}>{editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}</Button>
              {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass)}>Batal Mengubah</Button>}
           </CardFooter>
         </Card>
@@ -256,7 +289,7 @@ export default function GradesPage() {
        <Card>
         <CardHeader>
             <CardTitle>Riwayat Penilaian</CardTitle>
-            <CardDescription>Daftar nilai yang telah Anda simpan {selectedClass ? `untuk kelas ${selectedClass.name}` : ''}.</CardDescription>
+            <CardDescription>Daftar nilai yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
         </CardHeader>
         <CardContent>
             <Table>
@@ -264,6 +297,7 @@ export default function GradesPage() {
                     <TableRow>
                         <TableHead>Tanggal</TableHead>
                         <TableHead>Kelas</TableHead>
+                        <TableHead>Mata Pelajaran</TableHead>
                         <TableHead>Jenis Penilaian</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
@@ -273,6 +307,7 @@ export default function GradesPage() {
                         <TableRow key={entry.id}>
                             <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
                             <TableCell>{entry.className}</TableCell>
+                            <TableCell>{entry.subjectName}</TableCell>
                             <TableCell>{entry.assessmentType}</TableCell>
                             <TableCell className="text-right">
                                 <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
