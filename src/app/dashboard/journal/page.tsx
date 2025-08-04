@@ -29,7 +29,7 @@ import {
     DialogTrigger,
   } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { journalEntries as initialJournalEntries, classes } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { JournalEntry } from "@/lib/types";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type NewJournalEntry = Omit<JournalEntry, 'id' | 'date'>;
 
@@ -51,6 +52,7 @@ export default function JournalPage() {
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
   const [selectedEntry, setSelectedEntry] = React.useState<JournalEntry | null>(null);
+  const [editingEntry, setEditingEntry] = React.useState<JournalEntry | null>(null);
 
   const initialFormState: NewJournalEntry = {
     class: "",
@@ -67,14 +69,46 @@ export default function JournalPage() {
 
   React.useEffect(() => {
     if (openDialog === "true") {
-      setNewEntry(prev => ({
-        ...prev,
-        class: preselectedClass || "",
-        subject: preselectedSubject || "",
-      }));
-      setIsFormDialogOpen(true);
+      handleOpenAddDialog();
     }
-  }, [openDialog, preselectedClass, preselectedSubject]);
+  }, [openDialog]);
+
+  React.useEffect(() => {
+      if (isFormDialogOpen && preselectedClass && preselectedSubject && !editingEntry) {
+          setNewEntry(prev => ({
+              ...prev,
+              class: preselectedClass || "",
+              subject: preselectedSubject || "",
+          }));
+      }
+  }, [isFormDialogOpen, preselectedClass, preselectedSubject, editingEntry]);
+
+
+  const handleOpenAddDialog = () => {
+    setEditingEntry(null);
+    setNewEntry(initialFormState);
+    setIsFormDialogOpen(true);
+  };
+  
+  const handleOpenEditDialog = (entry: JournalEntry) => {
+    setEditingEntry(entry);
+    setNewEntry({
+      class: entry.class,
+      subject: entry.subject,
+      meetingNumber: entry.meetingNumber,
+      learningObjectives: entry.learningObjectives,
+      learningActivities: entry.learningActivities,
+      assessment: entry.assessment,
+      reflection: entry.reflection,
+    });
+    setIsViewDialogOpen(false);
+    setIsFormDialogOpen(true);
+  };
+
+  const handleDeleteEntry = (entryId: string) => {
+      setJournalEntries(journalEntries.filter(entry => entry.id !== entryId));
+      toast({ title: "Sukses", description: "Jurnal berhasil dihapus.", variant: "destructive" });
+  }
 
   const handleSaveJournal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,18 +116,29 @@ export default function JournalPage() {
         toast({ title: "Gagal", description: "Mohon isi semua kolom yang wajib diisi.", variant: "destructive" });
         return;
     }
+
+    if (editingEntry) {
+        // Update existing entry
+        const updatedEntries = journalEntries.map(entry => 
+            entry.id === editingEntry.id ? { ...entry, ...newEntry } : entry
+        );
+        setJournalEntries(updatedEntries);
+        toast({ title: "Sukses", description: "Jurnal mengajar berhasil diperbarui." });
+    } else {
+        // Add new entry
+        const newJournalEntry: JournalEntry = {
+            id: `J${Date.now()}`,
+            date: new Date(),
+            ...newEntry,
+            meetingNumber: newEntry.meetingNumber || undefined,
+        };
+        setJournalEntries([newJournalEntry, ...journalEntries]);
+        toast({ title: "Sukses", description: "Jurnal mengajar berhasil disimpan.", className: "bg-green-100 text-green-900 border-green-200" });
+    }
     
-    const newJournalEntry: JournalEntry = {
-        id: `J${Date.now()}`,
-        date: new Date(),
-        ...newEntry,
-        meetingNumber: newEntry.meetingNumber || undefined,
-    };
-    
-    setJournalEntries([newJournalEntry, ...journalEntries]);
-    toast({ title: "Sukses", description: "Jurnal mengajar berhasil disimpan.", className: "bg-green-100 text-green-900 border-green-200" });
     setNewEntry(initialFormState);
     setIsFormDialogOpen(false);
+    setEditingEntry(null);
   }
 
   const handleViewEntry = (entry: JournalEntry) => {
@@ -108,19 +153,19 @@ export default function JournalPage() {
             <h1 className="text-2xl font-bold font-headline">Jurnal Mengajar</h1>
             <p className="text-muted-foreground">Catatan reflektif kegiatan mengajar harian Anda.</p>
         </div>
+        <Button onClick={handleOpenAddDialog}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Tambah Jurnal Baru
+        </Button>
+       </div>
+
         <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Tambah Jurnal Baru
-                </Button>
-            </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
                 <form onSubmit={handleSaveJournal}>
                     <DialogHeader>
-                    <DialogTitle>Tambah Jurnal Mengajar</DialogTitle>
+                    <DialogTitle>{editingEntry ? 'Ubah Jurnal Mengajar' : 'Tambah Jurnal Mengajar'}</DialogTitle>
                     <DialogDescription>
-                        Dokumentasikan proses pembelajaran secara lengkap dan reflektif.
+                        {editingEntry ? 'Perbarui detail jurnal mengajar ini.' : 'Dokumentasikan proses pembelajaran secara lengkap dan reflektif.'}
                     </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
@@ -165,11 +210,11 @@ export default function JournalPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="assessment">Penilaian (Asesmen)</Label>
-                            <Textarea id="assessment" placeholder="Asesmen formatif melalui tanya jawab, asesmen sumatif melalui..." value={newEntry.assessment} onChange={(e) => setNewEntry({...newEntry, assessment: e.target.value})} />
+                            <Textarea id="assessment" placeholder="Asesmen formatif melalui tanya jawab, asesmen sumatif melalui..." value={newEntry.assessment || ''} onChange={(e) => setNewEntry({...newEntry, assessment: e.target.value})} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="reflection">Refleksi & Tindak Lanjut</Label>
-                            <Textarea id="reflection" placeholder="Sebagian besar siswa sudah paham, namun 3 siswa perlu bimbingan..." value={newEntry.reflection} onChange={(e) => setNewEntry({...newEntry, reflection: e.target.value})} />
+                            <Textarea id="reflection" placeholder="Sebagian besar siswa sudah paham, namun 3 siswa perlu bimbingan..." value={newEntry.reflection || ''} onChange={(e) => setNewEntry({...newEntry, reflection: e.target.value})} />
                         </div>
                     </div>
                     <DialogFooter className="pt-4 border-t">
@@ -179,7 +224,6 @@ export default function JournalPage() {
                 </form>
             </DialogContent>
         </Dialog>
-       </div>
 
       <Card>
         <CardHeader>
@@ -212,9 +256,24 @@ export default function JournalPage() {
                      <p className="line-clamp-2 text-sm text-muted-foreground">{entry.learningObjectives}</p>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleViewEntry(entry)}>
-                      Lihat
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewEntry(entry)}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Lihat Detail
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenEditDialog(entry)}>
+                                <Edit className="mr-2 h-4 w-4" /> Ubah
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteEntry(entry.id)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -254,11 +313,16 @@ export default function JournalPage() {
                     </div>
                  </div>
             )}
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
+            <DialogFooter className="justify-between">
+                <Button variant="outline" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)}>
+                    <Edit className="mr-2 h-4 w-4"/> Ubah Jurnal
+                </Button>
+                <Button variant="secondary" onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+
+    
