@@ -43,13 +43,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Users, CheckCircle, Award, Download, Sparkles } from "lucide-react";
+import { TrendingUp, Users, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck } from "lucide-react";
 import { classes, students, journalEntries } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSubscription } from "@/hooks/use-subscription";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 
 // Extend jsPDF with autoTable
@@ -89,10 +90,12 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 
 
 const studentPerformance = [
-    { id: 'S001', name: 'Budi Santoso', class: '10-A', average_grade: 92, attendance: 100, status: 'Meningkat' },
+    { id: 'S004', name: 'Eko Prasetyo', class: '10-A', average_grade: 95, attendance: 100, status: 'Sangat Baik' },
+    { id: 'S001', name: 'Budi Santoso', class: '10-A', average_grade: 92, attendance: 98, status: 'Sangat Baik' },
     { id: 'S006', name: 'Gilang Ramadhan', class: '10-B', average_grade: 85, attendance: 95, status: 'Stabil' },
-    { id: 'S003', name: 'Dewi Anggraini', class: '11-A', average_grade: 78, attendance: 98, status: 'Menurun' },
-    { id: 'S004', name: 'Eko Prasetyo', class: '11-A', average_grade: 95, attendance: 100, status: 'Sangat Baik' },
+    { id: 'S002', name: 'Citra Lestari', class: '10-A', average_grade: 82, attendance: 90, status: 'Stabil' },
+    { id: 'S007', name: 'Hana Yulita', class: '11-A', average_grade: 78, attendance: 88, status: 'Butuh Perhatian' },
+    { id: 'S003', name: 'Dewi Anggraini', class: '11-A', average_grade: 74, attendance: 85, status: 'Berisiko' },
 ];
 
 // Mock data for detailed reports
@@ -223,6 +226,21 @@ export default function ReportsPage() {
     doc.save(`${title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
   }
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'Sangat Baik':
+            return "bg-green-100 text-green-800 border-green-200 hover:bg-green-200";
+        case 'Stabil':
+            return "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200";
+        case 'Butuh Perhatian':
+            return "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200";
+        case 'Berisiko':
+            return "bg-red-100 text-red-800 border-red-200 hover:bg-red-200";
+        default:
+            return "bg-muted text-muted-foreground";
+    }
+  }
+
   return (
     <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -253,15 +271,15 @@ export default function ReportsPage() {
                 <TabsTrigger value="journal">Laporan Jurnal</TabsTrigger>
             </TabsList>
             <TabsContent value="summary" className="mt-6 space-y-6">
-                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Tingkat Kehadiran</CardTitle>
+                            <CardTitle className="text-sm font-medium">Tingkat Kehadiran Rata-rata</CardTitle>
                             <CheckCircle className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">94.2%</div>
-                            <p className="text-xs text-muted-foreground">Rata-rata kehadiran semua kelas</p>
+                            <p className="text-xs text-muted-foreground">Rata-rata semua kelas bulan ini</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -276,25 +294,54 @@ export default function ReportsPage() {
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Siswa Berprestasi</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-sm font-medium">Jurnal Mengajar Terisi</CardTitle>
+                            <BookCheck className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">Eko P.</div>
-                            <p className="text-xs text-muted-foreground">Nilai rata-rata tertinggi (95)</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Siswa Aktif</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{students.length}</div>
-                            <p className="text-xs text-muted-foreground">Di semua kelas yang Anda ajar</p>
+                            <div className="text-2xl font-bold">{journalEntries.length}</div>
+                            <p className="text-xs text-muted-foreground">Total jurnal yang telah dibuat</p>
                         </CardContent>
                     </Card>
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Analisis Performa Siswa</CardTitle>
+                        <CardDescription>Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead>Nama Siswa</TableHead>
+                                <TableHead>Kelas</TableHead>
+                                <TableHead className="text-center">Rata-rata Nilai</TableHead>
+                                <TableHead className="text-center">Kehadiran</TableHead>
+                                <TableHead className="text-center">Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {studentPerformance.map((student) => (
+                                <TableRow key={student.id}>
+                                    <TableCell className="font-medium">{student.name}</TableCell>
+                                    <TableCell>{student.class}</TableCell>
+                                    <TableCell className="text-center font-mono">{student.average_grade}</TableCell>
+                                    <TableCell className="text-center font-mono">{student.attendance}%</TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge variant="outline" className={cn("font-semibold", getStatusBadge(student.status))}>
+                                            {student.status === 'Sangat Baik' && <TrendingUp className="mr-2 h-3 w-3" />}
+                                            {student.status === 'Stabil' && <UserCheck className="mr-2 h-3 w-3" />}
+                                            {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-2 h-3 w-3" />}
+                                            {student.status === 'Berisiko' && <UserX className="mr-2 h-3 w-3" />}
+                                            {student.status}
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                     <Card className="lg:col-span-3">
