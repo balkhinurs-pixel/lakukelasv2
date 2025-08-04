@@ -53,6 +53,7 @@ export default function JournalPage() {
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
   const [selectedEntry, setSelectedEntry] = React.useState<JournalEntry | null>(null);
   const [editingEntry, setEditingEntry] = React.useState<JournalEntry | null>(null);
+  const [filterClass, setFilterClass] = React.useState<string>("all");
 
   const initialFormState: NewJournalEntry = {
     class: "",
@@ -80,6 +81,7 @@ export default function JournalPage() {
               class: preselectedClass || "",
               subject: preselectedSubject || "",
           }));
+          setFilterClass(preselectedClass || "all");
       }
   }, [isFormDialogOpen, preselectedClass, preselectedSubject, editingEntry]);
 
@@ -120,7 +122,7 @@ export default function JournalPage() {
     if (editingEntry) {
         // Update existing entry
         const updatedEntries = journalEntries.map(entry => 
-            entry.id === editingEntry.id ? { ...entry, ...newEntry } : entry
+            entry.id === editingEntry.id ? { ...editingEntry, ...newEntry } : entry
         );
         setJournalEntries(updatedEntries);
         toast({ title: "Sukses", description: "Jurnal mengajar berhasil diperbarui." });
@@ -145,6 +147,13 @@ export default function JournalPage() {
     setSelectedEntry(entry);
     setIsViewDialogOpen(true);
   }
+
+  const filteredEntries = React.useMemo(() => {
+    if (filterClass === "all") {
+        return journalEntries;
+    }
+    return journalEntries.filter(entry => entry.class === filterClass);
+  }, [journalEntries, filterClass]);
 
   return (
     <div className="space-y-6">
@@ -227,10 +236,27 @@ export default function JournalPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Riwayat Jurnal</CardTitle>
-          <CardDescription>
-            Entri jurnal mengajar Anda yang telah disimpan sebelumnya.
-          </CardDescription>
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+                <div>
+                    <CardTitle>Riwayat Jurnal</CardTitle>
+                    <CardDescription>
+                        Entri jurnal mengajar yang telah Anda simpan sebelumnya.
+                    </CardDescription>
+                </div>
+                <div className="w-full md:w-auto">
+                    <Select value={filterClass} onValueChange={setFilterClass}>
+                        <SelectTrigger className="w-full md:w-[200px]">
+                            <SelectValue placeholder="Filter berdasarkan kelas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua Kelas</SelectItem>
+                            {classes.map(c => (
+                                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -243,7 +269,7 @@ export default function JournalPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {journalEntries.map((entry) => (
+              {filteredEntries.map((entry) => (
                 <TableRow key={entry.id}>
                   <TableCell className="font-medium">
                     {format(entry.date, "dd MMM yyyy")}
@@ -324,5 +350,3 @@ export default function JournalPage() {
     </div>
   );
 }
-
-    

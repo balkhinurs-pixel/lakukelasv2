@@ -143,6 +143,13 @@ export default function GradesPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const filteredHistory = React.useMemo(() => {
+    if (!selectedClass) {
+        return history;
+    }
+    return history.filter(entry => entry.classId === selectedClass.id);
+  }, [history, selectedClass]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -249,7 +256,7 @@ export default function GradesPage() {
        <Card>
         <CardHeader>
             <CardTitle>Riwayat Penilaian</CardTitle>
-            <CardDescription>Daftar nilai yang telah Anda simpan.</CardDescription>
+            <CardDescription>Daftar nilai yang telah Anda simpan {selectedClass ? `untuk kelas ${selectedClass.name}` : ''}.</CardDescription>
         </CardHeader>
         <CardContent>
             <Table>
@@ -262,7 +269,7 @@ export default function GradesPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {history.map(entry => (
+                    {filteredHistory.map(entry => (
                         <TableRow key={entry.id}>
                             <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
                             <TableCell>{entry.className}</TableCell>

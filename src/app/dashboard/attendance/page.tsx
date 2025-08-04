@@ -145,6 +145,13 @@ export default function AttendancePage() {
   
   const attendanceOptions: AttendanceRecord['status'][] = ['Hadir', 'Sakit', 'Izin', 'Alpha'];
 
+  const filteredHistory = React.useMemo(() => {
+    if (!selectedClass) {
+        return history;
+    }
+    return history.filter(entry => entry.classId === selectedClass.id);
+  }, [history, selectedClass]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -262,7 +269,7 @@ export default function AttendancePage() {
       <Card>
         <CardHeader>
             <CardTitle>Riwayat Presensi</CardTitle>
-            <CardDescription>Daftar presensi yang telah Anda simpan.</CardDescription>
+            <CardDescription>Daftar presensi yang telah Anda simpan {selectedClass ? `untuk kelas ${selectedClass.name}` : ''}.</CardDescription>
         </CardHeader>
         <CardContent>
             <Table>
@@ -276,7 +283,7 @@ export default function AttendancePage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {history.map(entry => {
+                    {filteredHistory.map(entry => {
                         const total = entry.records.length;
                         const hadir = entry.records.filter(r => r.status === 'Hadir').length;
                         const percentage = total > 0 ? ((hadir / total) * 100).toFixed(0) : 0;
