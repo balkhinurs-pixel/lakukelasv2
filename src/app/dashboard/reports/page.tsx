@@ -39,13 +39,18 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Users, CheckCircle, Award, Download } from "lucide-react";
+import { TrendingUp, Users, CheckCircle, Award, Download, Sparkles } from "lucide-react";
 import { classes, students, journalEntries } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { useSubscription } from "@/hooks/use-subscription";
+import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
+
 
 // Extend jsPDF with autoTable
 interface jsPDFWithAutoTable extends jsPDF {
@@ -127,8 +132,22 @@ export default function ReportsPage() {
   const [selectedClass, setSelectedClass] = React.useState("C01");
   const [selectedMonth, setSelectedMonth] = React.useState("all");
   const [selectedSemester, setSelectedSemester] = React.useState("all");
+  const { isPremium, limits } = useSubscription();
+  const { toast } = useToast();
 
   const pieData = Object.entries(overallAttendance).map(([name, value]) => ({name, value}));
+
+  const handleDownloadClick = (title: string, head: string[][], body: any[][]) => {
+      if (!limits.canDownloadPdf) {
+          toast({
+              title: "Fitur Premium",
+              description: "Unduh laporan PDF adalah fitur premium. Silakan upgrade paket Anda.",
+              variant: "destructive"
+          });
+          return;
+      }
+      downloadPdf(title, head, body);
+  }
 
   const downloadPdf = async (title: string, head: string[][], body: any[][]) => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
@@ -212,6 +231,19 @@ export default function ReportsPage() {
                 <p className="text-muted-foreground">Analisis komprehensif tentang kehadiran dan nilai siswa.</p>
             </div>
         </div>
+
+         {!isPremium && (
+            <Alert>
+                <Sparkles className="h-4 w-4" />
+                <AlertTitle>Laporan Profesional dengan Paket Premium</AlertTitle>
+                <AlertDescription>
+                    Upgrade ke paket premium untuk dapat mengunduh semua laporan dalam format PDF profesional dengan kop surat sekolah Anda.
+                    <Button variant="link" className="p-0 h-auto ml-1" asChild>
+                        <Link href="/dashboard/subscription">Upgrade sekarang</Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        )}
 
         <Tabs defaultValue="summary">
             <TabsList>
@@ -326,7 +358,7 @@ export default function ReportsPage() {
                                 <CardDescription>Detail kehadiran siswa per periode.</CardDescription>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => downloadPdf('Laporan Kehadiran Siswa', [['ID', 'Nama', 'Hadir', 'Sakit', 'Izin', 'Alpha', '% Hadir']], detailedAttendance.map(s => [s.id, s.name, s.hadir, s.sakit, s.izin, s.alpha, ((s.hadir/s.pertemuan)*100).toFixed(1) + '%']))}>
+                                <Button variant="outline" onClick={() => handleDownloadClick('Laporan Kehadiran Siswa', [['ID', 'Nama', 'Hadir', 'Sakit', 'Izin', 'Alpha', '% Hadir']], detailedAttendance.map(s => [s.id, s.name, s.hadir, s.sakit, s.izin, s.alpha, ((s.hadir/s.pertemuan)*100).toFixed(1) + '%']))} disabled={!isPremium}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Unduh PDF
                                 </Button>
@@ -403,7 +435,7 @@ export default function ReportsPage() {
                                <CardDescription>Detail nilai ulangan dan tugas siswa.</CardDescription>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => downloadPdf('Laporan Nilai Siswa', [['ID', 'Nama', 'UH1', 'UH2', 'Tugas 1', 'UTS', 'UAS']], detailedGrades.map(s => [s.id, s.name, s.uh1, s.uh2, s.tugas1, s.uts, s.uas]))}>
+                                <Button variant="outline" onClick={() => handleDownloadClick('Laporan Nilai Siswa', [['ID', 'Nama', 'UH1', 'UH2', 'Tugas 1', 'UTS', 'UAS']], detailedGrades.map(s => [s.id, s.name, s.uh1, s.uh2, s.tugas1, s.uts, s.uas]))} disabled={!isPremium}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Unduh PDF
                                 </Button>
@@ -461,7 +493,7 @@ export default function ReportsPage() {
                                 <CardTitle>Laporan Jurnal Mengajar</CardTitle>
                                 <CardDescription>Arsip semua jurnal mengajar yang telah Anda buat.</CardDescription>
                             </div>
-                            <Button variant="outline" onClick={() => downloadPdf('Laporan Jurnal Mengajar', [['Tanggal', 'Info', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), `${j.class} - ${j.subject} (P-${j.meetingNumber})`, j.learningObjectives, j.learningActivities]))}>
+                            <Button variant="outline" onClick={() => handleDownloadClick('Laporan Jurnal Mengajar', [['Tanggal', 'Info', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), `${j.class} - ${j.subject} (P-${j.meetingNumber})`, j.learningObjectives, j.learningActivities]))} disabled={!isPremium}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Unduh PDF
                             </Button>
@@ -500,5 +532,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    

@@ -28,19 +28,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { PlusCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PlusCircle, Sparkles } from "lucide-react";
 import { classes as initialClasses } from "@/lib/placeholder-data";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscription } from "@/hooks/use-subscription";
 import type { Class } from "@/lib/types";
+import Link from "next/link";
 
 export default function ClassSettingsPage() {
     const [classes, setClasses] = React.useState<Class[]>(initialClasses);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [newClassName, setNewClassName] = React.useState("");
     const { toast } = useToast();
+    const { limits, isPremium } = useSubscription();
+
+    const canCreateClass = classes.length < limits.classes;
 
     const handleSaveClass = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!canCreateClass) {
+            toast({ title: "Batas Tercapai", description: "Anda telah mencapai batas maksimal jumlah kelas untuk paket gratis.", variant: "destructive" });
+            return;
+        }
+
         if (!newClassName) {
             toast({ title: "Gagal", description: "Nama kelas tidak boleh kosong.", variant: "destructive" });
             return;
@@ -67,7 +79,7 @@ export default function ClassSettingsPage() {
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button>
+                        <Button disabled={!canCreateClass}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Buat Kelas Baru
                         </Button>
@@ -91,10 +103,24 @@ export default function ClassSettingsPage() {
                     </DialogContent>
                 </Dialog>
             </div>
+
+            {!isPremium && (
+                 <Alert>
+                    <Sparkles className="h-4 w-4" />
+                    <AlertTitle>Tingkatkan ke Premium!</AlertTitle>
+                    <AlertDescription>
+                        Anda menggunakan paket gratis dengan batas **{limits.classes} kelas**.
+                        <Button variant="link" className="p-0 h-auto ml-1" asChild>
+                           <Link href="/dashboard/subscription">Upgrade sekarang</Link>
+                        </Button> untuk membuat kelas tanpa batas.
+                    </AlertDescription>
+                </Alert>
+            )}
+
             <Card>
                 <CardHeader>
                     <CardTitle>Daftar Kelas</CardTitle>
-                    <CardDescription>Berikut adalah semua kelas yang terdaftar di sistem.</CardDescription>
+                    <CardDescription>Berikut adalah semua kelas yang terdaftar di sistem. ({classes.length}/{isPremium ? '∞' : limits.classes})</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <Table>

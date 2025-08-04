@@ -36,10 +36,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, Download, Upload, FileText } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { UserPlus, Download, Upload, FileText, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscription } from "@/hooks/use-subscription";
 import { classes as initialClasses, students as initialStudents } from "@/lib/placeholder-data";
 import type { Student, Class } from "@/lib/types";
+import Link from "next/link";
 
 export default function StudentsPage() {
   const [classes, setClasses] = React.useState<Class[]>(initialClasses);
@@ -50,20 +53,22 @@ export default function StudentsPage() {
   const [newStudent, setNewStudent] = React.useState({ name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
 
   const { toast } = useToast();
+  const { limits, isPremium } = useSubscription();
+
+  const selectedClass = classes.find(c => c.id === selectedClassId);
+  const studentsInClass = selectedClass ? selectedClass.students : [];
+  const canAddStudent = selectedClass ? selectedClass.students.length < limits.studentsPerClass : false;
 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
   };
-  
-  const getStudentsInClass = () => {
-    return students.filter(s => {
-        const studentClass = classes.find(c => c.students.some(cs => cs.id === s.id));
-        return studentClass?.id === selectedClassId;
-    });
-  }
 
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canAddStudent) {
+        toast({ title: "Batas Siswa Tercapai", description: "Anda telah mencapai batas maksimal jumlah siswa di kelas ini untuk paket gratis.", variant: "destructive" });
+        return;
+    }
     if (!newStudent.name || !newStudent.nis || !newStudent.nisn || !newStudent.gender) {
         toast({ title: "Gagal", description: "Semua kolom harus diisi.", variant: "destructive" });
         return;
@@ -74,14 +79,11 @@ export default function StudentsPage() {
         ...newStudent
     };
     
-    // Add student to general student list
     const updatedStudents = [...students, newStudentData];
     setStudents(updatedStudents);
 
-    // Add student to the selected class
     const updatedClasses = classes.map(c => {
         if (c.id === selectedClassId) {
-            // This is a simplified placeholder data update. In a real app, you'd just update relations.
             const classStudent = updatedStudents.find(s => s.id === newStudentData.id);
             if(classStudent) {
               return { ...c, students: [...c.students, classStudent]};
@@ -97,10 +99,6 @@ export default function StudentsPage() {
   };
 
 
-  const selectedClass = classes.find(c => c.id === selectedClassId);
-  const studentsInClass = selectedClass ? selectedClass.students : [];
-
-
   return (
     <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -109,18 +107,32 @@ export default function StudentsPage() {
                 <p className="text-muted-foreground">Kelola data induk siswa di setiap kelas.</p>
             </div>
              <div className="flex gap-2">
-                <Button variant="outline"><FileText /> Unduh Template</Button>
-                <Button variant="outline"><Upload /> Impor Siswa</Button>
-                <Button variant="outline"><Download /> Ekspor Siswa</Button>
+                <Button variant="outline" disabled={!isPremium}><FileText /> Unduh Template</Button>
+                <Button variant="outline" disabled={!isPremium}><Upload /> Impor Siswa</Button>
+                <Button variant="outline" disabled={!isPremium}><Download /> Ekspor Siswa</Button>
             </div>
         </div>
+        
+        {!isPremium && (
+            <Alert>
+                <Sparkles className="h-4 w-4" />
+                <AlertTitle>Fitur Premium</AlertTitle>
+                <AlertDescription>
+                    Impor, ekspor, dan unduh template siswa adalah fitur premium. 
+                    <Button variant="link" className="p-0 h-auto ml-1" asChild>
+                        <Link href="/dashboard/subscription">Upgrade sekarang</Link>
+                    </Button> untuk mengelola data siswa dengan lebih efisien.
+                </AlertDescription>
+            </Alert>
+        )}
+
         <Card>
         <CardHeader>
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <CardTitle>Siswa Kelas {selectedClass?.name}</CardTitle>
                     <CardDescription>
-                    Lihat, tambah, atau kelola data siswa di kelas ini.
+                    Lihat, tambah, atau kelola data siswa di kelas ini. ({studentsInClass.length}/{isPremium ? '∞' : limits.studentsPerClass} siswa)
                     </CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -141,7 +153,7 @@ export default function StudentsPage() {
                     </Select>
                     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button>
+                            <Button disabled={!canAddStudent}>
                                 <UserPlus />
                                 Tambah Siswa
                             </Button>
