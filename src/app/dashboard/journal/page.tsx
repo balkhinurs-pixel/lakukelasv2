@@ -39,31 +39,31 @@ export default function JournalPage() {
     <div className="space-y-6">
        <div className="flex justify-between items-center">
         <div>
-            <h1 className="text-2xl font-bold font-headline">Teaching Journal</h1>
-            <p className="text-muted-foreground">A log of your daily teaching activities.</p>
+            <h1 className="text-2xl font-bold font-headline">Jurnal Mengajar</h1>
+            <p className="text-muted-foreground">Catatan kegiatan mengajar harian Anda.</p>
         </div>
         <Dialog>
             <DialogTrigger asChild>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Entry
+                    Tambah Jurnal Baru
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                <DialogTitle>Add Journal Entry</DialogTitle>
+                <DialogTitle>Tambah Jurnal</DialogTitle>
                 <DialogDescription>
-                    Record your teaching activities for a specific class and date.
+                    Catat aktivitas mengajar Anda untuk kelas dan tanggal tertentu.
                 </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="class" className="text-right">
-                    Class
+                    Kelas
                     </Label>
                     <Select>
                         <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Select a class" />
+                            <SelectValue placeholder="Pilih kelas" />
                         </SelectTrigger>
                         <SelectContent>
                             {classes.map((c) => (
@@ -76,25 +76,25 @@ export default function JournalPage() {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="subject" className="text-right">
-                    Subject
+                    Materi
                     </Label>
                     <Input id="subject" placeholder="e.g. Matematika" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="material" className="text-right">
-                    Material
+                    Bahan Ajar
                     </Label>
                     <Input id="material" placeholder="e.g. Aljabar Linier" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
                     <Label htmlFor="notes" className="text-right pt-2">
-                    Notes
+                    Catatan
                     </Label>
-                    <Textarea id="notes" placeholder="Optional notes about the lesson..." className="col-span-3" />
+                    <Textarea id="notes" placeholder="Catatan opsional tentang pelajaran..." className="col-span-3" />
                 </div>
                 </div>
                 <DialogFooter>
-                <Button type="submit">Save Entry</Button>
+                <Button type="submit">Simpan Jurnal</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -102,19 +102,19 @@ export default function JournalPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Journal History</CardTitle>
+          <CardTitle>Riwayat Jurnal</CardTitle>
           <CardDescription>
-            Your previously saved teaching journal entries.
+            Entri jurnal mengajar Anda yang telah disimpan sebelumnya.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[120px]">Date</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Subject & Material</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead className="w-[120px]">Tanggal</TableHead>
+                <TableHead>Kelas</TableHead>
+                <TableHead>Mata Pelajaran & Materi</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -130,7 +130,7 @@ export default function JournalPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm">
-                      View
+                      Lihat
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -139,7 +139,7 @@ export default function JournalPage() {
           </Table>
         </CardContent>
         <CardFooter className="flex justify-center border-t pt-4">
-            <Button variant="outline">Load More</Button>
+            <Button variant="outline">Muat Lebih Banyak</Button>
         </CardFooter>
       </Card>
     </div>

@@ -42,13 +42,13 @@ export default function RosterPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-headline">Class Roster</h1>
-          <p className="text-muted-foreground">View and manage student lists for each class.</p>
+          <h1 className="text-2xl font-bold font-headline">Daftar Kelas</h1>
+          <p className="text-muted-foreground">Lihat dan kelola daftar siswa untuk setiap kelas.</p>
         </div>
         <div className="flex gap-2">
             <Select onValueChange={handleClassChange} defaultValue={selectedClass?.id}>
                 <SelectTrigger className="w-full md:w-[220px]">
-                    <SelectValue placeholder="Select a class" />
+                    <SelectValue placeholder="Pilih kelas" />
                 </SelectTrigger>
                 <SelectContent>
                     {classes.map((c) => (
@@ -60,7 +60,7 @@ export default function RosterPage() {
             </Select>
             <Button variant="outline">
               <Upload className="mr-2 h-4 w-4" />
-              Import CSV
+              Impor CSV
             </Button>
         </div>
       </div>
@@ -68,18 +68,18 @@ export default function RosterPage() {
       {selectedClass && (
         <Card>
           <CardHeader>
-            <CardTitle>Students in {selectedClass.name}</CardTitle>
+            <CardTitle>Siswa di {selectedClass.name}</CardTitle>
             <CardDescription>
-              A total of {students.length} students are in this class.
+              Total {students.length} siswa ada di kelas ini.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[150px]">Student ID</TableHead>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[150px]">ID Siswa</TableHead>
+                  <TableHead>Nama Siswa</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -89,7 +89,7 @@ export default function RosterPage() {
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm">
-                        View Details
+                        Lihat Detail
                       </Button>
                     </TableCell>
                   </TableRow>

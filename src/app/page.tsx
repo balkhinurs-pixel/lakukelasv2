@@ -14,7 +14,7 @@ export default function LoginPage() {
             <AppLogo className="h-12 w-12" />
           </div>
           <CardTitle className="text-2xl font-headline">Classroom Zephyr</CardTitle>
-          <CardDescription>Welcome back! Please log in to your account.</CardDescription>
+          <CardDescription>Selamat datang kembali! Silakan masuk ke akun Anda.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4">
@@ -23,17 +23,17 @@ export default function LoginPage() {
               <Input id="email" type="email" placeholder="guru@sekolah.id" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Kata Sandi</Label>
               <Input id="password" type="password" required />
             </div>
           </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button className="w-full" asChild>
-            <Link href="/dashboard">Login</Link>
+            <Link href="/dashboard">Masuk</Link>
           </Button>
           <Button variant="link" size="sm" className="w-full text-muted-foreground">
-            Forgot password?
+            Lupa kata sandi?
           </Button>
         </CardFooter>
       </Card>

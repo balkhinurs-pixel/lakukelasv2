@@ -37,10 +37,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from '@/components/icons';
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Attendance' },
-  { href: '/dashboard/journal', icon: BookText, label: 'Teaching Journal' },
-  { href: '/dashboard/roster', icon: Users, label: 'Class Roster' },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dasbor' },
+  { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
+  { href: '/dashboard/journal', icon: BookText, label: 'Jurnal Mengajar' },
+  { href: '/dashboard/roster', icon: Users, label: 'Daftar Kelas' },
 ];
 
 export default function DashboardLayout({
@@ -51,7 +51,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   const getPageTitle = () => {
-    return navItems.find(item => pathname === item.href)?.label || 'Dashboard';
+    return navItems.find(item => pathname.startsWith(item.href))?.label || 'Dasbor';
   }
 
   return (
@@ -69,7 +69,7 @@ export default function DashboardLayout({
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href)}
                   tooltip={{ children: item.label }}
                 >
                   <Link href={item.href}>
@@ -105,11 +105,11 @@ export default function DashboardLayout({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem><User className="mr-2 h-4 w-4" />Profile</DropdownMenuItem>
-                <DropdownMenuItem><Settings className="mr-2 h-4 w-4" />Settings</DropdownMenuItem>
+                <DropdownMenuItem><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
+                <DropdownMenuItem><Settings className="mr-2 h-4 w-4" />Pengaturan</DropdownMenuItem>
                 <DropdownMenuSeparator />
                  <DropdownMenuItem asChild>
-                  <Link href="/"><LogOut className="mr-2 h-4 w-4" />Log out</Link>
+                  <Link href="/"><LogOut className="mr-2 h-4 w-4" />Keluar</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

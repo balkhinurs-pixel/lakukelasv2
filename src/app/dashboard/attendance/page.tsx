@@ -72,8 +72,8 @@ export default function AttendancePage() {
       records: Array.from(attendance.entries()).map(([studentId, status]) => ({ studentId, status })),
     });
     toast({
-      title: "Attendance Saved",
-      description: `Attendance for ${selectedClass?.name} on ${date ? format(date, "PPP") : ''} has been saved successfully.`,
+      title: "Presensi Disimpan",
+      description: `Presensi untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} telah berhasil disimpan.`,
       variant: "default",
       className: "bg-green-100 text-green-900 border-green-200",
     });
@@ -85,16 +85,16 @@ export default function AttendancePage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Mark Attendance</CardTitle>
+          <CardTitle>Isi Presensi</CardTitle>
           <CardDescription>
-            Select a class and date to mark student attendance.
+            Pilih kelas dan tanggal untuk mengisi presensi siswa.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
             <Select onValueChange={handleClassChange}>
               <SelectTrigger className="w-full md:w-[280px]">
-                <SelectValue placeholder="Select a class" />
+                <SelectValue placeholder="Pilih kelas" />
               </SelectTrigger>
               <SelectContent>
                 {classes.map((c) => (
@@ -114,7 +114,7 @@ export default function AttendancePage() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  {date ? format(date, "PPP") : <span>Pilih tanggal</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -133,9 +133,9 @@ export default function AttendancePage() {
       {selectedClass && students.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Student List - {selectedClass.name}</CardTitle>
+            <CardTitle>Daftar Siswa - {selectedClass.name}</CardTitle>
             <CardDescription>
-              Mark each student's attendance for {date ? format(date, "PPP") : ""}.
+              Tandai status kehadiran setiap siswa untuk tanggal {date ? format(date, "PPP") : ""}.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -143,7 +143,7 @@ export default function AttendancePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Student Name</TableHead>
+                    <TableHead>Nama Siswa</TableHead>
                     <TableHead className="text-right">Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -172,7 +172,7 @@ export default function AttendancePage() {
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
-            <Button onClick={saveAttendance}>Save Attendance</Button>
+            <Button onClick={saveAttendance}>Simpan Presensi</Button>
           </CardFooter>
         </Card>
       )}
