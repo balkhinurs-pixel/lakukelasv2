@@ -108,7 +108,7 @@ export default function DashboardLayout({
             ))}
              <SidebarMenuItem>
                 <Collapsible defaultOpen={isRosterActive}>
-                    <CollapsibleTrigger className="w-full">
+                    <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                         className="justify-between"
                         isActive={isRosterActive}
