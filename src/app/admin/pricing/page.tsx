@@ -17,10 +17,15 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign } from "lucide-react";
 
+// In a real app, these values would come from a database.
+const semesterPrice = 150000;
+const annualPrice = 250000;
+
 export default function PricingSettingsPage() {
     const { toast } = useToast();
 
     const handleSave = () => {
+        // In a real app, this would trigger an API call to update the prices in the database.
         toast({
             title: "Harga Disimpan",
             description: "Harga paket langganan telah berhasil diperbarui.",
@@ -47,7 +52,7 @@ export default function PricingSettingsPage() {
                     <Label htmlFor="semester-price">Harga (Rp)</Label>
                     <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
-                        <Input id="semester-price" type="number" defaultValue="150000" className="pl-8"/>
+                        <Input id="semester-price" type="number" defaultValue={semesterPrice} className="pl-8"/>
                     </div>
                 </div>
                  <div className="flex items-center space-x-2">
@@ -70,7 +75,7 @@ export default function PricingSettingsPage() {
                     <Label htmlFor="annual-price">Harga (Rp)</Label>
                     <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
-                        <Input id="annual-price" type="number" defaultValue="250000" className="pl-8"/>
+                        <Input id="annual-price" type="number" defaultValue={annualPrice} className="pl-8"/>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">
