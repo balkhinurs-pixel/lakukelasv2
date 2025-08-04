@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Edit } from "lucide-react";
+import { DollarSign } from "lucide-react";
 
 export default function PricingSettingsPage() {
     const { toast } = useToast();
@@ -86,4 +86,3 @@ export default function PricingSettingsPage() {
     </div>
   );
 }
-
