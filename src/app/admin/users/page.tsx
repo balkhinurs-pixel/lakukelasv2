@@ -128,7 +128,7 @@ export default function AdminUsersPage() {
                 Tambah Pengguna
             </Button>
         </div>
-         <Card>
+         <Card className="shadow-sm">
             <CardHeader>
                 <div className="flex flex-col md:flex-row justify-between gap-4">
                     <div>

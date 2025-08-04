@@ -111,7 +111,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Presensi Hari Ini
@@ -125,7 +125,7 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Kelas Hari Ini</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -137,7 +137,7 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Jurnal Belum Diisi
@@ -151,7 +151,7 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Kelas Berikutnya</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -166,7 +166,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
+        <Card className="lg:col-span-4 shadow-sm">
           <CardHeader>
             <CardTitle>Jurnal Terbaru</CardTitle>
             <CardDescription>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
             </Table>
           </CardContent>
         </Card>
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3 shadow-sm">
           <CardHeader>
             <CardTitle>Jadwal Hari Ini ({today})</CardTitle>
             <CardDescription>Alur kerja cepat untuk mengisi data mengajar Anda.</CardDescription>

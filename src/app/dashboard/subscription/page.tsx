@@ -80,7 +80,7 @@ export default function SubscriptionPage() {
       </div>
       
       {isPremium && (
-          <Card className="max-w-2xl mx-auto border-green-200 bg-green-50">
+          <Card className="max-w-2xl mx-auto border-green-200 bg-green-50/50 shadow-sm">
               <CardHeader className="text-center">
                   <div className="mx-auto bg-green-100 p-3 rounded-full w-fit">
                     <Crown className="h-8 w-8 text-green-700"/>
@@ -98,7 +98,7 @@ export default function SubscriptionPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
         {/* Free Plan Card */}
-        <Card className={`flex flex-col ${isPremium ? '' : 'border-2 border-primary shadow-lg'}`}>
+        <Card className={`flex flex-col shadow-sm ${isPremium ? '' : 'border-2 border-primary'}`}>
            {!isPremium && (
                 <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
                     <div className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">Paket Anda Saat Ini</div>
@@ -130,7 +130,7 @@ export default function SubscriptionPage() {
         </Card>
         
         {/* Semester Plan Card */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col shadow-sm">
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Paket Semester</CardTitle>
             <CardDescription>Ideal untuk mencoba semua fitur premium selama satu semester penuh.</CardDescription>
@@ -158,7 +158,7 @@ export default function SubscriptionPage() {
         </Card>
         
         {/* Annual Plan Card */}
-        <Card className="flex flex-col border-2 border-primary relative shadow-2xl">
+        <Card className="flex flex-col border-2 border-primary relative shadow-lg">
           <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
              <div className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">Paling Populer</div>
           </div>

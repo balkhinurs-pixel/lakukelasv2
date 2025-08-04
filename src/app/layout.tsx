@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import { cn } from "@/lib/utils";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { GeistSans } from 'geist/font/sans';
 
 export const metadata: Metadata = {
   title: 'Classroom Zephyr',
@@ -15,12 +16,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={GeistSans.className} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-        <meta name="theme-color" content="#5DADE2" />
+        <meta name="theme-color" content="#2563EB" />
       </head>
       <body className={cn("font-body antialiased")}>
         {children}

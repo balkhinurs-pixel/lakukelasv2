@@ -8,10 +8,10 @@ import { AppLogo } from "@/components/icons";
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm shadow-2xl">
+      <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <AppLogo className="h-12 w-12" />
+            <AppLogo className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl font-headline">Classroom Zephyr</CardTitle>
           <CardDescription>Selamat datang kembali! Silakan masuk ke akun Anda.</CardDescription>

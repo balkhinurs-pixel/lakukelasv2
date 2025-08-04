@@ -16,7 +16,7 @@ export default function AdminDashboardPage() {
             <p className="text-muted-foreground">Ringkasan umum aplikasi Classroom Zephyr.</p>
         </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Pengguna (Guru)
@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pendapatan (Bulan Ini)</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Langganan Aktif
@@ -56,7 +56,7 @@ export default function AdminDashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Kupon Digunakan</CardTitle>
             <TicketPercent className="h-4 w-4 text-muted-foreground" />
