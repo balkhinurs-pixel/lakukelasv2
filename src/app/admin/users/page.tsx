@@ -46,23 +46,29 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, UserPlus, Edit, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+
+type SubscriptionPlan = 'Free' | 'Semester' | 'Tahunan';
 
 type User = {
     id: string;
     name: string;
     email: string;
-    subscription: 'Premium' | 'Free';
+    subscription: {
+        status: 'Premium' | 'Free';
+        planName: SubscriptionPlan;
+        expiresAt: Date | null;
+    };
     joinDate: Date;
 };
 
 const initialUsers: User[] = [
-    { id: 'USR001', name: 'Guru Tangguh', email: 'guru@sekolah.id', subscription: 'Premium', joinDate: new Date('2023-01-15') },
-    { id: 'USR002', name: 'Andi Pratama', email: 'andi.p@email.com', subscription: 'Free', joinDate: new Date('2023-02-20') },
-    { id: 'USR003', name: 'Siti Aminah', email: 'siti.a@email.com', subscription: 'Premium', joinDate: new Date('2023-03-10') },
-    { id: 'USR004', name: 'Budi Setiawan', email: 'budi.s@email.com', subscription: 'Free', joinDate: new Date('2023-04-05') },
-    { id: 'USR005', name: 'Dewi Lestari', email: 'dewi.l@email.com', subscription: 'Premium', joinDate: new Date('2023-05-21') },
+    { id: 'USR001', name: 'Guru Tangguh', email: 'guru@sekolah.id', subscription: { status: 'Premium', planName: 'Tahunan', expiresAt: new Date('2025-01-15') }, joinDate: new Date('2023-01-15') },
+    { id: 'USR002', name: 'Andi Pratama', email: 'andi.p@email.com', subscription: { status: 'Free', planName: 'Free', expiresAt: null }, joinDate: new Date('2023-02-20') },
+    { id: 'USR003', name: 'Siti Aminah', email: 'siti.a@email.com', subscription: { status: 'Premium', planName: 'Semester', expiresAt: new Date('2024-09-10') }, joinDate: new Date('2023-03-10') },
+    { id: 'USR004', name: 'Budi Setiawan', email: 'budi.s@email.com', subscription: { status: 'Free', planName: 'Free', expiresAt: null }, joinDate: new Date('2023-04-05') },
+    { id: 'USR005', name: 'Dewi Lestari', email: 'dewi.l@email.com', subscription: { status: 'Premium', planName: 'Tahunan', expiresAt: new Date('2024-11-21') }, joinDate: new Date('2023-05-21') },
 ];
 
 
@@ -72,28 +78,40 @@ export default function AdminUsersPage() {
     const [filterSubscription, setFilterSubscription] = React.useState('all');
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
-    const [newSubscriptionStatus, setNewSubscriptionStatus] = React.useState<'Free' | 'Premium'>('Free');
+    const [newPlan, setNewPlan] = React.useState<SubscriptionPlan>('Free');
     const { toast } = useToast();
 
     const filteredUsers = users.filter(user => {
         const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesSubscription = filterSubscription === 'all' || user.subscription === filterSubscription;
+        const matchesSubscription = filterSubscription === 'all' || user.subscription.status === filterSubscription;
         return matchesSearch && matchesSubscription;
     });
 
     const handleManageClick = (user: User) => {
         setSelectedUser(user);
-        setNewSubscriptionStatus(user.subscription);
+        setNewPlan(user.subscription.planName);
         setIsManageDialogOpen(true);
     };
 
     const handleSubscriptionChange = () => {
         if (!selectedUser) return;
-        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, subscription: newSubscriptionStatus } : u));
+
+        let newSubscription: User['subscription'];
+        if (newPlan === 'Free') {
+            newSubscription = { status: 'Free', planName: 'Free', expiresAt: null };
+        } else {
+            const now = new Date();
+            const expiresAt = newPlan === 'Semester' ? addMonths(now, 6) : addMonths(now, 12);
+            newSubscription = { status: 'Premium', planName: newPlan, expiresAt };
+        }
+
+        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, subscription: newSubscription } : u));
+        
         toast({
             title: "Langganan Diperbarui",
-            description: `Status langganan untuk ${selectedUser.name} telah diubah menjadi ${newSubscriptionStatus}.`,
+            description: `Status langganan untuk ${selectedUser.name} telah diubah menjadi ${newPlan}.`,
         });
+
         setIsManageDialogOpen(false);
         setSelectedUser(null);
     }
@@ -154,9 +172,14 @@ export default function AdminUsersPage() {
                                 <TableCell className="font-medium">{user.name}</TableCell>
                                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                                 <TableCell>
-                                    <Badge variant={user.subscription === 'Premium' ? 'secondary' : 'outline'} className={user.subscription === 'Premium' ? 'text-green-700 bg-green-100' : ''}>
-                                        {user.subscription}
+                                    <Badge variant={user.subscription.status === 'Premium' ? 'secondary' : 'outline'} className={user.subscription.status === 'Premium' ? 'text-green-700 bg-green-100' : ''}>
+                                        {user.subscription.status}
                                     </Badge>
+                                    {user.subscription.status === 'Premium' && (
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                            {user.subscription.planName} - Aktif s.d. {user.subscription.expiresAt ? format(user.subscription.expiresAt, 'dd MMM yyyy') : '-'}
+                                        </div>
+                                    )}
                                 </TableCell>
                                 <TableCell>{format(user.joinDate, 'dd MMMM yyyy')}</TableCell>
                                 <TableCell className="text-right">
@@ -197,16 +220,20 @@ export default function AdminUsersPage() {
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="subscription-status">Status Langganan</Label>
-                        <Select value={newSubscriptionStatus} onValueChange={(value) => setNewSubscriptionStatus(value as 'Free' | 'Premium')}>
-                            <SelectTrigger id="subscription-status">
-                                <SelectValue placeholder="Pilih status baru" />
+                        <Label htmlFor="subscription-plan">Paket Langganan</Label>
+                        <Select value={newPlan} onValueChange={(value) => setNewPlan(value as SubscriptionPlan)}>
+                            <SelectTrigger id="subscription-plan">
+                                <SelectValue placeholder="Pilih paket baru" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Free">Free</SelectItem>
-                                <SelectItem value="Premium">Premium</SelectItem>
+                                <SelectItem value="Semester">Premium - Semester</SelectItem>
+                                <SelectItem value="Tahunan">Premium - Tahunan</SelectItem>
                             </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground">
+                            Memilih paket premium akan mengatur tanggal kedaluwarsa baru dari hari ini.
+                        </p>
                     </div>
                 </div>
                 <DialogFooter>
@@ -218,3 +245,5 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
+    
