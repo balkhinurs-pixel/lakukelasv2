@@ -38,17 +38,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import type { JournalEntry } from "@/lib/types";
 
+type NewJournalEntry = Omit<JournalEntry, 'id' | 'date'>;
 
 export default function JournalPage() {
   const [journalEntries, setJournalEntries] = React.useState<JournalEntry[]>(initialJournalEntries);
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [newEntry, setNewEntry] = React.useState({ class: "", subject: "", material: "", notes: "" });
+  const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
+  const [selectedEntry, setSelectedEntry] = React.useState<JournalEntry | null>(null);
+
+  const initialFormState: NewJournalEntry = {
+    class: "",
+    subject: "",
+    learningObjectives: "",
+    learningActivities: "",
+    assessment: "",
+    reflection: ""
+  };
+
+  const [newEntry, setNewEntry] = React.useState<NewJournalEntry>(initialFormState);
   const { toast } = useToast();
 
   const handleSaveJournal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEntry.class || !newEntry.subject || !newEntry.material) {
-        toast({ title: "Gagal", description: "Kelas, Materi, dan Bahan Ajar harus diisi.", variant: "destructive" });
+    if (!newEntry.class || !newEntry.subject || !newEntry.learningObjectives || !newEntry.learningActivities) {
+        toast({ title: "Gagal", description: "Mohon isi semua kolom yang wajib diisi.", variant: "destructive" });
         return;
     }
     
@@ -59,9 +72,14 @@ export default function JournalPage() {
     };
     
     setJournalEntries([newJournalEntry, ...journalEntries]);
-    toast({ title: "Sukses", description: "Jurnal mengajar berhasil disimpan." });
-    setNewEntry({ class: "", subject: "", material: "", notes: "" });
-    setIsDialogOpen(false);
+    toast({ title: "Sukses", description: "Jurnal mengajar berhasil disimpan.", className: "bg-green-100 text-green-900 border-green-200" });
+    setNewEntry(initialFormState);
+    setIsFormDialogOpen(false);
+  }
+
+  const handleViewEntry = (entry: JournalEntry) => {
+    setSelectedEntry(entry);
+    setIsViewDialogOpen(true);
   }
 
   return (
@@ -69,62 +87,63 @@ export default function JournalPage() {
        <div className="flex justify-between items-center">
         <div>
             <h1 className="text-2xl font-bold font-headline">Jurnal Mengajar</h1>
-            <p className="text-muted-foreground">Catatan kegiatan mengajar harian Anda.</p>
+            <p className="text-muted-foreground">Catatan reflektif kegiatan mengajar harian Anda.</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
             <DialogTrigger asChild>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Tambah Jurnal Baru
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-lg">
                 <form onSubmit={handleSaveJournal}>
                     <DialogHeader>
-                    <DialogTitle>Tambah Jurnal</DialogTitle>
+                    <DialogTitle>Tambah Jurnal Mengajar</DialogTitle>
                     <DialogDescription>
-                        Catat aktivitas mengajar Anda untuk kelas dan tanggal tertentu.
+                        Dokumentasikan proses pembelajaran secara lengkap dan reflektif.
                     </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="class" className="text-right">
-                        Kelas
-                        </Label>
-                        <Select value={newEntry.class} onValueChange={(value) => setNewEntry({...newEntry, class: value})} required>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Pilih kelas" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {classes.map((c) => (
-                                <SelectItem key={c.id} value={c.name}>
-                                    {c.name}
-                                </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="class">Kelas</Label>
+                            <Select value={newEntry.class} onValueChange={(value) => setNewEntry({...newEntry, class: value})} required>
+                                <SelectTrigger id="class">
+                                    <SelectValue placeholder="Pilih kelas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {classes.map((c) => (
+                                    <SelectItem key={c.id} value={c.name}>
+                                        {c.name}
+                                    </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="subject">Mata Pelajaran</Label>
+                            <Input id="subject" placeholder="e.g. Matematika Wajib" value={newEntry.subject} onChange={(e) => setNewEntry({...newEntry, subject: e.target.value})} required/>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="learningObjectives">Tujuan Pembelajaran</Label>
+                            <Textarea id="learningObjectives" placeholder="Siswa mampu mengidentifikasi..." value={newEntry.learningObjectives} onChange={(e) => setNewEntry({...newEntry, learningObjectives: e.target.value})} required/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="learningActivities">Kegiatan Pembelajaran (Sintaks)</Label>
+                            <Textarea id="learningActivities" placeholder="1. Kegiatan Awal: Apersepsi dan doa..." value={newEntry.learningActivities} onChange={(e) => setNewEntry({...newEntry, learningActivities: e.target.value})} required/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="assessment">Penilaian (Asesmen)</Label>
+                            <Textarea id="assessment" placeholder="Asesmen formatif melalui tanya jawab, asesmen sumatif melalui..." value={newEntry.assessment} onChange={(e) => setNewEntry({...newEntry, assessment: e.target.value})} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="reflection">Refleksi & Tindak Lanjut</Label>
+                            <Textarea id="reflection" placeholder="Sebagian besar siswa sudah paham, namun 3 siswa perlu bimbingan..." value={newEntry.reflection} onChange={(e) => setNewEntry({...newEntry, reflection: e.target.value})} />
+                        </div>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="subject" className="text-right">
-                        Materi
-                        </Label>
-                        <Input id="subject" placeholder="e.g. Matematika" className="col-span-3" value={newEntry.subject} onChange={(e) => setNewEntry({...newEntry, subject: e.target.value})} required/>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="material" className="text-right">
-                        Bahan Ajar
-                        </Label>
-                        <Input id="material" placeholder="e.g. Aljabar Linier" className="col-span-3" value={newEntry.material} onChange={(e) => setNewEntry({...newEntry, material: e.target.value})} required/>
-                    </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                        <Label htmlFor="notes" className="text-right pt-2">
-                        Catatan
-                        </Label>
-                        <Textarea id="notes" placeholder="Catatan opsional tentang pelajaran..." className="col-span-3" value={newEntry.notes} onChange={(e) => setNewEntry({...newEntry, notes: e.target.value})}/>
-                    </div>
-                    </div>
-                    <DialogFooter>
-                    <Button type="submit">Simpan Jurnal</Button>
+                    <DialogFooter className="pt-4 border-t">
+                      <Button type="button" variant="ghost" onClick={() => setIsFormDialogOpen(false)}>Batal</Button>
+                      <Button type="submit">Simpan Jurnal</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -144,7 +163,8 @@ export default function JournalPage() {
               <TableRow>
                 <TableHead className="w-[120px]">Tanggal</TableHead>
                 <TableHead>Kelas</TableHead>
-                <TableHead>Mata Pelajaran & Materi</TableHead>
+                <TableHead>Mata Pelajaran</TableHead>
+                <TableHead>Tujuan Pembelajaran</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
@@ -157,10 +177,12 @@ export default function JournalPage() {
                   <TableCell>{entry.class}</TableCell>
                   <TableCell>
                     <div className="font-medium">{entry.subject}</div>
-                    <div className="text-sm text-muted-foreground">{entry.material}</div>
+                  </TableCell>
+                  <TableCell>
+                     <p className="line-clamp-2 text-sm text-muted-foreground">{entry.learningObjectives}</p>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleViewEntry(entry)}>
                       Lihat
                     </Button>
                   </TableCell>
@@ -173,6 +195,40 @@ export default function JournalPage() {
             <Button variant="outline">Muat Lebih Banyak</Button>
         </CardFooter>
       </Card>
+
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+                <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
+                <DialogDescription>
+                    {selectedEntry?.subject} - {selectedEntry?.class} ({selectedEntry ? format(selectedEntry.date, "eeee, dd MMMM yyyy") : ''})
+                </DialogDescription>
+            </DialogHeader>
+            {selectedEntry && (
+                 <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+                    <div className="space-y-1">
+                        <h4 className="font-semibold text-sm">Tujuan Pembelajaran</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.learningObjectives}</p>
+                    </div>
+                     <div className="space-y-1">
+                        <h4 className="font-semibold text-sm">Kegiatan Pembelajaran</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.learningActivities}</p>
+                    </div>
+                     <div className="space-y-1">
+                        <h4 className="font-semibold text-sm">Penilaian (Asesmen)</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.assessment || "-"}</p>
+                    </div>
+                     <div className="space-y-1">
+                        <h4 className="font-semibold text-sm">Refleksi & Tindak Lanjut</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.reflection || "-"}</p>
+                    </div>
+                 </div>
+            )}
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

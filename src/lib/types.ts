@@ -27,8 +27,10 @@ export interface JournalEntry {
   date: Date;
   class: string;
   subject: string;
-  material: string;
-  notes?: string;
+  learningObjectives: string;
+  learningActivities: string;
+  assessment?: string;
+  reflection?: string;
 }
 
 export interface ScheduleItem {
