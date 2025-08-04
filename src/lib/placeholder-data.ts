@@ -51,4 +51,6 @@ export const schedule: ScheduleItem[] = [
     { id: 'SCH02', day: 'Senin', startTime: '09:30', endTime: '11:00', subject: 'Fisika', class: 'Kelas 11-B' },
     { id: 'SCH03', day: 'Selasa', startTime: '11:00', endTime: '12:30', subject: 'Biologi', class: 'Kelas 10-A' },
     { id: 'SCH04', day: 'Rabu', startTime: '13:30', endTime: '15:00', subject: 'Bahasa Inggris', class: 'Kelas 11-B' },
+    { id: 'SCH05', day: 'Kamis', startTime: '08:00', endTime: '09:30', subject: 'Kimia', class: 'Kelas 11-A' },
+    { id: 'SCH06', day: 'Jumat', startTime: '10:00', endTime: '11:30', subject: 'Sejarah', class: 'Kelas 10-B' },
 ];

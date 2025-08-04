@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  BarChart3,
   BookText,
   CalendarClock,
   ClipboardCheck,
@@ -43,6 +44,7 @@ const navItems = [
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Input Nilai' },
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal Mengajar' },
+  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
   { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
   { href: '/dashboard/roster', icon: Users, label: 'Daftar Kelas' },
 ];
@@ -55,7 +57,9 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   const getPageTitle = () => {
-    return navItems.find(item => pathname.startsWith(item.href))?.label || 'Dasbor';
+    // For nested routes, find the best match
+    const currentItem = navItems.slice().reverse().find(item => pathname.startsWith(item.href));
+    return currentItem?.label || 'Dasbor';
   }
 
   return (
@@ -90,7 +94,7 @@ export default function DashboardLayout({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://placehold.co/40x40.png" alt="Teacher" />
+                    <AvatarImage src="https://placehold.co/40x40.png" alt="Teacher" data-ai-hint="teacher portrait" />
                     <AvatarFallback>GT</AvatarFallback>
                   </Avatar>
                   <div className="text-left">
