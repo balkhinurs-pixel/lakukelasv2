@@ -69,11 +69,15 @@ export const schedule: ScheduleItem[] = [
 // --- New Placeholder History Data ---
 
 const generateAttendanceRecords = (students: Student[]): AttendanceRecord[] => {
-    const statuses: AttendanceRecord['status'][] = ['Hadir', 'Hadir', 'Hadir', 'Hadir', 'Sakit', 'Izin', 'Alpha'];
-    return students.map(student => ({
-        studentId: student.id,
-        status: statuses[Math.floor(Math.random() * statuses.length)]
-    }));
+    return students.map((student, index) => {
+        const statuses: AttendanceRecord['status'][] = ['Hadir', 'Sakit', 'Izin', 'Alpha'];
+        // Use a deterministic way to assign status for placeholder data
+        const status = statuses[index % statuses.length]; 
+        return {
+            studentId: student.id,
+            status: status
+        };
+    });
 };
 
 export const attendanceHistory: AttendanceHistoryEntry[] = [
