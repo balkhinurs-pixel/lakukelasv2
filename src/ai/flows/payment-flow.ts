@@ -17,7 +17,7 @@ const apiKey = process.env.DUITKU_API_KEY;
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
 
 
-export const CreatePaymentInputSchema = z.object({
+const CreatePaymentInputSchema = z.object({
   packageName: z.string().describe('Nama paket, e.g., "semester" atau "tahunan"'),
   productDetails: z.string().describe('Deskripsi produk yang dibeli.'),
   amount: z.number().int().positive().describe('Jumlah yang harus dibayar dalam Rupiah.'),
@@ -25,7 +25,7 @@ export const CreatePaymentInputSchema = z.object({
 export type CreatePaymentInput = z.infer<typeof CreatePaymentInputSchema>;
 
 
-export const CreatePaymentOutputSchema = z.object({
+const CreatePaymentOutputSchema = z.object({
     success: z.boolean().describe('Menunjukkan apakah permintaan berhasil.'),
     paymentUrl: z.string().optional().describe('URL untuk redirect ke halaman pembayaran Duitku.'),
     errorMessage: z.string().optional().describe('Pesan error jika terjadi kegagalan.'),
