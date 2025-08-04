@@ -73,13 +73,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const isRosterActive = pathname.startsWith('/dashboard/roster');
-
-  const getPageTitle = () => {
-    const allNavItems = [...navItems, ...rosterNavItems, {href: '/dashboard/roster', label: 'Manajemen Rombel'}];
-    // For nested routes, find the best match
-    const currentItem = allNavItems.slice().reverse().find(item => pathname.startsWith(item.href));
-    return currentItem?.label || 'Dasbor';
-  };
+  const isSettingsActive = pathname.startsWith('/dashboard/settings');
 
   return (
     <SidebarProvider>
@@ -133,6 +127,17 @@ export default function DashboardLayout({
                     </CollapsibleContent>
                 </Collapsible>
              </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={isSettingsActive}
+                >
+                    <Link href="/dashboard/settings">
+                        <Settings/>
+                        <span>Pengaturan</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
 
           </SidebarMenu>
         </SidebarContent>
@@ -160,10 +165,20 @@ export default function DashboardLayout({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
-                <DropdownMenuItem><Settings className="mr-2 h-4 w-4" />Pengaturan</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/dashboard/settings">
+                        <User className="mr-2 h-4 w-4" />Profil
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/dashboard/settings">
+                        <Settings className="mr-2 h-4 w-4" />Pengaturan
+                    </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem><LogOut className="mr-2 h-4 w-4" />Keluar</DropdownMenuItem>
+                <DropdownMenuItem>
+                    <LogOut className="mr-2 h-4 w-4" />Keluar
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
         </SidebarFooter>
