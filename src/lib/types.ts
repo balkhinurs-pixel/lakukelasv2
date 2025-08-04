@@ -30,7 +30,9 @@ export interface JournalEntry {
 
 export interface ScheduleItem {
   id: string;
-  time: string;
+  day: 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu';
+  startTime: string;
+  endTime: string;
   subject: string;
   class: string;
 }

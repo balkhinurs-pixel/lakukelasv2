@@ -47,8 +47,8 @@ export const journalEntries: JournalEntry[] = [
 ];
 
 export const schedule: ScheduleItem[] = [
-    { id: 'SCH01', time: '07:30 - 09:00', subject: 'Matematika', class: 'Kelas 10-A' },
-    { id: 'SCH02', time: '09:30 - 11:00', subject: 'Fisika', class: 'Kelas 11-B' },
-    { id: 'SCH03', time: '11:00 - 12:30', subject: 'Biologi', class: 'Kelas 10-A' },
-    { id: 'SCH04', time: '13:30 - 15:00', subject: 'Bahasa Inggris', class: 'Kelas 11-B' },
+    { id: 'SCH01', day: 'Senin', startTime: '07:30', endTime: '09:00', subject: 'Matematika', class: 'Kelas 10-A' },
+    { id: 'SCH02', day: 'Senin', startTime: '09:30', endTime: '11:00', subject: 'Fisika', class: 'Kelas 11-B' },
+    { id: 'SCH03', day: 'Selasa', startTime: '11:00', endTime: '12:30', subject: 'Biologi', class: 'Kelas 10-A' },
+    { id: 'SCH04', day: 'Rabu', startTime: '13:30', endTime: '15:00', subject: 'Bahasa Inggris', class: 'Kelas 11-B' },
 ];

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BookText,
+  CalendarClock,
   ClipboardCheck,
   ClipboardEdit,
   LayoutDashboard,
@@ -42,6 +43,7 @@ const navItems = [
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Input Nilai' },
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal Mengajar' },
+  { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
   { href: '/dashboard/roster', icon: Users, label: 'Daftar Kelas' },
 ];
 
@@ -53,10 +55,6 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   const getPageTitle = () => {
-    // Handle special case for grades page since it's not in navItems yet
-    if (pathname.startsWith('/dashboard/grades')) {
-      return 'Input Nilai';
-    }
     return navItems.find(item => pathname.startsWith(item.href))?.label || 'Dasbor';
   }
 
@@ -75,7 +73,7 @@ export default function DashboardLayout({
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith(item.href)}
+                  isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
                   tooltip={{ children: item.label }}
                 >
                   <Link href={item.href}>

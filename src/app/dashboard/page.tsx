@@ -19,8 +19,13 @@ import { ClipboardCheck, BookText, Users, Clock } from "lucide-react";
 import Link from 'next/link';
 import { journalEntries, schedule } from "@/lib/placeholder-data";
 import { format } from "date-fns";
+import type { ScheduleItem } from "@/lib/types";
 
 export default function DashboardPage() {
+
+    const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' }) as ScheduleItem['day'];
+    const todaySchedule = schedule.filter(item => item.day === today).sort((a,b) => a.startTime.localeCompare(b.startTime));
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -44,7 +49,7 @@ export default function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
+            <div className="text-2xl font-bold">{todaySchedule.length}</div>
             <p className="text-xs text-muted-foreground">
               Total kelas dalam jadwal Anda
             </p>
@@ -70,9 +75,9 @@ export default function DashboardPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">10:30</div>
+            <div className="text-2xl font-bold">{todaySchedule.length > 0 ? todaySchedule[0].startTime : '-'}</div>
             <p className="text-xs text-muted-foreground">
-              Fisika - Kelas 11-B
+            {todaySchedule.length > 0 ? `${todaySchedule[0].subject} - ${todaySchedule[0].class}` : 'Tidak ada kelas'}
             </p>
           </CardContent>
         </Card>
@@ -96,7 +101,7 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {journalEntries.map((entry) => (
+                {journalEntries.slice(0, 5).map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell>
                       <div className="font-medium">{entry.subject}</div>
@@ -116,11 +121,11 @@ export default function DashboardPage() {
         </Card>
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Jadwal Hari Ini</CardTitle>
+            <CardTitle>Jadwal Hari Ini ({today})</CardTitle>
             <CardDescription>Jadwal mengajar Anda untuk hari ini.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {schedule.map((item) => (
+            {todaySchedule.length > 0 ? todaySchedule.map((item) => (
                  <div key={item.id} className="flex items-center p-2 rounded-lg hover:bg-muted">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <Clock className="h-5 w-5" />
@@ -129,9 +134,13 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium">{item.subject}</p>
                       <p className="text-sm text-muted-foreground">{item.class}</p>
                     </div>
-                    <div className="text-sm text-muted-foreground">{item.time}</div>
+                    <div className="text-sm text-muted-foreground">{item.startTime} - {item.endTime}</div>
                 </div>
-            ))}
+            )) : (
+                <div className="text-center text-muted-foreground py-8">
+                    <p>Tidak ada jadwal mengajar hari ini.</p>
+                </div>
+            )}
           </CardContent>
         </Card>
       </div>
