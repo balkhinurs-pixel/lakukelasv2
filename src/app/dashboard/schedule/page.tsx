@@ -29,49 +29,73 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { classes, schedule as initialSchedule } from "@/lib/placeholder-data";
+import { classes, subjects, schedule as initialSchedule } from "@/lib/placeholder-data";
 import { useToast } from "@/hooks/use-toast";
 import type { ScheduleItem } from "@/lib/types";
 
 const daysOfWeek: ScheduleItem['day'][] = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
-type NewScheduleEntry = Omit<ScheduleItem, 'id'>;
+type NewScheduleEntry = Omit<ScheduleItem, 'id' | 'teacherId' | 'subject' | 'class'>;
 
 export default function SchedulePage() {
     const [schedule, setSchedule] = React.useState<ScheduleItem[]>(initialSchedule);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [editingItem, setEditingItem] = React.useState<ScheduleItem | null>(null);
     const [newEntry, setNewEntry] = React.useState<NewScheduleEntry>({
-        day: 'Senin', class: '', subject: '', startTime: '', endTime: ''
+        day: 'Senin', classId: '', subjectId: '', startTime: '', endTime: ''
     });
     const { toast } = useToast();
 
     const openAddDialog = () => {
         setEditingItem(null);
-        setNewEntry({ day: 'Senin', class: '', subject: '', startTime: '', endTime: '' });
+        setNewEntry({ day: 'Senin', classId: '', subjectId: '', startTime: '', endTime: '' });
         setIsDialogOpen(true);
     }
     
     const openEditDialog = (item: ScheduleItem) => {
         setEditingItem(item);
-        setNewEntry(item);
+        setNewEntry({
+          day: item.day,
+          classId: item.classId,
+          subjectId: item.subjectId,
+          startTime: item.startTime,
+          endTime: item.endTime,
+        });
         setIsDialogOpen(true);
     }
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newEntry.day || !newEntry.class || !newEntry.subject || !newEntry.startTime || !newEntry.endTime) {
+        if (!newEntry.day || !newEntry.classId || !newEntry.subjectId || !newEntry.startTime || !newEntry.endTime) {
             toast({ title: "Gagal", description: "Semua kolom harus diisi.", variant: "destructive" });
             return;
+        }
+        
+        const selectedClass = classes.find(c => c.id === newEntry.classId);
+        const selectedSubject = subjects.find(s => s.id === newEntry.subjectId);
+
+        if (!selectedClass || !selectedSubject) {
+            toast({ title: "Data tidak valid", description: "Kelas atau mapel tidak ditemukan.", variant: "destructive" });
+            return;
+        }
+
+        const scheduleData = {
+          ...newEntry,
+          class: selectedClass.name,
+          subject: selectedSubject.name
         }
 
         if (editingItem) {
             // Update existing item
-            setSchedule(schedule.map(item => item.id === editingItem.id ? { ...item, ...newEntry } : item));
+            setSchedule(schedule.map(item => item.id === editingItem.id ? { ...editingItem, ...scheduleData } : item));
             toast({ title: "Sukses", description: "Jadwal berhasil diperbarui." });
         } else {
             // Add new item
-            const newScheduleItem: ScheduleItem = { id: `SCH${Date.now()}`, ...newEntry };
+            const newScheduleItem: ScheduleItem = { 
+              id: `SCH${Date.now()}`,
+              teacherId: 'user_placeholder',
+              ...scheduleData,
+            };
             setSchedule([...schedule, newScheduleItem]);
             toast({ title: "Sukses", description: "Jadwal baru berhasil ditambahkan." });
         }
@@ -110,7 +134,7 @@ export default function SchedulePage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-md">
             <form onSubmit={handleSave}>
                 <DialogHeader>
                   <DialogTitle>{editingItem ? 'Ubah Jadwal' : 'Tambah Jadwal Baru'}</DialogTitle>
@@ -119,12 +143,12 @@ export default function SchedulePage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="day" className="text-right">
+                  <div className="space-y-2">
+                    <Label htmlFor="day">
                       Hari
                     </Label>
                     <Select value={newEntry.day} onValueChange={(value: ScheduleItem['day']) => setNewEntry({...newEntry, day: value})} required>
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger id="day">
                         <SelectValue placeholder="Pilih hari" />
                       </SelectTrigger>
                       <SelectContent>
@@ -136,40 +160,53 @@ export default function SchedulePage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="class" className="text-right">
+                  <div className="space-y-2">
+                    <Label htmlFor="class">
                       Kelas
                     </Label>
-                    <Select value={newEntry.class} onValueChange={(value) => setNewEntry({...newEntry, class: value})} required>
-                      <SelectTrigger className="col-span-3">
+                    <Select value={newEntry.classId} onValueChange={(value) => setNewEntry({...newEntry, classId: value})} required>
+                      <SelectTrigger id="class">
                         <SelectValue placeholder="Pilih kelas" />
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map((c) => (
-                          <SelectItem key={c.id} value={c.name}>
+                          <SelectItem key={c.id} value={c.id}>
                             {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="subject" className="text-right">
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">
                       Mata Pelajaran
                     </Label>
-                    <Input id="subject" placeholder="e.g. Kimia" className="col-span-3" value={newEntry.subject} onChange={e => setNewEntry({...newEntry, subject: e.target.value})} required/>
+                     <Select value={newEntry.subjectId} onValueChange={(value) => setNewEntry({...newEntry, subjectId: value})} required>
+                      <SelectTrigger id="subject">
+                        <SelectValue placeholder="Pilih mapel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subjects.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="startTime" className="text-right">
-                      Waktu Mulai
-                    </Label>
-                    <Input id="startTime" type="time" className="col-span-3" value={newEntry.startTime} onChange={e => setNewEntry({...newEntry, startTime: e.target.value})} required/>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="endTime" className="text-right">
-                      Waktu Selesai
-                    </Label>
-                    <Input id="endTime" type="time" className="col-span-3" value={newEntry.endTime} onChange={e => setNewEntry({...newEntry, endTime: e.target.value})} required/>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startTime">
+                        Waktu Mulai
+                      </Label>
+                      <Input id="startTime" type="time" value={newEntry.startTime} onChange={e => setNewEntry({...newEntry, startTime: e.target.value})} required/>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endTime">
+                        Waktu Selesai
+                      </Label>
+                      <Input id="endTime" type="time" value={newEntry.endTime} onChange={e => setNewEntry({...newEntry, endTime: e.target.value})} required/>
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
