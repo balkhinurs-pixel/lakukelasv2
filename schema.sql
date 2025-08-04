@@ -1,105 +1,196 @@
--- Panduan:
--- 1. Buka Supabase Studio Anda.
--- 2. Navigasi ke "SQL Editor".
--- 3. Klik "+ New query".
--- 4. Salin semua isi file ini dan tempel ke editor.
--- 5. Klik "RUN".
+-- Ekstensi untuk UUID
+create extension if not exists "uuid-ossp" with schema "extensions";
 
--- Ekstensi untuk UUID (jika belum aktif)
-create extension if not exists "uuid-ossp";
-
--- 1. Tabel PROFILES
--- Tabel ini menyimpan data publik pengguna (guru) dan terhubung dengan tabel auth.users bawaan Supabase.
-create table public.profiles (
-  id uuid not null primary key, -- Referensi ke auth.users.id
-  email text,
+-- 1. Tabel Pengguna (Guru)
+-- Tabel ini menyimpan informasi dasar tentang pengguna aplikasi (guru).
+-- Menggunakan sistem autentikasi bawaan Supabase.
+create table if not exists public.profiles (
+  id uuid not null primary key, -- Terhubung ke auth.users.id
   full_name text,
-  nip text,
-  pangkat text,
-  jabatan text,
   avatar_url text,
-  updated_at timestamp with time zone,
-
-  constraint fk_auth foreign key (id) references auth.users (id) on delete cascade
+  email text,
+  -- Tambahkan kolom profil lain yang relevan di sini
+  -- seperti NIP, pangkat, jabatan, dll.
+  nip text,
+  pangkat_golongan text,
+  jabatan text
 );
 
-comment on table public.profiles is 'Menyimpan data profil publik untuk setiap pengguna.';
-comment on column public.profiles.id is 'Referensi ke ID pengguna di tabel auth.users.';
-
--- 2. Tabel SUBSCRIPTIONS
--- Menyimpan status dan detail langganan setiap pengguna.
-create table public.subscriptions (
-  id uuid not null primary key, -- Referensi ke profiles.id
-  status text default 'free'::text, -- 'free' atau 'premium'
-  plan_name text default 'Free'::text, -- 'Free', 'Semester', atau 'Tahunan'
-  expires_at timestamp with time zone,
-
-  constraint fk_profile foreign key (id) references public.profiles(id) on delete cascade
-);
-
-comment on table public.subscriptions is 'Menyimpan status langganan untuk setiap pengguna.';
-
--- 3. Tabel COUPONS
--- Menyimpan data kupon diskon yang bisa dibuat oleh admin.
-create type coupon_type as enum ('Persen', 'Tetap');
-create type coupon_status as enum ('Aktif', 'Tidak Aktif', 'Kadaluarsa');
-
-create table public.coupons (
-  id uuid not null default uuid_generate_v4() primary key,
-  code text not null unique,
-  type coupon_type not null,
-  value numeric not null,
-  usage_limit integer not null,
-  usage_count integer default 0,
-  status coupon_status default 'Aktif'::coupon_status,
-  expires_at timestamp with time zone,
-  created_at timestamp with time zone default now()
-);
-
-comment on table public.coupons is 'Menyimpan kode kupon diskon untuk promosi.';
-
--- 4. Tabel SCHOOL_SETTINGS
--- Menyimpan data sekolah yang dimiliki oleh seorang guru/pengguna.
-create table public.school_settings (
-  id uuid not null default uuid_generate_v4() primary key,
-  user_id uuid not null references public.profiles(id) on delete cascade,
-  school_name text,
-  school_address text,
-  headmaster_name text,
-  headmaster_nip text,
-  logo_url text,
-  updated_at timestamp with time zone default now()
-);
-
-comment on table public.school_settings is 'Menyimpan data dan pengaturan sekolah untuk setiap guru.';
-
--- Security: Enable Row Level Security (RLS)
--- Sangat PENTING untuk keamanan data Anda.
--- Aturan di bawah ini adalah contoh dasar, Anda perlu menyesuaikannya sesuai kebutuhan aplikasi.
-
--- PROFILES
 alter table public.profiles enable row level security;
 create policy "Public profiles are viewable by everyone." on public.profiles for select using (true);
 create policy "Users can insert their own profile." on public.profiles for insert with check (auth.uid() = id);
-create policy "Users can update their own profile." on public.profiles for update using (auth.uid() = id);
+create policy "Users can update own profile." on public.profiles for update using (auth.uid() = id);
 
--- SUBSCRIPTIONS
+
+-- 2. Tabel Langganan
+-- Menyimpan status langganan setiap pengguna.
+create table if not exists public.subscriptions (
+  id uuid not null primary key, -- Terhubung ke profiles.id
+  status text check (status in ('free', 'premium')) not null default 'free',
+  plan_name text check (plan_name in ('Free', 'Semester', 'Tahunan')) not null default 'Free',
+  expires_at timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  
+  constraint fk_profiles foreign key(id) references public.profiles(id) on delete cascade
+);
+
 alter table public.subscriptions enable row level security;
 create policy "Users can view their own subscription." on public.subscriptions for select using (auth.uid() = id);
--- Admin-only policies for update/insert would be handled via server-side logic (Edge Functions).
+-- Hanya admin yang boleh mengubah langganan (melalui backend/edge function)
+-- Jadi, tidak ada policy untuk insert/update/delete dari sisi klien.
 
--- COUPONS
+
+-- 3. Tabel Kupon
+-- Menyimpan data kupon diskon yang dibuat oleh admin.
+create table if not exists public.coupons (
+  id bigint generated by default as identity primary key,
+  code text not null unique,
+  type text check (type in ('Persen', 'Tetap')) not null,
+  value numeric not null,
+  usage_limit int not null,
+  times_used int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 alter table public.coupons enable row level security;
-create policy "Coupons are public to view." on public.coupons for select using (true);
--- Admin-only policies for create/update/delete would be handled via server-side logic (Edge Functions).
+create policy "Public can view active coupons." on public.coupons for select using (is_active = true);
+-- Hanya admin yang boleh membuat/mengubah kupon.
 
--- SCHOOL_SETTINGS
-alter table public.school_settings enable row level security;
-create policy "Users can view their own school settings." on public.school_settings for select using (auth.uid() = user_id);
-create policy "Users can insert their own school settings." on public.school_settings for insert with check (auth.uid() = user_id);
-create policy "Users can update their own school settings." on public.school_settings for update using (auth.uid() = user_id);
 
--- Catatan:
--- Tabel untuk data akademik seperti `classes`, `students`, `journal_entries`, `attendance` belum dibuat
--- karena akan lebih kompleks dan biasanya terikat pada 'tahun ajaran' yang aktif.
--- Struktur tersebut bisa ditambahkan kemudian sesuai dengan evolusi aplikasi.
+-- 4. Tabel Data Sekolah
+-- Menyimpan data sekolah yang terkait dengan pengguna.
+create table if not exists public.school_data (
+  id uuid not null primary key, -- Terhubung ke profiles.id (satu data sekolah per guru)
+  school_name text,
+  school_address text,
+  school_logo_url text,
+  headmaster_name text,
+  headmaster_nip text,
+  
+  constraint fk_profiles foreign key(id) references public.profiles(id) on delete cascade
+);
+
+alter table public.school_data enable row level security;
+create policy "Users can manage their own school data." on public.school_data for all using (auth.uid() = id);
+
+
+-- 5. Tabel Tahun Ajaran
+create table if not exists public.school_years (
+  id bigint generated by default as identity primary key,
+  user_id uuid not null,
+  name text not null, -- e.g., "2024/2025 - Semester Ganjil"
+  is_active boolean not null default false,
+  
+  constraint fk_profiles foreign key(user_id) references public.profiles(id) on delete cascade
+);
+alter table public.school_years enable row level security;
+create policy "Users can manage their own school years." on public.school_years for all using (auth.uid() = user_id);
+
+
+-- 6. Tabel Kelas
+create table if not exists public.classes (
+  id bigint generated by default as identity primary key,
+  user_id uuid not null,
+  name text not null,
+  school_year_id bigint not null,
+  
+  constraint fk_profiles foreign key(user_id) references public.profiles(id) on delete cascade,
+  constraint fk_school_years foreign key(school_year_id) references public.school_years(id) on delete cascade
+);
+alter table public.classes enable row level security;
+create policy "Users can manage their own classes." on public.classes for all using (auth.uid() = user_id);
+
+-- 7. Tabel Siswa
+create table if not exists public.students (
+  id bigint generated by default as identity primary key,
+  user_id uuid not null,
+  class_id bigint not null,
+  name text not null,
+  nis text,
+  nisn text,
+  gender text check (gender in ('Laki-laki', 'Perempuan')),
+  is_active boolean not null default true, -- Untuk menandai siswa lulus/pindah
+  
+  constraint fk_profiles foreign key(user_id) references public.profiles(id) on delete cascade,
+  constraint fk_classes foreign key(class_id) references public.classes(id) on delete cascade
+);
+alter table public.students enable row level security;
+create policy "Users can manage their own students." on public.students for all using (auth.uid() = user_id);
+
+
+-- 8. Tabel Jadwal Pelajaran
+create table if not exists public.schedule_items (
+  id bigint generated by default as identity primary key,
+  user_id uuid not null,
+  class_id bigint not null,
+  day text not null,
+  start_time time not null,
+  end_time time not null,
+  subject text not null,
+  
+  constraint fk_profiles foreign key(user_id) references public.profiles(id) on delete cascade,
+  constraint fk_classes foreign key(class_id) references public.classes(id) on delete cascade
+);
+alter table public.schedule_items enable row level security;
+create policy "Users can manage their own schedule." on public.schedule_items for all using (auth.uid() = user_id);
+
+
+-- 9. Tabel Jurnal Mengajar
+create table if not exists public.journal_entries (
+  id bigint generated by default as identity primary key,
+  user_id uuid not null,
+  class_id bigint not null,
+  entry_date date not null,
+  subject text not null,
+  meeting_number int,
+  material text,
+  learning_objectives text not null,
+  learning_activities text not null,
+  assessment text,
+  reflection text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  
+  constraint fk_profiles foreign key(user_id) references public.profiles(id) on delete cascade,
+  constraint fk_classes foreign key(class_id) references public.classes(id) on delete cascade
+);
+alter table public.journal_entries enable row level security;
+create policy "Users can manage their own journal entries." on public.journal_entries for all using (auth.uid() = user_id);
+
+
+-- 10. Tabel Presensi
+create table if not exists public.attendance_records (
+  id bigint generated by default as identity primary key,
+  user_id uuid not null,
+  student_id bigint not null,
+  class_id bigint not null,
+  entry_date date not null,
+  meeting_number int,
+  status text check (status in ('Hadir', 'Sakit', 'Izin', 'Alpha')) not null,
+  
+  constraint fk_profiles foreign key(user_id) references public.profiles(id) on delete cascade,
+  constraint fk_students foreign key(student_id) references public.students(id) on delete cascade,
+  constraint fk_classes foreign key(class_id) references public.classes(id) on delete cascade,
+  unique (student_id, entry_date, meeting_number) -- Siswa hanya bisa punya 1 status presensi per pertemuan
+);
+alter table public.attendance_records enable row level security;
+create policy "Users can manage attendance for their students." on public.attendance_records for all using (auth.uid() = user_id);
+
+
+-- 11. Tabel Penilaian
+create table if not exists public.grade_records (
+  id bigint generated by default as identity primary key,
+  user_id uuid not null,
+  student_id bigint not null,
+  class_id bigint not null,
+  assessment_type text not null, -- e.g., "Ulangan Harian 1", "Tugas", "UTS"
+  entry_date date not null,
+  score numeric not null,
+  
+  constraint fk_profiles foreign key(user_id) references public.profiles(id) on delete cascade,
+  constraint fk_students foreign key(student_id) references public.students(id) on delete cascade,
+  constraint fk_classes foreign key(class_id) references public.classes(id) on delete cascade
+);
+alter table public.grade_records enable row level security;
+create policy "Users can manage grades for their students." on public.grade_records for all using (auth.uid() = user_id);
