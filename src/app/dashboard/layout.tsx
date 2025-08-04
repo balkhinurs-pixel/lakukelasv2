@@ -13,6 +13,7 @@ import {
   Settings,
   User,
   Users,
+  ChevronDown,
 } from 'lucide-react';
 
 import {
@@ -25,8 +26,15 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarTrigger,
-  SidebarFooter
+  SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +46,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from '@/components/icons';
+import { cn } from '@/lib/utils';
+import * as React from 'react';
+
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dasbor' },
@@ -46,7 +57,13 @@ const navItems = [
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal Mengajar' },
   { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
   { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
-  { href: '/dashboard/roster', icon: Users, label: 'Manajemen Kelas' },
+];
+
+const rosterNavItems = [
+    { href: '/dashboard/roster/students', label: 'Daftar Siswa' },
+    { href: '/dashboard/roster/classes', label: 'Pengaturan Kelas' },
+    { href: '/dashboard/roster/school-year', label: 'Tahun Ajaran' },
+    { href: '/dashboard/roster/promotion', label: 'Promosi & Mutasi' },
 ];
 
 export default function DashboardLayout({
@@ -55,12 +72,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isRosterActive = pathname.startsWith('/dashboard/roster');
 
   const getPageTitle = () => {
+    const allNavItems = [...navItems, ...rosterNavItems, {href: '/dashboard/roster', label: 'Manajemen Rombel'}];
     // For nested routes, find the best match
-    const currentItem = navItems.slice().reverse().find(item => pathname.startsWith(item.href));
+    const currentItem = allNavItems.slice().reverse().find(item => pathname.startsWith(item.href));
     return currentItem?.label || 'Dasbor';
-  }
+  };
 
   return (
     <SidebarProvider>
@@ -87,6 +106,34 @@ export default function DashboardLayout({
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+             <SidebarMenuItem>
+                <Collapsible defaultOpen={isRosterActive}>
+                    <CollapsibleTrigger className="w-full">
+                        <SidebarMenuButton
+                        className="justify-between"
+                        isActive={isRosterActive}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Users />
+                                <span>Manajemen Rombel</span>
+                            </div>
+                            <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <SidebarMenuSub>
+                            {rosterNavItems.map(item => (
+                                <SidebarMenuItem key={item.href}>
+                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
+                                        <Link href={item.href}>{item.label}</Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenuSub>
+                    </CollapsibleContent>
+                </Collapsible>
+             </SidebarMenuItem>
+
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
@@ -116,25 +163,15 @@ export default function DashboardLayout({
                 <DropdownMenuItem><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
                 <DropdownMenuItem><Settings className="mr-2 h-4 w-4" />Pengaturan</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                 <DropdownMenuItem asChild>
-                  <Link href="/"><LogOut className="mr-2 h-4 w-4" />Keluar</Link>
-                </DropdownMenuItem>
+                <DropdownMenuItem><LogOut className="mr-2 h-4 w-4" />Keluar</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6">
-            <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <SidebarTrigger className="md:hidden" />
-                  <h1 className="text-lg font-semibold font-headline">{getPageTitle()}</h1>
-                </div>
-            </div>
-        </header>
-        <main className="flex-1 p-4 lg:p-6">
+        <div className="p-4 md:p-6 lg:p-8">
             {children}
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
