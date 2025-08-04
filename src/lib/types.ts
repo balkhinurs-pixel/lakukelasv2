@@ -19,7 +19,7 @@ export interface AttendanceRecord {
 
 export interface GradeRecord {
   studentId: string;
-  score: number;
+  score: number | string; // Allow string for empty input
 }
 
 export interface JournalEntry {
@@ -27,14 +27,13 @@ export interface JournalEntry {
   date: Date;
   class: string;
   subject: string;
-  meetingNumber?: number; // Made optional for backward compatibility
+  meetingNumber?: number;
   learningObjectives: string;
   learningActivities: string;
   assessment?: string;
   reflection?: string;
-  material?: string; // Menambahkan properti material
+  material?: string;
 }
-
 
 export interface ScheduleItem {
   id: string;
@@ -43,4 +42,24 @@ export interface ScheduleItem {
   endTime: string;
   subject: string;
   class: string;
+}
+
+// --- New Types for History ---
+
+export interface AttendanceHistoryEntry {
+  id: string;
+  date: Date;
+  classId: string;
+  className: string;
+  meetingNumber: number;
+  records: AttendanceRecord[];
+}
+
+export interface GradeHistoryEntry {
+    id: string;
+    date: Date;
+    classId: string;
+    className: string;
+    assessmentType: string;
+    records: GradeRecord[];
 }

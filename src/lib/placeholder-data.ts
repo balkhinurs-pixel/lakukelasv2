@@ -1,4 +1,4 @@
-import type { Class, JournalEntry, ScheduleItem, Student } from './types';
+import type { Class, JournalEntry, ScheduleItem, Student, AttendanceHistoryEntry, GradeHistoryEntry, AttendanceRecord } from './types';
 
 export const students: Student[] = [
   { id: 'S001', name: 'Budi Santoso', nis: '23241001', nisn: '0012345678', gender: 'Laki-laki' },
@@ -64,4 +64,68 @@ export const schedule: ScheduleItem[] = [
     { id: 'SCH04', day: 'Rabu', startTime: '13:30', endTime: '15:00', subject: 'Bahasa Inggris', class: 'Kelas 11-B' },
     { id: 'SCH05', day: 'Kamis', startTime: '08:00', endTime: '09:30', subject: 'Kimia', class: 'Kelas 11-A' },
     { id: 'SCH06', day: 'Jumat', startTime: '10:00', endTime: '11:30', subject: 'Sejarah', class: 'Kelas 10-B' },
+];
+
+// --- New Placeholder History Data ---
+
+const generateAttendanceRecords = (students: Student[]): AttendanceRecord[] => {
+    const statuses: AttendanceRecord['status'][] = ['Hadir', 'Hadir', 'Hadir', 'Hadir', 'Sakit', 'Izin', 'Alpha'];
+    return students.map(student => ({
+        studentId: student.id,
+        status: statuses[Math.floor(Math.random() * statuses.length)]
+    }));
+};
+
+export const attendanceHistory: AttendanceHistoryEntry[] = [
+    {
+        id: 'AH01',
+        date: new Date(new Date().setDate(new Date().getDate() - 1)),
+        classId: 'C01',
+        className: 'Kelas 10-A',
+        meetingNumber: 5,
+        records: generateAttendanceRecords(classes[0].students)
+    },
+    {
+        id: 'AH02',
+        date: new Date(new Date().setDate(new Date().getDate() - 2)),
+        classId: 'C01',
+        className: 'Kelas 10-A',
+        meetingNumber: 4,
+        records: generateAttendanceRecords(classes[0].students)
+    },
+    {
+        id: 'AH03',
+        date: new Date(new Date().setDate(new Date().getDate() - 1)),
+        classId: 'C02',
+        className: 'Kelas 10-B',
+        meetingNumber: 3,
+        records: generateAttendanceRecords(classes[1].students)
+    }
+];
+
+export const gradeHistory: GradeHistoryEntry[] = [
+    {
+        id: 'GH01',
+        date: new Date(new Date().setDate(new Date().getDate() - 3)),
+        classId: 'C01',
+        className: 'Kelas 10-A',
+        assessmentType: 'Ulangan Harian 1 - Aljabar',
+        records: classes[0].students.map(s => ({ studentId: s.id, score: Math.floor(Math.random() * 30) + 70 }))
+    },
+    {
+        id: 'GH02',
+        date: new Date(new Date().setDate(new Date().getDate() - 5)),
+        classId: 'C01',
+        className: 'Kelas 10-A',
+        assessmentType: 'Tugas Proyek - Fungsi Kuadrat',
+        records: classes[0].students.map(s => ({ studentId: s.id, score: Math.floor(Math.random() * 20) + 75 }))
+    },
+     {
+        id: 'GH03',
+        date: new Date(new Date().setDate(new Date().getDate() - 4)),
+        classId: 'C02',
+        className: 'Kelas 10-B',
+        assessmentType: 'Ulangan Harian 1 - Teks Prosedur',
+        records: classes[1].students.map(s => ({ studentId: s.id, score: Math.floor(Math.random() * 25) + 72 }))
+    }
 ];

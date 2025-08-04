@@ -4,7 +4,7 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { useSearchParams } from 'next/navigation';
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Edit } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -39,8 +39,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { classes } from "@/lib/placeholder-data";
-import type { Student, Class } from "@/lib/types";
+import { classes, gradeHistory as initialHistory } from "@/lib/placeholder-data";
+import type { Student, Class, GradeHistoryEntry, GradeRecord } from "@/lib/types";
 
 export default function GradesPage() {
   const searchParams = useSearchParams();
@@ -52,7 +52,9 @@ export default function GradesPage() {
   const [students, setStudents] = React.useState<Student[]>([]);
   const [grades, setGrades] = React.useState<Map<string, number | string>>(new Map());
   const [assessmentType, setAssessmentType] = React.useState<string>("");
-  const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
+  const [history, setHistory] = React.useState<GradeHistoryEntry[]>(initialHistory);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -68,12 +70,19 @@ export default function GradesPage() {
     const newClass = classes.find((c) => c.id === classId) || null;
     setSelectedClass(newClass);
     setStudents(newClass ? newClass.students : []);
+    resetForm(newClass);
+  };
+  
+  const resetForm = (newClass: Class | null) => {
+    setEditingId(null);
+    setDate(new Date());
+    setAssessmentType(preselectedSubject ? `Tugas Harian - ${preselectedSubject}` : "");
     const newGrades = new Map();
     newClass?.students.forEach(student => {
       newGrades.set(student.id, "");
     });
     setGrades(newGrades);
-  };
+  }
 
   const handleGradeChange = (studentId: string, value: string) => {
     const score = value === "" ? "" : Math.max(0, Math.min(100, Number(value)));
@@ -81,32 +90,70 @@ export default function GradesPage() {
   };
 
   const saveGrades = () => {
-    console.log({
-      date,
-      classId: selectedClass?.id,
-      assessmentType,
-      meetingNumber,
-      records: Array.from(grades.entries()).map(([studentId, score]) => ({ studentId, score })),
-    });
-    toast({
-      title: "Nilai Disimpan",
-      description: `Nilai untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} telah berhasil disimpan.`,
-      variant: "default",
-      className: "bg-green-100 text-green-900 border-green-200",
-    });
+    if (!selectedClass || !date || !assessmentType) {
+        toast({
+            title: "Gagal Menyimpan",
+            description: "Harap pilih kelas, tanggal, dan isi jenis penilaian.",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    const newEntry: GradeHistoryEntry = {
+        id: editingId || `GH${Date.now()}`,
+        date,
+        classId: selectedClass.id,
+        className: selectedClass.name,
+        assessmentType: assessmentType,
+        records: Array.from(grades.entries()).map(([studentId, score]) => ({ studentId, score })),
+    };
+
+    if (editingId) {
+        setHistory(history.map(h => h.id === editingId ? newEntry : h));
+        toast({ title: "Nilai Diperbarui", description: `Nilai untuk ${assessmentType} telah diperbarui.` });
+    } else {
+        setHistory([newEntry, ...history]);
+        toast({
+          title: "Nilai Disimpan",
+          description: `Nilai untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} telah berhasil disimpan.`,
+          variant: "default",
+          className: "bg-green-100 text-green-900 border-green-200",
+        });
+    }
+
+    resetForm(selectedClass);
   };
+  
+  const handleEdit = (entry: GradeHistoryEntry) => {
+      const classToEdit = classes.find(c => c.id === entry.classId) || null;
+      if (!classToEdit) return;
+
+      setSelectedClass(classToEdit);
+      setStudents(classToEdit.students);
+      setEditingId(entry.id);
+      setDate(entry.date);
+      setAssessmentType(entry.assessmentType);
+      
+      const loadedGrades = new Map<string, GradeRecord['score']>();
+      entry.records.forEach(record => {
+          loadedGrades.set(record.studentId, record.score);
+      });
+      setGrades(loadedGrades);
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Input Nilai Harian</CardTitle>
+          <CardTitle>{editingId ? 'Ubah Nilai' : 'Input Nilai'}</CardTitle>
           <CardDescription>
-            Pilih kelas, tanggal, dan jenis penilaian untuk menginput nilai siswa.
+            {editingId ? 'Ubah detail nilai yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan jenis penilaian untuk menginput nilai siswa.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
                 <Label>Kelas</Label>
                 <Select onValueChange={handleClassChange} value={selectedClass?.id}>
@@ -151,17 +198,6 @@ export default function GradesPage() {
                 <Label htmlFor="assessmentType">Jenis Penilaian</Label>
                 <Input id="assessmentType" value={assessmentType} onChange={(e) => setAssessmentType(e.target.value)} placeholder="e.g. Ulangan Harian 1" />
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="meetingNumber">Pertemuan Ke (Opsional)</Label>
-                <Input 
-                    id="meetingNumber" 
-                    type="number"
-                    value={meetingNumber} 
-                    onChange={(e) => setMeetingNumber(e.target.value === '' ? '' : parseInt(e.target.value))} 
-                    placeholder="e.g. 1" 
-                    min="1"
-                />
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -203,11 +239,46 @@ export default function GradesPage() {
               </Table>
             </div>
           </CardContent>
-          <CardFooter className="border-t px-6 py-4">
-            <Button onClick={saveGrades} disabled={!assessmentType}>Simpan Nilai</Button>
+          <CardFooter className="border-t px-6 py-4 justify-between">
+            <Button onClick={saveGrades} disabled={!assessmentType}>{editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}</Button>
+             {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass)}>Batal Mengubah</Button>}
           </CardFooter>
         </Card>
       )}
+
+       <Card>
+        <CardHeader>
+            <CardTitle>Riwayat Penilaian</CardTitle>
+            <CardDescription>Daftar nilai yang telah Anda simpan.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Kelas</TableHead>
+                        <TableHead>Jenis Penilaian</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {history.map(entry => (
+                        <TableRow key={entry.id}>
+                            <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
+                            <TableCell>{entry.className}</TableCell>
+                            <TableCell>{entry.assessmentType}</TableCell>
+                            <TableCell className="text-right">
+                                <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Ubah
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

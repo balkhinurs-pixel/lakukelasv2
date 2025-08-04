@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, History, Edit, Eye, Trash2 } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -41,8 +41,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { classes } from "@/lib/placeholder-data";
-import type { Student, AttendanceRecord, Class } from "@/lib/types";
+import { classes, attendanceHistory as initialHistory } from "@/lib/placeholder-data";
+import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry } from "@/lib/types";
 
 export default function AttendancePage() {
   const searchParams = useSearchParams();
@@ -53,6 +53,8 @@ export default function AttendancePage() {
   const [students, setStudents] = React.useState<Student[]>([]);
   const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
   const [attendance, setAttendance] = React.useState<Map<string, AttendanceRecord['status']>>(new Map());
+  const [history, setHistory] = React.useState<AttendanceHistoryEntry[]>(initialHistory);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -65,13 +67,19 @@ export default function AttendancePage() {
     const newClass = classes.find((c) => c.id === classId) || null;
     setSelectedClass(newClass);
     setStudents(newClass ? newClass.students : []);
-    // Reset attendance when class changes
+    resetForm(newClass);
+  };
+  
+  const resetForm = (newClass: Class | null) => {
+    setEditingId(null);
+    setDate(new Date());
+    setMeetingNumber("");
     const newAttendance = new Map();
     newClass?.students.forEach(student => {
       newAttendance.set(student.id, 'Hadir');
     });
     setAttendance(newAttendance);
-  };
+  }
 
   const handleAttendanceChange = (studentId: string, status: AttendanceRecord['status']) => {
     setAttendance(new Map(attendance.set(studentId, status)));
@@ -86,19 +94,54 @@ export default function AttendancePage() {
         });
         return;
     }
-    console.log({
-      date,
-      classId: selectedClass?.id,
-      meetingNumber,
-      records: Array.from(attendance.entries()).map(([studentId, status]) => ({ studentId, status })),
-    });
-    toast({
-      title: "Presensi Disimpan",
-      description: `Presensi untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} (Pertemuan ke-${meetingNumber}) telah berhasil disimpan.`,
-      variant: "default",
-      className: "bg-green-100 text-green-900 border-green-200",
-    });
+
+    const newEntry: AttendanceHistoryEntry = {
+        id: editingId || `AH${Date.now()}`,
+        date,
+        classId: selectedClass.id,
+        className: selectedClass.name,
+        meetingNumber: Number(meetingNumber),
+        records: Array.from(attendance.entries()).map(([studentId, status]) => ({ studentId, status })),
+    };
+
+    if (editingId) {
+        setHistory(history.map(h => h.id === editingId ? newEntry : h));
+        toast({
+            title: "Presensi Diperbarui",
+            description: `Presensi untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} telah diperbarui.`,
+        });
+    } else {
+        setHistory([newEntry, ...history]);
+        toast({
+          title: "Presensi Disimpan",
+          description: `Presensi untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} (Pertemuan ke-${meetingNumber}) telah berhasil disimpan.`,
+          variant: "default",
+          className: "bg-green-100 text-green-900 border-green-200",
+        });
+    }
+
+    resetForm(selectedClass);
   };
+
+  const handleEdit = (entry: AttendanceHistoryEntry) => {
+      const classToEdit = classes.find(c => c.id === entry.classId) || null;
+      if (!classToEdit) return;
+
+      setSelectedClass(classToEdit);
+      setStudents(classToEdit.students);
+      setEditingId(entry.id);
+      setDate(entry.date);
+      setMeetingNumber(entry.meetingNumber);
+      
+      const loadedAttendance = new Map<string, AttendanceRecord['status']>();
+      entry.records.forEach(record => {
+          loadedAttendance.set(record.studentId, record.status);
+      });
+      setAttendance(loadedAttendance);
+
+      // Scroll to top to see the form
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
   
   const attendanceOptions: AttendanceRecord['status'][] = ['Hadir', 'Sakit', 'Izin', 'Alpha'];
 
@@ -106,9 +149,9 @@ export default function AttendancePage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Isi Presensi</CardTitle>
+          <CardTitle>{editingId ? 'Ubah Presensi' : 'Isi Presensi'}</CardTitle>
           <CardDescription>
-            Pilih kelas, tanggal, dan pertemuan untuk mengisi presensi siswa.
+            {editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mengisi presensi siswa.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -209,11 +252,53 @@ export default function AttendancePage() {
               </Table>
             </div>
           </CardContent>
-          <CardFooter className="border-t px-6 py-4">
-            <Button onClick={saveAttendance} disabled={!meetingNumber}>Simpan Presensi</Button>
+          <CardFooter className="border-t px-6 py-4 justify-between">
+            <Button onClick={saveAttendance} disabled={!meetingNumber}>{editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}</Button>
+            {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass)}>Batal Mengubah</Button>}
           </CardFooter>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+            <CardTitle>Riwayat Presensi</CardTitle>
+            <CardDescription>Daftar presensi yang telah Anda simpan.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Kelas</TableHead>
+                        <TableHead>Pertemuan Ke</TableHead>
+                        <TableHead>Kehadiran</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {history.map(entry => {
+                        const total = entry.records.length;
+                        const hadir = entry.records.filter(r => r.status === 'Hadir').length;
+                        const percentage = total > 0 ? ((hadir / total) * 100).toFixed(0) : 0;
+                        return (
+                            <TableRow key={entry.id}>
+                                <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
+                                <TableCell>{entry.className}</TableCell>
+                                <TableCell className="text-center">{entry.meetingNumber}</TableCell>
+                                <TableCell>{hadir}/{total} ({percentage}%)</TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Ubah
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        )
+                    })}
+                </TableBody>
+            </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
