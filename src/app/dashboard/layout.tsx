@@ -46,7 +46,7 @@ const navItems = [
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal Mengajar' },
   { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
   { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
-  { href: '/dashboard/roster', icon: Users, label: 'Daftar Kelas' },
+  { href: '/dashboard/roster', icon: Users, label: 'Manajemen Kelas' },
 ];
 
 export default function DashboardLayout({
