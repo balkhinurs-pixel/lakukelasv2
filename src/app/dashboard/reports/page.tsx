@@ -39,7 +39,7 @@ import {
 } from 'recharts';
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Users, CheckCircle, Award } from "lucide-react";
-import { classes } from "@/lib/placeholder-data";
+import { classes, students } from "@/lib/placeholder-data";
 
 const attendanceData = [
   { name: 'Kelas 10-A', Hadir: 95, Sakit: 2, Izin: 3, Alpha: 0 },
