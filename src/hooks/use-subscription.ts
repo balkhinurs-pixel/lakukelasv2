@@ -34,14 +34,42 @@ const TIER_LIMITS = {
 
 // Hook untuk mendapatkan status langganan dan batasannya
 // Dalam aplikasi nyata, ini akan mengambil data dari server/database
-// Untuk sekarang, kita akan mensimulasikan pengguna 'premium' untuk demonstrasi.
 export const useSubscription = () => {
-  // Ubah baris ini untuk mensimulasikan pengguna 'free' vs 'premium'
-  const [subscription] = React.useState<Subscription>({ 
-    status: 'premium', 
-    planName: 'Tahunan',
-    expires: new Date('2025-01-15')
+  // --- Simulasi Pengguna dengan Langganan yang Telah Berakhir ---
+  // Kita set tanggal kedaluwarsa ke masa lalu untuk melihat apa yang terjadi.
+  const simulatedExpiryDate = new Date();
+  simulatedExpiryDate.setDate(simulatedExpiryDate.getDate() - 1); // Set ke 1 hari yang lalu
+
+  const [simulatedUser] = React.useState<{ plan: SubscriptionPlanName, expires: Date | null }>({ 
+    plan: 'Tahunan',
+    expires: simulatedExpiryDate 
   });
+
+  const [subscription, setSubscription] = React.useState<Subscription>({
+    status: 'free',
+    planName: 'Free',
+    expires: null
+  });
+
+  React.useEffect(() => {
+    const now = new Date();
+    if (simulatedUser.expires && simulatedUser.expires > now) {
+      // Jika langganan masih aktif
+      setSubscription({
+        status: 'premium',
+        planName: simulatedUser.plan,
+        expires: simulatedUser.expires,
+      });
+    } else {
+      // Jika tidak ada tanggal kedaluwarsa atau sudah lewat (langganan berakhir)
+      setSubscription({
+        status: 'free',
+        planName: 'Free',
+        expires: null,
+      });
+    }
+  }, [simulatedUser]);
+
 
   const limits = TIER_LIMITS[subscription.status];
 
