@@ -2,6 +2,8 @@
 "use client"
 
 import * as React from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import {
   Card,
   CardContent,
@@ -37,21 +39,24 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Users, CheckCircle, Award } from "lucide-react";
-import { classes, students } from "@/lib/placeholder-data";
+import { TrendingUp, Users, CheckCircle, Award, Download } from "lucide-react";
+import { classes, students, journalEntries } from "@/lib/placeholder-data";
+import { format } from "date-fns";
+
+// Extend jsPDF with autoTable
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
+
 
 const attendanceData = [
   { name: 'Kelas 10-A', Hadir: 95, Sakit: 2, Izin: 3, Alpha: 0 },
   { name: 'Kelas 10-B', Hadir: 92, Sakit: 4, Izin: 2, Alpha: 2 },
   { name: 'Kelas 11-A', Hadir: 98, Sakit: 1, Izin: 1, Alpha: 0 },
   { name: 'Kelas 11-B', Hadir: 90, Sakit: 5, Izin: 3, Alpha: 2 },
-];
-
-const gradeData = [
-    { name: 'Ulangan 1', 'Kelas 10-A': 82, 'Kelas 10-B': 78, 'Kelas 11-A': 85, 'Kelas 11-B': 75 },
-    { name: 'Ulangan 2', 'Kelas 10-A': 85, 'Kelas 10-B': 80, 'Kelas 11-A': 88, 'Kelas 11-B': 79 },
-    { name: 'Tugas', 'Kelas 10-A': 90, 'Kelas 10-B': 85, 'Kelas 11-A': 92, 'Kelas 11-B': 88 },
 ];
 
 const overallAttendance = {
@@ -61,10 +66,10 @@ const overallAttendance = {
     Alpha: 4
 };
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS = ['#22c55e', '#f97316', '#0ea5e9', '#ef4444'];
 
 const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -82,13 +87,46 @@ const studentPerformance = [
     { id: 'S006', name: 'Gilang Ramadhan', class: '10-B', average_grade: 85, attendance: 95, status: 'Stabil' },
     { id: 'S003', name: 'Dewi Anggraini', class: '11-A', average_grade: 78, attendance: 98, status: 'Menurun' },
     { id: 'S004', name: 'Eko Prasetyo', class: '11-A', average_grade: 95, attendance: 100, status: 'Sangat Baik' },
-]
+];
 
+// Mock data for detailed reports
+const detailedAttendance = students.map(s => ({
+    ...s,
+    hadir: Math.floor(Math.random() * 16) + 15, // 15-30
+    sakit: Math.floor(Math.random() * 3), // 0-2
+    izin: Math.floor(Math.random() * 2), // 0-1
+    alpha: Math.floor(Math.random() * 2), // 0-1
+    pertemuan: 32,
+}));
+
+const detailedGrades = students.map(s => ({
+    ...s,
+    uh1: Math.floor(Math.random() * 30) + 70,
+    uh2: Math.floor(Math.random() * 30) + 71,
+    tugas1: Math.floor(Math.random() * 20) + 80,
+    uts: Math.floor(Math.random() * 25) + 75,
+    uas: Math.floor(Math.random() * 25) + 72,
+}));
 
 export default function ReportsPage() {
-  const [selectedClass, setSelectedClass] = React.useState("all");
+  const [selectedClass, setSelectedClass] = React.useState("C01");
+  const [selectedMonth, setSelectedMonth] = React.useState("all");
+  const [selectedSemester, setSelectedSemester] = React.useState("all");
 
   const pieData = Object.entries(overallAttendance).map(([name, value]) => ({name, value}));
+
+  const downloadPdf = (title: string, head: string[][], body: any[][]) => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    doc.text(title, 14, 16);
+    doc.autoTable({
+        head: head,
+        body: body,
+        startY: 20,
+        theme: 'grid',
+        headStyles: { fillColor: [22, 160, 133] },
+    });
+    doc.save(`${title.toLowerCase().replace(/ /g, '_')}.pdf`);
+  }
 
   return (
     <div className="space-y-6">
@@ -97,151 +135,292 @@ export default function ReportsPage() {
                 <h1 className="text-2xl font-bold font-headline">Laporan Akademik</h1>
                 <p className="text-muted-foreground">Analisis komprehensif tentang kehadiran dan nilai siswa.</p>
             </div>
-             <Select onValueChange={setSelectedClass} defaultValue="all">
-                <SelectTrigger className="w-[220px]">
-                    <SelectValue placeholder="Filter berdasarkan kelas" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Semua Kelas</SelectItem>
-                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-            </Select>
-        </div>
-      
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Tingkat Kehadiran</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">94.2%</div>
-                    <p className="text-xs text-muted-foreground">Rata-rata kehadiran semua kelas</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Rata-rata Nilai</CardTitle>
-                    <Award className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">84.5</div>
-                    <p className="text-xs text-muted-foreground">Skor rata-rata semua penilaian</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Siswa Berprestasi</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">Eko P.</div>
-                    <p className="text-xs text-muted-foreground">Nilai rata-rata tertinggi (95)</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Siswa Aktif</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{students.length}</div>
-                    <p className="text-xs text-muted-foreground">Di semua kelas yang Anda ajar</p>
-                </CardContent>
-            </Card>
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <Card className="lg:col-span-3">
-            <CardHeader>
-                <CardTitle>Perbandingan Kehadiran Antar Kelas</CardTitle>
-                <CardDescription>Visualisasi persentase kehadiran untuk setiap status di berbagai kelas.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={attendanceData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" fontSize={12} />
-                        <YAxis fontSize={12} />
-                        <Tooltip />
-                        <Legend wrapperStyle={{fontSize: "12px"}}/>
-                        <Bar dataKey="Hadir" stackId="a" fill="#22c55e" name="Hadir" />
-                        <Bar dataKey="Sakit" stackId="a" fill="#f97316" name="Sakit"/>
-                        <Bar dataKey="Izin" stackId="a" fill="#0ea5e9" name="Izin"/>
-                        <Bar dataKey="Alpha" stackId="a" fill="#ef4444" name="Alpha"/>
-                    </BarChart>
-                </ResponsiveContainer>
-            </CardContent>
-        </Card>
-        <Card className="lg:col-span-2">
-            <CardHeader>
-                <CardTitle>Distribusi Kehadiran Umum</CardTitle>
-                <CardDescription>Proporsi setiap status kehadiran secara keseluruhan.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                        <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={renderCustomizedLabel}
-                            outerRadius={110}
-                            fill="#8884d8"
-                            dataKey="value"
-                        >
-                            {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+        <Tabs defaultValue="summary">
+            <TabsList>
+                <TabsTrigger value="summary">Ringkasan</TabsTrigger>
+                <TabsTrigger value="attendance">Laporan Kehadiran</TabsTrigger>
+                <TabsTrigger value="grades">Laporan Nilai</TabsTrigger>
+                <TabsTrigger value="journal">Laporan Jurnal</TabsTrigger>
+            </TabsList>
+            <TabsContent value="summary" className="mt-6 space-y-6">
+                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Tingkat Kehadiran</CardTitle>
+                            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">94.2%</div>
+                            <p className="text-xs text-muted-foreground">Rata-rata kehadiran semua kelas</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Rata-rata Nilai</CardTitle>
+                            <Award className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">84.5</div>
+                            <p className="text-xs text-muted-foreground">Skor rata-rata semua penilaian</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Siswa Berprestasi</CardTitle>
+                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">Eko P.</div>
+                            <p className="text-xs text-muted-foreground">Nilai rata-rata tertinggi (95)</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Siswa Aktif</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{students.length}</div>
+                            <p className="text-xs text-muted-foreground">Di semua kelas yang Anda ajar</p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <CardTitle>Perbandingan Kehadiran Antar Kelas</CardTitle>
+                            <CardDescription>Visualisasi persentase kehadiran untuk setiap status di berbagai kelas.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pl-2">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={attendanceData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                    <Tooltip />
+                                    <Legend wrapperStyle={{fontSize: "12px"}}/>
+                                    <Bar dataKey="Hadir" stackId="a" fill="#22c55e" name="Hadir" />
+                                    <Bar dataKey="Sakit" stackId="a" fill="#f97316" name="Sakit"/>
+                                    <Bar dataKey="Izin" stackId="a" fill="#0ea5e9" name="Izin"/>
+                                    <Bar dataKey="Alpha" stackId="a" fill="#ef4444" name="Alpha"/>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                    <Card className="lg:col-span-2">
+                        <CardHeader>
+                            <CardTitle>Distribusi Kehadiran Umum</CardTitle>
+                            <CardDescription>Proporsi setiap status kehadiran secara keseluruhan.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={pieData}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        label={renderCustomizedLabel}
+                                        outerRadius={100}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                        nameKey="name"
+                                    >
+                                        {pieData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend wrapperStyle={{fontSize: "12px", paddingTop: "20px"}}/>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </div>
+            </TabsContent>
+            <TabsContent value="attendance" className="mt-6">
+                <Card>
+                    <CardHeader>
+                        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                            <div>
+                                <CardTitle>Laporan Kehadiran Siswa</CardTitle>
+                                <CardDescription>Detail kehadiran siswa per periode.</CardDescription>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => downloadPdf('Laporan Kehadiran', [['ID', 'Nama', 'Hadir', 'Sakit', 'Izin', 'Alpha', '% Hadir']], detailedAttendance.map(s => [s.id, s.name, s.hadir, s.sakit, s.izin, s.alpha, ((s.hadir/s.pertemuan)*100).toFixed(1) + '%']))}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Unduh PDF
+                                </Button>
+                            </div>
+                        </div>
+                         <div className="mt-4 flex flex-col md:flex-row gap-2">
+                            <Select value={selectedClass} onValueChange={setSelectedClass}>
+                                <SelectTrigger className="w-full md:w-[200px]">
+                                    <SelectValue placeholder="Pilih kelas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                <SelectTrigger className="w-full md:w-[180px]">
+                                    <SelectValue placeholder="Pilih Bulan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Bulan</SelectItem>
+                                    <SelectItem value="1">Januari</SelectItem>
+                                    <SelectItem value="2">Februari</SelectItem>
+                                    <SelectItem value="3">Maret</SelectItem>
+                                </SelectContent>
+                            </Select>
+                             <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                                <SelectTrigger className="w-full md:w-[180px]">
+                                    <SelectValue placeholder="Pilih Semester" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Semester</SelectItem>
+                                    <SelectItem value="1">Semester Ganjil</SelectItem>
+                                    <SelectItem value="2">Semester Genap</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Nama Siswa</TableHead>
+                            <TableHead className="text-center">Hadir</TableHead>
+                            <TableHead className="text-center">Sakit</TableHead>
+                            <TableHead className="text-center">Izin</TableHead>
+                            <TableHead className="text-center">Alpha</TableHead>
+                            <TableHead className="text-center">Total Pertemuan</TableHead>
+                            <TableHead className="text-right">Kehadiran (%)</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {detailedAttendance.map((student) => (
+                            <TableRow key={student.id}>
+                                <TableCell className="font-medium">{student.name}</TableCell>
+                                <TableCell className="text-center">{student.hadir}</TableCell>
+                                <TableCell className="text-center">{student.sakit}</TableCell>
+                                <TableCell className="text-center">{student.izin}</TableCell>
+                                <TableCell className="text-center">{student.alpha}</TableCell>
+                                <TableCell className="text-center">{student.pertemuan}</TableCell>
+                                <TableCell className="text-right font-semibold">{((student.hadir / student.pertemuan) * 100).toFixed(1)}%</TableCell>
+                            </TableRow>
                             ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend wrapperStyle={{fontSize: "12px"}}/>
-                    </PieChart>
-                </ResponsiveContainer>
-            </CardContent>
-        </Card>
-      </div>
-      
-       <Card>
-          <CardHeader>
-            <CardTitle>Performa Siswa Teratas</CardTitle>
-            <CardDescription>
-              Daftar siswa dengan performa terbaik berdasarkan nilai dan kehadiran.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nama Siswa</TableHead>
-                  <TableHead>Kelas</TableHead>
-                  <TableHead className="text-center">Rata-rata Nilai</TableHead>
-                  <TableHead className="text-center">Kehadiran</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {studentPerformance.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.class}</TableCell>
-                    <TableCell className="text-center">{student.average_grade}</TableCell>
-                    <TableCell className="text-center">{student.attendance}%</TableCell>
-                    <TableCell className="text-right">
-                        <Badge 
-                            variant={student.status === 'Meningkat' || student.status === 'Sangat Baik' ? 'default' : student.status === 'Menurun' ? 'destructive' : 'secondary'}
-                            className={student.status === 'Meningkat' || student.status === 'Sangat Baik' ? 'bg-green-100 text-green-800' : ''}
-                        >
-                           {student.status}
-                        </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="grades" className="mt-6">
+                <Card>
+                    <CardHeader>
+                         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                            <div>
+                               <CardTitle>Laporan Nilai Siswa</CardTitle>
+                               <CardDescription>Detail nilai ulangan dan tugas siswa.</CardDescription>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => downloadPdf('Laporan Nilai', [['ID', 'Nama', 'UH1', 'UH2', 'Tugas 1', 'UTS', 'UAS']], detailedGrades.map(s => [s.id, s.name, s.uh1, s.uh2, s.tugas1, s.uts, s.uas]))}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Unduh PDF
+                                </Button>
+                            </div>
+                        </div>
+                         <div className="mt-4 flex gap-2">
+                            <Select value={selectedClass} onValueChange={setSelectedClass}>
+                                <SelectTrigger className="w-full md:w-[200px]">
+                                    <SelectValue placeholder="Pilih kelas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Nama Siswa</TableHead>
+                            <TableHead className="text-center">UH 1</TableHead>
+                            <TableHead className="text-center">UH 2</TableHead>
+                            <TableHead className="text-center">Tugas 1</TableHead>
+                            <TableHead className="text-center">UTS</TableHead>
+                            <TableHead className="text-center">UAS</TableHead>
+                            <TableHead className="text-right font-semibold">Rata-rata</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {detailedGrades.map((student) => {
+                                const avg = (student.uh1 + student.uh2 + student.tugas1 + student.uts + student.uas) / 5;
+                                return (
+                                <TableRow key={student.id}>
+                                    <TableCell className="font-medium">{student.name}</TableCell>
+                                    <TableCell className="text-center">{student.uh1}</TableCell>
+                                    <TableCell className="text-center">{student.uh2}</TableCell>
+                                    <TableCell className="text-center">{student.tugas1}</TableCell>
+                                    <TableCell className="text-center">{student.uts}</TableCell>
+                                    <TableCell className="text-center">{student.uas}</TableCell>
+                                    <TableCell className="text-right font-semibold">{avg.toFixed(1)}</TableCell>
+                                </TableRow>
+                                )
+                            })}
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="journal" className="mt-6">
+                <Card>
+                    <CardHeader>
+                        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                            <div>
+                                <CardTitle>Laporan Jurnal Mengajar</CardTitle>
+                                <CardDescription>Arsip semua jurnal mengajar yang telah Anda buat.</CardDescription>
+                            </div>
+                            <Button variant="outline" onClick={() => downloadPdf('Laporan Jurnal Mengajar', [['Tanggal', 'Kelas', 'Materi', 'Bahan Ajar', 'Catatan']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), j.class, j.subject, j.material, j.notes || '-']))}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Unduh PDF
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead className="w-[120px]">Tanggal</TableHead>
+                            <TableHead>Kelas</TableHead>
+                            <TableHead>Mata Pelajaran & Materi</TableHead>
+                            <TableHead>Catatan</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {journalEntries.map((entry) => (
+                            <TableRow key={entry.id}>
+                                <TableCell className="font-medium">
+                                {format(entry.date, "dd MMM yyyy")}
+                                </TableCell>
+                                <TableCell>{entry.class}</TableCell>
+                                <TableCell>
+                                <div className="font-medium">{entry.subject}</div>
+                                <div className="text-sm text-muted-foreground">{entry.material}</div>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">{entry.notes || "-"}</TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
