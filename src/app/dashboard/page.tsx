@@ -68,7 +68,7 @@ export default function DashboardPage() {
 
         const commonButtonProps = {
             size: "sm",
-            className: "w-full md:w-auto",
+            className: "w-full",
         } as const;
 
         const linkParams = new URLSearchParams({
@@ -109,7 +109,7 @@ export default function DashboardPage() {
             );
         }
         if (status === 'jurnal_done') {
-            return <div className="text-sm text-green-600 font-semibold flex items-center justify-end"><ClipboardCheck className="mr-2 h-4 w-4"/> Selesai</div>;
+            return <div className="text-sm text-green-600 font-semibold flex items-center justify-center py-2"><ClipboardCheck className="mr-2 h-4 w-4"/> Tugas Selesai</div>;
         }
 
         return null;
@@ -215,8 +215,8 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {todaySchedule.length > 0 ? todaySchedule.map((item) => (
-                 <div key={item.id} className="flex flex-col md:flex-row items-start md:items-center gap-2 p-3 rounded-lg hover:bg-muted/50 border">
-                    <div className="flex items-center gap-3 flex-1">
+                 <div key={item.id} className="flex flex-col gap-3 p-3 rounded-lg hover:bg-muted/50 border">
+                    <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
                           <Clock className="h-5 w-5" />
                         </div>
@@ -225,9 +225,11 @@ export default function DashboardPage() {
                           <p className="text-sm text-muted-foreground leading-tight">{item.class} | {item.startTime} - {item.endTime}</p>
                         </div>
                     </div>
-                    <div className="w-full md:w-auto mt-2 md:mt-0">
-                        {activeSchedules[item.id] && getNextAction(item)}
-                    </div>
+                    {activeSchedules[item.id] && (
+                        <div className="w-full">
+                            {getNextAction(item)}
+                        </div>
+                    )}
                 </div>
             )) : (
                 <div className="text-center text-muted-foreground py-8">
@@ -240,3 +242,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
