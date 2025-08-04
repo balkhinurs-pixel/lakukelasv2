@@ -24,16 +24,6 @@ import { journalEntries, schedule, classes } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import type { ScheduleItem } from "@/lib/types";
 
-// Helper function to check if current time is past schedule start time
-const isScheduleActive = (scheduleTime: string) => {
-    if (typeof window === "undefined") return false; // Avoid SSR issues
-    const now = new Date();
-    const [hours, minutes] = scheduleTime.split(':').map(Number);
-    const scheduleDate = new Date();
-    scheduleDate.setHours(hours, minutes, 0, 0);
-    return now >= scheduleDate;
-}
-
 type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
 
 export default function DashboardPage() {
@@ -42,6 +32,23 @@ export default function DashboardPage() {
 
     // State to track task completion for each schedule item
     const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
+    const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
+
+    React.useEffect(() => {
+        // This effect runs only on the client, after hydration
+        const now = new Date();
+        const newActiveSchedules: Record<string, boolean> = {};
+        todaySchedule.forEach(item => {
+            const [hours, minutes] = item.startTime.split(':').map(Number);
+            const scheduleDate = new Date();
+            scheduleDate.setHours(hours, minutes, 0, 0);
+            if (now >= scheduleDate) {
+                newActiveSchedules[item.id] = true;
+            }
+        });
+        setActiveSchedules(newActiveSchedules);
+    }, [todaySchedule]);
+
 
     const handleTaskCompletion = (scheduleId: string, currentStatus: TaskStatus) => {
         let nextStatus: TaskStatus = 'pending';
@@ -219,7 +226,7 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <div className="w-full md:w-auto mt-2 md:mt-0">
-                        {isScheduleActive(item.startTime) && getNextAction(item)}
+                        {activeSchedules[item.id] && getNextAction(item)}
                     </div>
                 </div>
             )) : (
