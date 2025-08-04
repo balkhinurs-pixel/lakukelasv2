@@ -1,6 +1,9 @@
 export interface Student {
   id: string;
   name: string;
+  nis: string;
+  nisn: string;
+  gender: 'Laki-laki' | 'Perempuan';
 }
 
 export interface Class {
