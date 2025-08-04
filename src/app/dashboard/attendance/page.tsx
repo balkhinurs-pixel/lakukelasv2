@@ -75,7 +75,7 @@ export default function AttendancePage() {
       title: "Attendance Saved",
       description: `Attendance for ${selectedClass?.name} on ${date ? format(date, "PPP") : ''} has been saved successfully.`,
       variant: "default",
-      className: "bg-green-100 text-green-900 border-green-200"
+      className: "bg-green-100 text-green-900 border-green-200",
     });
   };
   
@@ -169,7 +169,7 @@ export default function AttendancePage() {
                   ))}
                 </TableBody>
               </Table>
-            </Card>
+            </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
             <Button onClick={saveAttendance}>Save Attendance</Button>
