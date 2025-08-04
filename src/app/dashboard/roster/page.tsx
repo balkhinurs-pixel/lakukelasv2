@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -218,13 +219,13 @@ function SchoolYearTab() {
             <CardContent className="space-y-4 max-w-md">
                  <div className="space-y-2">
                     <Label>Tahun Ajaran Aktif</Label>
-                     <Select defaultValue="2023/2024">
+                     <Select defaultValue="2023/2024-2">
                         <SelectTrigger>
                             <SelectValue placeholder="Pilih tahun ajaran" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="2023/2024">2023/2024 - Semester Genap</SelectItem>
-                            <SelectItem value="2024/2025">2024/2025 - Semester Ganjil</SelectItem>
+                            <SelectItem value="2023/2024-2">2023/2024 - Semester Genap</SelectItem>
+                            <SelectItem value="2024/2025-1">2024/2025 - Semester Ganjil</SelectItem>
                         </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">Tahun ajaran aktif akan mempengaruhi pencatatan data baru.</p>
@@ -244,11 +245,15 @@ function PromotionTab() {
                 <CardDescription>Pindahkan siswa secara kolektif untuk kenaikan kelas atau kelulusan di akhir tahun ajaran.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+                <div className="p-4 border rounded-lg bg-amber-50 border-amber-200">
+                    <h3 className="font-semibold text-amber-900">Penting: Proses Akhir Tahun Ajaran</h3>
+                    <p className="text-sm text-amber-800 mt-1">Gunakan fitur ini di akhir semester genap. Pastikan semua nilai dan laporan telah final sebelum melakukan promosi atau kelulusan.</p>
+                </div>
                 <div className="p-4 border rounded-lg">
-                    <h3 className="font-semibold mb-2">Kenaikan Kelas</h3>
+                    <h3 className="font-semibold mb-2">1. Kenaikan Kelas</h3>
                     <p className="text-sm text-muted-foreground mb-4">Pindahkan semua siswa dari satu kelas ke kelas lainnya. Contoh: Semua siswa Kelas 10-A naik ke Kelas 11-A.</p>
-                    <div className="flex items-center gap-4">
-                        <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex-1 space-y-1 min-w-[180px]">
                             <Label>Dari Kelas</Label>
                             <Select>
                                 <SelectTrigger>
@@ -260,7 +265,7 @@ function PromotionTab() {
                             </Select>
                         </div>
                         <ArrowRightLeft className="mt-6 text-muted-foreground"/>
-                         <div className="flex-1 space-y-1">
+                         <div className="flex-1 space-y-1 min-w-[180px]">
                             <Label>Ke Kelas</Label>
                             <Select>
                                 <SelectTrigger>
@@ -275,21 +280,21 @@ function PromotionTab() {
                     </div>
                 </div>
                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-semibold mb-2">Luluskan Siswa</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Tandai semua siswa di kelas tertentu sebagai lulus. Data mereka akan diarsipkan.</p>
-                    <div className="flex items-center gap-4">
-                        <div className="flex-1 space-y-1">
+                    <h3 className="font-semibold mb-2">2. Luluskan Siswa</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Tandai semua siswa di kelas tertentu sebagai lulus. Data mereka akan diarsipkan dan tidak aktif lagi.</p>
+                    <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex-1 space-y-1 min-w-[180px]">
                             <Label>Kelas yang Lulus</Label>
                             <Select>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Pilih kelas" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                    {classes.filter(c => c.name.startsWith("Kelas 12")).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button className="mt-6" variant="destructive">Luluskan</Button>
+                        <Button className="mt-6" variant="destructive">Luluskan Siswa</Button>
                     </div>
                 </div>
             </CardContent>
@@ -304,7 +309,7 @@ export default function RosterPage() {
         <div>
           <h1 className="text-2xl font-bold font-headline">Manajemen Kelas & Siswa</h1>
           <p className="text-muted-foreground">
-            Pusat data untuk mengelola siswa, kelas, dan tahun ajaran.
+            Pusat data untuk mengelola siswa, kelas, dan siklus tahun ajaran.
           </p>
         </div>
       </div>
@@ -331,3 +336,5 @@ export default function RosterPage() {
     </div>
   );
 }
+
+    
