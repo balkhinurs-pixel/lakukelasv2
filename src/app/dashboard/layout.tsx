@@ -17,6 +17,7 @@ import {
   ChevronDown,
   CreditCard,
   Crown,
+  Menu,
 } from 'lucide-react';
 
 import {
@@ -31,6 +32,7 @@ import {
   SidebarFooter,
   SidebarMenuSub,
   SidebarMenuSubButton,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -51,16 +53,26 @@ import { AppLogo } from '@/components/icons';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Badge } from '@/components/ui/badge';
 import { format } from "date-fns";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dasbor' },
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
-  { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Input Nilai' },
-  { href: '/dashboard/journal', icon: BookText, label: 'Jurnal Mengajar' },
-  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
-  { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
+  { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
+  { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
 ];
+
+const mainMobileNavItems = navItems;
+const moreMobileNavItems = [
+    { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
+    { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
+    { href: '/dashboard/roster/students', icon: Users, label: 'Rombel' },
+    { href: '/dashboard/subscription', icon: CreditCard, label: 'Langganan' },
+    { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan' },
+]
+
 
 const rosterNavItems = [
     { href: '/dashboard/roster/students', label: 'Daftar Siswa' },
@@ -69,6 +81,26 @@ const rosterNavItems = [
     { href: '/dashboard/roster/promotion', label: 'Promosi & Mutasi' },
 ];
 
+const BottomNavbar = () => {
+    const pathname = usePathname();
+    const { toggleSidebar } = useSidebar();
+    
+    return (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
+            {mainMobileNavItems.map((item) => (
+                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname.startsWith(item.href) ? "text-primary" : "text-muted-foreground")}>
+                    <item.icon className="w-5 h-5" />
+                    <span className="text-xs">{item.label}</span>
+                </Link>
+            ))}
+            <button onClick={toggleSidebar} className="flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
+                <Menu className="w-5 h-5" />
+                <span className="text-xs">Lainnya</span>
+            </button>
+        </div>
+    )
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -76,6 +108,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const { subscription, isPremium } = useSubscription();
+  const isMobile = useIsMobile();
 
   const isRosterActive = pathname.startsWith('/dashboard/roster');
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
@@ -90,9 +123,23 @@ export default function DashboardLayout({
                 <span className="text-lg font-semibold font-headline">Classroom Zephyr</span>
             </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="p-2">
           <SidebarMenu>
             {navItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
+                  tooltip={{ children: item.label }}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+            {moreMobileNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
@@ -133,29 +180,6 @@ export default function DashboardLayout({
                     </CollapsibleContent>
                 </Collapsible>
              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={isSubscriptionActive}
-                >
-                    <Link href="/dashboard/subscription">
-                        <CreditCard/>
-                        <span>Langganan</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={isSettingsActive}
-                >
-                    <Link href="/dashboard/settings">
-                        <Settings/>
-                        <span>Pengaturan</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
@@ -214,6 +238,7 @@ export default function DashboardLayout({
             {children}
         </div>
       </SidebarInset>
+      {isMobile && <BottomNavbar />}
     </SidebarProvider>
   );
 }

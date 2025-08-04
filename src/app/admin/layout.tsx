@@ -12,7 +12,8 @@ import {
   CreditCard,
   TicketPercent,
   BarChart,
-  ChevronDown
+  ChevronDown,
+  Menu
 } from 'lucide-react';
 
 import {
@@ -25,6 +26,7 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarFooter,
+  useSidebar
 } from '@/components/ui/sidebar';
 
 import {
@@ -38,16 +40,37 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from '@/components/icons';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 
 const navItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dasbor Admin' },
-  { href: '/admin/users', icon: Users, label: 'Kelola Pengguna' },
+  { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
+  { href: '/admin/users', icon: Users, label: 'Pengguna' },
   { href: '/admin/analytics', icon: BarChart, label: 'Analitik' },
-  { href: '/admin/pricing', icon: CreditCard, label: 'Kelola Harga' },
-  { href: '/admin/coupons', icon: TicketPercent, label: 'Kelola Kupon' },
+  { href: '/admin/pricing', icon: CreditCard, label: 'Harga' },
+  { href: '/admin/coupons', icon: TicketPercent, label: 'Kupon' },
 ];
 
+const BottomNavbar = () => {
+    const pathname = usePathname();
+    const { toggleSidebar } = useSidebar();
+    
+    return (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
+            {navItems.slice(0, 4).map((item) => (
+                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname.startsWith(item.href) ? "text-primary" : "text-muted-foreground")}>
+                    <item.icon className="w-5 h-5" />
+                    <span className="text-xs">{item.label}</span>
+                </Link>
+            ))}
+            <button onClick={toggleSidebar} className="flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
+                <Menu className="w-5 h-5" />
+                <span className="text-xs">Lainnya</span>
+            </button>
+        </div>
+    )
+}
 
 export default function AdminLayout({
   children,
@@ -55,6 +78,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
 
   return (
     <SidebarProvider>
@@ -125,6 +149,7 @@ export default function AdminLayout({
             {children}
         </div>
       </SidebarInset>
+      {isMobile && <BottomNavbar />}
     </SidebarProvider>
   );
 }
