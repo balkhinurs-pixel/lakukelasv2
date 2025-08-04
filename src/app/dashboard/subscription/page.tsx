@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,7 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import { createPaymentTransaction } from "@/ai/flows/payment-flow";
+import { useToast } from "@/hooks/use-toast";
 
 const features = [
     "Manajemen Siswa & Kelas Tanpa Batas",
@@ -21,6 +24,41 @@ const features = [
 ]
 
 export default function SubscriptionPage() {
+  const [loading, setLoading] = React.useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleSubscription = async (packageName: 'semester' | 'tahunan', amount: number) => {
+    setLoading(packageName);
+    try {
+        const result = await createPaymentTransaction({
+            packageName,
+            amount,
+            productDetails: `Langganan Classroom Zephyr - Paket ${packageName.charAt(0).toUpperCase() + packageName.slice(1)}`,
+        });
+
+        if (result.paymentUrl) {
+            // In a real application, you would redirect the user to this URL
+            console.log("Redirecting to payment URL:", result.paymentUrl);
+            window.open(result.paymentUrl, '_blank');
+            toast({
+                title: "Mengarahkan ke Pembayaran",
+                description: "Anda sedang diarahkan ke halaman pembayaran yang aman.",
+            });
+        } else {
+            throw new Error(result.errorMessage || "Gagal membuat transaksi.");
+        }
+    } catch (error) {
+        console.error("Payment error:", error);
+        toast({
+            title: "Terjadi Kesalahan",
+            description: (error as Error).message || "Tidak dapat memproses permintaan Anda saat ini.",
+            variant: "destructive",
+        });
+    } finally {
+        setLoading(null);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -52,7 +90,9 @@ export default function SubscriptionPage() {
             </ul>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" size="lg">Pilih Paket Semester</Button>
+            <Button className="w-full" size="lg" onClick={() => handleSubscription('semester', 150000)} disabled={loading !== null}>
+               {loading === 'semester' ? <Loader2 className="animate-spin" /> : "Pilih Paket Semester"}
+            </Button>
           </CardFooter>
         </Card>
         
@@ -84,7 +124,9 @@ export default function SubscriptionPage() {
             </ul>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" size="lg">Pilih Paket Tahunan</Button>
+            <Button className="w-full" size="lg" onClick={() => handleSubscription('tahunan', 250000)} disabled={loading !== null}>
+                {loading === 'tahunan' ? <Loader2 className="animate-spin" /> : "Pilih Paket Tahunan"}
+            </Button>
           </CardFooter>
         </Card>
       </div>
