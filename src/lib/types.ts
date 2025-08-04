@@ -32,7 +32,9 @@ export interface JournalEntry {
   learningActivities: string;
   assessment?: string;
   reflection?: string;
+  material?: string; // Menambahkan properti material
 }
+
 
 export interface ScheduleItem {
   id: string;
