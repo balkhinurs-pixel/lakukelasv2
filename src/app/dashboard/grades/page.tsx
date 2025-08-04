@@ -46,6 +46,7 @@ export default function GradesPage() {
   const [students, setStudents] = React.useState<Student[]>([]);
   const [grades, setGrades] = React.useState<Map<string, number | string>>(new Map());
   const [assessmentType, setAssessmentType] = React.useState<string>("");
+  const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
   const { toast } = useToast();
 
   const handleClassChange = (classId: string) => {
@@ -69,6 +70,7 @@ export default function GradesPage() {
       date,
       classId: selectedClass?.id,
       assessmentType,
+      meetingNumber,
       records: Array.from(grades.entries()).map(([studentId, score]) => ({ studentId, score })),
     });
     toast({
@@ -89,7 +91,7 @@ export default function GradesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
                 <Label>Kelas</Label>
                 <Select onValueChange={handleClassChange}>
@@ -133,6 +135,17 @@ export default function GradesPage() {
              <div className="space-y-2">
                 <Label htmlFor="assessmentType">Jenis Penilaian</Label>
                 <Input id="assessmentType" value={assessmentType} onChange={(e) => setAssessmentType(e.target.value)} placeholder="e.g. Ulangan Harian 1" />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="meetingNumber">Pertemuan Ke (Opsional)</Label>
+                <Input 
+                    id="meetingNumber" 
+                    type="number"
+                    value={meetingNumber} 
+                    onChange={(e) => setMeetingNumber(e.target.value === '' ? '' : parseInt(e.target.value))} 
+                    placeholder="e.g. 1" 
+                    min="1"
+                />
             </div>
           </div>
         </CardContent>

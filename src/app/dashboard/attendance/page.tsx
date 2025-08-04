@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { classes } from "@/lib/placeholder-data";
 import type { Student, AttendanceRecord, Class } from "@/lib/types";
@@ -45,6 +46,7 @@ export default function AttendancePage() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [selectedClass, setSelectedClass] = React.useState<Class | null>(null);
   const [students, setStudents] = React.useState<Student[]>([]);
+  const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
   const [attendance, setAttendance] = React.useState<Map<string, AttendanceRecord['status']>>(new Map());
   const { toast } = useToast();
 
@@ -65,15 +67,23 @@ export default function AttendancePage() {
   };
 
   const saveAttendance = () => {
-    // In a real app, this would send data to Supabase
+    if (!selectedClass || !date || !meetingNumber) {
+        toast({
+            title: "Gagal Menyimpan",
+            description: "Harap pilih kelas, tanggal, dan isi nomor pertemuan.",
+            variant: "destructive",
+        });
+        return;
+    }
     console.log({
       date,
       classId: selectedClass?.id,
+      meetingNumber,
       records: Array.from(attendance.entries()).map(([studentId, status]) => ({ studentId, status })),
     });
     toast({
       title: "Presensi Disimpan",
-      description: `Presensi untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} telah berhasil disimpan.`,
+      description: `Presensi untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} (Pertemuan ke-${meetingNumber}) telah berhasil disimpan.`,
       variant: "default",
       className: "bg-green-100 text-green-900 border-green-200",
     });
@@ -87,45 +97,62 @@ export default function AttendancePage() {
         <CardHeader>
           <CardTitle>Isi Presensi</CardTitle>
           <CardDescription>
-            Pilih kelas dan tanggal untuk mengisi presensi siswa.
+            Pilih kelas, tanggal, dan pertemuan untuk mengisi presensi siswa.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <Select onValueChange={handleClassChange}>
-              <SelectTrigger className="w-full md:w-[280px]">
-                <SelectValue placeholder="Pilih kelas" />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full md:w-[280px] justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pilih tanggal</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+             <div className="space-y-2">
+                <Label>Kelas</Label>
+                 <Select onValueChange={handleClassChange}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Pilih kelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {classes.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label>Tanggal</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : <span>Pilih tanggal</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="meetingNumber">Pertemuan Ke</Label>
+                <Input 
+                    id="meetingNumber" 
+                    type="number"
+                    value={meetingNumber} 
+                    onChange={(e) => setMeetingNumber(e.target.value === '' ? '' : parseInt(e.target.value))} 
+                    placeholder="e.g. 1" 
+                    min="1"
                 />
-              </PopoverContent>
-            </Popover>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -172,7 +199,7 @@ export default function AttendancePage() {
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
-            <Button onClick={saveAttendance}>Simpan Presensi</Button>
+            <Button onClick={saveAttendance} disabled={!meetingNumber}>Simpan Presensi</Button>
           </CardFooter>
         </Card>
       )}

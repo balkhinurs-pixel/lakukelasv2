@@ -27,6 +27,7 @@ export interface JournalEntry {
   date: Date;
   class: string;
   subject: string;
+  meetingNumber?: number; // Made optional for backward compatibility
   learningObjectives: string;
   learningActivities: string;
   assessment?: string;

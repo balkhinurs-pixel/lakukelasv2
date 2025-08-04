@@ -49,6 +49,7 @@ export default function JournalPage() {
   const initialFormState: NewJournalEntry = {
     class: "",
     subject: "",
+    meetingNumber: undefined,
     learningObjectives: "",
     learningActivities: "",
     assessment: "",
@@ -68,7 +69,8 @@ export default function JournalPage() {
     const newJournalEntry: JournalEntry = {
         id: `J${Date.now()}`,
         date: new Date(),
-        ...newEntry
+        ...newEntry,
+        meetingNumber: newEntry.meetingNumber || undefined,
     };
     
     setJournalEntries([newJournalEntry, ...journalEntries]);
@@ -105,24 +107,36 @@ export default function JournalPage() {
                     </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="class">Kelas</Label>
-                            <Select value={newEntry.class} onValueChange={(value) => setNewEntry({...newEntry, class: value})} required>
-                                <SelectTrigger id="class">
-                                    <SelectValue placeholder="Pilih kelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {classes.map((c) => (
-                                    <SelectItem key={c.id} value={c.name}>
-                                        {c.name}
-                                    </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="class">Kelas</Label>
+                                <Select value={newEntry.class} onValueChange={(value) => setNewEntry({...newEntry, class: value})} required>
+                                    <SelectTrigger id="class">
+                                        <SelectValue placeholder="Pilih kelas" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {classes.map((c) => (
+                                        <SelectItem key={c.id} value={c.name}>
+                                            {c.name}
+                                        </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="subject">Mata Pelajaran</Label>
+                                <Input id="subject" placeholder="e.g. Matematika Wajib" value={newEntry.subject} onChange={(e) => setNewEntry({...newEntry, subject: e.target.value})} required/>
+                            </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="subject">Mata Pelajaran</Label>
-                            <Input id="subject" placeholder="e.g. Matematika Wajib" value={newEntry.subject} onChange={(e) => setNewEntry({...newEntry, subject: e.target.value})} required/>
+                            <Label htmlFor="meetingNumber">Pertemuan Ke</Label>
+                            <Input 
+                                id="meetingNumber" 
+                                type="number" 
+                                placeholder="e.g. 5" 
+                                value={newEntry.meetingNumber || ""} 
+                                onChange={(e) => setNewEntry({...newEntry, meetingNumber: e.target.value ? parseInt(e.target.value) : undefined})} 
+                            />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="learningObjectives">Tujuan Pembelajaran</Label>
@@ -162,8 +176,7 @@ export default function JournalPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[120px]">Tanggal</TableHead>
-                <TableHead>Kelas</TableHead>
-                <TableHead>Mata Pelajaran</TableHead>
+                <TableHead>Info</TableHead>
                 <TableHead>Tujuan Pembelajaran</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
@@ -174,9 +187,9 @@ export default function JournalPage() {
                   <TableCell className="font-medium">
                     {format(entry.date, "dd MMM yyyy")}
                   </TableCell>
-                  <TableCell>{entry.class}</TableCell>
                   <TableCell>
                     <div className="font-medium">{entry.subject}</div>
+                    <div className="text-sm text-muted-foreground">{entry.class} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
                   </TableCell>
                   <TableCell>
                      <p className="line-clamp-2 text-sm text-muted-foreground">{entry.learningObjectives}</p>
@@ -201,7 +214,7 @@ export default function JournalPage() {
             <DialogHeader>
                 <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
                 <DialogDescription>
-                    {selectedEntry?.subject} - {selectedEntry?.class} ({selectedEntry ? format(selectedEntry.date, "eeee, dd MMMM yyyy") : ''})
+                    {selectedEntry?.subject} - {selectedEntry?.class} ({selectedEntry ? format(selectedEntry.date, "eeee, dd MMMM yyyy") : ''}) {selectedEntry?.meetingNumber ? ` - Pertemuan ${selectedEntry.meetingNumber}` : ''}
                 </DialogDescription>
             </DialogHeader>
             {selectedEntry && (

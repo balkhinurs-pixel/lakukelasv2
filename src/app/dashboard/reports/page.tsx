@@ -126,9 +126,9 @@ export default function ReportsPage() {
         headStyles: { fillColor: [22, 160, 133] },
         styles: { fontSize: 8 },
         columnStyles: {
-            0: {cellWidth: 20},
+            0: {cellWidth: 'auto'},
             1: {cellWidth: 25},
-            2: {cellWidth: 25},
+            2: {cellWidth: 'auto'},
             3: {cellWidth: 'auto'},
             4: {cellWidth: 'auto'},
         }
@@ -393,7 +393,7 @@ export default function ReportsPage() {
                                 <CardTitle>Laporan Jurnal Mengajar</CardTitle>
                                 <CardDescription>Arsip semua jurnal mengajar yang telah Anda buat.</CardDescription>
                             </div>
-                            <Button variant="outline" onClick={() => downloadPdf('Laporan Jurnal Mengajar', [['Tanggal', 'Kelas', 'Mata Pelajaran', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), j.class, j.subject, j.learningObjectives, j.learningActivities]))}>
+                            <Button variant="outline" onClick={() => downloadPdf('Laporan Jurnal Mengajar', [['Tanggal', 'Info', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), `${j.class} - ${j.subject} (P-${j.meetingNumber})`, j.learningObjectives, j.learningActivities]))}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Unduh PDF
                             </Button>
@@ -404,8 +404,7 @@ export default function ReportsPage() {
                         <TableHeader>
                             <TableRow>
                             <TableHead className="w-[120px]">Tanggal</TableHead>
-                            <TableHead>Kelas</TableHead>
-                            <TableHead>Mata Pelajaran</TableHead>
+                            <TableHead>Info</TableHead>
                             <TableHead>Tujuan Pembelajaran</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -415,9 +414,9 @@ export default function ReportsPage() {
                                 <TableCell className="font-medium">
                                 {format(entry.date, "dd MMM yyyy")}
                                 </TableCell>
-                                <TableCell>{entry.class}</TableCell>
                                 <TableCell>
                                     <div className="font-medium">{entry.subject}</div>
+                                    <div className="text-sm text-muted-foreground">{entry.class} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
                                     <p className="line-clamp-2">{entry.learningObjectives}</p>
