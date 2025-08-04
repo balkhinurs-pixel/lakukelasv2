@@ -27,12 +27,14 @@ import type { ScheduleItem } from "@/lib/types";
 type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
 
 export default function DashboardPage() {
-    const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' }) as ScheduleItem['day'];
-    const todaySchedule = schedule.filter(item => item.day === today).sort((a,b) => a.startTime.localeCompare(b.startTime));
-
     // State to track task completion for each schedule item
     const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
+
+    const todaySchedule = React.useMemo(() => {
+        const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' }) as ScheduleItem['day'];
+        return schedule.filter(item => item.day === today).sort((a,b) => a.startTime.localeCompare(b.startTime));
+    }, []);
 
     React.useEffect(() => {
         // This effect runs only on the client, after hydration
@@ -114,7 +116,9 @@ export default function DashboardPage() {
 
         return null;
     }
-
+    
+    const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' }) as ScheduleItem['day'];
+    
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -226,7 +230,7 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     {activeSchedules[item.id] && (
-                        <div className="w-full">
+                        <div className="w-full pt-2">
                             {getNextAction(item)}
                         </div>
                     )}
@@ -242,4 +246,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
