@@ -24,13 +24,40 @@ import {
     SelectTrigger,
     SelectValue,
   } from "@/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, UserPlus } from "lucide-react";
+import { MoreHorizontal, UserPlus, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
-const users = [
+type User = {
+    id: string;
+    name: string;
+    email: string;
+    subscription: 'Premium' | 'Free';
+    joinDate: Date;
+};
+
+const initialUsers: User[] = [
     { id: 'USR001', name: 'Guru Tangguh', email: 'guru@sekolah.id', subscription: 'Premium', joinDate: new Date('2023-01-15') },
     { id: 'USR002', name: 'Andi Pratama', email: 'andi.p@email.com', subscription: 'Free', joinDate: new Date('2023-02-20') },
     { id: 'USR003', name: 'Siti Aminah', email: 'siti.a@email.com', subscription: 'Premium', joinDate: new Date('2023-03-10') },
@@ -40,14 +67,36 @@ const users = [
 
 
 export default function AdminUsersPage() {
+    const [users, setUsers] = React.useState<User[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [filterSubscription, setFilterSubscription] = React.useState('all');
+    const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
+    const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+    const [newSubscriptionStatus, setNewSubscriptionStatus] = React.useState<'Free' | 'Premium'>('Free');
+    const { toast } = useToast();
 
     const filteredUsers = users.filter(user => {
         const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesSubscription = filterSubscription === 'all' || user.subscription === filterSubscription;
         return matchesSearch && matchesSubscription;
     });
+
+    const handleManageClick = (user: User) => {
+        setSelectedUser(user);
+        setNewSubscriptionStatus(user.subscription);
+        setIsManageDialogOpen(true);
+    };
+
+    const handleSubscriptionChange = () => {
+        if (!selectedUser) return;
+        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, subscription: newSubscriptionStatus } : u));
+        toast({
+            title: "Langganan Diperbarui",
+            description: `Status langganan untuk ${selectedUser.name} telah diubah menjadi ${newSubscriptionStatus}.`,
+        });
+        setIsManageDialogOpen(false);
+        setSelectedUser(null);
+    }
 
   return (
     <div className="space-y-6">
@@ -111,9 +160,25 @@ export default function AdminUsersPage() {
                                 </TableCell>
                                 <TableCell>{format(user.joinDate, 'dd MMMM yyyy')}</TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                            <DropdownMenuItem onSelect={() => handleManageClick(user)}>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                Ubah Langganan
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Hapus Pengguna
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -121,6 +186,35 @@ export default function AdminUsersPage() {
                 </Table>
             </CardContent>
         </Card>
+
+         <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Kelola Langganan Pengguna</DialogTitle>
+                    <DialogDescription>
+                        Ubah status langganan untuk <span className="font-semibold">{selectedUser?.name}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="subscription-status">Status Langganan</Label>
+                        <Select value={newSubscriptionStatus} onValueChange={(value) => setNewSubscriptionStatus(value as 'Free' | 'Premium')}>
+                            <SelectTrigger id="subscription-status">
+                                <SelectValue placeholder="Pilih status baru" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Free">Free</SelectItem>
+                                <SelectItem value="Premium">Premium</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setIsManageDialogOpen(false)}>Batal</Button>
+                    <Button onClick={handleSubscriptionChange}>Simpan Perubahan</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
