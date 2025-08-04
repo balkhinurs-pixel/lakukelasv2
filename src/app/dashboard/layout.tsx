@@ -62,12 +62,13 @@ const navItems = [
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
+  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
+  { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
 ];
 
-const mainMobileNavItems = navItems;
+const mainMobileNavItems = navItems.slice(0, 4);
 const moreMobileNavItems = [
-    { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
-    { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
+    ...navItems.slice(4),
     { href: '/dashboard/roster/students', icon: Users, label: 'Rombel' },
     { href: '/dashboard/subscription', icon: CreditCard, label: 'Langganan' },
     { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan' },
@@ -88,7 +89,7 @@ const BottomNavbar = () => {
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
             {mainMobileNavItems.map((item) => (
-                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname.startsWith(item.href) ? "text-primary" : "text-muted-foreground")}>
+                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname === item.href ? "text-primary" : "text-muted-foreground")}>
                     <item.icon className="w-5 h-5" />
                     <span className="text-xs">{item.label}</span>
                 </Link>
@@ -111,9 +112,7 @@ export default function DashboardLayout({
   const isMobile = useIsMobile();
 
   const isRosterActive = pathname.startsWith('/dashboard/roster');
-  const isSettingsActive = pathname.startsWith('/dashboard/settings');
-  const isSubscriptionActive = pathname.startsWith('/dashboard/subscription');
-
+  
   return (
     <SidebarProvider>
       <Sidebar>
@@ -129,8 +128,9 @@ export default function DashboardLayout({
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
+                  isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard'}
                   tooltip={{ children: item.label }}
+                  className="hidden md:flex"
                 >
                   <Link href={item.href}>
                     <item.icon />
@@ -139,11 +139,13 @@ export default function DashboardLayout({
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
-            {moreMobileNavItems.map((item) => (
+
+            {/* Mobile-only menu items */}
+            {isMobile && moreMobileNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
+                  isActive={pathname.startsWith(item.href)}
                   tooltip={{ children: item.label }}
                 >
                   <Link href={item.href}>
@@ -153,11 +155,12 @@ export default function DashboardLayout({
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+            
              <SidebarMenuItem>
                 <Collapsible defaultOpen={isRosterActive}>
                     <CollapsibleTrigger asChild>
                         <SidebarMenuButton
-                        className="justify-between"
+                        className="justify-between hidden md:flex"
                         isActive={isRosterActive}
                         >
                             <div className="flex items-center gap-2">
@@ -179,6 +182,30 @@ export default function DashboardLayout({
                         </SidebarMenuSub>
                     </CollapsibleContent>
                 </Collapsible>
+             </SidebarMenuItem>
+
+             <SidebarMenuItem className="hidden md:block">
+              <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/dashboard/subscription')}
+                >
+                  <Link href="/dashboard/subscription">
+                    <CreditCard />
+                    <span>Langganan</span>
+                  </Link>
+                </SidebarMenuButton>
+             </SidebarMenuItem>
+
+             <SidebarMenuItem className="hidden md:block">
+              <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/dashboard/settings')}
+                >
+                  <Link href="/dashboard/settings">
+                    <Settings />
+                    <span>Pengaturan</span>
+                  </Link>
+                </SidebarMenuButton>
              </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>

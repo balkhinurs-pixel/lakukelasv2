@@ -59,7 +59,7 @@ const BottomNavbar = () => {
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
             {navItems.slice(0, 4).map((item) => (
-                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname.startsWith(item.href) ? "text-primary" : "text-muted-foreground")}>
+                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname === item.href ? "text-primary" : "text-muted-foreground")}>
                     <item.icon className="w-5 h-5" />
                     <span className="text-xs">{item.label}</span>
                 </Link>
@@ -95,7 +95,7 @@ export default function AdminLayout({
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href)}
+                  isActive={item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/admin'}
                   tooltip={{ children: item.label }}
                 >
                   <Link href={item.href}>
