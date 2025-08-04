@@ -1,7 +1,9 @@
+
 "use client";
 
 import * as React from "react";
 import { format } from "date-fns";
+import { useSearchParams } from 'next/navigation';
 import { Calendar as CalendarIcon } from "lucide-react";
 import {
   Card,
@@ -41,6 +43,10 @@ import { classes } from "@/lib/placeholder-data";
 import type { Student, Class } from "@/lib/types";
 
 export default function GradesPage() {
+  const searchParams = useSearchParams();
+  const preselectedClassId = searchParams.get('classId');
+  const preselectedSubject = searchParams.get('subject');
+
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [selectedClass, setSelectedClass] = React.useState<Class | null>(null);
   const [students, setStudents] = React.useState<Student[]>([]);
@@ -48,6 +54,15 @@ export default function GradesPage() {
   const [assessmentType, setAssessmentType] = React.useState<string>("");
   const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (preselectedClassId) {
+      handleClassChange(preselectedClassId);
+    }
+    if (preselectedSubject) {
+        setAssessmentType(`Tugas Harian - ${preselectedSubject}`);
+    }
+  }, [preselectedClassId, preselectedSubject]);
 
   const handleClassChange = (classId: string) => {
     const newClass = classes.find((c) => c.id === classId) || null;
@@ -94,7 +109,7 @@ export default function GradesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
                 <Label>Kelas</Label>
-                <Select onValueChange={handleClassChange}>
+                <Select onValueChange={handleClassChange} value={selectedClass?.id}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih kelas" />
                   </SelectTrigger>

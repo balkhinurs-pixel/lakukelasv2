@@ -1,3 +1,7 @@
+
+"use client";
+
+import * as React from "react";
 import {
   Card,
   CardContent,
@@ -13,18 +17,96 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, BookText, Users, Clock } from "lucide-react";
+import { ClipboardCheck, BookText, Users, Clock, ArrowRight } from "lucide-react";
 import Link from 'next/link';
-import { journalEntries, schedule } from "@/lib/placeholder-data";
+import { journalEntries, schedule, classes } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import type { ScheduleItem } from "@/lib/types";
 
-export default function DashboardPage() {
+// Helper function to check if current time is past schedule start time
+const isScheduleActive = (scheduleTime: string) => {
+    if (typeof window === "undefined") return false; // Avoid SSR issues
+    const now = new Date();
+    const [hours, minutes] = scheduleTime.split(':').map(Number);
+    const scheduleDate = new Date();
+    scheduleDate.setHours(hours, minutes, 0, 0);
+    return now >= scheduleDate;
+}
 
+type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
+
+export default function DashboardPage() {
     const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' }) as ScheduleItem['day'];
     const todaySchedule = schedule.filter(item => item.day === today).sort((a,b) => a.startTime.localeCompare(b.startTime));
+
+    // State to track task completion for each schedule item
+    const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
+
+    const handleTaskCompletion = (scheduleId: string, currentStatus: TaskStatus) => {
+        let nextStatus: TaskStatus = 'pending';
+        if (currentStatus === 'pending') nextStatus = 'presensi_done';
+        else if (currentStatus === 'presensi_done') nextStatus = 'nilai_done';
+        else if (currentStatus === 'nilai_done') nextStatus = 'jurnal_done';
+        
+        setTaskStatus(prev => ({ ...prev, [scheduleId]: nextStatus }));
+    }
+
+    const getNextAction = (item: ScheduleItem) => {
+        const status = taskStatus[item.id] || 'pending';
+        const classData = classes.find(c => c.name === item.class);
+        const classId = classData?.id;
+
+        if (!classId) return null;
+
+        const commonButtonProps = {
+            size: "sm",
+            className: "w-full md:w-auto",
+        } as const;
+
+        const linkParams = new URLSearchParams({
+            classId: classId,
+            subject: item.subject,
+        });
+
+        if (status === 'pending') {
+            return (
+                <Button {...commonButtonProps} asChild>
+                    <Link href={`/dashboard/attendance?${linkParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'pending')}>
+                        Isi Presensi <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            );
+        }
+        if (status === 'presensi_done') {
+            return (
+                <Button {...commonButtonProps} asChild>
+                    <Link href={`/dashboard/grades?${linkParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'presensi_done')}>
+                        Input Nilai <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            );
+        }
+        if (status === 'nilai_done') {
+             const journalParams = new URLSearchParams({
+                class: item.class,
+                subject: item.subject,
+                openDialog: "true"
+            });
+            return (
+                <Button {...commonButtonProps} asChild>
+                     <Link href={`/dashboard/journal?${journalParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'nilai_done')}>
+                        Isi Jurnal <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            );
+        }
+        if (status === 'jurnal_done') {
+            return <div className="text-sm text-green-600 font-semibold flex items-center justify-end"><ClipboardCheck className="mr-2 h-4 w-4"/> Selesai</div>;
+        }
+
+        return null;
+    }
 
   return (
     <div className="space-y-6">
@@ -122,19 +204,23 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Jadwal Hari Ini ({today})</CardTitle>
-            <CardDescription>Jadwal mengajar Anda untuk hari ini.</CardDescription>
+            <CardDescription>Alur kerja cepat untuk mengisi data mengajar Anda.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {todaySchedule.length > 0 ? todaySchedule.map((item) => (
-                 <div key={item.id} className="flex items-center p-2 rounded-lg hover:bg-muted">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <Clock className="h-5 w-5" />
+                 <div key={item.id} className="flex flex-col md:flex-row items-start md:items-center gap-2 p-3 rounded-lg hover:bg-muted/50 border">
+                    <div className="flex items-center gap-3 flex-1">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
+                          <Clock className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium leading-tight">{item.subject}</p>
+                          <p className="text-sm text-muted-foreground leading-tight">{item.class} | {item.startTime} - {item.endTime}</p>
+                        </div>
                     </div>
-                    <div className="ml-4 flex-1">
-                      <p className="text-sm font-medium">{item.subject}</p>
-                      <p className="text-sm text-muted-foreground">{item.class}</p>
+                    <div className="w-full md:w-auto mt-2 md:mt-0">
+                        {isScheduleActive(item.startTime) && getNextAction(item)}
                     </div>
-                    <div className="text-sm text-muted-foreground">{item.startTime} - {item.endTime}</div>
                 </div>
             )) : (
                 <div className="text-center text-muted-foreground py-8">

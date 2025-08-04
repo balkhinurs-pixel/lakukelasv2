@@ -1,8 +1,10 @@
+
 "use client";
 
 import * as React from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { useSearchParams } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,12 +45,21 @@ import { classes } from "@/lib/placeholder-data";
 import type { Student, AttendanceRecord, Class } from "@/lib/types";
 
 export default function AttendancePage() {
+  const searchParams = useSearchParams();
+  const preselectedClassId = searchParams.get('classId');
+
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [selectedClass, setSelectedClass] = React.useState<Class | null>(null);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
   const [attendance, setAttendance] = React.useState<Map<string, AttendanceRecord['status']>>(new Map());
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (preselectedClassId) {
+      handleClassChange(preselectedClassId);
+    }
+  }, [preselectedClassId]);
 
   const handleClassChange = (classId: string) => {
     const newClass = classes.find((c) => c.id === classId) || null;
@@ -104,7 +115,7 @@ export default function AttendancePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
              <div className="space-y-2">
                 <Label>Kelas</Label>
-                 <Select onValueChange={handleClassChange}>
+                 <Select onValueChange={handleClassChange} value={selectedClass?.id}>
                     <SelectTrigger>
                         <SelectValue placeholder="Pilih kelas" />
                     </SelectTrigger>

@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -41,6 +42,11 @@ import type { JournalEntry } from "@/lib/types";
 type NewJournalEntry = Omit<JournalEntry, 'id' | 'date'>;
 
 export default function JournalPage() {
+  const searchParams = useSearchParams();
+  const preselectedClass = searchParams.get('class');
+  const preselectedSubject = searchParams.get('subject');
+  const openDialog = searchParams.get('openDialog');
+
   const [journalEntries, setJournalEntries] = React.useState<JournalEntry[]>(initialJournalEntries);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
@@ -58,6 +64,17 @@ export default function JournalPage() {
 
   const [newEntry, setNewEntry] = React.useState<NewJournalEntry>(initialFormState);
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (openDialog === "true") {
+      setNewEntry(prev => ({
+        ...prev,
+        class: preselectedClass || "",
+        subject: preselectedSubject || "",
+      }));
+      setIsFormDialogOpen(true);
+    }
+  }, [openDialog, preselectedClass, preselectedSubject]);
 
   const handleSaveJournal = (e: React.FormEvent) => {
     e.preventDefault();
