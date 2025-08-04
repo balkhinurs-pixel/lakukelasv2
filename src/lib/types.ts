@@ -14,6 +14,11 @@ export interface AttendanceRecord {
   status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha';
 }
 
+export interface GradeRecord {
+  studentId: string;
+  score: number;
+}
+
 export interface JournalEntry {
   id: string;
   date: Date;

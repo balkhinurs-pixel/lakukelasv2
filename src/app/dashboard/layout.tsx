@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   BookText,
   ClipboardCheck,
+  ClipboardEdit,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -39,6 +40,7 @@ import { AppLogo } from '@/components/icons';
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dasbor' },
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
+  { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Input Nilai' },
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal Mengajar' },
   { href: '/dashboard/roster', icon: Users, label: 'Daftar Kelas' },
 ];
@@ -51,6 +53,10 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   const getPageTitle = () => {
+    // Handle special case for grades page since it's not in navItems yet
+    if (pathname.startsWith('/dashboard/grades')) {
+      return 'Input Nilai';
+    }
     return navItems.find(item => pathname.startsWith(item.href))?.label || 'Dasbor';
   }
 
