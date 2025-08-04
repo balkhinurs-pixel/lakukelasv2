@@ -14,6 +14,7 @@ import crypto from 'crypto';
 // Di production, ini harus diatur di environment hosting Anda (e.g., Supabase, Vercel)
 const merchantCode = process.env.DUITKU_MERCHANT_CODE;
 const apiKey = process.env.DUITKU_API_KEY;
+// Gunakan NEXT_PUBLIC_APP_URL agar URL dinamis sesuai environment (local, staging, prod)
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
 
 
