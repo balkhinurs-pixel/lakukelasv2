@@ -17,8 +17,20 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SchoolYearPage() {
+    const [activeSchoolYear, setActiveSchoolYear] = React.useState("2023/2024-2");
+    const { toast } = useToast();
+
+    const handleSave = () => {
+        // In a real app, this would be saved to a persistent store (e.g., database or user settings)
+        toast({
+            title: "Pengaturan Disimpan",
+            description: `Tahun ajaran aktif telah diubah.`
+        });
+    }
+
     return (
         <div className="space-y-6">
             <div>
@@ -33,7 +45,7 @@ export default function SchoolYearPage() {
                 <CardContent className="space-y-4 max-w-md">
                      <div className="space-y-2">
                         <Label>Tahun Ajaran Aktif</Label>
-                         <Select defaultValue="2023/2024-2">
+                         <Select value={activeSchoolYear} onValueChange={setActiveSchoolYear}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Pilih tahun ajaran" />
                             </SelectTrigger>
@@ -44,7 +56,7 @@ export default function SchoolYearPage() {
                         </Select>
                         <p className="text-xs text-muted-foreground">Tahun ajaran aktif akan mempengaruhi pencatatan data baru.</p>
                      </div>
-                     <Button>Simpan Pengaturan</Button>
+                     <Button onClick={handleSave}>Simpan Pengaturan</Button>
                 </CardContent>
             </Card>
         </div>
