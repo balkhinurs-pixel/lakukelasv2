@@ -124,54 +124,54 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-sm">
+        <Card className="shadow-sm bg-blue-500/10 border-blue-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
               Presensi Hari Ini
             </CardTitle>
-            <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+            <ClipboardCheck className="h-4 w-4 text-blue-800/70 dark:text-blue-200/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">95.8%</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">95.8%</div>
+            <p className="text-xs text-blue-700 dark:text-blue-300">
               2 dari 3 kelas telah direkam
             </p>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="shadow-sm bg-green-500/10 border-green-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kelas Hari Ini</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">Kelas Hari Ini</CardTitle>
+            <Users className="h-4 w-4 text-green-800/70 dark:text-green-200/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todaySchedule.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-green-900 dark:text-green-100">{todaySchedule.length}</div>
+            <p className="text-xs text-green-700 dark:text-green-300">
               Total kelas dalam jadwal Anda
             </p>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="shadow-sm bg-amber-500/10 border-amber-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">
               Jurnal Belum Diisi
             </CardTitle>
-            <BookText className="h-4 w-4 text-muted-foreground" />
+            <BookText className="h-4 w-4 text-amber-800/70 dark:text-amber-200/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">1</div>
+            <p className="text-xs text-amber-700 dark:text-amber-300">
               Dari jadwal kemarin
             </p>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="shadow-sm bg-indigo-500/10 border-indigo-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kelas Berikutnya</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-indigo-800 dark:text-indigo-200">Kelas Berikutnya</CardTitle>
+            <Clock className="h-4 w-4 text-indigo-800/70 dark:text-indigo-200/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todaySchedule.length > 0 ? todaySchedule[0].startTime : '-'}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">{todaySchedule.length > 0 ? todaySchedule[0].startTime : '-'}</div>
+            <p className="text-xs text-indigo-700 dark:text-indigo-300">
             {todaySchedule.length > 0 ? `${todaySchedule[0].subject} - ${todaySchedule[0].class}` : 'Tidak ada kelas'}
             </p>
           </CardContent>
