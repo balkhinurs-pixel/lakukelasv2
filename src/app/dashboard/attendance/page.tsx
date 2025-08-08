@@ -263,7 +263,7 @@ export default function AttendancePage() {
           <CardHeader>
             <CardTitle>Daftar Siswa - {selectedClass.name}</CardTitle>
             <CardDescription>
-              Tandai status kehadiran setiap siswa untuk tanggal {date ? format(date, "PPP") : ""}.
+              Tandai status kehadiran setiap siswa untuk tanggal {date ? format(date, "PPP") : ""}. Secara default, semua siswa dianggap hadir.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -386,6 +386,4 @@ export default function AttendancePage() {
   );
 }
 
-
-    
     
