@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, History, Edit, Eye, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, History, Edit, Eye, Trash2, Check, X, Hand, AlertCircle } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -43,6 +43,15 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { classes, subjects, attendanceHistory as initialHistory } from "@/lib/placeholder-data";
 import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject } from "@/lib/types";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+type AttendanceStatus = AttendanceRecord['status'];
+const attendanceOptions: { value: AttendanceStatus, label: string, icon: React.ElementType, color: string, tooltip: string }[] = [
+    { value: 'Hadir', label: 'H', icon: Check, color: 'bg-green-100 text-green-800 border-green-200 data-[state=checked]:bg-green-500 data-[state=checked]:text-white data-[state=checked]:border-green-600', tooltip: 'Hadir' },
+    { value: 'Sakit', label: 'S', icon: AlertCircle, color: 'bg-yellow-100 text-yellow-800 border-yellow-200 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-yellow-600', tooltip: 'Sakit' },
+    { value: 'Izin', label: 'I', icon: Hand, color: 'bg-blue-100 text-blue-800 border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-blue-600', tooltip: 'Izin' },
+    { value: 'Alpha', label: 'A', icon: X, color: 'bg-red-100 text-red-800 border-red-200 data-[state=checked]:bg-red-500 data-[state=checked]:text-white data-[state=checked]:border-red-600', tooltip: 'Alpha' },
+];
 
 export default function AttendancePage() {
   const searchParams = useSearchParams();
@@ -156,8 +165,6 @@ export default function AttendancePage() {
       // Scroll to top to see the form
       window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  
-  const attendanceOptions: AttendanceRecord['status'][] = ['Hadir', 'Sakit', 'Izin', 'Alpha'];
 
   const filteredHistory = React.useMemo(() => {
     let result = history;
@@ -260,36 +267,36 @@ export default function AttendancePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nama Siswa</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.name}</TableCell>
-                      <TableCell className="text-right">
-                        <RadioGroup
-                          value={attendance.get(student.id) || 'Hadir'}
-                          onValueChange={(value) => handleAttendanceChange(student.id, value as AttendanceRecord['status'])}
-                          className="flex justify-end gap-2 md:gap-4 flex-wrap"
-                        >
-                          {attendanceOptions.map(option => (
-                              <div key={option} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option} id={`${student.id}-${option}`} />
-                                <Label htmlFor={`${student.id}-${option}`}>{option}</Label>
-                              </div>
-                          ))}
-                        </RadioGroup>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-2">
+              {students.map((student, index) => (
+                <div key={student.id} className={cn("p-4 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4", index % 2 === 0 ? "bg-muted/50" : "")}>
+                  <p className="font-medium flex-1">{student.name}</p>
+                  <RadioGroup
+                      value={attendance.get(student.id) || 'Hadir'}
+                      onValueChange={(value) => handleAttendanceChange(student.id, value as AttendanceRecord['status'])}
+                      className="flex justify-start sm:justify-end gap-2 flex-wrap"
+                    >
+                      <TooltipProvider delayDuration={200}>
+                      {attendanceOptions.map(option => (
+                        <Tooltip key={option.value}>
+                          <TooltipTrigger asChild>
+                             <RadioGroupItem value={option.value} id={`${student.id}-${option.value}`} className="peer sr-only" />
+                          </TooltipTrigger>
+                          <TooltipContent className="hidden sm:block">
+                            <p>{option.tooltip}</p>
+                          </TooltipContent>
+                           <Label 
+                            htmlFor={`${student.id}-${option.value}`}
+                            className={cn("h-9 w-9 flex items-center justify-center rounded-md border text-sm font-semibold cursor-pointer transition-colors", option.color)}
+                           >
+                            {option.label}
+                           </Label>
+                        </Tooltip>
+                      ))}
+                      </TooltipProvider>
+                    </RadioGroup>
+                </div>
+              ))}
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4 justify-between flex-wrap gap-2">
@@ -378,3 +385,6 @@ export default function AttendancePage() {
     </div>
   );
 }
+
+
+    
