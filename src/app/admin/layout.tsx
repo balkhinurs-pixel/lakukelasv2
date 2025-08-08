@@ -7,7 +7,8 @@ import {
   LayoutDashboard,
   LogOut,
   Users,
-  Menu
+  Menu,
+  PanelLeft
 } from 'lucide-react';
 
 import {
@@ -20,7 +21,8 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarFooter,
-  useSidebar
+  useSidebar,
+  SidebarTrigger
 } from '@/components/ui/sidebar';
 
 import {
@@ -69,12 +71,13 @@ export default function AdminLayout({
 
   return (
     <SidebarProvider>
-      <Sidebar variant="floating">
-        <SidebarHeader>
+      <Sidebar variant="floating" collapsible="icon">
+        <SidebarHeader className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />
                 <span className="text-lg font-semibold font-headline">Admin Zephyr</span>
             </div>
+            <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
@@ -132,7 +135,14 @@ export default function AdminLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <div className="p-4 sm:p-6 lg:p-8">
+        <header className="p-4 sm:p-6 lg:p-8 flex items-center md:hidden">
+            <SidebarTrigger />
+            <div className="flex items-center gap-2 ml-4">
+              <AppLogo className="size-8 text-primary" />
+              <span className="text-lg font-semibold font-headline">Admin Zephyr</span>
+            </div>
+        </header>
+        <div className="p-4 sm:p-6 lg:p-8 pt-0 md:pt-8">
             {children}
         </div>
       </SidebarInset>

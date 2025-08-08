@@ -15,9 +15,9 @@ import {
   User,
   Users,
   ChevronDown,
-  CreditCard,
   KeyRound,
   Menu,
+  PanelLeft,
 } from 'lucide-react';
 
 import {
@@ -32,7 +32,7 @@ import {
   SidebarFooter,
   SidebarMenuSub,
   useSidebar,
-  SidebarMenuSubButton,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -115,12 +115,13 @@ export default function DashboardLayout({
   
   return (
     <SidebarProvider>
-      <Sidebar variant="floating">
-        <SidebarHeader>
+      <Sidebar variant="floating" collapsible="icon">
+        <SidebarHeader className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />
                 <span className="text-lg font-semibold font-headline">Classroom Zephyr</span>
             </div>
+            <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
@@ -140,7 +141,6 @@ export default function DashboardLayout({
               </SidebarMenuItem>
             ))}
 
-            {/* Mobile-only menu items */}
             {isMobile && moreMobileNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
@@ -174,9 +174,9 @@ export default function DashboardLayout({
                         <SidebarMenuSub>
                             {rosterNavItems.map(item => (
                                 <SidebarMenuItem key={item.href}>
-                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
+                                    <SidebarMenuButton asChild isActive={pathname === item.href} size="sm">
                                         <Link href={item.href}>{item.label}</Link>
-                                    </SidebarMenuSubButton>
+                                    </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}
                         </SidebarMenuSub>
@@ -257,7 +257,14 @@ export default function DashboardLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <div className="p-4 sm:p-6 lg:p-8">
+        <header className="p-4 sm:p-6 lg:p-8 flex items-center md:hidden">
+             <SidebarTrigger />
+             <div className="flex items-center gap-2 ml-4">
+                <AppLogo className="size-8 text-primary" />
+                <span className="text-lg font-semibold font-headline">Classroom Zephyr</span>
+            </div>
+        </header>
+        <div className="p-4 sm:p-6 lg:p-8 pt-0 md:pt-8">
             {children}
         </div>
       </SidebarInset>
