@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -55,7 +54,7 @@ export function ActivationProvider({ children }: { children: React.ReactNode }) 
             {children}
         </ActivationContext.Provider>
     );
-};
+}
 
 
 // Hook untuk mendapatkan status aktivasi dan batasannya
