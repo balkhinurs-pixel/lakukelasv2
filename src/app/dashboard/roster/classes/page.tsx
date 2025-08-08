@@ -32,7 +32,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PlusCircle, Sparkles } from "lucide-react";
 import { classes as initialClasses } from "@/lib/placeholder-data";
 import { useToast } from "@/hooks/use-toast";
-import { useSubscription } from "@/hooks/use-subscription";
+import { useActivation } from "@/hooks/use-activation";
 import type { Class } from "@/lib/types";
 import Link from "next/link";
 
@@ -41,7 +41,7 @@ export default function ClassSettingsPage() {
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [newClassName, setNewClassName] = React.useState("");
     const { toast } = useToast();
-    const { limits, isPremium } = useSubscription();
+    const { limits, isPro } = useActivation();
 
     const canCreateClass = classes.length < limits.classes;
 
@@ -49,7 +49,7 @@ export default function ClassSettingsPage() {
         e.preventDefault();
 
         if (!canCreateClass) {
-            toast({ title: "Batas Tercapai", description: "Anda telah mencapai batas maksimal jumlah kelas untuk paket gratis.", variant: "destructive" });
+            toast({ title: "Batas Tercapai", description: "Anda telah mencapai batas maksimal jumlah kelas untuk akun gratis.", variant: "destructive" });
             return;
         }
 
@@ -104,14 +104,14 @@ export default function ClassSettingsPage() {
                 </Dialog>
             </div>
 
-            {!isPremium && (
+            {!isPro && (
                  <Alert>
                     <Sparkles className="h-4 w-4" />
-                    <AlertTitle>Tingkatkan ke Premium!</AlertTitle>
+                    <AlertTitle>Aktivasi Akun Pro!</AlertTitle>
                     <AlertDescription>
-                        Anda menggunakan paket gratis dengan batas **{limits.classes} kelas**.
+                        Anda menggunakan akun gratis dengan batas **{limits.classes} kelas**.
                         <Button variant="link" className="p-0 h-auto ml-1" asChild>
-                           <Link href="/dashboard/subscription">Upgrade sekarang</Link>
+                           <Link href="/dashboard/activation">Aktivasi sekarang</Link>
                         </Button> untuk membuat kelas tanpa batas.
                     </AlertDescription>
                 </Alert>
@@ -120,7 +120,7 @@ export default function ClassSettingsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Daftar Kelas</CardTitle>
-                    <CardDescription>Berikut adalah semua kelas yang terdaftar di sistem. ({classes.length}/{isPremium ? '∞' : limits.classes})</CardDescription>
+                    <CardDescription>Berikut adalah semua kelas yang terdaftar di sistem. ({classes.length}/{isPro ? '∞' : limits.classes})</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <Table>

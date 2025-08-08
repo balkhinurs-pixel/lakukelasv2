@@ -49,67 +49,54 @@ import { MoreHorizontal, UserPlus, Edit, Trash2 } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
-type SubscriptionPlan = 'Free' | 'Semester' | 'Tahunan';
+type UserStatus = 'Pro' | 'Free';
 
 type User = {
     id: string;
     name: string;
     email: string;
-    subscription: {
-        status: 'Premium' | 'Free';
-        planName: SubscriptionPlan;
-        expiresAt: Date | null;
-    };
+    status: UserStatus;
     joinDate: Date;
 };
 
 const initialUsers: User[] = [
-    { id: 'USR001', name: 'Guru Tangguh', email: 'guru@sekolah.id', subscription: { status: 'Premium', planName: 'Tahunan', expiresAt: new Date('2025-01-15') }, joinDate: new Date('2023-01-15') },
-    { id: 'USR002', name: 'Andi Pratama', email: 'andi.p@email.com', subscription: { status: 'Free', planName: 'Free', expiresAt: null }, joinDate: new Date('2023-02-20') },
-    { id: 'USR003', name: 'Siti Aminah', email: 'siti.a@email.com', subscription: { status: 'Premium', planName: 'Semester', expiresAt: new Date('2024-09-10') }, joinDate: new Date('2023-03-10') },
-    { id: 'USR004', name: 'Budi Setiawan', email: 'budi.s@email.com', subscription: { status: 'Free', planName: 'Free', expiresAt: null }, joinDate: new Date('2023-04-05') },
-    { id: 'USR005', name: 'Dewi Lestari', email: 'dewi.l@email.com', subscription: { status: 'Premium', planName: 'Tahunan', expiresAt: new Date('2024-11-21') }, joinDate: new Date('2023-05-21') },
+    { id: 'USR001', name: 'Guru Tangguh', email: 'guru@sekolah.id', status: 'Pro', joinDate: new Date('2023-01-15') },
+    { id: 'USR002', name: 'Andi Pratama', email: 'andi.p@email.com', status: 'Free', joinDate: new Date('2023-02-20') },
+    { id: 'USR003', name: 'Siti Aminah', email: 'siti.a@email.com', status: 'Pro', joinDate: new Date('2023-03-10') },
+    { id: 'USR004', name: 'Budi Setiawan', email: 'budi.s@email.com', status: 'Free', joinDate: new Date('2023-04-05') },
+    { id: 'USR005', name: 'Dewi Lestari', email: 'dewi.l@email.com', status: 'Pro', joinDate: new Date('2023-05-21') },
 ];
 
 
 export default function AdminUsersPage() {
     const [users, setUsers] = React.useState<User[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [filterSubscription, setFilterSubscription] = React.useState('all');
+    const [filterStatus, setFilterStatus] = React.useState('all');
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
-    const [newPlan, setNewPlan] = React.useState<SubscriptionPlan>('Free');
+    const [newStatus, setNewStatus] = React.useState<UserStatus>('Free');
     const { toast } = useToast();
 
     const filteredUsers = users.filter(user => {
         const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesSubscription = filterSubscription === 'all' || user.subscription.status === filterSubscription;
-        return matchesSearch && matchesSubscription;
+        const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
+        return matchesSearch && matchesStatus;
     });
 
     const handleManageClick = (user: User) => {
         setSelectedUser(user);
-        setNewPlan(user.subscription.planName);
+        setNewStatus(user.status);
         setIsManageDialogOpen(true);
     };
 
-    const handleSubscriptionChange = () => {
+    const handleStatusChange = () => {
         if (!selectedUser) return;
-
-        let newSubscription: User['subscription'];
-        if (newPlan === 'Free') {
-            newSubscription = { status: 'Free', planName: 'Free', expiresAt: null };
-        } else {
-            const now = new Date();
-            const expiresAt = newPlan === 'Semester' ? addMonths(now, 6) : addMonths(now, 12);
-            newSubscription = { status: 'Premium', planName: newPlan, expiresAt };
-        }
-
-        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, subscription: newSubscription } : u));
+        
+        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, status: newStatus } : u));
         
         toast({
-            title: "Langganan Diperbarui",
-            description: `Status langganan untuk ${selectedUser.name} telah diubah menjadi ${newPlan}.`,
+            title: "Status Diperbarui",
+            description: `Status untuk ${selectedUser.name} telah diubah menjadi ${newStatus}.`,
         });
 
         setIsManageDialogOpen(false);
@@ -142,13 +129,13 @@ export default function AdminUsersPage() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <Select value={filterSubscription} onValueChange={setFilterSubscription}>
+                        <Select value={filterStatus} onValueChange={setFilterStatus}>
                             <SelectTrigger className="w-full md:w-[180px]">
-                                <SelectValue placeholder="Filter Langganan" />
+                                <SelectValue placeholder="Filter Status" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Semua Langganan</SelectItem>
-                                <SelectItem value="Premium">Premium</SelectItem>
+                                <SelectItem value="all">Semua Status</SelectItem>
+                                <SelectItem value="Pro">Pro</SelectItem>
                                 <SelectItem value="Free">Free</SelectItem>
                             </SelectContent>
                         </Select>
@@ -161,7 +148,7 @@ export default function AdminUsersPage() {
                         <TableRow>
                             <TableHead>Nama Pengguna</TableHead>
                             <TableHead>Email</TableHead>
-                            <TableHead>Langganan</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Tanggal Bergabung</TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
@@ -172,14 +159,9 @@ export default function AdminUsersPage() {
                                 <TableCell className="font-medium">{user.name}</TableCell>
                                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                                 <TableCell>
-                                    <Badge variant={user.subscription.status === 'Premium' ? 'default' : 'secondary'} className={user.subscription.status === 'Premium' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>
-                                        {user.subscription.status}
+                                    <Badge variant={user.status === 'Pro' ? 'default' : 'secondary'} className={user.status === 'Pro' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>
+                                        {user.status}
                                     </Badge>
-                                    {user.subscription.status === 'Premium' && (
-                                        <div className="text-xs text-muted-foreground mt-1">
-                                            {user.subscription.planName} - Aktif s.d. {user.subscription.expiresAt ? format(user.subscription.expiresAt, 'dd MMM yyyy') : '-'}
-                                        </div>
-                                    )}
                                 </TableCell>
                                 <TableCell>{format(user.joinDate, 'dd MMMM yyyy')}</TableCell>
                                 <TableCell className="text-right">
@@ -193,7 +175,7 @@ export default function AdminUsersPage() {
                                             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                             <DropdownMenuItem onSelect={() => handleManageClick(user)}>
                                                 <Edit className="mr-2 h-4 w-4" />
-                                                Ubah Langganan
+                                                Ubah Status
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
@@ -213,32 +195,28 @@ export default function AdminUsersPage() {
          <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Kelola Langganan Pengguna</DialogTitle>
+                    <DialogTitle>Kelola Status Pengguna</DialogTitle>
                     <DialogDescription>
-                        Ubah status langganan untuk <span className="font-semibold">{selectedUser?.name}</span>.
+                        Ubah status aktivasi untuk <span className="font-semibold">{selectedUser?.name}</span>.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="subscription-plan">Paket Langganan</Label>
-                        <Select value={newPlan} onValueChange={(value) => setNewPlan(value as SubscriptionPlan)}>
+                        <Label htmlFor="subscription-plan">Status Akun</Label>
+                        <Select value={newStatus} onValueChange={(value) => setNewStatus(value as UserStatus)}>
                             <SelectTrigger id="subscription-plan">
-                                <SelectValue placeholder="Pilih paket baru" />
+                                <SelectValue placeholder="Pilih status baru" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Free">Free</SelectItem>
-                                <SelectItem value="Semester">Premium - Semester</SelectItem>
-                                <SelectItem value="Tahunan">Premium - Tahunan</SelectItem>
+                                <SelectItem value="Pro">Pro</SelectItem>
                             </SelectContent>
                         </Select>
-                        <p className="text-xs text-muted-foreground">
-                            Memilih paket premium akan mengatur tanggal kedaluwarsa baru dari hari ini.
-                        </p>
                     </div>
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => setIsManageDialogOpen(false)}>Batal</Button>
-                    <Button onClick={handleSubscriptionChange}>Simpan Perubahan</Button>
+                    <Button onClick={handleStatusChange}>Simpan Perubahan</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

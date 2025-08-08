@@ -6,13 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   LogOut,
-  Settings,
-  User,
   Users,
-  CreditCard,
-  TicketPercent,
-  BarChart,
-  ChevronDown,
   Menu
 } from 'lucide-react';
 
@@ -47,9 +41,6 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
   { href: '/admin/users', icon: Users, label: 'Pengguna' },
-  { href: '/admin/analytics', icon: BarChart, label: 'Analitik' },
-  { href: '/admin/pricing', icon: CreditCard, label: 'Harga' },
-  { href: '/admin/coupons', icon: TicketPercent, label: 'Kupon' },
 ];
 
 const BottomNavbar = () => {
@@ -58,16 +49,12 @@ const BottomNavbar = () => {
     
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
-            {navItems.slice(0, 4).map((item) => (
+            {navItems.map((item) => (
                 <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname === item.href ? "text-primary" : "text-muted-foreground")}>
                     <item.icon className="w-5 h-5" />
                     <span className="text-xs">{item.label}</span>
                 </Link>
             ))}
-            <button onClick={toggleSidebar} className="flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
-                <Menu className="w-5 h-5" />
-                <span className="text-xs">Lainnya</span>
-            </button>
         </div>
     )
 }
@@ -133,7 +120,7 @@ export default function AdminLayout({
                 <DropdownMenuSeparator />
                  <DropdownMenuItem asChild>
                     <Link href="/dashboard">
-                        <User className="mr-2 h-4 w-4" />Ke Dasbor Guru
+                        <Users className="mr-2 h-4 w-4" />Ke Dasbor Guru
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

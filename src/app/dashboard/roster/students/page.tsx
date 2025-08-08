@@ -39,7 +39,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { UserPlus, Download, Upload, FileText, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useSubscription } from "@/hooks/use-subscription";
+import { useActivation } from "@/hooks/use-activation";
 import { classes as initialClasses, students as initialStudents } from "@/lib/placeholder-data";
 import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
@@ -53,7 +53,7 @@ export default function StudentsPage() {
   const [newStudent, setNewStudent] = React.useState({ name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
 
   const { toast } = useToast();
-  const { limits, isPremium } = useSubscription();
+  const { limits, isPro } = useActivation();
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const studentsInClass = selectedClass ? selectedClass.students : [];
@@ -66,7 +66,7 @@ export default function StudentsPage() {
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canAddStudent) {
-        toast({ title: "Batas Siswa Tercapai", description: "Anda telah mencapai batas maksimal jumlah siswa di kelas ini untuk paket gratis.", variant: "destructive" });
+        toast({ title: "Batas Siswa Tercapai", description: "Anda telah mencapai batas maksimal jumlah siswa di kelas ini untuk akun gratis.", variant: "destructive" });
         return;
     }
     if (!newStudent.name || !newStudent.nis || !newStudent.nisn || !newStudent.gender) {
@@ -107,20 +107,20 @@ export default function StudentsPage() {
                 <p className="text-muted-foreground">Kelola data induk siswa di setiap kelas.</p>
             </div>
              <div className="flex gap-2">
-                <Button variant="outline" disabled={!isPremium}><FileText /> Unduh Template</Button>
-                <Button variant="outline" disabled={!isPremium}><Upload /> Impor Siswa</Button>
-                <Button variant="outline" disabled={!isPremium}><Download /> Ekspor Siswa</Button>
+                <Button variant="outline" disabled={!isPro}><FileText /> Unduh Template</Button>
+                <Button variant="outline" disabled={!isPro}><Upload /> Impor Siswa</Button>
+                <Button variant="outline" disabled={!isPro}><Download /> Ekspor Siswa</Button>
             </div>
         </div>
         
-        {!isPremium && (
+        {!isPro && (
             <Alert>
                 <Sparkles className="h-4 w-4" />
-                <AlertTitle>Fitur Premium</AlertTitle>
+                <AlertTitle>Fitur Akun Pro</AlertTitle>
                 <AlertDescription>
-                    Impor, ekspor, dan unduh template siswa adalah fitur premium. 
+                    Impor, ekspor, dan unduh template siswa adalah fitur Pro. 
                     <Button variant="link" className="p-0 h-auto ml-1" asChild>
-                        <Link href="/dashboard/subscription">Upgrade sekarang</Link>
+                        <Link href="/dashboard/activation">Aktivasi sekarang</Link>
                     </Button> untuk mengelola data siswa dengan lebih efisien.
                 </AlertDescription>
             </Alert>
@@ -132,7 +132,7 @@ export default function StudentsPage() {
                 <div>
                     <CardTitle>Siswa Kelas {selectedClass?.name}</CardTitle>
                     <CardDescription>
-                    Lihat, tambah, atau kelola data siswa di kelas ini. ({studentsInClass.length}/{isPremium ? '∞' : limits.studentsPerClass} siswa)
+                    Lihat, tambah, atau kelola data siswa di kelas ini. ({studentsInClass.length}/{isPro ? '∞' : limits.studentsPerClass} siswa)
                     </CardDescription>
                 </div>
                 <div className="flex gap-2">

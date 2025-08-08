@@ -16,9 +16,8 @@ import {
   Users,
   ChevronDown,
   CreditCard,
-  Crown,
+  KeyRound,
   Menu,
-  Book,
 } from 'lucide-react';
 
 import {
@@ -32,7 +31,6 @@ import {
   SidebarProvider,
   SidebarFooter,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
@@ -51,9 +49,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from '@/components/icons';
-import { useSubscription } from '@/hooks/use-subscription';
+import { useActivation } from '@/hooks/use-activation';
 import { Badge } from '@/components/ui/badge';
-import { format } from "date-fns";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -71,7 +68,7 @@ const mainMobileNavItems = navItems.slice(0, 4);
 const moreMobileNavItems = [
     ...navItems.slice(4),
     { href: '/dashboard/roster/students', icon: Users, label: 'Rombel' },
-    { href: '/dashboard/subscription', icon: CreditCard, label: 'Langganan' },
+    { href: '/dashboard/activation', icon: KeyRound, label: 'Aktivasi' },
     { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan' },
 ]
 
@@ -110,7 +107,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { subscription, isPremium } = useSubscription();
+  const { isPro } = useActivation();
   const isMobile = useIsMobile();
 
   const isRosterActive = pathname.startsWith('/dashboard/roster');
@@ -189,11 +186,11 @@ export default function DashboardLayout({
              <SidebarMenuItem className="hidden md:block">
               <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith('/dashboard/subscription')}
+                  isActive={pathname.startsWith('/dashboard/activation')}
                 >
-                  <Link href="/dashboard/subscription">
-                    <CreditCard />
-                    <span>Langganan</span>
+                  <Link href="/dashboard/activation">
+                    <KeyRound />
+                    <span>Aktivasi Akun</span>
                   </Link>
                 </SidebarMenuButton>
              </SidebarMenuItem>
@@ -223,7 +220,7 @@ export default function DashboardLayout({
                     <p className="text-sm font-medium">Guru Tangguh</p>
                     <p className="text-xs text-muted-foreground">guru@sekolah.id</p>
                   </div>
-                  {isPremium && <Badge variant="default" className="ml-auto bg-green-600 hover:bg-green-700">Premium</Badge>}
+                  {isPro && <Badge variant="default" className="ml-auto bg-green-600 hover:bg-green-700">Pro</Badge>}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" side="right" align="end" forceMount>
@@ -237,15 +234,11 @@ export default function DashboardLayout({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/subscription">
-                        <CreditCard className="mr-2 h-4 w-4" />
+                    <Link href="/dashboard/activation">
+                        <KeyRound className="mr-2 h-4 w-4" />
                         <div>
-                            <span>Langganan Saya</span>
-                            {isPremium && subscription.expires ? (
-                                <p className="text-xs text-muted-foreground">Aktif s.d. {format(subscription.expires, "dd MMM yyyy")}</p>
-                            ) : (
-                                <p className="text-xs text-muted-foreground">Paket Gratis</p>
-                            )}
+                            <span>Aktivasi Akun</span>
+                            <p className="text-xs text-muted-foreground">Status: {isPro ? 'Pro' : 'Gratis'}</p>
                         </div>
                     </Link>
                 </DropdownMenuItem>

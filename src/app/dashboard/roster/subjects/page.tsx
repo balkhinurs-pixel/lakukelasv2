@@ -28,20 +28,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PlusCircle, Sparkles } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { subjects as initialSubjects } from "@/lib/placeholder-data";
 import { useToast } from "@/hooks/use-toast";
-import { useSubscription } from "@/hooks/use-subscription";
 import type { Subject } from "@/lib/types";
-import Link from "next/link";
 
 export default function SubjectSettingsPage() {
     const [subjects, setSubjects] = React.useState<Subject[]>(initialSubjects);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [newSubjectName, setNewSubjectName] = React.useState("");
     const { toast } = useToast();
-    const { isPremium } = useSubscription();
 
     const handleSaveSubject = (e: React.FormEvent) => {
         e.preventDefault();

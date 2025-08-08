@@ -11,191 +11,153 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check, Crown, Loader2, X } from "lucide-react";
-import { createPaymentTransaction } from "@/ai/flows/payment-flow";
+import { KeyRound, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import { useActivation } from "@/hooks/use-activation";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useSubscription } from "@/hooks/use-subscription";
-import { format } from "date-fns";
 
-const premiumFeatures = [
-    "Manajemen Siswa & Kelas Tanpa Batas",
-    "Pencatatan Presensi, Nilai, Jurnal Tanpa Batas",
-    "Unduh Laporan PDF Profesional dengan Kop Surat",
-    "Impor & Ekspor Data Siswa",
-    "Fitur Kenaikan Kelas & Kelulusan",
-    "Dukungan Prioritas"
-];
 
-const freeFeatures = [
-    { text: "Manajemen 1 kelas", included: true },
-    { text: "Manajemen 10 siswa per kelas", included: true },
-    { text: "Pencatatan Presensi, Nilai, Jurnal (terbatas)", included: true },
-    { text: "Unduh Laporan PDF Profesional", included: false },
-    { text: "Impor & Ekspor Data Siswa", included: false },
-]
+export default function ActivationPage() {
+    const { isPro, limits, setActivationStatus } = useActivation();
+    const [activationCode, setActivationCode] = React.useState("");
+    const [loading, setLoading] = React.useState(false);
+    const { toast } = useToast();
 
-export default function SubscriptionPage() {
-  const [loading, setLoading] = React.useState<string | null>(null);
-  const { toast } = useToast();
-  const { subscription, isPremium } = useSubscription();
+    const handleActivation = (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
 
-  const handleSubscription = async (packageName: 'semester' | 'tahunan', amount: number) => {
-    setLoading(packageName);
-    try {
-        const result = await createPaymentTransaction({
-            packageName,
-            amount,
-            productDetails: `Langganan Classroom Zephyr - Paket ${packageName.charAt(0).toUpperCase() + packageName.slice(1)}`,
-        });
-
-        if (result.paymentUrl) {
-            console.log("Redirecting to payment URL:", result.paymentUrl);
-            window.open(result.paymentUrl, '_blank');
-            toast({
-                title: "Mengarahkan ke Pembayaran",
-                description: "Anda sedang diarahkan ke halaman pembayaran yang aman.",
-            });
-        } else {
-            throw new Error(result.errorMessage || "Gagal membuat transaksi.");
-        }
-    } catch (error) {
-        console.error("Payment error:", error);
-        toast({
-            title: "Terjadi Kesalahan",
-            description: (error as Error).message || "Tidak dapat memproses permintaan Anda saat ini.",
-            variant: "destructive",
-        });
-    } finally {
-        setLoading(null);
+        // Simulate API call to validate the activation code
+        setTimeout(() => {
+            if (activationCode === "ZEPHYRPRO2024") {
+                setActivationStatus(true);
+                toast({
+                    title: "Aktivasi Berhasil!",
+                    description: "Akun Anda kini Pro. Semua fitur telah terbuka.",
+                    className: "bg-green-100 text-green-900 border-green-200",
+                });
+            } else {
+                 toast({
+                    title: "Aktivasi Gagal",
+                    description: "Kode aktivasi yang Anda masukkan tidak valid.",
+                    variant: "destructive",
+                });
+            }
+            setLoading(false);
+            setActivationCode("");
+        }, 1500);
     }
-  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-4xl mx-auto">
       <div className="text-center">
-        <h1 className="text-3xl md:text-4xl font-bold font-headline">Pilih Paket yang Tepat Untuk Anda</h1>
+        <h1 className="text-3xl md:text-4xl font-bold font-headline">Aktivasi Akun Pro</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Akses semua fitur premium Classroom Zephyr untuk memaksimalkan efisiensi mengajar Anda. Batalkan kapan saja.
+          Buka semua fitur tanpa batas dengan memasukkan kode aktivasi Anda.
         </p>
       </div>
       
-      {isPremium && (
-          <Card className="max-w-2xl mx-auto border-green-200 bg-green-50/50 shadow-sm">
-              <CardHeader className="text-center">
+      {isPro ? (
+        <Card className="max-w-lg mx-auto border-green-200 bg-green-50/50 shadow-sm">
+              <CardHeader className="text-center items-center">
                   <div className="mx-auto bg-green-100 p-3 rounded-full w-fit">
-                    <Crown className="h-8 w-8 text-green-700"/>
+                    <CheckCircle className="h-8 w-8 text-green-700"/>
                   </div>
-                  <CardTitle>Anda Sudah Berlangganan Paket Premium</CardTitle>
+                  <CardTitle>Akun Anda Sudah Pro</CardTitle>
                   <CardDescription className="text-green-800">
-                    {subscription.planName && `Paket ${subscription.planName} Anda aktif hingga ${subscription.expires ? format(subscription.expires, "dd MMMM yyyy") : ''}.`}
-                    <br/>
-                    Nikmati semua fitur tanpa batas!
+                    Terima kasih telah melakukan aktivasi. Nikmati semua fitur Classroom Zephyr tanpa batas!
                   </CardDescription>
               </CardHeader>
-          </Card>
+        </Card>
+      ) : (
+        <Card className="max-w-lg mx-auto">
+            <form onSubmit={handleActivation}>
+                <CardHeader>
+                    <div className="flex justify-center mb-2">
+                        <KeyRound className="h-10 w-10 text-primary" />
+                    </div>
+                    <CardTitle className="text-center">Masukkan Kode Aktivasi</CardTitle>
+                    <CardDescription className="text-center">
+                        Dapatkan kode aktivasi dari vendor atau distributor resmi kami.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="activation-code">Kode Aktivasi</Label>
+                        <Input 
+                            id="activation-code" 
+                            placeholder="XXXXXXXX-XXXX-XXXX-XXXXXXXX" 
+                            value={activationCode}
+                            onChange={(e) => setActivationCode(e.target.value)}
+                            required
+                        />
+                     </div>
+                </CardContent>
+                <CardFooter>
+                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {loading ? "Memverifikasi..." : "Aktifkan Akun Pro"}
+                    </Button>
+                </CardFooter>
+            </form>
+        </Card>
       )}
 
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        {/* Free Plan Card */}
-        <Card className={`flex flex-col shadow-sm ${isPremium ? '' : 'border-2 border-primary'}`}>
-           {!isPremium && (
-                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-                    <div className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">Paket Anda Saat Ini</div>
+      <Card className="bg-muted/30">
+          <CardHeader>
+              <CardTitle>Perbandingan Fitur</CardTitle>
+              <CardDescription>Lihat perbedaan antara akun Gratis dan Pro.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4 p-4 rounded-lg">
+                    <h3 className="font-semibold text-lg">Akun Gratis</h3>
+                    <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                           <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                           <span className="text-muted-foreground">Manajemen **{limits.classes} kelas**</span>
+                        </li>
+                         <li className="flex items-start gap-2">
+                           <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                           <span className="text-muted-foreground">Manajemen **{limits.studentsPerClass} siswa** per kelas</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                           <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                           <span className="text-muted-foreground">Pencatatan Presensi, Nilai, & Jurnal</span>
+                        </li>
+                    </ul>
                 </div>
-           )}
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Paket Gratis</CardTitle>
-            <CardDescription>Coba fitur-fitur inti untuk memulai.</CardDescription>
-            <div className="pt-4">
-                <span className="text-4xl font-bold">Rp 0</span>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 space-y-4">
-            <p className="font-semibold">Fitur yang termasuk:</p>
-            <ul className="space-y-2">
-                {freeFeatures.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                        {feature.included ? <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" /> : <X className="h-5 w-5 text-destructive mt-0.5 shrink-0" />}
-                        <span className="text-muted-foreground">{feature.text}</span>
-                    </li>
-                ))}
-            </ul>
+                 <div className="space-y-4 p-4 rounded-lg border-2 border-primary bg-background shadow-lg">
+                    <h3 className="font-semibold text-lg flex items-center">
+                        Akun Pro
+                        <Sparkles className="h-4 w-4 ml-2 text-primary" />
+                    </h3>
+                    <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                           <span className="text-foreground">**Semua fitur Gratis**, plus:</span>
+                        </li>
+                         <li className="flex items-start gap-2">
+                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                           <span className="text-foreground">Manajemen Kelas & Siswa **Tanpa Batas**</span>
+                        </li>
+                         <li className="flex items-start gap-2">
+                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                           <span className="text-foreground">**Unduh Laporan PDF** Profesional</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                           <span className="text-foreground">**Impor & Ekspor** Data Siswa</span>
+                        </li>
+                         <li className="flex items-start gap-2">
+                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                           <span className="text-foreground">Fitur **Promosi & Mutasi** Siswa</span>
+                        </li>
+                    </ul>
+                </div>
           </CardContent>
-          <CardFooter>
-            <Button className="w-full" variant="outline" disabled>
-               {isPremium ? 'Tersedia' : 'Paket Aktif'}
-            </Button>
-          </CardFooter>
-        </Card>
-        
-        {/* Semester Plan Card */}
-        <Card className="flex flex-col shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Paket Semester</CardTitle>
-            <CardDescription>Ideal untuk mencoba semua fitur premium selama satu semester penuh.</CardDescription>
-            <div className="pt-4">
-                <span className="text-4xl font-bold">Rp 150.000</span>
-                <span className="text-muted-foreground"> / semester</span>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 space-y-4">
-            <p className="font-semibold">Semua di Paket Gratis, plus:</p>
-            <ul className="space-y-2">
-                {premiumFeatures.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                        <span className="text-muted-foreground">{feature}</span>
-                    </li>
-                ))}
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" size="lg" onClick={() => handleSubscription('semester', 150000)} disabled={loading !== null || isPremium}>
-               {loading === 'semester' ? <Loader2 className="animate-spin" /> : (isPremium ? "Sudah Berlangganan" : "Pilih Paket Semester")}
-            </Button>
-          </CardFooter>
-        </Card>
-        
-        {/* Annual Plan Card */}
-        <Card className="flex flex-col border-2 border-primary relative shadow-lg">
-          <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-             <div className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">Paling Populer</div>
-          </div>
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Paket Tahunan</CardTitle>
-            <CardDescription>Pilihan terbaik untuk penggunaan jangka panjang dengan harga lebih hemat.</CardDescription>
-            <div className="pt-4">
-                <span className="text-4xl font-bold">Rp 250.000</span>
-                <span className="text-muted-foreground"> / tahun</span>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 space-y-4">
-             <p className="font-semibold">Semua di Paket Gratis, plus:</p>
-             <ul className="space-y-2">
-                {premiumFeatures.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                        <span className="text-muted-foreground">{feature}</span>
-                    </li>
-                ))}
-                 <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                    <span className="text-muted-foreground font-semibold">Akses fitur baru lebih awal</span>
-                </li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" size="lg" onClick={() => handleSubscription('tahunan', 250000)} disabled={loading !== null || isPremium}>
-                {loading === 'tahunan' ? <Loader2 className="animate-spin" /> : (isPremium ? "Sudah Berlangganan" : "Pilih Paket Tahunan")}
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      </Card>
 
-       <div className="text-center text-muted-foreground text-sm max-w-2xl mx-auto">
-            <p>Pembayaran akan diproses melalui payment gateway Duitku yang aman. Langganan akan diperpanjang secara otomatis. Anda dapat membatalkan perpanjangan kapan saja melalui halaman pengaturan akun.</p>
-        </div>
     </div>
   );
 }
