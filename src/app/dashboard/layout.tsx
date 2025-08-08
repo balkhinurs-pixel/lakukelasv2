@@ -33,6 +33,7 @@ import {
   SidebarMenuSub,
   useSidebar,
   SidebarTrigger,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -110,6 +111,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { isPro } = useActivation();
   const isMobile = useIsMobile();
+  const { state: sidebarState } = useSidebar();
 
   const isRosterActive = pathname.startsWith('/dashboard/roster');
   
@@ -119,7 +121,7 @@ export default function DashboardLayout({
         <SidebarHeader className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />
-                <span className="text-lg font-semibold font-headline">Classroom Zephyr</span>
+                <span className="text-lg font-semibold font-headline group-data-[state=collapsed]:hidden">Classroom Zephyr</span>
             </div>
             <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
@@ -174,9 +176,9 @@ export default function DashboardLayout({
                         <SidebarMenuSub>
                             {rosterNavItems.map(item => (
                                 <SidebarMenuItem key={item.href}>
-                                    <SidebarMenuButton asChild isActive={pathname === item.href} size="sm">
+                                    <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
                                         <Link href={item.href}>{item.label}</Link>
-                                    </SidebarMenuButton>
+                                    </SidebarMenuSubButton>
                                 </SidebarMenuItem>
                             ))}
                         </SidebarMenuSub>
@@ -217,11 +219,11 @@ export default function DashboardLayout({
                     <AvatarImage src="https://placehold.co/40x40.png" alt="Teacher" data-ai-hint="teacher portrait" />
                     <AvatarFallback>GT</AvatarFallback>
                   </Avatar>
-                  <div className="text-left">
+                  <div className="text-left group-data-[state=collapsed]:hidden">
                     <p className="text-sm font-medium">Guru Tangguh</p>
                     <p className="text-xs text-muted-foreground">guru@sekolah.id</p>
                   </div>
-                  {isPro && <Badge variant="default" className="ml-auto bg-green-600 hover:bg-green-700">Pro</Badge>}
+                  {isPro && <Badge variant="default" className="ml-auto bg-green-600 hover:bg-green-700 group-data-[state=collapsed]:hidden">Pro</Badge>}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" side="right" align="end" forceMount>

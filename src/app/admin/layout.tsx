@@ -68,6 +68,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
+  const { state: sidebarState } = useSidebar();
 
   return (
     <SidebarProvider>
@@ -75,7 +76,7 @@ export default function AdminLayout({
         <SidebarHeader className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />
-                <span className="text-lg font-semibold font-headline">Admin Zephyr</span>
+                <span className="text-lg font-semibold font-headline group-data-[state=collapsed]:hidden">Admin Zephyr</span>
             </div>
             <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
@@ -105,7 +106,7 @@ export default function AdminLayout({
                     <AvatarImage src="https://placehold.co/40x40.png" alt="Admin" data-ai-hint="admin portrait" />
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
-                  <div className="text-left">
+                  <div className="text-left group-data-[state=collapsed]:hidden">
                     <p className="text-sm font-medium">Admin User</p>
                     <p className="text-xs text-muted-foreground">admin@zephyr.com</p>
                   </div>
