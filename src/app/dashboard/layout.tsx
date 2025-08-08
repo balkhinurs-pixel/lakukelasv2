@@ -83,8 +83,14 @@ const rosterNavItems = [
     { href: '/dashboard/roster/promotion', label: 'Promosi & Mutasi' },
 ];
 
-const BottomNavbar = () => {
-    const pathname = usePathname();
+function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
+  const pathname = usePathname();
+  const { isPro } = useActivation();
+  const isMobile = useIsMobile();
+  const { state: sidebarState } = useSidebar();
+  const isRosterActive = pathname.startsWith('/dashboard/roster');
+
+  const BottomNavbar = () => {
     const { toggleSidebar } = useSidebar();
     
     return (
@@ -101,22 +107,10 @@ const BottomNavbar = () => {
             </button>
         </div>
     )
-}
+  }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const { isPro } = useActivation();
-  const isMobile = useIsMobile();
-  const { state: sidebarState } = useSidebar();
-
-  const isRosterActive = pathname.startsWith('/dashboard/roster');
-  
   return (
-    <SidebarProvider>
+    <>
       <Sidebar variant="floating" collapsible="icon">
         <SidebarHeader className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -271,6 +265,18 @@ export default function DashboardLayout({
         </div>
       </SidebarInset>
       {isMobile && <BottomNavbar />}
-    </SidebarProvider>
+    </>
   );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SidebarProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </SidebarProvider>
+  )
 }

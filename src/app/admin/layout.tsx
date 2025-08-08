@@ -45,7 +45,12 @@ const navItems = [
   { href: '/admin/users', icon: Users, label: 'Pengguna' },
 ];
 
-const BottomNavbar = () => {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isMobile = useIsMobile();
+  const { state: sidebarState } = useSidebar();
+
+  const BottomNavbar = () => {
     const pathname = usePathname();
     const { toggleSidebar } = useSidebar();
     
@@ -59,19 +64,10 @@ const BottomNavbar = () => {
             ))}
         </div>
     )
-}
-
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const isMobile = useIsMobile();
-  const { state: sidebarState } = useSidebar();
+  }
 
   return (
-    <SidebarProvider>
+    <>
       <Sidebar variant="floating" collapsible="icon">
         <SidebarHeader className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -148,6 +144,19 @@ export default function AdminLayout({
         </div>
       </SidebarInset>
       {isMobile && <BottomNavbar />}
+    </>
+  )
+}
+
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SidebarProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
     </SidebarProvider>
   );
 }
