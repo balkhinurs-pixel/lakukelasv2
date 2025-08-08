@@ -41,9 +41,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import type { JournalEntry } from "@/lib/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
 
 type NewJournalEntry = Omit<JournalEntry, 'id' | 'date' | 'className' | 'subjectName'>;
+const ITEMS_PER_PAGE = 6;
+
 
 export default function JournalPage() {
   const searchParams = useSearchParams();
@@ -58,6 +69,7 @@ export default function JournalPage() {
   const [editingEntry, setEditingEntry] = React.useState<JournalEntry | null>(null);
   const [filterClass, setFilterClass] = React.useState<string>("all");
   const [filterSubject, setFilterSubject] = React.useState<string>("all");
+  const [currentPage, setCurrentPage] = React.useState(1);
 
   const initialFormState: NewJournalEntry = {
     classId: "",
@@ -180,6 +192,85 @@ export default function JournalPage() {
     }
     return result;
   }, [journalEntries, filterClass, filterSubject]);
+
+  // Pagination logic
+  const pageCount = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
+  const paginatedEntries = filteredEntries.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (page: number) => {
+      setCurrentPage(page);
+  };
+
+  const renderPagination = () => {
+    if (pageCount <= 1) return null;
+    const pageNumbers = [];
+    const ellipsis = <PaginationItem key="ellipsis"><PaginationEllipsis /></PaginationItem>;
+
+    if (pageCount <= 7) {
+        for (let i = 1; i <= pageCount; i++) {
+            pageNumbers.push(
+                <PaginationItem key={i}>
+                    <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(i); }}>{i}</PaginationLink>
+                </PaginationItem>
+            );
+        }
+    } else {
+        pageNumbers.push(
+            <PaginationItem key={1}>
+                <PaginationLink href="#" isActive={1 === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(1); }}>1</PaginationLink>
+            </PaginationItem>
+        );
+
+        if (currentPage > 3) pageNumbers.push(React.cloneElement(ellipsis, {key: "start-ellipsis"}));
+
+        let startPage = Math.max(2, currentPage - 1);
+        let endPage = Math.min(pageCount - 1, currentPage + 1);
+        
+        if (currentPage <= 3) {
+           startPage = 2;
+           endPage = 4;
+        }
+        if (currentPage >= pageCount - 2) {
+            startPage = pageCount - 3;
+            endPage = pageCount -1;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(
+                <PaginationItem key={i}>
+                    <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(i); }}>{i}</PaginationLink>
+                </PaginationItem>
+            );
+        }
+        
+        if (currentPage < pageCount - 2) pageNumbers.push(React.cloneElement(ellipsis, {key: "end-ellipsis"}));
+
+        pageNumbers.push(
+            <PaginationItem key={pageCount}>
+                <PaginationLink href="#" isActive={pageCount === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(pageCount); }}>{pageCount}</PaginationLink>
+            </PaginationItem>
+        );
+    }
+
+    return (
+        <Pagination>
+            <PaginationContent>
+                <PaginationItem>
+                    <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); handlePageChange(Math.max(1, currentPage - 1)); }} />
+                </PaginationItem>
+                {pageNumbers}
+                <PaginationItem>
+                    <PaginationNext href="#" onClick={(e) => { e.preventDefault(); handlePageChange(Math.min(pageCount, currentPage + 1)); }} />
+                </PaginationItem>
+            </PaginationContent>
+        </Pagination>
+    );
+};
+
+
 
   return (
     <div className="space-y-6">
@@ -306,7 +397,7 @@ export default function JournalPage() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredEntries.map((entry) => (
+                    {paginatedEntries.map((entry) => (
                         <Card key={entry.id} className="flex flex-col">
                             <CardHeader>
                                 <div className="flex justify-between items-start">
@@ -369,15 +460,17 @@ export default function JournalPage() {
                         </Card>
                     ))}
                 </div>
-                 {filteredEntries.length === 0 && (
+                 {paginatedEntries.length === 0 && (
                     <div className="text-center text-muted-foreground py-12">
                         <p>Tidak ada entri jurnal yang cocok dengan filter Anda.</p>
                     </div>
                 )}
             </CardContent>
-            <CardFooter className="flex justify-center border-t pt-4">
-                <Button variant="outline">Muat Lebih Banyak</Button>
-            </CardFooter>
+            {pageCount > 1 && (
+                <CardFooter className="flex justify-center border-t pt-4">
+                    {renderPagination()}
+                </CardFooter>
+            )}
         </Card>
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
