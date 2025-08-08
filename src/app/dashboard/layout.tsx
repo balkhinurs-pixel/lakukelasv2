@@ -72,7 +72,7 @@ const moreMobileNavItems = [
     { href: '/dashboard/roster/students', icon: Users, label: 'Rombel' },
     { href: '/dashboard/activation', icon: KeyRound, label: 'Aktivasi' },
     { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan' },
-]
+];
 
 
 const rosterNavItems = [
@@ -87,12 +87,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
   const pathname = usePathname();
   const { isPro } = useActivation();
   const isMobile = useIsMobile();
-  const { state: sidebarState } = useSidebar();
+  const { state: sidebarState, toggleSidebar } = useSidebar();
   const isRosterActive = pathname.startsWith('/dashboard/roster');
 
   const BottomNavbar = () => {
-    const { toggleSidebar } = useSidebar();
-    
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
             {mainMobileNavItems.map((item) => (
@@ -109,6 +107,106 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
     )
   }
 
+  const MobileSidebarContent = () => (
+    <SidebarMenu>
+        {moreMobileNavItems.map((item) => (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith(item.href)}
+            >
+              <Link href={item.href}>
+                <item.icon />
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+    </SidebarMenu>
+  );
+
+  const DesktopSidebarContent = () => (
+     <SidebarMenu>
+        {navItems.map((item) => (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard'}
+              tooltip={{ children: item.label }}
+            >
+              <Link href={item.href}>
+                <item.icon />
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+        
+         <SidebarMenuItem>
+            <Collapsible defaultOpen={isRosterActive}>
+                <div className={cn("flex items-center group-data-[state=collapsed]:justify-center", isRosterActive && "text-sidebar-primary-foreground font-semibold")}>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={isRosterActive}
+                        className="flex-1 justify-start p-2"
+                        tooltip={{ children: 'Manajemen Rombel' }}
+                    >
+                        <Link href="/dashboard/roster/students">
+                            <Users />
+                            <span className="group-data-[state=collapsed]:hidden">Manajemen Rombel</span>
+                        </Link>
+                    </SidebarMenuButton>
+
+                    <CollapsibleTrigger asChild>
+                         <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn("h-8 w-8 shrink-0 group-data-[state=collapsed]:hidden", isRosterActive ? "text-sidebar-primary-foreground hover:text-sidebar-primary-foreground" : "text-sidebar-foreground/70 hover:text-sidebar-foreground")}
+                        >
+                            <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-180" />
+                        </Button>
+                    </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent>
+                    <SidebarMenuSub>
+                        {rosterNavItems.map(item => (
+                            <SidebarMenuItem key={item.href}>
+                                <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
+                                    <Link href={item.href}>{item.label}</Link>
+                                </SidebarMenuSubButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenuSub>
+                </CollapsibleContent>
+            </Collapsible>
+         </SidebarMenuItem>
+
+         <SidebarMenuItem>
+          <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith('/dashboard/activation')}
+            >
+              <Link href="/dashboard/activation">
+                <KeyRound />
+                <span>Aktivasi Akun</span>
+              </Link>
+            </SidebarMenuButton>
+         </SidebarMenuItem>
+
+         <SidebarMenuItem>
+          <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith('/dashboard/settings')}
+            >
+              <Link href="/dashboard/settings">
+                <Settings />
+                <span>Pengaturan</span>
+              </Link>
+            </SidebarMenuButton>
+         </SidebarMenuItem>
+      </SidebarMenu>
+  );
+
   return (
     <>
       <Sidebar variant="floating" collapsible="icon">
@@ -120,101 +218,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
             <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
         <SidebarContent className="p-2">
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard'}
-                  tooltip={{ children: item.label }}
-                  className="hidden md:flex"
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-
-            {isMobile && moreMobileNavItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={{ children: item.label }}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-            
-             <SidebarMenuItem className="hidden md:block">
-                <Collapsible defaultOpen={isRosterActive}>
-                    <div className={cn("flex items-center group-data-[state=collapsed]:justify-center", isRosterActive && "text-sidebar-primary-foreground font-semibold")}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={isRosterActive}
-                            className="flex-1 justify-start p-2"
-                            tooltip={{ children: 'Manajemen Rombel' }}
-                        >
-                            <Link href="/dashboard/roster/students">
-                                <Users />
-                                <span className="group-data-[state=collapsed]:hidden">Manajemen Rombel</span>
-                            </Link>
-                        </SidebarMenuButton>
-
-                        <CollapsibleTrigger asChild>
-                             <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("h-8 w-8 shrink-0 group-data-[state=collapsed]:hidden", isRosterActive ? "text-sidebar-primary-foreground hover:text-sidebar-primary-foreground" : "text-sidebar-foreground/70 hover:text-sidebar-foreground")}
-                            >
-                                <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-180" />
-                            </Button>
-                        </CollapsibleTrigger>
-                    </div>
-                    <CollapsibleContent>
-                        <SidebarMenuSub>
-                            {rosterNavItems.map(item => (
-                                <SidebarMenuItem key={item.href}>
-                                    <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
-                                        <Link href={item.href}>{item.label}</Link>
-                                    </SidebarMenuSubButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenuSub>
-                    </CollapsibleContent>
-                </Collapsible>
-             </SidebarMenuItem>
-
-             <SidebarMenuItem className="hidden md:block">
-              <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/dashboard/activation')}
-                >
-                  <Link href="/dashboard/activation">
-                    <KeyRound />
-                    <span>Aktivasi Akun</span>
-                  </Link>
-                </SidebarMenuButton>
-             </SidebarMenuItem>
-
-             <SidebarMenuItem className="hidden md:block">
-              <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/dashboard/settings')}
-                >
-                  <Link href="/dashboard/settings">
-                    <Settings />
-                    <span>Pengaturan</span>
-                  </Link>
-                </SidebarMenuButton>
-             </SidebarMenuItem>
-          </SidebarMenu>
+            {isMobile ? <MobileSidebarContent /> : <DesktopSidebarContent />}
         </SidebarContent>
         <SidebarFooter>
             <DropdownMenu>
