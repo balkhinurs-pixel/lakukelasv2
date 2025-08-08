@@ -47,10 +47,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 type AttendanceStatus = AttendanceRecord['status'];
 const attendanceOptions: { value: AttendanceStatus, label: string, icon: React.ElementType, color: string, tooltip: string }[] = [
-    { value: 'Hadir', label: 'H', icon: Check, color: 'bg-green-100 text-green-800 border-green-200 data-[state=checked]:bg-green-500 data-[state=checked]:text-white data-[state=checked]:border-green-600', tooltip: 'Hadir' },
+    { value: 'Hadir', label: 'H', icon: Check, color: 'bg-green-100 text-green-800 border-green-200 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-green-700', tooltip: 'Hadir' },
     { value: 'Sakit', label: 'S', icon: AlertCircle, color: 'bg-yellow-100 text-yellow-800 border-yellow-200 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-yellow-600', tooltip: 'Sakit' },
     { value: 'Izin', label: 'I', icon: Hand, color: 'bg-blue-100 text-blue-800 border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-blue-600', tooltip: 'Izin' },
-    { value: 'Alpha', label: 'A', icon: X, color: 'bg-red-100 text-red-800 border-red-200 data-[state=checked]:bg-red-500 data-[state=checked]:text-white data-[state=checked]:border-red-600', tooltip: 'Alpha' },
+    { value: 'Alpha', label: 'A', icon: X, color: 'bg-red-100 text-red-800 border-red-200 data-[state=checked]:bg-red-600 data-[state=checked]:text-white data-[state=checked]:border-red-700', tooltip: 'Alpha' },
 ];
 
 export default function AttendancePage() {
@@ -385,5 +385,3 @@ export default function AttendancePage() {
     </div>
   );
 }
-
-    
