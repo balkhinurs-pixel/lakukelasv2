@@ -67,13 +67,11 @@ const navItems = [
 ];
 
 const mainMobileNavItems = navItems.slice(0, 4);
+// These items will appear in the "More" sidebar on mobile
 const moreMobileNavItems = [
-    ...navItems.slice(4),
-    { href: '/dashboard/roster/students', icon: Users, label: 'Rombel' },
-    { href: '/dashboard/activation', icon: KeyRound, label: 'Aktivasi' },
-    { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan' },
+    navItems[4], // Laporan
+    navItems[5], // Jadwal
 ];
-
 
 const rosterNavItems = [
     { href: '/dashboard/roster/students', label: 'Daftar Siswa' },
@@ -83,11 +81,16 @@ const rosterNavItems = [
     { href: '/dashboard/roster/promotion', label: 'Promosi & Mutasi' },
 ];
 
+const settingsNavItems = [
+    { href: '/dashboard/activation', icon: KeyRound, label: 'Aktivasi Akun' },
+    { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan' },
+]
+
 function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
   const pathname = usePathname();
   const { isPro } = useActivation();
   const isMobile = useIsMobile();
-  const { state: sidebarState, toggleSidebar } = useSidebar();
+  const { toggleSidebar } = useSidebar();
   const isRosterActive = pathname.startsWith('/dashboard/roster');
 
   const BottomNavbar = () => {
@@ -111,16 +114,57 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
     <SidebarMenu>
         {moreMobileNavItems.map((item) => (
           <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith(item.href)}
-            >
-              <Link href={item.href}>
-                <item.icon />
-                <span>{item.label}</span>
-              </Link>
+            <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)}>
+              <Link href={item.href}> <item.icon /> <span>{item.label}</span> </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+        ))}
+
+        <SidebarMenuItem>
+            <Collapsible defaultOpen={isRosterActive}>
+                <div className={cn("flex items-center group-data-[state=collapsed]:justify-center", isRosterActive && "text-sidebar-primary-foreground font-semibold")}>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={isRosterActive}
+                        className="flex-1 justify-start p-2"
+                        tooltip={{ children: 'Manajemen Rombel' }}
+                    >
+                        <Link href="/dashboard/roster/students">
+                            <Users />
+                            <span className="group-data-[state=collapsed]:hidden">Manajemen Rombel</span>
+                        </Link>
+                    </SidebarMenuButton>
+
+                    <CollapsibleTrigger asChild>
+                         <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn("h-8 w-8 shrink-0 group-data-[state=collapsed]:hidden", isRosterActive ? "text-sidebar-primary-foreground hover:text-sidebar-primary-foreground" : "text-sidebar-foreground/70 hover:text-sidebar-foreground")}
+                        >
+                            <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-180" />
+                        </Button>
+                    </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent>
+                    <SidebarMenuSub>
+                        {rosterNavItems.map(item => (
+                            <SidebarMenuItem key={item.href}>
+                                <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
+                                    <Link href={item.href}>{item.label}</Link>
+                                </SidebarMenuSubButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenuSub>
+                </CollapsibleContent>
+            </Collapsible>
+         </SidebarMenuItem>
+
+        {settingsNavItems.map((item) => (
+             <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)}>
+                  <Link href={item.href}> <item.icon /> <span>{item.label}</span> </Link>
+                </SidebarMenuButton>
+             </SidebarMenuItem>
         ))}
     </SidebarMenu>
   );
