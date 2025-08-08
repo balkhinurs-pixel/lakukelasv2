@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent as SheetContentPrimitive } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -21,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ScrollArea } from "./scroll-area"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -201,7 +202,7 @@ const Sidebar = React.forwardRef<
          <>
           <div className="hidden">{children}</div>
           <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-            <SheetContent
+            <SheetContentPrimitive
               data-sidebar="sidebar"
               data-mobile="true"
               className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
@@ -217,7 +218,7 @@ const Sidebar = React.forwardRef<
                 <SheetPrimitive.Description>Navigation links for the application.</SheetPrimitive.Description>
               </VisuallyHidden>
               <div className="flex h-full w-full flex-col">{children}</div>
-            </SheetContent>
+            </SheetContentPrimitive>
           </Sheet>
         </>
       )
@@ -409,21 +410,18 @@ const SidebarSeparator = React.forwardRef<
 SidebarSeparator.displayName = "SidebarSeparator"
 
 const SidebarContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div">
->(({ className, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      data-sidebar="content"
-      className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
-        className
-      )}
-      {...props}
-    />
-  )
-})
+  React.ElementRef<typeof ScrollArea>,
+  React.ComponentProps<typeof ScrollArea>
+>(({className, ...props}, ref) => (
+  <ScrollArea
+    ref={ref}
+    className={cn(
+      "flex-1 group-data-[collapsible=icon]:overflow-hidden",
+      className
+    )}
+    {...props}
+  />
+))
 SidebarContent.displayName = "SidebarContent"
 
 const SidebarGroup = React.forwardRef<
@@ -774,5 +772,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
-    
