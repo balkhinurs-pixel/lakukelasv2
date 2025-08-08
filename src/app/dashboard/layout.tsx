@@ -115,7 +115,7 @@ export default function DashboardLayout({
   
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar variant="floating">
         <SidebarHeader>
             <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />

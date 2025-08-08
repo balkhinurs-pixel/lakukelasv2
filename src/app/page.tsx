@@ -7,8 +7,8 @@ import { AppLogo } from "@/components/icons";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm shadow-xl rounded-2xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <AppLogo className="h-12 w-12 text-primary" />
@@ -20,16 +20,16 @@ export default function LoginPage() {
           <form className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="guru@sekolah.id" required />
+              <Input id="email" type="email" placeholder="guru@sekolah.id" required className="rounded-full" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Kata Sandi</Label>
-              <Input id="password" type="password" required />
+              <Input id="password" type="password" required className="rounded-full" />
             </div>
           </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button className="w-full" asChild>
+          <Button className="w-full rounded-full" size="lg" asChild>
             <Link href="/dashboard">Masuk</Link>
           </Button>
           <Button variant="link" size="sm" className="w-full text-muted-foreground">
