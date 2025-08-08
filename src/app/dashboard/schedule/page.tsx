@@ -131,7 +131,7 @@ export default function SchedulePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold font-headline">Kelola Jadwal</h1>
           <p className="text-muted-foreground">
@@ -287,3 +287,5 @@ export default function SchedulePage() {
     </div>
   );
 }
+
+    
