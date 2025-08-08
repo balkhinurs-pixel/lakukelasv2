@@ -18,16 +18,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, BookText, Users, Clock, ArrowRight } from "lucide-react";
+import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check } from "lucide-react";
 import Link from 'next/link';
 import { journalEntries, schedule, classes, subjects } from "@/lib/placeholder-data";
 import { format } from "date-fns";
 import type { ScheduleItem } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
 
 export default function DashboardPage() {
-    // State to track task completion for each schedule item
     const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
 
@@ -37,7 +37,6 @@ export default function DashboardPage() {
     }, []);
 
     React.useEffect(() => {
-        // This effect runs only on the client, after hydration
         const now = new Date();
         const newActiveSchedules: Record<string, boolean> = {};
         todaySchedule.forEach(item => {
@@ -72,7 +71,7 @@ export default function DashboardPage() {
 
         const commonButtonProps = {
             size: "sm",
-            className: "w-full",
+            className: "w-full transition-all duration-300",
         } as const;
 
         const linkParams = new URLSearchParams({
@@ -82,9 +81,9 @@ export default function DashboardPage() {
 
         if (status === 'pending') {
             return (
-                <Button {...commonButtonProps} asChild>
+                <Button {...commonButtonProps} variant="outline" asChild>
                     <Link href={`/dashboard/attendance?${linkParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'pending')}>
-                        Isi Presensi <ArrowRight className="ml-2 h-4 w-4" />
+                        Isi Presensi <ArrowRight className="ml-auto h-4 w-4" />
                     </Link>
                 </Button>
             );
@@ -93,7 +92,7 @@ export default function DashboardPage() {
             return (
                 <Button {...commonButtonProps} asChild>
                     <Link href={`/dashboard/grades?${linkParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'presensi_done')}>
-                        Input Nilai <ArrowRight className="ml-2 h-4 w-4" />
+                        Input Nilai <ArrowRight className="ml-auto h-4 w-4" />
                     </Link>
                 </Button>
             );
@@ -107,13 +106,13 @@ export default function DashboardPage() {
             return (
                 <Button {...commonButtonProps} asChild>
                      <Link href={`/dashboard/journal?${journalParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'nilai_done')}>
-                        Isi Jurnal <ArrowRight className="ml-2 h-4 w-4" />
+                        Isi Jurnal <ArrowRight className="ml-auto h-4 w-4" />
                     </Link>
                 </Button>
             );
         }
         if (status === 'jurnal_done') {
-            return <div className="text-sm text-green-600 font-semibold flex items-center justify-center py-2"><ClipboardCheck className="mr-2 h-4 w-4"/> Tugas Selesai</div>;
+            return <div className="text-sm text-green-600 font-semibold text-center py-2">Tugas Selesai</div>;
         }
 
         return null;
@@ -124,12 +123,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-sm bg-blue-500/10 border-blue-500/20">
+        <Card className="shadow-sm bg-blue-50 border-blue-200 dark:bg-blue-950/50 dark:border-blue-800/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
               Presensi Hari Ini
             </CardTitle>
-            <ClipboardCheck className="h-4 w-4 text-blue-800/70 dark:text-blue-200/70" />
+            <ClipboardCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">95.8%</div>
@@ -138,10 +137,10 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card className="shadow-sm bg-green-500/10 border-green-500/20">
+        <Card className="shadow-sm bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-800/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">Kelas Hari Ini</CardTitle>
-            <Users className="h-4 w-4 text-green-800/70 dark:text-green-200/70" />
+            <Users className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-900 dark:text-green-100">{todaySchedule.length}</div>
@@ -150,12 +149,12 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card className="shadow-sm bg-amber-500/10 border-amber-500/20">
+        <Card className="shadow-sm bg-amber-50 border-amber-200 dark:bg-amber-950/50 dark:border-amber-800/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">
               Jurnal Belum Diisi
             </CardTitle>
-            <BookText className="h-4 w-4 text-amber-800/70 dark:text-amber-200/70" />
+            <BookText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">1</div>
@@ -164,10 +163,10 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card className="shadow-sm bg-indigo-500/10 border-indigo-500/20">
+        <Card className="shadow-sm bg-indigo-50 border-indigo-200 dark:bg-indigo-950/50 dark:border-indigo-800/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-indigo-800 dark:text-indigo-200">Kelas Berikutnya</CardTitle>
-            <Clock className="h-4 w-4 text-indigo-800/70 dark:text-indigo-200/70" />
+            <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">{todaySchedule.length > 0 ? todaySchedule[0].startTime : '-'}</div>
@@ -216,27 +215,41 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3 shadow-sm">
           <CardHeader>
             <CardTitle>Jadwal Hari Ini ({today})</CardTitle>
-            <CardDescription>Alur kerja cepat untuk mengisi data mengajar Anda.</CardDescription>
+            <CardDescription>Alur kerja cepat untuk mengajar.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {todaySchedule.length > 0 ? todaySchedule.map((item) => (
-                 <div key={item.id} className="flex flex-col gap-3 p-3 rounded-lg hover:bg-muted/50 border">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
-                          <Clock className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium leading-tight">{item.subject}</p>
-                          <p className="text-sm text-muted-foreground leading-tight">{item.class} | {item.startTime} - {item.endTime}</p>
-                        </div>
+          <CardContent className="space-y-2">
+            {todaySchedule.length > 0 ? (
+                <div className="relative">
+                    {/* Vertical line */}
+                    <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-border -z-10" aria-hidden="true" />
+                    
+                    <div className="space-y-8">
+                         {todaySchedule.map((item) => {
+                            const isTaskDone = taskStatus[item.id] === 'jurnal_done';
+                            const isActionAvailable = activeSchedules[item.id];
+                            return (
+                                <div key={item.id} className="relative flex items-start gap-4">
+                                     <div className={cn(
+                                        "flex h-10 w-10 items-center justify-center rounded-full shrink-0",
+                                        isTaskDone ? "bg-green-600 text-white" : "bg-primary text-primary-foreground"
+                                    )}>
+                                        {isTaskDone ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5" />}
+                                    </div>
+                                    <div className="flex-grow pt-1.5">
+                                        <p className="font-semibold">{item.subject}</p>
+                                        <p className="text-sm text-muted-foreground">{item.class} | {item.startTime} - {item.endTime}</p>
+                                        {isActionAvailable && (
+                                            <div className="mt-3">
+                                                {getNextAction(item)}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                         })}
                     </div>
-                    {activeSchedules[item.id] && (
-                        <div className="w-full pt-2">
-                            {getNextAction(item)}
-                        </div>
-                    )}
                 </div>
-            )) : (
+            ) : (
                 <div className="text-center text-muted-foreground py-8">
                     <p>Tidak ada jadwal mengajar hari ini.</p>
                 </div>
@@ -246,4 +259,5 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}
+
+    
