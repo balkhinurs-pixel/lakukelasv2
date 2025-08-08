@@ -313,8 +313,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
       </Sidebar>
       <SidebarInset>
         <header className="p-4 sm:p-6 lg:p-8 flex items-center md:hidden">
-             <SidebarTrigger />
-             <div className="flex items-center gap-2 ml-4">
+             <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />
                 <span className="text-lg font-semibold font-headline">Classroom Zephyr</span>
             </div>
