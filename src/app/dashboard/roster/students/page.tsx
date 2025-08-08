@@ -37,7 +37,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UserPlus, Download, Upload, FileText, Sparkles } from "lucide-react";
+import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
 import { classes as initialClasses, students as initialStudents } from "@/lib/placeholder-data";
@@ -202,7 +202,32 @@ export default function StudentsPage() {
             </div>
         </CardHeader>
         <CardContent>
-            <div className="overflow-x-auto">
+            {/* Mobile View - Cards */}
+            <div className="md:hidden space-y-4">
+              {studentsInClass.map((student) => (
+                <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                    <div className="font-semibold">{student.name}</div>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                        <p><span className="font-medium">NIS:</span> {student.nis}</p>
+                        <p><span className="font-medium">NISN:</span> {student.nisn}</p>
+                        <p><span className="font-medium">Gender:</span> {student.gender}</p>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button variant="outline" size="sm" className="w-full">
+                          <Edit className="mr-2 h-4 w-4" />
+                          Ubah
+                      </Button>
+                      <Button variant="ghost" size="sm" className="w-full">
+                          <UserRoundCog className="mr-2 h-4 w-4" />
+                          Pindahkan
+                      </Button>
+                    </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Desktop View - Table */}
+            <div className="hidden md:block overflow-x-auto">
                 <Table>
                 <TableHeader>
                     <TableRow>
@@ -222,9 +247,11 @@ export default function StudentsPage() {
                         <TableCell>{student.gender}</TableCell>
                         <TableCell className="text-right">
                         <Button variant="ghost" size="sm">
+                            <Edit className="mr-2 h-3.5 w-3.5"/>
                             Ubah
                         </Button>
                         <Button variant="ghost" size="sm">
+                            <UserRoundCog className="mr-2 h-3.5 w-3.5"/>
                             Pindahkan
                         </Button>
                         </TableCell>
@@ -233,6 +260,13 @@ export default function StudentsPage() {
                 </TableBody>
                 </Table>
             </div>
+            
+            {studentsInClass.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Belum ada siswa di kelas ini.</p>
+                <p className="text-sm">Silakan tambahkan siswa baru.</p>
+              </div>
+            )}
         </CardContent>
         </Card>
     </div>
