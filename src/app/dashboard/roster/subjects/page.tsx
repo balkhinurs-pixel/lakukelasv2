@@ -28,7 +28,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Edit } from "lucide-react";
 import { subjects as initialSubjects } from "@/lib/placeholder-data";
 import { useToast } from "@/hooks/use-toast";
 import type { Subject } from "@/lib/types";
@@ -50,6 +50,7 @@ export default function SubjectSettingsPage() {
         const newSubject: Subject = {
             id: `SUBJ${Date.now()}`,
             name: newSubjectName,
+            teacherId: 'user_placeholder'
         };
 
         setSubjects([...subjects, newSubject]);
@@ -98,26 +99,43 @@ export default function SubjectSettingsPage() {
                     <CardDescription>Berikut adalah semua mapel yang terdaftar di sistem.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead>ID Mapel</TableHead>
-                            <TableHead>Nama Mata Pelajaran</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {subjects.map((s) => (
-                            <TableRow key={s.id}>
-                                <TableCell className="font-mono text-muted-foreground">{s.id}</TableCell>
-                                <TableCell className="font-medium">{s.name}</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="ghost" size="sm">Ubah</Button>
-                                </TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    {/* Mobile View */}
+                     <div className="md:hidden space-y-4">
+                        {subjects.map((s) => (
+                             <div key={s.id} className="border rounded-lg p-4 space-y-3">
+                                <div className="font-semibold">{s.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                    <p><span className="font-medium">ID:</span> {s.id}</p>
+                                </div>
+                                <Button variant="outline" size="sm" className="w-full">
+                                    <Edit className="mr-2 h-4 w-4" /> Ubah
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto">
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead>ID Mapel</TableHead>
+                                <TableHead>Nama Mata Pelajaran</TableHead>
+                                <TableHead className="text-right">Aksi</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {subjects.map((s) => (
+                                <TableRow key={s.id}>
+                                    <TableCell className="font-mono text-muted-foreground">{s.id}</TableCell>
+                                    <TableCell className="font-medium">{s.name}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="sm">Ubah</Button>
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

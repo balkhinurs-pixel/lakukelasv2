@@ -29,7 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PlusCircle, Sparkles } from "lucide-react";
+import { PlusCircle, Sparkles, Edit, Users } from "lucide-react";
 import { classes as initialClasses } from "@/lib/placeholder-data";
 import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
@@ -61,7 +61,8 @@ export default function ClassSettingsPage() {
         const newClass: Class = {
             id: `C${Date.now()}`,
             name: newClassName,
-            students: []
+            students: [],
+            teacherId: 'user_placeholder'
         };
 
         setClasses([...classes, newClass]);
@@ -123,28 +124,48 @@ export default function ClassSettingsPage() {
                     <CardDescription>Berikut adalah semua kelas yang terdaftar di sistem. ({classes.length}/{isPro ? '∞' : limits.classes})</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead>ID Kelas</TableHead>
-                            <TableHead>Nama Kelas</TableHead>
-                            <TableHead className="text-center">Jumlah Siswa</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {classes.map((c) => (
-                            <TableRow key={c.id}>
-                                <TableCell className="font-mono text-muted-foreground">{c.id}</TableCell>
-                                <TableCell className="font-medium">{c.name}</TableCell>
-                                <TableCell className="text-center">{c.students.length}</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="ghost" size="sm">Ubah</Button>
-                                </TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    {/* Mobile View */}
+                    <div className="md:hidden space-y-4">
+                        {classes.map((c) => (
+                             <div key={c.id} className="border rounded-lg p-4 space-y-3">
+                                <div className="font-semibold">{c.name}</div>
+                                <div className="text-sm text-muted-foreground space-y-1">
+                                    <p><span className="font-medium">ID:</span> {c.id}</p>
+                                    <p><span className="font-medium">Jumlah Siswa:</span> {c.students.length}</p>
+                                </div>
+                                <Button variant="outline" size="sm" className="w-full">
+                                    <Edit className="mr-2 h-4 w-4" /> Ubah
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto">
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead>ID Kelas</TableHead>
+                                <TableHead>Nama Kelas</TableHead>
+                                <TableHead className="text-center">Jumlah Siswa</TableHead>
+                                <TableHead className="text-right">Aksi</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {classes.map((c) => (
+                                <TableRow key={c.id}>
+                                    <TableCell className="font-mono text-muted-foreground">{c.id}</TableCell>
+                                    <TableCell className="font-medium">{c.name}</TableCell>
+                                    <TableCell className="text-center">{c.students.length}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="sm">Ubah</Button>
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+
                 </CardContent>
             </Card>
         </div>

@@ -152,7 +152,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
               </SidebarMenuItem>
             ))}
             
-             <SidebarMenuItem>
+             <SidebarMenuItem className="hidden md:block">
                 <Collapsible defaultOpen={isRosterActive}>
                     <div className={cn("flex items-center group-data-[state=collapsed]:justify-center", isRosterActive && "text-sidebar-primary-foreground font-semibold")}>
                         <SidebarMenuButton
