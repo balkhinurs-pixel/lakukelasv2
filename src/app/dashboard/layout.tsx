@@ -154,18 +154,29 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
             
              <SidebarMenuItem>
                 <Collapsible defaultOpen={isRosterActive}>
-                    <CollapsibleTrigger asChild>
+                    <div className={cn("flex items-center group-data-[state=collapsed]:justify-center", isRosterActive && "text-sidebar-primary-foreground font-semibold")}>
                         <SidebarMenuButton
-                        className="justify-between hidden md:flex"
-                        isActive={isRosterActive}
+                            asChild
+                            isActive={isRosterActive}
+                            className="flex-1 justify-start p-2"
+                            tooltip={{ children: 'Manajemen Rombel' }}
                         >
-                            <div className="flex items-center gap-2">
+                            <Link href="/dashboard/roster/students">
                                 <Users />
-                                <span>Manajemen Rombel</span>
-                            </div>
-                            <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
+                                <span className="group-data-[state=collapsed]:hidden">Manajemen Rombel</span>
+                            </Link>
                         </SidebarMenuButton>
-                    </CollapsibleTrigger>
+
+                        <CollapsibleTrigger asChild>
+                             <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-8 w-8 shrink-0 group-data-[state=collapsed]:hidden", isRosterActive ? "text-sidebar-primary-foreground hover:text-sidebar-primary-foreground" : "text-sidebar-foreground/70 hover:text-sidebar-foreground")}
+                            >
+                                <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-180" />
+                            </Button>
+                        </CollapsibleTrigger>
+                    </div>
                     <CollapsibleContent>
                         <SidebarMenuSub>
                             {rosterNavItems.map(item => (
