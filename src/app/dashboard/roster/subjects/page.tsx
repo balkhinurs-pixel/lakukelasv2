@@ -61,7 +61,7 @@ export default function SubjectSettingsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold font-headline">Pengaturan Mata Pelajaran</h1>
                     <p className="text-muted-foreground">Kelola daftar mata pelajaran yang Anda ajar.</p>
