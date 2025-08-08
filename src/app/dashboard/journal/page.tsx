@@ -181,7 +181,7 @@ export default function JournalPage() {
 
   return (
     <div className="space-y-6">
-       <div className="flex justify-between items-center">
+       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
             <h1 className="text-2xl font-bold font-headline">Jurnal Mengajar</h1>
             <p className="text-muted-foreground">Catatan reflektif kegiatan mengajar harian Anda.</p>
@@ -202,7 +202,7 @@ export default function JournalPage() {
                     </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="class">Kelas</Label>
                                 <Select value={newEntry.classId} onValueChange={(value) => setNewEntry({...newEntry, classId: value})} required>
@@ -278,9 +278,9 @@ export default function JournalPage() {
                         Entri jurnal mengajar yang telah Anda simpan sebelumnya.
                     </CardDescription>
                 </div>
-                <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                     <Select value={filterClass} onValueChange={setFilterClass}>
-                        <SelectTrigger className="w-full md:w-[200px]">
+                        <SelectTrigger className="w-full sm:w-[200px]">
                             <SelectValue placeholder="Filter berdasarkan kelas" />
                         </SelectTrigger>
                         <SelectContent>
@@ -291,7 +291,7 @@ export default function JournalPage() {
                         </SelectContent>
                     </Select>
                     <Select value={filterSubject} onValueChange={setFilterSubject}>
-                        <SelectTrigger className="w-full md:w-[200px]">
+                        <SelectTrigger className="w-full sm:w-[200px]">
                             <SelectValue placeholder="Filter berdasarkan mapel" />
                         </SelectTrigger>
                         <SelectContent>
@@ -305,52 +305,54 @@ export default function JournalPage() {
             </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">Tanggal</TableHead>
-                <TableHead>Info</TableHead>
-                <TableHead>Tujuan Pembelajaran</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEntries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell className="font-medium">
-                    {format(entry.date, "dd MMM yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{entry.subjectName}</div>
-                    <div className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
-                  </TableCell>
-                  <TableCell>
-                     <p className="line-clamp-2 text-sm text-muted-foreground">{entry.learningObjectives}</p>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewEntry(entry)}>
-                                <Eye className="mr-2 h-4 w-4" /> Lihat Detail
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOpenEditDialog(entry)}>
-                                <Edit className="mr-2 h-4 w-4" /> Ubah
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteEntry(entry.id)} className="text-destructive focus:text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" /> Hapus
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead className="w-[120px]">Tanggal</TableHead>
+                    <TableHead>Info</TableHead>
+                    <TableHead>Tujuan Pembelajaran</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                {filteredEntries.map((entry) => (
+                    <TableRow key={entry.id}>
+                    <TableCell className="font-medium">
+                        {format(entry.date, "dd MMM yyyy")}
+                    </TableCell>
+                    <TableCell>
+                        <div className="font-medium">{entry.subjectName}</div>
+                        <div className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
+                    </TableCell>
+                    <TableCell>
+                        <p className="line-clamp-2 text-sm text-muted-foreground">{entry.learningObjectives}</p>
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewEntry(entry)}>
+                                    <Eye className="mr-2 h-4 w-4" /> Lihat Detail
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleOpenEditDialog(entry)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Ubah
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteEntry(entry.id)} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+          </div>
         </CardContent>
         <CardFooter className="flex justify-center border-t pt-4">
             <Button variant="outline">Muat Lebih Banyak</Button>
@@ -385,7 +387,7 @@ export default function JournalPage() {
                     </div>
                  </div>
             )}
-            <DialogFooter className="justify-between pt-4 border-t">
+            <DialogFooter className="justify-between pt-4 border-t flex-wrap gap-2">
                 <div>
                   <Button variant="destructive" onClick={() => selectedEntry && handleDeleteEntry(selectedEntry.id)}>
                       <Trash2 className="mr-2 h-4 w-4"/> Hapus

@@ -244,7 +244,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
                 <h1 className="text-2xl font-bold font-headline">Laporan Akademik</h1>
                 <p className="text-muted-foreground">Analisis komprehensif tentang kehadiran dan nilai siswa.</p>
@@ -265,7 +265,7 @@ export default function ReportsPage() {
         )}
 
         <Tabs defaultValue="summary">
-            <TabsList>
+            <TabsList className="w-full h-auto overflow-x-auto justify-start">
                 <TabsTrigger value="summary">Ringkasan</TabsTrigger>
                 <TabsTrigger value="attendance">Laporan Kehadiran</TabsTrigger>
                 <TabsTrigger value="grades">Laporan Nilai</TabsTrigger>
@@ -311,36 +311,38 @@ export default function ReportsPage() {
                         <CardDescription>Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead>Nama Siswa</TableHead>
-                                <TableHead>Kelas</TableHead>
-                                <TableHead className="text-center">Rata-rata Nilai</TableHead>
-                                <TableHead className="text-center">Kehadiran</TableHead>
-                                <TableHead className="text-center">Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {studentPerformance.map((student) => (
-                                <TableRow key={student.id}>
-                                    <TableCell className="font-medium">{student.name}</TableCell>
-                                    <TableCell>{student.class}</TableCell>
-                                    <TableCell className="text-center font-mono">{student.average_grade}</TableCell>
-                                    <TableCell className="text-center font-mono">{student.attendance}%</TableCell>
-                                    <TableCell className="text-center">
-                                        <Badge variant="outline" className={cn("font-semibold", getStatusBadge(student.status))}>
-                                            {student.status === 'Sangat Baik' && <TrendingUp className="mr-2 h-3 w-3" />}
-                                            {student.status === 'Stabil' && <UserCheck className="mr-2 h-3 w-3" />}
-                                            {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-2 h-3 w-3" />}
-                                            {student.status === 'Berisiko' && <UserX className="mr-2 h-3 w-3" />}
-                                            {student.status}
-                                        </Badge>
-                                    </TableCell>
-                                </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                    <TableHead>Nama Siswa</TableHead>
+                                    <TableHead>Kelas</TableHead>
+                                    <TableHead className="text-center">Rata-rata Nilai</TableHead>
+                                    <TableHead className="text-center">Kehadiran</TableHead>
+                                    <TableHead className="text-center">Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {studentPerformance.map((student) => (
+                                    <TableRow key={student.id}>
+                                        <TableCell className="font-medium">{student.name}</TableCell>
+                                        <TableCell>{student.class}</TableCell>
+                                        <TableCell className="text-center font-mono">{student.average_grade}</TableCell>
+                                        <TableCell className="text-center font-mono">{student.attendance}%</TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant="outline" className={cn("font-semibold", getStatusBadge(student.status))}>
+                                                {student.status === 'Sangat Baik' && <TrendingUp className="mr-2 h-3 w-3" />}
+                                                {student.status === 'Stabil' && <UserCheck className="mr-2 h-3 w-3" />}
+                                                {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-2 h-3 w-3" />}
+                                                {student.status === 'Berisiko' && <UserX className="mr-2 h-3 w-3" />}
+                                                {student.status}
+                                            </Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -412,9 +414,9 @@ export default function ReportsPage() {
                                 </Button>
                             </div>
                         </div>
-                         <div className="mt-4 flex flex-col md:flex-row gap-2">
+                         <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
                             <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                <SelectTrigger className="w-full md:w-[200px]">
+                                <SelectTrigger className="w-full sm:w-[200px]">
                                     <SelectValue placeholder="Pilih kelas" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -423,7 +425,7 @@ export default function ReportsPage() {
                                 </SelectContent>
                             </Select>
                              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className="w-full md:w-[200px]">
+                                <SelectTrigger className="w-full sm:w-[200px]">
                                     <SelectValue placeholder="Pilih Mapel" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -432,7 +434,7 @@ export default function ReportsPage() {
                                 </SelectContent>
                             </Select>
                              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger className="w-full md:w-[180px]">
+                                <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Pilih Bulan" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -443,7 +445,7 @@ export default function ReportsPage() {
                                 </SelectContent>
                             </Select>
                              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                                <SelectTrigger className="w-full md:w-[180px]">
+                                <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Pilih Semester" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -455,32 +457,34 @@ export default function ReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead>Nama Siswa</TableHead>
-                            <TableHead className="text-center">Hadir</TableHead>
-                            <TableHead className="text-center">Sakit</TableHead>
-                            <TableHead className="text-center">Izin</TableHead>
-                            <TableHead className="text-center">Alpha</TableHead>
-                            <TableHead className="text-center">Total Pertemuan</TableHead>
-                            <TableHead className="text-right">Kehadiran (%)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {detailedAttendance.map((student) => (
-                            <TableRow key={student.id}>
-                                <TableCell className="font-medium">{student.name}</TableCell>
-                                <TableCell className="text-center">{student.hadir}</TableCell>
-                                <TableCell className="text-center">{student.sakit}</TableCell>
-                                <TableCell className="text-center">{student.izin}</TableCell>
-                                <TableCell className="text-center">{student.alpha}</TableCell>
-                                <TableCell className="text-center">{student.pertemuan}</TableCell>
-                                <TableCell className="text-right font-semibold">{((student.hadir / student.pertemuan) * 100).toFixed(1)}%</TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
-                        </Table>
+                        <div className="overflow-x-auto">
+                            <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead>Nama Siswa</TableHead>
+                                <TableHead className="text-center">Hadir</TableHead>
+                                <TableHead className="text-center">Sakit</TableHead>
+                                <TableHead className="text-center">Izin</TableHead>
+                                <TableHead className="text-center">Alpha</TableHead>
+                                <TableHead className="text-center">Total Pertemuan</TableHead>
+                                <TableHead className="text-right">Kehadiran (%)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {detailedAttendance.map((student) => (
+                                <TableRow key={student.id}>
+                                    <TableCell className="font-medium">{student.name}</TableCell>
+                                    <TableCell className="text-center">{student.hadir}</TableCell>
+                                    <TableCell className="text-center">{student.sakit}</TableCell>
+                                    <TableCell className="text-center">{student.izin}</TableCell>
+                                    <TableCell className="text-center">{student.alpha}</TableCell>
+                                    <TableCell className="text-center">{student.pertemuan}</TableCell>
+                                    <TableCell className="text-right font-semibold">{((student.hadir / student.pertemuan) * 100).toFixed(1)}%</TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -499,9 +503,9 @@ export default function ReportsPage() {
                                 </Button>
                             </div>
                         </div>
-                         <div className="mt-4 flex gap-2">
+                         <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
                             <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                <SelectTrigger className="w-full md:w-[200px]">
+                                <SelectTrigger className="w-full sm:w-[200px]">
                                     <SelectValue placeholder="Pilih kelas" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -510,7 +514,7 @@ export default function ReportsPage() {
                                 </SelectContent>
                             </Select>
                              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className="w-full md:w-[200px]">
+                                <SelectTrigger className="w-full sm:w-[200px]">
                                     <SelectValue placeholder="Pilih Mapel" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -521,35 +525,37 @@ export default function ReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead>Nama Siswa</TableHead>
-                            <TableHead className="text-center">UH 1</TableHead>
-                            <TableHead className="text-center">UH 2</TableHead>
-                            <TableHead className="text-center">Tugas 1</TableHead>
-                            <TableHead className="text-center">UTS</TableHead>
-                            <TableHead className="text-center">UAS</TableHead>
-                            <TableHead className="text-right font-semibold">Rata-rata</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {detailedGrades.map((student) => {
-                                const avg = (student.uh1 + student.uh2 + student.tugas1 + student.uts + student.uas) / 5;
-                                return (
-                                <TableRow key={student.id}>
-                                    <TableCell className="font-medium">{student.name}</TableCell>
-                                    <TableCell className="text-center">{student.uh1}</TableCell>
-                                    <TableCell className="text-center">{student.uh2}</TableCell>
-                                    <TableCell className="text-center">{student.tugas1}</TableCell>
-                                    <TableCell className="text-center">{student.uts}</TableCell>
-                                    <TableCell className="text-center">{student.uas}</TableCell>
-                                    <TableCell className="text-right font-semibold">{avg.toFixed(1)}</TableCell>
+                        <div className="overflow-x-auto">
+                            <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead>Nama Siswa</TableHead>
+                                <TableHead className="text-center">UH 1</TableHead>
+                                <TableHead className="text-center">UH 2</TableHead>
+                                <TableHead className="text-center">Tugas 1</TableHead>
+                                <TableHead className="text-center">UTS</TableHead>
+                                <TableHead className="text-center">UAS</TableHead>
+                                <TableHead className="text-right font-semibold">Rata-rata</TableHead>
                                 </TableRow>
-                                )
-                            })}
-                        </TableBody>
-                        </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {detailedGrades.map((student) => {
+                                    const avg = (student.uh1 + student.uh2 + student.tugas1 + student.uts + student.uas) / 5;
+                                    return (
+                                    <TableRow key={student.id}>
+                                        <TableCell className="font-medium">{student.name}</TableCell>
+                                        <TableCell className="text-center">{student.uh1}</TableCell>
+                                        <TableCell className="text-center">{student.uh2}</TableCell>
+                                        <TableCell className="text-center">{student.tugas1}</TableCell>
+                                        <TableCell className="text-center">{student.uts}</TableCell>
+                                        <TableCell className="text-center">{student.uas}</TableCell>
+                                        <TableCell className="text-right font-semibold">{avg.toFixed(1)}</TableCell>
+                                    </TableRow>
+                                    )
+                                })}
+                            </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -568,31 +574,33 @@ export default function ReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead className="w-[120px]">Tanggal</TableHead>
-                            <TableHead>Info</TableHead>
-                            <TableHead>Tujuan Pembelajaran</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {journalEntries.map((entry) => (
-                            <TableRow key={entry.id}>
-                                <TableCell className="font-medium">
-                                {format(entry.date, "dd MMM yyyy")}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="font-medium">{entry.subjectName}</div>
-                                    <div className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
-                                </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                    <p className="line-clamp-2">{entry.learningObjectives}</p>
-                                </TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
-                        </Table>
+                        <div className="overflow-x-auto">
+                            <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead className="w-[120px]">Tanggal</TableHead>
+                                <TableHead>Info</TableHead>
+                                <TableHead>Tujuan Pembelajaran</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {journalEntries.map((entry) => (
+                                <TableRow key={entry.id}>
+                                    <TableCell className="font-medium">
+                                    {format(entry.date, "dd MMM yyyy")}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="font-medium">{entry.subjectName}</div>
+                                        <div className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                        <p className="line-clamp-2">{entry.learningObjectives}</p>
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>

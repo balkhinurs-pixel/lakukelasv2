@@ -279,7 +279,7 @@ export default function GradesPage() {
               </Table>
             </div>
           </CardContent>
-          <CardFooter className="border-t px-6 py-4 justify-between">
+          <CardFooter className="border-t px-6 py-4 justify-between flex-wrap gap-2">
             <Button onClick={saveGrades} disabled={!assessmentType || !selectedSubject}>{editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}</Button>
              {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass)}>Batal Mengubah</Button>}
           </CardFooter>
@@ -292,33 +292,35 @@ export default function GradesPage() {
             <CardDescription>Daftar nilai yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
         </CardHeader>
         <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Tanggal</TableHead>
-                        <TableHead>Kelas</TableHead>
-                        <TableHead>Mata Pelajaran</TableHead>
-                        <TableHead>Jenis Penilaian</TableHead>
-                        <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredHistory.map(entry => (
-                        <TableRow key={entry.id}>
-                            <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
-                            <TableCell>{entry.className}</TableCell>
-                            <TableCell>{entry.subjectName}</TableCell>
-                            <TableCell>{entry.assessmentType}</TableCell>
-                            <TableCell className="text-right">
-                                <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Ubah
-                                </Button>
-                            </TableCell>
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Tanggal</TableHead>
+                            <TableHead>Kelas</TableHead>
+                            <TableHead>Mata Pelajaran</TableHead>
+                            <TableHead>Jenis Penilaian</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredHistory.map(entry => (
+                            <TableRow key={entry.id}>
+                                <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
+                                <TableCell>{entry.className}</TableCell>
+                                <TableCell>{entry.subjectName}</TableCell>
+                                <TableCell>{entry.assessmentType}</TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Ubah
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
         </CardContent>
       </Card>
     </div>

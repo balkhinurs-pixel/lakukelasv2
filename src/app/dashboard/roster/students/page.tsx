@@ -101,12 +101,12 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
                 <h1 className="text-2xl font-bold font-headline">Daftar Siswa</h1>
                 <p className="text-muted-foreground">Kelola data induk siswa di setiap kelas.</p>
             </div>
-             <div className="flex gap-2">
+             <div className="flex gap-2 flex-wrap">
                 <Button variant="outline" disabled={!isPro}><FileText /> Unduh Template</Button>
                 <Button variant="outline" disabled={!isPro}><Upload /> Impor Siswa</Button>
                 <Button variant="outline" disabled={!isPro}><Download /> Ekspor Siswa</Button>
@@ -135,12 +135,12 @@ export default function StudentsPage() {
                     Lihat, tambah, atau kelola data siswa di kelas ini. ({studentsInClass.length}/{isPro ? '∞' : limits.studentsPerClass} siswa)
                     </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <Select
                         onValueChange={handleClassChange}
                         defaultValue={selectedClassId}
                     >
-                        <SelectTrigger className="w-full md:w-[220px]">
+                        <SelectTrigger className="w-full sm:w-[220px]">
                         <SelectValue placeholder="Pilih kelas" />
                         </SelectTrigger>
                         <SelectContent>
@@ -202,35 +202,37 @@ export default function StudentsPage() {
             </div>
         </CardHeader>
         <CardContent>
-            <Table>
-            <TableHeader>
-                <TableRow>
-                <TableHead>Nama Siswa</TableHead>
-                <TableHead>NIS</TableHead>
-                <TableHead>NISN</TableHead>
-                <TableHead>Jenis Kelamin</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {studentsInClass.map((student) => (
-                <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.nis}</TableCell>
-                    <TableCell>{student.nisn}</TableCell>
-                    <TableCell>{student.gender}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                          Ubah
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        Pindahkan
-                      </Button>
-                    </TableCell>
-                </TableRow>
-                ))}
-            </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Nama Siswa</TableHead>
+                    <TableHead>NIS</TableHead>
+                    <TableHead>NISN</TableHead>
+                    <TableHead>Jenis Kelamin</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {studentsInClass.map((student) => (
+                    <TableRow key={student.id}>
+                        <TableCell className="font-medium">{student.name}</TableCell>
+                        <TableCell>{student.nis}</TableCell>
+                        <TableCell>{student.nisn}</TableCell>
+                        <TableCell>{student.gender}</TableCell>
+                        <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">
+                            Ubah
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                            Pindahkan
+                        </Button>
+                        </TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </div>
         </CardContent>
         </Card>
     </div>

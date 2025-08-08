@@ -276,7 +276,7 @@ export default function AttendancePage() {
                         <RadioGroup
                           value={attendance.get(student.id) || 'Hadir'}
                           onValueChange={(value) => handleAttendanceChange(student.id, value as AttendanceRecord['status'])}
-                          className="flex justify-end gap-2 md:gap-4"
+                          className="flex justify-end gap-2 md:gap-4 flex-wrap"
                         >
                           {attendanceOptions.map(option => (
                               <div key={option} className="flex items-center space-x-2">
@@ -292,7 +292,7 @@ export default function AttendancePage() {
               </Table>
             </div>
           </CardContent>
-          <CardFooter className="border-t px-6 py-4 justify-between">
+          <CardFooter className="border-t px-6 py-4 justify-between flex-wrap gap-2">
             <Button onClick={saveAttendance} disabled={!meetingNumber || !selectedSubject}>{editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}</Button>
             {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass, selectedSubject)}>Batal Mengubah</Button>}
           </CardFooter>
@@ -305,40 +305,42 @@ export default function AttendancePage() {
             <CardDescription>Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
         </CardHeader>
         <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Tanggal</TableHead>
-                        <TableHead>Kelas</TableHead>
-                        <TableHead>Mata Pelajaran</TableHead>
-                        <TableHead>Pertemuan Ke</TableHead>
-                        <TableHead>Kehadiran</TableHead>
-                        <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredHistory.map(entry => {
-                        const total = entry.records.length;
-                        const hadir = entry.records.filter(r => r.status === 'Hadir').length;
-                        const percentage = total > 0 ? ((hadir / total) * 100).toFixed(0) : 0;
-                        return (
-                            <TableRow key={entry.id}>
-                                <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
-                                <TableCell>{entry.className}</TableCell>
-                                <TableCell>{entry.subjectName}</TableCell>
-                                <TableCell className="text-center">{entry.meetingNumber}</TableCell>
-                                <TableCell>{hadir}/{total} ({percentage}%)</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Ubah
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        )
-                    })}
-                </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Tanggal</TableHead>
+                            <TableHead>Kelas</TableHead>
+                            <TableHead>Mata Pelajaran</TableHead>
+                            <TableHead>Pertemuan Ke</TableHead>
+                            <TableHead>Kehadiran</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredHistory.map(entry => {
+                            const total = entry.records.length;
+                            const hadir = entry.records.filter(r => r.status === 'Hadir').length;
+                            const percentage = total > 0 ? ((hadir / total) * 100).toFixed(0) : 0;
+                            return (
+                                <TableRow key={entry.id}>
+                                    <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
+                                    <TableCell>{entry.className}</TableCell>
+                                    <TableCell>{entry.subjectName}</TableCell>
+                                    <TableCell className="text-center">{entry.meetingNumber}</TableCell>
+                                    <TableCell>{hadir}/{total} ({percentage}%)</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Ubah
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </div>
         </CardContent>
       </Card>
     </div>

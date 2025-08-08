@@ -105,7 +105,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
                 <h1 className="text-2xl font-bold font-headline">Kelola Pengguna</h1>
                 <p className="text-muted-foreground">Lihat, cari, dan kelola semua pengguna terdaftar.</p>
@@ -122,10 +122,10 @@ export default function AdminUsersPage() {
                         <CardTitle>Daftar Pengguna</CardTitle>
                         <CardDescription>Total pengguna terdaftar: {users.length}</CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <Input 
                             placeholder="Cari nama atau email..." 
-                            className="w-full md:w-[250px]"
+                            className="w-full md:w-auto flex-grow"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -143,52 +143,54 @@ export default function AdminUsersPage() {
                 </div>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nama Pengguna</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Tanggal Bergabung</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredUsers.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell className="font-medium">{user.name}</TableCell>
-                                <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                                <TableCell>
-                                    <Badge variant={user.status === 'Pro' ? 'default' : 'secondary'} className={user.status === 'Pro' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>
-                                        {user.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>{format(user.joinDate, 'dd MMMM yyyy')}</TableCell>
-                                <TableCell className="text-right">
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                            <DropdownMenuItem onSelect={() => handleManageClick(user)}>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                Ubah Status
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Hapus Pengguna
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nama Pengguna</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Tanggal Bergabung</TableHead>
+                                <TableHead className="text-right">Aksi</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredUsers.map((user) => (
+                                <TableRow key={user.id}>
+                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={user.status === 'Pro' ? 'default' : 'secondary'} className={user.status === 'Pro' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>
+                                            {user.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{format(user.joinDate, 'dd MMMM yyyy')}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                <DropdownMenuItem onSelect={() => handleManageClick(user)}>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Ubah Status
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Hapus Pengguna
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
         </Card>
 

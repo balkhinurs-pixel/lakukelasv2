@@ -187,28 +187,30 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mata Pelajaran</TableHead>
-                  <TableHead>Kelas</TableHead>
-                  <TableHead className="text-right">Tanggal</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {journalEntries.slice(0, 5).map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>
-                      <div className="font-medium">{entry.subjectName}</div>
-                    </TableCell>
-                    <TableCell>{entry.className}</TableCell>
-                    <TableCell className="text-right">
-                      {format(entry.date, "dd MMM yyyy")}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mata Pelajaran</TableHead>
+                    <TableHead>Kelas</TableHead>
+                    <TableHead className="text-right">Tanggal</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {journalEntries.slice(0, 5).map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell>
+                        <div className="font-medium">{entry.subjectName}</div>
+                      </TableCell>
+                      <TableCell>{entry.className}</TableCell>
+                      <TableCell className="text-right">
+                        {format(entry.date, "dd MMM yyyy")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
         <Card className="lg:col-span-3 shadow-sm">
