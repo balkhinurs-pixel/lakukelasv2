@@ -272,38 +272,36 @@ export default function JournalPage() {
         </Dialog>
 
         <Card>
-            <CardHeader>
-                <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div>
-                        <CardTitle>Riwayat Jurnal</CardTitle>
-                        <CardDescription>
-                            Entri jurnal mengajar yang telah Anda simpan sebelumnya.
-                        </CardDescription>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                        <Select value={filterClass} onValueChange={setFilterClass}>
-                            <SelectTrigger className="w-full sm:w-[200px]">
-                                <SelectValue placeholder="Filter berdasarkan kelas" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Kelas</SelectItem>
-                                {classes.map(c => (
-                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={filterSubject} onValueChange={setFilterSubject}>
-                            <SelectTrigger className="w-full sm:w-[200px]">
-                                <SelectValue placeholder="Filter berdasarkan mapel" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Mapel</SelectItem>
-                                {subjects.map(s => (
-                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+            <CardHeader className="flex flex-col gap-4">
+                <div>
+                    <CardTitle>Riwayat Jurnal</CardTitle>
+                    <CardDescription>
+                        Entri jurnal mengajar yang telah Anda simpan sebelumnya.
+                    </CardDescription>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto md:self-start">
+                    <Select value={filterClass} onValueChange={setFilterClass}>
+                        <SelectTrigger className="w-full sm:w-[200px]">
+                            <SelectValue placeholder="Filter berdasarkan kelas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua Kelas</SelectItem>
+                            {classes.map(c => (
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={filterSubject} onValueChange={setFilterSubject}>
+                        <SelectTrigger className="w-full sm:w-[200px]">
+                            <SelectValue placeholder="Filter berdasarkan mapel" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua Mapel</SelectItem>
+                            {subjects.map(s => (
+                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -446,5 +444,3 @@ export default function JournalPage() {
     </div>
   );
 }
-
-    
