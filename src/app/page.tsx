@@ -44,7 +44,7 @@ export default function LoginPage() {
             </p>
             <Button 
                 variant="outline" 
-                className="w-full rounded-full border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                className="w-full rounded-full bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/20"
                 onClick={() => setView(view === 'login' ? 'register' : 'login')}
             >
                 {view === 'login' ? 'Buat Akun' : 'Masuk di Sini'}
