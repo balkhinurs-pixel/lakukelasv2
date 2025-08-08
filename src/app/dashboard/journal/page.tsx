@@ -28,6 +28,17 @@ import {
     DialogTitle,
     DialogTrigger,
   } from "@/components/ui/dialog"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
 import { journalEntries as initialJournalEntries, classes, subjects } from "@/lib/placeholder-data";
@@ -38,7 +49,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { JournalEntry } from "@/lib/types";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 type NewJournalEntry = Omit<JournalEntry, 'id' | 'date' | 'className' | 'subjectName'>;
 
@@ -115,12 +126,13 @@ export default function JournalPage() {
       setJournalEntries(journalEntries.filter(entry => entry.id !== entryId));
       toast({ title: "Sukses", description: "Jurnal berhasil dihapus.", variant: "destructive" });
       setIsViewDialogOpen(false);
+      setSelectedEntry(null);
   }
 
   const handleSaveJournal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEntry.classId || !newEntry.subjectId || !newEntry.learningObjectives || !newEntry.learningActivities) {
-        toast({ title: "Gagal", description: "Mohon isi semua kolom yang wajib diisi.", variant: "destructive" });
+        toast({ title: "Gagal Menyimpan", description: "Mohon isi semua kolom wajib: Kelas, Mapel, Tujuan, dan Kegiatan.", variant: "destructive" });
         return;
     }
 
@@ -143,7 +155,7 @@ export default function JournalPage() {
             } : entry
         );
         setJournalEntries(updatedEntries);
-        toast({ title: "Sukses", description: "Jurnal mengajar berhasil diperbarui." });
+        toast({ title: "Jurnal Diperbarui", description: "Jurnal mengajar berhasil diperbarui." });
     } else {
         // Add new entry
         const newJournalEntry: JournalEntry = {
@@ -155,7 +167,7 @@ export default function JournalPage() {
             meetingNumber: newEntry.meetingNumber || undefined,
         };
         setJournalEntries([newJournalEntry, ...journalEntries]);
-        toast({ title: "Sukses", description: "Jurnal mengajar berhasil disimpan.", className: "bg-green-100 text-green-900 border-green-200" });
+        toast({ title: "Jurnal Disimpan", description: "Jurnal mengajar baru berhasil disimpan.", className: "bg-green-100 text-green-900 border-green-200" });
     }
     
     setNewEntry(initialFormState);
@@ -329,24 +341,43 @@ export default function JournalPage() {
                         <p className="line-clamp-2 text-sm text-muted-foreground">{entry.learningObjectives}</p>
                     </TableCell>
                     <TableCell className="text-right">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewEntry(entry)}>
-                                    <Eye className="mr-2 h-4 w-4" /> Lihat Detail
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleOpenEditDialog(entry)}>
-                                    <Edit className="mr-2 h-4 w-4" /> Ubah
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDeleteEntry(entry.id)} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Hapus
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <AlertDialog>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleViewEntry(entry)}>
+                                        <Eye className="mr-2 h-4 w-4" /> Lihat Detail
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(entry)}>
+                                        <Edit className="mr-2 h-4 w-4" /> Ubah
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                            <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{entry.subjectName} di {entry.className}</span> pada tanggal {format(entry.date, "dd MMM yyyy")}?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteEntry(entry.id)} className="bg-destructive hover:bg-destructive/90">
+                                        Ya, Hapus
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </TableCell>
                     </TableRow>
                 ))}
@@ -388,11 +419,29 @@ export default function JournalPage() {
                  </div>
             )}
             <DialogFooter className="justify-between pt-4 border-t flex-wrap gap-2">
-                <div>
-                  <Button variant="destructive" onClick={() => selectedEntry && handleDeleteEntry(selectedEntry.id)}>
-                      <Trash2 className="mr-2 h-4 w-4"/> Hapus
-                  </Button>
-                </div>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4"/> Hapus
+                        </Button>
+                    </AlertDialogTrigger>
+                     {selectedEntry && (
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal {format(selectedEntry.date, "dd MMM yyyy")}?
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteEntry(selectedEntry.id)} className="bg-destructive hover:bg-destructive/90">
+                                    Ya, Hapus
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                     )}
+                </AlertDialog>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)}>
                       <Edit className="mr-2 h-4 w-4"/> Ubah

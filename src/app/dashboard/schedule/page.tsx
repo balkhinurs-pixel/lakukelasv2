@@ -21,6 +21,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -67,7 +78,7 @@ export default function SchedulePage() {
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
         if (!newEntry.day || !newEntry.classId || !newEntry.subjectId || !newEntry.startTime || !newEntry.endTime) {
-            toast({ title: "Gagal", description: "Semua kolom harus diisi.", variant: "destructive" });
+            toast({ title: "Gagal Menyimpan", description: "Semua kolom harus diisi.", variant: "destructive" });
             return;
         }
         
@@ -88,7 +99,7 @@ export default function SchedulePage() {
         if (editingItem) {
             // Update existing item
             setSchedule(schedule.map(item => item.id === editingItem.id ? { ...editingItem, ...scheduleData } : item));
-            toast({ title: "Sukses", description: "Jadwal berhasil diperbarui." });
+            toast({ title: "Jadwal Diperbarui", description: "Jadwal mengajar berhasil diperbarui." });
         } else {
             // Add new item
             const newScheduleItem: ScheduleItem = { 
@@ -97,7 +108,7 @@ export default function SchedulePage() {
               ...scheduleData,
             };
             setSchedule([...schedule, newScheduleItem]);
-            toast({ title: "Sukses", description: "Jadwal baru berhasil ditambahkan." });
+            toast({ title: "Jadwal Disimpan", description: "Jadwal baru berhasil ditambahkan.", className: "bg-green-100 text-green-900 border-green-200" });
         }
         
         setIsDialogOpen(false);
@@ -106,7 +117,7 @@ export default function SchedulePage() {
 
     const handleDelete = (id: string) => {
         setSchedule(schedule.filter(item => item.id !== id));
-        toast({ title: "Dihapus", description: "Jadwal telah dihapus.", variant: 'destructive' });
+        toast({ title: "Jadwal Dihapus", description: "Satu jadwal telah berhasil dihapus.", variant: 'destructive' });
     }
 
     const groupedSchedule = schedule.reduce((acc, item) => {
@@ -231,23 +242,41 @@ export default function SchedulePage() {
                       <p className="text-sm text-muted-foreground">{item.class}</p>
                       <p className="text-sm text-muted-foreground">{item.startTime} - {item.endTime}</p>
                     </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditDialog(item)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                <span>Ubah</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Hapus</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEditDialog(item)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    <span>Ubah</span>
+                                </DropdownMenuItem>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        <span>Hapus</span>
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Tindakan ini akan menghapus jadwal <span className="font-semibold">{item.subject}</span> di kelas <span className="font-semibold">{item.class}</span> pada hari {item.day}.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">
+                                    Ya, Hapus
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 ))}
               </CardContent>
