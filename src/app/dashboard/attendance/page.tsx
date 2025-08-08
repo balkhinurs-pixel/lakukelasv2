@@ -305,7 +305,34 @@ export default function AttendancePage() {
             <CardDescription>Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="overflow-x-auto">
+            {/* Mobile View - Cards */}
+            <div className="md:hidden space-y-4">
+              {filteredHistory.map(entry => {
+                const total = entry.records.length;
+                const hadir = entry.records.filter(r => r.status === 'Hadir').length;
+                const percentage = total > 0 ? ((hadir / total) * 100).toFixed(0) : 0;
+                return (
+                  <div key={entry.id} className="border rounded-lg p-4 space-y-3">
+                    <div>
+                      <div className="font-semibold">{entry.subjectName} - {entry.className}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {format(entry.date, "dd MMM yyyy")} - Pertemuan ke-{entry.meetingNumber}
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium">
+                      Kehadiran: {hadir}/{total} ({percentage}%)
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(entry)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Ubah
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop View - Table */}
+            <div className="hidden md:block overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -341,6 +368,11 @@ export default function AttendancePage() {
                     </TableBody>
                 </Table>
             </div>
+             {filteredHistory.length === 0 && (
+              <div className="text-center py-10 text-muted-foreground">
+                <p>Belum ada riwayat presensi.</p>
+              </div>
+            )}
         </CardContent>
       </Card>
     </div>
