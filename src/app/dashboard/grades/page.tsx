@@ -292,7 +292,26 @@ export default function GradesPage() {
             <CardDescription>Daftar nilai yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="overflow-x-auto">
+            {/* Mobile View - Cards */}
+            <div className="md:hidden space-y-4">
+              {filteredHistory.map(entry => (
+                <div key={entry.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="font-semibold">{entry.assessmentType}</div>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>Kelas: {entry.className}</p>
+                    <p>Mapel: {entry.subjectName}</p>
+                    <p>Tanggal: {format(entry.date, "dd MMM yyyy")}</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(entry)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Ubah
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop View - Table */}
+            <div className="hidden md:block overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -321,8 +340,15 @@ export default function GradesPage() {
                     </TableBody>
                 </Table>
             </div>
+            {filteredHistory.length === 0 && (
+              <div className="text-center py-10 text-muted-foreground">
+                <p>Belum ada riwayat penilaian.</p>
+              </div>
+            )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
