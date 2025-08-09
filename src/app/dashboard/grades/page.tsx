@@ -49,6 +49,9 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { classes, subjects, gradeHistory as initialHistory, students as allStudents } from "@/lib/placeholder-data";
 import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+
+const KKM = 75; // Kriteria Ketuntasan Minimal
 
 export default function GradesPage() {
   const searchParams = useSearchParams();
@@ -421,7 +424,7 @@ export default function GradesPage() {
             <DialogHeader>
             <DialogTitle>Detail Nilai: {viewingEntry?.assessmentType}</DialogTitle>
             <DialogDescription>
-                Daftar nilai untuk kelas {viewingEntry?.className} pada {viewingEntry ? format(viewingEntry.date, "dd MMM yyyy") : ''}.
+                Daftar nilai untuk kelas {viewingEntry?.className} pada {viewingEntry ? format(viewingEntry.date, "dd MMM yyyy") : ''}. KKM: {KKM}
             </DialogDescription>
             </DialogHeader>
             <div className="max-h-[60vh] overflow-y-auto pr-2">
@@ -430,15 +433,25 @@ export default function GradesPage() {
                         <TableRow>
                         <TableHead>Nama Siswa</TableHead>
                         <TableHead className="text-right">Nilai</TableHead>
+                        <TableHead className="text-right">Predikat</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {viewingEntry?.records.map(record => (
-                            <TableRow key={record.studentId}>
-                                <TableCell>{getStudentName(record.studentId)}</TableCell>
-                                <TableCell className="text-right font-medium">{record.score}</TableCell>
-                            </TableRow>
-                        ))}
+                        {viewingEntry?.records.map(record => {
+                            const score = Number(record.score);
+                            const isPassing = score >= KKM;
+                            return (
+                                <TableRow key={record.studentId}>
+                                    <TableCell>{getStudentName(record.studentId)}</TableCell>
+                                    <TableCell className="text-right font-medium">{record.score}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Badge variant={isPassing ? 'default' : 'destructive'} className={isPassing ? "bg-green-600 hover:bg-green-700" : ""}>
+                                            {isPassing ? 'Tuntas' : 'Remedial'}
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
                     </TableBody>
                 </Table>
             </div>
