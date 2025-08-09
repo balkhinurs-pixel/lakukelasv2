@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Eye, Calendar, BookOpen, Hash } from "lucide-react";
 import { journalEntries as initialJournalEntries, classes, subjects } from "@/lib/placeholder-data";
 import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -431,7 +432,7 @@ export default function JournalPage() {
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{entry.subjectName} di {entry.className}</span> pada tanggal {format(entry.date, "dd MMM yyyy")}?
+                                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{entry.subjectName} di {entry.className}</span> pada tanggal {format(entry.date, "dd MMM yyyy", { locale: id })}?
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -444,7 +445,7 @@ export default function JournalPage() {
                                     </AlertDialog>
                                 </div>
                                 <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
-                                    <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {format(entry.date, "dd MMM yyyy")}</div>
+                                    <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {format(entry.date, "dd MMM yyyy", { locale: id })}</div>
                                     {entry.meetingNumber && <div className="flex items-center gap-1.5"><Hash className="h-3.5 w-3.5" /> Pertemuan ke-{entry.meetingNumber}</div>}
                                 </div>
                             </CardHeader>
@@ -478,7 +479,7 @@ export default function JournalPage() {
             <DialogHeader>
                 <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
                 <DialogDescription>
-                    {selectedEntry?.subjectName} - {selectedEntry?.className} ({selectedEntry ? format(selectedEntry.date, "eeee, dd MMMM yyyy") : ''}) {selectedEntry?.meetingNumber ? `- Pertemuan ${selectedEntry.meetingNumber}` : ''}
+                    {selectedEntry?.subjectName} - {selectedEntry?.className} ({selectedEntry ? format(selectedEntry.date, "eeee, dd MMMM yyyy", { locale: id }) : ''}) {selectedEntry?.meetingNumber ? `- Pertemuan ${selectedEntry.meetingNumber}` : ''}
                 </DialogDescription>
             </DialogHeader>
             {selectedEntry && (
@@ -513,7 +514,7 @@ export default function JournalPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal {format(selectedEntry.date, "dd MMM yyyy")}?
+                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal {format(selectedEntry.date, "dd MMM yyyy", { locale: id })}?
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
