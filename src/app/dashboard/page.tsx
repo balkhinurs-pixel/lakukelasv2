@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -20,12 +19,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check } from "lucide-react";
 import Link from 'next/link';
-import { journalEntries, schedule, classes, subjects } from "@/lib/placeholder-data";
 import { format } from "date-fns";
-import type { ScheduleItem } from "@/lib/types";
+import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
+
+// Mock data, to be replaced by API calls
+const journalEntries: JournalEntry[] = [];
+const schedule: ScheduleItem[] = [];
+const classes: {id: string; name: string}[] = [];
+const subjects: {id: string; name: string}[] = [];
 
 export default function DashboardPage() {
     const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
@@ -131,9 +135,9 @@ export default function DashboardPage() {
             <ClipboardCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">95.8%</div>
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">0%</div>
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              2 dari 3 kelas telah direkam
+              Belum ada data terekam
             </p>
           </CardContent>
         </Card>
@@ -157,9 +161,9 @@ export default function DashboardPage() {
             <BookText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">1</div>
+            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">0</div>
             <p className="text-xs text-amber-700 dark:text-amber-300">
-              Dari jadwal kemarin
+              Tidak ada jurnal tertinggal
             </p>
           </CardContent>
         </Card>
@@ -186,30 +190,36 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mata Pelajaran</TableHead>
-                    <TableHead>Kelas</TableHead>
-                    <TableHead className="text-right">Tanggal</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {journalEntries.slice(0, 5).map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell>
-                        <div className="font-medium">{entry.subjectName}</div>
-                      </TableCell>
-                      <TableCell>{entry.className}</TableCell>
-                      <TableCell className="text-right">
-                        {format(entry.date, "dd MMM yyyy")}
-                      </TableCell>
+             {journalEntries.length > 0 ? (
+                <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Mata Pelajaran</TableHead>
+                        <TableHead>Kelas</TableHead>
+                        <TableHead className="text-right">Tanggal</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                    {journalEntries.slice(0, 5).map((entry) => (
+                        <TableRow key={entry.id}>
+                        <TableCell>
+                            <div className="font-medium">{entry.subjectName}</div>
+                        </TableCell>
+                        <TableCell>{entry.className}</TableCell>
+                        <TableCell className="text-right">
+                            {format(new Date(entry.date), "dd MMM yyyy")}
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </div>
+             ) : (
+                <div className="text-center text-muted-foreground py-8">
+                    <p>Belum ada jurnal yang dibuat.</p>
+                </div>
+             )}
           </CardContent>
         </Card>
         <Card className="lg:col-span-3 shadow-sm">
@@ -259,5 +269,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-
-    
+}
