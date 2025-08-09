@@ -18,7 +18,6 @@ Sebelum memulai, pastikan Anda memiliki:
 - Akun **GitHub** (atau GitLab/Bitbucket).
 - Akun **Supabase** ([Daftar di sini](https://supabase.com/dashboard)).
 - Akun **Vercel** ([Daftar di sini](https://vercel.com/signup)).
-- Akun **Duitku** (Sandbox atau Production) untuk payment gateway.
 
 ---
 
@@ -57,7 +56,7 @@ Kita perlu membuat tabel di database Supabase untuk menyimpan data aplikasi.
     -   Tempelkan skrip tersebut ke dalam editor SQL di Supabase.
     -   Klik tombol **"RUN"**.
 
-Ini akan secara otomatis membuat semua tabel yang diperlukan (`users`, `profiles`, `classes`, `students`, `subjects`, dll.) dengan struktur dan relasi yang benar.
+Ini akan secara otomatis membuat semua tabel yang diperlukan (`users`, `profiles`, `classes`, `students`, `subjects`, dll.) dengan struktur, relasi, dan kebijakan keamanan (RLS) yang benar.
 
 ---
 
@@ -76,22 +75,19 @@ Vercel akan kita gunakan untuk hosting aplikasi Next.js Anda.
 
 3.  **Konfigurasi Environment Variables**:
     -   Sebelum menekan tombol "Deploy", buka bagian **"Environment Variables"**.
-    -   Di sini, kita akan menambahkan kunci API yang telah kita dapatkan dari Supabase dan Duitku. Lihat langkah berikutnya untuk detailnya.
+    -   Di sini, kita akan menambahkan kunci API yang telah kita dapatkan dari Supabase. Lihat langkah berikutnya untuk detailnya.
 
 ---
 
 ### 5. Langkah 4: Konfigurasi Environment Variables
 
-Variabel ini penting agar aplikasi Anda bisa terhubung ke layanan eksternal seperti Supabase dan Duitku.
+Variabel ini penting agar aplikasi Anda bisa terhubung ke layanan eksternal seperti Supabase.
 
--   Buka `.env.example` (jika ada) di proyek ini untuk melihat daftar variabel yang dibutuhkan.
+-   Buka `.env.example` di proyek ini untuk melihat daftar variabel yang dibutuhkan.
 -   Di pengaturan proyek Vercel (saat akan deploy atau di menu *Settings* > *Environment Variables*), tambahkan variabel berikut satu per satu:
 
 | Nama Variabel                  | Nilai                                                                   | Deskripsi                                 |
 | ------------------------------ | ----------------------------------------------------------------------- | ----------------------------------------- |
-| `DUITKU_MERCHANT_CODE`         | `Dapatkan dari akun Duitku Anda`                                        | Kode Merchant Duitku Anda.                |
-| `DUITKU_API_KEY`               | `Dapatkan dari akun Duitku Anda`                                        | Kunci API Duitku Anda.                    |
-| `NEXT_PUBLIC_APP_URL`          | `URL yang diberikan oleh Vercel setelah deploy`                         | URL utama aplikasi Anda (misal: `https://nama-proyek.vercel.app`) |
 | `NEXT_PUBLIC_SUPABASE_URL`     | `URL proyek Supabase Anda`                                              | Salin dari pengaturan API Supabase.       |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`| `Kunci anon public Supabase Anda`                                       | Salin dari pengaturan API Supabase.       |
 
@@ -104,7 +100,6 @@ Vercel akan mulai membangun dan men-deploy aplikasi Anda. Setelah selesai, Anda 
 ### 6. Langkah Selanjutnya
 
 Saat ini, aplikasi masih menggunakan data placeholder. Langkah pengembangan selanjutnya adalah:
-1.  **Integrasi Supabase Client**: Gunakan `@supabase/supabase-js` di dalam kode Next.js Anda untuk berinteraksi dengan database.
+1.  **Integrasi Supabase Client**: Gunakan klien Supabase yang telah dibuat di dalam kode Next.js Anda untuk berinteraksi dengan database.
 2.  **Ganti Data Placeholder**: Ubah semua pemanggilan data statis (dari `placeholder-data.ts`) menjadi pemanggilan data dinamis dari database Supabase Anda.
 3.  **Implementasi Autentikasi**: Gantikan halaman login statis dengan sistem autentikasi Supabase untuk mengelola login guru.
-4.  **Bangun API Endpoint**: Buat API endpoint di Next.js (misalnya di `app/api`) untuk menangani callback dari Duitku.

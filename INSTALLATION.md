@@ -5,8 +5,8 @@ Dokumen ini berisi panduan untuk menginstal semua dependensi yang diperlukan dan
 ## Daftar Isi
 1.  [Prasyarat](#1-prasyarat)
 2.  [Instalasi](#2-instalasi)
-3.  [Menjalankan Aplikasi](#3-menjalankan-aplikasi)
-4.  [Konfigurasi Tambahan](#4-konfigurasi-tambahan)
+3.  [Penyiapan Supabase](#3-penyiapan-supabase)
+4.  [Menjalankan Aplikasi](#4-menjalankan-aplikasi)
 
 ---
 
@@ -16,12 +16,13 @@ Sebelum memulai, pastikan Anda telah menginstal perangkat lunak berikut di siste
 
 -   **Node.js**: Versi 18.x atau yang lebih baru. Anda bisa mengunduhnya dari [nodejs.org](https://nodejs.org/).
 -   **npm** (Node Package Manager): Biasanya sudah terinstal bersama Node.js.
+-   **Akun Supabase**: Anda memerlukan proyek Supabase yang aktif.
 
 ---
 
 ### 2. Instalasi
 
-Semua dependensi proyek, baik untuk frontend (Next.js, React) maupun backend (Genkit), sudah didefinisikan dalam file `package.json`.
+Semua dependensi proyek sudah didefinisikan dalam file `package.json`.
 
 Untuk menginstal semua dependensi tersebut, ikuti langkah berikut:
 
@@ -37,11 +38,29 @@ Proses ini mungkin memerlukan beberapa menit tergantung pada kecepatan koneksi i
 
 ---
 
-### 3. Menjalankan Aplikasi
+### 3. Penyiapan Supabase
 
-Aplikasi ini terdiri dari dua bagian utama yang bisa dijalankan secara terpisah:
--   Aplikasi Next.js (antarmuka pengguna utama).
--   Server Genkit (untuk fitur AI seperti pembayaran).
+Aplikasi ini memerlukan koneksi ke database Supabase untuk berfungsi.
+
+1.  **Buat file `.env`**:
+    -   Salin file `.env.example` dan ubah namanya menjadi `.env`.
+    -   Isi nilai `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` dengan kredensial dari proyek Supabase Anda. Anda bisa menemukannya di *Project Settings* > *API* di dasbor Supabase.
+
+    Contoh isi file `.env`:
+    ```
+    NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyxxxxxxxx.xxxxxxxx
+    ```
+
+2.  **Jalankan Skema Database**:
+    -   Masuk ke dasbor Supabase Anda.
+    -   Navigasi ke **SQL Editor**.
+    -   Buka file `schema.sql` dari proyek ini, salin seluruh isinya.
+    -   Tempelkan ke editor SQL di Supabase dan klik **"RUN"**. Ini akan membuat semua tabel yang diperlukan.
+
+---
+
+### 4. Menjalankan Aplikasi
 
 #### Menjalankan Server Pengembangan Next.js
 
@@ -56,32 +75,3 @@ Setelah server berhasil berjalan, Anda akan melihat pesan di terminal, biasanya 
 - ready started server on 0.0.0.0:9002, url: http://localhost:9002
 ```
 Buka `http://localhost:9002` di browser Anda untuk melihat aplikasi.
-
-#### Menjalankan Server Genkit (Opsional)
-
-Server ini diperlukan jika Anda ingin menguji fungsionalitas yang terkait dengan AI, seperti alur pembayaran.
-
-Buka terminal **baru** (biarkan terminal Next.js tetap berjalan) dan jalankan:
-
-```bash
-npm run genkit:dev
-```
-
-Server Genkit akan berjalan dan siap menerima panggilan dari aplikasi Next.js.
-
----
-
-### 4. Konfigurasi Tambahan
-
-Untuk fitur tertentu seperti pembayaran dengan Duitku, Anda perlu mengatur *environment variables*.
-
-1.  Buat file baru bernama `.env` di direktori root proyek.
-2.  Salin isi dari file `DEPLOYMENT.md` bagian "Konfigurasi Environment Variables" ke dalam file `.env` Anda.
-3.  Isi nilainya sesuai dengan kunci API yang Anda miliki dari layanan terkait.
-
-Contoh isi file `.env`:
-```
-DUITKU_MERCHANT_CODE=KODE_MERCHANT_ANDA
-DUITKU_API_KEY=KUNCI_API_ANDA
-NEXT_PUBLIC_APP_URL=http://localhost:9002
-```
