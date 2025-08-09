@@ -17,7 +17,9 @@ import {
   ChevronDown,
   KeyRound,
   Menu,
-  User as UserIcon
+  User as UserIcon,
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -48,6 +50,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dasbor' },
@@ -193,6 +196,13 @@ export default function DashboardLayoutClient({
     </>
   );
 
+  const StatusBadge = () => (
+    <Badge variant={isPro ? "default" : "secondary"} className={cn("mt-2", isPro ? 'bg-green-500/20 text-green-50 border-green-400/30' : 'bg-gray-500/20 text-gray-50 border-gray-400/30')}>
+      {isPro ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
+      Akun {isPro ? "Pro" : "Gratis"}
+    </Badge>
+  );
+
   return (
     <>
       <Sidebar variant="floating" collapsible="icon">
@@ -205,6 +215,7 @@ export default function DashboardLayoutClient({
               <div className="text-center">
                 <p className="text-lg font-bold">{profile?.full_name || 'Guru'}</p>
                 <p className="text-sm text-primary-foreground/80">{user?.email}</p>
+                <StatusBadge />
               </div>
           </div>
           <div className="flex justify-center p-2 group-data-[collapsible=icon]:p-0 group-data-[state=expanded]:hidden">
