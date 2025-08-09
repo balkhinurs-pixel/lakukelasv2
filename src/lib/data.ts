@@ -1,4 +1,6 @@
 
+'use server';
+
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear } from './types';
@@ -29,16 +31,44 @@ export async function getAdminDashboardData() {
 export async function getAllUsers(): Promise<Profile[]> {
     noStore();
     const supabase = createClient();
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
     
-    if (error) {
-        console.error("Error fetching users:", error);
+    // This function now fetches from auth.users and joins with profiles
+    // to ensure all signed-up users are listed, even if their profile creation is pending.
+    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+
+    if (authError) {
+        console.error("Error fetching users from auth:", authError);
         return [];
     }
-    return data;
+
+    const userIds = authUsers.users.map(u => u.id);
+
+    const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+    
+    if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+        return [];
+    }
+
+    const profilesMap = new Map(profiles.map(p => [p.id, p]));
+
+    const combinedUsers = authUsers.users.map(user => {
+        const profile = profilesMap.get(user.id);
+        return {
+            id: user.id,
+            created_at: user.created_at,
+            full_name: profile?.full_name || user.email || 'N/A',
+            email: user.email,
+            avatar_url: profile?.avatar_url,
+            account_status: profile?.account_status || 'Free',
+            role: profile?.role || 'teacher',
+        };
+    });
+
+    return combinedUsers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
 export async function getActivationCodes(): Promise<ActivationCode[]> {
@@ -383,3 +413,5 @@ export async function getReportsData() {
         allStudents,
     };
 }
+
+    
