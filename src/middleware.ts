@@ -38,11 +38,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
   
   // If user is not logged in, and tries to access protected routes, redirect to login
-  if (!session) {
+  if (!user) {
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
       return NextResponse.redirect(new URL('/', request.url));
     }
@@ -54,13 +54,13 @@ export async function middleware(request: NextRequest) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single();
   
   const isAdmin = profile?.role === 'admin';
   const isTeacher = profile?.role === 'teacher';
 
-  // If a logged-in user (admin or teacher) is on the login page, redirect them to their respective dashboard
+  // If a logged-in user is on the login page, redirect them to their respective dashboard
   if (pathname === '/') {
     if (isAdmin) {
       return NextResponse.redirect(new URL('/admin', request.url));
