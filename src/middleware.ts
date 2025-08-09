@@ -42,42 +42,37 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // If user is not logged in, and tries to access protected routes, redirect to login
-  if (!user) {
-    if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
+  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
       return NextResponse.redirect(new URL('/', request.url));
-    }
-    return response;
   }
-
-  // --- User is logged in, handle role-based routing and protection ---
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-  
-  const isAdmin = profile?.role === 'admin';
-  const isTeacher = profile?.role === 'teacher';
+  // If user is logged in, handle role-based routing
+  if (user) {
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+    
+    const isAdmin = profile?.role === 'admin';
 
-  // If a logged-in user is on the login page, redirect them to their respective dashboard
-  if (pathname === '/') {
-    if (isAdmin) {
-      return NextResponse.redirect(new URL('/admin', request.url));
+    // If a logged-in user is on the login page, redirect them to their respective dashboard
+    if (pathname === '/') {
+        if (isAdmin) {
+            return NextResponse.redirect(new URL('/admin', request.url));
+        }
+        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-    if (isTeacher) {
-       return NextResponse.redirect(new URL('/dashboard', request.url));
+
+    // Prevent non-admins from accessing admin routes
+    if (pathname.startsWith('/admin') && !isAdmin) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-  }
-
-  // If a non-admin tries to access admin routes, redirect to teacher dashboard
-  if (pathname.startsWith('/admin') && !isAdmin) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  // If an admin tries to access teacher dashboard, redirect to admin dashboard
-  if (pathname.startsWith('/dashboard') && !isTeacher) {
-    return NextResponse.redirect(new URL('/admin', request.url));
+    
+    // Prevent admins from accessing teacher dashboard routes
+    if (pathname.startsWith('/dashboard') && isAdmin) {
+        return NextResponse.redirect(new URL('/admin', request.url));
+    }
   }
 
 
@@ -96,3 +91,5 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+
+    
