@@ -382,7 +382,9 @@ export default function ReportsPage() {
                                         cy="50%"
                                         labelLine={false}
                                         label={renderCustomizedLabel}
-                                        outerRadius={100}
+                                        outerRadius={80}
+                                        innerRadius={60}
+                                        paddingAngle={5}
                                         fill="#8884d8"
                                         dataKey="value"
                                         nameKey="name"
@@ -608,3 +610,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
