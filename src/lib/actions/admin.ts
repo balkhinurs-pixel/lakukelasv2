@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
+import type { ActivationCode } from '../types';
 
 // This function generates a unique, random activation code.
 function generateCode(): string {
@@ -18,7 +19,7 @@ function generateCode(): string {
   return result;
 }
 
-export async function generateActivationCode() {
+export async function generateActivationCode(): Promise<{ success: boolean; data?: ActivationCode, error?: string, code?: string }> {
   noStore();
   const supabase = createClient();
   const newCode = generateCode();
@@ -39,7 +40,7 @@ export async function generateActivationCode() {
     }
 
     revalidatePath('/admin/codes');
-    return { success: true, code: data.code };
+    return { success: true, data };
 
   } catch (error: any) {
     return { success: false, error: error.message };

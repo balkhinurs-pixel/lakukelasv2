@@ -6,19 +6,22 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateActivationCode } from "@/lib/actions/admin";
+import { useRouter } from 'next/navigation';
 
 export function GenerateCodeButton() {
+    const router = useRouter();
     const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
 
     const handleGenerate = async () => {
         setLoading(true);
         const result = await generateActivationCode();
-        if (result.success) {
+        if (result.success && result.data) {
             toast({
                 title: "Kode Berhasil Dibuat",
-                description: `Kode baru: ${result.code}`,
+                description: `Kode baru: ${result.data.code}`,
             });
+            router.refresh(); // Reload data on the page
         } else {
             toast({
                 title: "Gagal Membuat Kode",
