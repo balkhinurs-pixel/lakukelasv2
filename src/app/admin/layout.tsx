@@ -8,7 +8,8 @@ import {
   LogOut,
   Users,
   Menu,
-  PanelLeft
+  PanelLeft,
+  KeySquare
 } from 'lucide-react';
 
 import {
@@ -38,17 +39,28 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from '@/components/icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
   { href: '/admin/users', icon: Users, label: 'Pengguna' },
+  { href: '/admin/codes', icon: KeySquare, label: 'Kode Aktivasi' },
 ];
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const { state: sidebarState } = useSidebar();
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+    router.refresh();
+  }
 
   const BottomNavbar = () => {
     const pathname = usePathname();
@@ -124,7 +136,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />Keluar
                 </DropdownMenuItem>
               </DropdownMenuContent>
