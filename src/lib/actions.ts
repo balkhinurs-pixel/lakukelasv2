@@ -37,23 +37,26 @@ export async function activateAccount(code: string) {
   // Use a transaction to ensure both updates succeed or both fail
   const { error } = await supabase.rpc('activate_account_with_code', {
     activation_code_to_use: code,
-    user_id_to_activate: user.id
+    user_id_to_activate: user.id,
+    user_email_to_set: user.email
   });
 
   if (error) {
-      if (error?.message.includes('Code not found')) {
+      if (error.message.includes('Code not found')) {
           return { success: false, error: 'Kode aktivasi tidak valid.' };
       }
-      if (error?.message.includes('Code already used')) {
+      if (error.message.includes('Code already used')) {
           return { success: false, error: 'Kode aktivasi sudah pernah digunakan.' };
       }
-      return { success: false, error: error?.message || 'Terjadi kesalahan saat aktivasi.' };
+      console.error('RPC Error:', error);
+      return { success: false, error: 'Terjadi kesalahan pada server saat aktivasi.' };
   }
   
   // Revalidate all relevant paths to reflect Pro status immediately
   revalidatePath('/dashboard/activation');
   revalidatePath('/dashboard', 'layout');
-  revalidatePath('/admin');
+  revalidatePath('/admin/users');
+  revalidatePath('/admin/codes');
   
   return { success: true };
 }
