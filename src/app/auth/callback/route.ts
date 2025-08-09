@@ -8,25 +8,11 @@ export async function GET(request: NextRequest) {
   const supabase = createClient();
 
   if (code) {
-    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (session?.user) {
-      // After getting the session, check the user's role from the profiles table
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-      
-      if (profile?.role === 'admin') {
-        // If user is an admin, redirect to the admin dashboard
-        return NextResponse.redirect(`${requestUrl.origin}/admin`);
-      }
-    }
+    // exchange the auth code for a session
+    await supabase.auth.exchangeCodeForSession(code);
   }
 
-  // For all other users or if there's an error, redirect to the default teacher dashboard
+  // URL to redirect to after sign in process completes
+  // This will be handled by the middleware, which will check the role
   return NextResponse.redirect(`${requestUrl.origin}/dashboard`);
 }
-
-    
