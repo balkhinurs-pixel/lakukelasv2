@@ -17,12 +17,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
-import { updateProfile, updateSchoolData } from "@/lib/actions";
+import { updateProfile, updateSchoolData, uploadProfileImage } from "@/lib/actions";
 import { Loader2 } from "lucide-react";
 
 export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
     const { toast } = useToast();
     const [loading, setLoading] = React.useState(false);
+    const [uploading, setUploading] = React.useState<'avatar' | 'logo' | null>(null);
+
+    const avatarInputRef = React.useRef<HTMLInputElement>(null);
+    const logoInputRef = React.useRef<HTMLInputElement>(null);
+
+    const [avatarUrl, setAvatarUrl] = React.useState(profile.avatar_url);
+    const [logoUrl, setLogoUrl] = React.useState(profile.school_logo_url);
     
     const [profileData, setProfileData] = React.useState({
         fullName: profile.full_name || '',
@@ -70,6 +77,29 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         setLoading(false);
     }
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'logo') => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(type);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const result = await uploadProfileImage(formData, type);
+
+        if (result.success && result.url) {
+            toast({ title: "Sukses", description: "Gambar berhasil diunggah." });
+            if (type === 'avatar') {
+                setAvatarUrl(result.url);
+            } else {
+                setLogoUrl(result.url);
+            }
+        } else {
+            toast({ title: "Gagal Mengunggah", description: result.error, variant: "destructive" });
+        }
+        setUploading(null);
+    }
+
     const handleAccountSave = async (e: React.FormEvent) => {
         e.preventDefault();
         toast({
@@ -90,6 +120,8 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
 
     return (
     <div className="space-y-6">
+        <input type="file" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, 'avatar')} accept="image/*" className="hidden" />
+        <input type="file" ref={logoInputRef} onChange={(e) => handleImageUpload(e, 'logo')} accept="image/*" className="hidden" />
         <div>
             <h1 className="text-2xl font-bold font-headline">Pengaturan</h1>
             <p className="text-muted-foreground">Kelola profil, akun, dan data sekolah Anda.</p>
@@ -111,10 +143,13 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                         <CardContent className="space-y-6">
                             <div className="flex items-center gap-4">
                                 <Avatar className="h-20 w-20">
-                                    <AvatarImage src={profile.avatar_url || "https://placehold.co/100x100.png"} alt={profile.full_name || 'Teacher'} data-ai-hint="teacher portrait"/>
+                                    <AvatarImage src={avatarUrl || "https://placehold.co/100x100.png"} alt={profile.full_name || 'Teacher'} data-ai-hint="teacher portrait"/>
                                     <AvatarFallback>{getAvatarFallback(profile.full_name)}</AvatarFallback>
                                 </Avatar>
-                                <Button type="button" variant="outline" disabled>Ganti Foto (Segera Hadir)</Button>
+                                <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()} disabled={uploading === 'avatar'}>
+                                    {uploading === 'avatar' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Ganti Foto
+                                </Button>
                             </div>
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -189,10 +224,13 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                                 <Label>Logo Sekolah</Label>
                                 <div className="flex items-center gap-4">
                                     <Avatar className="h-20 w-20 rounded-md">
-                                        <AvatarImage src={profile.school_logo_url || "https://placehold.co/100x100.png"} alt="Logo Sekolah" data-ai-hint="school building" />
+                                        <AvatarImage src={logoUrl || "https://placehold.co/100x100.png"} alt="Logo Sekolah" data-ai-hint="school building" />
                                         <AvatarFallback>LOGO</AvatarFallback>
                                     </Avatar>
-                                    <Button type="button" variant="outline" disabled>Ganti Logo (Segera Hadir)</Button>
+                                    <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploading === 'logo'}>
+                                        {uploading === 'logo' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Ganti Logo
+                                    </Button>
                                 </div>
                             </div>
                            <div className="space-y-2">

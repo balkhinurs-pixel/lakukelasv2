@@ -294,3 +294,43 @@ export async function updateSchoolData(schoolData: { schoolName: string; schoolA
     const action = supabase.from('profiles').update(updatedData).eq('id', user.id);
     return handleSupabaseAction(action, 'Data sekolah berhasil diperbarui.', '/dashboard/settings');
 }
+
+export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'logo') {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
+    const file = formData.get('file') as File;
+    if (!file) return { success: false, error: 'No file provided' };
+
+    const bucket = 'profile-images';
+    const filePath = `${user.id}/${type}-${Date.now()}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
+
+    if (uploadError) {
+        return { success: false, error: `Upload failed: ${uploadError.message}` };
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+
+    const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
+
+    const { error: dbError } = await supabase
+        .from('profiles')
+        .update({ [columnToUpdate]: publicUrl })
+        .eq('id', user.id);
+
+    if (dbError) {
+        return { success: false, error: `Database update failed: ${dbError.message}` };
+    }
+    
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/dashboard', 'layout'); // Revalidate layout to update sidebar avatar
+
+    return { success: true, message: 'Image uploaded successfully', url: publicUrl };
+}
