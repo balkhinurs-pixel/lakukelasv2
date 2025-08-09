@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react";
@@ -132,16 +133,16 @@ const teacherData = {
 }
 
 export default function ReportsPage() {
-  const [selectedClass, setSelectedClass] = React.useState("all");
-  const [selectedSubject, setSelectedSubject] = React.useState("all");
+  const [selectedClass, setSelectedClass] = React.useState("C01");
+  const [selectedSubject, setSelectedSubject] = React.useState("SUBJ01");
   const [selectedMonth, setSelectedMonth] = React.useState("all");
-  const [selectedSemester, setSelectedSemester] = React.useState("all");
+  const [selectedSemester, setSelectedSemester] = React.useState("2");
   const { isPro, limits } = useActivation();
   const { toast } = useToast();
 
   const pieData = Object.entries(overallAttendance).map(([name, value]) => ({name, value}));
 
-  const handleDownloadClick = (title: string, head: string[][], body: any[][]) => {
+  const handleDownloadClick = () => {
       if (!limits.canDownloadPdf) {
           toast({
               title: "Fitur Akun Pro",
@@ -150,14 +151,60 @@ export default function ReportsPage() {
           });
           return;
       }
-      downloadPdf(title, head, body);
+
+      const activeClass = classes.find(c => c.id === selectedClass);
+      const activeSubject = subjects.find(s => s.id === selectedSubject);
+      
+      const title = `REKAPITULASI KEHADIRAN SISWA`;
+      const doc = new jsPDF() as jsPDFWithAutoTable;
+      
+      const head = [['No.', 'NIS', 'Nama Siswa', 'H', 'S', 'I', 'A', 'Pertemuan', 'Kehadiran (%)']];
+      const body = detailedAttendance
+        .filter(s => selectedClass === 'all' || s.classId === selectedClass)
+        .map((s, index) => [
+            index + 1,
+            s.nis,
+            s.name,
+            s.hadir,
+            s.sakit,
+            s.izin,
+            s.alpha,
+            s.pertemuan,
+            ((s.hadir/s.pertemuan)*100).toFixed(1) + '%'
+      ]);
+
+      downloadPdf(doc, title, head, body, {
+        kelas: activeClass?.name,
+        mapel: activeSubject?.name,
+        semester: selectedSemester === "1" ? "Ganjil" : "Genap",
+        tahunAjaran: "2023/2024"
+      });
+  }
+  
+  const handleDownloadGrades = () => {
+    if (!limits.canDownloadPdf) {
+        toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
+        return;
+    }
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    downloadPdf(doc, 'Laporan Nilai Siswa', [['ID', 'Nama', 'UH1', 'UH2', 'Tugas 1', 'UTS', 'UAS']], detailedGrades.map(s => [s.id, s.name, s.uh1, s.uh2, s.tugas1, s.uts, s.uas]));
+  }
+  
+  const handleDownloadJournal = () => {
+    if (!limits.canDownloadPdf) {
+        toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
+        return;
+    }
+     const doc = new jsPDF() as jsPDFWithAutoTable;
+    downloadPdf(doc, 'Laporan Jurnal Mengajar', [['Tanggal', 'Info', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), `${j.className} - ${j.subjectName} (P-${j.meetingNumber})`, j.learningObjectives, j.learningActivities]));
   }
 
-  const downloadPdf = async (title: string, head: string[][], body: any[][]) => {
-    const doc = new jsPDF() as jsPDFWithAutoTable;
+
+  const downloadPdf = async (doc: jsPDFWithAutoTable, title: string, head: string[][], body: any[][], meta?: Record<string, string | undefined>) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
+    let finalY = margin;
 
     // --- Add Header ---
     try {
@@ -168,63 +215,87 @@ export default function ReportsPage() {
         reader.onloadend = () => {
             const base64data = reader.result as string;
             doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
-            
-            doc.setFontSize(14).setFont(undefined, 'bold');
-            doc.text(schoolData.name.toUpperCase(), margin + 25, margin + 8);
-            doc.setFontSize(10).setFont(undefined, 'normal');
-            doc.text(schoolData.address, margin + 25, margin + 14);
-            doc.setLineWidth(0.5);
-            doc.line(margin, margin + 25, pageWidth - margin, margin + 25);
-            
-            // --- Add Table ---
-            generateTableAndFooter(doc, title, head, body, margin, pageWidth, pageHeight);
+            generateContent();
         };
     } catch (error) {
         console.error("Error fetching logo, proceeding without it.", error);
-        generateTableAndFooter(doc, title, head, body, margin, pageWidth, pageHeight);
+        generateContent();
     }
-  }
-
-  const generateTableAndFooter = (doc: jsPDFWithAutoTable, title: string, head: string[][], body: any[][], margin: number, pageWidth: number, pageHeight: number) => {
-    doc.setFontSize(12).setFont(undefined, 'bold');
-    doc.text(title, pageWidth / 2, margin + 35, { align: 'center' });
     
-    doc.autoTable({
-        head: head,
-        body: body,
-        startY: margin + 40,
-        theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        styles: { fontSize: 8, cellPadding: 2 },
-    });
+    const generateContent = () => {
+        doc.setFontSize(14).setFont(undefined, 'bold');
+        doc.text(schoolData.name.toUpperCase(), margin + 25, margin + 8);
+        doc.setFontSize(10).setFont(undefined, 'normal');
+        doc.text(schoolData.address, margin + 25, margin + 14);
+        doc.setLineWidth(0.5);
+        doc.line(margin, margin + 25, pageWidth - margin, margin + 25);
+        finalY = margin + 25;
 
-    // --- Add Footer ---
-    const tableEndY = (doc.lastAutoTable as any).finalY;
-    const signatureY = tableEndY + 20 > pageHeight - 50 ? pageHeight - 50 : tableEndY + 20;
+        // --- Add Title and Meta Info ---
+        doc.setFontSize(12).setFont(undefined, 'bold');
+        doc.text(title, pageWidth / 2, finalY + 10, { align: 'center' });
+        finalY += 15;
 
-    const todayDate = format(new Date(), "eeee, dd MMMM yyyy", { locale: id });
-    const city = schoolData.address.split(',')[1]?.trim() || "Kota";
+        if (meta) {
+            doc.setFontSize(10).setFont(undefined, 'normal');
+            const metaYStart = finalY;
+            doc.text(`Mata Pelajaran`, margin, metaYStart);
+            doc.text(`: ${meta.mapel || '-'}`, margin + 35, metaYStart);
+            doc.text(`Kelas`, margin, metaYStart + 5);
+            doc.text(`: ${meta.kelas || 'Semua Kelas'}`, margin + 35, metaYStart + 5);
+            doc.text(`Semester`, pageWidth / 2, metaYStart);
+            doc.text(`: ${meta.semester || '-'}`, pageWidth / 2 + 35, metaYStart);
+            doc.text(`Tahun Ajaran`, pageWidth / 2, metaYStart + 5);
+            doc.text(`: ${meta.tahunAjaran || '-'}`, pageWidth / 2 + 35, metaYStart + 5);
+            finalY = metaYStart + 15;
+        }
 
-    doc.setFontSize(10);
-    doc.text(`${city}, ${todayDate}`, pageWidth - margin, signatureY, { align: 'right' });
-    
-    const signatureXLeft = margin;
-    const signatureXRight = pageWidth - margin;
-    const signatureYBase = signatureY + 8;
-    
-    doc.text("Mengetahui,", signatureXLeft, signatureYBase, { align: 'left'});
-    doc.text("Guru Mata Pelajaran", signatureXRight, signatureYBase, { align: 'right'});
-    doc.text("Kepala Sekolah", signatureXLeft, signatureYBase, { align: 'left'});
+        // --- Add Table ---
+        doc.autoTable({
+            head: head,
+            body: body,
+            startY: finalY,
+            theme: 'grid',
+            headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
+            styles: { fontSize: 8, cellPadding: 2, lineWidth: 0.1 },
+            didDrawPage: (data) => {
+                // In case of multiple pages, reset finalY for the new page.
+                finalY = data.cursor?.y || 0;
+            }
+        });
 
-    const signatureYName = signatureYBase + 30;
-    doc.setFont(undefined, 'bold').text(schoolData.headmasterName, signatureXLeft, signatureYName, { align: 'left'});
-    doc.setFont(undefined, 'normal').text(`NIP. ${schoolData.headmasterNip}`, signatureXLeft, signatureYName + 5, { align: 'left'});
+        finalY = (doc.lastAutoTable as any).finalY;
+        
+        // --- Add Footer ---
+        const signatureY = finalY + 15 > pageHeight - 50 ? pageHeight - 50 : finalY + 15;
+        if (finalY + 50 > pageHeight) { // Check if we need a new page for signature
+            doc.addPage();
+            finalY = margin;
+        }
 
-    doc.setFont(undefined, 'bold').text(teacherData.name, signatureXRight, signatureYName, { align: 'right'});
-    doc.setFont(undefined, 'normal').text(`NIP. ${teacherData.nip}`, signatureXRight, signatureYName + 5, { align: 'right'});
+        const todayDate = format(new Date(), "eeee, dd MMMM yyyy", { locale: id });
+        const city = schoolData.address.split(',')[1]?.trim() || "Kota";
 
+        doc.setFontSize(10);
+        doc.text(`${city}, ${todayDate}`, pageWidth - margin, signatureY, { align: 'right' });
+        
+        const signatureXLeft = margin;
+        const signatureXRight = pageWidth - margin;
+        const signatureYBase = signatureY + 8;
+        
+        doc.text("Mengetahui,", signatureXLeft, signatureYBase, { align: 'left'});
+        doc.text("Guru Mata Pelajaran,", signatureXRight, signatureYBase, { align: 'right'});
+        doc.text("Kepala Sekolah", signatureXLeft, signatureYBase + 5, { align: 'left'});
 
-    doc.save(`${title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
+        const signatureYName = signatureYBase + 30;
+        doc.setFont(undefined, 'bold').text(schoolData.headmasterName, signatureXLeft, signatureYName, { align: 'left'});
+        doc.setFont(undefined, 'normal').text(`NIP. ${schoolData.headmasterNip}`, signatureXLeft, signatureYName + 5, { align: 'left'});
+
+        doc.setFont(undefined, 'bold').text(teacherData.name, signatureXRight, signatureYName, { align: 'right'});
+        doc.setFont(undefined, 'normal').text(`NIP. ${teacherData.nip}`, signatureXRight, signatureYName + 5, { align: 'right'});
+
+        doc.save(`${title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -441,7 +512,7 @@ export default function ReportsPage() {
                                 <CardDescription>Detail kehadiran siswa per periode.</CardDescription>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => handleDownloadClick('Laporan Kehadiran Siswa', [['ID', 'Nama', 'Hadir', 'Sakit', 'Izin', 'Alpha', '% Hadir']], detailedAttendance.map(s => [s.id, s.name, s.hadir, s.sakit, s.izin, s.alpha, ((s.hadir/s.pertemuan)*100).toFixed(1) + '%']))} disabled={!isPro}>
+                                <Button variant="outline" onClick={handleDownloadClick} disabled={!isPro}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Unduh PDF
                                 </Button>
@@ -550,7 +621,7 @@ export default function ReportsPage() {
                                <CardDescription>Detail nilai ulangan dan tugas siswa.</CardDescription>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => handleDownloadClick('Laporan Nilai Siswa', [['ID', 'Nama', 'UH1', 'UH2', 'Tugas 1', 'UTS', 'UAS']], detailedGrades.map(s => [s.id, s.name, s.uh1, s.uh2, s.tugas1, s.uts, s.uas]))} disabled={!isPro}>
+                                <Button variant="outline" onClick={handleDownloadGrades} disabled={!isPro}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Unduh PDF
                                 </Button>
@@ -642,7 +713,7 @@ export default function ReportsPage() {
                                 <CardTitle>Laporan Jurnal Mengajar</CardTitle>
                                 <CardDescription>Arsip semua jurnal mengajar yang telah Anda buat.</CardDescription>
                             </div>
-                            <Button variant="outline" onClick={() => handleDownloadClick('Laporan Jurnal Mengajar', [['Tanggal', 'Info', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), `${j.className} - ${j.subjectName} (P-${j.meetingNumber})`, j.learningObjectives, j.learningActivities]))} disabled={!isPro}>
+                            <Button variant="outline" onClick={handleDownloadJournal} disabled={!isPro}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Unduh PDF
                             </Button>
@@ -697,5 +768,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    
