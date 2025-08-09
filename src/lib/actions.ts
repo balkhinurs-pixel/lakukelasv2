@@ -137,6 +137,9 @@ export async function saveSubject(formData: FormData) {
 
 export async function saveStudent(formData: FormData) {
     const supabase = createClient();
+     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
     const classId = formData.get('class_id') as string;
 
     const rawData = {
@@ -186,6 +189,9 @@ export async function deleteSchedule(scheduleId: string) {
 // --- Attendance Actions ---
 export async function saveAttendance(formData: FormData) {
     const supabase = createClient();
+     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+    
     const attendanceId = formData.get('id') as string;
 
     const records = JSON.parse(formData.get('records') as string);
@@ -195,6 +201,7 @@ export async function saveAttendance(formData: FormData) {
         subject_id: formData.get('subject_id') as string,
         meeting_number: Number(formData.get('meeting_number')),
         records: records,
+        teacher_id: user.id
     };
 
     const action = attendanceId
@@ -207,6 +214,9 @@ export async function saveAttendance(formData: FormData) {
 // --- Grade Actions ---
 export async function saveGrades(formData: FormData) {
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
     const gradeId = formData.get('id') as string;
     
     const records = JSON.parse(formData.get('records') as string);
@@ -216,6 +226,7 @@ export async function saveGrades(formData: FormData) {
         subject_id: formData.get('subject_id') as string,
         assessment_type: formData.get('assessment_type') as string,
         records: records,
+        teacher_id: user.id
     };
 
     const action = gradeId

@@ -1,7 +1,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode } from './types';
 
 // --- Admin Data ---
 
@@ -23,10 +23,10 @@ export async function getAdminDashboardData() {
         return { totalUsers: 0, proUsers: 0 };
     }
 
-    return { totalUsers, proUsers };
+    return { totalUsers: totalUsers || 0, proUsers: proUsers || 0 };
 }
 
-export async function getAllUsers() {
+export async function getAllUsers(): Promise<Profile[]> {
     noStore();
     const supabase = createClient();
     const { data, error } = await supabase
@@ -41,7 +41,7 @@ export async function getAllUsers() {
     return data;
 }
 
-export async function getActivationCodes() {
+export async function getActivationCodes(): Promise<ActivationCode[]> {
     noStore();
     const supabase = createClient();
     const { data, error } = await supabase
@@ -91,7 +91,10 @@ export async function getUserProfile() {
 export async function getClasses(): Promise<Class[]> {
     noStore();
     const supabase = createClient();
-    const { data, error } = await supabase.from('classes').select('*');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    
+    const { data, error } = await supabase.from('classes').select('*').eq('teacher_id', user.id);
     if (error) {
         console.error("Error fetching classes:", error);
         return [];
@@ -102,7 +105,10 @@ export async function getClasses(): Promise<Class[]> {
 export async function getSubjects(): Promise<Subject[]> {
     noStore();
     const supabase = createClient();
-    const { data, error } = await supabase.from('subjects').select('*');
+     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase.from('subjects').select('*').eq('teacher_id', user.id);
     if (error) {
         console.error("Error fetching subjects:", error);
         return [];
@@ -130,9 +136,13 @@ export async function getStudentsByClass(classId: string): Promise<Student[]> {
 export async function getSchedule(): Promise<ScheduleItem[]> {
     noStore();
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('schedule')
-      .select('*, classes(name), subjects(name)');
+      .select('*, classes(name), subjects(name)')
+      .eq('teacher_id', user.id);
     
     if (error) {
       console.error("Error fetching schedule:", error);
@@ -149,9 +159,13 @@ export async function getSchedule(): Promise<ScheduleItem[]> {
 export async function getJournalEntries(): Promise<JournalEntry[]> {
     noStore();
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('journals')
       .select('*, classes(name), subjects(name)')
+      .eq('teacher_id', user.id)
       .order('date', { ascending: false });
 
     if (error) {
@@ -169,9 +183,13 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
 export async function getAttendanceHistory(): Promise<AttendanceHistoryEntry[]> {
     noStore();
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('attendance_history')
       .select('*, classes(name), subjects(name)')
+      .eq('teacher_id', user.id)
       .order('date', { ascending: false });
     
     if (error) {
@@ -183,15 +201,20 @@ export async function getAttendanceHistory(): Promise<AttendanceHistoryEntry[]> 
         ...entry,
         className: entry.classes.name,
         subjectName: entry.subjects.name,
+        records: entry.records.map((r: any) => ({studentId: r.student_id, status: r.status}))
     }));
 }
 
 export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
     noStore();
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('grade_history')
       .select('*, classes(name), subjects(name, kkm)')
+      .eq('teacher_id', user.id)
       .order('date', { ascending: false });
 
     if (error) {
@@ -204,13 +227,17 @@ export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
         className: entry.classes.name,
         subjectName: entry.subjects.name,
         subjectKkm: entry.subjects.kkm,
+        records: entry.records.map((r: any) => ({studentId: r.student_id, score: r.score}))
     }));
 }
 
 export async function getAllStudents(): Promise<Student[]> {
     noStore();
     const supabase = createClient();
-    const { data, error } = await supabase.from('students').select('*');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase.from('students').select('*, classes!inner(*)').eq('classes.teacher_id', user.id);
     if (error) {
         console.error("Error fetching all students:", error);
         return [];

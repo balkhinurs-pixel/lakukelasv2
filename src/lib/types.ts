@@ -1,4 +1,5 @@
 
+
 export interface Profile {
   id: string;
   created_at: string;
@@ -13,7 +14,18 @@ export interface Profile {
   headmaster_nip?: string;
   school_logo_url?: string;
   account_status: 'Free' | 'Pro';
+  role: 'admin' | 'teacher';
   email?: string;
+}
+
+export interface ActivationCode {
+    id: string;
+    code: string;
+    is_used: boolean;
+    used_by: string | null;
+    used_at: string | null;
+    created_at: string;
+    used_by_email?: string | null;
 }
 
 export interface Student {
