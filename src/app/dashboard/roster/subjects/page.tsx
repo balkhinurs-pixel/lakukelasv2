@@ -33,30 +33,55 @@ import { subjects as initialSubjects } from "@/lib/placeholder-data";
 import { useToast } from "@/hooks/use-toast";
 import type { Subject } from "@/lib/types";
 
+type NewSubjectData = {
+    name: string;
+    kkm: number | string;
+}
+
 export default function SubjectSettingsPage() {
     const [subjects, setSubjects] = React.useState<Subject[]>(initialSubjects);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-    const [newSubjectName, setNewSubjectName] = React.useState("");
+    const [editingSubject, setEditingSubject] = React.useState<Subject | null>(null);
+    const [newSubjectData, setNewSubjectData] = React.useState<NewSubjectData>({ name: "", kkm: 75 });
     const { toast } = useToast();
+
+    const handleOpenDialog = (subject: Subject | null = null) => {
+        if (subject) {
+            setEditingSubject(subject);
+            setNewSubjectData({ name: subject.name, kkm: subject.kkm });
+        } else {
+            setEditingSubject(null);
+            setNewSubjectData({ name: "", kkm: 75 });
+        }
+        setIsDialogOpen(true);
+    };
 
     const handleSaveSubject = (e: React.FormEvent) => {
         e.preventDefault();
+        const kkmNumber = Number(newSubjectData.kkm);
 
-        if (!newSubjectName) {
-            toast({ title: "Gagal", description: "Nama mata pelajaran tidak boleh kosong.", variant: "destructive" });
+        if (!newSubjectData.name || isNaN(kkmNumber) || kkmNumber < 0 || kkmNumber > 100) {
+            toast({ title: "Gagal", description: "Nama mapel harus diisi dan KKM harus berupa angka antara 0-100.", variant: "destructive" });
             return;
         }
 
-        const newSubject: Subject = {
-            id: `SUBJ${Date.now()}`,
-            name: newSubjectName,
-            teacherId: 'user_placeholder'
-        };
+        if (editingSubject) {
+            setSubjects(subjects.map(s => s.id === editingSubject.id ? { ...s, name: newSubjectData.name, kkm: kkmNumber } : s));
+            toast({ title: "Sukses", description: `Mata pelajaran ${newSubjectData.name} berhasil diperbarui.` });
+        } else {
+            const newSubject: Subject = {
+                id: `SUBJ${Date.now()}`,
+                name: newSubjectData.name,
+                kkm: kkmNumber,
+                teacherId: 'user_placeholder'
+            };
+            setSubjects([...subjects, newSubject]);
+            toast({ title: "Sukses", description: `Mata pelajaran ${newSubjectData.name} berhasil ditambahkan.` });
+        }
 
-        setSubjects([...subjects, newSubject]);
-        toast({ title: "Sukses", description: `Mata pelajaran ${newSubjectName} berhasil ditambahkan.` });
-        setNewSubjectName("");
         setIsDialogOpen(false);
+        setEditingSubject(null);
+        setNewSubjectData({ name: "", kkm: 75 });
     }
 
     return (
@@ -64,11 +89,11 @@ export default function SubjectSettingsPage() {
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold font-headline">Pengaturan Mata Pelajaran</h1>
-                    <p className="text-muted-foreground">Kelola daftar mata pelajaran yang Anda ajar.</p>
+                    <p className="text-muted-foreground">Kelola daftar mata pelajaran yang Anda ajar beserta KKM-nya.</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button>
+                        <Button onClick={() => handleOpenDialog()}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Tambah Mapel Baru
                         </Button>
@@ -76,13 +101,34 @@ export default function SubjectSettingsPage() {
                     <DialogContent>
                         <form onSubmit={handleSaveSubject}>
                             <DialogHeader>
-                                <DialogTitle>Tambah Mapel Baru</DialogTitle>
-                                <DialogDescription>Tambahkan mata pelajaran baru ke dalam sistem.</DialogDescription>
+                                <DialogTitle>{editingSubject ? 'Ubah' : 'Tambah'} Mapel Baru</DialogTitle>
+                                <DialogDescription>
+                                    {editingSubject ? 'Perbarui detail mata pelajaran ini.' : 'Tambahkan mata pelajaran baru ke dalam sistem.'}
+                                </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="subject-name">Nama Mata Pelajaran</Label>
-                                    <Input id="subject-name" placeholder="e.g. Matematika Wajib" value={newSubjectName} onChange={e => setNewSubjectName(e.target.value)} required/>
+                                    <Input 
+                                        id="subject-name" 
+                                        placeholder="e.g. Matematika Wajib" 
+                                        value={newSubjectData.name} 
+                                        onChange={e => setNewSubjectData({...newSubjectData, name: e.target.value})} 
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="subject-kkm">KKM (0-100)</Label>
+                                    <Input 
+                                        id="subject-kkm" 
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        placeholder="e.g. 75" 
+                                        value={newSubjectData.kkm} 
+                                        onChange={e => setNewSubjectData({...newSubjectData, kkm: e.target.value})} 
+                                        required
+                                    />
                                 </div>
                             </div>
                             <DialogFooter>
@@ -106,8 +152,9 @@ export default function SubjectSettingsPage() {
                                 <div className="font-semibold">{s.name}</div>
                                 <div className="text-sm text-muted-foreground">
                                     <p><span className="font-medium">ID:</span> {s.id}</p>
+                                    <p><span className="font-medium">KKM:</span> {s.kkm}</p>
                                 </div>
-                                <Button variant="outline" size="sm" className="w-full">
+                                <Button variant="outline" size="sm" className="w-full" onClick={() => handleOpenDialog(s)}>
                                     <Edit className="mr-2 h-4 w-4" /> Ubah
                                 </Button>
                             </div>
@@ -120,6 +167,7 @@ export default function SubjectSettingsPage() {
                                 <TableRow>
                                 <TableHead>ID Mapel</TableHead>
                                 <TableHead>Nama Mata Pelajaran</TableHead>
+                                <TableHead className="text-center">KKM</TableHead>
                                 <TableHead className="text-right">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -128,8 +176,11 @@ export default function SubjectSettingsPage() {
                                 <TableRow key={s.id}>
                                     <TableCell className="font-mono text-muted-foreground">{s.id}</TableCell>
                                     <TableCell className="font-medium">{s.name}</TableCell>
+                                    <TableCell className="text-center font-semibold">{s.kkm}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm">Ubah</Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(s)}>
+                                            <Edit className="mr-2 h-4 w-4" /> Ubah
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                                 ))}

@@ -28,13 +28,13 @@ export const classes: Class[] = [
 
 // --- SUBJECTS ---
 export const subjects: Subject[] = [
-    { id: 'SUBJ01', name: 'Matematika', teacherId: TEACHER_ID },
-    { id: 'SUBJ02', name: 'Fisika', teacherId: TEACHER_ID },
-    { id: 'SUBJ03', name: 'Biologi', teacherId: TEACHER_ID },
-    { id: 'SUBJ04', name: 'Bahasa Indonesia', teacherId: TEACHER_ID },
-    { id: 'SUBJ05', name: 'Bahasa Inggris', teacherId: TEACHER_ID },
-    { id: 'SUBJ06', name: 'Kimia', teacherId: TEACHER_ID },
-    { id: 'SUBJ07', name: 'Sejarah', teacherId: TEACHER_ID },
+    { id: 'SUBJ01', name: 'Matematika', kkm: 75, teacherId: TEACHER_ID },
+    { id: 'SUBJ02', name: 'Fisika', kkm: 78, teacherId: TEACHER_ID },
+    { id: 'SUBJ03', name: 'Biologi', kkm: 72, teacherId: TEACHER_ID },
+    { id: 'SUBJ04', name: 'Bahasa Indonesia', kkm: 70, teacherId: TEACHER_ID },
+    { id: 'SUBJ05', name: 'Bahasa Inggris', kkm: 73, teacherId: TEACHER_ID },
+    { id: 'SUBJ06', name: 'Kimia', kkm: 78, teacherId: TEACHER_ID },
+    { id: 'SUBJ07', name: 'Sejarah', kkm: 70, teacherId: TEACHER_ID },
 ];
 
 // --- SCHEDULE ---

@@ -51,8 +51,6 @@ import { classes, subjects, gradeHistory as initialHistory, students as allStude
 import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 
-const KKM = 75; // Kriteria Ketuntasan Minimal
-
 export default function GradesPage() {
   const searchParams = useSearchParams();
   const preselectedClassId = searchParams.get('classId');
@@ -205,6 +203,12 @@ export default function GradesPage() {
   const getStudentName = (studentId: string) => {
     return allStudents.find(s => s.id === studentId)?.name || "Siswa Tidak Ditemukan";
   };
+  
+  const getSubjectKkm = (subjectId: string | undefined): number => {
+      if (!subjectId) return 75; // Default KKM
+      const subject = subjects.find(s => s.id === subjectId);
+      return subject ? subject.kkm : 75;
+  }
 
   return (
     <div className="space-y-6">
@@ -424,7 +428,7 @@ export default function GradesPage() {
             <DialogHeader>
             <DialogTitle>Detail Nilai: {viewingEntry?.assessmentType}</DialogTitle>
             <DialogDescription>
-                Daftar nilai untuk kelas {viewingEntry?.className} pada {viewingEntry ? format(viewingEntry.date, "dd MMM yyyy") : ''}. KKM: {KKM}
+                Daftar nilai untuk kelas {viewingEntry?.className} ({viewingEntry?.subjectName}). KKM: <span className="font-bold">{getSubjectKkm(viewingEntry?.subjectId)}</span>
             </DialogDescription>
             </DialogHeader>
             <div className="max-h-[60vh] overflow-y-auto pr-2">
@@ -439,7 +443,8 @@ export default function GradesPage() {
                     <TableBody>
                         {viewingEntry?.records.map(record => {
                             const score = Number(record.score);
-                            const isPassing = score >= KKM;
+                            const kkm = getSubjectKkm(viewingEntry.subjectId);
+                            const isPassing = score >= kkm;
                             return (
                                 <TableRow key={record.studentId}>
                                     <TableCell>{getStudentName(record.studentId)}</TableCell>
@@ -460,5 +465,3 @@ export default function GradesPage() {
     </div>
   );
 }
-
-    

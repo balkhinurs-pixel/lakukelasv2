@@ -18,6 +18,7 @@ export interface Class {
 export interface Subject {
   id: string;
   name: string;
+  kkm: number;
   teacherId: string; // Foreign key to User
 }
 
