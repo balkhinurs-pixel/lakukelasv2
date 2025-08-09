@@ -10,6 +10,7 @@ Dokumen ini akan memandu Anda melalui proses deployment aplikasi Next.js ini men
 5.  [Langkah 4: Deploy ke Vercel](#5-langkah-4-deploy-ke-vercel)
 6.  [Langkah 5: Konfigurasi Environment Variables di Vercel](#6-langkah-5-konfigurasi-environment-variables-di-vercel)
 7.  [Aplikasi Anda Siap!](#7-aplikasi-anda-siap)
+8.  [Langkah 6: Mengatur Pengguna Admin Pertama](#8-langkah-6-mengatur-pengguna-admin-pertama)
 
 ---
 
@@ -121,4 +122,30 @@ Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin mem
 
 Setelah proses deployment selesai, Vercel akan memberikan Anda URL publik (contoh: `lakukelas-anda.vercel.app`). Buka URL tersebut untuk mengakses aplikasi Anda yang sudah berfungsi penuh.
 
-Anda sekarang dapat mendaftar sebagai pengguna baru dan mulai menggunakan semua fitur aplikasi. Untuk mendapatkan akses admin atau membuat kode aktivasi, Anda perlu mengubah data secara manual langsung di tabel Supabase Anda untuk pengguna pertama.
+Anda sekarang dapat mendaftar sebagai pengguna baru dan mulai menggunakan semua fitur aplikasi.
+
+---
+
+### 8. Langkah 6: Mengatur Pengguna Admin Pertama
+
+Aplikasi ini memiliki panel admin terpisah untuk mengelola pengguna dan kode aktivasi. Untuk mengaksesnya, Anda perlu mengatur satu pengguna sebagai 'admin' secara manual.
+
+1.  **Daftar Akun Baru**:
+    -   Buka aplikasi Anda yang sudah di-deploy.
+    -   Daftarkan akun baru menggunakan email yang ingin Anda jadikan admin. Selesaikan proses verifikasi email jika diperlukan.
+
+2.  **Buka Tabel `profiles` di Supabase**:
+    -   Kembali ke dasbor proyek Supabase Anda.
+    -   Di menu samping, klik ikon **Table Editor** (terlihat seperti tabel).
+    -   Pilih tabel **`profiles`**.
+
+3.  **Ubah Role Pengguna**:
+    -   Cari baris yang sesuai dengan pengguna yang baru saja Anda daftarkan (Anda bisa mencarinya berdasarkan email).
+    -   Klik dua kali pada sel di kolom **`role`**.
+    -   Ubah nilainya dari `teacher` menjadi `admin`.
+    -   Klik tombol **Save** di pojok kanan atas.
+
+4.  **Akses Panel Admin**:
+    -   Sekarang, logout dari aplikasi jika Anda sedang login.
+    -   Login kembali menggunakan akun yang baru saja Anda atur sebagai admin.
+    -   Setelah login, Anda akan berada di dasbor guru. Di menu navigasi samping, akan ada tautan untuk beralih ke panel admin, atau Anda bisa mengaksesnya langsung dengan menambahkan `/admin` ke URL (contoh: `https://lakukelas-anda.vercel.app/admin`).
