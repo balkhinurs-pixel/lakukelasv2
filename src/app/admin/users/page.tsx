@@ -57,35 +57,29 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, UserPlus, Edit, Trash2 } from "lucide-react";
-import { format, addMonths } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-
-type UserStatus = 'Pro' | 'Free';
+import { mockUsers } from "@/lib/placeholder-data";
+import type { Profile } from "@/lib/types";
 
 type User = {
     id: string;
-    name: string;
+    full_name: string;
     email: string;
-    status: UserStatus;
-    joinDate: Date;
+    account_status: 'Pro' | 'Free';
+    join_date: string;
 };
 
-const initialUsers: User[] = [
-    { id: 'USR001', name: 'Guru Tangguh', email: 'guru@sekolah.id', status: 'Pro', joinDate: new Date('2023-01-15') },
-    { id: 'USR002', name: 'Andi Pratama', email: 'andi.p@email.com', status: 'Free', joinDate: new Date('2023-02-20') },
-    { id: 'USR003', name: 'Siti Aminah', email: 'siti.a@email.com', status: 'Pro', joinDate: new Date('2023-03-10') },
-    { id: 'USR004', name: 'Budi Setiawan', email: 'budi.s@email.com', status: 'Free', joinDate: new Date('2023-04-05') },
-    { id: 'USR005', name: 'Dewi Lestari', email: 'dewi.l@email.com', status: 'Pro', joinDate: new Date('2023-05-21') },
-];
+const initialUsers: User[] = mockUsers.map(u => ({...u, name: u.full_name, status: u.account_status, joinDate: new Date(u.join_date)}));
 
 
 export default function AdminUsersPage() {
-    const [users, setUsers] = React.useState<User[]>(initialUsers);
+    const [users, setUsers] = React.useState<any[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [filterStatus, setFilterStatus] = React.useState('all');
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
-    const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
-    const [newStatus, setNewStatus] = React.useState<UserStatus>('Free');
+    const [selectedUser, setSelectedUser] = React.useState<any | null>(null);
+    const [newStatus, setNewStatus] = React.useState<'Pro' | 'Free'>('Free');
     const { toast } = useToast();
 
     const filteredUsers = users.filter(user => {
@@ -94,7 +88,7 @@ export default function AdminUsersPage() {
         return matchesSearch && matchesStatus;
     });
 
-    const handleManageClick = (user: User) => {
+    const handleManageClick = (user: any) => {
         setSelectedUser(user);
         setNewStatus(user.status);
         setIsManageDialogOpen(true);
@@ -246,7 +240,7 @@ export default function AdminUsersPage() {
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="subscription-plan">Status Akun</Label>
-                        <Select value={newStatus} onValueChange={(value) => setNewStatus(value as UserStatus)}>
+                        <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ('Pro' | 'Free'))}>
                             <SelectTrigger id="subscription-plan">
                                 <SelectValue placeholder="Pilih status baru" />
                             </SelectTrigger>
@@ -266,3 +260,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+

@@ -1,4 +1,7 @@
 
+"use client";
+
+import * as React from 'react';
 import {
   Card,
   CardContent,
@@ -15,14 +18,20 @@ import {
     TableRow,
   } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getActivationCodes, getCodeUser } from "@/lib/data";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { GenerateCodeButton } from "./generate-button";
+import { activationCodes as initialCodes, mockUsers } from '@/lib/placeholder-data';
+import type { Profile } from '@/lib/types';
 
 
-export default async function AdminCodesPage() {
-    const codes = await getActivationCodes();
+export default function AdminCodesPage() {
+    const [codes, setCodes] = React.useState(initialCodes);
+
+    const getCodeUser = (userId: string | null): Profile | null => {
+        if (!userId) return null;
+        return mockUsers.find(u => u.id === userId) || null;
+    }
 
     return (
         <div className="space-y-6">
@@ -50,8 +59,8 @@ export default async function AdminCodesPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {codes.map(async (code) => {
-                                    const user = code.used_by ? await getCodeUser(code.used_by) : null;
+                                {codes.map((code) => {
+                                    const user = getCodeUser(code.used_by);
                                     return (
                                         <TableRow key={code.id}>
                                             <TableCell className="font-mono">{code.code}</TableCell>

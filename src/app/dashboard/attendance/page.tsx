@@ -43,11 +43,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject } from "@/lib/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { classes, subjects, attendanceHistory as initialHistory } from '@/lib/placeholder-data';
 
-// Mock data, to be replaced by API calls
-const classes: Class[] = [];
-const subjects: Subject[] = [];
-const initialHistory: AttendanceHistoryEntry[] = [];
 
 type AttendanceStatus = AttendanceRecord['status'];
 const attendanceOptions: { value: AttendanceStatus, label: string, icon: React.ElementType, color: string, tooltip: string }[] = [
@@ -98,7 +95,7 @@ export default function AttendancePage() {
     setDate(new Date());
     setMeetingNumber("");
     const newAttendance = new Map();
-    currentClass?.students.forEach(student => {
+    (currentClass?.students || []).forEach(student => {
       newAttendance.set(student.id, 'Hadir');
     });
     setAttendance(newAttendance);
@@ -120,7 +117,7 @@ export default function AttendancePage() {
 
     const newEntry: AttendanceHistoryEntry = {
         id: editingId || `AH${Date.now()}`,
-        date,
+        date: date,
         classId: selectedClass.id,
         className: selectedClass.name,
         subjectId: selectedSubject.id,
@@ -155,5 +152,206 @@ export default function AttendancePage() {
 
       setSelectedClass(classToEdit);
       setSelectedSubject(subjectToEdit);
-      setStudents(classToE...
-<TRUNCATED>
+      setStudents(classToEdit.students);
+      setEditingId(entry.id);
+      setDate(entry.date);
+      setMeetingNumber(entry.meetingNumber);
+
+      const loadedAttendance = new Map<string, AttendanceRecord['status']>();
+      entry.records.forEach(record => {
+          loadedAttendance.set(record.studentId, record.status);
+      });
+      setAttendance(loadedAttendance);
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{editingId ? 'Ubah Presensi' : 'Input Presensi'}</CardTitle>
+          <CardDescription>
+            {editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mencatat presensi siswa.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+                <Label>Kelas</Label>
+                <Select onValueChange={handleClassChange} value={selectedClass?.id}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih kelas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+            </div>
+             <div className="space-y-2">
+                <Label>Mata Pelajaran</Label>
+                 <Select onValueChange={handleSubjectChange} value={selectedSubject?.id}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Pilih mata pelajaran" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {subjects.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label>Tanggal</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : <span>Pilih tanggal</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="pertemuan">Pertemuan Ke</Label>
+                <Input id="pertemuan" type="number" placeholder="e.g. 5" value={meetingNumber} onChange={(e) => setMeetingNumber(Number(e.target.value))}/>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {selectedClass && students.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Daftar Siswa - {selectedClass.name}</CardTitle>
+            <CardDescription>Pilih status kehadiran untuk setiap siswa.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama Siswa</TableHead>
+                    <TableHead className="text-right">Status Kehadiran</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {students.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell className="font-medium">{student.name}</TableCell>
+                      <TableCell className="text-right">
+                        <RadioGroup
+                          value={attendance.get(student.id)}
+                          onValueChange={(status) => handleAttendanceChange(student.id, status as AttendanceRecord['status'])}
+                          className="justify-end"
+                        >
+                            <TooltipProvider>
+                                <div className="flex gap-1 justify-end">
+                                {attendanceOptions.map(opt => (
+                                    <Tooltip key={opt.value}>
+                                        <TooltipTrigger asChild>
+                                            <RadioGroupItem value={opt.value} id={`${student.id}-${opt.value}`} className={cn("size-8 border text-xs", opt.color)}>
+                                                {opt.label}
+                                            </RadioGroupItem>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{opt.tooltip}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ))}
+                                </div>
+                          </TooltipProvider>
+                        </RadioGroup>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+          <CardFooter className="border-t px-6 py-4 justify-between flex-wrap gap-2">
+            <Button onClick={saveAttendance} disabled={!meetingNumber}>{editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}</Button>
+             {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass, selectedSubject)}>Batal Mengubah</Button>}
+          </CardFooter>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+            <CardTitle>Riwayat Presensi</CardTitle>
+            <CardDescription>Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
+        </CardHeader>
+        <CardContent>
+           <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Info</TableHead>
+                        <TableHead>Pertemuan Ke</TableHead>
+                        <TableHead>Ringkasan</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {history.filter(h => (!selectedClass || h.classId === selectedClass.id) && (!selectedSubject || h.subjectId === selectedSubject.id)).map(entry => {
+                        const summary = entry.records.reduce((acc, record) => {
+                            acc[record.status] = (acc[record.status] || 0) + 1;
+                            return acc;
+                        }, {} as Record<AttendanceRecord['status'], number>);
+                        return (
+                             <TableRow key={entry.id}>
+                                <TableCell>{format(entry.date, 'dd MMM yyyy')}</TableCell>
+                                <TableCell>
+                                    <div className="font-medium">{entry.className}</div>
+                                    <div className="text-xs text-muted-foreground">{entry.subjectName}</div>
+                                </TableCell>
+                                <TableCell>{entry.meetingNumber}</TableCell>
+                                <TableCell className="text-xs">
+                                    <span className="text-green-600">H: {summary.Hadir || 0}</span>,{' '}
+                                    <span className="text-yellow-600">S: {summary.Sakit || 0}</span>,{' '}
+                                    <span className="text-blue-600">I: {summary.Izin || 0}</span>,{' '}
+                                    <span className="text-red-600">A: {summary.Alpha || 0}</span>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Ubah
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        )
+                    })}
+                </TableBody>
+            </Table>
+           </div>
+           {history.length === 0 && (
+                <div className="text-center text-muted-foreground py-12">
+                    <p>Belum ada riwayat presensi yang tersimpan.</p>
+                </div>
+            )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
