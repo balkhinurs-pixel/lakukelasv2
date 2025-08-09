@@ -5,11 +5,19 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 // Universal function to handle Supabase errors
-async function handleSupabaseAction(action: Promise<any>, successMessage: string, revalidationPath?: string) {
+async function handleSupabaseAction(action: Promise<any>, successMessage: string, revalidationPath?: string | string[]) {
   try {
     const { error } = await action;
     if (error) throw new Error(error.message);
-    if (revalidationPath) revalidatePath(revalidationPath);
+    
+    if (revalidationPath) {
+        if (Array.isArray(revalidationPath)) {
+            revalidationPath.forEach(path => revalidatePath(path));
+        } else {
+            revalidatePath(revalidationPath);
+        }
+    }
+
     return { success: true, message: successMessage };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -25,46 +33,29 @@ export async function activateAccount(code: string) {
     return { success: false, error: 'Pengguna tidak terautentikasi.' };
   }
 
-  // Check if code is valid and not used
-  const { data: activationCode, error: codeError } = await supabase
-    .from('activation_codes')
-    .select('*')
-    .eq('code', code)
-    .single();
+  // Use a transaction to ensure both updates succeed or both fail
+  const { data: activationCode, error } = await supabase.rpc('activate_account_with_code', {
+    activation_code: code,
+    user_id: user.id
+  });
 
-  if (codeError || !activationCode) {
-    return { success: false, error: 'Kode aktivasi tidak valid.' };
-  }
-
-  if (activationCode.is_used) {
-    return { success: false, error: 'Kode aktivasi sudah pernah digunakan.' };
-  }
-
-  // Update profile to 'Pro'
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({ account_status: 'Pro' })
-    .eq('id', user.id);
-
-  if (profileError) {
-    return { success: false, error: profileError.message };
-  }
-
-  // Mark code as used
-  const { error: updateCodeError } = await supabase
-    .from('activation_codes')
-    .update({ is_used: true, used_by: user.id, used_at: new Date().toISOString() })
-    .eq('id', activationCode.id);
-
-  if (updateCodeError) {
-    // Optionally, handle rollback logic here if marking the code fails
-    return { success: false, error: updateCodeError.message };
+  if (error || !activationCode) {
+      if (error?.message.includes('Code not found')) {
+          return { success: false, error: 'Kode aktivasi tidak valid.' };
+      }
+      if (error?.message.includes('Code already used')) {
+          return { success: false, error: 'Kode aktivasi sudah pernah digunakan.' };
+      }
+      return { success: false, error: error?.message || 'Terjadi kesalahan saat aktivasi.' };
   }
   
+  // Revalidate all relevant paths to reflect Pro status immediately
   revalidatePath('/dashboard/activation');
   revalidatePath('/dashboard');
   revalidatePath('/admin/users');
   revalidatePath('/admin/codes');
+  revalidatePath('/dashboard/layout');
+  revalidatePath('/admin/layout');
   
   return { success: true };
 }

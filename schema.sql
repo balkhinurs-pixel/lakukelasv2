@@ -1,11 +1,14 @@
 
--- Drop existing objects with CASCADE to handle dependencies
+-- Drop dependent objects first
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user CASCADE;
 DROP FUNCTION IF EXISTS public.get_my_role CASCADE;
+DROP FUNCTION IF EXISTS public.activate_account_with_code CASCADE;
 
--- Drop tables in reverse order of creation to respect foreign keys, using CASCADE
-DROP TABLE IF EXISTS public.grade_history CASCADE;
+
+-- Drop tables in reverse order of creation due to dependencies
 DROP TABLE IF EXISTS public.attendance_history CASCADE;
+DROP TABLE IF EXISTS public.grade_history CASCADE;
 DROP TABLE IF EXISTS public.journals CASCADE;
 DROP TABLE IF EXISTS public.schedule CASCADE;
 DROP TABLE IF EXISTS public.students CASCADE;
@@ -14,163 +17,198 @@ DROP TABLE IF EXISTS public.classes CASCADE;
 DROP TABLE IF EXISTS public.activation_codes CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
-
--- 1. Profiles Table
--- This table will store user profile data.
+-- Create profiles table
 CREATE TABLE public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    full_name TEXT NOT NULL,
-    avatar_url TEXT,
-    nip TEXT,
-    pangkat TEXT,
-    jabatan TEXT,
-    school_name TEXT,
-    school_address TEXT,
-    headmaster_name TEXT,
-    headmaster_nip TEXT,
-    school_logo_url TEXT,
-    account_status TEXT NOT NULL DEFAULT 'Free',
-    role TEXT NOT NULL DEFAULT 'teacher',
-    email TEXT
+    id uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    full_name text NOT NULL,
+    avatar_url text,
+    nip text,
+    pangkat text,
+    jabatan text,
+    school_name text,
+    school_address text,
+    headmaster_name text,
+    headmaster_nip text,
+    school_logo_url text,
+    account_status text DEFAULT 'Free'::text NOT NULL,
+    role text DEFAULT 'teacher'::text NOT NULL
 );
-COMMENT ON TABLE public.profiles IS 'Stores public profile information for each user.';
+COMMENT ON TABLE public.profiles IS 'Holds public user profile information.';
 
--- 2. Activation Codes Table
--- Stores activation codes for Pro accounts.
+-- Create activation codes table
 CREATE TABLE public.activation_codes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code TEXT NOT NULL UNIQUE,
-    is_used BOOLEAN NOT NULL DEFAULT FALSE,
-    used_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-    used_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    code text NOT NULL UNIQUE,
+    is_used boolean DEFAULT false NOT NULL,
+    used_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+    used_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
-COMMENT ON TABLE public.activation_codes IS 'Stores activation codes for Pro account upgrades.';
+COMMENT ON TABLE public.activation_codes IS 'Stores activation codes for Pro accounts.';
 
--- 3. Classes Table
--- Stores information about classes taught by a teacher.
+-- Create classes table
 CREATE TABLE public.classes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    name text NOT NULL,
+    teacher_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
-COMMENT ON TABLE public.classes IS 'Represents a class or group of students.';
+COMMENT ON TABLE public.classes IS 'Represents a group of students, e.g., "Class 10-A".';
 
--- 4. Subjects Table
--- Stores information about subjects taught by a teacher.
+-- Create subjects table
 CREATE TABLE public.subjects (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    kkm NUMERIC NOT NULL DEFAULT 75,
-    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    name text NOT NULL,
+    kkm integer DEFAULT 75 NOT NULL,
+    teacher_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
-COMMENT ON TABLE public.subjects IS 'Represents a subject taught in a class.';
+COMMENT ON TABLE public.subjects IS 'Represents a subject taught, e.g., "Mathematics".';
 
--- 5. Students Table
--- Stores student data, linked to a class.
+-- Create students table
 CREATE TABLE public.students (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    nis TEXT,
-    nisn TEXT,
-    gender TEXT,
-    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    name text NOT NULL,
+    nis text,
+    nisn text UNIQUE,
+    gender text,
+    class_id uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE
 );
-COMMENT ON TABLE public.students IS 'Stores individual student information.';
+COMMENT ON TABLE public.students IS 'Stores individual student data.';
 
--- 6. Schedule Table
--- Stores the weekly teaching schedule.
+-- Create schedule table
 CREATE TABLE public.schedule (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    day TEXT NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
-    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
-    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    day text NOT NULL,
+    start_time time without time zone NOT NULL,
+    end_time time without time zone NOT NULL,
+    subject_id uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    class_id uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    teacher_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
-COMMENT ON TABLE public.schedule IS 'Stores the weekly teaching schedule for teachers.';
+COMMENT ON TABLE public.schedule IS 'Stores the weekly teaching schedule.';
 
--- 7. Journals Table
--- For teachers to write teaching journals.
+-- Create journals table
 CREATE TABLE public.journals (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    date DATE NOT NULL DEFAULT CURRENT_DATE,
-    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
-    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
-    meeting_number INT,
-    learning_objectives TEXT NOT NULL,
-    learning_activities TEXT NOT NULL,
-    assessment TEXT,
-    reflection TEXT,
-    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    date date NOT NULL,
+    class_id uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    subject_id uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    meeting_number integer,
+    learning_objectives text,
+    learning_activities text,
+    assessment text,
+    reflection text,
+    teacher_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 COMMENT ON TABLE public.journals IS 'Stores teaching journal entries.';
 
--- 8. Attendance History Table
--- Stores historical attendance records.
-CREATE TABLE public.attendance_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    date DATE NOT NULL,
-    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
-    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
-    meeting_number INT,
-    records JSONB NOT NULL,
-    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
-);
-COMMENT ON TABLE public.attendance_history IS 'Stores daily attendance records.';
-
--- 9. Grade History Table
--- Stores historical grade records.
+-- Create grade history table
 CREATE TABLE public.grade_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    date DATE NOT NULL,
-    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
-    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
-    assessment_type TEXT NOT NULL,
-    records JSONB NOT NULL,
-    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    date date NOT NULL,
+    class_id uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    subject_id uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    assessment_type text NOT NULL,
+    records jsonb,
+    teacher_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
-COMMENT ON TABLE public.grade_history IS 'Stores student grade records for various assessments.';
+COMMENT ON TABLE public.grade_history IS 'Stores records of student grades for various assessments.';
+
+-- Create attendance history table
+CREATE TABLE public.attendance_history (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    date date NOT NULL,
+    class_id uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    subject_id uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    meeting_number integer,
+    records jsonb,
+    teacher_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+COMMENT ON TABLE public.attendance_history IS 'Stores student attendance records for each meeting.';
 
 
--- Functions and Triggers
-
--- Function to create a profile for a new user
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
+-- Function to handle new user creation
+CREATE FUNCTION public.handle_new_user()
+RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, email)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.email);
+  INSERT INTO public.profiles (id, full_name, email, avatar_url, role)
+  VALUES (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    new.email,
+    new.raw_user_meta_data->>'avatar_url',
+    'teacher' -- default role
+  );
   RETURN new;
 END;
 $$;
+COMMENT ON FUNCTION public.handle_new_user() IS 'Trigger function to create a profile entry for a new user.';
+
 
 -- Trigger to call handle_new_user on new user signup
 CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 
--- Function to get the role of the currently logged-in user
-CREATE OR REPLACE FUNCTION public.get_my_role()
-RETURNS TEXT
+-- Function to get the role of the currently authenticated user
+CREATE FUNCTION public.get_my_role()
+RETURNS text
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public
 AS $$
     SELECT role FROM public.profiles WHERE id = auth.uid()
 $$;
+COMMENT ON FUNCTION public.get_my_role() IS 'Safely retrieves the role of the current user.';
+
+-- Function to handle account activation atomically
+CREATE OR REPLACE FUNCTION public.activate_account_with_code(activation_code text, user_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  code_id uuid;
+  code_is_used boolean;
+BEGIN
+  -- Find the code and lock the row for update
+  SELECT id, is_used INTO code_id, code_is_used
+  FROM public.activation_codes
+  WHERE code = activation_code
+  FOR UPDATE;
+
+  -- Raise exceptions for invalid or used codes
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Code not found';
+  END IF;
+
+  IF code_is_used THEN
+    RAISE EXCEPTION 'Code already used';
+  END IF;
+
+  -- Update the profiles table
+  UPDATE public.profiles
+  SET account_status = 'Pro'
+  WHERE id = user_id;
+
+  -- Update the activation_codes table
+  UPDATE public.activation_codes
+  SET 
+    is_used = true,
+    used_by = user_id,
+    used_at = now()
+  WHERE id = code_id;
+
+  RETURN true;
+END;
+$$;
+COMMENT ON FUNCTION public.activate_account_with_code(text, uuid) IS 'Atomically activates a user account and marks the code as used.';
 
 
--- Row Level Security (RLS) Policies
-
--- Enable RLS for all tables
+-- RLS Policies
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activation_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
@@ -178,42 +216,59 @@ ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedule ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.journals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.attendance_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.grade_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance_history ENABLE ROW LEVEL SECURITY;
 
--- Policies for profiles
-CREATE POLICY "Users can read all profiles" ON public.profiles FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
-CREATE POLICY "Admins can manage all profiles" ON public.profiles FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
+-- Profiles Policies
+CREATE POLICY "Users can read all profiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admins can manage all profiles" ON public.profiles FOR ALL USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
 
--- Policies for activation_codes
-CREATE POLICY "Admins can manage activation codes" ON public.activation_codes FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
-CREATE POLICY "Users can read their own used code" ON public.activation_codes FOR SELECT TO authenticated USING (used_by = auth.uid());
+-- Activation Codes Policies
+CREATE POLICY "Admins can manage activation codes" ON public.activation_codes FOR ALL USING (public.get_my_role() = 'admin');
+CREATE POLICY "Authenticated users can read codes" ON public.activation_codes FOR SELECT USING (auth.role() = 'authenticated');
 
+-- Generic Policies for Teacher-Owned Data
+-- Classes
+CREATE POLICY "Teachers can manage their own classes" ON public.classes FOR ALL USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+-- Subjects
+CREATE POLICY "Teachers can manage their own subjects" ON public.subjects FOR ALL USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+-- Schedule
+CREATE POLICY "Teachers can manage their own schedule" ON public.schedule FOR ALL USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+-- Journals
+CREATE POLICY "Teachers can manage their own journals" ON public.journals FOR ALL USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+-- Grade History
+CREATE POLICY "Teachers can manage their own grade history" ON public.grade_history FOR ALL USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+-- Attendance History
+CREATE POLICY "Teachers can manage their own attendance history" ON public.attendance_history FOR ALL USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
 
--- Policies for teacher-specific data
-CREATE POLICY "Teachers can manage their own data" ON public.classes FOR ALL TO authenticated USING (teacher_id = auth.uid());
-CREATE POLICY "Teachers can manage their own data" ON public.subjects FOR ALL TO authenticated USING (teacher_id = auth.uid());
-CREATE POLICY "Teachers can manage their own data" ON public.schedule FOR ALL TO authenticated USING (teacher_id = auth.uid());
-CREATE POLICY "Teachers can manage their own data" ON public.journals FOR ALL TO authenticated USING (teacher_id = auth.uid());
-CREATE POLICY "Teachers can manage their own data" ON public.attendance_history FOR ALL TO authenticated USING (teacher_id = auth.uid());
-CREATE POLICY "Teachers can manage their own data" ON public.grade_history FOR ALL TO authenticated USING (teacher_id = auth.uid());
-
--- Policies for students (A teacher can see students in their own classes)
-CREATE POLICY "Teachers can manage students in their classes" ON public.students
-FOR ALL TO authenticated
-USING (
-  class_id IN (
-    SELECT id FROM public.classes WHERE teacher_id = auth.uid()
+-- Students Policies
+CREATE POLICY "Teachers can view students in their classes" ON public.students FOR SELECT USING (
+  EXISTS (
+    SELECT 1
+    FROM public.classes
+    WHERE classes.id = students.class_id AND classes.teacher_id = auth.uid()
   )
 );
-
--- Admin override policies for teacher-specific data
-CREATE POLICY "Admins can manage all classes" ON public.classes FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
-CREATE POLICY "Admins can manage all subjects" ON public.subjects FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
-CREATE POLICY "Admins can manage all schedules" ON public.schedule FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
-CREATE POLICY "Admins can manage all journals" ON public.journals FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
-CREATE POLICY "Admins can manage all attendance" ON public.attendance_history FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
-CREATE POLICY "Admins can manage all grades" ON public.grade_history FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
-CREATE POLICY "Admins can manage all students" ON public.students FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
+CREATE POLICY "Teachers can insert students into their classes" ON public.students FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.classes
+    WHERE classes.id = students.class_id AND classes.teacher_id = auth.uid()
+  )
+);
+CREATE POLICY "Teachers can update students in their classes" ON public.students FOR UPDATE USING (
+  EXISTS (
+    SELECT 1
+    FROM public.classes
+    WHERE classes.id = students.class_id AND classes.teacher_id = auth.uid()
+  )
+);
+CREATE POLICY "Teachers can delete students from their classes" ON public.students FOR DELETE USING (
+  EXISTS (
+    SELECT 1
+    FROM public.classes
+    WHERE classes.id = students.class_id AND classes.teacher_id = auth.uid()
+  )
+);

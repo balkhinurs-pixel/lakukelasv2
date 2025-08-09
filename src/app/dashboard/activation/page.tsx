@@ -17,15 +17,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { activateAccount } from "@/lib/actions";
+import { useRouter } from "next/navigation";
 
 export default function ActivationPage() {
     const { isPro, limits, setActivationStatus } = useActivation();
     const [activationCode, setActivationCode] = React.useState("");
     const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
+    const router = useRouter();
 
     const handleActivation = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!activationCode) return;
         setLoading(true);
 
         const result = await activateAccount(activationCode);
@@ -37,6 +40,7 @@ export default function ActivationPage() {
                 description: "Akun Anda kini Pro. Semua fitur telah terbuka.",
                 className: "bg-green-100 text-green-900 border-green-200",
             });
+            router.refresh(); // Refresh the page to reflect new Pro status everywhere
         } else {
              toast({
                 title: "Aktivasi Gagal",
@@ -94,7 +98,7 @@ export default function ActivationPage() {
                      </div>
                 </CardContent>
                 <CardFooter>
-                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                    <Button type="submit" className="w-full" size="lg" disabled={loading || !activationCode}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {loading ? "Memverifikasi..." : "Aktifkan Akun Pro"}
                     </Button>
