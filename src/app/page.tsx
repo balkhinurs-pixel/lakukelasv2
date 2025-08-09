@@ -2,13 +2,16 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppLogo } from "@/components/icons";
 import { Checkbox } from "@/components/ui/checkbox";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -23,6 +26,113 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginPage() {
   const [view, setView] = React.useState<'login' | 'register' | 'forgot-password'>('login');
+  const [loading, setLoading] = React.useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const supabase = createClient();
+
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+
+    if (!supabase) {
+      toast({ title: "Kesalahan Konfigurasi", description: "Koneksi ke Supabase gagal. Mohon periksa konsol.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      toast({ title: "Login Gagal", description: error.message, variant: "destructive" });
+    } else {
+      router.push('/dashboard');
+      router.refresh(); // Refresh to update session state
+    }
+    setLoading(false);
+  };
+  
+  const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+
+    if (!supabase) {
+      toast({ title: "Kesalahan Konfigurasi", description: "Koneksi ke Supabase gagal. Mohon periksa konsol.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const fullName = formData.get('fullname') as string;
+
+    const { error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+            data: {
+                full_name: fullName
+            }
+        }
+    });
+
+    if (error) {
+      toast({ title: "Registrasi Gagal", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Registrasi Berhasil", description: "Silakan cek email Anda untuk verifikasi." });
+      setView('login');
+    }
+    setLoading(false);
+  };
+  
+  const handleForgotPassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+
+    if (!supabase) {
+      toast({ title: "Kesalahan Konfigurasi", description: "Koneksi ke Supabase gagal. Mohon periksa konsol.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/update-password`
+    });
+
+    if (error) {
+        toast({ title: "Gagal Mengirim Email", description: error.message, variant: "destructive" });
+    } else {
+        toast({ title: "Email Terkirim", description: "Silakan cek email Anda untuk tautan reset kata sandi." });
+        setView('login');
+    }
+    setLoading(false);
+  };
+  
+  const handleGoogleLogin = async () => {
+      setLoading(true);
+
+      if (!supabase) {
+        toast({ title: "Kesalahan Konfigurasi", description: "Koneksi ke Supabase gagal. Mohon periksa konsol.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+              redirectTo: `${window.location.origin}/auth/callback`
+          }
+      });
+      setLoading(false);
+  }
 
   const WelcomePanel = () => {
     const titles = {
@@ -65,6 +175,7 @@ export default function LoginPage() {
                     variant="outline" 
                     className="w-full rounded-full bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/20"
                     onClick={buttonActions[view]}
+                    disabled={loading}
                 >
                     {buttonLabels[view]}
                 </Button>
@@ -74,14 +185,14 @@ export default function LoginPage() {
   }
 
   const LoginForm = () => (
-     <form className="space-y-4">
+     <form className="space-y-4" onSubmit={handleLogin}>
         <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="guru@sekolah.id" required className="rounded-lg" />
+            <Input id="email" name="email" type="email" placeholder="guru@sekolah.id" required className="rounded-lg" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="password">Kata Sandi</Label>
-            <Input id="password" type="password" required className="rounded-lg" />
+            <Input id="password" name="password" type="password" required className="rounded-lg" />
         </div>
         <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-2">
@@ -92,44 +203,47 @@ export default function LoginPage() {
                 Lupa kata sandi?
             </Button>
         </div>
-        <Button className="w-full rounded-lg" size="lg" asChild>
-            <Link href="/dashboard">Masuk</Link>
+        <Button className="w-full rounded-lg" size="lg" type="submit" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Masuk
         </Button>
      </form>
   )
 
   const RegisterForm = () => (
-      <form className="space-y-4">
+      <form className="space-y-4" onSubmit={handleRegister}>
         <div className="space-y-2">
             <Label htmlFor="fullname">Nama Lengkap</Label>
-            <Input id="fullname" type="text" placeholder="e.g. Guru Tangguh, S.Pd." required className="rounded-lg" />
+            <Input id="fullname" name="fullname" type="text" placeholder="e.g. Guru Tangguh, S.Pd." required className="rounded-lg" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="email-register">Email</Label>
-            <Input id="email-register" type="email" placeholder="guru@sekolah.id" required className="rounded-lg" />
+            <Input id="email-register" name="email" type="email" placeholder="guru@sekolah.id" required className="rounded-lg" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="password-register">Kata Sandi</Label>
-            <Input id="password-register" type="password" required className="rounded-lg" />
+            <Input id="password-register" name="password" type="password" required className="rounded-lg" />
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="password-confirm">Konfirmasi Kata Sandi</Label>
-            <Input id="password-confirm" type="password" required className="rounded-lg" />
-        </div>
-        <Button className="w-full rounded-lg" size="lg">Buat Akun</Button>
+        <Button className="w-full rounded-lg" size="lg" type="submit" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Buat Akun
+        </Button>
       </form>
   )
 
   const ForgotPasswordForm = () => (
-    <form className="space-y-4">
+    <form className="space-y-4" onSubmit={handleForgotPassword}>
         <p className="text-sm text-muted-foreground">
             Masukkan alamat email Anda yang terdaftar dan kami akan mengirimkan tautan untuk mereset kata sandi Anda.
         </p>
        <div className="space-y-2">
            <Label htmlFor="email-forgot">Email</Label>
-           <Input id="email-forgot" type="email" placeholder="guru@sekolah.id" required className="rounded-lg" />
+           <Input id="email-forgot" name="email" type="email" placeholder="guru@sekolah.id" required className="rounded-lg" />
        </div>
-       <Button className="w-full rounded-lg" size="lg">Kirim Tautan Reset</Button>
+       <Button className="w-full rounded-lg" size="lg" type="submit" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Kirim Tautan Reset
+       </Button>
     </form>
   )
   
@@ -167,8 +281,8 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <Button variant="outline" className="w-full rounded-lg">
-                    <GoogleIcon className="mr-2 h-5 w-5" />
+                <Button variant="outline" className="w-full rounded-lg" onClick={handleGoogleLogin} disabled={loading}>
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                     Masuk dengan Google
                 </Button>
                 </>
