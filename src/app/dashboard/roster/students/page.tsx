@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -37,65 +38,81 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog } from "lucide-react";
+import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
-import { classes as initialClasses, students as initialStudents } from "@/lib/placeholder-data";
 import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
+import { saveStudent } from "@/lib/actions";
 
-export default function StudentsPage() {
+function StudentsPageComponent({
+    initialClasses,
+    initialStudents,
+}: {
+    initialClasses: Class[];
+    initialStudents: Student[];
+}) {
+  const router = useRouter();
   const [classes, setClasses] = React.useState<Class[]>(initialClasses);
   const [students, setStudents] = React.useState<Student[]>(initialStudents);
-  const [selectedClassId, setSelectedClassId] = React.useState<string>(classes[0].id);
-
+  const [selectedClassId, setSelectedClassId] = React.useState<string>(classes.length > 0 ? classes[0].id : "");
+  
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
   const [newStudent, setNewStudent] = React.useState({ name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
-
+  const [loading, setLoading] = React.useState(false);
+  
   const { toast } = useToast();
   const { limits, isPro } = useActivation();
+  
+  React.useEffect(() => {
+    setClasses(initialClasses);
+    setStudents(initialStudents);
+    if (!selectedClassId && initialClasses.length > 0) {
+        setSelectedClassId(initialClasses[0].id);
+    }
+  }, [initialClasses, initialStudents, selectedClassId]);
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
-  const studentsInClass = selectedClass ? selectedClass.students : [];
-  const canAddStudent = selectedClass ? selectedClass.students.length < limits.studentsPerClass : false;
+  const studentsInClass = students.filter(s => s.class_id === selectedClassId);
+  const canAddStudent = isPro || (selectedClass ? studentsInClass.length < limits.studentsPerClass : false);
 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
   };
 
-  const handleAddStudent = (e: React.FormEvent) => {
+  const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
     if (!canAddStudent) {
-        toast({ title: "Batas Siswa Tercapai", description: "Anda telah mencapai batas maksimal jumlah siswa di kelas ini untuk akun gratis.", variant: "destructive" });
+        toast({ title: "Batas Siswa Tercapai", description: `Akun gratis hanya bisa menampung ${limits.studentsPerClass} siswa per kelas.`, variant: "destructive" });
+        setLoading(false);
         return;
     }
     if (!newStudent.name || !newStudent.nis || !newStudent.nisn || !newStudent.gender) {
         toast({ title: "Gagal", description: "Semua kolom harus diisi.", variant: "destructive" });
+        setLoading(false);
         return;
     }
 
-    const newStudentData: Student = {
-        id: `S${Date.now()}`,
-        ...newStudent
-    };
-    
-    const updatedStudents = [...students, newStudentData];
-    setStudents(updatedStudents);
+    const formData = new FormData();
+    formData.append('class_id', selectedClassId);
+    formData.append('name', newStudent.name);
+    formData.append('nis', newStudent.nis);
+    formData.append('nisn', newStudent.nisn);
+    formData.append('gender', newStudent.gender);
 
-    const updatedClasses = classes.map(c => {
-        if (c.id === selectedClassId) {
-            const classStudent = updatedStudents.find(s => s.id === newStudentData.id);
-            if(classStudent) {
-              return { ...c, students: [...c.students, classStudent]};
-            }
-        }
-        return c;
-    });
-    setClasses(updatedClasses);
+    const result = await saveStudent(formData);
     
-    toast({ title: "Sukses", description: "Siswa baru berhasil ditambahkan." });
-    setNewStudent({ name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
-    setIsAddDialogOpen(false);
+    if (result.success) {
+      toast({ title: "Sukses", description: "Siswa baru berhasil ditambahkan." });
+      setNewStudent({ name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
+      setIsAddDialogOpen(false);
+      router.refresh();
+    } else {
+      toast({ title: "Gagal", description: result.error, variant: "destructive" });
+    }
+    setLoading(false);
   };
 
 
@@ -118,7 +135,7 @@ export default function StudentsPage() {
                 <Sparkles className="h-4 w-4" />
                 <AlertTitle>Fitur Akun Pro</AlertTitle>
                 <AlertDescription>
-                    Impor, ekspor, dan unduh template siswa adalah fitur Pro. 
+                    Impor, ekspor, dan unduh template siswa adalah fitur Pro. Batas siswa per kelas juga lebih banyak.
                     <Button variant="link" className="p-0 h-auto ml-1" asChild>
                         <Link href="/dashboard/activation">Aktivasi sekarang</Link>
                     </Button> untuk mengelola data siswa dengan lebih efisien.
@@ -130,7 +147,7 @@ export default function StudentsPage() {
         <CardHeader>
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
-                    <CardTitle>Siswa Kelas {selectedClass?.name}</CardTitle>
+                    <CardTitle>Siswa di Kelas {selectedClass?.name || '...'}</CardTitle>
                     <CardDescription>
                     Lihat, tambah, atau kelola data siswa di kelas ini. ({studentsInClass.length}/{isPro ? '∞' : limits.studentsPerClass} siswa)
                     </CardDescription>
@@ -138,7 +155,7 @@ export default function StudentsPage() {
                 <div className="flex gap-2 flex-wrap">
                     <Select
                         onValueChange={handleClassChange}
-                        defaultValue={selectedClassId}
+                        value={selectedClassId}
                     >
                         <SelectTrigger className="w-full sm:w-[220px]">
                         <SelectValue placeholder="Pilih kelas" />
@@ -153,7 +170,7 @@ export default function StudentsPage() {
                     </Select>
                     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button disabled={!canAddStudent}>
+                            <Button disabled={!canAddStudent || !selectedClassId}>
                                 <UserPlus />
                                 Tambah Siswa
                             </Button>
@@ -193,7 +210,10 @@ export default function StudentsPage() {
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="submit">Simpan Siswa</Button>
+                                    <Button type="submit" disabled={loading}>
+                                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Simpan Siswa
+                                    </Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -213,11 +233,11 @@ export default function StudentsPage() {
                         <p><span className="font-medium">Gender:</span> {student.gender}</p>
                     </div>
                     <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="w-full">
+                      <Button variant="outline" size="sm" className="w-full" disabled>
                           <Edit className="mr-2 h-4 w-4" />
                           Ubah
                       </Button>
-                      <Button variant="ghost" size="sm" className="w-full">
+                      <Button variant="ghost" size="sm" className="w-full" disabled>
                           <UserRoundCog className="mr-2 h-4 w-4" />
                           Pindahkan
                       </Button>
@@ -246,11 +266,11 @@ export default function StudentsPage() {
                         <TableCell>{student.nisn}</TableCell>
                         <TableCell>{student.gender}</TableCell>
                         <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" disabled>
                             <Edit className="mr-2 h-3.5 w-3.5"/>
                             Ubah
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" disabled>
                             <UserRoundCog className="mr-2 h-3.5 w-3.5"/>
                             Pindahkan
                         </Button>
@@ -272,3 +292,14 @@ export default function StudentsPage() {
     </div>
   );
 }
+
+export default async function StudentsPage() {
+    const { getClasses, getAllStudents } = await import("@/lib/data");
+    const [classes, students] = await Promise.all([
+        getClasses(),
+        getAllStudents()
+    ]);
+    return <StudentsPageComponent initialClasses={classes} initialStudents={students} />;
+}
+
+    

@@ -20,8 +20,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check } from "lucide-react";
 import Link from 'next/link';
-import { format } from "date-fns";
-import type { ScheduleItem, JournalEntry, Class, Subject } from "@/lib/types";
+import { format, parseISO } from "date-fns";
+import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
@@ -29,11 +29,9 @@ type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
   journalEntries: JournalEntry[];
-  classes: Class[];
-  subjects: Subject[];
 }
 
-export default function DashboardPage({ todaySchedule, journalEntries, classes, subjects }: DashboardPageProps) {
+function DashboardPageComponent({ todaySchedule, journalEntries }: DashboardPageProps) {
     const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
     
@@ -138,7 +136,10 @@ export default function DashboardPage({ todaySchedule, journalEntries, classes, 
         return null;
     }
     
-    const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' });
+    const [today, setToday] = React.useState('');
+    React.useEffect(() => {
+        setToday(new Date().toLocaleDateString('id-ID', { weekday: 'long' }));
+    }, []);
     
   return (
     <div className="space-y-6">
@@ -224,7 +225,7 @@ export default function DashboardPage({ todaySchedule, journalEntries, classes, 
                         </TableCell>
                         <TableCell>{entry.className}</TableCell>
                         <TableCell className="text-right">
-                            {format(new Date(entry.date), "dd MMM yyyy")}
+                            {format(parseISO(entry.date), "dd MMM yyyy")}
                         </TableCell>
                         </TableRow>
                     ))}
@@ -286,3 +287,11 @@ export default function DashboardPage({ todaySchedule, journalEntries, classes, 
     </div>
   );
 }
+
+export default async function DashboardPage() {
+    const { getDashboardData } = await import('@/lib/data');
+    const { todaySchedule, journalEntries } = await getDashboardData();
+    return <DashboardPageComponent todaySchedule={todaySchedule} journalEntries={journalEntries} />;
+}
+
+    

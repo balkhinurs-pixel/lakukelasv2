@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -10,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Trash2, Edit, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -40,26 +41,40 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { classes, subjects, schedule as initialSchedule } from "@/lib/placeholder-data";
 import { useToast } from "@/hooks/use-toast";
-import type { ScheduleItem } from "@/lib/types";
+import type { ScheduleItem, Class, Subject } from "@/lib/types";
+import { saveSchedule, deleteSchedule } from "@/lib/actions";
 
-const daysOfWeek: ScheduleItem['day'][] = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const daysOfWeek: ScheduleItem['day'][] = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
-type NewScheduleEntry = Omit<ScheduleItem, 'id' | 'teacherId' | 'subject' | 'class'>;
+type NewScheduleEntry = Omit<ScheduleItem, 'id' | 'teacher_id' | 'subject' | 'class'>;
 
-export default function SchedulePage() {
+function SchedulePageComponent({
+    initialSchedule,
+    classes,
+    subjects,
+} : {
+    initialSchedule: ScheduleItem[],
+    classes: Class[],
+    subjects: Subject[]
+}) {
+    const router = useRouter();
     const [schedule, setSchedule] = React.useState<ScheduleItem[]>(initialSchedule);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [editingItem, setEditingItem] = React.useState<ScheduleItem | null>(null);
     const [newEntry, setNewEntry] = React.useState<NewScheduleEntry>({
-        day: 'Senin', classId: '', subjectId: '', startTime: '', endTime: ''
+        day: 'Senin', class_id: '', subject_id: '', start_time: '', end_time: ''
     });
+    const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
+
+    React.useEffect(() => {
+        setSchedule(initialSchedule);
+    }, [initialSchedule]);
 
     const openAddDialog = () => {
         setEditingItem(null);
-        setNewEntry({ day: 'Senin', classId: '', subjectId: '', startTime: '', endTime: '' });
+        setNewEntry({ day: 'Senin', class_id: '', subject_id: '', start_time: '', end_time: '' });
         setIsDialogOpen(true);
     }
     
@@ -67,57 +82,53 @@ export default function SchedulePage() {
         setEditingItem(item);
         setNewEntry({
           day: item.day,
-          classId: item.classId,
-          subjectId: item.subjectId,
-          startTime: item.startTime,
-          endTime: item.endTime,
+          class_id: item.class_id,
+          subject_id: item.subject_id,
+          start_time: item.start_time,
+          end_time: item.end_time,
         });
         setIsDialogOpen(true);
     }
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newEntry.day || !newEntry.classId || !newEntry.subjectId || !newEntry.startTime || !newEntry.endTime) {
+        if (!newEntry.day || !newEntry.class_id || !newEntry.subject_id || !newEntry.start_time || !newEntry.end_time) {
             toast({ title: "Gagal Menyimpan", description: "Semua kolom harus diisi.", variant: "destructive" });
             return;
         }
-        
-        const selectedClass = classes.find(c => c.id === newEntry.classId);
-        const selectedSubject = subjects.find(s => s.id === newEntry.subjectId);
+        setLoading(true);
 
-        if (!selectedClass || !selectedSubject) {
-            toast({ title: "Data tidak valid", description: "Kelas atau mapel tidak ditemukan.", variant: "destructive" });
-            return;
-        }
+        const formData = new FormData();
+        if(editingItem) formData.append('id', editingItem.id);
+        formData.append('day', newEntry.day);
+        formData.append('class_id', newEntry.class_id);
+        formData.append('subject_id', newEntry.subject_id);
+        formData.append('start_time', newEntry.start_time);
+        formData.append('end_time', newEntry.end_time);
 
-        const scheduleData = {
-          ...newEntry,
-          class: selectedClass.name,
-          subject: selectedSubject.name
-        }
+        const result = await saveSchedule(formData);
 
-        if (editingItem) {
-            // Update existing item
-            setSchedule(schedule.map(item => item.id === editingItem.id ? { ...editingItem, ...scheduleData } : item));
-            toast({ title: "Jadwal Diperbarui", description: "Jadwal mengajar berhasil diperbarui." });
+        if(result.success) {
+            toast({ title: "Jadwal Disimpan", description: "Jadwal baru berhasil ditambahkan."});
+            setIsDialogOpen(false);
+            setEditingItem(null);
+            router.refresh();
         } else {
-            // Add new item
-            const newScheduleItem: ScheduleItem = { 
-              id: `SCH${Date.now()}`,
-              teacherId: 'user_placeholder',
-              ...scheduleData,
-            };
-            setSchedule([...schedule, newScheduleItem]);
-            toast({ title: "Jadwal Disimpan", description: "Jadwal baru berhasil ditambahkan.", className: "bg-green-100 text-green-900 border-green-200" });
+            toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
         }
-        
-        setIsDialogOpen(false);
-        setEditingItem(null);
+        setLoading(false);
     }
 
-    const handleDelete = (id: string) => {
-        setSchedule(schedule.filter(item => item.id !== id));
-        toast({ title: "Jadwal Dihapus", description: "Satu jadwal telah berhasil dihapus.", variant: 'destructive' });
+    const handleDelete = async (id: string) => {
+        setLoading(true);
+        const result = await deleteSchedule(id);
+        if(result.success) {
+            toast({ title: "Jadwal Dihapus", description: "Satu jadwal telah berhasil dihapus."});
+            router.refresh();
+        } else {
+            toast({ title: "Gagal Menghapus", description: result.error, variant: 'destructive' });
+        }
+        setLoading(false);
     }
 
     const groupedSchedule = schedule.reduce((acc, item) => {
@@ -126,7 +137,7 @@ export default function SchedulePage() {
       }, {} as Record<ScheduleItem['day'], ScheduleItem[]>);
     
     for (const day in groupedSchedule) {
-        groupedSchedule[day as ScheduleItem['day']].sort((a, b) => a.startTime.localeCompare(b.startTime));
+        groupedSchedule[day as ScheduleItem['day']].sort((a, b) => a.start_time.localeCompare(b.start_time));
     }
 
   return (
@@ -172,11 +183,11 @@ export default function SchedulePage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="class">
+                    <Label htmlFor="class_id">
                       Kelas
                     </Label>
-                    <Select value={newEntry.classId} onValueChange={(value) => setNewEntry({...newEntry, classId: value})} required>
-                      <SelectTrigger id="class">
+                    <Select value={newEntry.class_id} onValueChange={(value) => setNewEntry({...newEntry, class_id: value})} required>
+                      <SelectTrigger id="class_id">
                         <SelectValue placeholder="Pilih kelas" />
                       </SelectTrigger>
                       <SelectContent>
@@ -189,11 +200,11 @@ export default function SchedulePage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="subject">
+                    <Label htmlFor="subject_id">
                       Mata Pelajaran
                     </Label>
-                     <Select value={newEntry.subjectId} onValueChange={(value) => setNewEntry({...newEntry, subjectId: value})} required>
-                      <SelectTrigger id="subject">
+                     <Select value={newEntry.subject_id} onValueChange={(value) => setNewEntry({...newEntry, subject_id: value})} required>
+                      <SelectTrigger id="subject_id">
                         <SelectValue placeholder="Pilih mapel" />
                       </SelectTrigger>
                       <SelectContent>
@@ -207,21 +218,24 @@ export default function SchedulePage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="startTime">
+                      <Label htmlFor="start_time">
                         Waktu Mulai
                       </Label>
-                      <Input id="startTime" type="time" value={newEntry.startTime} onChange={e => setNewEntry({...newEntry, startTime: e.target.value})} required/>
+                      <Input id="start_time" type="time" value={newEntry.start_time} onChange={e => setNewEntry({...newEntry, start_time: e.target.value})} required/>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="endTime">
+                      <Label htmlFor="end_time">
                         Waktu Selesai
                       </Label>
-                      <Input id="endTime" type="time" value={newEntry.endTime} onChange={e => setNewEntry({...newEntry, endTime: e.target.value})} required/>
+                      <Input id="end_time" type="time" value={newEntry.end_time} onChange={e => setNewEntry({...newEntry, end_time: e.target.value})} required/>
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">Simpan</Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Simpan
+                  </Button>
                 </DialogFooter>
             </form>
           </DialogContent>
@@ -229,7 +243,7 @@ export default function SchedulePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {daysOfWeek.map((day) => (
-            groupedSchedule[day] && groupedSchedule[day].length > 0 ? (
+            (groupedSchedule[day] && groupedSchedule[day].length > 0) ? (
             <Card key={day}>
               <CardHeader>
                 <CardTitle>{day}</CardTitle>
@@ -240,7 +254,7 @@ export default function SchedulePage() {
                     <div>
                       <p className="font-semibold">{item.subject}</p>
                       <p className="text-sm text-muted-foreground">{item.class}</p>
-                      <p className="text-sm text-muted-foreground">{item.startTime} - {item.endTime}</p>
+                      <p className="text-sm text-muted-foreground">{item.start_time} - {item.end_time}</p>
                     </div>
                     <AlertDialog>
                         <DropdownMenu>
@@ -284,8 +298,24 @@ export default function SchedulePage() {
           ) : null
         ))}
       </div>
+       {schedule.length === 0 && (
+            <div className="text-center text-muted-foreground py-12 col-span-full">
+                <p>Belum ada jadwal yang dibuat.</p>
+                <p className="text-sm">Silakan tambahkan jadwal mengajar Anda.</p>
+            </div>
+        )}
     </div>
   );
+}
+
+export default async function SchedulePage() {
+    const { getSchedule, getClasses, getSubjects } = await import("@/lib/data");
+    const [schedule, classes, subjects] = await Promise.all([
+        getSchedule(),
+        getClasses(),
+        getSubjects()
+    ]);
+    return <SchedulePageComponent initialSchedule={schedule} classes={classes} subjects={subjects} />;
 }
 
     

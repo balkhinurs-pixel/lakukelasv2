@@ -1,6 +1,7 @@
 
 "use client"
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -28,22 +29,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { PlusCircle, Edit } from "lucide-react";
-import { subjects as initialSubjects } from "@/lib/placeholder-data";
+import { PlusCircle, Edit, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Subject } from "@/lib/types";
+import { saveSubject } from "@/lib/actions";
 
 type NewSubjectData = {
     name: string;
     kkm: number | string;
 }
 
-export default function SubjectSettingsPage() {
+function SubjectSettingsPageComponent({ initialSubjects }: { initialSubjects: Subject[] }) {
+    const router = useRouter();
     const [subjects, setSubjects] = React.useState<Subject[]>(initialSubjects);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [editingSubject, setEditingSubject] = React.useState<Subject | null>(null);
     const [newSubjectData, setNewSubjectData] = React.useState<NewSubjectData>({ name: "", kkm: 75 });
+    const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
+
+    React.useEffect(() => {
+        setSubjects(initialSubjects);
+    }, [initialSubjects]);
 
     const handleOpenDialog = (subject: Subject | null = null) => {
         if (subject) {
@@ -56,32 +63,34 @@ export default function SubjectSettingsPage() {
         setIsDialogOpen(true);
     };
 
-    const handleSaveSubject = (e: React.FormEvent) => {
+    const handleSaveSubject = async (e: React.FormEvent) => {
         e.preventDefault();
-        const kkmNumber = Number(newSubjectData.kkm);
+        setLoading(true);
 
+        const kkmNumber = Number(newSubjectData.kkm);
         if (!newSubjectData.name || isNaN(kkmNumber) || kkmNumber < 0 || kkmNumber > 100) {
             toast({ title: "Gagal", description: "Nama mapel harus diisi dan KKM harus berupa angka antara 0-100.", variant: "destructive" });
+            setLoading(false);
             return;
         }
 
-        if (editingSubject) {
-            setSubjects(subjects.map(s => s.id === editingSubject.id ? { ...s, name: newSubjectData.name, kkm: kkmNumber } : s));
-            toast({ title: "Sukses", description: `Mata pelajaran ${newSubjectData.name} berhasil diperbarui.` });
-        } else {
-            const newSubject: Subject = {
-                id: `SUBJ${Date.now()}`,
-                name: newSubjectData.name,
-                kkm: kkmNumber,
-                teacherId: 'user_placeholder'
-            };
-            setSubjects([...subjects, newSubject]);
-            toast({ title: "Sukses", description: `Mata pelajaran ${newSubjectData.name} berhasil ditambahkan.` });
-        }
+        const formData = new FormData();
+        if(editingSubject) formData.append('id', editingSubject.id);
+        formData.append('name', newSubjectData.name);
+        formData.append('kkm', String(kkmNumber));
 
-        setIsDialogOpen(false);
-        setEditingSubject(null);
-        setNewSubjectData({ name: "", kkm: 75 });
+        const result = await saveSubject(formData);
+
+        if (result.success) {
+            toast({ title: "Sukses", description: `Mata pelajaran ${newSubjectData.name} berhasil disimpan.` });
+            setIsDialogOpen(false);
+            setEditingSubject(null);
+            setNewSubjectData({ name: "", kkm: 75 });
+            router.refresh();
+        } else {
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        }
+        setLoading(false);
     }
 
     return (
@@ -132,7 +141,10 @@ export default function SubjectSettingsPage() {
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button type="submit">Simpan Mapel</Button>
+                                <Button type="submit" disabled={loading}>
+                                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Simpan Mapel
+                                </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
@@ -187,8 +199,21 @@ export default function SubjectSettingsPage() {
                             </TableBody>
                         </Table>
                     </div>
+                     {subjects.length === 0 && (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>Belum ada mata pelajaran yang dibuat.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
     )
 }
+
+export default async function SubjectSettingsPage() {
+    const { getSubjects } = await import("@/lib/data");
+    const subjects = await getSubjects();
+    return <SubjectSettingsPageComponent initialSubjects={subjects} />;
+}
+
+    

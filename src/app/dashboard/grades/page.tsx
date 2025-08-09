@@ -2,9 +2,10 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useSearchParams } from 'next/navigation';
-import { Calendar as CalendarIcon, Edit, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -39,7 +40,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -47,11 +47,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { classes, subjects, gradeHistory as initialHistory, students as allStudents } from "@/lib/placeholder-data";
 import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { saveGrades } from "@/lib/actions";
 
-function FormattedDate({ date, formatString }: { date: Date, formatString: string }) {
+function FormattedDate({ date, formatString }: { date: Date | null, formatString: string }) {
     const [formattedDate, setFormattedDate] = React.useState<string>('');
 
     React.useEffect(() => {
@@ -63,57 +63,69 @@ function FormattedDate({ date, formatString }: { date: Date, formatString: strin
     return <>{formattedDate}</>;
 }
 
-
-export default function GradesPage() {
+function GradesPageComponent({
+    classes,
+    subjects,
+    initialHistory,
+    allStudents,
+}: {
+    classes: Class[];
+    subjects: Subject[];
+    initialHistory: GradeHistoryEntry[];
+    allStudents: Student[];
+}) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const preselectedClassId = searchParams.get('classId');
   const preselectedSubjectId = searchParams.get('subjectId');
 
   const [date, setDate] = React.useState<Date | undefined>(new Date());
-  const [selectedClass, setSelectedClass] = React.useState<Class | null>(null);
-  const [selectedSubject, setSelectedSubject] = React.useState<Subject | null>(null);
+  const [selectedClassId, setSelectedClassId] = React.useState<string | undefined>(preselectedClassId || undefined);
+  const [selectedSubjectId, setSelectedSubjectId] = React.useState<string | undefined>(preselectedSubjectId || undefined);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [grades, setGrades] = React.useState<Map<string, number | string>>(new Map());
   const [assessmentType, setAssessmentType] = React.useState<string>("");
-  const [history, setHistory] = React.useState<GradeHistoryEntry[]>(initialHistory);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [viewingEntry, setViewingEntry] = React.useState<GradeHistoryEntry | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = React.useState(false);
-
+  const [loading, setLoading] = React.useState(false);
 
   const { toast } = useToast();
 
+  const selectedClass = classes.find(c => c.id === selectedClassId);
+  const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
+
   React.useEffect(() => {
-    if (preselectedClassId) {
-      handleClassChange(preselectedClassId);
-    }
     if (preselectedSubjectId) {
         const subject = subjects.find(s => s.id === preselectedSubjectId);
         if (subject) {
-            setSelectedSubject(subject);
             setAssessmentType(`Tugas Harian - ${subject.name}`);
         }
     }
-  }, [preselectedClassId, preselectedSubjectId]);
+  }, [preselectedSubjectId, subjects]);
 
-  const handleClassChange = (classId: string) => {
-    const newClass = classes.find((c) => c.id === classId) || null;
-    setSelectedClass(newClass);
-    setStudents(newClass ? newClass.students : []);
-    resetForm(newClass);
-  };
-  
-  const handleSubjectChange = (subjectId: string) => {
-      const newSubject = subjects.find(s => s.id === subjectId) || null;
-      setSelectedSubject(newSubject);
-  }
+  React.useEffect(() => {
+      const fetchStudents = async () => {
+          if (!selectedClassId) {
+              setStudents([]);
+              return;
+          }
+          setLoading(true);
+          const { getStudentsByClass } = await import('@/lib/data');
+          const fetchedStudents = await getStudentsByClass(selectedClassId);
+          setStudents(fetchedStudents);
+          resetForm(fetchedStudents);
+          setLoading(false);
+      };
+      fetchStudents();
+  }, [selectedClassId]);
 
-  const resetForm = (newClass: Class | null) => {
+  const resetForm = (studentList: Student[]) => {
     setEditingId(null);
     setDate(new Date());
     setAssessmentType(selectedSubject ? `Tugas Harian - ${selectedSubject.name}` : "");
     const newGrades = new Map();
-    newClass?.students.forEach(student => {
+    studentList.forEach(student => {
       newGrades.set(student.id, "");
     });
     setGrades(newGrades);
@@ -124,8 +136,8 @@ export default function GradesPage() {
     setGrades(new Map(grades.set(studentId, score)));
   };
 
-  const saveGrades = () => {
-    if (!selectedClass || !selectedSubject || !date || !assessmentType) {
+  const handleSubmit = async () => {
+    if (!selectedClassId || !selectedSubjectId || !date || !assessmentType) {
         toast({
             title: "Gagal Menyimpan",
             description: "Harap pilih kelas, mata pelajaran, tanggal, dan isi jenis penilaian.",
@@ -136,64 +148,55 @@ export default function GradesPage() {
     
     const gradedRecords = Array.from(grades.entries())
         .filter(([, score]) => score !== "" && score !== null && score !== undefined)
-        .map(([studentId, score]) => ({ studentId, score }));
+        .map(([student_id, score]) => ({ student_id, score: Number(score) }));
 
     if (gradedRecords.length === 0) {
-        toast({
-            title: "Gagal Menyimpan",
-            description: "Tidak ada nilai yang diinput. Harap isi setidaknya satu nilai siswa.",
-            variant: "destructive",
-        });
+        toast({ title: "Tidak Ada Nilai", description: "Harap isi setidaknya satu nilai siswa.", variant: "destructive" });
         return;
     }
+    
+    setLoading(true);
 
+    const formData = new FormData();
+    if(editingId) formData.append('id', editingId);
+    formData.append('date', format(date, 'yyyy-MM-dd'));
+    formData.append('class_id', selectedClassId);
+    formData.append('subject_id', selectedSubjectId);
+    formData.append('assessment_type', assessmentType);
+    formData.append('records', JSON.stringify(gradedRecords));
 
-    const newEntry: GradeHistoryEntry = {
-        id: editingId || `GH${Date.now()}`,
-        date,
-        classId: selectedClass.id,
-        className: selectedClass.name,
-        subjectId: selectedSubject.id,
-        subjectName: selectedSubject.name,
-        assessmentType: assessmentType,
-        records: gradedRecords,
-    };
+    const result = await saveGrades(formData);
 
-    if (editingId) {
-        setHistory(history.map(h => h.id === editingId ? newEntry : h));
-        toast({ title: "Nilai Diperbarui", description: `Nilai untuk ${assessmentType} telah diperbarui.` });
+    if (result.success) {
+        toast({ title: "Nilai Disimpan", description: `Nilai untuk ${assessmentType} telah berhasil disimpan.` });
+        router.refresh();
+        resetForm(students);
     } else {
-        setHistory([newEntry, ...history]);
-        toast({
-          title: "Nilai Disimpan",
-          description: `Nilai untuk ${selectedClass?.name} pada ${date ? format(date, "PPP") : ''} telah berhasil disimpan.`,
-          variant: "default",
-          className: "bg-green-100 text-green-900 border-green-200",
-        });
+        toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
     }
-
-    resetForm(selectedClass);
+    setLoading(false);
   };
   
-  const handleEdit = (entry: GradeHistoryEntry) => {
-      const classToEdit = classes.find(c => c.id === entry.classId) || null;
-      const subjectToEdit = subjects.find(s => s.id === entry.subjectId) || null;
-      if (!classToEdit || !subjectToEdit) return;
+  const handleEdit = async (entry: GradeHistoryEntry) => {
+      setLoading(true);
+      setSelectedClassId(entry.class_id);
+      setSelectedSubjectId(entry.subject_id);
+      
+      const { getStudentsByClass } = await import('@/lib/data');
+      const fetchedStudents = await getStudentsByClass(entry.class_id);
+      setStudents(fetchedStudents);
 
-      setSelectedClass(classToEdit);
-      setSelectedSubject(subjectToEdit);
-      setStudents(classToEdit.students);
       setEditingId(entry.id);
-      setDate(entry.date);
-      setAssessmentType(entry.assessmentType);
+      setDate(parseISO(entry.date));
+      setAssessmentType(entry.assessment_type);
       
       const loadedGrades = new Map<string, GradeRecord['score']>();
-      classToEdit.students.forEach(student => {
+      fetchedStudents.forEach(student => {
           const record = entry.records.find(r => r.studentId === student.id);
           loadedGrades.set(student.id, record ? record.score : "");
       });
       setGrades(loadedGrades);
-      
+      setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -203,15 +206,11 @@ export default function GradesPage() {
   }
 
   const filteredHistory = React.useMemo(() => {
-    let result = history;
-    if (selectedClass) {
-        result = result.filter(entry => entry.classId === selectedClass.id);
-    }
-    if (selectedSubject) {
-        result = result.filter(entry => entry.subjectId === selectedSubject.id);
-    }
-    return result;
-  }, [history, selectedClass, selectedSubject]);
+    return initialHistory.filter(entry => 
+        (!selectedClassId || entry.class_id === selectedClassId) &&
+        (!selectedSubjectId || entry.subject_id === selectedSubjectId)
+    );
+  }, [initialHistory, selectedClassId, selectedSubjectId]);
 
   const getStudentName = (studentId: string) => {
     return allStudents.find(s => s.id === studentId)?.name || "Siswa Tidak Ditemukan";
@@ -236,7 +235,7 @@ export default function GradesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
                 <Label>Kelas</Label>
-                <Select onValueChange={handleClassChange} value={selectedClass?.id}>
+                <Select onValueChange={setSelectedClassId} value={selectedClassId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih kelas" />
                   </SelectTrigger>
@@ -251,7 +250,7 @@ export default function GradesPage() {
             </div>
              <div className="space-y-2">
                 <Label>Mata Pelajaran</Label>
-                 <Select onValueChange={handleSubjectChange} value={selectedSubject?.id}>
+                 <Select onValueChange={setSelectedSubjectId} value={selectedSubjectId}>
                     <SelectTrigger>
                         <SelectValue placeholder="Pilih mata pelajaran" />
                     </SelectTrigger>
@@ -270,74 +269,84 @@ export default function GradesPage() {
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
-                      )}
+                      className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                      disabled={loading}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {date ? <FormattedDate date={date} formatString="PPP" /> : <span>Pilih tanggal</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      initialFocus
-                    />
+                    <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
                   </PopoverContent>
                 </Popover>
             </div>
              <div className="space-y-2">
                 <Label htmlFor="assessmentType">Jenis Penilaian</Label>
-                <Input id="assessmentType" value={assessmentType} onChange={(e) => setAssessmentType(e.target.value)} placeholder="e.g. Ulangan Harian 1" />
+                <Input id="assessmentType" value={assessmentType} onChange={(e) => setAssessmentType(e.target.value)} placeholder="e.g. Ulangan Harian 1" disabled={loading}/>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {selectedClass && students.length > 0 && (
+      {selectedClassId && (
         <Card>
           <CardHeader>
-            <CardTitle>Daftar Nilai - {selectedClass.name}</CardTitle>
+            <CardTitle>Daftar Nilai - {selectedClass?.name}</CardTitle>
             <CardDescription>
               Input nilai (0-100) untuk setiap siswa. Kosongkan jika tidak ada nilai.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nama Siswa</TableHead>
-                    <TableHead className="w-[120px] text-right">Nilai</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.name}</TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={grades.get(student.id) ?? ""}
-                          onChange={(e) => handleGradeChange(student.id, e.target.value)}
-                          className="w-24 text-right"
-                        />
-                      </TableCell>
+            {loading && students.length === 0 ? (
+                <div className="text-center text-muted-foreground py-12">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                    <p className="mt-2">Memuat data siswa...</p>
+                </div>
+            ) : students.length > 0 ? (
+                <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Nama Siswa</TableHead>
+                        <TableHead className="w-[120px] text-right">Nilai</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                    {students.map((student) => (
+                        <TableRow key={student.id}>
+                        <TableCell className="font-medium">{student.name}</TableCell>
+                        <TableCell className="text-right">
+                            <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={grades.get(student.id) ?? ""}
+                            onChange={(e) => handleGradeChange(student.id, e.target.value)}
+                            className="w-24 text-right"
+                            disabled={loading}
+                            />
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </div>
+            ) : (
+                <div className="text-center text-muted-foreground py-12">
+                    <p>Belum ada siswa di kelas ini.</p>
+                </div>
+            )}
           </CardContent>
-          <CardFooter className="border-t px-6 py-4 justify-between flex-wrap gap-2">
-            <Button onClick={saveGrades} disabled={!assessmentType || !selectedSubject}>{editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}</Button>
-             {editingId && <Button variant="ghost" onClick={() => resetForm(selectedClass)}>Batal Mengubah</Button>}
-          </CardFooter>
+          {students.length > 0 && (
+            <CardFooter className="border-t px-6 py-4 justify-between flex-wrap gap-2">
+              <Button onClick={handleSubmit} disabled={loading || !assessmentType || !selectedSubjectId}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}
+              </Button>
+              {editingId && <Button variant="ghost" onClick={() => resetForm(students)} disabled={loading}>Batal Mengubah</Button>}
+            </CardFooter>
+          )}
         </Card>
       )}
 
@@ -354,11 +363,11 @@ export default function GradesPage() {
                 const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
                 return (
                     <div key={entry.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="font-semibold">{entry.assessmentType}</div>
+                        <div className="font-semibold">{entry.assessment_type}</div>
                         <div className="text-sm text-muted-foreground space-y-1">
                             <p>Kelas: {entry.className}</p>
                             <p>Mapel: {entry.subjectName}</p>
-                            <p>Tanggal: <FormattedDate date={entry.date} formatString="dd MMM yyyy" /></p>
+                            <p>Tanggal: <FormattedDate date={parseISO(entry.date)} formatString="dd MMM yyyy" /></p>
                         </div>
                         <div className="border-t pt-3 mt-3 flex justify-between items-center text-sm">
                             <div>
@@ -375,7 +384,7 @@ export default function GradesPage() {
                                 <Eye className="mr-2 h-4 w-4" />
                                 Lihat Detail
                             </Button>
-                            <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(entry)}>
+                            <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(entry)} disabled={loading}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Ubah
                             </Button>
@@ -404,8 +413,8 @@ export default function GradesPage() {
                            const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
                            return (
                                 <TableRow key={entry.id}>
-                                    <TableCell><FormattedDate date={entry.date} formatString="dd MMM yyyy" /></TableCell>
-                                    <TableCell>{entry.assessmentType}</TableCell>
+                                    <TableCell><FormattedDate date={parseISO(entry.date)} formatString="dd MMM yyyy" /></TableCell>
+                                    <TableCell>{entry.assessment_type}</TableCell>
                                     <TableCell>
                                         <div className="font-medium">{entry.className}</div>
                                         <div className="text-xs text-muted-foreground">{entry.subjectName}</div>
@@ -417,7 +426,7 @@ export default function GradesPage() {
                                             <Eye className="mr-2 h-4 w-4" />
                                             Detail
                                         </Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
+                                        <Button variant="outline" size="sm" onClick={() => handleEdit(entry)} disabled={loading}>
                                             <Edit className="mr-2 h-4 w-4" />
                                             Ubah
                                         </Button>
@@ -439,9 +448,9 @@ export default function GradesPage() {
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent>
             <DialogHeader>
-            <DialogTitle>Detail Nilai: {viewingEntry?.assessmentType}</DialogTitle>
+            <DialogTitle>Detail Nilai: {viewingEntry?.assessment_type}</DialogTitle>
             <DialogDescription>
-                Daftar nilai untuk kelas {viewingEntry?.className} ({viewingEntry?.subjectName}). KKM: <span className="font-bold">{getSubjectKkm(viewingEntry?.subjectId)}</span>
+                Daftar nilai untuk kelas {viewingEntry?.className} ({viewingEntry?.subjectName}). KKM: <span className="font-bold">{getSubjectKkm(viewingEntry?.subject_id)}</span>
             </DialogDescription>
             </DialogHeader>
             <div className="max-h-[60vh] overflow-y-auto pr-2">
@@ -456,7 +465,7 @@ export default function GradesPage() {
                     <TableBody>
                         {viewingEntry?.records.map(record => {
                             const score = Number(record.score);
-                            const kkm = getSubjectKkm(viewingEntry.subjectId);
+                            const kkm = getSubjectKkm(viewingEntry.subject_id);
                             const isPassing = score >= kkm;
                             return (
                                 <TableRow key={record.studentId}>
@@ -478,3 +487,17 @@ export default function GradesPage() {
     </div>
   );
 }
+
+export default async function GradesPage() {
+    const { getClasses, getSubjects, getGradeHistory, getAllStudents } = await import("@/lib/data");
+    const [classes, subjects, history, allStudents] = await Promise.all([
+        getClasses(),
+        getSubjects(),
+        getGradeHistory(),
+        getAllStudents()
+    ]);
+
+    return <GradesPageComponent classes={classes} subjects={subjects} initialHistory={history} allStudents={allStudents} />;
+}
+
+    

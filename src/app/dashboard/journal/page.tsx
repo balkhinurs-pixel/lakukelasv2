@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -31,16 +31,15 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Eye, Calendar, BookOpen, Hash } from "lucide-react";
-import { journalEntries as initialJournalEntries, classes, subjects } from "@/lib/placeholder-data";
-import { format } from "date-fns";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Eye, Calendar, BookOpen, Hash, Loader2 } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { JournalEntry } from "@/lib/types";
+import type { JournalEntry, Class, Subject } from "@/lib/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
   Pagination,
@@ -51,13 +50,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { saveJournal, deleteJournal } from "@/lib/actions";
 
 
-type NewJournalEntry = Omit<JournalEntry, 'id' | 'date' | 'className' | 'subjectName'>;
+type NewJournalEntry = Omit<JournalEntry, 'id' | 'date' | 'className' | 'subjectName' | 'teacher_id'>;
 const ITEMS_PER_PAGE = 6;
 
 
-function FormattedDate({ date, formatString }: { date: Date, formatString: string }) {
+function FormattedDate({ date, formatString }: { date: Date | null, formatString: string }) {
     const [formattedDate, setFormattedDate] = React.useState<string>('');
 
     React.useEffect(() => {
@@ -70,13 +70,21 @@ function FormattedDate({ date, formatString }: { date: Date, formatString: strin
 }
 
 
-export default function JournalPage() {
+function JournalPageComponent({
+    initialJournalEntries,
+    classes,
+    subjects,
+}: {
+    initialJournalEntries: JournalEntry[];
+    classes: Class[];
+    subjects: Subject[];
+}) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const preselectedClassId = searchParams.get('classId');
   const preselectedSubjectId = searchParams.get('subjectId');
   const openDialog = searchParams.get('openDialog');
 
-  const [journalEntries, setJournalEntries] = React.useState<JournalEntry[]>(initialJournalEntries);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
   const [selectedEntry, setSelectedEntry] = React.useState<JournalEntry | null>(null);
@@ -84,13 +92,14 @@ export default function JournalPage() {
   const [filterClass, setFilterClass] = React.useState<string>("all");
   const [filterSubject, setFilterSubject] = React.useState<string>("all");
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [loading, setLoading] = React.useState(false);
 
   const initialFormState: NewJournalEntry = {
-    classId: "",
-    subjectId: "",
-    meetingNumber: undefined,
-    learningObjectives: "",
-    learningActivities: "",
+    class_id: "",
+    subject_id: "",
+    meeting_number: undefined,
+    learning_objectives: "",
+    learning_activities: "",
     assessment: "",
     reflection: ""
   };
@@ -108,8 +117,8 @@ export default function JournalPage() {
       if (isFormDialogOpen && preselectedClassId && preselectedSubjectId && !editingEntry) {
           setNewEntry(prev => ({
               ...prev,
-              classId: preselectedClassId || "",
-              subjectId: preselectedSubjectId || "",
+              class_id: preselectedClassId || "",
+              subject_id: preselectedSubjectId || "",
           }));
           const selectedClass = classes.find(c => c.id === preselectedClassId);
           if (selectedClass) {
@@ -128,11 +137,11 @@ export default function JournalPage() {
   const handleOpenEditDialog = (entry: JournalEntry) => {
     setEditingEntry(entry);
     setNewEntry({
-      classId: entry.classId,
-      subjectId: entry.subjectId,
-      meetingNumber: entry.meetingNumber,
-      learningObjectives: entry.learningObjectives,
-      learningActivities: entry.learningActivities,
+      class_id: entry.class_id,
+      subject_id: entry.subject_id,
+      meeting_number: entry.meeting_number,
+      learning_objectives: entry.learning_objectives,
+      learning_activities: entry.learning_activities,
       assessment: entry.assessment,
       reflection: entry.reflection,
     });
@@ -140,55 +149,49 @@ export default function JournalPage() {
     setIsFormDialogOpen(true);
   };
 
-  const handleDeleteEntry = (entryId: string) => {
-      setJournalEntries(journalEntries.filter(entry => entry.id !== entryId));
-      toast({ title: "Sukses", description: "Jurnal berhasil dihapus.", variant: "destructive" });
+  const handleDeleteEntry = async (entryId: string) => {
+      setLoading(true);
+      const result = await deleteJournal(entryId);
+      if (result.success) {
+          toast({ title: "Sukses", description: "Jurnal berhasil dihapus." });
+          router.refresh();
+      } else {
+          toast({ title: "Gagal", description: result.error, variant: "destructive" });
+      }
       setIsViewDialogOpen(false);
       setSelectedEntry(null);
+      setLoading(false);
   }
 
-  const handleSaveJournal = (e: React.FormEvent) => {
+  const handleSaveJournal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEntry.classId || !newEntry.subjectId || !newEntry.learningObjectives || !newEntry.learningActivities) {
+    if (!newEntry.class_id || !newEntry.subject_id || !newEntry.learning_objectives || !newEntry.learning_activities) {
         toast({ title: "Gagal Menyimpan", description: "Mohon isi semua kolom wajib: Kelas, Mapel, Tujuan, dan Kegiatan.", variant: "destructive" });
         return;
     }
+    setLoading(true);
 
-    const selectedClass = classes.find(c => c.id === newEntry.classId);
-    const selectedSubject = subjects.find(s => s.id === newEntry.subjectId);
+    const formData = new FormData();
+    if(editingEntry) formData.append('id', editingEntry.id);
+    formData.append('class_id', newEntry.class_id);
+    formData.append('subject_id', newEntry.subject_id);
+    if(newEntry.meeting_number) formData.append('meeting_number', String(newEntry.meeting_number));
+    formData.append('learning_objectives', newEntry.learning_objectives);
+    formData.append('learning_activities', newEntry.learning_activities);
+    if(newEntry.assessment) formData.append('assessment', newEntry.assessment);
+    if(newEntry.reflection) formData.append('reflection', newEntry.reflection);
 
-    if(!selectedClass || !selectedSubject) {
-        toast({ title: "Gagal", description: "Kelas atau mapel tidak valid.", variant: "destructive" });
-        return;
-    }
-
-    if (editingEntry) {
-        const updatedEntries = journalEntries.map(entry => 
-            entry.id === editingEntry.id ? { 
-                ...editingEntry, 
-                ...newEntry, 
-                className: selectedClass.name, 
-                subjectName: selectedSubject.name 
-            } : entry
-        );
-        setJournalEntries(updatedEntries);
-        toast({ title: "Jurnal Diperbarui", description: "Jurnal mengajar berhasil diperbarui." });
-    } else {
-        const newJournalEntry: JournalEntry = {
-            id: `J${Date.now()}`,
-            date: new Date(),
-            ...newEntry,
-            className: selectedClass.name,
-            subjectName: selectedSubject.name,
-            meetingNumber: newEntry.meetingNumber || undefined,
-        };
-        setJournalEntries([newJournalEntry, ...journalEntries]);
-        toast({ title: "Jurnal Disimpan", description: "Jurnal mengajar baru berhasil disimpan.", className: "bg-green-100 text-green-900 border-green-200" });
-    }
+    const result = await saveJournal(formData);
     
-    setNewEntry(initialFormState);
-    setIsFormDialogOpen(false);
-    setEditingEntry(null);
+    if (result.success) {
+        toast({ title: editingEntry ? "Jurnal Diperbarui" : "Jurnal Disimpan", description: "Perubahan Anda telah berhasil disimpan." });
+        router.refresh();
+        setIsFormDialogOpen(false);
+        setEditingEntry(null);
+    } else {
+        toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
+    }
+    setLoading(false);
   }
 
   const handleViewEntry = (entry: JournalEntry) => {
@@ -197,15 +200,15 @@ export default function JournalPage() {
   }
 
   const filteredEntries = React.useMemo(() => {
-    let result = journalEntries;
+    let result = initialJournalEntries;
     if (filterClass !== "all") {
-        result = result.filter(entry => entry.classId === filterClass);
+        result = result.filter(entry => entry.class_id === filterClass);
     }
     if (filterSubject !== "all") {
-        result = result.filter(entry => entry.subjectId === filterSubject);
+        result = result.filter(entry => entry.subject_id === filterSubject);
     }
     return result;
-  }, [journalEntries, filterClass, filterSubject]);
+  }, [initialJournalEntries, filterClass, filterSubject]);
 
   // Pagination logic
   const pageCount = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
@@ -285,7 +288,6 @@ export default function JournalPage() {
 };
 
 
-
   return (
     <div className="space-y-6">
        <div className="flex justify-between items-center flex-wrap gap-4">
@@ -311,9 +313,9 @@ export default function JournalPage() {
                     <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="class">Kelas</Label>
-                                <Select value={newEntry.classId} onValueChange={(value) => setNewEntry({...newEntry, classId: value})} required>
-                                    <SelectTrigger id="class">
+                                <Label htmlFor="class_id">Kelas</Label>
+                                <Select value={newEntry.class_id} onValueChange={(value) => setNewEntry({...newEntry, class_id: value})} required>
+                                    <SelectTrigger id="class_id">
                                         <SelectValue placeholder="Pilih kelas" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -326,9 +328,9 @@ export default function JournalPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="subject">Mata Pelajaran</Label>
-                                 <Select value={newEntry.subjectId} onValueChange={(value) => setNewEntry({...newEntry, subjectId: value})} required>
-                                    <SelectTrigger id="subject">
+                                <Label htmlFor="subject_id">Mata Pelajaran</Label>
+                                 <Select value={newEntry.subject_id} onValueChange={(value) => setNewEntry({...newEntry, subject_id: value})} required>
+                                    <SelectTrigger id="subject_id">
                                         <SelectValue placeholder="Pilih mapel" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -342,22 +344,22 @@ export default function JournalPage() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="meetingNumber">Pertemuan Ke</Label>
+                            <Label htmlFor="meeting_number">Pertemuan Ke</Label>
                             <Input 
-                                id="meetingNumber" 
+                                id="meeting_number" 
                                 type="number" 
                                 placeholder="e.g. 5" 
-                                value={newEntry.meetingNumber || ""} 
-                                onChange={(e) => setNewEntry({...newEntry, meetingNumber: e.target.value ? parseInt(e.target.value) : undefined})} 
+                                value={newEntry.meeting_number || ""} 
+                                onChange={(e) => setNewEntry({...newEntry, meeting_number: e.target.value ? parseInt(e.target.value) : undefined})} 
                             />
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="learningObjectives">Tujuan Pembelajaran</Label>
-                            <Textarea id="learningObjectives" placeholder="Siswa mampu mengidentifikasi..." value={newEntry.learningObjectives} onChange={(e) => setNewEntry({...newEntry, learningObjectives: e.target.value})} required/>
+                            <Label htmlFor="learning_objectives">Tujuan Pembelajaran</Label>
+                            <Textarea id="learning_objectives" placeholder="Siswa mampu mengidentifikasi..." value={newEntry.learning_objectives} onChange={(e) => setNewEntry({...newEntry, learning_objectives: e.target.value})} required/>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="learningActivities">Kegiatan Pembelajaran (Sintaks)</Label>
-                            <Textarea id="learningActivities" placeholder="1. Kegiatan Awal: Apersepsi dan doa..." value={newEntry.learningActivities} onChange={(e) => setNewEntry({...newEntry, learningActivities: e.target.value})} required/>
+                            <Label htmlFor="learning_activities">Kegiatan Pembelajaran (Sintaks)</Label>
+                            <Textarea id="learning_activities" placeholder="1. Kegiatan Awal: Apersepsi dan doa..." value={newEntry.learning_activities} onChange={(e) => setNewEntry({...newEntry, learning_activities: e.target.value})} required/>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="assessment">Penilaian (Asesmen)</Label>
@@ -369,8 +371,11 @@ export default function JournalPage() {
                         </div>
                     </div>
                     <DialogFooter className="pt-4 border-t">
-                      <Button type="button" variant="ghost" onClick={() => setIsFormDialogOpen(false)}>Batal</Button>
-                      <Button type="submit">Simpan Jurnal</Button>
+                      <Button type="button" variant="ghost" onClick={() => setIsFormDialogOpen(false)} disabled={loading}>Batal</Button>
+                      <Button type="submit" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Simpan Jurnal
+                      </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -445,7 +450,7 @@ export default function JournalPage() {
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{entry.subjectName} di {entry.className}</span> pada tanggal <FormattedDate date={entry.date} formatString="dd MMM yyyy" />?
+                                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{entry.subjectName} di {entry.className}</span> pada tanggal <FormattedDate date={parseISO(entry.date)} formatString="dd MMM yyyy" />?
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -458,14 +463,14 @@ export default function JournalPage() {
                                     </AlertDialog>
                                 </div>
                                 <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
-                                    <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> <FormattedDate date={entry.date} formatString="dd MMM yyyy" /></div>
-                                    {entry.meetingNumber && <div className="flex items-center gap-1.5"><Hash className="h-3.5 w-3.5" /> Pertemuan ke-{entry.meetingNumber}</div>}
+                                    <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> <FormattedDate date={parseISO(entry.date)} formatString="dd MMM yyyy" /></div>
+                                    {entry.meeting_number && <div className="flex items-center gap-1.5"><Hash className="h-3.5 w-3.5" /> Pertemuan ke-{entry.meeting_number}</div>}
                                 </div>
                             </CardHeader>
                             <CardContent className="flex-grow">
                                  <div className="space-y-2">
                                     <h4 className="font-semibold text-sm flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary"/> Tujuan Pembelajaran</h4>
-                                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{entry.learningObjectives}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{entry.learning_objectives}</p>
                                  </div>
                             </CardContent>
                             <CardFooter>
@@ -492,18 +497,18 @@ export default function JournalPage() {
             <DialogHeader>
                 <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
                 <DialogDescription>
-                    {selectedEntry?.subjectName} - {selectedEntry?.className} ({selectedEntry ? <FormattedDate date={selectedEntry.date} formatString="eeee, dd MMMM yyyy"/> : ''}) {selectedEntry?.meetingNumber ? `- Pertemuan ${selectedEntry.meetingNumber}` : ''}
+                    {selectedEntry?.subjectName} - {selectedEntry?.className} ({selectedEntry ? <FormattedDate date={parseISO(selectedEntry.date)} formatString="eeee, dd MMMM yyyy"/> : ''}) {selectedEntry?.meeting_number ? `- Pertemuan ${selectedEntry.meeting_number}` : ''}
                 </DialogDescription>
             </DialogHeader>
             {selectedEntry && (
                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
                     <div className="space-y-1">
                         <h4 className="font-semibold text-sm">Tujuan Pembelajaran</h4>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.learningObjectives}</p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.learning_objectives}</p>
                     </div>
                      <div className="space-y-1">
                         <h4 className="font-semibold text-sm">Kegiatan Pembelajaran</h4>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.learningActivities}</p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.learning_activities}</p>
                     </div>
                      <div className="space-y-1">
                         <h4 className="font-semibold text-sm">Penilaian (Asesmen)</h4>
@@ -518,8 +523,8 @@ export default function JournalPage() {
             <DialogFooter className="justify-between pt-4 border-t flex-wrap gap-2">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive">
-                            <Trash2 className="mr-2 h-4 w-4"/> Hapus
+                        <Button variant="destructive" disabled={loading}>
+                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4"/>} Hapus
                         </Button>
                     </AlertDialogTrigger>
                      {selectedEntry && (
@@ -527,7 +532,7 @@ export default function JournalPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal <FormattedDate date={selectedEntry.date} formatString="dd MMM yyyy" />?
+                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal <FormattedDate date={parseISO(selectedEntry.date)} formatString="dd MMM yyyy" />?
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -540,10 +545,10 @@ export default function JournalPage() {
                      )}
                 </AlertDialog>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)}>
+                  <Button variant="outline" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)} disabled={loading}>
                       <Edit className="mr-2 h-4 w-4"/> Ubah
                   </Button>
-                  <Button variant="secondary" onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
+                  <Button variant="secondary" onClick={() => setIsViewDialogOpen(false)} disabled={loading}>Tutup</Button>
                 </div>
             </DialogFooter>
         </DialogContent>
@@ -551,3 +556,15 @@ export default function JournalPage() {
     </div>
   );
 }
+
+export default async function JournalPage() {
+    const { getJournalEntries, getClasses, getSubjects } = await import("@/lib/data");
+    const [journalEntries, classes, subjects] = await Promise.all([
+        getJournalEntries(),
+        getClasses(),
+        getSubjects()
+    ]);
+    return <JournalPageComponent initialJournalEntries={journalEntries} classes={classes} subjects={subjects} />;
+}
+
+    

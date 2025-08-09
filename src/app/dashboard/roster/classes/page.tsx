@@ -29,46 +29,59 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PlusCircle, Sparkles, Edit, Users } from "lucide-react";
-import { classes as initialClasses } from "@/lib/placeholder-data";
+import { PlusCircle, Sparkles, Edit, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
 import type { Class } from "@/lib/types";
 import Link from "next/link";
+import { saveClass } from "@/lib/actions";
+import { useRouter } from "next/navigation";
 
-export default function ClassSettingsPage() {
+function ClassSettingsPageComponent({ initialClasses }: { initialClasses: Class[] }) {
+    const router = useRouter();
     const [classes, setClasses] = React.useState<Class[]>(initialClasses);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [newClassName, setNewClassName] = React.useState("");
+    const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
     const { limits, isPro } = useActivation();
 
-    const canCreateClass = classes.length < limits.classes;
+    React.useEffect(() => {
+        setClasses(initialClasses);
+    }, [initialClasses]);
 
-    const handleSaveClass = (e: React.FormEvent) => {
+    const canCreateClass = isPro || classes.length < limits.classes;
+
+    const handleSaveClass = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoading(true);
 
         if (!canCreateClass) {
             toast({ title: "Batas Tercapai", description: "Anda telah mencapai batas maksimal jumlah kelas untuk akun gratis.", variant: "destructive" });
+            setLoading(false);
             return;
         }
 
         if (!newClassName) {
             toast({ title: "Gagal", description: "Nama kelas tidak boleh kosong.", variant: "destructive" });
+            setLoading(false);
             return;
         }
 
-        const newClass: Class = {
-            id: `C${Date.now()}`,
-            name: newClassName,
-            students: [],
-            teacherId: 'user_placeholder'
-        };
+        const formData = new FormData();
+        formData.append('name', newClassName);
+        
+        const result = await saveClass(formData);
 
-        setClasses([...classes, newClass]);
-        toast({ title: "Sukses", description: `Kelas ${newClassName} berhasil dibuat.` });
-        setNewClassName("");
-        setIsDialogOpen(false);
+        if (result.success) {
+            toast({ title: "Sukses", description: `Kelas ${newClassName} berhasil dibuat.` });
+            setNewClassName("");
+            setIsDialogOpen(false);
+            router.refresh();
+        } else {
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        }
+        setLoading(false);
     }
 
     return (
@@ -98,7 +111,10 @@ export default function ClassSettingsPage() {
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button type="submit">Simpan Kelas</Button>
+                                <Button type="submit" disabled={loading}>
+                                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Simpan Kelas
+                                </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
@@ -129,12 +145,11 @@ export default function ClassSettingsPage() {
                         {classes.map((c) => (
                              <div key={c.id} className="border rounded-lg p-4 space-y-3">
                                 <div className="font-semibold">{c.name}</div>
-                                <div className="text-sm text-muted-foreground space-y-1">
+                                <div className="text-sm text-muted-foreground">
                                     <p><span className="font-medium">ID:</span> {c.id}</p>
-                                    <p><span className="font-medium">Jumlah Siswa:</span> {c.students.length}</p>
                                 </div>
-                                <Button variant="outline" size="sm" className="w-full">
-                                    <Edit className="mr-2 h-4 w-4" /> Ubah
+                                <Button variant="outline" size="sm" className="w-full" disabled>
+                                    <Edit className="mr-2 h-4 w-4" /> Ubah (Segera Hadir)
                                 </Button>
                             </div>
                         ))}
@@ -147,7 +162,6 @@ export default function ClassSettingsPage() {
                                 <TableRow>
                                 <TableHead>ID Kelas</TableHead>
                                 <TableHead>Nama Kelas</TableHead>
-                                <TableHead className="text-center">Jumlah Siswa</TableHead>
                                 <TableHead className="text-right">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -156,18 +170,29 @@ export default function ClassSettingsPage() {
                                 <TableRow key={c.id}>
                                     <TableCell className="font-mono text-muted-foreground">{c.id}</TableCell>
                                     <TableCell className="font-medium">{c.name}</TableCell>
-                                    <TableCell className="text-center">{c.students.length}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm">Ubah</Button>
+                                        <Button variant="ghost" size="sm" disabled>Ubah (Segera Hadir)</Button>
                                     </TableCell>
                                 </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
                     </div>
-
+                     {classes.length === 0 && (
+                        <div className="text-center text-muted-foreground py-12">
+                            <p>Belum ada kelas yang dibuat.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
     )
 }
+
+export default async function ClassSettingsPage() {
+    const { getClasses } = await import("@/lib/data");
+    const classes = await getClasses();
+    return <ClassSettingsPageComponent initialClasses={classes} />;
+}
+
+    

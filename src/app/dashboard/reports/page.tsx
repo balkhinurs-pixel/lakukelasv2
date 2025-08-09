@@ -38,20 +38,30 @@ import {
   PieChart,
   Pie,
   Cell,
-  LabelList
 } from 'recharts';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Users, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck } from "lucide-react";
-import { classes, students, subjects, journalEntries } from "@/lib/placeholder-data";
+import { TrendingUp, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck } from "lucide-react";
+import type { Class, Student, Subject, JournalEntry } from "@/lib/types";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useActivation } from "@/hooks/use-activation";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+
+// This is a placeholder since we don't have real history data yet to do complex calcs
+const studentPerformance = [
+    { id: 'S004', name: 'Eko Prasetyo', class: '10-A', average_grade: 95, attendance: 100, status: 'Sangat Baik' },
+    { id: 'S001', name: 'Budi Santoso', class: '10-A', average_grade: 92, attendance: 98, status: 'Sangat Baik' },
+    { id: 'S006', name: 'Gilang Ramadhan', class: '10-B', average_grade: 85, attendance: 95, status: 'Stabil' },
+    { id: 'S002', name: 'Citra Lestari', class: '10-A', average_grade: 82, attendance: 90, status: 'Stabil' },
+    { id: 'S007', name: 'Hana Yulita', class: '11-A', average_grade: 78, attendance: 88, status: 'Butuh Perhatian' },
+    { id: 'S003', name: 'Dewi Anggraini', class: '11-A', average_grade: 74, attendance: 85, status: 'Berisiko' },
+];
 
 
 // Extend jsPDF with autoTable
@@ -97,35 +107,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, fill }:
 };
 
 
-const studentPerformance = [
-    { id: 'S004', name: 'Eko Prasetyo', class: '10-A', average_grade: 95, attendance: 100, status: 'Sangat Baik' },
-    { id: 'S001', name: 'Budi Santoso', class: '10-A', average_grade: 92, attendance: 98, status: 'Sangat Baik' },
-    { id: 'S006', name: 'Gilang Ramadhan', class: '10-B', average_grade: 85, attendance: 95, status: 'Stabil' },
-    { id: 'S002', name: 'Citra Lestari', class: '10-A', average_grade: 82, attendance: 90, status: 'Stabil' },
-    { id: 'S007', name: 'Hana Yulita', class: '11-A', average_grade: 78, attendance: 88, status: 'Butuh Perhatian' },
-    { id: 'S003', name: 'Dewi Anggraini', class: '11-A', average_grade: 74, attendance: 85, status: 'Berisiko' },
-];
-
-// Mock data for detailed reports
-const detailedAttendance = students.map(s => ({
-    ...s,
-    hadir: Math.floor(Math.random() * 16) + 15, // 15-30
-    sakit: Math.floor(Math.random() * 3), // 0-2
-    izin: Math.floor(Math.random() * 2), // 0-1
-    alpha: Math.floor(Math.random() * 2), // 0-1
-    pertemuan: 32,
-}));
-
-const detailedGrades = students.map(s => ({
-    ...s,
-    uh1: Math.floor(Math.random() * 30) + 70,
-    uh2: Math.floor(Math.random() * 30) + 71,
-    tugas1: Math.floor(Math.random() * 20) + 80,
-    uts: Math.floor(Math.random() * 25) + 75,
-    uas: Math.floor(Math.random() * 25) + 72,
-}));
-
-// Mock data from settings
+// Mock data from settings - in a real app, this would come from user profile
 const schoolData = {
     logo: "https://placehold.co/100x100.png",
     name: "SMA Negeri 1 Harapan Bangsa",
@@ -139,9 +121,23 @@ const teacherData = {
     nip: "199001012020121001"
 }
 
-export default function ReportsPage() {
-  const [selectedClass, setSelectedClass] = React.useState("C01");
-  const [selectedSubject, setSelectedSubject] = React.useState("SUBJ01");
+function ReportsPageComponent({
+    classes,
+    students,
+    subjects,
+    journalEntries,
+    // attendanceHistory,
+    // gradeHistory
+}: {
+    classes: Class[];
+    students: Student[];
+    subjects: Subject[];
+    journalEntries: JournalEntry[];
+    // attendanceHistory: any[];
+    // gradeHistory: any[];
+}) {
+  const [selectedClass, setSelectedClass] = React.useState("all");
+  const [selectedSubject, setSelectedSubject] = React.useState("all");
   const [selectedMonth, setSelectedMonth] = React.useState("all");
   const [selectedSemester, setSelectedSemester] = React.useState("2");
   const { isPro, limits } = useActivation();
@@ -159,33 +155,8 @@ export default function ReportsPage() {
           return;
       }
 
-      const activeClass = classes.find(c => c.id === selectedClass);
-      const activeSubject = subjects.find(s => s.id === selectedSubject);
-      
-      const title = `REKAPITULASI KEHADIRAN SISWA`;
-      const doc = new jsPDF() as jsPDFWithAutoTable;
-      
-      const head = [['No.', 'NIS', 'Nama Siswa', 'H', 'S', 'I', 'A', 'Pertemuan', 'Kehadiran (%)']];
-      const body = detailedAttendance
-        .filter(s => selectedClass === 'all' || s.classId === selectedClass)
-        .map((s, index) => [
-            index + 1,
-            s.nis,
-            s.name,
-            s.hadir,
-            s.sakit,
-            s.izin,
-            s.alpha,
-            s.pertemuan,
-            ((s.hadir/s.pertemuan)*100).toFixed(1) + '%'
-      ]);
-
-      downloadPdf(doc, {title: title, head: head, body: body}, {
-        kelas: activeClass?.name,
-        mapel: activeSubject?.name,
-        semester: selectedSemester === "1" ? "Ganjil" : "Genap",
-        tahunAjaran: "2023/2024"
-      });
+      // PDF generation logic here...
+      toast({title: "Coming Soon", description: "PDF generation for attendance is not yet implemented."});
   }
   
   const handleDownloadGrades = () => {
@@ -193,52 +164,25 @@ export default function ReportsPage() {
         toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
         return;
     }
-    const doc = new jsPDF() as jsPDFWithAutoTable;
-    const activeClass = classes.find(c => c.id === selectedClass);
-    const activeSubject = subjects.find(s => s.id === selectedSubject);
-    const title = `REKAPITULASI NILAI SISWA`;
-
-    const head = [['No.', 'NIS', 'Nama Siswa', 'UH 1', 'UH 2', 'Tugas 1', 'UTS', 'UAS', 'Rata-rata']];
-    const body = detailedGrades
-        .filter(s => selectedClass === 'all' || s.classId === selectedClass)
-        .map((s, index) => {
-            const avg = (s.uh1 + s.uh2 + s.tugas1 + s.uts + s.uas) / 5;
-            return [
-                index + 1,
-                s.nis,
-                s.name,
-                s.uh1,
-                s.uh2,
-                s.tugas1,
-                s.uts,
-                s.uas,
-                avg.toFixed(1)
-            ];
-        });
-
-    downloadPdf(doc, {title: title, head: head, body: body}, {
-        kelas: activeClass?.name,
-        mapel: activeSubject?.name,
-        semester: selectedSemester === "1" ? "Ganjil" : "Genap",
-        tahunAjaran: "2023/2024"
-      });
+    // PDF generation logic here...
+    toast({title: "Coming Soon", description: "PDF generation for grades is not yet implemented."});
   }
   
-  const handleDownloadJournal = () => {
+  const handleDownloadJournal = async () => {
     if (!limits.canDownloadPdf) {
         toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
         return;
     }
+
     const doc = new jsPDF() as jsPDFWithAutoTable;
     const title = 'JURNAL MENGAJAR GURU';
     
-    // For journals, we don't use autoTable. We build the content manually.
     const filteredJournals = journalEntries.filter(j => 
-      (selectedClass === 'all' || j.classId === selectedClass) &&
-      (selectedSubject === 'all' || j.subjectId === selectedSubject)
+      (selectedClass === 'all' || j.class_id === selectedClass) &&
+      (selectedSubject === 'all' || j.subject_id === selectedSubject)
     );
 
-    downloadPdf(doc, { title: title, journals: filteredJournals }, {
+    await downloadPdf(doc, { title: title, journals: filteredJournals }, {
         semester: selectedSemester === "1" ? "Ganjil" : "Genap",
         tahunAjaran: "2023/2024"
     });
@@ -276,7 +220,6 @@ export default function ReportsPage() {
         doc.line(margin, margin + 25, pageWidth - margin, margin + 25);
         finalY = margin + 25;
 
-        // --- Add Title and Meta Info ---
         doc.setFontSize(12).setFont(undefined, 'bold');
         doc.text(content.title, pageWidth / 2, finalY + 10, { align: 'center' });
         finalY += 15;
@@ -284,10 +227,13 @@ export default function ReportsPage() {
         if (meta) {
             doc.setFontSize(10).setFont(undefined, 'normal');
             const metaYStart = finalY;
+            const activeClass = classes.find(c => c.id === selectedClass);
+            const activeSubject = subjects.find(s => s.id === selectedSubject);
+
             doc.text(`Mata Pelajaran`, margin, metaYStart);
-            doc.text(`: ${meta.mapel || 'Semua Mapel'}`, margin + 35, metaYStart);
+            doc.text(`: ${activeSubject?.name || 'Semua Mapel'}`, margin + 35, metaYStart);
             doc.text(`Kelas`, margin, metaYStart + 5);
-            doc.text(`: ${meta.kelas || 'Semua Kelas'}`, margin + 35, metaYStart + 5);
+            doc.text(`: ${activeClass?.name || 'Semua Kelas'}`, margin + 35, metaYStart + 5);
             doc.text(`Semester`, pageWidth / 2, metaYStart);
             doc.text(`: ${meta.semester || '-'}`, pageWidth / 2 + 35, metaYStart);
             doc.text(`Tahun Ajaran`, pageWidth / 2, metaYStart + 5);
@@ -295,7 +241,6 @@ export default function ReportsPage() {
             finalY = metaYStart + 15;
         }
 
-        // --- Add Table for Attendance/Grades OR Narrative for Journal ---
         if (content.head && content.body) {
              doc.autoTable({
                 head: content.head,
@@ -310,11 +255,11 @@ export default function ReportsPage() {
             });
             finalY = (doc.lastAutoTable as any).finalY;
         } else if (content.journals) {
-            finalY += 5; // Add a bit of space before the first entry
+            finalY += 5;
             doc.setFontSize(10);
             
             content.journals.forEach((entry, index) => {
-                if (finalY > pageHeight - 60) { // Check for page break before rendering new entry
+                if (finalY > pageHeight - 60) {
                     doc.addPage();
                     finalY = margin;
                 }
@@ -324,7 +269,7 @@ export default function ReportsPage() {
                 finalY += 6;
                 
                 doc.setFont(undefined, 'normal');
-                const entryMeta = `Tanggal: ${format(entry.date, "eeee, dd MMMM yyyy", { locale: id })} | Pertemuan ke-${entry.meetingNumber}`;
+                const entryMeta = `Tanggal: ${format(new Date(entry.date), "eeee, dd MMMM yyyy", { locale: id })} | Pertemuan ke-${entry.meeting_number}`;
                 doc.text(entryMeta, margin, finalY);
                 finalY += 8;
 
@@ -336,15 +281,15 @@ export default function ReportsPage() {
                     doc.setFont(undefined, 'normal');
                     const splitText = doc.splitTextToSize(text, pageWidth - (margin * 2));
                     doc.text(splitText, margin, finalY);
-                    finalY += (splitText.length * 4) + 4; // Adjust spacing based on text lines
+                    finalY += (splitText.length * 4) + 4;
                 }
 
-                addSection("A. Tujuan Pembelajaran", entry.learningObjectives);
-                addSection("B. Kegiatan Pembelajaran (Sintaks)", entry.learningActivities);
-                addSection("C. Penilaian (Asesmen)", entry.assessment);
-                addSection("D. Refleksi & Tindak Lanjut", entry.reflection);
+                addSection("A. Tujuan Pembelajaran", entry.learning_objectives);
+                addSection("B. Kegiatan Pembelajaran (Sintaks)", entry.learning_activities);
+                addSection("C. Penilaian (Asesmen)", entry.assessment || '-');
+                addSection("D. Refleksi & Tindak Lanjut", entry.reflection || '-');
 
-                finalY += 5; // Extra space between entries
+                finalY += 5;
                 doc.setLineDashPattern([1, 1], 0);
                 doc.line(margin, finalY, pageWidth - margin, finalY);
                 doc.setLineDashPattern([], 0);
@@ -352,9 +297,8 @@ export default function ReportsPage() {
             });
         }
         
-        // --- Add Footer ---
         const signatureY = finalY + 15 > pageHeight - 50 ? pageHeight - 50 : finalY + 15;
-        if (finalY + 50 > pageHeight) { // Check if we need a new page for signature
+        if (finalY + 50 > pageHeight) {
             doc.addPage();
             finalY = margin;
         }
@@ -467,7 +411,7 @@ export default function ReportsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Analisis Performa Siswa</CardTitle>
-                        <CardDescription>Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran.</CardDescription>
+                        <CardDescription>Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran (fitur dalam pengembangan).</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {/* Mobile View */}
@@ -541,7 +485,7 @@ export default function ReportsPage() {
                     <Card className="lg:col-span-3">
                         <CardHeader>
                             <CardTitle>Perbandingan Kehadiran Antar Kelas</CardTitle>
-                            <CardDescription>Visualisasi persentase kehadiran untuk setiap status di berbagai kelas.</CardDescription>
+                            <CardDescription>Visualisasi persentase kehadiran untuk setiap status (data placeholder).</CardDescription>
                         </CardHeader>
                         <CardContent className="pl-2">
                              <div className="w-full overflow-x-auto">
@@ -564,7 +508,7 @@ export default function ReportsPage() {
                     <Card className="lg:col-span-2">
                         <CardHeader>
                             <CardTitle>Distribusi Kehadiran Umum</CardTitle>
-                            <CardDescription>Proporsi setiap status kehadiran secara keseluruhan.</CardDescription>
+                            <CardDescription>Proporsi setiap status kehadiran keseluruhan (data placeholder).</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
@@ -573,7 +517,7 @@ export default function ReportsPage() {
                                         data={pieData}
                                         cx="50%"
                                         cy="50%"
-                                        labelLine={props => <path d={props.points.reduce((acc, p) => acc + `${p.x},${p.y} `, 'M')} stroke={props.fill} />}
+                                        labelLine={false}
                                         label={renderCustomizedLabel}
                                         innerRadius={60}
                                         outerRadius={80}
@@ -595,110 +539,22 @@ export default function ReportsPage() {
                 </div>
             </TabsContent>
             <TabsContent value="attendance" className="mt-6">
-                <Card>
+                 <Card>
                     <CardHeader>
                         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                             <div>
                                 <CardTitle>Laporan Kehadiran Siswa</CardTitle>
-                                <CardDescription>Detail kehadiran siswa per periode.</CardDescription>
+                                <CardDescription>Fitur ini sedang dalam pengembangan.</CardDescription>
                             </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" onClick={handleDownloadClick} disabled={!isPro}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Unduh PDF
-                                </Button>
-                            </div>
-                        </div>
-                         <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
-                            <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih kelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Kelas</SelectItem>
-                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih Mapel" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Mapel</SelectItem>
-                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Pilih Bulan" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Bulan</SelectItem>
-                                    <SelectItem value="1">Januari</SelectItem>
-                                    <SelectItem value="2">Februari</SelectItem>
-                                    <SelectItem value="3">Maret</SelectItem>
-                                </SelectContent>
-                            </Select>
-                             <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Pilih Semester" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Semester</SelectItem>
-                                    <SelectItem value="1">Semester Ganjil</SelectItem>
-                                    <SelectItem value="2">Semester Genap</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Button variant="outline" onClick={handleDownloadClick} disabled={!isPro}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Unduh PDF
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {/* Mobile View */}
-                        <div className="md:hidden space-y-4">
-                             {detailedAttendance.map((student) => (
-                                <div key={student.id} className="border rounded-lg p-4 space-y-3">
-                                    <p className="font-semibold">{student.name}</p>
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                                       <p><strong>Hadir:</strong> {student.hadir}</p>
-                                       <p><strong>Sakit:</strong> {student.sakit}</p>
-                                       <p><strong>Izin:</strong> {student.izin}</p>
-                                       <p><strong>Alpha:</strong> {student.alpha}</p>
-                                    </div>
-                                    <div className="border-t pt-2 text-sm font-semibold flex justify-between">
-                                        <span>Total Pertemuan: {student.pertemuan}</span>
-                                        <span>Kehadiran: {((student.hadir / student.pertemuan) * 100).toFixed(1)}%</span>
-                                    </div>
-                                </div>
-                             ))}
-                        </div>
-
-                        {/* Desktop View */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead>Nama Siswa</TableHead>
-                                <TableHead className="text-center">Hadir</TableHead>
-                                <TableHead className="text-center">Sakit</TableHead>
-                                <TableHead className="text-center">Izin</TableHead>
-                                <TableHead className="text-center">Alpha</TableHead>
-                                <TableHead className="text-center">Total Pertemuan</TableHead>
-                                <TableHead className="text-right">Kehadiran (%)</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {detailedAttendance.map((student) => (
-                                <TableRow key={student.id}>
-                                    <TableCell className="font-medium">{student.name}</TableCell>
-                                    <TableCell className="text-center">{student.hadir}</TableCell>
-                                    <TableCell className="text-center">{student.sakit}</TableCell>
-                                    <TableCell className="text-center">{student.izin}</TableCell>
-                                    <TableCell className="text-center">{student.alpha}</TableCell>
-                                    <TableCell className="text-center">{student.pertemuan}</TableCell>
-                                    <TableCell className="text-right font-semibold">{((student.hadir / student.pertemuan) * 100).toFixed(1)}%</TableCell>
-                                </TableRow>
-                                ))}
-                            </TableBody>
-                            </Table>
+                        <div className="text-center py-12 text-muted-foreground">
+                            <p>Data detail kehadiran siswa akan tersedia di sini.</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -709,89 +565,17 @@ export default function ReportsPage() {
                          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                             <div>
                                <CardTitle>Laporan Nilai Siswa</CardTitle>
-                               <CardDescription>Detail nilai ulangan dan tugas siswa.</CardDescription>
+                               <CardDescription>Fitur ini sedang dalam pengembangan.</CardDescription>
                             </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" onClick={handleDownloadGrades} disabled={!isPro}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Unduh PDF
-                                </Button>
-                            </div>
-                        </div>
-                         <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
-                            <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih kelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Kelas</SelectItem>
-                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih Mapel" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Mapel</SelectItem>
-                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                            <Button variant="outline" onClick={handleDownloadGrades} disabled={!isPro}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Unduh PDF
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {/* Mobile View */}
-                        <div className="md:hidden space-y-4">
-                            {detailedGrades.map((student) => {
-                                const avg = (student.uh1 + student.uh2 + student.tugas1 + student.uts + student.uas) / 5;
-                                return (
-                                    <div key={student.id} className="border rounded-lg p-4 space-y-3">
-                                        <p className="font-semibold">{student.name}</p>
-                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                                            <p><strong>UH 1:</strong> {student.uh1}</p>
-                                            <p><strong>UH 2:</strong> {student.uh2}</p>
-                                            <p><strong>Tugas 1:</strong> {student.tugas1}</p>
-                                            <p><strong>UTS:</strong> {student.uts}</p>
-                                            <p><strong>UAS:</strong> {student.uas}</p>
-                                        </div>
-                                        <div className="border-t pt-2 text-sm font-semibold flex justify-end">
-                                            <span>Rata-rata: {avg.toFixed(1)}</span>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                        {/* Desktop View */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead>Nama Siswa</TableHead>
-                                <TableHead className="text-center">UH 1</TableHead>
-                                <TableHead className="text-center">UH 2</TableHead>
-                                <TableHead className="text-center">Tugas 1</TableHead>
-                                <TableHead className="text-center">UTS</TableHead>
-                                <TableHead className="text-center">UAS</TableHead>
-                                <TableHead className="text-right font-semibold">Rata-rata</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {detailedGrades.map((student) => {
-                                    const avg = (student.uh1 + student.uh2 + student.tugas1 + student.uts + student.uas) / 5;
-                                    return (
-                                    <TableRow key={student.id}>
-                                        <TableCell className="font-medium">{student.name}</TableCell>
-                                        <TableCell className="text-center">{student.uh1}</TableCell>
-                                        <TableCell className="text-center">{student.uh2}</TableCell>
-                                        <TableCell className="text-center">{student.tugas1}</TableCell>
-                                        <TableCell className="text-center">{student.uts}</TableCell>
-                                        <TableCell className="text-center">{student.uas}</TableCell>
-                                        <TableCell className="text-right font-semibold">{avg.toFixed(1)}</TableCell>
-                                    </TableRow>
-                                    )
-                                })}
-                            </TableBody>
-                            </Table>
+                        <div className="text-center py-12 text-muted-foreground">
+                            <p>Data detail nilai siswa akan tersedia di sini.</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -837,10 +621,10 @@ export default function ReportsPage() {
                                 <div key={entry.id} className="border rounded-lg p-4 space-y-3">
                                     <div className="space-y-1">
                                         <p className="font-semibold">{entry.subjectName}</p>
-                                        <p className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</p>
-                                        <p className="text-xs text-muted-foreground">{format(entry.date, "dd MMM yyyy")}</p>
+                                        <p className="text-sm text-muted-foreground">{entry.className} {entry.meeting_number ? `(P-${entry.meeting_number})` : ''}</p>
+                                        <p className="text-xs text-muted-foreground">{format(new Date(entry.date), "dd MMM yyyy")}</p>
                                     </div>
-                                    <p className="text-sm text-muted-foreground line-clamp-3">{entry.learningObjectives}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-3">{entry.learning_objectives}</p>
                                 </div>
                             ))}
                          </div>
@@ -857,20 +641,20 @@ export default function ReportsPage() {
                             <TableBody>
                                 {journalEntries
                                     .filter(j => 
-                                        (selectedClass === 'all' || j.classId === selectedClass) &&
-                                        (selectedSubject === 'all' || j.subjectId === selectedClass)
+                                        (selectedClass === 'all' || j.class_id === selectedClass) &&
+                                        (selectedSubject === 'all' || j.subject_id === selectedSubject)
                                     )
                                     .map((entry) => (
                                 <TableRow key={entry.id}>
                                     <TableCell className="font-medium">
-                                    {format(entry.date, "dd MMM yyyy")}
+                                    {format(new Date(entry.date), "dd MMM yyyy")}
                                     </TableCell>
                                     <TableCell>
                                         <div className="font-medium">{entry.subjectName}</div>
-                                        <div className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</div>
+                                        <div className="text-sm text-muted-foreground">{entry.className} {entry.meeting_number ? `(P-${entry.meeting_number})` : ''}</div>
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
-                                        <p className="line-clamp-2">{entry.learningObjectives}</p>
+                                        <p className="line-clamp-2">{entry.learning_objectives}</p>
                                     </TableCell>
                                 </TableRow>
                                 ))}
@@ -884,3 +668,16 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+export default async function ReportsPage() {
+    const { getClasses, getSubjects, getAllStudents, getJournalEntries } = await import("@/lib/data");
+    const [classes, subjects, students, journalEntries] = await Promise.all([
+        getClasses(),
+        getSubjects(),
+        getAllStudents(),
+        getJournalEntries()
+    ]);
+    return <ReportsPageComponent classes={classes} subjects={subjects} students={students} journalEntries={journalEntries} />;
+}
+
+    
