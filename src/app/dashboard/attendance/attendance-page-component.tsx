@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -327,50 +328,51 @@ export default function AttendancePageComponent({
             <CardDescription>Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
         </CardHeader>
         <CardContent>
-           <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Tanggal</TableHead>
-                        <TableHead>Info</TableHead>
-                        <TableHead>Pertemuan Ke</TableHead>
-                        <TableHead>Ringkasan</TableHead>
-                        <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredHistory.map(entry => {
-                        const summary = entry.records.reduce((acc, record) => {
-                            acc[record.status] = (acc[record.status] || 0) + 1;
-                            return acc;
-                        }, {} as Record<AttendanceRecord['status'], number>);
-                        return (
-                             <TableRow key={entry.id}>
-                                <TableCell>{format(parseISO(entry.date), 'dd MMM yyyy')}</TableCell>
-                                <TableCell>
-                                    <div className="font-medium">{entry.className}</div>
-                                    <div className="text-xs text-muted-foreground">{entry.subjectName}</div>
-                                </TableCell>
-                                <TableCell>{entry.meeting_number}</TableCell>
-                                <TableCell className="text-xs">
-                                    <span className="text-green-600">H: {summary.Hadir || 0}</span>,{' '}
-                                    <span className="text-yellow-600">S: {summary.Sakit || 0}</span>,{' '}
-                                    <span className="text-blue-600">I: {summary.Izin || 0}</span>,{' '}
-                                    <span className="text-red-600">A: {summary.Alpha || 0}</span>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="outline" size="sm" onClick={() => handleEdit(entry)} disabled={loading}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Ubah
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        )
-                    })}
-                </TableBody>
-            </Table>
-           </div>
-           {initialHistory.length === 0 && (
+           {filteredHistory.length > 0 ? (
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Tanggal</TableHead>
+                            <TableHead>Info</TableHead>
+                            <TableHead>Pertemuan Ke</TableHead>
+                            <TableHead>Ringkasan</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredHistory.map(entry => {
+                            const summary = entry.records.reduce((acc, record) => {
+                                acc[record.status] = (acc[record.status] || 0) + 1;
+                                return acc;
+                            }, {} as Record<AttendanceRecord['status'], number>);
+                            return (
+                                 <TableRow key={entry.id}>
+                                    <TableCell>{format(parseISO(entry.date), 'dd MMM yyyy')}</TableCell>
+                                    <TableCell>
+                                        <div className="font-medium">{entry.className}</div>
+                                        <div className="text-xs text-muted-foreground">{entry.subjectName}</div>
+                                    </TableCell>
+                                    <TableCell>{entry.meeting_number}</TableCell>
+                                    <TableCell className="text-xs">
+                                        <span className="text-green-600">H: {summary.Hadir || 0}</span>,{' '}
+                                        <span className="text-yellow-600">S: {summary.Sakit || 0}</span>,{' '}
+                                        <span className="text-blue-600">I: {summary.Izin || 0}</span>,{' '}
+                                        <span className="text-red-600">A: {summary.Alpha || 0}</span>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="outline" size="sm" onClick={() => handleEdit(entry)} disabled={loading}>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Ubah
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </div>
+           ) : (
                 <div className="text-center text-muted-foreground py-12">
                     <p>Belum ada riwayat presensi yang tersimpan.</p>
                 </div>
