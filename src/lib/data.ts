@@ -1,7 +1,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord } from './types';
 
 // --- Admin Data ---
 
@@ -94,7 +94,7 @@ export async function getClasses(): Promise<Class[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     
-    const { data, error } = await supabase.from('classes').select('*').eq('teacher_id', user.id);
+    const { data, error } = await supabase.from('classes').select('*').eq('teacher_id', user.id).order('name', { ascending: true });
     if (error) {
         console.error("Error fetching classes:", error);
         return [];
@@ -220,12 +220,13 @@ export async function getAllStudents(): Promise<Student[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase.from('students').select('*, classes!inner(*)').eq('classes.teacher_id', user.id);
+    const { data, error } = await supabase.from('students').select('*, classes!inner(name, teacher_id)').eq('classes.teacher_id', user.id);
     if (error) {
         console.error("Error fetching all students:", error);
         return [];
     }
-    return data;
+    // @ts-ignore
+    return data.map(s => ({...s, class_name: s.classes.name}));
 }
 
 export async function getDashboardData() {
@@ -268,4 +269,88 @@ export async function getDashboardData() {
     }));
 
     return { todaySchedule: formattedSchedule, journalEntries: formattedJournals };
+}
+
+
+export async function getReportsData() {
+    noStore();
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const [allStudents, attendanceHistory, gradeHistory, journalEntries, classes] = await Promise.all([
+        getAllStudents(),
+        getAttendanceHistory(),
+        getGradeHistory(),
+        getJournalEntries(),
+        getClasses()
+    ]);
+
+    // 1. Overall Attendance Rate
+    const totalAttendanceRecords = attendanceHistory.reduce((sum, entry) => sum + entry.records.length, 0);
+    const totalHadirRecords = attendanceHistory.reduce((sum, entry) => sum + entry.records.filter(r => r.status === 'Hadir').length, 0);
+    const overallAttendanceRate = totalAttendanceRecords > 0 ? (totalHadirRecords / totalAttendanceRecords) * 100 : 0;
+
+    // 2. Overall Average Grade
+    const allGradeRecords = gradeHistory.flatMap(entry => entry.records);
+    const totalScore = allGradeRecords.reduce((sum, record) => sum + Number(record.score), 0);
+    const overallAverageGrade = allGradeRecords.length > 0 ? totalScore / allGradeRecords.length : 0;
+
+    // 3. Overall Attendance Distribution (for Pie Chart)
+    const overallAttendanceDistribution: Record<AttendanceRecord['status'], number> = { Hadir: 0, Sakit: 0, Izin: 0, Alpha: 0 };
+    attendanceHistory.flatMap(entry => entry.records).forEach(record => {
+        overallAttendanceDistribution[record.status]++;
+    });
+
+    // 4. Attendance by Class (for Bar Chart)
+    const attendanceByClass = classes.map(c => {
+        const classAttendance = attendanceHistory.filter(h => h.class_id === c.id).flatMap(h => h.records);
+        const distribution: Record<AttendanceRecord['status'], number> = { Hadir: 0, Sakit: 0, Izin: 0, Alpha: 0 };
+        classAttendance.forEach(record => {
+            distribution[record.status]++;
+        });
+        return { name: c.name, ...distribution };
+    });
+
+    // 5. Student Performance Analysis
+    const studentPerformance = allStudents.map(student => {
+        const studentGrades = gradeHistory.flatMap(g => g.records.filter(r => r.studentId === student.id).map(r => Number(r.score)));
+        const studentAttendance = attendanceHistory.flatMap(a => a.records.filter(r => r.studentId === student.id));
+        
+        const average_grade = studentGrades.length > 0 ? studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length : 0;
+        const total_attendance = studentAttendance.length;
+        const total_hadir = studentAttendance.filter(a => a.status === 'Hadir').length;
+        const attendance_rate = total_attendance > 0 ? (total_hadir / total_attendance) * 100 : 100;
+
+        let status = 'Stabil';
+        if (average_grade >= 90 && attendance_rate >= 95) {
+            status = 'Sangat Baik';
+        } else if (average_grade < 75 && attendance_rate < 85) {
+            status = 'Berisiko';
+        } else if (average_grade < 75 || attendance_rate < 85) {
+            status = 'Butuh Perhatian';
+        }
+
+        return {
+            id: student.id,
+            name: student.name,
+            class: student.class_name,
+            average_grade: parseFloat(average_grade.toFixed(1)),
+            attendance: parseFloat(attendance_rate.toFixed(1)),
+            status,
+        };
+    }).sort((a,b) => b.average_grade - a.average_grade);
+
+
+    return {
+        summaryCards: {
+            overallAttendanceRate: parseFloat(overallAttendanceRate.toFixed(1)),
+            overallAverageGrade: parseFloat(overallAverageGrade.toFixed(1)),
+            totalJournals: journalEntries.length
+        },
+        studentPerformance,
+        attendanceByClass,
+        overallAttendanceDistribution,
+        journalEntries,
+    };
 }

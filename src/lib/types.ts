@@ -35,6 +35,7 @@ export interface Student {
   nisn: string;
   gender: 'Laki-laki' | 'Perempuan';
   class_id: string;
+  class_name?: string;
 }
 
 export interface Class {

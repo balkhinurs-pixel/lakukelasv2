@@ -50,17 +50,7 @@ import { useActivation } from "@/hooks/use-activation";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-
-
-// This is a placeholder since we don't have real history data yet to do complex calcs
-const studentPerformance = [
-    { id: 'S004', name: 'Eko Prasetyo', class: '10-A', average_grade: 95, attendance: 100, status: 'Sangat Baik' },
-    { id: 'S001', name: 'Budi Santoso', class: '10-A', average_grade: 92, attendance: 98, status: 'Sangat Baik' },
-    { id: 'S006', name: 'Gilang Ramadhan', class: '10-B', average_grade: 85, attendance: 95, status: 'Stabil' },
-    { id: 'S002', name: 'Citra Lestari', class: '10-A', average_grade: 82, attendance: 90, status: 'Stabil' },
-    { id: 'S007', name: 'Hana Yulita', class: '11-A', average_grade: 78, attendance: 88, status: 'Butuh Perhatian' },
-    { id: 'S003', name: 'Dewi Anggraini', class: '11-A', average_grade: 74, attendance: 85, status: 'Berisiko' },
-];
+import type { getReportsData } from "@/lib/data";
 
 
 // Extend jsPDF with autoTable
@@ -68,22 +58,7 @@ interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
 }
 
-
-const attendanceData = [
-  { name: 'Kelas 10-A', Hadir: 95, Sakit: 2, Izin: 3, Alpha: 0 },
-  { name: 'Kelas 10-B', Hadir: 92, Sakit: 4, Izin: 2, Alpha: 2 },
-  { name: 'Kelas 11-A', Hadir: 98, Sakit: 1, Izin: 1, Alpha: 0 },
-  { name: 'Kelas 11-B', Hadir: 90, Sakit: 5, Izin: 3, Alpha: 2 },
-];
-
-const overallAttendance = {
-    Hadir: 375,
-    Sakit: 12,
-    Izin: 9,
-    Alpha: 4
-};
-
-const COLORS = ['#22c55e', '#f97316', '#0ea5e9', '#ef4444'];
+const COLORS = ['#22c55e', '#f97316', '#0ea5e9', '#ef4444']; // Hadir, Sakit, Izin, Alpha
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, fill }: any) => {
@@ -120,14 +95,16 @@ const teacherData = {
     nip: "199001012020121001"
 }
 
+type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
+
 export default function ReportsPageComponent({
     classes,
     subjects,
-    journalEntries,
+    reportsData,
 }: {
     classes: Class[];
     subjects: Subject[];
-    journalEntries: JournalEntry[];
+    reportsData: ReportsData;
 }) {
   const [selectedClass, setSelectedClass] = React.useState("all");
   const [selectedSubject, setSelectedSubject] = React.useState("all");
@@ -136,7 +113,15 @@ export default function ReportsPageComponent({
   const { isPro, limits } = useActivation();
   const { toast } = useToast();
 
-  const pieData = Object.entries(overallAttendance).map(([name, value]) => ({name, value}));
+  const {
+      summaryCards,
+      studentPerformance,
+      attendanceByClass,
+      overallAttendanceDistribution,
+      journalEntries,
+  } = reportsData;
+
+  const pieData = Object.entries(overallAttendanceDistribution).map(([name, value]) => ({name, value}));
 
   const handleDownloadClick = () => {
       if (!limits.canDownloadPdf) {
@@ -262,7 +247,7 @@ export default function ReportsPageComponent({
                 finalY += 6;
                 
                 doc.setFont(undefined, 'normal');
-                const entryMeta = `Tanggal: ${format(new Date(entry.date), "eeee, dd MMMM yyyy", { locale: id })} | Pertemuan ke-${entry.meeting_number}`;
+                const entryMeta = `Tanggal: ${format(new Date(entry.date), "eeee, dd MMMM yyyy", { locale: id })} | Pertemuan ke-${entry.meeting_number || 'N/A'}`;
                 doc.text(entryMeta, margin, finalY);
                 finalY += 8;
 
@@ -375,8 +360,8 @@ export default function ReportsPageComponent({
                             <CheckCircle className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">94.2%</div>
-                            <p className="text-xs text-muted-foreground">Rata-rata semua kelas bulan ini</p>
+                            <div className="text-2xl font-bold">{summaryCards.overallAttendanceRate}%</div>
+                            <p className="text-xs text-muted-foreground">Rata-rata semua kelas</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -385,7 +370,7 @@ export default function ReportsPageComponent({
                             <Award className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">84.5</div>
+                            <div className="text-2xl font-bold">{summaryCards.overallAverageGrade}</div>
                             <p className="text-xs text-muted-foreground">Skor rata-rata semua penilaian</p>
                         </CardContent>
                     </Card>
@@ -395,7 +380,7 @@ export default function ReportsPageComponent({
                             <BookCheck className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{journalEntries.length}</div>
+                            <div className="text-2xl font-bold">{summaryCards.totalJournals}</div>
                             <p className="text-xs text-muted-foreground">Total jurnal yang telah dibuat</p>
                         </CardContent>
                     </Card>
@@ -404,7 +389,7 @@ export default function ReportsPageComponent({
                 <Card>
                     <CardHeader>
                         <CardTitle>Analisis Performa Siswa</CardTitle>
-                        <CardDescription>Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran (fitur dalam pengembangan).</CardDescription>
+                        <CardDescription>Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {/* Mobile View */}
@@ -471,6 +456,11 @@ export default function ReportsPageComponent({
                                 </TableBody>
                             </Table>
                         </div>
+                        {studentPerformance.length === 0 && (
+                            <div className="text-center text-muted-foreground py-12">
+                                <p>Belum ada data nilai atau kehadiran yang cukup untuk dianalisis.</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -478,12 +468,12 @@ export default function ReportsPageComponent({
                     <Card className="lg:col-span-3">
                         <CardHeader>
                             <CardTitle>Perbandingan Kehadiran Antar Kelas</CardTitle>
-                            <CardDescription>Visualisasi persentase kehadiran untuk setiap status (data placeholder).</CardDescription>
+                            <CardDescription>Visualisasi persentase kehadiran untuk setiap status.</CardDescription>
                         </CardHeader>
                         <CardContent className="pl-2">
                              <div className="w-full overflow-x-auto">
                                 <ResponsiveContainer width="100%" height={300} minWidth={500}>
-                                    <BarChart data={attendanceData}>
+                                    <BarChart data={attendanceByClass}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                                         <YAxis fontSize={12} tickLine={false} axisLine={false} />
@@ -501,7 +491,7 @@ export default function ReportsPageComponent({
                     <Card className="lg:col-span-2">
                         <CardHeader>
                             <CardTitle>Distribusi Kehadiran Umum</CardTitle>
-                            <CardDescription>Proporsi setiap status kehadiran keseluruhan (data placeholder).</CardDescription>
+                            <CardDescription>Proporsi setiap status kehadiran keseluruhan.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
@@ -654,6 +644,11 @@ export default function ReportsPageComponent({
                             </TableBody>
                             </Table>
                         </div>
+                         {journalEntries.length === 0 && (
+                            <div className="text-center text-muted-foreground py-12">
+                                <p>Belum ada jurnal yang dibuat.</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </TabsContent>
