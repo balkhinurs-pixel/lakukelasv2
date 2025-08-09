@@ -6,9 +6,10 @@ Dokumen ini akan memandu Anda melalui proses deployment aplikasi Next.js ini men
 1.  [Prasyarat](#1-prasyarat)
 2.  [Langkah 1: Setup Proyek Supabase](#2-langkah-1-setup-proyek-supabase)
 3.  [Langkah 2: Setup Tabel Database](#3-langkah-2-setup-tabel-database)
-4.  [Langkah 3: Deploy ke Vercel](#4-langkah-3-deploy-ke-vercel)
-5.  [Langkah 4: Konfigurasi Environment Variables di Vercel](#5-langkah-4-konfigurasi-environment-variables-di-vercel)
-6.  [Aplikasi Anda Siap!](#6-aplikasi-anda-siap)
+4.  [Langkah 3: Konfigurasi Autentikasi Supabase](#4-langkah-3-konfigurasi-autentikasi-supabase)
+5.  [Langkah 4: Deploy ke Vercel](#5-langkah-4-deploy-ke-vercel)
+6.  [Langkah 5: Konfigurasi Environment Variables di Vercel](#6-langkah-5-konfigurasi-environment-variables-di-vercel)
+7.  [Aplikasi Anda Siap!](#7-aplikasi-anda-siap)
 
 ---
 
@@ -60,7 +61,26 @@ Ini akan secara otomatis membuat semua tabel yang diperlukan (`profiles`, `class
 
 ---
 
-### 4. Langkah 3: Deploy ke Vercel
+### 4. Langkah 3: Konfigurasi Autentikasi Supabase
+
+Langkah ini **sangat penting** agar email konfirmasi dan tautan lainnya berfungsi dengan benar saat aplikasi sudah di-deploy.
+
+1.  **Navigasi ke Pengaturan Autentikasi**:
+    -   Di dasbor Supabase proyek Anda, pergi ke **Authentication** (ikon pengguna) > **Providers**.
+
+2.  **Atur Site URL**:
+    -   Scroll ke bawah ke bagian **Site URL**.
+    -   Masukkan URL **produksi** aplikasi Anda di Vercel (contoh: `https://nama-aplikasi-anda.vercel.app`). **Jangan biarkan kosong atau berisi localhost**.
+    -   Klik **Save**.
+
+3.  **Nonaktifkan Konfirmasi Email (Opsional, untuk Kemudahan Awal)**:
+    -   Jika Anda tidak ingin pengguna baru harus mengkonfirmasi email mereka, Anda bisa menonaktifkan fitur ini.
+    -   Di menu **Authentication** > **Providers**, scroll ke atas ke bagian **Email**.
+    -   Matikan sakelar (toggle) **"Confirm email"**.
+
+---
+
+### 5. Langkah 4: Deploy ke Vercel
 
 Vercel akan kita gunakan untuk hosting aplikasi Next.js Anda.
 
@@ -79,7 +99,7 @@ Vercel akan kita gunakan untuk hosting aplikasi Next.js Anda.
 
 ---
 
-### 5. Langkah 4: Konfigurasi Environment Variables di Vercel
+### 6. Langkah 5: Konfigurasi Environment Variables di Vercel
 
 Variabel ini penting agar aplikasi Anda yang di-hosting di Vercel bisa terhubung ke database Supabase.
 
@@ -97,7 +117,7 @@ Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin mem
 
 ---
 
-### 6. Aplikasi Anda Siap!
+### 7. Aplikasi Anda Siap!
 
 Setelah proses deployment selesai, Vercel akan memberikan Anda URL publik (contoh: `lakukelas-anda.vercel.app`). Buka URL tersebut untuk mengakses aplikasi Anda yang sudah berfungsi penuh.
 
