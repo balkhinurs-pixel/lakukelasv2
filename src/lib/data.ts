@@ -116,23 +116,6 @@ export async function getSubjects(): Promise<Subject[]> {
     return data;
 }
 
-export async function getStudentsByClass(classId: string): Promise<Student[]> {
-    noStore();
-    if (!classId) return [];
-    const supabase = createClient();
-    const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('class_id', classId)
-        .order('name', { ascending: true });
-
-    if (error) {
-        console.error("Error fetching students:", error);
-        return [];
-    }
-    return data;
-}
-
 export async function getSchedule(): Promise<ScheduleItem[]> {
     noStore();
     const supabase = createClient();

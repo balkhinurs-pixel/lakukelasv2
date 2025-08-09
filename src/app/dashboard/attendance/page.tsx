@@ -393,5 +393,3 @@ export default async function AttendancePage() {
 
     return <AttendancePageComponent classes={classes} subjects={subjects} initialHistory={history} />;
 }
-
-    

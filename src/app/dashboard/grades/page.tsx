@@ -498,5 +498,3 @@ export default async function GradesPage() {
 
     return <GradesPageComponent classes={classes} subjects={subjects} initialHistory={history} allStudents={allStudents} />;
 }
-
-    

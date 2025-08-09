@@ -23,5 +23,3 @@ export async function getStudentsByClass(classId: string): Promise<Student[]> {
     }
     return data;
 }
-
-    
