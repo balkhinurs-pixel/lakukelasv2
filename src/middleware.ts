@@ -40,6 +40,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
   
+  // If user is not logged in, protect dashboard/admin routes
   if (!session) {
     if (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/admin')) {
       return NextResponse.redirect(new URL('/', request.url));
@@ -47,7 +48,8 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // User is logged in, check their role
+  // --- User is logged in, handle redirections ---
+  
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -55,16 +57,26 @@ export async function middleware(request: NextRequest) {
     .single();
   
   const isAdmin = profile?.role === 'admin';
+  const isTeacher = profile?.role === 'teacher';
+  const currentPath = request.nextUrl.pathname;
 
-  // Protect admin routes
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    if (!isAdmin) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+  // If a logged-in user tries to access the login page, redirect them
+  if (currentPath === '/') {
+    if (isAdmin) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+    if (isTeacher) {
+       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 
-  // Redirect admin from teacher dashboard to admin dashboard
-  if (request.nextUrl.pathname.startsWith('/dashboard') && isAdmin) {
+  // Protect admin routes: only admins can access them
+  if (currentPath.startsWith('/admin') && !isAdmin) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // Protect teacher dashboard: redirect admins away from it
+  if (currentPath.startsWith('/dashboard') && isAdmin) {
     return NextResponse.redirect(new URL('/admin', request.url));
   }
 
@@ -74,6 +86,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
