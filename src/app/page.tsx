@@ -48,7 +48,11 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      toast({ title: "Login Gagal", description: error.message, variant: "destructive" });
+      if (error.message === 'Email not confirmed') {
+        toast({ title: "Verifikasi Email Diperlukan", description: "Silakan cek email Anda untuk tautan konfirmasi sebelum masuk.", variant: "destructive" });
+      } else {
+        toast({ title: "Login Gagal", description: "Email atau kata sandi salah.", variant: "destructive" });
+      }
     } else {
       router.push('/dashboard');
       router.refresh(); // Refresh to update session state
@@ -77,15 +81,15 @@ export default function LoginPage() {
         options: {
             data: {
                 full_name: fullName
-            }
+            },
+            emailRedirectTo: `${window.location.origin}/auth/callback`
         }
     });
 
     if (error) {
       toast({ title: "Registrasi Gagal", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Registrasi Berhasil", description: "Silakan cek email Anda untuk verifikasi." });
-      setView('login');
+      router.push('/auth/check-email');
     }
     setLoading(false);
   };
@@ -293,3 +297,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
