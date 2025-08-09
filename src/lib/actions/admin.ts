@@ -45,3 +45,37 @@ export async function generateActivationCode() {
     return { success: false, error: error.message };
   }
 }
+
+
+export async function updateUserStatus(userId: string, newStatus: 'Pro' | 'Free') {
+    const supabase = createClient();
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ account_status: newStatus })
+            .eq('id', userId);
+
+        if (error) throw error;
+        
+        revalidatePath('/admin/users');
+        return { success: true, message: `Status pengguna berhasil diubah menjadi ${newStatus}.` };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function deleteUser(userId: string) {
+    const supabase = createClient();
+    try {
+        // We need to use the service role key to delete from auth.users
+        const { error } = await supabase.auth.admin.deleteUser(userId);
+
+        if (error) throw error;
+        
+        // The on_delete_user function in the database should handle deleting the profile.
+        revalidatePath('/admin/users');
+        return { success: true, message: 'Pengguna berhasil dihapus.' };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}

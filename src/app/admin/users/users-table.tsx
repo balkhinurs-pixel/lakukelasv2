@@ -34,7 +34,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
     DropdownMenu,
@@ -48,10 +47,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
+import { updateUserStatus, deleteUser } from "@/lib/actions/admin";
+import { useRouter } from "next/navigation";
+
 
 function FormattedDate({ dateString }: { dateString: string }) {
     const [date, setDate] = React.useState('');
@@ -67,12 +69,14 @@ function FormattedDate({ dateString }: { dateString: string }) {
 
 
 export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
+    const router = useRouter();
     const [users, setUsers] = React.useState<Profile[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [filterStatus, setFilterStatus] = React.useState('all');
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [selectedUser, setSelectedUser] = React.useState<Profile | null>(null);
     const [newStatus, setNewStatus] = React.useState<'Pro' | 'Free'>('Free');
+    const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -93,32 +97,52 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         setIsManageDialogOpen(true);
     };
 
-    const handleStatusChange = () => {
+    const handleStatusChange = async () => {
         if (!selectedUser) return;
-        
-        // This part would be a server action in a real app
-        // setUsers(users.map(u => u.id === selectedUser.id ? { ...u, account_status: newStatus } : u));
-        
-        toast({
-            title: "Status Diperbarui (Simulasi)",
-            description: `Status untuk ${selectedUser.full_name} akan diubah menjadi ${newStatus}. Implementasikan server action untuk menyimpan ini.`,
-        });
+        setLoading(true);
 
+        const result = await updateUserStatus(selectedUser.id, newStatus);
+        
+        if (result.success) {
+            toast({
+                title: "Status Diperbarui",
+                description: result.message,
+            });
+            router.refresh();
+        } else {
+             toast({
+                title: "Gagal Memperbarui",
+                description: result.error,
+                variant: "destructive"
+            });
+        }
+
+        setLoading(false);
         setIsManageDialogOpen(false);
         setSelectedUser(null);
     }
     
-    const handleDeleteUser = (userId: string) => {
+    const handleDeleteUser = async (userId: string) => {
+        setLoading(true);
         const userToDelete = users.find(u => u.id === userId);
         if (!userToDelete) return;
-        
-        // This part would be a server action in a real app
-        // setUsers(users.filter(u => u.id !== userId));
-        toast({
-            title: "Pengguna Dihapus (Simulasi)",
-            description: `Pengguna ${userToDelete.full_name} akan dihapus. Implementasikan server action untuk menyimpan ini.`,
-            variant: "destructive"
-        });
+
+        const result = await deleteUser(userId);
+
+        if (result.success) {
+            toast({
+                title: "Pengguna Dihapus",
+                description: `Pengguna ${userToDelete.full_name} telah berhasil dihapus.`,
+            });
+            router.refresh();
+        } else {
+            toast({
+                title: "Gagal Menghapus",
+                description: result.error,
+                variant: "destructive"
+            });
+        }
+        setLoading(false);
     }
 
   return (
@@ -169,19 +193,19 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                 <AlertDialog>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon">
+                                            <Button variant="ghost" size="icon" disabled={loading}>
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                            <DropdownMenuItem onSelect={() => handleManageClick(user)} disabled>
+                                            <DropdownMenuItem onSelect={() => handleManageClick(user)}>
                                                 <Edit className="mr-2 h-4 w-4" />
                                                 Ubah Status
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled>
+                                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                                     <Trash2 className="mr-2 h-4 w-4" />
                                                     Hapus Pengguna
                                                 </DropdownMenuItem>
@@ -197,7 +221,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Batal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90">
+                                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading}>
+                                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                 Ya, Hapus Pengguna
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
@@ -233,8 +258,11 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsManageDialogOpen(false)}>Batal</Button>
-                    <Button onClick={handleStatusChange} disabled>Simpan Perubahan</Button>
+                    <Button variant="ghost" onClick={() => setIsManageDialogOpen(false)} disabled={loading}>Batal</Button>
+                    <Button onClick={handleStatusChange} disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Simpan Perubahan
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
