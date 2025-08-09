@@ -16,7 +16,7 @@ import { useActivation } from "@/hooks/use-activation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-
+import { activateAccount } from "@/lib/actions";
 
 export default function ActivationPage() {
     const { isPro, limits, setActivationStatus } = useActivation();
@@ -24,29 +24,28 @@ export default function ActivationPage() {
     const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
 
-    const handleActivation = (e: React.FormEvent) => {
+    const handleActivation = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
-        // Simulate API call to validate the activation code
-        setTimeout(() => {
-            if (activationCode === "ZEPHYRPRO2024") {
-                setActivationStatus(true);
-                toast({
-                    title: "Aktivasi Berhasil!",
-                    description: "Akun Anda kini Pro. Semua fitur telah terbuka.",
-                    className: "bg-green-100 text-green-900 border-green-200",
-                });
-            } else {
-                 toast({
-                    title: "Aktivasi Gagal",
-                    description: "Kode aktivasi yang Anda masukkan tidak valid.",
-                    variant: "destructive",
-                });
-            }
-            setLoading(false);
-            setActivationCode("");
-        }, 1500);
+        const result = await activateAccount(activationCode);
+
+        if (result.success) {
+            setActivationStatus(true); // Update the context state
+            toast({
+                title: "Aktivasi Berhasil!",
+                description: "Akun Anda kini Pro. Semua fitur telah terbuka.",
+                className: "bg-green-100 text-green-900 border-green-200",
+            });
+        } else {
+             toast({
+                title: "Aktivasi Gagal",
+                description: result.error || "Kode aktivasi tidak valid atau sudah digunakan.",
+                variant: "destructive",
+            });
+        }
+        setLoading(false);
+        setActivationCode("");
     }
 
   return (
