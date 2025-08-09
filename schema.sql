@@ -1,322 +1,237 @@
+-- Classroom Zephyr - Supabase Schema
+-- Version: 1.5
+-- Last Updated: 2024-05-22
+-- Description: Final production-ready schema for the Lakukelas application.
+-- This script is designed to be idempotent and can be run on a new or existing database.
 
--- ===============================================================================================
---
---  Lakukelas Production Schema
---  Version: 1.2
---  Author: AI Assistant
---  Description: This script sets up the complete database schema for the Lakukelas application.
---               It is designed to be idempotent and can be run on a fresh or existing database.
---
--- ===============================================================================================
+-- ----------------------------
+-- Section 1: Teardown and Cleanup
+-- Drop dependent objects first in reverse order of creation.
+-- ----------------------------
 
--- -----------------------------------------------------------------------------------------------
---  I. Dropping existing objects
---     We drop objects in reverse order of dependency to avoid errors.
---     Triggers -> Functions -> Tables.
---     Using `CASCADE` for tables handles foreign key dependencies automatically.
--- -----------------------------------------------------------------------------------------------
-
--- Drop the trigger first because it depends on the function
+-- Drop Triggers first as they depend on functions
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
--- Now, drop the function
-DROP FUNCTION IF EXISTS handle_new_user;
+-- Drop Functions
+DROP FUNCTION IF EXISTS public.handle_new_user();
 
--- Drop all tables. `CASCADE` will also remove dependent objects like foreign keys.
-DROP TABLE IF EXISTS "public"."grade_history" CASCADE;
-DROP TABLE IF EXISTS "public"."attendance_history" CASCADE;
-DROP TABLE IF EXISTS "public"."journals" CASCADE;
-DROP TABLE IF EXISTS "public"."schedule" CASCADE;
-DROP TABLE IF EXISTS "public"."activation_codes" CASCADE;
-DROP TABLE IF EXISTS "public"."students" CASCADE;
-DROP TABLE IF EXISTS "public"."subjects" CASCADE;
-DROP TABLE IF EXISTS "public"."classes" CASCADE;
-DROP TABLE IF EXISTS "public"."profiles" CASCADE;
+-- Drop Policies (if any were created manually or in previous versions)
+-- Note: RLS policies are dropped when the table is dropped, but this is for good measure.
+-- Example: DROP POLICY IF EXISTS "Allow individual read access" ON public.profiles;
 
--- -----------------------------------------------------------------------------------------------
---  II. Creating Tables
---      Defines the core structure of the application's data.
--- -----------------------------------------------------------------------------------------------
+-- Drop Tables, using CASCADE to handle dependencies like foreign keys.
+DROP TABLE IF EXISTS public.grade_history CASCADE;
+DROP TABLE IF EXISTS public.attendance_history CASCADE;
+DROP TABLE IF EXISTS public.journals CASCADE;
+DROP TABLE IF EXISTS public.schedule CASCADE;
+DROP TABLE IF EXISTS public.students CASCADE;
+DROP TABLE IF EXISTS public.activation_codes CASCADE;
+DROP TABLE IF EXISTS public.subjects CASCADE;
+DROP TABLE IF EXISTS public.classes CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
 
--- Profiles Table: Stores user-specific data, linked to Supabase Auth.
-CREATE TABLE "public"."profiles" (
-    "id" "uuid" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "full_name" "text",
-    "avatar_url" "text",
-    "nip" "text",
-    "pangkat" "text",
-    "jabatan" "text",
-    "school_name" "text",
-    "school_address" "text",
-    "headmaster_name" "text",
-    "headmaster_nip" "text",
-    "school_logo_url" "text",
-    "account_status" "text" DEFAULT 'Free'::"text" NOT NULL,
-    "role" "text" DEFAULT 'teacher'::"text" NOT NULL,
-    "email" "text",
-    CONSTRAINT "profiles_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE
+
+-- ----------------------------
+-- Section 2: Table Creation
+-- ----------------------------
+
+-- Table for user profiles, linked to auth.users
+CREATE TABLE public.profiles (
+    "id" uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    "created_at" timestamp with time zone NOT NULL DEFAULT now(),
+    "full_name" text NULL,
+    "avatar_url" text NULL,
+    "nip" text NULL,
+    "pangkat" text NULL,
+    "jabatan" text NULL,
+    "school_name" text NULL,
+    "school_address" text NULL,
+    "headmaster_name" text NULL,
+    "headmaster_nip" text NULL,
+    "school_logo_url" text NULL,
+    "account_status" text NOT NULL DEFAULT 'Free'::text,
+    "role" text NOT NULL DEFAULT 'teacher'::text,
+    "email" text NULL
 );
-ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.profiles IS 'Stores public-facing user profile information.';
 
--- Classes Table: Stores class information managed by a teacher.
-CREATE TABLE "public"."classes" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "name" "text" NOT NULL,
-    "teacher_id" "uuid" NOT NULL,
-    CONSTRAINT "classes_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "classes_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE
+-- Table for classes taught by a teacher
+CREATE TABLE public.classes (
+    "id" uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "name" text NOT NULL,
+    "teacher_id" uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    "created_at" timestamp with time zone NOT NULL DEFAULT now()
 );
-ALTER TABLE "public"."classes" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.classes IS 'Stores class groups taught by teachers.';
 
--- Subjects Table: Stores subject information and KKM, managed by a teacher.
-CREATE TABLE "public"."subjects" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "name" "text" NOT NULL,
-    "kkm" "smallint" DEFAULT 75 NOT NULL,
-    "teacher_id" "uuid" NOT NULL,
-    CONSTRAINT "subjects_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "subjects_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE
+-- Table for subjects taught by a teacher
+CREATE TABLE public.subjects (
+    "id" uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "name" text NOT NULL,
+    "kkm" smallint NOT NULL DEFAULT 75,
+    "teacher_id" uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    "created_at" timestamp with time zone NOT NULL DEFAULT now()
 );
-ALTER TABLE "public"."subjects" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.subjects IS 'Stores subjects and their passing criteria (KKM).';
 
--- Students Table: Stores student data, linked to a specific class.
-CREATE TABLE "public"."students" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "name" "text" NOT NULL,
-    "nis" "text",
-    "nisn" "text",
-    "gender" "text" NOT NULL,
-    "class_id" "uuid" NOT NULL,
-    CONSTRAINT "students_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "students_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE
+-- Table for students, belonging to a class
+CREATE TABLE public.students (
+    "id" uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "name" text NOT NULL,
+    "nis" text NOT NULL,
+    "nisn" text NOT NULL,
+    "gender" text NOT NULL,
+    "class_id" uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    "created_at" timestamp with time zone NOT NULL DEFAULT now()
 );
-ALTER TABLE "public"."students" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.students IS 'Stores student data for each class.';
 
--- Schedule Table: Stores the weekly teaching schedule for a teacher.
-CREATE TABLE "public"."schedule" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "day" "text" NOT NULL,
-    "start_time" time without time zone NOT NULL,
-    "end_time" time without time zone NOT NULL,
-    "subject_id" "uuid" NOT NULL,
-    "class_id" "uuid" NOT NULL,
-    "teacher_id" "uuid" NOT NULL,
-    CONSTRAINT "schedule_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "schedule_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE,
-    CONSTRAINT "schedule_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE,
-    CONSTRAINT "schedule_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE
+-- Table for weekly teaching schedule
+CREATE TABLE public.schedule (
+    "id" uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "day" text NOT NULL,
+    "start_time" time NOT NULL,
+    "end_time" time NOT NULL,
+    "subject_id" uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    "class_id" uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    "teacher_id" uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    "created_at" timestamp with time zone NOT NULL DEFAULT now()
 );
-ALTER TABLE "public"."schedule" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.schedule IS 'Stores the weekly teaching schedule.';
 
--- Journals Table: Stores teaching journal entries.
-CREATE TABLE "public"."journals" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "date" "timestamp with time zone" DEFAULT "now"() NOT NULL,
-    "class_id" "uuid" NOT NULL,
-    "subject_id" "uuid" NOT NULL,
-    "meeting_number" "integer",
-    "learning_objectives" "text" NOT NULL,
-    "learning_activities" "text" NOT NULL,
-    "assessment" "text",
-    "reflection" "text",
-    "teacher_id" "uuid" NOT NULL,
-    CONSTRAINT "journals_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "journals_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE,
-    CONSTRAINT "journals_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE,
-    CONSTRAINT "journals_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE
+-- Table for teaching journals
+CREATE TABLE public.journals (
+    "id" uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "date" timestamp with time zone NOT NULL DEFAULT now(),
+    "class_id" uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    "subject_id" uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    "meeting_number" integer,
+    "learning_objectives" text NOT NULL,
+    "learning_activities" text NOT NULL,
+    "assessment" text,
+    "reflection" text,
+    "teacher_id" uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
-ALTER TABLE "public"."journals" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.journals IS 'Stores daily teaching journal entries.';
 
--- Attendance History Table: Records attendance for each session.
-CREATE TABLE "public"."attendance_history" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "date" "date" NOT NULL,
-    "class_id" "uuid" NOT NULL,
-    "subject_id" "uuid" NOT NULL,
-    "meeting_number" "integer" NOT NULL,
-    "records" "jsonb" NOT NULL,
-    "teacher_id" "uuid" NOT NULL,
-    CONSTRAINT "attendance_history_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "attendance_history_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE,
-    CONSTRAINT "attendance_history_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE,
-    CONSTRAINT "attendance_history_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE
+-- Table for attendance history
+CREATE TABLE public.attendance_history (
+    "id" uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "date" date NOT NULL,
+    "class_id" uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    "subject_id" uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    "meeting_number" integer NOT NULL,
+    "records" jsonb NOT NULL,
+    "teacher_id" uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    "created_at" timestamp with time zone NOT NULL DEFAULT now()
 );
-ALTER TABLE "public"."attendance_history" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.attendance_history IS 'Stores historical attendance records.';
 
--- Grade History Table: Records grades for various assessments.
-CREATE TABLE "public"."grade_history" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "date" "date" NOT NULL,
-    "class_id" "uuid" NOT NULL,
-    "subject_id" "uuid" NOT NULL,
-    "assessment_type" "text" NOT NULL,
-    "records" "jsonb" NOT NULL,
-    "teacher_id" "uuid" NOT NULL,
-    CONSTRAINT "grade_history_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "grade_history_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE,
-    CONSTRAINT "grade_history_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE,
-    CONSTRAINT "grade_history_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE
+-- Table for grade history
+CREATE TABLE public.grade_history (
+    "id" uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "date" date NOT NULL,
+    "class_id" uuid NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    "subject_id" uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    "assessment_type" text NOT NULL,
+    "records" jsonb NOT NULL,
+    "teacher_id" uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    "created_at" timestamp with time zone NOT NULL DEFAULT now()
 );
-ALTER TABLE "public"."grade_history" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.grade_history IS 'Stores historical grade records for various assessments.';
 
--- Activation Codes Table: Manages Pro account activation codes.
-CREATE TABLE "public"."activation_codes" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "code" "text" NOT NULL,
-    "is_used" boolean DEFAULT false NOT NULL,
-    "used_by" "uuid",
-    "used_at" "timestamp with time zone",
-    "created_at" "timestamp with time zone" DEFAULT "now"() NOT NULL,
-    CONSTRAINT "activation_codes_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "activation_codes_code_key" UNIQUE ("code"),
-    CONSTRAINT "activation_codes_used_by_fkey" FOREIGN KEY ("used_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL
+-- Table for Pro account activation codes
+CREATE TABLE public.activation_codes (
+    "id" uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    "code" text NOT NULL UNIQUE,
+    "is_used" boolean NOT NULL DEFAULT false,
+    "used_by" uuid NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+    "used_at" timestamp with time zone NULL,
+    "created_at" timestamp with time zone NOT NULL DEFAULT now()
 );
-ALTER TABLE "public"."activation_codes" ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.activation_codes IS 'Stores activation codes for Pro accounts.';
 
--- -----------------------------------------------------------------------------------------------
--- III. Functions and Triggers
---      Automates database operations, like creating a user profile on new sign-ups.
--- -----------------------------------------------------------------------------------------------
 
--- Function to create a new profile when a new user signs up in Supabase Auth.
+-- ----------------------------
+-- Section 3: Functions and Triggers
+-- ----------------------------
+
+-- Function to create a new profile entry when a new user signs up in Supabase Auth.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
+RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, avatar_url, email)
   VALUES (
-    NEW.id,
-    NEW.raw_user_meta_data ->> 'full_name',
-    NEW.raw_user_meta_data ->> 'avatar_url',
-    NEW.email
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'avatar_url',
+    new.email
   );
-  RETURN NEW;
+  RETURN new;
 END;
 $$;
+COMMENT ON FUNCTION public.handle_new_user() IS 'Automatically creates a user profile upon new user registration in auth.users.';
 
 -- Trigger to execute the function after a new user is created.
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_new_user();
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- -----------------------------------------------------------------------------------------------
--- IV. Row Level Security (RLS) Policies
---     Secures data by ensuring users can only access their own information.
--- -----------------------------------------------------------------------------------------------
 
--- Policies for 'profiles' table
-CREATE POLICY "Users can view their own profile." ON "public"."profiles"
-AS PERMISSIVE FOR SELECT
-TO authenticated
-USING (auth.uid() = id);
+-- ----------------------------
+-- Section 4: Row Level Security (RLS)
+-- ----------------------------
 
-CREATE POLICY "Users can update their own profile." ON "public"."profiles"
-AS PERMISSIVE FOR UPDATE
-TO authenticated
-USING (auth.uid() = id);
+-- Enable RLS for all tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.schedule ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.journals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.grade_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.activation_codes ENABLE ROW LEVEL SECURITY;
 
--- Policies for 'classes' table
-CREATE POLICY "Teachers can view their own classes." ON "public"."classes"
-AS PERMISSIVE FOR SELECT
-TO authenticated
-USING (auth.uid() = teacher_id);
+-- RLS Policies for 'profiles'
+CREATE POLICY "Allow individual read access" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Allow individual update access" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admin can see all profiles" ON public.profiles FOR SELECT TO authenticated USING ( (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' );
 
-CREATE POLICY "Teachers can create classes for themselves." ON "public"."classes"
-AS PERMISSIVE FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = teacher_id);
+-- RLS Policies for teacher-specific data
+-- Classes, Subjects, Schedule, Journals, History tables
+CREATE POLICY "Allow full access for owners" ON public.classes FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Allow full access for owners" ON public.subjects FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Allow full access for owners" ON public.schedule FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Allow full access for owners" ON public.journals FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Allow full access for owners" ON public.attendance_history FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Allow full access for owners" ON public.grade_history FOR ALL USING (auth.uid() = teacher_id);
 
--- Policies for 'subjects' table
-CREATE POLICY "Teachers can view their own subjects." ON "public"."subjects"
-AS PERMISSIVE FOR SELECT
-TO authenticated
-USING (auth.uid() = teacher_id);
-
-CREATE POLICY "Teachers can create subjects for themselves." ON "public"."subjects"
-AS PERMISSIVE FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = teacher_id);
-
-CREATE POLICY "Teachers can update their own subjects." ON "public"."subjects"
-AS PERMISSIVE FOR UPDATE
-TO authenticated
-USING (auth.uid() = teacher_id);
-
--- Policies for 'students' table (access is determined by class ownership)
-CREATE POLICY "Teachers can view students in their own classes." ON "public"."students"
-AS PERMISSIVE FOR SELECT
-TO authenticated
-USING (
+-- RLS Policies for 'students' (accessible if user owns the class)
+CREATE POLICY "Allow read access to students in owned classes" ON public.students FOR SELECT USING (
   EXISTS (
-    SELECT 1
-    FROM classes
-    WHERE classes.id = students.class_id AND classes.teacher_id = auth.uid()
+    SELECT 1 FROM classes WHERE classes.id = students.class_id AND classes.teacher_id = auth.uid()
+  )
+);
+CREATE POLICY "Allow full access to students in owned classes" ON public.students FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM classes WHERE classes.id = students.class_id AND classes.teacher_id = auth.uid()
   )
 );
 
-CREATE POLICY "Teachers can add students to their own classes." ON "public"."students"
-AS PERMISSIVE FOR INSERT
-TO authenticated
-WITH CHECK (
-  EXISTS (
-    SELECT 1
-    FROM classes
-    WHERE classes.id = students.class_id AND classes.teacher_id = auth.uid()
-  )
-);
+-- RLS Policies for 'activation_codes'
+CREATE POLICY "Allow admin full access to activation codes" ON public.activation_codes FOR ALL USING ( (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' );
+CREATE POLICY "Allow authenticated users to read codes" ON public.activation_codes FOR SELECT TO authenticated USING (true);
 
--- Policies for 'schedule' table
-CREATE POLICY "Teachers can manage their own schedule." ON "public"."schedule"
-AS PERMISSIVE FOR ALL
-TO authenticated
-USING (auth.uid() = teacher_id)
-WITH CHECK (auth.uid() = teacher_id);
 
--- Policies for 'journals' table
-CREATE POLICY "Teachers can manage their own journals." ON "public"."journals"
-AS PERMISSIVE FOR ALL
-TO authenticated
-USING (auth.uid() = teacher_id)
-WITH CHECK (auth.uid() = teacher_id);
+-- ----------------------------
+-- Section 5: Initial Data (Optional)
+-- You can add any initial seed data here if needed.
+-- ----------------------------
+-- Example:
+-- INSERT INTO public.classes (name, teacher_id) VALUES ('Kelas Contoh', 'user-uuid-goes-here');
 
--- Policies for 'attendance_history' table
-CREATE POLICY "Teachers can manage their own attendance records." ON "public"."attendance_history"
-AS PERMISSIVE FOR ALL
-TO authenticated
-USING (auth.uid() = teacher_id)
-WITH CHECK (auth.uid() = teacher_id);
-
--- Policies for 'grade_history' table
-CREATE POLICY "Teachers can manage their own grade records." ON "public"."grade_history"
-AS PERMISSIVE FOR ALL
-TO authenticated
-USING (auth.uid() = teacher_id)
-WITH CHECK (auth.uid() = teacher_id);
-
--- Policies for 'activation_codes' (Admins have full access via service_role key, users have none)
-CREATE POLICY "Allow admin full access." ON "public"."activation_codes"
-AS PERMISSIVE FOR ALL
-TO service_role
-USING (true);
-
--- -----------------------------------------------------------------------------------------------
---  V. Granting Permissions
---     Allows the 'authenticated' role to read from tables, which is required for RLS to work.
--- -----------------------------------------------------------------------------------------------
-GRANT SELECT ON TABLE "public"."profiles" TO "authenticated";
-GRANT SELECT ON TABLE "public"."classes" TO "authenticated";
-GRANT SELECT ON TABLE "public"."subjects" TO "authenticated";
-GRANT SELECT ON TABLE "public"."students" TO "authenticated";
-GRANT SELECT ON TABLE "public"."schedule" TO "authenticated";
-GRANT SELECT ON TABLE "public"."journals" TO "authenticated";
-GRANT SELECT ON TABLE "public"."attendance_history" TO "authenticated";
-GRANT SELECT ON TABLE "public"."grade_history" TO "authenticated";
-
--- ===============================================================================================
---  End of Schema
--- ===============================================================================================
+-- --- END OF SCHEMA ---
