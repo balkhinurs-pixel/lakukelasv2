@@ -173,7 +173,7 @@ export default function ReportsPage() {
             ((s.hadir/s.pertemuan)*100).toFixed(1) + '%'
       ]);
 
-      downloadPdf(doc, title, head, body, {
+      downloadPdf(doc, {title: title, head: head, body: body}, {
         kelas: activeClass?.name,
         mapel: activeSubject?.name,
         semester: selectedSemester === "1" ? "Ganjil" : "Genap",
@@ -209,7 +209,7 @@ export default function ReportsPage() {
             ];
         });
 
-    downloadPdf(doc, title, head, body, {
+    downloadPdf(doc, {title: title, head: head, body: body}, {
         kelas: activeClass?.name,
         mapel: activeSubject?.name,
         semester: selectedSemester === "1" ? "Ganjil" : "Genap",
@@ -222,12 +222,23 @@ export default function ReportsPage() {
         toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
         return;
     }
-     const doc = new jsPDF() as jsPDFWithAutoTable;
-    downloadPdf(doc, 'Laporan Jurnal Mengajar', [['Tanggal', 'Info', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran']], journalEntries.map(j => [format(j.date, "dd MMM yyyy"), `${j.className} - ${j.subjectName} (P-${j.meetingNumber})`, j.learningObjectives, j.learningActivities]));
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const title = 'JURNAL MENGAJAR GURU';
+    
+    // For journals, we don't use autoTable. We build the content manually.
+    const filteredJournals = journalEntries.filter(j => 
+      (selectedClass === 'all' || j.classId === selectedClass) &&
+      (selectedSubject === 'all' || j.subjectId === selectedSubject)
+    );
+
+    downloadPdf(doc, { title: title, journals: filteredJournals }, {
+        semester: selectedSemester === "1" ? "Ganjil" : "Genap",
+        tahunAjaran: "2023/2024"
+    });
   }
 
 
-  const downloadPdf = async (doc: jsPDFWithAutoTable, title: string, head: string[][], body: any[][], meta?: Record<string, string | undefined>) => {
+  const downloadPdf = async (doc: jsPDFWithAutoTable, content: {title: string, head?: any[][], body?: any[][], journals?: any[]}, meta?: Record<string, string | undefined>) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
@@ -260,14 +271,14 @@ export default function ReportsPage() {
 
         // --- Add Title and Meta Info ---
         doc.setFontSize(12).setFont(undefined, 'bold');
-        doc.text(title, pageWidth / 2, finalY + 10, { align: 'center' });
+        doc.text(content.title, pageWidth / 2, finalY + 10, { align: 'center' });
         finalY += 15;
 
         if (meta) {
             doc.setFontSize(10).setFont(undefined, 'normal');
             const metaYStart = finalY;
             doc.text(`Mata Pelajaran`, margin, metaYStart);
-            doc.text(`: ${meta.mapel || '-'}`, margin + 35, metaYStart);
+            doc.text(`: ${meta.mapel || 'Semua Mapel'}`, margin + 35, metaYStart);
             doc.text(`Kelas`, margin, metaYStart + 5);
             doc.text(`: ${meta.kelas || 'Semua Kelas'}`, margin + 35, metaYStart + 5);
             doc.text(`Semester`, pageWidth / 2, metaYStart);
@@ -277,21 +288,62 @@ export default function ReportsPage() {
             finalY = metaYStart + 15;
         }
 
-        // --- Add Table ---
-        doc.autoTable({
-            head: head,
-            body: body,
-            startY: finalY,
-            theme: 'grid',
-            headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
-            styles: { fontSize: 8, cellPadding: 2, lineWidth: 0.1 },
-            didDrawPage: (data) => {
-                // In case of multiple pages, reset finalY for the new page.
-                finalY = data.cursor?.y || 0;
-            }
-        });
+        // --- Add Table for Attendance/Grades OR Narrative for Journal ---
+        if (content.head && content.body) {
+             doc.autoTable({
+                head: content.head,
+                body: content.body,
+                startY: finalY,
+                theme: 'grid',
+                headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
+                styles: { fontSize: 8, cellPadding: 2, lineWidth: 0.1, cellWidth: 'auto' },
+                didDrawPage: (data) => {
+                    finalY = data.cursor?.y || 0;
+                }
+            });
+            finalY = (doc.lastAutoTable as any).finalY;
+        } else if (content.journals) {
+            finalY += 5; // Add a bit of space before the first entry
+            doc.setFontSize(10);
+            
+            content.journals.forEach((entry, index) => {
+                if (finalY > pageHeight - 60) { // Check for page break before rendering new entry
+                    doc.addPage();
+                    finalY = margin;
+                }
+                doc.setFont(undefined, 'bold');
+                const entryHeader = `JURNAL KE-${index + 1}: ${entry.subjectName} - ${entry.className}`;
+                doc.text(entryHeader, margin, finalY);
+                finalY += 6;
+                
+                doc.setFont(undefined, 'normal');
+                const entryMeta = `Tanggal: ${format(entry.date, "eeee, dd MMMM yyyy", { locale: id })} | Pertemuan ke-${entry.meetingNumber}`;
+                doc.text(entryMeta, margin, finalY);
+                finalY += 8;
 
-        finalY = (doc.lastAutoTable as any).finalY;
+                const addSection = (title: string, text: string) => {
+                    if (!text) return;
+                    doc.setFont(undefined, 'bold');
+                    doc.text(title, margin, finalY);
+                    finalY += 5;
+                    doc.setFont(undefined, 'normal');
+                    const splitText = doc.splitTextToSize(text, pageWidth - (margin * 2));
+                    doc.text(splitText, margin, finalY);
+                    finalY += (splitText.length * 4) + 4; // Adjust spacing based on text lines
+                }
+
+                addSection("A. Tujuan Pembelajaran", entry.learningObjectives);
+                addSection("B. Kegiatan Pembelajaran (Sintaks)", entry.learningActivities);
+                addSection("C. Penilaian (Asesmen)", entry.assessment);
+                addSection("D. Refleksi & Tindak Lanjut", entry.reflection);
+
+                finalY += 5; // Extra space between entries
+                doc.setLineDashPattern([1, 1], 0);
+                doc.line(margin, finalY, pageWidth - margin, finalY);
+                doc.setLineDashPattern([], 0);
+                finalY += 8;
+            });
+        }
         
         // --- Add Footer ---
         const signatureY = finalY + 15 > pageHeight - 50 ? pageHeight - 50 : finalY + 15;
@@ -321,7 +373,7 @@ export default function ReportsPage() {
         doc.setFont(undefined, 'bold').text(teacherData.name, signatureXRight, signatureYName, { align: 'right'});
         doc.setFont(undefined, 'normal').text(`NIP. ${teacherData.nip}`, signatureXRight, signatureYName + 5, { align: 'right'});
 
-        doc.save(`${title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
+        doc.save(`${content.title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
     }
   }
 
@@ -745,6 +797,26 @@ export default function ReportsPage() {
                                 Unduh PDF
                             </Button>
                         </div>
+                        <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
+                            <Select value={selectedClass} onValueChange={setSelectedClass}>
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="Pilih kelas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Kelas</SelectItem>
+                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="Pilih Mapel" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Mapel</SelectItem>
+                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {/* Mobile View */}
@@ -771,7 +843,12 @@ export default function ReportsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {journalEntries.map((entry) => (
+                                {journalEntries
+                                    .filter(j => 
+                                        (selectedClass === 'all' || j.classId === selectedClass) &&
+                                        (selectedSubject === 'all' || j.subjectId === selectedSubject)
+                                    )
+                                    .map((entry) => (
                                 <TableRow key={entry.id}>
                                     <TableCell className="font-medium">
                                     {format(entry.date, "dd MMM yyyy")}
