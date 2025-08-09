@@ -8,9 +8,23 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (session?.user) {
+      // After getting the session, check the user's role from the profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (profile && profile.role === 'admin') {
+        // If user is an admin, redirect to the admin dashboard
+        return NextResponse.redirect(new URL('/admin', request.url).origin + '/admin');
+      }
+    }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(requestUrl.origin + '/dashboard');
+  // For all other users or if there's an error, redirect to the default teacher dashboard
+  return NextResponse.redirect(new URL('/dashboard', request.url).origin + '/dashboard');
 }

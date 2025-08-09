@@ -40,22 +40,34 @@ export async function middleware(request: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
   
+  if (!session) {
+    if (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/admin')) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    return response;
+  }
+
+  // User is logged in, check their role
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single();
+  
+  const isAdmin = profile?.role === 'admin';
+
   // Protect admin routes
   if (request.nextUrl.pathname.startsWith('/admin')) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (!isAdmin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
+
+  // Redirect admin from teacher dashboard to admin dashboard
+  if (request.nextUrl.pathname.startsWith('/dashboard') && isAdmin) {
+    return NextResponse.redirect(new URL('/admin', request.url));
+  }
+
 
   return response
 }
