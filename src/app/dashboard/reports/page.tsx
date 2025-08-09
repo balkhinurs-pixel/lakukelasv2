@@ -265,14 +265,16 @@ export default function ReportsPage() {
         )}
 
         <Tabs defaultValue="summary">
-            <TabsList className="w-full h-auto overflow-x-auto justify-start">
-                <TabsTrigger value="summary">Ringkasan</TabsTrigger>
-                <TabsTrigger value="attendance">Laporan Kehadiran</TabsTrigger>
-                <TabsTrigger value="grades">Laporan Nilai</TabsTrigger>
-                <TabsTrigger value="journal">Laporan Jurnal</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto">
+                <TabsList className="w-full sm:w-auto justify-start">
+                    <TabsTrigger value="summary">Ringkasan</TabsTrigger>
+                    <TabsTrigger value="attendance">Kehadiran</TabsTrigger>
+                    <TabsTrigger value="grades">Nilai</TabsTrigger>
+                    <TabsTrigger value="journal">Jurnal</TabsTrigger>
+                </TabsList>
+            </div>
             <TabsContent value="summary" className="mt-6 space-y-6">
-                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Tingkat Kehadiran Rata-rata</CardTitle>
@@ -311,7 +313,36 @@ export default function ReportsPage() {
                         <CardDescription>Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto">
+                        {/* Mobile View */}
+                        <div className="md:hidden space-y-4">
+                            {studentPerformance.map((student) => (
+                                <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-semibold">{student.name}</p>
+                                            <p className="text-sm text-muted-foreground">{student.class}</p>
+                                        </div>
+                                        <Badge variant="outline" className={cn("font-semibold text-xs", getStatusBadge(student.status))}>
+                                            {student.status === 'Sangat Baik' && <TrendingUp className="mr-1 h-3 w-3" />}
+                                            {student.status}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex justify-around text-center text-sm pt-2">
+                                        <div>
+                                            <p className="font-bold text-base">{student.average_grade}</p>
+                                            <p className="text-xs text-muted-foreground">Rata-rata Nilai</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-base">{student.attendance}%</p>
+                                            <p className="text-xs text-muted-foreground">Kehadiran</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -459,7 +490,27 @@ export default function ReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto">
+                        {/* Mobile View */}
+                        <div className="md:hidden space-y-4">
+                             {detailedAttendance.map((student) => (
+                                <div key={student.id} className="border rounded-lg p-4 space-y-3">
+                                    <p className="font-semibold">{student.name}</p>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                                       <p><strong>Hadir:</strong> {student.hadir}</p>
+                                       <p><strong>Sakit:</strong> {student.sakit}</p>
+                                       <p><strong>Izin:</strong> {student.izin}</p>
+                                       <p><strong>Alpha:</strong> {student.alpha}</p>
+                                    </div>
+                                    <div className="border-t pt-2 text-sm font-semibold flex justify-between">
+                                        <span>Total Pertemuan: {student.pertemuan}</span>
+                                        <span>Kehadiran: {((student.hadir / student.pertemuan) * 100).toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                             ))}
+                        </div>
+
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <Table>
                             <TableHeader>
                                 <TableRow>
@@ -527,7 +578,29 @@ export default function ReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto">
+                        {/* Mobile View */}
+                        <div className="md:hidden space-y-4">
+                            {detailedGrades.map((student) => {
+                                const avg = (student.uh1 + student.uh2 + student.tugas1 + student.uts + student.uas) / 5;
+                                return (
+                                    <div key={student.id} className="border rounded-lg p-4 space-y-3">
+                                        <p className="font-semibold">{student.name}</p>
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                                            <p><strong>UH 1:</strong> {student.uh1}</p>
+                                            <p><strong>UH 2:</strong> {student.uh2}</p>
+                                            <p><strong>Tugas 1:</strong> {student.tugas1}</p>
+                                            <p><strong>UTS:</strong> {student.uts}</p>
+                                            <p><strong>UAS:</strong> {student.uas}</p>
+                                        </div>
+                                        <div className="border-t pt-2 text-sm font-semibold flex justify-end">
+                                            <span>Rata-rata: {avg.toFixed(1)}</span>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <Table>
                             <TableHeader>
                                 <TableRow>
@@ -576,7 +649,21 @@ export default function ReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto">
+                        {/* Mobile View */}
+                         <div className="md:hidden space-y-4">
+                            {journalEntries.map((entry) => (
+                                <div key={entry.id} className="border rounded-lg p-4 space-y-3">
+                                    <div className="space-y-1">
+                                        <p className="font-semibold">{entry.subjectName}</p>
+                                        <p className="text-sm text-muted-foreground">{entry.className} {entry.meetingNumber ? `(P-${entry.meetingNumber})` : ''}</p>
+                                        <p className="text-xs text-muted-foreground">{format(entry.date, "dd MMM yyyy")}</p>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground line-clamp-3">{entry.learningObjectives}</p>
+                                </div>
+                            ))}
+                         </div>
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <Table>
                             <TableHeader>
                                 <TableRow>
