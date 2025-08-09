@@ -261,3 +261,36 @@ export async function saveGrades(formData: FormData) {
 
     return handleSupabaseAction(action, 'Nilai berhasil disimpan.', '/dashboard/grades');
 }
+
+// --- Settings Actions ---
+export async function updateProfile(profileData: { fullName: string; nip: string; pangkat: string; jabatan: string; }) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+    
+    const updatedProfile = {
+        full_name: profileData.fullName,
+        nip: profileData.nip,
+        pangkat: profileData.pangkat,
+        jabatan: profileData.jabatan,
+    };
+
+    const action = supabase.from('profiles').update(updatedProfile).eq('id', user.id);
+    return handleSupabaseAction(action, 'Profil berhasil diperbarui.', '/dashboard/settings');
+}
+
+export async function updateSchoolData(schoolData: { schoolName: string; schoolAddress: string; headmasterName: string; headmasterNip: string; }) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+    
+    const updatedData = {
+        school_name: schoolData.schoolName,
+        school_address: schoolData.schoolAddress,
+        headmaster_name: schoolData.headmasterName,
+        headmaster_nip: schoolData.headmasterNip,
+    };
+
+    const action = supabase.from('profiles').update(updatedData).eq('id', user.id);
+    return handleSupabaseAction(action, 'Data sekolah berhasil diperbarui.', '/dashboard/settings');
+}
