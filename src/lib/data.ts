@@ -413,5 +413,3 @@ export async function getReportsData() {
         allStudents,
     };
 }
-
-    

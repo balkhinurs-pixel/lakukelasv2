@@ -53,6 +53,7 @@ export async function activateAccount(code: string) {
   // Revalidate all relevant paths to reflect Pro status immediately
   revalidatePath('/dashboard/activation');
   revalidatePath('/dashboard', 'layout');
+  revalidatePath('/admin');
   
   return { success: true };
 }
@@ -81,7 +82,7 @@ export async function saveJournal(formData: FormData) {
     ? supabase.from('journals').update(rawData).eq('id', entryId)
     : supabase.from('journals').insert([rawData]);
 
-  return handleSupabaseAction(action, 'Jurnal berhasil disimpan.', '/dashboard/journal');
+  return handleSupabaseAction(action, 'Jurnal berhasil disimpan.', ['/dashboard/journal', '/dashboard']);
 }
 
 export async function deleteJournal(journalId: string) {
@@ -89,7 +90,7 @@ export async function deleteJournal(journalId: string) {
   return handleSupabaseAction(
     supabase.from('journals').delete().eq('id', journalId),
     'Jurnal berhasil dihapus.',
-    '/dashboard/journal'
+    ['/dashboard/journal', '/dashboard']
   );
 }
 
@@ -196,7 +197,7 @@ export async function saveSchedule(formData: FormData) {
         ? supabase.from('schedule').update(rawData).eq('id', scheduleId)
         : supabase.from('schedule').insert([rawData]);
 
-    return handleSupabaseAction(action, 'Jadwal berhasil disimpan.', '/dashboard/schedule');
+    return handleSupabaseAction(action, 'Jadwal berhasil disimpan.', ['/dashboard/schedule', '/dashboard']);
 }
 
 export async function deleteSchedule(scheduleId: string) {
@@ -204,7 +205,7 @@ export async function deleteSchedule(scheduleId: string) {
   return handleSupabaseAction(
     supabase.from('schedule').delete().eq('id', scheduleId),
     'Jadwal berhasil dihapus.',
-    '/dashboard/schedule'
+    ['/dashboard/schedule', '/dashboard']
   );
 }
 
