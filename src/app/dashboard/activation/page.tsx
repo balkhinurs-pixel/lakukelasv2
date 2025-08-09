@@ -11,13 +11,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { KeyRound, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import { KeyRound, CheckCircle, Sparkles, Loader2, Users, Download, ArrowRightLeft, ShieldCheck, XCircle } from "lucide-react";
 import { useActivation } from "@/hooks/use-activation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { activateAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
 
 export default function ActivationPage() {
     const { isPro, limits, setActivationStatus } = useActivation();
@@ -65,7 +68,7 @@ export default function ActivationPage() {
         <Card className="max-w-lg mx-auto border-green-200 bg-green-50/50 shadow-sm">
               <CardHeader className="text-center items-center">
                   <div className="mx-auto bg-green-100 p-3 rounded-full w-fit">
-                    <CheckCircle className="h-8 w-8 text-green-700"/>
+                    <ShieldCheck className="h-8 w-8 text-green-700"/>
                   </div>
                   <CardTitle>Akun Anda Sudah Pro</CardTitle>
                   <CardDescription className="text-green-800">
@@ -107,60 +110,82 @@ export default function ActivationPage() {
         </Card>
       )}
 
-      <Card className="bg-muted/30">
-          <CardHeader>
-              <CardTitle>Perbandingan Fitur</CardTitle>
-              <CardDescription>Lihat perbedaan antara akun Gratis dan Pro.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4 p-4 rounded-lg">
-                    <h3 className="font-semibold text-lg">Akun Gratis</h3>
-                    <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                           <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                           <span className="text-muted-foreground">Manajemen **{limits.classes} kelas**</span>
-                        </li>
-                         <li className="flex items-start gap-2">
-                           <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                           <span className="text-muted-foreground">Manajemen **{limits.studentsPerClass} siswa** per kelas</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                           <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                           <span className="text-muted-foreground">Pencatatan Presensi, Nilai, & Jurnal</span>
-                        </li>
-                    </ul>
+      <div className="space-y-4">
+        <div className="text-center">
+            <h2 className="text-2xl font-bold font-headline">Perbandingan Fitur</h2>
+            <p className="text-muted-foreground mt-1">Lihat perbedaan antara akun Gratis dan Pro.</p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6 items-start">
+            <Card className="p-6 h-full flex flex-col">
+                <h3 className="text-2xl font-bold font-headline mb-4">Gratis</h3>
+                <div className="space-y-3 flex-grow">
+                    <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground">Manajemen **{limits.classes} kelas**</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground">Manajemen **{limits.studentsPerClass} siswa** per kelas</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground">Pencatatan Presensi, Nilai, & Jurnal</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                        <XCircle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground">Unduh Laporan PDF</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                        <XCircle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground">Impor & Ekspor Data Siswa</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                        <XCircle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground">Fitur Promosi & Mutasi Siswa</p>
+                    </div>
                 </div>
-                 <div className="space-y-4 p-4 rounded-lg border-2 border-primary bg-background shadow-lg">
-                    <h3 className="font-semibold text-lg flex items-center">
-                        Akun Pro
-                        <Sparkles className="h-4 w-4 ml-2 text-primary" />
-                    </h3>
-                    <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                           <span className="text-foreground">**Semua fitur Gratis**, plus:</span>
-                        </li>
-                         <li className="flex items-start gap-2">
-                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                           <span className="text-foreground">Manajemen Kelas & Siswa **Tanpa Batas**</span>
-                        </li>
-                         <li className="flex items-start gap-2">
-                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                           <span className="text-foreground">**Unduh Laporan PDF** Profesional</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                           <span className="text-foreground">**Impor & Ekspor** Data Siswa</span>
-                        </li>
-                         <li className="flex items-start gap-2">
-                           <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                           <span className="text-foreground">Fitur **Promosi & Mutasi** Siswa</span>
-                        </li>
-                    </ul>
-                </div>
-          </CardContent>
-      </Card>
+            </Card>
 
+            <div className="relative h-full">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                <Card className="p-6 relative h-full flex flex-col">
+                    <Badge className="absolute -top-3 right-5 bg-primary hover:bg-primary">Paling Populer</Badge>
+                    <h3 className="text-2xl font-bold font-headline mb-4 flex items-center gap-2">
+                        Pro
+                        <Sparkles className="h-5 w-5 text-primary" />
+                    </h3>
+                    <div className="space-y-3 flex-grow">
+                        <div className="flex items-start gap-3">
+                            <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-foreground">Semua fitur **Gratis**, plus:</p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <Users className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-foreground">Manajemen Kelas & Siswa **Tanpa Batas**</p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <Download className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-foreground">**Unduh Laporan PDF** Profesional</p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <ArrowRightLeft className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-foreground">**Impor & Ekspor** Data Siswa</p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <ShieldCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-foreground">Fitur **Promosi & Mutasi** Siswa</p>
+                        </div>
+                    </div>
+                     {!isPro && (
+                        <Button size="lg" className="w-full mt-6" onClick={() => document.getElementById('activation-code')?.focus()}>
+                            Aktifkan Sekarang
+                        </Button>
+                    )}
+                </Card>
+            </div>
+        </div>
+      </div>
     </div>
   );
 }
+
