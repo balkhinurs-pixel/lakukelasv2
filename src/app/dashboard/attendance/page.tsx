@@ -46,6 +46,7 @@ import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Check, X, Hand, AlertCircle, Loader2 } from "lucide-react";
 import { saveAttendance } from "@/lib/actions";
+import { getStudentsByClass } from "@/lib/data-client";
 
 const attendanceOptions: { value: AttendanceRecord['status'], label: string, icon: React.ElementType, color: string, tooltip: string }[] = [
     { value: 'Hadir', label: 'H', icon: Check, color: 'bg-green-100 text-green-800 border-green-200 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-green-700', tooltip: 'Hadir' },
@@ -87,7 +88,6 @@ function AttendancePageComponent({
               return;
           }
           setLoading(true);
-          const { getStudentsByClass } = await import('@/lib/data');
           const fetchedStudents = await getStudentsByClass(selectedClassId);
           setStudents(fetchedStudents);
           resetForm(fetchedStudents);
@@ -152,7 +152,6 @@ function AttendancePageComponent({
       setSelectedSubjectId(entry.subject_id);
       
       setLoading(true);
-      const { getStudentsByClass } = await import('@/lib/data');
       const fetchedStudents = await getStudentsByClass(entry.class_id);
       setStudents(fetchedStudents);
       

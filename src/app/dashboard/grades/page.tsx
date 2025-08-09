@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { saveGrades } from "@/lib/actions";
+import { getStudentsByClass } from "@/lib/data-client";
 
 function FormattedDate({ date, formatString }: { date: Date | null, formatString: string }) {
     const [formattedDate, setFormattedDate] = React.useState<string>('');
@@ -111,7 +112,6 @@ function GradesPageComponent({
               return;
           }
           setLoading(true);
-          const { getStudentsByClass } = await import('@/lib/data');
           const fetchedStudents = await getStudentsByClass(selectedClassId);
           setStudents(fetchedStudents);
           resetForm(fetchedStudents);
@@ -182,7 +182,6 @@ function GradesPageComponent({
       setSelectedClassId(entry.class_id);
       setSelectedSubjectId(entry.subject_id);
       
-      const { getStudentsByClass } = await import('@/lib/data');
       const fetchedStudents = await getStudentsByClass(entry.class_id);
       setStudents(fetchedStudents);
 
