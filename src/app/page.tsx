@@ -67,7 +67,6 @@ export default function LoginPage() {
         } else {
             router.push('/dashboard');
         }
-        router.refresh(); // Refresh to ensure layout gets correct user state.
     }
   };
   
@@ -308,5 +307,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
