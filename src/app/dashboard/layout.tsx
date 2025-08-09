@@ -2,7 +2,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import * as React from 'react';
 import {
   BarChart3,
   BookText,
@@ -55,7 +56,8 @@ import { useActivation } from '@/hooks/use-activation';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-
+import { createClient } from '@/lib/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dasbor' },
@@ -67,7 +69,6 @@ const navItems = [
 ];
 
 const mainMobileNavItems = navItems.slice(0, 4);
-// These items will appear in the "More" sidebar on mobile
 const moreMobileNavItems = [
     navItems[4], // Laporan
     navItems[5], // Jadwal
@@ -86,12 +87,43 @@ const settingsNavItems = [
     { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan' },
 ]
 
-function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
+function DashboardLayoutContent({ 
+  children,
+  user
+}: { 
+  children: React.ReactNode;
+  user: SupabaseUser | null;
+}) {
   const pathname = usePathname();
-  const { isPro } = useActivation();
+  const router = useRouter();
+  const { isPro, setActivationStatus } = useActivation();
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
   const isRosterActive = pathname.startsWith('/dashboard/roster');
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    router.push('/');
+    router.refresh();
+  };
+
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+        if (user && supabase) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('account_status')
+                .eq('id', user.id)
+                .single();
+            if (profile) {
+                setActivationStatus(profile.account_status === 'Pro');
+            }
+        }
+    };
+    fetchProfile();
+  }, [user, setActivationStatus, supabase]);
 
   const BottomNavbar = () => {
     return (
@@ -269,12 +301,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://placehold.co/40x40.png" alt="Teacher" data-ai-hint="teacher portrait" />
-                    <AvatarFallback>GT</AvatarFallback>
+                    <AvatarImage src={(user?.user_metadata?.avatar_url || "https://placehold.co/40x40.png")} alt={user?.user_metadata?.full_name || 'Teacher'} data-ai-hint="teacher portrait" />
+                    <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || 'G'}</AvatarFallback>
                   </Avatar>
                   <div className="text-left group-data-[state=collapsed]:hidden">
-                    <p className="text-sm font-medium">Guru Tangguh</p>
-                    <p className="text-xs text-muted-foreground">guru@sekolah.id</p>
+                    <p className="text-sm font-medium truncate">{user?.user_metadata?.full_name || 'Guru'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                   </div>
                   {isPro && <Badge variant="default" className="ml-auto bg-green-600 hover:bg-green-700 group-data-[state=collapsed]:hidden">Pro</Badge>}
                 </Button>
@@ -282,9 +314,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
               <DropdownMenuContent className="w-56" side="right" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Guru Tangguh</p>
+                    <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name || 'Guru'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      guru@sekolah.id
+                      {user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -304,7 +336,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />Keluar
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -332,11 +364,42 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [user, setUser] = React.useState<SupabaseUser | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const router = useRouter();
+  const supabase = createClient();
+
+  React.useEffect(() => {
+    const checkUser = async () => {
+      if (!supabase) {
+        setLoading(false);
+        router.push('/');
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        router.push('/');
+      } else {
+        setUser(session.user);
+        setLoading(false);
+      }
+    };
+    checkUser();
+  }, [router, supabase]);
+
+  if (loading) {
+    // You can show a loading spinner here
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <p>Memuat dasbor...</p>
+        </div>
+    );
+  }
+
   return (
     <SidebarProvider>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      <DashboardLayoutContent user={user}>{children}</DashboardLayoutContent>
     </SidebarProvider>
   )
 }
-
-    
