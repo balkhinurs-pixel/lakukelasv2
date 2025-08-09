@@ -10,7 +10,8 @@ import {
   Users,
   Menu,
   KeySquare,
-  User as UserIcon
+  User as UserIcon,
+  ChevronDown
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -23,19 +24,11 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarTrigger
+  SidebarTrigger,
+  SidebarSeparator
 } from '@/components/ui/sidebar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AppLogo } from '@/components/icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -85,14 +78,26 @@ export default function AdminLayoutClient({
   return (
     <>
       <Sidebar variant="floating" collapsible="icon">
-        <SidebarHeader className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <AppLogo className="size-8 text-primary" />
-                <span className="text-lg font-semibold font-headline group-data-[state=collapsed]:hidden">Admin Lakukelas</span>
-            </div>
-            <SidebarTrigger className="hidden md:flex" />
+        <SidebarHeader className="p-0 text-background">
+           <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden">
+              <Avatar className="h-20 w-20 border-4 border-white/50">
+                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="Admin" data-ai-hint="admin portrait" />
+                <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
+              </Avatar>
+              <div className="text-center">
+                <p className="text-lg font-bold">{profile?.full_name || 'Admin User'}</p>
+                <p className="text-sm text-primary-foreground/80">{user?.email}</p>
+              </div>
+          </div>
+          <div className="flex justify-center p-2 group-data-[collapsible=icon]:p-0 group-data-[state=expanded]:hidden">
+              <Avatar className="h-12 w-12 border-2 border-primary">
+                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="Admin" data-ai-hint="admin portrait" />
+                <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
+              </Avatar>
+          </div>
         </SidebarHeader>
-        <SidebarContent>
+
+        <SidebarContent className="p-2">
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
@@ -100,60 +105,50 @@ export default function AdminLayoutClient({
                   asChild
                   isActive={item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/admin'}
                   tooltip={{ children: item.label }}
+                  className="group-data-[collapsible=icon]:justify-center"
                 >
                   <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
+                    <item.icon className="group-data-[active=true]:text-primary" />
+                    <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start gap-2 p-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={profile?.avatar_url || "https://placehold.co/40x40.png"} alt="Admin" data-ai-hint="admin portrait" />
-                    <AvatarFallback>{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
-                  </Avatar>
-                  <div className="text-left group-data-[state=collapsed]:hidden">
-                    <p className="text-sm font-medium">{profile?.full_name || 'Admin User'}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" side="right" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{profile?.full_name || 'Admin User'}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                 <DropdownMenuItem asChild>
-                    <Link href="/dashboard">
-                        <UserIcon className="mr-2 h-4 w-4" />Ke Dasbor Guru
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />Keluar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+
+        <SidebarFooter className="p-2">
+            <SidebarSeparator className="my-2" />
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        tooltip={{ children: "Ke Dasbor Guru" }}
+                        className="group-data-[collapsible=icon]:justify-center"
+                    >
+                        <Link href="/dashboard">
+                            <UserIcon />
+                            <span className="group-data-[collapsible=icon]:hidden">Ke Dasbor Guru</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={handleLogout}
+                        tooltip={{ children: "Keluar" }}
+                        className="group-data-[collapsible=icon]:justify-center"
+                    >
+                        <LogOut />
+                        <span className="group-data-[collapsible=icon]:hidden">Keluar</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
+      
       <SidebarInset>
         <header className="p-4 sm:p-6 lg:p-8 flex items-center md:hidden">
             <SidebarTrigger />
-            <div className="flex items-center gap-2 ml-4">
-              <AppLogo className="size-8 text-primary" />
-              <span className="text-lg font-semibold font-headline">Admin Lakukelas</span>
-            </div>
         </header>
         <div className="p-4 sm:p-6 lg:p-8 pt-0 md:pt-8">
             {children}
