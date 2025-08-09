@@ -11,7 +11,6 @@ import {
   Menu,
   KeySquare,
   User as UserIcon,
-  ChevronDown
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -25,7 +24,8 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
-  SidebarSeparator
+  SidebarSeparator,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -53,6 +53,7 @@ export default function AdminLayoutClient({
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const router = useRouter();
+  const { toggleSidebar } = useSidebar();
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -61,6 +62,28 @@ export default function AdminLayoutClient({
     router.push('/');
     router.refresh();
   }
+
+  const SidebarNavContent = () => (
+    <>
+      <SidebarMenu>
+        {navItems.map((item) => (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              isActive={item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/admin'}
+              tooltip={{ children: item.label }}
+              className="group-data-[collapsible=icon]:justify-center"
+            >
+              <Link href={item.href}>
+                <item.icon className="group-data-[active=true]:text-primary" />
+                <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    </>
+  );
 
   const BottomNavbar = () => {
     return (
@@ -71,13 +94,17 @@ export default function AdminLayoutClient({
                     <span className="text-xs">{item.label}</span>
                 </Link>
             ))}
+             <button onClick={toggleSidebar} className="flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
+                <Menu className="w-5 h-5" />
+                <span className="text-xs">Lainnya</span>
+            </button>
         </div>
     )
   }
 
   return (
     <>
-      <Sidebar variant="floating" collapsible="icon">
+      <Sidebar collapsible="icon">
         <SidebarHeader className="p-0 text-background">
            <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden">
               <Avatar className="h-20 w-20 border-4 border-white/50">
@@ -89,7 +116,7 @@ export default function AdminLayoutClient({
                 <p className="text-sm text-primary-foreground/80">{user?.email}</p>
               </div>
           </div>
-          <div className="flex justify-center p-2 group-data-[collapsible=icon]:p-0 group-data-[state=expanded]:hidden">
+          <div className="hidden justify-center p-2 group-data-[collapsible=icon]:flex group-data-[state=expanded]:hidden">
               <Avatar className="h-12 w-12 border-2 border-primary">
                 <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="Admin" data-ai-hint="admin portrait" />
                 <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
@@ -98,23 +125,7 @@ export default function AdminLayoutClient({
         </SidebarHeader>
 
         <SidebarContent className="p-2">
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/admin'}
-                  tooltip={{ children: item.label }}
-                  className="group-data-[collapsible=icon]:justify-center"
-                >
-                  <Link href={item.href}>
-                    <item.icon className="group-data-[active=true]:text-primary" />
-                    <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
+           <SidebarNavContent />
         </SidebarContent>
 
         <SidebarFooter className="p-2">
