@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -20,31 +21,31 @@ import { Button } from "@/components/ui/button";
 import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check } from "lucide-react";
 import Link from 'next/link';
 import { format } from "date-fns";
-import type { ScheduleItem, JournalEntry } from "@/lib/types";
+import type { ScheduleItem, JournalEntry, Class, Subject } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
 
-// Mock data, to be replaced by API calls
-const journalEntries: JournalEntry[] = [];
-const schedule: ScheduleItem[] = [];
-const classes: {id: string; name: string}[] = [];
-const subjects: {id: string; name: string}[] = [];
+type DashboardPageProps = {
+  todaySchedule: ScheduleItem[];
+  journalEntries: JournalEntry[];
+  classes: Class[];
+  subjects: Subject[];
+}
 
-export default function DashboardPage() {
+export default function DashboardPage({ todaySchedule, journalEntries, classes, subjects }: DashboardPageProps) {
     const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
-
-    const todaySchedule = React.useMemo(() => {
-        const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' }) as ScheduleItem['day'];
-        return schedule.filter(item => item.day === today).sort((a,b) => a.startTime.localeCompare(b.startTime));
-    }, []);
+    
+    const sortedSchedule = React.useMemo(() => {
+        return todaySchedule.sort((a,b) => a.start_time.localeCompare(b.start_time));
+    }, [todaySchedule]);
 
     React.useEffect(() => {
         const now = new Date();
         const newActiveSchedules: Record<string, boolean> = {};
-        todaySchedule.forEach(item => {
-            const [hours, minutes] = item.startTime.split(':').map(Number);
+        sortedSchedule.forEach(item => {
+            const [hours, minutes] = item.start_time.split(':').map(Number);
             const scheduleDate = new Date();
             scheduleDate.setHours(hours, minutes, 0, 0);
             if (now >= scheduleDate) {
@@ -52,7 +53,24 @@ export default function DashboardPage() {
             }
         });
         setActiveSchedules(newActiveSchedules);
-    }, [todaySchedule]);
+
+        const interval = setInterval(() => {
+             const now = new Date();
+             const updatedSchedules: Record<string, boolean> = {};
+             sortedSchedule.forEach(item => {
+                const [hours, minutes] = item.start_time.split(':').map(Number);
+                const scheduleDate = new Date();
+                scheduleDate.setHours(hours, minutes, 0, 0);
+                if (now >= scheduleDate) {
+                    updatedSchedules[item.id] = true;
+                }
+            });
+            setActiveSchedules(current => ({...current, ...updatedSchedules}));
+        }, 60000); // Check every minute
+
+        return () => clearInterval(interval);
+
+    }, [sortedSchedule]);
 
 
     const handleTaskCompletion = (scheduleId: string, currentStatus: TaskStatus) => {
@@ -66,10 +84,8 @@ export default function DashboardPage() {
 
     const getNextAction = (item: ScheduleItem) => {
         const status = taskStatus[item.id] || 'pending';
-        const classData = classes.find(c => c.name === item.class);
-        const subjectData = subjects.find(s => s.name === item.subject);
-        const classId = classData?.id;
-        const subjectId = subjectData?.id;
+        const classId = item.class_id;
+        const subjectId = item.subject_id;
 
         if (!classId || !subjectId) return null;
 
@@ -122,7 +138,7 @@ export default function DashboardPage() {
         return null;
     }
     
-    const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' }) as ScheduleItem['day'];
+    const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' });
     
   return (
     <div className="space-y-6">
@@ -173,9 +189,9 @@ export default function DashboardPage() {
             <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">{todaySchedule.length > 0 ? todaySchedule[0].startTime : '-'}</div>
+            <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">{sortedSchedule.length > 0 ? sortedSchedule[0].start_time : '-'}</div>
             <p className="text-xs text-indigo-700 dark:text-indigo-300">
-            {todaySchedule.length > 0 ? `${todaySchedule[0].subject} - ${todaySchedule[0].class}` : 'Tidak ada kelas'}
+            {sortedSchedule.length > 0 ? `${sortedSchedule[0].subject} - ${sortedSchedule[0].class}` : 'Tidak ada kelas'}
             </p>
           </CardContent>
         </Card>
@@ -201,7 +217,7 @@ export default function DashboardPage() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {journalEntries.slice(0, 5).map((entry) => (
+                    {journalEntries.map((entry) => (
                         <TableRow key={entry.id}>
                         <TableCell>
                             <div className="font-medium">{entry.subjectName}</div>
@@ -228,13 +244,13 @@ export default function DashboardPage() {
             <CardDescription>Alur kerja cepat untuk mengajar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {todaySchedule.length > 0 ? (
+            {sortedSchedule.length > 0 ? (
                 <div className="relative">
                     {/* Vertical line */}
                     <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-border -z-10" aria-hidden="true" />
                     
                     <div className="space-y-8">
-                         {todaySchedule.map((item) => {
+                         {sortedSchedule.map((item) => {
                             const isTaskDone = taskStatus[item.id] === 'jurnal_done';
                             const isActionAvailable = activeSchedules[item.id];
                             return (
@@ -247,7 +263,7 @@ export default function DashboardPage() {
                                     </div>
                                     <div className="flex-grow pt-1.5">
                                         <p className="font-semibold">{item.subject}</p>
-                                        <p className="text-sm text-muted-foreground">{item.class} | {item.startTime} - {item.endTime}</p>
+                                        <p className="text-sm text-muted-foreground">{item.class} | {item.start_time} - {item.end_time}</p>
                                         {isActionAvailable && (
                                             <div className="mt-3">
                                                 {getNextAction(item)}

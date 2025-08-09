@@ -59,61 +59,52 @@ import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, UserPlus, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { mockUsers } from "@/lib/placeholder-data";
 import type { Profile } from "@/lib/types";
 
-type User = {
-    id: string;
-    full_name: string;
-    email: string;
-    account_status: 'Pro' | 'Free';
-    join_date: string;
-};
-
-const initialUsers: User[] = mockUsers.map(u => ({...u, name: u.full_name, status: u.account_status, joinDate: new Date(u.join_date)}));
-
 function FormattedDate({ dateString }: { dateString: string }) {
-    const [formattedDate, setFormattedDate] = React.useState<string>('');
-
-    React.useEffect(() => {
-        if (dateString) {
-            setFormattedDate(format(new Date(dateString), 'dd MMMM yyyy'));
-        }
-    }, [dateString]);
-
-    return <>{formattedDate}</>;
+    if (!dateString) return null;
+    try {
+        return <>{format(new Date(dateString), 'dd MMMM yyyy')}</>;
+    } catch (error) {
+        return null;
+    }
 }
 
 
-export default function AdminUsersPage() {
-    const [users, setUsers] = React.useState<any[]>(initialUsers);
+export default function AdminUsersPage({ users: initialUsers }: { users: Profile[] }) {
+    const [users, setUsers] = React.useState<Profile[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [filterStatus, setFilterStatus] = React.useState('all');
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
-    const [selectedUser, setSelectedUser] = React.useState<any | null>(null);
+    const [selectedUser, setSelectedUser] = React.useState<Profile | null>(null);
     const [newStatus, setNewStatus] = React.useState<'Pro' | 'Free'>('Free');
     const { toast } = useToast();
 
+    React.useEffect(() => {
+        setUsers(initialUsers);
+    }, [initialUsers]);
+
     const filteredUsers = users.filter(user => {
-        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
+        const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = filterStatus === 'all' || user.account_status === filterStatus;
         return matchesSearch && matchesStatus;
     });
 
-    const handleManageClick = (user: any) => {
+    const handleManageClick = (user: Profile) => {
         setSelectedUser(user);
-        setNewStatus(user.status);
+        setNewStatus(user.account_status);
         setIsManageDialogOpen(true);
     };
 
     const handleStatusChange = () => {
         if (!selectedUser) return;
         
-        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, status: newStatus } : u));
+        // This part would be a server action in a real app
+        // setUsers(users.map(u => u.id === selectedUser.id ? { ...u, account_status: newStatus } : u));
         
         toast({
-            title: "Status Diperbarui",
-            description: `Status untuk ${selectedUser.name} telah diubah menjadi ${newStatus}.`,
+            title: "Status Diperbarui (Simulasi)",
+            description: `Status untuk ${selectedUser.full_name} akan diubah menjadi ${newStatus}. Implementasikan server action untuk menyimpan ini.`,
         });
 
         setIsManageDialogOpen(false);
@@ -123,11 +114,12 @@ export default function AdminUsersPage() {
     const handleDeleteUser = (userId: string) => {
         const userToDelete = users.find(u => u.id === userId);
         if (!userToDelete) return;
-
-        setUsers(users.filter(u => u.id !== userId));
+        
+        // This part would be a server action in a real app
+        // setUsers(users.filter(u => u.id !== userId));
         toast({
-            title: "Pengguna Dihapus",
-            description: `Pengguna ${userToDelete.name} telah berhasil dihapus.`,
+            title: "Pengguna Dihapus (Simulasi)",
+            description: `Pengguna ${userToDelete.full_name} akan dihapus. Implementasikan server action untuk menyimpan ini.`,
             variant: "destructive"
         });
     }
@@ -139,7 +131,7 @@ export default function AdminUsersPage() {
                 <h1 className="text-2xl font-bold font-headline">Kelola Pengguna</h1>
                 <p className="text-muted-foreground">Lihat, cari, dan kelola semua pengguna terdaftar.</p>
             </div>
-            <Button>
+            <Button disabled>
                 <UserPlus className="mr-2 h-4 w-4" />
                 Tambah Pengguna
             </Button>
@@ -186,15 +178,15 @@ export default function AdminUsersPage() {
                         <TableBody>
                             {filteredUsers.map((user) => (
                                 <TableRow key={user.id}>
-                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                    <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
                                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
                                     <TableCell>
-                                        <Badge variant={user.status === 'Pro' ? 'default' : 'secondary'} className={user.status === 'Pro' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>
-                                            {user.status}
+                                        <Badge variant={user.account_status === 'Pro' ? 'default' : 'secondary'} className={user.account_status === 'Pro' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>
+                                            {user.account_status}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
-                                      <FormattedDate dateString={user.joinDate} />
+                                      <FormattedDate dateString={user.created_at} />
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <AlertDialog>
@@ -206,13 +198,13 @@ export default function AdminUsersPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                    <DropdownMenuItem onSelect={() => handleManageClick(user)}>
+                                                    <DropdownMenuItem onSelect={() => handleManageClick(user)} disabled>
                                                         <Edit className="mr-2 h-4 w-4" />
                                                         Ubah Status
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled>
                                                             <Trash2 className="mr-2 h-4 w-4" />
                                                             Hapus Pengguna
                                                         </DropdownMenuItem>
@@ -223,7 +215,7 @@ export default function AdminUsersPage() {
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        Tindakan ini tidak dapat dibatalkan. Ini akan menghapus pengguna <span className="font-semibold">{user.name}</span> secara permanen dari server.
+                                                        Tindakan ini tidak dapat dibatalkan. Ini akan menghapus pengguna <span className="font-semibold">{user.full_name}</span> secara permanen dari server.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
@@ -248,7 +240,7 @@ export default function AdminUsersPage() {
                 <DialogHeader>
                     <DialogTitle>Kelola Status Pengguna</DialogTitle>
                     <DialogDescription>
-                        Ubah status aktivasi untuk <span className="font-semibold">{selectedUser?.name}</span>.
+                        Ubah status aktivasi untuk <span className="font-semibold">{selectedUser?.full_name}</span>.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
@@ -267,7 +259,7 @@ export default function AdminUsersPage() {
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => setIsManageDialogOpen(false)}>Batal</Button>
-                    <Button onClick={handleStatusChange}>Simpan Perubahan</Button>
+                    <Button onClick={handleStatusChange} disabled>Simpan Perubahan</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -275,3 +267,9 @@ export default function AdminUsersPage() {
   );
 }
 
+// This wrapper fetches the data on the server and passes it to the client component.
+export default async function AdminUsersPageWrapper() {
+    const { getAllUsers } = await import('@/lib/data');
+    const users = await getAllUsers();
+    return <AdminUsersPage users={users} />;
+}

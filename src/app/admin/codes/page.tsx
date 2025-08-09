@@ -1,6 +1,4 @@
 
-"use client";
-
 import * as React from 'react';
 import {
   Card,
@@ -21,29 +19,20 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { GenerateCodeButton } from "./generate-button";
-import { activationCodes as initialCodes, mockUsers } from '@/lib/placeholder-data';
-import type { Profile } from '@/lib/types';
+import { getActivationCodes } from "@/lib/data";
 
 function FormattedDate({ dateString }: { dateString: string | null }) {
-    const [formattedDate, setFormattedDate] = React.useState<string>('-');
-
-    React.useEffect(() => {
-        if (dateString) {
-            setFormattedDate(format(new Date(dateString), 'dd MMM yyyy, HH:mm', { locale: id }));
-        }
-    }, [dateString]);
-
-    return <>{formattedDate}</>;
+    if (!dateString) return <>-</>;
+    try {
+        return <>{format(new Date(dateString), 'dd MMM yyyy, HH:mm', { locale: id })}</>;
+    } catch (error) {
+        return <>-</>;
+    }
 }
 
 
-export default function AdminCodesPage() {
-    const [codes, setCodes] = React.useState(initialCodes);
-
-    const getCodeUser = (userId: string | null): Profile | null => {
-        if (!userId) return null;
-        return mockUsers.find(u => u.id === userId) || null;
-    }
+export default async function AdminCodesPage() {
+    const codes = await getActivationCodes();
 
     return (
         <div className="space-y-6">
@@ -72,7 +61,6 @@ export default function AdminCodesPage() {
                             </TableHeader>
                             <TableBody>
                                 {codes.map((code) => {
-                                    const user = getCodeUser(code.used_by);
                                     return (
                                         <TableRow key={code.id}>
                                             <TableCell className="font-mono">{code.code}</TableCell>
@@ -81,7 +69,7 @@ export default function AdminCodesPage() {
                                                     {code.is_used ? 'Digunakan' : 'Tersedia'}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-muted-foreground">{user?.email || '-'}</TableCell>
+                                            <TableCell className="text-muted-foreground">{code.used_by_email || '-'}</TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 <FormattedDate dateString={code.used_at} />
                                             </TableCell>

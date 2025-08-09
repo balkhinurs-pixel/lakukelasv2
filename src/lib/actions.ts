@@ -63,6 +63,8 @@ export async function activateAccount(code: string) {
   
   revalidatePath('/dashboard/activation');
   revalidatePath('/dashboard');
+  revalidatePath('/admin/users');
+  revalidatePath('/admin/codes');
   
   return { success: true };
 }
@@ -76,14 +78,15 @@ export async function saveJournal(formData: FormData) {
 
   const entryId = formData.get('id') as string;
   const rawData = {
-    class_id: formData.get('classId') as string,
-    subject_id: formData.get('subjectId') as string,
-    meeting_number: Number(formData.get('meetingNumber')) || null,
-    learning_activities: formData.get('learningActivities') as string,
-    learning_objectives: formData.get('learningObjectives') as string,
+    class_id: formData.get('class_id') as string,
+    subject_id: formData.get('subject_id') as string,
+    meeting_number: Number(formData.get('meeting_number')) || null,
+    learning_activities: formData.get('learning_activities') as string,
+    learning_objectives: formData.get('learning_objectives') as string,
     assessment: formData.get('assessment') as string,
     reflection: formData.get('reflection') as string,
     teacher_id: user.id,
+    date: new Date().toISOString(),
   };
 
   const action = entryId
@@ -157,10 +160,10 @@ export async function saveSchedule(formData: FormData) {
     const scheduleId = formData.get('id') as string;
     const rawData = {
         day: formData.get('day') as string,
-        class_id: formData.get('classId') as string,
-        subject_id: formData.get('subjectId') as string,
-        start_time: formData.get('startTime') as string,
-        end_time: formData.get('endTime') as string,
+        class_id: formData.get('class_id') as string,
+        subject_id: formData.get('subject_id') as string,
+        start_time: formData.get('start_time') as string,
+        end_time: formData.get('end_time') as string,
         teacher_id: user.id,
     };
     
