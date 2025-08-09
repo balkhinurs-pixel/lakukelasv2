@@ -4,7 +4,7 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { useSearchParams } from 'next/navigation';
-import { Calendar as CalendarIcon, Edit } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -33,13 +33,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { classes, subjects, gradeHistory as initialHistory } from "@/lib/placeholder-data";
+import { classes, subjects, gradeHistory as initialHistory, students as allStudents } from "@/lib/placeholder-data";
 import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
 
 export default function GradesPage() {
@@ -55,6 +63,9 @@ export default function GradesPage() {
   const [assessmentType, setAssessmentType] = React.useState<string>("");
   const [history, setHistory] = React.useState<GradeHistoryEntry[]>(initialHistory);
   const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [viewingEntry, setViewingEntry] = React.useState<GradeHistoryEntry | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = React.useState(false);
+
 
   const { toast } = useToast();
 
@@ -108,6 +119,20 @@ export default function GradesPage() {
         });
         return;
     }
+    
+    const gradedRecords = Array.from(grades.entries())
+        .filter(([, score]) => score !== "" && score !== null && score !== undefined)
+        .map(([studentId, score]) => ({ studentId, score }));
+
+    if (gradedRecords.length === 0) {
+        toast({
+            title: "Gagal Menyimpan",
+            description: "Tidak ada nilai yang diinput. Harap isi setidaknya satu nilai siswa.",
+            variant: "destructive",
+        });
+        return;
+    }
+
 
     const newEntry: GradeHistoryEntry = {
         id: editingId || `GH${Date.now()}`,
@@ -117,7 +142,7 @@ export default function GradesPage() {
         subjectId: selectedSubject.id,
         subjectName: selectedSubject.name,
         assessmentType: assessmentType,
-        records: Array.from(grades.entries()).map(([studentId, score]) => ({ studentId, score })),
+        records: gradedRecords,
     };
 
     if (editingId) {
@@ -149,12 +174,18 @@ export default function GradesPage() {
       setAssessmentType(entry.assessmentType);
       
       const loadedGrades = new Map<string, GradeRecord['score']>();
-      entry.records.forEach(record => {
-          loadedGrades.set(record.studentId, record.score);
+      classToEdit.students.forEach(student => {
+          const record = entry.records.find(r => r.studentId === student.id);
+          loadedGrades.set(student.id, record ? record.score : "");
       });
       setGrades(loadedGrades);
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const handleViewDetails = (entry: GradeHistoryEntry) => {
+    setViewingEntry(entry);
+    setIsDetailDialogOpen(true);
   }
 
   const filteredHistory = React.useMemo(() => {
@@ -167,6 +198,10 @@ export default function GradesPage() {
     }
     return result;
   }, [history, selectedClass, selectedSubject]);
+
+  const getStudentName = (studentId: string) => {
+    return allStudents.find(s => s.id === studentId)?.name || "Siswa Tidak Ditemukan";
+  };
 
   return (
     <div className="space-y-6">
@@ -247,7 +282,7 @@ export default function GradesPage() {
           <CardHeader>
             <CardTitle>Daftar Nilai - {selectedClass.name}</CardTitle>
             <CardDescription>
-              Input nilai (0-100) untuk setiap siswa.
+              Input nilai (0-100) untuk setiap siswa. Kosongkan jika tidak ada nilai.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -294,20 +329,40 @@ export default function GradesPage() {
         <CardContent>
             {/* Mobile View - Cards */}
             <div className="md:hidden space-y-4">
-              {filteredHistory.map(entry => (
-                <div key={entry.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="font-semibold">{entry.assessmentType}</div>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>Kelas: {entry.className}</p>
-                    <p>Mapel: {entry.subjectName}</p>
-                    <p>Tanggal: {format(entry.date, "dd MMM yyyy")}</p>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(entry)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Ubah
-                  </Button>
-                </div>
-              ))}
+              {filteredHistory.map(entry => {
+                const scores = entry.records.map(r => Number(r.score)).filter(s => !isNaN(s));
+                const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
+                return (
+                    <div key={entry.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="font-semibold">{entry.assessmentType}</div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                            <p>Kelas: {entry.className}</p>
+                            <p>Mapel: {entry.subjectName}</p>
+                            <p>Tanggal: {format(entry.date, "dd MMM yyyy")}</p>
+                        </div>
+                        <div className="border-t pt-3 mt-3 flex justify-between items-center text-sm">
+                            <div>
+                                <p className="font-semibold">{average}</p>
+                                <p className="text-xs text-muted-foreground">Rata-rata</p>
+                            </div>
+                             <div>
+                                <p className="font-semibold">{entry.records.length}</p>
+                                <p className="text-xs text-muted-foreground">Siswa Dinilai</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                             <Button variant="secondary" size="sm" className="w-full" onClick={() => handleViewDetails(entry)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Lihat Detail
+                            </Button>
+                            <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(entry)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Ubah
+                            </Button>
+                        </div>
+                    </div>
+                )
+              })}
             </div>
 
             {/* Desktop View - Table */}
@@ -316,27 +371,40 @@ export default function GradesPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Tanggal</TableHead>
-                            <TableHead>Kelas</TableHead>
-                            <TableHead>Mata Pelajaran</TableHead>
                             <TableHead>Jenis Penilaian</TableHead>
+                            <TableHead>Info</TableHead>
+                            <TableHead className="text-center">Siswa Dinilai</TableHead>
+                            <TableHead className="text-center">Rata-rata</TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredHistory.map(entry => (
-                            <TableRow key={entry.id}>
-                                <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
-                                <TableCell>{entry.className}</TableCell>
-                                <TableCell>{entry.subjectName}</TableCell>
-                                <TableCell>{entry.assessmentType}</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Ubah
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {filteredHistory.map(entry => {
+                           const scores = entry.records.map(r => Number(r.score)).filter(s => !isNaN(s));
+                           const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
+                           return (
+                                <TableRow key={entry.id}>
+                                    <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
+                                    <TableCell>{entry.assessmentType}</TableCell>
+                                    <TableCell>
+                                        <div className="font-medium">{entry.className}</div>
+                                        <div className="text-xs text-muted-foreground">{entry.subjectName}</div>
+                                    </TableCell>
+                                    <TableCell className="text-center">{entry.records.length}</TableCell>
+                                    <TableCell className="text-center font-semibold">{average}</TableCell>
+                                    <TableCell className="text-right space-x-2">
+                                         <Button variant="ghost" size="sm" onClick={() => handleViewDetails(entry)}>
+                                            <Eye className="mr-2 h-4 w-4" />
+                                            Detail
+                                        </Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleEdit(entry)}>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Ubah
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
                     </TableBody>
                 </Table>
             </div>
@@ -347,6 +415,35 @@ export default function GradesPage() {
             )}
         </CardContent>
       </Card>
+
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+            <DialogTitle>Detail Nilai: {viewingEntry?.assessmentType}</DialogTitle>
+            <DialogDescription>
+                Daftar nilai untuk kelas {viewingEntry?.className} pada {viewingEntry ? format(viewingEntry.date, "dd MMM yyyy") : ''}.
+            </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto pr-2">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Nama Siswa</TableHead>
+                        <TableHead className="text-right">Nilai</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {viewingEntry?.records.map(record => (
+                            <TableRow key={record.studentId}>
+                                <TableCell>{getStudentName(record.studentId)}</TableCell>
+                                <TableCell className="text-right font-medium">{record.score}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
