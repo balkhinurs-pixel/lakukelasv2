@@ -108,7 +108,6 @@ export default function ReportsPageComponent({
 }) {
   const [selectedClass, setSelectedClass] = React.useState("all");
   const [selectedSubject, setSelectedSubject] = React.useState("all");
-  const [selectedMonth, setSelectedMonth] = React.useState("all");
   const [selectedSemester, setSelectedSemester] = React.useState("2");
   const { isPro, limits } = useActivation();
   const { toast } = useToast();
@@ -119,32 +118,103 @@ export default function ReportsPageComponent({
       attendanceByClass,
       overallAttendanceDistribution,
       journalEntries,
+      attendanceHistory,
+      gradeHistory,
+      allStudents
   } = reportsData;
 
   const pieData = Object.entries(overallAttendanceDistribution).map(([name, value]) => ({name, value}));
 
-  const handleDownloadClick = () => {
-      if (!limits.canDownloadPdf) {
-          toast({
-              title: "Fitur Akun Pro",
-              description: "Unduh laporan PDF adalah fitur Pro. Silakan aktivasi akun Anda.",
-              variant: "destructive"
-          });
-          return;
-      }
+    const handleDownloadAttendance = async () => {
+        if (!limits.canDownloadPdf) {
+            toast({ title: "Fitur Akun Pro", description: "Unduh laporan PDF adalah fitur Pro.", variant: "destructive" });
+            return;
+        }
+        if (selectedClass === 'all' || selectedSubject === 'all') {
+            toast({ title: "Filter Dibutuhkan", description: "Silakan pilih Kelas dan Mata Pelajaran untuk mengunduh laporan kehadiran.", variant: "destructive"});
+            return;
+        }
 
-      // PDF generation logic here...
-      toast({title: "Coming Soon", description: "PDF generation for attendance is not yet implemented."});
-  }
-  
-  const handleDownloadGrades = () => {
-    if (!limits.canDownloadPdf) {
-        toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
-        return;
+        const doc = new jsPDF() as jsPDFWithAutoTable;
+        const title = 'REKAPITULASI KEHADIRAN SISWA';
+
+        const filteredStudents = allStudents.filter(s => s.class_id === selectedClass);
+        const filteredHistory = attendanceHistory.filter(h => h.class_id === selectedClass && h.subject_id === selectedSubject);
+
+        const tableBody = filteredStudents.map((student, index) => {
+            const studentRecords = filteredHistory.flatMap(h => h.records).filter(r => r.studentId === student.id);
+            const hadir = studentRecords.filter(r => r.status === 'Hadir').length;
+            const sakit = studentRecords.filter(r => r.status === 'Sakit').length;
+            const izin = studentRecords.filter(r => r.status === 'Izin').length;
+            const alpha = studentRecords.filter(r => r.status === 'Alpha').length;
+            const total = hadir + sakit + izin + alpha;
+            return [index + 1, student.name, hadir, sakit, izin, alpha, total];
+        });
+
+        await downloadPdf(doc, { 
+            title: title, 
+            head: [['No', 'Nama Siswa', 'Hadir (H)', 'Sakit (S)', 'Izin (I)', 'Alpha (A)', 'Total']],
+            body: tableBody,
+        }, {
+            semester: selectedSemester === "1" ? "Ganjil" : "Genap",
+            tahunAjaran: "2023/2024"
+        });
     }
-    // PDF generation logic here...
-    toast({title: "Coming Soon", description: "PDF generation for grades is not yet implemented."});
-  }
+
+    const handleDownloadGrades = async () => {
+        if (!limits.canDownloadPdf) {
+            toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
+            return;
+        }
+        if (selectedClass === 'all' || selectedSubject === 'all') {
+            toast({ title: "Filter Dibutuhkan", description: "Silakan pilih Kelas dan Mata Pelajaran untuk mengunduh laporan nilai.", variant: "destructive"});
+            return;
+        }
+
+        const doc = new jsPDF() as jsPDFWithAutoTable;
+        const title = 'DAFTAR NILAI SISWA';
+        const subject = subjects.find(s => s.id === selectedSubject);
+        const kkm = subject?.kkm || 75;
+
+        const filteredStudents = allStudents.filter(s => s.class_id === selectedClass);
+        const filteredGradeHistory = gradeHistory.filter(h => h.class_id === selectedClass && h.subject_id === selectedSubject);
+        
+        const assessments = [...new Set(filteredGradeHistory.map(h => h.assessment_type))];
+        const head = [['No', 'Nama Siswa', ...assessments, 'Rata-rata', 'Predikat']];
+
+        const tableBody = filteredStudents.map((student, index) => {
+            const row = [index + 1, student.name];
+            let totalScore = 0;
+            let scoreCount = 0;
+
+            assessments.forEach(assessment => {
+                const gradeEntry = filteredGradeHistory.find(h => h.assessment_type === assessment);
+                const studentRecord = gradeEntry?.records.find(r => r.studentId === student.id);
+                const score = studentRecord ? Number(studentRecord.score) : '-';
+                if (typeof score === 'number') {
+                    totalScore += score;
+                    scoreCount++;
+                }
+                row.push(score);
+            });
+
+            const average = scoreCount > 0 ? (totalScore / scoreCount).toFixed(2) : '-';
+            const predicate = typeof average === 'string' ? '-' : (parseFloat(average) >= kkm ? 'Tuntas' : 'Remedial');
+            row.push(average);
+            row.push(predicate);
+
+            return row;
+        });
+
+        await downloadPdf(doc, { 
+            title: title, 
+            head: head,
+            body: tableBody,
+        }, {
+            semester: selectedSemester === "1" ? "Ganjil" : "Genap",
+            tahunAjaran: "2023/2024"
+        });
+    }
   
   const handleDownloadJournal = async () => {
     if (!limits.canDownloadPdf) {
@@ -527,17 +597,38 @@ export default function ReportsPageComponent({
                         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                             <div>
                                 <CardTitle>Laporan Kehadiran Siswa</CardTitle>
-                                <CardDescription>Fitur ini sedang dalam pengembangan.</CardDescription>
+                                <CardDescription>Pilih kelas dan mapel untuk mengunduh rekap kehadiran.</CardDescription>
                             </div>
-                            <Button variant="outline" onClick={handleDownloadClick} disabled={!isPro}>
+                            <Button variant="outline" onClick={handleDownloadAttendance} disabled={!isPro}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Unduh PDF
                             </Button>
                         </div>
+                        <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
+                            <Select value={selectedClass} onValueChange={setSelectedClass}>
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="Pilih kelas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Pilih Kelas</SelectItem>
+                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="Pilih Mapel" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Pilih Mapel</SelectItem>
+                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-center py-12 text-muted-foreground">
-                            <p>Data detail kehadiran siswa akan tersedia di sini.</p>
+                            <p>Data detail kehadiran siswa akan direkap di sini saat Anda mengunduh PDF.</p>
+                            <p className="text-sm">Fitur ini memerlukan Akun Pro.</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -548,17 +639,38 @@ export default function ReportsPageComponent({
                          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                             <div>
                                <CardTitle>Laporan Nilai Siswa</CardTitle>
-                               <CardDescription>Fitur ini sedang dalam pengembangan.</CardDescription>
+                               <CardDescription>Pilih kelas dan mapel untuk mengunduh rekap nilai.</CardDescription>
                             </div>
                             <Button variant="outline" onClick={handleDownloadGrades} disabled={!isPro}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Unduh PDF
                             </Button>
                         </div>
+                         <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
+                            <Select value={selectedClass} onValueChange={setSelectedClass}>
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="Pilih kelas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Pilih Kelas</SelectItem>
+                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="Pilih Mapel" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Pilih Mapel</SelectItem>
+                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-center py-12 text-muted-foreground">
-                            <p>Data detail nilai siswa akan tersedia di sini.</p>
+                            <p>Data detail nilai siswa akan direkap di sini saat Anda mengunduh PDF.</p>
+                            <p className="text-sm">Fitur ini memerlukan Akun Pro.</p>
                         </div>
                     </CardContent>
                 </Card>

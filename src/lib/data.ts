@@ -377,5 +377,9 @@ export async function getReportsData() {
         attendanceByClass,
         overallAttendanceDistribution,
         journalEntries,
+        // Pass detailed history for PDF generation
+        attendanceHistory,
+        gradeHistory,
+        allStudents,
     };
 }
