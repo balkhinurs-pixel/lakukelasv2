@@ -575,7 +575,9 @@ export default function ReportsPage() {
                                         cy="50%"
                                         labelLine={props => <path d={props.points.reduce((acc, p) => acc + `${p.x},${p.y} `, 'M')} stroke={props.fill} />}
                                         label={renderCustomizedLabel}
-                                        outerRadius={60}
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
                                         fill="#8884d8"
                                         dataKey="value"
                                         nameKey="name"
@@ -882,5 +884,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    
