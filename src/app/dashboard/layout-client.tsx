@@ -74,10 +74,10 @@ const moreMobileNavItems = [
 ];
 
 const rosterNavItems = [
-    { href: '/dashboard/roster/students', label: 'Daftar Siswa' },
+    { href: '/dashboard/roster/school-year', label: 'Tahun Ajaran' },
     { href: '/dashboard/roster/classes', label: 'Pengaturan Kelas' },
     { href: '/dashboard/roster/subjects', label: 'Pengaturan Mapel' },
-    { href: '/dashboard/roster/school-year', label: 'Tahun Ajaran' },
+    { href: '/dashboard/roster/students', label: 'Daftar Siswa' },
     { href: '/dashboard/roster/promotion', label: 'Promosi & Mutasi' },
 ];
 
