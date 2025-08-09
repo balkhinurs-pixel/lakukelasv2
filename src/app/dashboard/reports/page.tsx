@@ -37,7 +37,8 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LabelList
 } from 'recharts';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -76,13 +77,20 @@ const overallAttendance = {
 const COLORS = ['#22c55e', '#f97316', '#0ea5e9', '#ef4444'];
 
 const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, fill }: any) => {
+  const radius = outerRadius + 15; // Position the label outside the pie
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
   return (
-    <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs font-semibold">
+    <text 
+      x={x} 
+      y={y} 
+      fill={fill} // Use the slice color for the text
+      textAnchor={x > cx ? 'start' : 'end'} 
+      dominantBaseline="central"
+      className="text-xs font-bold"
+    >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
@@ -565,11 +573,9 @@ export default function ReportsPage() {
                                         data={pieData}
                                         cx="50%"
                                         cy="50%"
-                                        labelLine={false}
+                                        labelLine={props => <path d={props.points.reduce((acc, p) => acc + `${p.x},${p.y} `, 'M')} stroke={props.fill} />}
                                         label={renderCustomizedLabel}
-                                        outerRadius={80}
-                                        innerRadius={60}
-                                        paddingAngle={5}
+                                        outerRadius={60}
                                         fill="#8884d8"
                                         dataKey="value"
                                         nameKey="name"
