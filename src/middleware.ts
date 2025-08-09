@@ -39,16 +39,17 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { session } } = await supabase.auth.getSession()
+  const { pathname } = request.nextUrl
   
-  // If user is not logged in, protect dashboard/admin routes
+  // If user is not logged in, and tries to access protected routes, redirect to login
   if (!session) {
-    if (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/admin')) {
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     return response;
   }
 
-  // --- User is logged in, handle redirections ---
+  // --- User is logged in, handle role-based routing and protection ---
   
   const { data: profile } = await supabase
     .from('profiles')
@@ -58,10 +59,9 @@ export async function middleware(request: NextRequest) {
   
   const isAdmin = profile?.role === 'admin';
   const isTeacher = profile?.role === 'teacher';
-  const currentPath = request.nextUrl.pathname;
 
-  // If a logged-in user tries to access the login page, redirect them
-  if (currentPath === '/') {
+  // If a logged-in user (admin or teacher) is on the login page, redirect them to their respective dashboard
+  if (pathname === '/') {
     if (isAdmin) {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
@@ -70,13 +70,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Protect admin routes: only admins can access them
-  if (currentPath.startsWith('/admin') && !isAdmin) {
+  // If a non-admin tries to access admin routes, redirect to teacher dashboard
+  if (pathname.startsWith('/admin') && !isAdmin) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // Protect teacher dashboard: redirect admins away from it
-  if (currentPath.startsWith('/dashboard') && isAdmin) {
+  // If an admin tries to access teacher dashboard, redirect to admin dashboard
+  if (pathname.startsWith('/dashboard') && !isTeacher) {
     return NextResponse.redirect(new URL('/admin', request.url));
   }
 
