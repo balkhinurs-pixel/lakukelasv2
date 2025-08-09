@@ -45,7 +45,7 @@ export default function LoginPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     
-    const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       if (error.message === 'Email not confirmed') {
@@ -54,19 +54,10 @@ export default function LoginPage() {
         toast({ title: "Login Gagal", description: "Email atau kata sandi salah.", variant: "destructive" });
       }
       setLoading(false);
-    } else if (user) {
-        // Fetch profile to determine role
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-        if (profile?.role === 'admin') {
-            router.push('/admin');
-        } else {
-            router.push('/dashboard');
-        }
+    } else {
+        // On successful login, refresh the page. 
+        // The middleware will then handle the redirection based on the user's role.
+        router.refresh();
     }
   };
   

@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
   
-  // If user is not logged in, and tries to access protected routes, redirect to login
+  // If user is not logged in, and tries to access a protected route, redirect to login
   if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
       return NextResponse.redirect(new URL('/', request.url));
   }
@@ -60,16 +60,17 @@ export async function middleware(request: NextRequest) {
     if (pathname === '/') {
         if (isAdmin) {
             return NextResponse.redirect(new URL('/admin', request.url));
+        } else {
+            return NextResponse.redirect(new URL('/dashboard', request.url));
         }
-        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // Prevent non-admins from accessing admin routes
+    // If a non-admin tries to access admin routes, redirect to teacher dashboard
     if (pathname.startsWith('/admin') && !isAdmin) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     
-    // Prevent admins from accessing teacher dashboard routes
+    // If an admin tries to access teacher dashboard routes, redirect to admin dashboard
     if (pathname.startsWith('/dashboard') && isAdmin) {
         return NextResponse.redirect(new URL('/admin', request.url));
     }
