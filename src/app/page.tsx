@@ -45,7 +45,7 @@ export default function LoginPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: { session }, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       if (error.message === 'Email not confirmed') {
@@ -53,11 +53,24 @@ export default function LoginPage() {
       } else {
         toast({ title: "Login Gagal", description: "Email atau kata sandi salah.", variant: "destructive" });
       }
+      setLoading(false);
+    } else if (session?.user) {
+        // After successful login, check the user's role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+        if (profile?.role === 'admin') {
+            router.push('/admin');
+        } else {
+            router.push('/dashboard');
+        }
+        router.refresh(); // Refresh to update session state
     } else {
-      router.push('/dashboard');
-      router.refresh(); // Refresh to update session state
+        setLoading(false);
     }
-    setLoading(false);
   };
   
   const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
