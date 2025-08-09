@@ -1,7 +1,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear } from './types';
 
 // --- Admin Data ---
 
@@ -114,6 +114,31 @@ export async function getSubjects(): Promise<Subject[]> {
         return [];
     }
     return data;
+}
+
+export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], activeSchoolYearId: string | null }> {
+    noStore();
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { schoolYears: [], activeSchoolYearId: null };
+
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('active_school_year_id')
+        .eq('id', user.id)
+        .single();
+
+    const { data, error } = await supabase
+        .from('school_years')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .order('name', { ascending: false });
+
+    if (error || profileError) {
+        console.error("Error fetching school years:", error || profileError);
+        return { schoolYears: [], activeSchoolYearId: null };
+    }
+    return { schoolYears: data || [], activeSchoolYearId: profile?.active_school_year_id || null };
 }
 
 export async function getSchedule(): Promise<ScheduleItem[]> {

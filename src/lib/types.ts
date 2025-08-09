@@ -16,6 +16,7 @@ export interface Profile {
   account_status: 'Free' | 'Pro';
   role: 'admin' | 'teacher';
   email?: string;
+  active_school_year_id?: string | null;
 }
 
 export interface ActivationCode {
@@ -48,6 +49,12 @@ export interface Subject {
   id: string;
   name: string;
   kkm: number;
+  teacher_id: string;
+}
+
+export interface SchoolYear {
+  id: string;
+  name: string;
   teacher_id: string;
 }
 

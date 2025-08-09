@@ -1,177 +1,174 @@
--- Skrip Migrasi untuk Database yang Sudah Ada (AMAN DIJALANKAN)
--- Skrip ini TIDAK akan menghapus data Anda.
--- Tujuannya adalah untuk memperbaiki fungsi dan RLS policies yang salah.
-
--- 1. Hapus dan buat ulang fungsi yang salah/bermasalah
-
--- Menghapus trigger lama agar fungsi bisa dihapus
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-
--- Menghapus fungsi lama dengan CASCADE untuk menghapus dependensi
-DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
-DROP FUNCTION IF EXISTS public.get_my_role() CASCADE;
-DROP FUNCTION IF EXISTS public.activate_account_with_code(text, uuid) CASCADE;
-
-
--- 2. Buat ulang fungsi dengan definisi yang benar
-
--- Fungsi untuk membuat profil baru secara otomatis saat user mendaftar
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name, email, role, account_status)
-  VALUES (
-    NEW.id,
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.email,
-    'teacher',
-    'Free'
-  );
-  RETURN NEW;
-END;
-$$;
-
--- Fungsi untuk mendapatkan peran pengguna saat ini dengan aman
-CREATE OR REPLACE FUNCTION public.get_my_role()
-RETURNS TEXT
-LANGUAGE sql
-STABLE -- Functions that read the database but don't change it should be STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT role FROM public.profiles WHERE id = auth.uid();
-$$;
-
--- [FIX] Fungsi untuk mengaktifkan akun dengan kode
-CREATE OR REPLACE FUNCTION public.activate_account_with_code(
-    activation_code TEXT,
-    user_id UUID
-)
-RETURNS TABLE (
-  id uuid,
-  code text,
-  is_used boolean,
-  used_by uuid,
-  used_at timestamptz
-) AS $$
-DECLARE
-    code_id UUID;
-BEGIN
-    -- Temukan ID kode aktivasi yang valid dan belum digunakan
-    SELECT a.id INTO code_id
-    FROM public.activation_codes a
-    WHERE a.code = activation_code AND a.is_used = FALSE
-    LIMIT 1;
-
-    -- Jika kode tidak ditemukan atau sudah digunakan, lempar error
-    IF code_id IS NULL THEN
-        RAISE EXCEPTION 'Activation code not found or already used';
-    END IF;
-
-    -- Update status akun pengguna menjadi 'Pro'
-    UPDATE public.profiles
-    SET account_status = 'Pro'
-    WHERE public.profiles.id = user_id;
-
-    -- Update kode aktivasi menjadi telah digunakan
-    RETURN QUERY
-    UPDATE public.activation_codes a
-    SET
-        is_used = TRUE,
-        used_by = user_id,
-        used_at = NOW()
-    WHERE a.id = code_id
-    RETURNING a.id, a.code, a.is_used, a.used_by, a.used_at;
-
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-
--- 3. Buat ulang trigger yang menghubungkan ke fungsi handle_new_user
-CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW
-EXECUTE FUNCTION public.handle_new_user();
-
-
--- 4. Hapus semua RLS policies yang lama dan berpotensi salah
--- Menggunakan "DROP POLICY IF EXISTS" agar aman dijalankan berkali-kali
+-- Drop existing policies first to avoid conflicts
 DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON "public"."profiles";
 DROP POLICY IF EXISTS "Users can insert their own profile" ON "public"."profiles";
 DROP POLICY IF EXISTS "Users can update their own profile" ON "public"."profiles";
 DROP POLICY IF EXISTS "Admins can manage all profiles" ON "public"."profiles";
-DROP POLICY IF EXISTS "Users can read all profiles" ON "public"."profiles"; -- Menghapus policy yang menyebabkan error sebelumnya
 
--- Lakukan hal yang sama untuk semua tabel lain untuk kebersihan
--- (Bahkan jika belum ada, ini adalah praktik yang baik)
-DROP POLICY IF EXISTS "Enable read access for assigned teacher" ON "public"."classes";
-DROP POLICY IF EXISTS "Enable read access for assigned teacher" ON "public"."subjects";
-DROP POLICY IF EXISTS "Enable read access for assigned teacher" ON "public"."students";
-DROP POLICY IF EXISTS "Enable read access for assigned teacher" ON "public"."schedule";
-DROP POLICY IF EXISTS "Enable read access for assigned teacher" ON "public"."attendance_history";
-DROP POLICY IF EXISTS "Enable read access for assigned teacher" ON "public"."grade_history";
-DROP POLICY IF EXISTS "Enable read access for assigned teacher" ON "public"."journals";
-DROP POLICY IF EXISTS "Enable read access for admin" ON "public"."activation_codes";
+DROP POLICY IF EXISTS "Enable read for users based on user_id" ON "public"."classes";
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."classes";
 
+DROP POLICY IF EXISTS "Enable read for users based on user_id" ON "public"."subjects";
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."subjects";
 
--- 5. Buat ulang semua RLS policies dengan definisi yang benar dan aman
+DROP POLICY IF EXISTS "Enable read for users based on teacher_id" ON "public"."students";
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."students";
 
--- Table: profiles
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for all authenticated users" ON "public"."profiles" FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert their own profile" ON "public"."profiles" FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can update their own profile" ON "public"."profiles" FOR UPDATE TO authenticated USING (auth.uid() = id);
-CREATE POLICY "Admins can manage all profiles" ON "public"."profiles" FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
+DROP POLICY IF EXISTS "Enable read for users based on user_id" ON "public"."schedule";
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."schedule";
+DROP POLICY IF EXISTS "Enable delete for users based on user_id" ON "public"."schedule";
 
--- Table: classes
-ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for assigned teacher" ON "public"."classes" FOR ALL TO authenticated USING (auth.uid() = teacher_id OR public.get_my_role() = 'admin') WITH CHECK (auth.uid() = teacher_id OR public.get_my_role() = 'admin');
+DROP POLICY IF EXISTS "Enable access for users based on user_id" ON "public"."attendance_history";
+DROP POLICY IF EXISTS "Enable access for users based on user_id" ON "public"."grade_history";
+DROP POLICY IF EXISTS "Enable access for users based on user_id" ON "public"."journals";
 
--- Table: subjects
-ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for assigned teacher" ON "public"."subjects" FOR ALL TO authenticated USING (auth.uid() = teacher_id OR public.get_my_role() = 'admin') WITH CHECK (auth.uid() = teacher_id OR public.get_my_role() = 'admin');
+-- Drop trigger and function if they exist
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user CASCADE;
+DROP FUNCTION IF EXISTS public.get_my_role;
+DROP FUNCTION IF EXISTS public.activate_account_with_code;
 
--- Table: students (diakses melalui kelas)
-ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for assigned teacher" ON "public"."students" FOR ALL TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.classes c
-        WHERE c.id = students.class_id AND c.teacher_id = auth.uid()
-    ) OR public.get_my_role() = 'admin'
-)
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.classes c
-        WHERE c.id = students.class_id AND c.teacher_id = auth.uid()
-    ) OR public.get_my_role() = 'admin'
+-- Create school_years table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.school_years (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    name character varying NOT NULL,
+    teacher_id uuid NOT NULL,
+    CONSTRAINT school_years_pkey PRIMARY KEY (id),
+    CONSTRAINT school_years_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
+-- Add RLS to school_years
+ALTER TABLE public.school_years ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable access for users based on user_id" ON "public"."school_years"
+AS PERMISSIVE FOR ALL
+TO authenticated
+USING (auth.uid() = teacher_id)
+WITH CHECK (auth.uid() = teacher_id);
 
 
--- Table: schedule
-ALTER TABLE public.schedule ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for assigned teacher" ON "public"."schedule" FOR ALL TO authenticated USING (auth.uid() = teacher_id OR public.get_my_role() = 'admin') WITH CHECK (auth.uid() = teacher_id OR public.get_my_role() = 'admin');
+-- Add active_school_year_id to profiles if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM   information_schema.columns
+        WHERE  table_schema = 'public'
+        AND    table_name = 'profiles'
+        AND    column_name = 'active_school_year_id'
+    ) THEN
+        ALTER TABLE public.profiles ADD COLUMN active_school_year_id UUID;
+        ALTER TABLE public.profiles ADD CONSTRAINT profiles_active_school_year_id_fkey FOREIGN KEY (active_school_year_id) REFERENCES public.school_years(id) ON DELETE SET NULL;
+    END IF;
+END;
+$$;
 
--- Table: attendance_history
-ALTER TABLE public.attendance_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for assigned teacher" ON "public"."attendance_history" FOR ALL TO authenticated USING (auth.uid() = teacher_id OR public.get_my_role() = 'admin') WITH CHECK (auth.uid() = teacher_id OR public.get_my_role() = 'admin');
 
--- Table: grade_history
-ALTER TABLE public.grade_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for assigned teacher" ON "public"."grade_history" FOR ALL TO authenticated USING (auth.uid() = teacher_id OR public.get_my_role() = 'admin') WITH CHECK (auth.uid() = teacher_id OR public.get_my_role() = 'admin');
+-- Function to handle new user creation
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $function$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, email, role, account_status)
+  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.email, 'teacher', 'Free');
+  RETURN new;
+END;
+$function$;
 
--- Table: journals
-ALTER TABLE public.journals ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for assigned teacher" ON "public"."journals" FOR ALL TO authenticated USING (auth.uid() = teacher_id OR public.get_my_role() = 'admin') WITH CHECK (auth.uid() = teacher_id OR public.get_my_role() = 'admin');
+-- Trigger to call the function on new user signup
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- Table: activation_codes
-ALTER TABLE public.activation_codes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for admin" ON "public"."activation_codes" FOR ALL TO authenticated USING (public.get_my_role() = 'admin') WITH CHECK (public.get_my_role() = 'admin');
+-- Function to safely get the current user's role
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT role FROM public.profiles WHERE id = auth.uid()
+$$;
 
--- Pesan akhir
-SELECT 'Migration script completed successfully.' as status;
+-- Function for account activation
+CREATE OR REPLACE FUNCTION public.activate_account_with_code(
+    activation_code_to_use TEXT,
+    user_id_to_activate UUID
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    code_id UUID;
+BEGIN
+    -- Find the code and lock the row for update
+    SELECT id INTO code_id
+    FROM public.activation_codes
+    WHERE code = activation_code_to_use AND is_used = false
+    FOR UPDATE;
+
+    -- If code is not found or already used, raise an exception
+    IF code_id IS NULL THEN
+        RAISE EXCEPTION 'Activation code not found or already used';
+    END IF;
+
+    -- Update the user's account status to Pro
+    UPDATE public.profiles
+    SET account_status = 'Pro'
+    WHERE id = user_id_to_activate;
+
+    -- Mark the activation code as used
+    UPDATE public.activation_codes
+    SET 
+        is_used = true,
+        used_by = user_id_to_activate,
+        used_at = now()
+    WHERE id = code_id;
+
+    RETURN true;
+END;
+$$;
+
+-- Recreate RLS Policies
+-- Profiles Table
+CREATE POLICY "Enable read access for all authenticated users" ON "public"."profiles"
+AS PERMISSIVE FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users can insert their own profile" ON "public"."profiles"
+AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update their own profile" ON "public"."profiles"
+AS PERMISSIVE FOR UPDATE TO authenticated USING (auth.uid() = id);
+CREATE POLICY "Admins can manage all profiles" ON "public"."profiles"
+AS PERMISSIVE FOR ALL TO authenticated
+USING (public.get_my_role() = 'admin')
+WITH CHECK (public.get_my_role() = 'admin');
+
+-- Other tables
+CREATE POLICY "Enable access for users based on user_id" ON "public"."classes"
+AS PERMISSIVE FOR ALL TO authenticated USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+
+CREATE POLICY "Enable access for users based on user_id" ON "public"."subjects"
+AS PERMISSIVE FOR ALL TO authenticated USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+
+CREATE POLICY "Enable read for users based on teacher_id" ON "public"."students"
+AS PERMISSIVE FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1 FROM classes WHERE ((classes.id = students.class_id) AND (classes.teacher_id = auth.uid())))));
+CREATE POLICY "Enable insert for authenticated users only" ON "public"."students"
+AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK ((EXISTS ( SELECT 1 FROM classes WHERE ((classes.id = students.class_id) AND (classes.teacher_id = auth.uid())))));
+
+CREATE POLICY "Enable access for users based on user_id" ON "public"."schedule"
+AS PERMISSIVE FOR ALL TO authenticated USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+
+CREATE POLICY "Enable access for users based on user_id" ON "public"."attendance_history"
+AS PERMISSIVE FOR ALL TO authenticated USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+
+CREATE POLICY "Enable access for users based on user_id" ON "public"."grade_history"
+AS PERMISSIVE FOR ALL TO authenticated USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+
+CREATE POLICY "Enable access for users based on user_id" ON "public"."journals"
+AS PERMISSIVE FOR ALL TO authenticated USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+
+-- Activation Codes Table (only admins can read all, nobody can update/delete directly)
+CREATE POLICY "Enable read access for admins" ON "public"."activation_codes"
+AS PERMISSIVE FOR SELECT TO authenticated USING (public.get_my_role() = 'admin');
+CREATE POLICY "Enable insert for admins" ON "public"."activation_codes"
+AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (public.get_my_role() = 'admin');

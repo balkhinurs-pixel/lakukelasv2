@@ -35,11 +35,11 @@ export async function activateAccount(code: string) {
 
   // Use a transaction to ensure both updates succeed or both fail
   const { data: activationCode, error } = await supabase.rpc('activate_account_with_code', {
-    activation_code: code,
-    user_id: user.id
+    activation_code_to_use: code,
+    user_id_to_activate: user.id
   });
 
-  if (error || !activationCode) {
+  if (error) {
       if (error?.message.includes('Code not found')) {
           return { success: false, error: 'Kode aktivasi tidak valid.' };
       }
@@ -50,12 +50,8 @@ export async function activateAccount(code: string) {
   }
   
   // Revalidate all relevant paths to reflect Pro status immediately
-  revalidatePath('/dashboard/activation');
-  revalidatePath('/dashboard');
-  revalidatePath('/admin/users');
-  revalidatePath('/admin/codes');
-  revalidatePath('/dashboard/layout');
-  revalidatePath('/admin/layout');
+  revalidatePath('/dashboard', 'layout');
+  revalidatePath('/admin', 'layout');
   
   return { success: true };
 }
@@ -143,6 +139,25 @@ export async function saveStudent(formData: FormData) {
     
     const action = supabase.from('students').insert([rawData]);
     return handleSupabaseAction(action, 'Siswa berhasil ditambahkan.', `/dashboard/roster/students?classId=${classId}`);
+}
+
+export async function saveSchoolYear(formData: FormData) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
+    const yearName = formData.get('name') as string;
+    const action = supabase.from('school_years').insert([{ name: yearName, teacher_id: user.id }]);
+    return handleSupabaseAction(action, 'Tahun ajaran berhasil dibuat.', '/dashboard/roster/school-year');
+}
+
+export async function setActiveSchoolYear(schoolYearId: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
+    const action = supabase.from('profiles').update({ active_school_year_id: schoolYearId }).eq('id', user.id);
+    return handleSupabaseAction(action, 'Tahun ajaran aktif berhasil diperbarui.', '/dashboard/roster/school-year');
 }
 
 // --- Schedule Actions ---
