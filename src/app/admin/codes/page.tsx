@@ -24,6 +24,18 @@ import { GenerateCodeButton } from "./generate-button";
 import { activationCodes as initialCodes, mockUsers } from '@/lib/placeholder-data';
 import type { Profile } from '@/lib/types';
 
+function FormattedDate({ dateString }: { dateString: string | null }) {
+    const [formattedDate, setFormattedDate] = React.useState<string>('-');
+
+    React.useEffect(() => {
+        if (dateString) {
+            setFormattedDate(format(new Date(dateString), 'dd MMM yyyy, HH:mm', { locale: id }));
+        }
+    }, [dateString]);
+
+    return <>{formattedDate}</>;
+}
+
 
 export default function AdminCodesPage() {
     const [codes, setCodes] = React.useState(initialCodes);
@@ -71,7 +83,7 @@ export default function AdminCodesPage() {
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">{user?.email || '-'}</TableCell>
                                             <TableCell className="text-muted-foreground">
-                                                {code.used_at ? format(new Date(code.used_at), 'dd MMM yyyy, HH:mm', { locale: id }) : '-'}
+                                                <FormattedDate dateString={code.used_at} />
                                             </TableCell>
                                         </TableRow>
                                     )

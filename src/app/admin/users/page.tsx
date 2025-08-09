@@ -72,6 +72,18 @@ type User = {
 
 const initialUsers: User[] = mockUsers.map(u => ({...u, name: u.full_name, status: u.account_status, joinDate: new Date(u.join_date)}));
 
+function FormattedDate({ dateString }: { dateString: string }) {
+    const [formattedDate, setFormattedDate] = React.useState<string>('');
+
+    React.useEffect(() => {
+        if (dateString) {
+            setFormattedDate(format(new Date(dateString), 'dd MMMM yyyy'));
+        }
+    }, [dateString]);
+
+    return <>{formattedDate}</>;
+}
+
 
 export default function AdminUsersPage() {
     const [users, setUsers] = React.useState<any[]>(initialUsers);
@@ -181,7 +193,9 @@ export default function AdminUsersPage() {
                                             {user.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>{format(user.joinDate, 'dd MMMM yyyy')}</TableCell>
+                                    <TableCell>
+                                      <FormattedDate dateString={user.joinDate} />
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <AlertDialog>
                                             <DropdownMenu>

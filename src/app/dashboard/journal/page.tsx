@@ -57,6 +57,19 @@ type NewJournalEntry = Omit<JournalEntry, 'id' | 'date' | 'className' | 'subject
 const ITEMS_PER_PAGE = 6;
 
 
+function FormattedDate({ date, formatString }: { date: Date, formatString: string }) {
+    const [formattedDate, setFormattedDate] = React.useState<string>('');
+
+    React.useEffect(() => {
+        if (date) {
+            setFormattedDate(format(date, formatString, { locale: id }));
+        }
+    }, [date, formatString]);
+
+    return <>{formattedDate}</>;
+}
+
+
 export default function JournalPage() {
   const searchParams = useSearchParams();
   const preselectedClassId = searchParams.get('classId');
@@ -432,7 +445,7 @@ export default function JournalPage() {
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{entry.subjectName} di {entry.className}</span> pada tanggal {format(entry.date, "dd MMM yyyy", { locale: id })}?
+                                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{entry.subjectName} di {entry.className}</span> pada tanggal <FormattedDate date={entry.date} formatString="dd MMM yyyy" />?
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -445,7 +458,7 @@ export default function JournalPage() {
                                     </AlertDialog>
                                 </div>
                                 <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
-                                    <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {format(entry.date, "dd MMM yyyy", { locale: id })}</div>
+                                    <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> <FormattedDate date={entry.date} formatString="dd MMM yyyy" /></div>
                                     {entry.meetingNumber && <div className="flex items-center gap-1.5"><Hash className="h-3.5 w-3.5" /> Pertemuan ke-{entry.meetingNumber}</div>}
                                 </div>
                             </CardHeader>
@@ -479,7 +492,7 @@ export default function JournalPage() {
             <DialogHeader>
                 <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
                 <DialogDescription>
-                    {selectedEntry?.subjectName} - {selectedEntry?.className} ({selectedEntry ? format(selectedEntry.date, "eeee, dd MMMM yyyy", { locale: id }) : ''}) {selectedEntry?.meetingNumber ? `- Pertemuan ${selectedEntry.meetingNumber}` : ''}
+                    {selectedEntry?.subjectName} - {selectedEntry?.className} ({selectedEntry ? <FormattedDate date={selectedEntry.date} formatString="eeee, dd MMMM yyyy"/> : ''}) {selectedEntry?.meetingNumber ? `- Pertemuan ${selectedEntry.meetingNumber}` : ''}
                 </DialogDescription>
             </DialogHeader>
             {selectedEntry && (
@@ -514,12 +527,12 @@ export default function JournalPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal {format(selectedEntry.date, "dd MMM yyyy", { locale: id })}?
+                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal <FormattedDate date={selectedEntry.date} formatString="dd MMM yyyy" />?
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteEntry(selectedEntry.id)} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction onClick={() => selectedEntry && handleDeleteEntry(selectedEntry.id)} className="bg-destructive hover:bg-destructive/90">
                                     Ya, Hapus
                                 </AlertDialogAction>
                             </AlertDialogFooter>

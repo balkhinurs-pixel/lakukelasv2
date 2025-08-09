@@ -51,6 +51,19 @@ import { classes, subjects, gradeHistory as initialHistory, students as allStude
 import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 
+function FormattedDate({ date, formatString }: { date: Date, formatString: string }) {
+    const [formattedDate, setFormattedDate] = React.useState<string>('');
+
+    React.useEffect(() => {
+        if (date) {
+            setFormattedDate(format(date, formatString));
+        }
+    }, [date, formatString]);
+
+    return <>{formattedDate}</>;
+}
+
+
 export default function GradesPage() {
   const searchParams = useSearchParams();
   const preselectedClassId = searchParams.get('classId');
@@ -263,7 +276,7 @@ export default function GradesPage() {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pilih tanggal</span>}
+                      {date ? <FormattedDate date={date} formatString="PPP" /> : <span>Pilih tanggal</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -345,7 +358,7 @@ export default function GradesPage() {
                         <div className="text-sm text-muted-foreground space-y-1">
                             <p>Kelas: {entry.className}</p>
                             <p>Mapel: {entry.subjectName}</p>
-                            <p>Tanggal: {format(entry.date, "dd MMM yyyy")}</p>
+                            <p>Tanggal: <FormattedDate date={entry.date} formatString="dd MMM yyyy" /></p>
                         </div>
                         <div className="border-t pt-3 mt-3 flex justify-between items-center text-sm">
                             <div>
@@ -391,7 +404,7 @@ export default function GradesPage() {
                            const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
                            return (
                                 <TableRow key={entry.id}>
-                                    <TableCell>{format(entry.date, "dd MMM yyyy")}</TableCell>
+                                    <TableCell><FormattedDate date={entry.date} formatString="dd MMM yyyy" /></TableCell>
                                     <TableCell>{entry.assessmentType}</TableCell>
                                     <TableCell>
                                         <div className="font-medium">{entry.className}</div>
