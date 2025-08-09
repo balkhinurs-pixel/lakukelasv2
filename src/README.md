@@ -1,4 +1,4 @@
-# Product Requirements Document (PRD) - Classroom Zephyr
+# Product Requirements Document (PRD) - Lakukelas
 
 ## 1. Visi & Misi
 

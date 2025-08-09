@@ -257,7 +257,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
         <SidebarHeader className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />
-                <span className="text-lg font-semibold font-headline group-data-[state=collapsed]:hidden">Classroom Zephyr</span>
+                <span className="text-lg font-semibold font-headline group-data-[state=collapsed]:hidden">Lakukelas</span>
             </div>
             <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
@@ -315,7 +315,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode; }) {
         <header className="p-4 sm:p-6 lg:p-8 flex items-center md:hidden">
              <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />
-                <span className="text-lg font-semibold font-headline">Classroom Zephyr</span>
+                <span className="text-lg font-semibold font-headline">Lakukelas</span>
             </div>
         </header>
         <div className="p-4 sm:p-6 lg:p-8 pt-0 md:pt-8">

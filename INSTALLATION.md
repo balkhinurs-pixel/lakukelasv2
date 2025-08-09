@@ -1,6 +1,6 @@
 # Panduan Instalasi dan Penyiapan Lokal
 
-Dokumen ini berisi panduan untuk menginstal semua dependensi yang diperlukan dan menjalankan aplikasi Classroom Zephyr di komputer lokal Anda untuk tujuan pengembangan.
+Dokumen ini berisi panduan untuk menginstal semua dependensi yang diperlukan dan menjalankan aplikasi Lakukelas di komputer lokal Anda untuk tujuan pengembangan.
 
 ## Daftar Isi
 1.  [Prasyarat](#1-prasyarat)

@@ -13,7 +13,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
         <div>
             <h1 className="text-2xl font-bold font-headline">Dasbor Admin</h1>
-            <p className="text-muted-foreground">Ringkasan umum aplikasi Classroom Zephyr.</p>
+            <p className="text-muted-foreground">Ringkasan umum aplikasi Lakukelas.</p>
         </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm">

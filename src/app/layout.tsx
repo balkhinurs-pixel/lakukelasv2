@@ -7,7 +7,7 @@ import { GeistSans } from 'geist/font/sans';
 import { ActivationProvider } from '@/hooks/use-activation';
 
 export const metadata: Metadata = {
-  title: 'Classroom Zephyr',
+  title: 'Lakukelas',
   description: 'A modern attendance app for teachers.',
   manifest: '/manifest.json',
 };

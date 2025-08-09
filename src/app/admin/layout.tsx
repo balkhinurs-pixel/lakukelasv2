@@ -72,7 +72,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         <SidebarHeader className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <AppLogo className="size-8 text-primary" />
-                <span className="text-lg font-semibold font-headline group-data-[state=collapsed]:hidden">Admin Zephyr</span>
+                <span className="text-lg font-semibold font-headline group-data-[state=collapsed]:hidden">Admin Lakukelas</span>
             </div>
             <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
@@ -104,7 +104,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   </Avatar>
                   <div className="text-left group-data-[state=collapsed]:hidden">
                     <p className="text-sm font-medium">Admin User</p>
-                    <p className="text-xs text-muted-foreground">admin@zephyr.com</p>
+                    <p className="text-xs text-muted-foreground">admin@lakukelas.com</p>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
@@ -113,7 +113,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">Admin User</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      admin@zephyr.com
+                      admin@lakukelas.com
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -136,7 +136,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             <SidebarTrigger />
             <div className="flex items-center gap-2 ml-4">
               <AppLogo className="size-8 text-primary" />
-              <span className="text-lg font-semibold font-headline">Admin Zephyr</span>
+              <span className="text-lg font-semibold font-headline">Admin Lakukelas</span>
             </div>
         </header>
         <div className="p-4 sm:p-6 lg:p-8 pt-0 md:pt-8">

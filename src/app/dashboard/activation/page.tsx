@@ -66,7 +66,7 @@ export default function ActivationPage() {
                   </div>
                   <CardTitle>Akun Anda Sudah Pro</CardTitle>
                   <CardDescription className="text-green-800">
-                    Terima kasih telah melakukan aktivasi. Nikmati semua fitur Classroom Zephyr tanpa batas!
+                    Terima kasih telah melakukan aktivasi. Nikmati semua fitur Lakukelas tanpa batas!
                   </CardDescription>
               </CardHeader>
         </Card>
