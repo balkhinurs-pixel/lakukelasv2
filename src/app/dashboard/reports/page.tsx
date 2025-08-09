@@ -474,6 +474,9 @@ export default function ReportsPage() {
                                         </div>
                                         <Badge variant="outline" className={cn("font-semibold text-xs", getStatusBadge(student.status))}>
                                             {student.status === 'Sangat Baik' && <TrendingUp className="mr-1 h-3 w-3" />}
+                                            {student.status === 'Stabil' && <UserCheck className="mr-1 h-3 w-3" />}
+                                            {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-1 h-3 w-3" />}
+                                            {student.status === 'Berisiko' && <UserX className="mr-1 h-3 w-3" />}
                                             {student.status}
                                         </Badge>
                                     </div>
