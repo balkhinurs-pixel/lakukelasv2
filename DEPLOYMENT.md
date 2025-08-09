@@ -6,11 +6,12 @@ Dokumen ini akan memandu Anda melalui proses deployment aplikasi Next.js ini men
 1.  [Prasyarat](#1-prasyarat)
 2.  [Langkah 1: Setup Proyek Supabase](#2-langkah-1-setup-proyek-supabase)
 3.  [Langkah 2: Setup Tabel Database](#3-langkah-2-setup-tabel-database)
-4.  [Langkah 3: Konfigurasi Autentikasi Supabase](#4-langkah-3-konfigurasi-autentikasi-supabase)
-5.  [Langkah 4: Deploy ke Vercel](#5-langkah-4-deploy-ke-vercel)
-6.  [Langkah 5: Konfigurasi Environment Variables di Vercel](#6-langkah-5-konfigurasi-environment-variables-di-vercel)
-7.  [Aplikasi Anda Siap!](#7-aplikasi-anda-siap)
-8.  [Langkah 6: Mengatur Pengguna Admin Pertama](#8-langkah-6-mengatur-pengguna-admin-pertama)
+4.  [Langkah 3: Setup Webhook Profil Pengguna (SANGAT PENTING)](#4-langkah-3-setup-webhook-profil-pengguna-sangat-penting)
+5.  [Langkah 4: Konfigurasi Autentikasi Supabase](#5-langkah-4-konfigurasi-autentikasi-supabase)
+6.  [Langkah 5: Deploy ke Vercel](#6-langkah-5-deploy-ke-vercel)
+7.  [Langkah 6: Konfigurasi Environment Variables di Vercel](#7-langkah-6-konfigurasi-environment-variables-di-vercel)
+8.  [Aplikasi Anda Siap!](#8-aplikasi-anda-siap)
+9.  [Langkah 7: Mengatur Pengguna Admin Pertama](#9-langkah-7-mengatur-pengguna-admin-pertama)
 
 ---
 
@@ -58,13 +59,35 @@ Kita perlu membuat semua tabel yang dibutuhkan oleh aplikasi di database Supabas
     -   Tempelkan skrip tersebut ke dalam editor SQL di Supabase.
     -   Klik tombol **"RUN"**.
 
-Ini akan secara otomatis membuat semua tabel yang diperlukan (`profiles`, `classes`, `students`, `activation_codes`, dll.) beserta relasi, kebijakan keamanan (RLS), dan fungsi pemicu (trigger) yang benar.
+Ini akan secara otomatis membuat semua tabel yang diperlukan (`profiles`, `classes`, `students`, `activation_codes`, dll.) beserta relasi dan kebijakan keamanan (RLS) yang benar.
 
 ---
 
-### 4. Langkah 3: Konfigurasi Autentikasi Supabase
+### 4. Langkah 3: Setup Webhook Profil Pengguna (SANGAT PENTING)
 
-Langkah ini **sangat penting** agar email konfirmasi dan tautan lainnya berfungsi dengan benar saat aplikasi sudah di-deploy.
+Langkah ini **wajib** dilakukan agar setiap pengguna baru yang mendaftar (baik melalui email atau Google) secara otomatis dibuatkan profilnya di tabel `profiles`. Tanpa ini, pengguna tidak akan bisa login atau menggunakan aplikasi.
+
+1.  **Navigasi ke Database Webhooks**:
+    -   Di dasbor Supabase proyek Anda, pergi ke **Database** (ikon silinder) > **Webhooks**.
+
+2.  **Buat Webhook Baru**:
+    -   Klik tombol **"Create a new webhook"**.
+    -   Isi formulir dengan konfigurasi berikut:
+        -   **Name**: Beri nama yang deskriptif, contoh: `Buat Profil Pengguna Baru`.
+        -   **Table**: Pilih tabel **`users`** dari skema **`auth`**.
+        -   **Events**: Centang hanya **`INSERT`**.
+        -   **Type**: Pilih **`HTTP Request`**.
+        -   **HTTP Method**: Pilih **`POST`**.
+        -   Di bawah **`HTTP Request`**, klik **`Supabase Function`** dan pilih fungsi **`handle_new_user`**.
+    -   Klik **"Confirm"** untuk menyimpan webhook.
+
+Setelah ini, sistem sudah siap menangani pendaftaran pengguna baru secara otomatis.
+
+---
+
+### 5. Langkah 4: Konfigurasi Autentikasi Supabase
+
+Langkah ini penting agar email konfirmasi dan tautan lainnya berfungsi dengan benar saat aplikasi sudah di-deploy.
 
 1.  **Navigasi ke Pengaturan Autentikasi**:
     -   Di dasbor Supabase proyek Anda, pergi ke **Authentication** (ikon pengguna) > **Providers**.
@@ -81,7 +104,7 @@ Langkah ini **sangat penting** agar email konfirmasi dan tautan lainnya berfungs
 
 ---
 
-### 5. Langkah 4: Deploy ke Vercel
+### 6. Langkah 5: Deploy ke Vercel
 
 Vercel akan kita gunakan untuk hosting aplikasi Next.js Anda.
 
@@ -100,7 +123,7 @@ Vercel akan kita gunakan untuk hosting aplikasi Next.js Anda.
 
 ---
 
-### 6. Langkah 5: Konfigurasi Environment Variables di Vercel
+### 7. Langkah 6: Konfigurasi Environment Variables di Vercel
 
 Variabel ini penting agar aplikasi Anda yang di-hosting di Vercel bisa terhubung ke database Supabase.
 
@@ -118,7 +141,7 @@ Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin mem
 
 ---
 
-### 7. Aplikasi Anda Siap!
+### 8. Aplikasi Anda Siap!
 
 Setelah proses deployment selesai, Vercel akan memberikan Anda URL publik (contoh: `lakukelas-anda.vercel.app`). Buka URL tersebut untuk mengakses aplikasi Anda yang sudah berfungsi penuh.
 
@@ -126,7 +149,7 @@ Anda sekarang dapat mendaftar sebagai pengguna baru dan mulai menggunakan semua 
 
 ---
 
-### 8. Langkah 6: Mengatur Pengguna Admin Pertama
+### 9. Langkah 7: Mengatur Pengguna Admin Pertama
 
 Aplikasi ini memiliki panel admin terpisah untuk mengelola pengguna dan kode aktivasi. Untuk mengaksesnya, Anda perlu mengatur satu pengguna sebagai 'admin' secara manual.
 
