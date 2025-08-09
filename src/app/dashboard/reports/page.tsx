@@ -669,15 +669,6 @@ function ReportsPageComponent({
   );
 }
 
-export default async function ReportsPage() {
-    const { getClasses, getSubjects, getAllStudents, getJournalEntries } = await import("@/lib/data");
-    const [classes, subjects, students, journalEntries] = await Promise.all([
-        getClasses(),
-        getSubjects(),
-        getAllStudents(),
-        getJournalEntries()
-    ]);
-    return <ReportsPageComponent classes={classes} subjects={subjects} students={students} journalEntries={journalEntries} />;
+export default function ReportsPage() {
+    return <ReportsPageComponent classes={[]} subjects={[]} students={[]} journalEntries={[]} />;
 }
-
-    

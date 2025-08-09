@@ -1,4 +1,3 @@
-
 import { getClasses, getAllStudents } from "@/lib/data";
 import StudentsPageComponent from './students-page-component';
 
@@ -9,5 +8,3 @@ export default async function StudentsPage() {
     ]);
     return <StudentsPageComponent initialClasses={classes} initialStudents={students} />;
 }
-
-    

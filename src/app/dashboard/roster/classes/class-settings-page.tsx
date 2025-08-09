@@ -188,5 +188,3 @@ export function ClassSettingsPageComponent({ initialClasses }: { initialClasses:
         </div>
     )
 }
-
-    

@@ -1,4 +1,3 @@
-
 import { getSchedule, getClasses, getSubjects } from "@/lib/data";
 import SchedulePageComponent from "./schedule-page-component";
 
@@ -10,5 +9,3 @@ export default async function SchedulePage() {
     ]);
     return <SchedulePageComponent initialSchedule={schedule} classes={classes} subjects={subjects} />;
 }
-
-    
