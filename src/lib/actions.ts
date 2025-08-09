@@ -3,6 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import type { Student } from './types';
 
 // Universal function to handle Supabase errors
 async function handleSupabaseAction(action: Promise<any>, successMessage: string, revalidationPath?: string | string[]) {
@@ -34,7 +35,7 @@ export async function activateAccount(code: string) {
   }
 
   // Use a transaction to ensure both updates succeed or both fail
-  const { data: activationCode, error } = await supabase.rpc('activate_account_with_code', {
+  const { error } = await supabase.rpc('activate_account_with_code', {
     activation_code_to_use: code,
     user_id_to_activate: user.id
   });
@@ -50,8 +51,8 @@ export async function activateAccount(code: string) {
   }
   
   // Revalidate all relevant paths to reflect Pro status immediately
+  revalidatePath('/dashboard/activation');
   revalidatePath('/dashboard', 'layout');
-  revalidatePath('/admin', 'layout');
   
   return { success: true };
 }
@@ -138,8 +139,23 @@ export async function saveStudent(formData: FormData) {
     };
     
     const action = supabase.from('students').insert([rawData]);
-    return handleSupabaseAction(action, 'Siswa berhasil ditambahkan.', `/dashboard/roster/students?classId=${classId}`);
+    return handleSupabaseAction(action, 'Siswa berhasil ditambahkan.', `/dashboard/roster/students`);
 }
+
+export async function importStudents(classId: string, students: Omit<Student, 'id' | 'class_id'>[]) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
+    const recordsToInsert = students.map(student => ({
+        ...student,
+        class_id: classId,
+    }));
+
+    const action = supabase.from('students').insert(recordsToInsert);
+    return handleSupabaseAction(action, 'Siswa berhasil diimpor.', `/dashboard/roster/students`);
+}
+
 
 export async function saveSchoolYear(formData: FormData) {
     const supabase = createClient();
