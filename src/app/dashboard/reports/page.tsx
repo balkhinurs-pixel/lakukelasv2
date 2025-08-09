@@ -187,7 +187,34 @@ export default function ReportsPage() {
         return;
     }
     const doc = new jsPDF() as jsPDFWithAutoTable;
-    downloadPdf(doc, 'Laporan Nilai Siswa', [['ID', 'Nama', 'UH1', 'UH2', 'Tugas 1', 'UTS', 'UAS']], detailedGrades.map(s => [s.id, s.name, s.uh1, s.uh2, s.tugas1, s.uts, s.uas]));
+    const activeClass = classes.find(c => c.id === selectedClass);
+    const activeSubject = subjects.find(s => s.id === selectedSubject);
+    const title = `REKAPITULASI NILAI SISWA`;
+
+    const head = [['No.', 'NIS', 'Nama Siswa', 'UH 1', 'UH 2', 'Tugas 1', 'UTS', 'UAS', 'Rata-rata']];
+    const body = detailedGrades
+        .filter(s => selectedClass === 'all' || s.classId === selectedClass)
+        .map((s, index) => {
+            const avg = (s.uh1 + s.uh2 + s.tugas1 + s.uts + s.uas) / 5;
+            return [
+                index + 1,
+                s.nis,
+                s.name,
+                s.uh1,
+                s.uh2,
+                s.tugas1,
+                s.uts,
+                s.uas,
+                avg.toFixed(1)
+            ];
+        });
+
+    downloadPdf(doc, title, head, body, {
+        kelas: activeClass?.name,
+        mapel: activeSubject?.name,
+        semester: selectedSemester === "1" ? "Ganjil" : "Genap",
+        tahunAjaran: "2023/2024"
+      });
   }
   
   const handleDownloadJournal = () => {
