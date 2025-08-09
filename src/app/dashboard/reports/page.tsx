@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import * as React from "react";
@@ -537,19 +536,21 @@ export default function ReportsPage() {
                             <CardDescription>Visualisasi persentase kehadiran untuk setiap status di berbagai kelas.</CardDescription>
                         </CardHeader>
                         <CardContent className="pl-2">
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={attendanceData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                                    <Tooltip />
-                                    <Legend wrapperStyle={{fontSize: "12px"}}/>
-                                    <Bar dataKey="Hadir" stackId="a" fill="#22c55e" name="Hadir" />
-                                    <Bar dataKey="Sakit" stackId="a" fill="#f97316" name="Sakit"/>
-                                    <Bar dataKey="Izin" stackId="a" fill="#0ea5e9" name="Izin"/>
-                                    <Bar dataKey="Alpha" stackId="a" fill="#ef4444" name="Alpha"/>
-                                </BarChart>
-                            </ResponsiveContainer>
+                             <div className="w-full overflow-x-auto">
+                                <ResponsiveContainer width="100%" height={300} minWidth={500}>
+                                    <BarChart data={attendanceData}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip />
+                                        <Legend wrapperStyle={{fontSize: "12px"}}/>
+                                        <Bar dataKey="Hadir" stackId="a" fill="#22c55e" name="Hadir" />
+                                        <Bar dataKey="Sakit" stackId="a" fill="#f97316" name="Sakit"/>
+                                        <Bar dataKey="Izin" stackId="a" fill="#0ea5e9" name="Izin"/>
+                                        <Bar dataKey="Alpha" stackId="a" fill="#ef4444" name="Alpha"/>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </CardContent>
                     </Card>
                     <Card className="lg:col-span-2">
@@ -849,7 +850,7 @@ export default function ReportsPage() {
                                 {journalEntries
                                     .filter(j => 
                                         (selectedClass === 'all' || j.classId === selectedClass) &&
-                                        (selectedSubject === 'all' || j.subjectId === selectedSubject)
+                                        (selectedSubject === 'all' || j.subjectId === selectedClass)
                                     )
                                     .map((entry) => (
                                 <TableRow key={entry.id}>
@@ -875,3 +876,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
