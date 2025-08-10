@@ -85,6 +85,31 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // --- Client-side validation ---
+        const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+        const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+        if (file.size > MAX_FILE_SIZE) {
+            toast({
+                title: "Ukuran File Terlalu Besar",
+                description: "Ukuran file maksimal adalah 2MB.",
+                variant: "destructive",
+            });
+            e.target.value = ''; // Reset the input
+            return;
+        }
+
+        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+             toast({
+                title: "Format File Tidak Didukung",
+                description: "Mohon gunakan file dengan format JPEG, PNG, atau WEBP.",
+                variant: "destructive",
+            });
+            e.target.value = ''; // Reset the input
+            return;
+        }
+        // --- End validation ---
+
         setUploading(type);
         const formData = new FormData();
         formData.append('file', file);
@@ -103,6 +128,7 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
             toast({ title: "Gagal Mengunggah", description: result.error, variant: "destructive" });
         }
         setUploading(false);
+        e.target.value = ''; // Reset the input after upload
     }
 
     const handleAccountSave = async (e: React.FormEvent) => {
@@ -125,8 +151,8 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
 
     return (
     <div className="space-y-6">
-        <input type="file" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, 'avatar')} accept="image/*" className="hidden" />
-        <input type="file" ref={logoInputRef} onChange={(e) => handleImageUpload(e, 'logo')} accept="image/*" className="hidden" />
+        <input type="file" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, 'avatar')} accept="image/png, image/jpeg, image/webp" className="hidden" />
+        <input type="file" ref={logoInputRef} onChange={(e) => handleImageUpload(e, 'logo')} accept="image/png, image/jpeg, image/webp" className="hidden" />
         <div>
             <h1 className="text-2xl font-bold font-headline">Pengaturan</h1>
             <p className="text-muted-foreground">Kelola profil, akun, dan data sekolah Anda.</p>
