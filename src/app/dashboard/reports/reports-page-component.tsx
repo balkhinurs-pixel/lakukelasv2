@@ -43,7 +43,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck } from "lucide-react";
-import type { Class, Student, Subject, JournalEntry } from "@/lib/types";
+import type { Class, Student, Subject, JournalEntry, Profile } from "@/lib/types";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useActivation } from "@/hooks/use-activation";
@@ -80,31 +80,18 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, fill }:
   );
 };
 
-
-// Mock data from settings - in a real app, this would come from user profile
-const schoolData = {
-    logo: "https://placehold.co/100x100.png",
-    name: "SMA Negeri 1 Harapan Bangsa",
-    address: "Jl. Pendidikan No. 1, Kota Cerdas, 12345",
-    headmasterName: "Dr. H. Bijaksana, M.Pd.",
-    headmasterNip: "198001012010121001",
-};
-
-const teacherData = {
-    name: "Guru Tangguh, S.Pd.",
-    nip: "199001012020121001"
-}
-
 type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
 
 export default function ReportsPageComponent({
     classes,
     subjects,
     reportsData,
+    profile
 }: {
     classes: Class[];
     subjects: Subject[];
     reportsData: ReportsData;
+    profile: Profile;
 }) {
   const [selectedClass, setSelectedClass] = React.useState("all");
   const [selectedSubject, setSelectedSubject] = React.useState("all");
@@ -242,8 +229,31 @@ export default function ReportsPageComponent({
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
     let finalY = margin;
+    const pageBottomMargin = 25;
+
+    const schoolData = {
+        logo: profile.school_logo_url || "https://placehold.co/100x100.png",
+        name: profile.school_name || "Nama Sekolah Belum Diatur",
+        address: profile.school_address || "Alamat Sekolah Belum Diatur",
+        headmasterName: profile.headmaster_name || "Nama Kepsek Belum Diatur",
+        headmasterNip: profile.headmaster_nip || "-",
+    };
+
+    const teacherData = {
+        name: profile.full_name || "Nama Guru",
+        nip: profile.nip || "-"
+    };
 
     // --- Add Header ---
+    const addHeader = (docInstance: jsPDF) => {
+        docInstance.setFontSize(14).setFont(undefined, 'bold');
+        docInstance.text((schoolData.name || '').toUpperCase(), margin + 25, margin + 8);
+        docInstance.setFontSize(10).setFont(undefined, 'normal');
+        docInstance.text(schoolData.address, margin + 25, margin + 14);
+        docInstance.setLineWidth(0.5);
+        docInstance.line(margin, margin + 25, pageWidth - margin, margin + 25);
+    }
+    
     try {
         const response = await fetch(schoolData.logo);
         const blob = await response.blob();
@@ -260,12 +270,7 @@ export default function ReportsPageComponent({
     }
     
     const generateContent = () => {
-        doc.setFontSize(14).setFont(undefined, 'bold');
-        doc.text(schoolData.name.toUpperCase(), margin + 25, margin + 8);
-        doc.setFontSize(10).setFont(undefined, 'normal');
-        doc.text(schoolData.address, margin + 25, margin + 14);
-        doc.setLineWidth(0.5);
-        doc.line(margin, margin + 25, pageWidth - margin, margin + 25);
+        addHeader(doc);
         finalY = margin + 25;
 
         doc.setFontSize(12).setFont(undefined, 'bold');
@@ -310,6 +315,8 @@ export default function ReportsPageComponent({
                 if (finalY > pageHeight - 60) {
                     doc.addPage();
                     finalY = margin;
+                    addHeader(doc);
+                    finalY += 30;
                 }
                 doc.setFont(undefined, 'bold');
                 const entryHeader = `JURNAL KE-${index + 1}: ${entry.subjectName} - ${entry.className}`;
@@ -323,13 +330,23 @@ export default function ReportsPageComponent({
 
                 const addSection = (title: string, text: string) => {
                     if (!text) return;
+                    const textLines = doc.splitTextToSize(text, pageWidth - margin * 2);
+                    const textHeight = textLines.length * (doc.getLineHeight() / doc.internal.scaleFactor);
+                    const titleHeight = (doc.getLineHeight() / doc.internal.scaleFactor) + 5;
+                    
+                    if (finalY + titleHeight + textHeight > pageHeight - pageBottomMargin) {
+                        doc.addPage();
+                        finalY = margin;
+                        addHeader(doc);
+                        finalY += 30;
+                    }
+
                     doc.setFont(undefined, 'bold');
                     doc.text(title, margin, finalY);
                     finalY += 5;
                     doc.setFont(undefined, 'normal');
-                    const splitText = doc.splitTextToSize(text, pageWidth - (margin * 2));
-                    doc.text(splitText, margin, finalY);
-                    finalY += (splitText.length * 4) + 4;
+                    doc.text(textLines, margin, finalY);
+                    finalY += textHeight + 4;
                 }
 
                 addSection("A. Tujuan Pembelajaran", entry.learning_objectives);
@@ -338,6 +355,9 @@ export default function ReportsPageComponent({
                 addSection("D. Refleksi & Tindak Lanjut", entry.reflection || '-');
 
                 finalY += 5;
+                if (finalY > pageHeight - pageBottomMargin) {
+                    doc.addPage(); finalY = margin; addHeader(doc); finalY += 30;
+                }
                 doc.setLineDashPattern([1, 1], 0);
                 doc.line(margin, finalY, pageWidth - margin, finalY);
                 doc.setLineDashPattern([], 0);
@@ -345,10 +365,12 @@ export default function ReportsPageComponent({
             });
         }
         
-        const signatureY = finalY + 15 > pageHeight - 50 ? pageHeight - 50 : finalY + 15;
-        if (finalY + 50 > pageHeight) {
+        let signatureY = finalY + 15;
+        if (signatureY > pageHeight - 50) {
             doc.addPage();
             finalY = margin;
+            addHeader(doc);
+            signatureY = finalY + 30;
         }
 
         const todayDate = format(new Date(), "eeee, dd MMMM yyyy", { locale: id });

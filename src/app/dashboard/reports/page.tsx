@@ -1,17 +1,19 @@
-import { getClasses, getSubjects, getReportsData } from "@/lib/data";
+import { getClasses, getSubjects, getReportsData, getUserProfile } from "@/lib/data";
 import ReportsPageComponent from "./reports-page-component";
+import type { Profile } from "@/lib/types";
 
 export default async function ReportsPage() {
-    const [classes, subjects, reportsData] = await Promise.all([
+    const [classes, subjects, reportsData, profile] = await Promise.all([
         getClasses(),
         getSubjects(),
-        getReportsData()
+        getReportsData(),
+        getUserProfile()
     ]);
 
-    if (!reportsData) {
+    if (!reportsData || !profile) {
         return (
             <div className="p-4 text-center text-muted-foreground">
-                Tidak dapat memuat data laporan. Pastikan Anda sudah login.
+                Tidak dapat memuat data laporan. Pastikan Anda sudah login dan profil Anda ada.
             </div>
         )
     }
@@ -20,5 +22,6 @@ export default async function ReportsPage() {
         classes={classes} 
         subjects={subjects} 
         reportsData={reportsData}
+        profile={profile}
     />;
 }
