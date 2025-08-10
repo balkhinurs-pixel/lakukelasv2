@@ -51,8 +51,45 @@ const attendanceOptions: { value: AttendanceRecord['status'], label: string, cla
     { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600 hover:bg-green-500/10 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Hadir' },
     { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600 hover:bg-yellow-500/10 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Sakit' },
     { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600 hover:bg-blue-500/10 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Izin' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600 hover:bg-red-500/10 data-[state=checked]:bg-red-600 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Alpha' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600 hover:bg-red-500/10 data-[state=checked]:bg-red-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Alpha' },
 ];
+
+
+// Isolated component to prevent re-rendering the entire list on a single change
+const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: AttendanceRecord['status'], onChange: (studentId: string, status: AttendanceRecord['status']) => void }) => {
+    return (
+        <RadioGroup
+            value={value}
+            onValueChange={(status) => onChange(studentId, status as AttendanceRecord['status'])}
+            className="justify-end"
+        >
+            <TooltipProvider>
+                <div className="flex gap-1 justify-end">
+                {attendanceOptions.map(opt => (
+                    <Tooltip key={opt.value}>
+                        <TooltipTrigger asChild>
+                            <Label
+                                htmlFor={`${studentId}-${opt.value}`}
+                                className={cn(
+                                "flex items-center justify-center size-8 rounded-md border text-xs font-semibold cursor-pointer transition-colors duration-200",
+                                opt.className
+                                )}
+                            >
+                                {opt.label}
+                                <RadioGroupItem value={opt.value} id={`${studentId}-${opt.value}`} className="sr-only" />
+                            </Label>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{opt.tooltip}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                ))}
+                </div>
+        </TooltipProvider>
+        </RadioGroup>
+    );
+});
+AttendanceInput.displayName = 'AttendanceInput';
 
 
 export default function AttendancePageComponent({
@@ -107,9 +144,9 @@ export default function AttendancePageComponent({
     setAttendance(newAttendance);
   }
 
-  const handleAttendanceChange = (studentId: string, status: AttendanceRecord['status']) => {
-    setAttendance(new Map(attendance.set(studentId, status)));
-  };
+  const handleAttendanceChange = React.useCallback((studentId: string, status: AttendanceRecord['status']) => {
+    setAttendance(prev => new Map(prev.set(studentId, status)));
+  }, []);
 
   const handleSubmit = async () => {
     if (!selectedClassId || !selectedSubjectId || !date || !meetingNumber) {
@@ -174,38 +211,6 @@ export default function AttendancePageComponent({
         (!selectedSubjectId || h.subject_id === selectedSubjectId)
       );
   }, [initialHistory, selectedClassId, selectedSubjectId]);
-
-  const AttendanceInputComponent = ({studentId}: {studentId: string}) => (
-        <RadioGroup
-            value={attendance.get(studentId)}
-            onValueChange={(status) => handleAttendanceChange(studentId, status as AttendanceRecord['status'])}
-            className="justify-end"
-        >
-            <TooltipProvider>
-                <div className="flex gap-1 justify-end">
-                {attendanceOptions.map(opt => (
-                    <Tooltip key={opt.value}>
-                        <TooltipTrigger asChild>
-                            <Label
-                                htmlFor={`${studentId}-${opt.value}`}
-                                className={cn(
-                                "flex items-center justify-center size-8 rounded-md border text-xs font-semibold cursor-pointer transition-colors",
-                                opt.className
-                                )}
-                            >
-                                {opt.label}
-                                <RadioGroupItem value={opt.value} id={`${studentId}-${opt.value}`} className="sr-only" />
-                            </Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{opt.tooltip}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                ))}
-                </div>
-        </TooltipProvider>
-        </RadioGroup>
-  );
 
   return (
     <div className="space-y-6">
@@ -301,7 +306,11 @@ export default function AttendancePageComponent({
                             <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
                                 <p><span className="font-bold mr-2">{index + 1}.</span>{student.name}</p>
                                 <div className="border-t pt-3 mt-3">
-                                   <AttendanceInputComponent studentId={student.id}/>
+                                   <AttendanceInput 
+                                        studentId={student.id} 
+                                        value={attendance.get(student.id) || 'Hadir'}
+                                        onChange={handleAttendanceChange}
+                                   />
                                 </div>
                             </div>
                         ))}
@@ -323,7 +332,11 @@ export default function AttendancePageComponent({
                             <TableCell className="font-medium text-center">{index + 1}</TableCell>
                             <TableCell className="font-medium">{student.name}</TableCell>
                             <TableCell className="text-right">
-                                <AttendanceInputComponent studentId={student.id}/>
+                                <AttendanceInput 
+                                    studentId={student.id} 
+                                    value={attendance.get(student.id) || 'Hadir'}
+                                    onChange={handleAttendanceChange}
+                                />
                             </TableCell>
                             </TableRow>
                         ))}
@@ -443,6 +456,3 @@ export default function AttendancePageComponent({
     </div>
   );
 }
-
-    
-    
