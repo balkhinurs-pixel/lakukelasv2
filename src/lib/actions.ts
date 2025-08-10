@@ -146,6 +146,35 @@ export async function saveStudent(formData: FormData) {
     return handleSupabaseAction(action, 'Siswa berhasil ditambahkan.', `/dashboard/roster/students`);
 }
 
+export async function updateStudent(formData: FormData) {
+    const supabase = createClient();
+    const studentId = formData.get('id') as string;
+
+    if (!studentId) {
+        return { success: false, error: 'ID Siswa tidak ditemukan.' };
+    }
+
+    const rawData = {
+        name: formData.get('name') as string,
+        nis: formData.get('nis') as string,
+        nisn: formData.get('nisn') as string,
+        gender: formData.get('gender') as 'Laki-laki' | 'Perempuan',
+    };
+
+    const action = supabase.from('students').update(rawData).eq('id', studentId);
+    return handleSupabaseAction(action, 'Data siswa berhasil diperbarui.', '/dashboard/roster/students');
+}
+
+export async function moveStudent(studentId: string, newClassId: string) {
+    const supabase = createClient();
+    if (!studentId || !newClassId) {
+        return { success: false, error: 'ID Siswa atau ID Kelas baru tidak valid.' };
+    }
+
+    const action = supabase.from('students').update({ class_id: newClassId }).eq('id', studentId);
+    return handleSupabaseAction(action, 'Siswa berhasil dipindahkan.', '/dashboard/roster/students');
+}
+
 export async function importStudents(classId: string, students: Omit<Student, 'id' | 'class_id'>[]) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

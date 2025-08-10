@@ -45,7 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
 import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
-import { saveStudent, importStudents } from "@/lib/actions";
+import { saveStudent, importStudents, updateStudent, moveStudent } from "@/lib/actions";
 
 export default function StudentsPageComponent({
     initialClasses,
@@ -56,25 +56,23 @@ export default function StudentsPageComponent({
 }) {
   const router = useRouter();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [classes, setClasses] = React.useState<Class[]>(initialClasses);
-  const [students, setStudents] = React.useState<Student[]>(initialStudents);
+  const [classes] = React.useState<Class[]>(initialClasses);
+  const [students] = React.useState<Student[]>(initialStudents);
   const [selectedClassId, setSelectedClassId] = React.useState<string>(initialClasses.length > 0 ? initialClasses[0].id : "");
   
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [newStudent, setNewStudent] = React.useState({ name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = React.useState(false);
+  const [editingStudent, setEditingStudent] = React.useState<Student | null>(null);
+  const [studentToMove, setStudentToMove] = React.useState<Student | null>(null);
+  const [newClassIdForMove, setNewClassIdForMove] = React.useState("");
+
+  const [formState, setFormState] = React.useState({ id: "", name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
   const [loading, setLoading] = React.useState(false);
   
   const { toast } = useToast();
   const { limits, isPro } = useActivation();
   
-  React.useEffect(() => {
-    setClasses(initialClasses);
-    setStudents(initialStudents);
-    if (!selectedClassId && initialClasses.length > 0) {
-        setSelectedClassId(initialClasses[0].id);
-    }
-  }, [initialClasses, initialStudents, selectedClassId]);
-
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const studentsInClass = students.filter(s => s.class_id === selectedClassId);
   const canAddStudent = isPro || (selectedClass ? studentsInClass.length < limits.studentsPerClass : false);
@@ -83,40 +81,81 @@ export default function StudentsPageComponent({
     setSelectedClassId(classId);
   };
 
-  const handleAddStudent = async (e: React.FormEvent) => {
+  const handleOpenAddDialog = () => {
+    setEditingStudent(null);
+    setFormState({ id: "", name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
+    setIsAddDialogOpen(true);
+  };
+  
+  const handleOpenEditDialog = (student: Student) => {
+    setEditingStudent(student);
+    setFormState({ id: student.id, name: student.name, nis: student.nis, nisn: student.nisn, gender: student.gender });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleOpenMoveDialog = (student: Student) => {
+      setStudentToMove(student);
+      setNewClassIdForMove("");
+      setIsMoveDialogOpen(true);
+  }
+
+  const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    if (!canAddStudent) {
+    if (!canAddStudent && !editingStudent) {
         toast({ title: "Batas Siswa Tercapai", description: `Akun gratis hanya bisa menampung ${limits.studentsPerClass} siswa per kelas.`, variant: "destructive" });
         setLoading(false);
         return;
     }
-    if (!newStudent.name || !newStudent.nis || !newStudent.nisn || !newStudent.gender) {
+    if (!formState.name || !formState.nis || !formState.nisn || !formState.gender) {
         toast({ title: "Gagal", description: "Semua kolom harus diisi.", variant: "destructive" });
         setLoading(false);
         return;
     }
 
     const formData = new FormData();
+    if(editingStudent) {
+        formData.append('id', editingStudent.id);
+    }
     formData.append('class_id', selectedClassId);
-    formData.append('name', newStudent.name);
-    formData.append('nis', newStudent.nis);
-    formData.append('nisn', newStudent.nisn);
-    formData.append('gender', newStudent.gender);
+    formData.append('name', formState.name);
+    formData.append('nis', formState.nis);
+    formData.append('nisn', formState.nisn);
+    formData.append('gender', formState.gender);
 
-    const result = await saveStudent(formData);
+    const result = editingStudent ? await updateStudent(formData) : await saveStudent(formData);
     
     if (result.success) {
-      toast({ title: "Sukses", description: "Siswa baru berhasil ditambahkan." });
-      setNewStudent({ name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
+      toast({ title: "Sukses", description: `Data siswa berhasil ${editingStudent ? 'diperbarui' : 'ditambahkan'}.` });
       setIsAddDialogOpen(false);
+      setIsEditDialogOpen(false);
       router.refresh();
     } else {
       toast({ title: "Gagal", description: result.error, variant: "destructive" });
     }
     setLoading(false);
   };
+
+  const handleMoveStudent = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!studentToMove || !newClassIdForMove) {
+          toast({ title: "Gagal", description: "Siswa atau kelas tujuan tidak dipilih.", variant: "destructive" });
+          return;
+      }
+      setLoading(true);
+      const result = await moveStudent(studentToMove.id, newClassIdForMove);
+
+      if (result.success) {
+          toast({ title: "Sukses", description: `${studentToMove.name} berhasil dipindahkan.` });
+          setIsMoveDialogOpen(false);
+          setStudentToMove(null);
+          router.refresh();
+      } else {
+          toast({ title: "Gagal", description: result.error, variant: "destructive" });
+      }
+      setLoading(false);
+  }
 
   const handleDownloadTemplate = () => {
     const csvData = "name,nis,nisn,gender";
@@ -180,13 +219,55 @@ export default function StudentsPageComponent({
       });
       event.target.value = '';
   };
-  
-  const handleComingSoon = () => {
-      toast({
-          title: "Segera Hadir",
-          description: "Fitur ini sedang dalam pengembangan."
-      })
-  }
+
+  const AddEditDialog = ({ open, onOpenChange, isEditing }: { open: boolean, onOpenChange: (open: boolean) => void, isEditing: boolean }) => (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+            <form onSubmit={handleSaveStudent}>
+                <DialogHeader>
+                    <DialogTitle>{isEditing ? 'Ubah Data Siswa' : 'Tambah Siswa Baru'}</DialogTitle>
+                    <DialogDescription>
+                        {isEditing ? `Perbarui detail untuk ${formState.name}.` : `Masukkan detail siswa baru untuk ditambahkan ke kelas ${selectedClass?.name}.`}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="student-name">Nama Lengkap Siswa</Label>
+                        <Input id="student-name" placeholder="e.g. Ahmad Fauzi" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} required/>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="student-nis">NIS</Label>
+                            <Input id="student-nis" placeholder="e.g. 23241001" value={formState.nis} onChange={e => setFormState({...formState, nis: e.target.value})} required/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="student-nisn">NISN</Label>
+                            <Input id="student-nisn" placeholder="e.g. 0012345678" value={formState.nisn} onChange={e => setFormState({...formState, nisn: e.target.value})} required/>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Jenis Kelamin</Label>
+                        <Select value={formState.gender} onValueChange={(value: Student['gender']) => setFormState({...formState, gender: value})} required>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Pilih jenis kelamin" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                                <SelectItem value="Perempuan">Perempuan</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="submit" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isEditing ? 'Simpan Perubahan' : 'Simpan Siswa'}
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+  );
 
   return (
     <div className="space-y-6">
@@ -247,56 +328,10 @@ export default function StudentsPageComponent({
                         ))}
                         </SelectContent>
                     </Select>
-                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button disabled={!canAddStudent || !selectedClassId || loading}>
-                                <UserPlus />
-                                Tambah Siswa
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                            <form onSubmit={handleAddStudent}>
-                                <DialogHeader>
-                                    <DialogTitle>Tambah Siswa Baru</DialogTitle>
-                                    <DialogDescription>Masukkan detail siswa baru untuk ditambahkan ke kelas {selectedClass?.name}.</DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="student-name">Nama Lengkap Siswa</Label>
-                                        <Input id="student-name" placeholder="e.g. Ahmad Fauzi" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} required/>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="student-nis">NIS</Label>
-                                            <Input id="student-nis" placeholder="e.g. 23241001" value={newStudent.nis} onChange={e => setNewStudent({...newStudent, nis: e.target.value})} required/>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="student-nisn">NISN</Label>
-                                            <Input id="student-nisn" placeholder="e.g. 0012345678" value={newStudent.nisn} onChange={e => setNewStudent({...newStudent, nisn: e.target.value})} required/>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Jenis Kelamin</Label>
-                                        <Select value={newStudent.gender} onValueChange={(value: Student['gender']) => setNewStudent({...newStudent, gender: value})} required>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Pilih jenis kelamin" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Laki-laki">Laki-laki</SelectItem>
-                                                <SelectItem value="Perempuan">Perempuan</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button type="submit" disabled={loading}>
-                                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Simpan Siswa
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                    <Button onClick={handleOpenAddDialog} disabled={!canAddStudent || !selectedClassId || loading}>
+                        <UserPlus />
+                        Tambah Siswa
+                    </Button>
                 </div>
             </div>
         </CardHeader>
@@ -312,11 +347,11 @@ export default function StudentsPageComponent({
                         <p><span className="font-medium">Gender:</span> {student.gender}</p>
                     </div>
                     <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="w-full" onClick={handleComingSoon}>
+                      <Button variant="outline" size="sm" className="w-full" onClick={() => handleOpenEditDialog(student)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Ubah
                       </Button>
-                      <Button variant="ghost" size="sm" className="w-full" onClick={handleComingSoon}>
+                      <Button variant="ghost" size="sm" className="w-full" onClick={() => handleOpenMoveDialog(student)}>
                           <UserRoundCog className="mr-2 h-4 w-4" />
                           Pindahkan
                       </Button>
@@ -347,11 +382,11 @@ export default function StudentsPageComponent({
                         <TableCell>{student.nisn}</TableCell>
                         <TableCell>{student.gender}</TableCell>
                         <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={handleComingSoon}>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(student)}>
                             <Edit className="mr-2 h-3.5 w-3.5"/>
                             Ubah
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={handleComingSoon}>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenMoveDialog(student)}>
                             <UserRoundCog className="mr-2 h-3.5 w-3.5"/>
                             Pindahkan
                         </Button>
@@ -377,6 +412,44 @@ export default function StudentsPageComponent({
             )}
         </CardContent>
         </Card>
+
+        {/* Add/Edit Dialog */}
+        <AddEditDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} isEditing={false} />
+        <AddEditDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} isEditing={true} />
+
+        {/* Move Student Dialog */}
+        <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+            <DialogContent>
+                <form onSubmit={handleMoveStudent}>
+                    <DialogHeader>
+                        <DialogTitle>Pindahkan Siswa</DialogTitle>
+                        <DialogDescription>
+                            Pindahkan <span className="font-semibold">{studentToMove?.name}</span> ke kelas lain.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label htmlFor="new-class">Kelas Tujuan Baru</Label>
+                        <Select value={newClassIdForMove} onValueChange={setNewClassIdForMove} required>
+                            <SelectTrigger id="new-class">
+                                <SelectValue placeholder="Pilih kelas tujuan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {classes.filter(c => c.id !== studentToMove?.class_id).map(c => (
+                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => setIsMoveDialogOpen(false)}>Batal</Button>
+                        <Button type="submit" disabled={loading}>
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Pindahkan
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
