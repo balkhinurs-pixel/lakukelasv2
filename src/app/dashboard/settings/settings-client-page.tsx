@@ -19,11 +19,13 @@ import type { Profile } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, updateSchoolData, uploadProfileImage } from "@/lib/actions";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
     const { toast } = useToast();
+    const router = useRouter();
     const [loading, setLoading] = React.useState(false);
-    const [uploading, setUploading] = React.useState<'avatar' | 'logo' | null>(null);
+    const [uploading, setUploading] = React.useState<false | 'avatar' | 'logo'>(false);
 
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
     const logoInputRef = React.useRef<HTMLInputElement>(null);
@@ -59,6 +61,7 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         const result = await updateProfile(profileData);
         if (result.success) {
             toast({ title: "Profil Disimpan", description: "Perubahan profil Anda telah berhasil disimpan." });
+            router.refresh();
         } else {
             toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
         }
@@ -71,6 +74,7 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         const result = await updateSchoolData(schoolData);
         if (result.success) {
             toast({ title: "Data Sekolah Disimpan", description: "Perubahan data sekolah Anda telah berhasil disimpan." });
+            router.refresh();
         } else {
             toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
         }
@@ -94,10 +98,11 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
             } else {
                 setLogoUrl(result.url);
             }
+            router.refresh();
         } else {
             toast({ title: "Gagal Mengunggah", description: result.error, variant: "destructive" });
         }
-        setUploading(null);
+        setUploading(false);
     }
 
     const handleAccountSave = async (e: React.FormEvent) => {
@@ -113,7 +118,7 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         if (!name || typeof name !== 'string' || name.trim() === '') return 'G';
         const parts = name.split(' ');
         if (parts.length > 1) {
-            return (parts[0][0] + parts[1][0]).toUpperCase();
+            return (parts[0][0] + (parts[1][0] || '')).toUpperCase();
         }
         return name.substring(0, 2).toUpperCase();
     }
