@@ -45,7 +45,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -54,48 +53,46 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { saveAttendance } from "@/lib/actions";
 import { getStudentsByClass } from "@/lib/data-client";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, tooltip: string }[] = [
-    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Hadir' },
-    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Sakit' },
-    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Izin' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600 data-[state=checked]:bg-red-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Alpha' },
+const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string, tooltip: string }[] = [
+    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white', tooltip: 'Hadir' },
+    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white', tooltip: 'Sakit' },
+    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white', tooltip: 'Izin' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white', tooltip: 'Alpha' },
 ];
 
 
 // Isolated component to prevent re-rendering the entire list on a single change
 const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: AttendanceRecord['status'], onChange: (studentId: string, status: AttendanceRecord['status']) => void }) => {
     return (
-        <RadioGroup
-            value={value}
-            onValueChange={(status) => onChange(studentId, status as AttendanceRecord['status'])}
-            className="justify-end"
-        >
-            <TooltipProvider>
-                <div className="flex gap-1 justify-end">
-                {attendanceOptions.map(opt => (
-                    <Tooltip key={opt.value}>
-                        <TooltipTrigger asChild>
-                            <Label
-                                htmlFor={`${studentId}-${opt.value}`}
-                                className={cn(
-                                "flex items-center justify-center size-8 rounded-md border text-xs font-semibold cursor-pointer transition-colors duration-200",
-                                "hover:bg-muted/50",
-                                opt.className
-                                )}
-                            >
-                                {opt.label}
-                                <RadioGroupItem value={opt.value} id={`${studentId}-${opt.value}`} className="sr-only" />
-                            </Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{opt.tooltip}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                ))}
-                </div>
-        </TooltipProvider>
-        </RadioGroup>
+        <TooltipProvider>
+            <div className="flex gap-1 justify-end">
+            {attendanceOptions.map(opt => (
+                <Tooltip key={opt.value}>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => onChange(studentId, opt.value)}
+                            className={cn(
+                                "size-8 rounded-md border text-xs font-semibold transition-colors duration-200",
+                                value === opt.value
+                                    ? opt.selectedClassName
+                                    : opt.className
+                            )}
+                        >
+                            {opt.label}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{opt.tooltip}</p>
+                    </TooltipContent>
+                </Tooltip>
+            ))}
+            </div>
+    </TooltipProvider>
     );
 });
 AttendanceInput.displayName = 'AttendanceInput';
@@ -515,7 +512,7 @@ export default function AttendancePageComponent({
                 {viewingEntry?.subjectName} - {viewingEntry ? format(parseISO(viewingEntry.date), "dd MMMM yyyy") : ''}
             </DialogDescription>
             </DialogHeader>
-            <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <ScrollArea className="max-h-[60vh] pr-2">
                 {viewingEntry && students.length > 0 ? (
                     <Table>
                         <TableHeader>
@@ -543,7 +540,7 @@ export default function AttendancePageComponent({
                         <p className="mt-2">Memuat atau data tidak ditemukan...</p>
                     </div>
                 )}
-            </div>
+            </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
