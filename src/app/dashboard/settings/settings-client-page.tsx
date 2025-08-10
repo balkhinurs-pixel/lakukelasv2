@@ -86,13 +86,18 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         if (!file) return;
 
         // --- Client-side validation ---
-        const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+        const MAX_AVATAR_SIZE = 1 * 1024 * 1024; // 1MB
+        const MAX_LOGO_SIZE = 500 * 1024; // 500KB
         const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-        if (file.size > MAX_FILE_SIZE) {
+        const max_size = type === 'avatar' ? MAX_AVATAR_SIZE : MAX_LOGO_SIZE;
+        const size_in_mb = max_size / (1024*1024);
+        const size_in_kb = max_size / 1024;
+
+        if (file.size > max_size) {
             toast({
                 title: "Ukuran File Terlalu Besar",
-                description: "Ukuran file maksimal adalah 2MB.",
+                description: `Ukuran file maksimal adalah ${type === 'avatar' ? size_in_mb + 'MB' : size_in_kb + 'KB'}.`,
                 variant: "destructive",
             });
             e.target.value = ''; // Reset the input
@@ -172,15 +177,19 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                             <CardDescription>Perbarui foto dan informasi pribadi Anda.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-20 w-20">
-                                    <AvatarImage src={avatarUrl || "https://placehold.co/100x100.png"} alt={profile.full_name || 'Teacher'} data-ai-hint="teacher portrait"/>
-                                    <AvatarFallback>{getAvatarFallback(profile.full_name)}</AvatarFallback>
-                                </Avatar>
-                                <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()} disabled={uploading === 'avatar'}>
-                                    {uploading === 'avatar' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                    Ganti Foto
-                                </Button>
+                            <div className="space-y-2">
+                                <Label>Foto Profil</Label>
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="h-20 w-20">
+                                        <AvatarImage src={avatarUrl || "https://placehold.co/100x100.png"} alt={profile.full_name || 'Teacher'} data-ai-hint="teacher portrait"/>
+                                        <AvatarFallback>{getAvatarFallback(profile.full_name)}</AvatarFallback>
+                                    </Avatar>
+                                    <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()} disabled={uploading === 'avatar'}>
+                                        {uploading === 'avatar' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Ganti Foto
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">JPG, PNG, atau WEBP. Ukuran maksimal 1MB.</p>
                             </div>
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -263,6 +272,7 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                                         Ganti Logo
                                     </Button>
                                 </div>
+                                <p className="text-xs text-muted-foreground">JPG, PNG, atau WEBP. Ukuran maksimal 500KB.</p>
                             </div>
                            <div className="space-y-2">
                                 <Label htmlFor="schoolName">Nama Sekolah</Label>
