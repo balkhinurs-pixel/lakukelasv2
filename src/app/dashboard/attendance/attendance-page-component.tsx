@@ -253,7 +253,7 @@ export default function AttendancePageComponent({
         <Card>
           <CardHeader>
             <CardTitle>Daftar Siswa - {selectedClass?.name}</CardTitle>
-            <CardDescription>Pilih status kehadiran untuk setiap siswa.</CardDescription>
+            <CardDescription>Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.</CardDescription>
           </CardHeader>
           <CardContent>
             {loading && students.length === 0 ? (
@@ -266,13 +266,15 @@ export default function AttendancePageComponent({
                 <Table>
                     <TableHeader>
                     <TableRow>
+                        <TableHead className="w-[50px]">No.</TableHead>
                         <TableHead>Nama Siswa</TableHead>
                         <TableHead className="text-right">Status Kehadiran</TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {students.map((student) => (
+                    {students.map((student, index) => (
                         <TableRow key={student.id}>
+                        <TableCell className="font-medium text-center">{index + 1}</TableCell>
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell className="text-right">
                             <RadioGroup
