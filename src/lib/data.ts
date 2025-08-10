@@ -251,7 +251,7 @@ export async function getAllStudents(): Promise<Student[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase.from('students').select('*, classes!left(name, teacher_id)').eq('classes.teacher_id', user.id);
+    const { data, error } = await supabase.from('students').select('*, classes!left(name, teacher_id)').eq('classes.teacher_id', user.id).order('name', { ascending: true });
     if (error) {
         console.error("Error fetching all students:", error);
         return [];
@@ -389,5 +389,3 @@ export async function getReportsData() {
         allStudents,
     };
 }
-
-    

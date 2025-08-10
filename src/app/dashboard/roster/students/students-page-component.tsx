@@ -180,6 +180,13 @@ export default function StudentsPageComponent({
       });
       event.target.value = '';
   };
+  
+  const handleComingSoon = () => {
+      toast({
+          title: "Segera Hadir",
+          description: "Fitur ini sedang dalam pengembangan."
+      })
+  }
 
   return (
     <div className="space-y-6">
@@ -296,20 +303,20 @@ export default function StudentsPageComponent({
         <CardContent>
             {/* Mobile View - Cards */}
             <div className="md:hidden space-y-4">
-              {studentsInClass.map((student) => (
+              {studentsInClass.map((student, index) => (
                 <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                    <div className="font-semibold">{student.name}</div>
-                    <div className="text-sm text-muted-foreground space-y-1">
+                    <div className="font-semibold"><span className="font-normal text-muted-foreground mr-2">{index + 1}.</span>{student.name}</div>
+                    <div className="text-sm text-muted-foreground space-y-1 border-t pt-3 mt-3">
                         <p><span className="font-medium">NIS:</span> {student.nis}</p>
                         <p><span className="font-medium">NISN:</span> {student.nisn}</p>
                         <p><span className="font-medium">Gender:</span> {student.gender}</p>
                     </div>
                     <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="w-full" disabled>
+                      <Button variant="outline" size="sm" className="w-full" onClick={handleComingSoon}>
                           <Edit className="mr-2 h-4 w-4" />
                           Ubah
                       </Button>
-                      <Button variant="ghost" size="sm" className="w-full" disabled>
+                      <Button variant="ghost" size="sm" className="w-full" onClick={handleComingSoon}>
                           <UserRoundCog className="mr-2 h-4 w-4" />
                           Pindahkan
                       </Button>
@@ -323,6 +330,7 @@ export default function StudentsPageComponent({
                 <Table>
                 <TableHeader>
                     <TableRow>
+                    <TableHead className="w-[50px]">No.</TableHead>
                     <TableHead>Nama Siswa</TableHead>
                     <TableHead>NIS</TableHead>
                     <TableHead>NISN</TableHead>
@@ -331,18 +339,19 @@ export default function StudentsPageComponent({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {studentsInClass.map((student) => (
+                    {studentsInClass.map((student, index) => (
                     <TableRow key={student.id}>
+                        <TableCell className="font-medium text-center">{index + 1}</TableCell>
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell>{student.nis}</TableCell>
                         <TableCell>{student.nisn}</TableCell>
                         <TableCell>{student.gender}</TableCell>
                         <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" disabled>
+                        <Button variant="ghost" size="sm" onClick={handleComingSoon}>
                             <Edit className="mr-2 h-3.5 w-3.5"/>
                             Ubah
                         </Button>
-                        <Button variant="ghost" size="sm" disabled>
+                        <Button variant="ghost" size="sm" onClick={handleComingSoon}>
                             <UserRoundCog className="mr-2 h-3.5 w-3.5"/>
                             Pindahkan
                         </Button>
