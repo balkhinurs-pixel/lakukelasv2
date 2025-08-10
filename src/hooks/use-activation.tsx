@@ -35,7 +35,7 @@ const ActivationContext = React.createContext<{
 // Provider untuk membungkus aplikasi
 export function ActivationProvider({ children }: { children: React.ReactNode }) {
     // Di aplikasi nyata, status awal akan diambil dari database atau local storage
-    const [status, setStatus] = React.useState<ActivationStatus>('free');
+    const [status, setStatus] = React.useState<ActivationStatus>('pro');
 
     const setActivationStatus = (isActivated: boolean) => {
         setStatus(isActivated ? 'pro' : 'free');
@@ -54,7 +54,7 @@ export function ActivationProvider({ children }: { children: React.ReactNode }) 
             {children}
         </ActivationContext.Provider>
     );
-}
+};
 
 
 // Hook untuk mendapatkan status aktivasi dan batasannya

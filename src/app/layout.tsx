@@ -1,10 +1,9 @@
-
 import type {Metadata} from 'next';
 import { cn } from "@/lib/utils";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { GeistSans } from 'geist/font/sans';
-import { ActivationProvider } from '@/hooks/use-activation';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: 'Lakukelas',
@@ -23,9 +22,9 @@ export default function RootLayout({
         <meta name="theme-color" content="#2563EB" />
       </head>
       <body className={cn("font-body antialiased")}>
-        <ActivationProvider>
+        <Providers>
             {children}
-        </ActivationProvider>
+        </Providers>
         <Toaster />
       </body>
     </html>
