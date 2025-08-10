@@ -48,12 +48,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Edit, Trash2, Loader2 } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Loader2, Calendar, Mail, User, Users } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
 import { updateUserStatus, deleteUser } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 
 function FormattedDate({ dateString }: { dateString: string }) {
@@ -166,7 +167,56 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                 </SelectContent>
             </Select>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
+            {filteredUsers.map((user) => (
+                 <div key={user.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                     <div className="flex justify-between items-start">
+                        <p className="font-semibold">{user.full_name || 'N/A'}</p>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" disabled={loading} className="h-8 w-8 -mt-2 -mr-2">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => handleManageClick(user)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Ubah Status
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Hapus Pengguna
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                     </div>
+                     <div className="text-sm text-muted-foreground space-y-2 border-t pt-3 mt-3">
+                         <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-primary"/>
+                            <span>{user.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Badge variant={user.account_status === 'Pro' ? 'default' : 'secondary'} className={cn("text-xs", user.account_status === 'Pro' ? 'bg-green-600 hover:bg-green-700 text-white' : '')}>
+                                {user.account_status}
+                            </Badge>
+                        </div>
+                         <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-primary"/>
+                            <span>Bergabung: <FormattedDate dateString={user.created_at} /></span>
+                        </div>
+                     </div>
+                </div>
+            ))}
+        </div>
+
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -235,6 +285,14 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                 </TableBody>
             </Table>
         </div>
+
+        {filteredUsers.length === 0 && (
+            <div className="text-center text-muted-foreground py-12">
+                <Users className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium">Pengguna Tidak Ditemukan</h3>
+                <p className="mt-1 text-sm text-gray-500">Coba ubah filter atau kata kunci pencarian Anda.</p>
+            </div>
+        )}
 
         <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
             <DialogContent>
