@@ -308,7 +308,9 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 
     const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file);
+        .upload(filePath, file, {
+            upsert: true, // This will overwrite the file if it already exists, useful for updates
+        });
 
     if (uploadError) {
         return { success: false, error: `Upload failed: ${uploadError.message}` };
@@ -318,7 +320,15 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
         .from(bucket)
         .getPublicUrl(filePath);
 
-    const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
+    let columnToUpdate: 'avatar_url' | 'school_logo_url';
+
+    if (type === 'avatar') {
+        columnToUpdate = 'avatar_url';
+    } else if (type === 'logo') {
+        columnToUpdate = 'school_logo_url';
+    } else {
+        return { success: false, error: 'Invalid upload type specified.' };
+    }
 
     const { error: dbError } = await supabase
         .from('profiles')
