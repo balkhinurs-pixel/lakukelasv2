@@ -43,7 +43,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -323,4 +322,5 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
       </div>
     </div>
   );
-}
+
+    
