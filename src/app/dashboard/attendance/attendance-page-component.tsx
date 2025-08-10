@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { format, parseISO } from "date-fns";
-import { Calendar as CalendarIcon, Edit, Eye, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Loader2 } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
 
@@ -44,7 +44,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject } from "@/lib/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, X, Hand, AlertCircle, Loader2 } from "lucide-react";
 import { saveAttendance } from "@/lib/actions";
 import { getStudentsByClass } from "@/lib/data-client";
 
@@ -176,6 +175,38 @@ export default function AttendancePageComponent({
       );
   }, [initialHistory, selectedClassId, selectedSubjectId]);
 
+  const AttendanceInputComponent = ({studentId}: {studentId: string}) => (
+        <RadioGroup
+            value={attendance.get(studentId)}
+            onValueChange={(status) => handleAttendanceChange(studentId, status as AttendanceRecord['status'])}
+            className="justify-end"
+        >
+            <TooltipProvider>
+                <div className="flex gap-1 justify-end">
+                {attendanceOptions.map(opt => (
+                    <Tooltip key={opt.value}>
+                        <TooltipTrigger asChild>
+                            <Label
+                                htmlFor={`${studentId}-${opt.value}`}
+                                className={cn(
+                                "flex items-center justify-center size-8 rounded-md border text-xs font-semibold cursor-pointer transition-colors",
+                                opt.color
+                                )}
+                            >
+                                {opt.label}
+                                <RadioGroupItem value={opt.value} id={`${studentId}-${opt.value}`} className="sr-only" />
+                            </Label>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{opt.tooltip}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                ))}
+                </div>
+        </TooltipProvider>
+        </RadioGroup>
+  );
+
   return (
     <div className="space-y-6">
       <Card>
@@ -263,56 +294,43 @@ export default function AttendancePageComponent({
                     <p className="mt-2">Memuat data siswa...</p>
                 </div>
             ) : students.length > 0 ? (
-                <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[50px]">No.</TableHead>
-                        <TableHead>Nama Siswa</TableHead>
-                        <TableHead className="text-right">Status Kehadiran</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {students.map((student, index) => (
-                        <TableRow key={student.id}>
-                        <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                        <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell className="text-right">
-                            <RadioGroup
-                            value={attendance.get(student.id)}
-                            onValueChange={(status) => handleAttendanceChange(student.id, status as AttendanceRecord['status'])}
-                            className="justify-end"
-                            >
-                                <TooltipProvider>
-                                    <div className="flex gap-1 justify-end">
-                                    {attendanceOptions.map(opt => (
-                                        <Tooltip key={opt.value}>
-                                            <TooltipTrigger asChild>
-                                                <Label
-                                                  htmlFor={`${student.id}-${opt.value}`}
-                                                  className={cn(
-                                                    "flex items-center justify-center size-8 rounded-md border text-xs font-semibold cursor-pointer transition-colors",
-                                                    opt.color
-                                                  )}
-                                                >
-                                                  {opt.label}
-                                                  <RadioGroupItem value={opt.value} id={`${student.id}-${opt.value}`} className="sr-only" />
-                                                </Label>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{opt.tooltip}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    ))}
-                                    </div>
-                            </TooltipProvider>
-                            </RadioGroup>
-                        </TableCell>
+                <>
+                    {/* Mobile View */}
+                    <div className="md:hidden space-y-4">
+                        {students.map((student, index) => (
+                            <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                                <p><span className="font-bold mr-2">{index + 1}.</span>{student.name}</p>
+                                <div className="border-t pt-3 mt-3">
+                                   <AttendanceInputComponent studentId={student.id}/>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[50px]">No.</TableHead>
+                            <TableHead>Nama Siswa</TableHead>
+                            <TableHead className="text-right">Status Kehadiran</TableHead>
                         </TableRow>
-                    ))}
-                    </TableBody>
-                </Table>
-                </div>
+                        </TableHeader>
+                        <TableBody>
+                        {students.map((student, index) => (
+                            <TableRow key={student.id}>
+                            <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                            <TableCell className="font-medium">{student.name}</TableCell>
+                            <TableCell className="text-right">
+                                <AttendanceInputComponent studentId={student.id}/>
+                            </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                    </div>
+                </>
             ) : (
                 <div className="text-center text-muted-foreground py-12">
                     <p>Belum ada siswa di kelas ini.</p>
