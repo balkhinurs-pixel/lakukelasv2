@@ -109,13 +109,13 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         });
     }
 
-    const getAvatarFallback = (name: string) => {
-        if (!name) return 'G';
+    const getAvatarFallback = (name: string | null) => {
+        if (!name || typeof name !== 'string' || name.trim() === '') return 'G';
         const parts = name.split(' ');
         if (parts.length > 1) {
-            return parts[0][0] + parts[1][0];
+            return (parts[0][0] + parts[1][0]).toUpperCase();
         }
-        return name.substring(0, 2);
+        return name.substring(0, 2).toUpperCase();
     }
 
     return (
@@ -265,3 +265,5 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
     </div>
     )
 }
+
+    
