@@ -49,50 +49,41 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject } from "@/lib/types";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { saveAttendance } from "@/lib/actions";
 import { getStudentsByClass } from "@/lib/data-client";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string, tooltip: string }[] = [
-    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white', tooltip: 'Hadir' },
-    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white', tooltip: 'Sakit' },
-    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white', tooltip: 'Izin' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white', tooltip: 'Alpha' },
+const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string }[] = [
+    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600 hover:bg-green-50', selectedClassName: 'bg-green-600 text-white hover:bg-green-700' },
+    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600 hover:bg-yellow-50', selectedClassName: 'bg-yellow-500 text-white hover:bg-yellow-600' },
+    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600 hover:bg-blue-50', selectedClassName: 'bg-blue-500 text-white hover:bg-blue-600' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600 hover:bg-red-50', selectedClassName: 'bg-red-500 text-white hover:bg-red-600' },
 ];
 
 
 // Isolated component to prevent re-rendering the entire list on a single change
 const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: AttendanceRecord['status'], onChange: (studentId: string, status: AttendanceRecord['status']) => void }) => {
     return (
-        <TooltipProvider>
-            <div className="flex gap-1 justify-end">
-            {attendanceOptions.map(opt => (
-                <Tooltip key={opt.value}>
-                    <TooltipTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => onChange(studentId, opt.value)}
-                            className={cn(
-                                "size-8 rounded-md border text-xs font-semibold transition-colors duration-200",
-                                value === opt.value
-                                    ? opt.selectedClassName
-                                    : opt.className
-                            )}
-                        >
-                            {opt.label}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{opt.tooltip}</p>
-                    </TooltipContent>
-                </Tooltip>
-            ))}
-            </div>
-    </TooltipProvider>
+        <div className="flex gap-1 justify-end">
+        {attendanceOptions.map(opt => (
+            <Button
+                key={opt.value}
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => onChange(studentId, opt.value)}
+                className={cn(
+                    "size-8 rounded-md border text-xs font-semibold transition-colors duration-200",
+                    value === opt.value
+                        ? opt.selectedClassName
+                        : opt.className
+                )}
+            >
+                {opt.label}
+            </Button>
+        ))}
+        </div>
     );
 });
 AttendanceInput.displayName = 'AttendanceInput';
@@ -546,5 +537,3 @@ export default function AttendancePageComponent({
     </div>
   );
 }
-
-    
