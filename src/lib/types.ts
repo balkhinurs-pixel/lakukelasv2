@@ -84,6 +84,18 @@ export interface JournalEntry {
   subjectName?: string;
 }
 
+export interface Agenda {
+    id: string;
+    date: string; // YYYY-MM-DD
+    title: string;
+    description?: string | null;
+    tag?: string | null;
+    start_time?: string | null; // HH:mm
+    end_time?: string | null; // HH:mm
+    teacher_id: string;
+    created_at: string;
+}
+
 export interface ScheduleItem {
   id: string;
   day: 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu';

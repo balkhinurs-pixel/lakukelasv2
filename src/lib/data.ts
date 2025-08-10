@@ -3,7 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda } from './types';
 
 // --- Admin Data ---
 
@@ -192,6 +192,26 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
       className: entry.classes.name,
       subjectName: entry.subjects.name,
     }));
+}
+
+export async function getAgendas(): Promise<Agenda[]> {
+    noStore();
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+        .from('agendas')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true, nullsFirst: false });
+
+    if (error) {
+        console.error("Error fetching agendas:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getAttendanceHistory(): Promise<AttendanceHistoryEntry[]> {

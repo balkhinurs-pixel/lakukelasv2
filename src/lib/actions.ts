@@ -97,6 +97,40 @@ export async function deleteJournal(journalId: string) {
   );
 }
 
+// --- Agenda Actions ---
+export async function saveAgenda(formData: FormData) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
+    const agendaId = formData.get('id') as string;
+    const rawData = {
+        date: formData.get('date') as string,
+        title: formData.get('title') as string,
+        description: formData.get('description') as string | undefined,
+        tag: formData.get('tag') as string | undefined,
+        start_time: formData.get('start_time') || null,
+        end_time: formData.get('end_time') || null,
+        teacher_id: user.id,
+    };
+
+    const action = agendaId
+        ? supabase.from('agendas').update(rawData).eq('id', agendaId)
+        : supabase.from('agendas').insert([rawData]);
+
+    return handleSupabaseAction(action, 'Agenda berhasil disimpan.', '/dashboard/agenda');
+}
+
+export async function deleteAgenda(agendaId: string) {
+    const supabase = createClient();
+    return handleSupabaseAction(
+        supabase.from('agendas').delete().eq('id', agendaId),
+        'Agenda berhasil dihapus.',
+        '/dashboard/agenda'
+    );
+}
+
+
 // --- Roster Actions ---
 export async function saveClass(formData: FormData) {
   const supabase = createClient();
