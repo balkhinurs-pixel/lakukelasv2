@@ -19,7 +19,8 @@ import {
   Menu,
   User as UserIcon,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  CalendarDays
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -54,6 +55,7 @@ import { Badge } from '@/components/ui/badge';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dasbor' },
+  { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
