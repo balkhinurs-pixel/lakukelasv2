@@ -199,46 +199,6 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4 shadow-sm">
-          <CardHeader>
-            <CardTitle>Jurnal Terbaru</CardTitle>
-            <CardDescription>
-              Catatan aktivitas mengajar Anda baru-baru ini.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-             {journalEntries.length > 0 ? (
-                <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>Mata Pelajaran</TableHead>
-                        <TableHead>Kelas</TableHead>
-                        <TableHead className="text-right">Tanggal</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {journalEntries.map((entry) => (
-                        <TableRow key={entry.id}>
-                        <TableCell>
-                            <div className="font-medium">{entry.subjectName}</div>
-                        </TableCell>
-                        <TableCell>{entry.className}</TableCell>
-                        <TableCell className="text-right">
-                            {format(parseISO(entry.date), "dd MMM yyyy")}
-                        </TableCell>
-                        </TableRow>
-                    ))}
-                    </TableBody>
-                </Table>
-                </div>
-             ) : (
-                <div className="text-center text-muted-foreground py-8">
-                    <p>Belum ada jurnal yang dibuat.</p>
-                </div>
-             )}
-          </CardContent>
-        </Card>
         <Card className="lg:col-span-3 shadow-sm">
           <CardHeader>
             <CardTitle>Jadwal Hari Ini ({today})</CardTitle>
@@ -283,9 +243,47 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
             )}
           </CardContent>
         </Card>
+        <Card className="lg:col-span-4 shadow-sm">
+          <CardHeader>
+            <CardTitle>Jurnal Terbaru</CardTitle>
+            <CardDescription>
+              Catatan aktivitas mengajar Anda baru-baru ini.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+             {journalEntries.length > 0 ? (
+                <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Mata Pelajaran</TableHead>
+                        <TableHead>Kelas</TableHead>
+                        <TableHead className="text-right">Tanggal</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {journalEntries.map((entry) => (
+                        <TableRow key={entry.id}>
+                        <TableCell>
+                            <div className="font-medium">{entry.subjectName}</div>
+                        </TableCell>
+                        <TableCell>{entry.className}</TableCell>
+                        <TableCell className="text-right">
+                            {format(parseISO(entry.date), "dd MMM yyyy")}
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </div>
+             ) : (
+                <div className="text-center text-muted-foreground py-8">
+                    <p>Belum ada jurnal yang dibuat.</p>
+                </div>
+             )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-
-    
