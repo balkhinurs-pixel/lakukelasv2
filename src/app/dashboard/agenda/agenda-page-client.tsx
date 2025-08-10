@@ -76,21 +76,129 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const [newAgenda, setNewAgenda] = React.useState<NewAgendaEntry>(initialFormState);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "start",
+    align: "center",
     containScroll: "trimSnaps",
+    dragFree: false,
+    loop: false,
+    slidesToScroll: 1,
+    skipSnaps: false
   });
+
+  const [canScrollPrev, setCanScrollPrev] = React.useState(false);
+  const [canScrollNext, setCanScrollNext] = React.useState(false);
+  const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  const scrollPrev = React.useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
+
+  const scrollNext = React.useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext();
+  }, [emblaApi]);
+
+  const onSelect = React.useCallback(() => {
+    if (!emblaApi) return;
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
+  }, [emblaApi]);
+
+  React.useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+  }, [emblaApi, onSelect]);
 
   React.useEffect(() => {
     setAgendas(initialAgendas);
   }, [initialAgendas]);
 
+  // Add window resize listener to update carousel responsiveness
+  React.useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Initialize window width on mount
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWindowWidth(window.innerWidth);
+    }
+  }, []);
+
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
-  });
+  // Generate a subset of dates around the selected date for responsive carousel
+  const daysInMonth = React.useMemo(() => {
+    const allDaysInMonth = eachDayOfInterval({
+      start: startOfMonth(currentMonth),
+      end: endOfMonth(currentMonth),
+    });
+    
+    // Find the index of selected date
+    const selectedIndex = allDaysInMonth.findIndex(day => isSameDay(day, selectedDate));
+    
+    // Calculate how many days to show based on screen size
+     let daysToShow;
+     
+     if (windowWidth < 480) {
+       daysToShow = 5; // Mobile: 5 days
+     } else if (windowWidth < 768) {
+       daysToShow = 7; // Tablet: 7 days
+     } else if (windowWidth < 1024) {
+       daysToShow = 9; // Small desktop: 9 days
+     } else {
+       daysToShow = 11; // Large desktop: 11 days
+     }
+    
+    // Calculate start and end indices to center the selected date
+    const halfRange = Math.floor(daysToShow / 2);
+    let startIndex = Math.max(0, selectedIndex - halfRange);
+    let endIndex = Math.min(allDaysInMonth.length - 1, startIndex + daysToShow - 1);
+    
+    // Adjust if we're at the end of the month
+    if (endIndex - startIndex + 1 < daysToShow) {
+      startIndex = Math.max(0, endIndex - daysToShow + 1);
+    }
+    
+    return allDaysInMonth.slice(startIndex, endIndex + 1);
+  }, [currentMonth, selectedDate, windowWidth]);
+
+  // Auto scroll to selected date when embla is ready
+  React.useEffect(() => {
+    if (!emblaApi) return;
+    
+    const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
+    if (targetIndex !== -1) {
+      // Use setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        emblaApi.scrollTo(targetIndex);
+      }, 100);
+    }
+  }, [emblaApi, daysInMonth, selectedDate]);
+
+  // Initialize selected date to today
+  React.useEffect(() => {
+    const today = new Date();
+    setSelectedDate(today);
+  }, []);
+
+  // Update currentMonth when selectedDate changes to different month
+  React.useEffect(() => {
+    const selectedMonth = selectedDate.getMonth();
+    const selectedYear = selectedDate.getFullYear();
+    const currentMonthValue = currentMonth.getMonth();
+    const currentYear = currentMonth.getFullYear();
+    
+    if (selectedMonth !== currentMonthValue || selectedYear !== currentYear) {
+      setCurrentMonth(new Date(selectedYear, selectedMonth, 1));
+    }
+  }, [selectedDate, currentMonth]);
 
   const handleDateSelect = (day: Date) => {
       setSelectedDate(day);
@@ -220,47 +328,92 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             </Dialog>
         </div>
 
-      <Card className="p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-            <ChevronLeft className="h-5 w-5" />
+      <Card className="p-3 sm:p-4 shadow-sm max-w-full overflow-hidden">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 sm:h-10 sm:w-10">
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
-          <h2 className="text-lg font-semibold font-headline">
+          <h2 className="text-base sm:text-lg font-semibold font-headline text-center" suppressHydrationWarning>
             {format(currentMonth, 'MMMM yyyy', { locale: id })}
           </h2>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-            <ChevronRight className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 sm:h-10 sm:w-10">
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </div>
 
-        <div className="overflow-hidden" ref={emblaRef}>
-            <div className="flex gap-2">
-            {daysInMonth.map((day) => (
-                <div key={day.toString()} className="flex-shrink-0 basis-16">
-                    <button
-                        onClick={() => handleDateSelect(day)}
-                        className={cn(
-                            "flex flex-col items-center justify-center p-3 rounded-xl w-14 h-20 shrink-0 transition-colors",
-                            isSameDay(day, selectedDate)
-                            ? "bg-primary text-primary-foreground shadow-md"
-                            : "bg-background hover:bg-muted"
-                        )}
-                        >
-                        <span className={cn("text-xs uppercase", isSameDay(day, selectedDate) ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                            {format(day, 'E', { locale: id })}
-                        </span>
-                        <span className="text-xl font-bold mt-1">
-                            {format(day, 'dd')}
-                        </span>
-                    </button>
+        <div className="relative w-full px-8 sm:px-10">
+          {/* Navigation buttons for carousel */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn(
+              "absolute left-0 top-1/2 -translate-y-1/2 z-10 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-lg border flex items-center justify-center",
+              !canScrollPrev && "opacity-30 cursor-not-allowed"
+            )}
+            onClick={scrollPrev}
+            disabled={!canScrollPrev}
+          >
+            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn(
+              "absolute right-0 top-1/2 -translate-y-1/2 z-10 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-lg border flex items-center justify-center",
+              !canScrollNext && "opacity-30 cursor-not-allowed"
+            )}
+            onClick={scrollNext}
+            disabled={!canScrollNext}
+          >
+            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+          </Button>
+
+          <div className="overflow-hidden w-full max-w-full" ref={emblaRef}>
+            <div className="flex gap-1 sm:gap-2">
+              {daysInMonth.map((day) => (
+                <div 
+                  key={day.toString()} 
+                  className="flex-1 min-w-0"
+                >
+                  <button
+                    onClick={() => handleDateSelect(day)}
+                    className={cn(
+                      "flex flex-col items-center justify-center rounded-lg sm:rounded-xl transition-all duration-200 w-full",
+                      "h-12 sm:h-14 md:h-16 p-1 sm:p-2",
+                      isSameDay(day, selectedDate)
+                        ? "bg-violet-500 text-white shadow-md transform-gpu scale-105"
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground hover:scale-102"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "text-[10px] sm:text-xs uppercase font-medium leading-none whitespace-nowrap",
+                        isSameDay(day, selectedDate) ? "text-white/80" : "text-muted-foreground"
+                      )}
+                      suppressHydrationWarning
+                    >
+                      {format(day, "EEE", { locale: id })}
+                    </span>
+                    <span
+                      className={cn(
+                        "mt-0.5 sm:mt-1 leading-none font-semibold",
+                        "text-xs sm:text-sm md:text-base",
+                        isSameDay(day, selectedDate) ? "text-sm sm:text-base md:text-lg" : "text-xs sm:text-sm md:text-base"
+                      )}
+                    >
+                      {format(day, "dd")}
+                    </span>
+                  </button>
                 </div>
-            ))}
+              ))}
             </div>
+          </div>
         </div>
       </Card>
       
       <div className="space-y-4">
-        <h3 className="text-xl font-bold font-headline">Agenda untuk {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}</h3>
+        <h3 className="text-xl font-bold font-headline" suppressHydrationWarning>Agenda untuk {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}</h3>
         <div className="space-y-4">
             {eventsForSelectedDate.length > 0 ? (
             eventsForSelectedDate.map((event) => (
