@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { format, parseISO } from "date-fns";
-import { Calendar as CalendarIcon, Edit, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
 
@@ -38,6 +38,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -46,12 +53,13 @@ import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { saveAttendance } from "@/lib/actions";
 import { getStudentsByClass } from "@/lib/data-client";
+import { Badge } from "@/components/ui/badge";
 
 const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, tooltip: string }[] = [
-    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600 hover:bg-green-500/10 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Hadir' },
-    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600 hover:bg-yellow-500/10 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Sakit' },
-    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600 hover:bg-blue-500/10 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Izin' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600 hover:bg-red-500/10 data-[state=checked]:bg-red-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Alpha' },
+    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Hadir' },
+    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Sakit' },
+    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Izin' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600 data-[state=checked]:bg-red-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Alpha' },
 ];
 
 
@@ -72,6 +80,7 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
                                 htmlFor={`${studentId}-${opt.value}`}
                                 className={cn(
                                 "flex items-center justify-center size-8 rounded-md border text-xs font-semibold cursor-pointer transition-colors duration-200",
+                                "hover:bg-muted/50",
                                 opt.className
                                 )}
                             >
@@ -114,6 +123,8 @@ export default function AttendancePageComponent({
   const [attendance, setAttendance] = React.useState<Map<string, AttendanceRecord['status']>>(new Map());
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = React.useState(false);
+  const [viewingEntry, setViewingEntry] = React.useState<AttendanceHistoryEntry | null>(null);
   const { toast } = useToast();
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
@@ -127,10 +138,14 @@ export default function AttendancePageComponent({
           setLoading(true);
           const fetchedStudents = await getStudentsByClass(selectedClassId);
           setStudents(fetchedStudents);
-          resetForm(fetchedStudents);
+          // Only reset form if not editing
+          if (!editingId) {
+            resetForm(fetchedStudents);
+          }
           setLoading(false);
       };
       fetchStudents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClassId]);
 
   const resetForm = (studentList: Student[]) => {
@@ -185,7 +200,10 @@ export default function AttendancePageComponent({
   };
 
   const handleEdit = async (entry: AttendanceHistoryEntry) => {
-      setSelectedClassId(entry.class_id);
+      // Ensure the correct class students are loaded before setting state
+      if (selectedClassId !== entry.class_id) {
+        setSelectedClassId(entry.class_id);
+      }
       setSelectedSubjectId(entry.subject_id);
       
       setLoading(true);
@@ -197,12 +215,18 @@ export default function AttendancePageComponent({
       setMeetingNumber(entry.meeting_number);
 
       const loadedAttendance = new Map<string, AttendanceRecord['status']>();
-      entry.records.forEach(record => {
-          loadedAttendance.set(record.studentId, record.status);
+      fetchedStudents.forEach(student => {
+        const record = entry.records.find(r => r.studentId === student.id);
+        loadedAttendance.set(student.id, record ? record.status : 'Hadir');
       });
       setAttendance(loadedAttendance);
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const handleViewDetails = (entry: AttendanceHistoryEntry) => {
+    setViewingEntry(entry);
+    setIsDetailDialogOpen(true);
   }
 
   const filteredHistory = React.useMemo(() => {
@@ -211,6 +235,27 @@ export default function AttendancePageComponent({
         (!selectedSubjectId || h.subject_id === selectedSubjectId)
       );
   }, [initialHistory, selectedClassId, selectedSubjectId]);
+  
+  const getStudentName = (studentId: string) => {
+    return students.find(s => s.id === studentId)?.name || "Siswa tidak ditemukan";
+  }
+
+  const getStatusBadgeVariant = (status: AttendanceRecord['status']) => {
+    switch (status) {
+        case 'Hadir': return "default";
+        case 'Sakit': return "secondary";
+        case 'Izin': return "secondary";
+        case 'Alpha': return "destructive";
+    }
+  }
+   const getStatusBadgeClass = (status: AttendanceRecord['status']) => {
+    switch (status) {
+        case 'Hadir': return "bg-green-600 hover:bg-green-700";
+        case 'Sakit': return "bg-yellow-500 hover:bg-yellow-600 text-black";
+        case 'Izin': return "bg-blue-500 hover:bg-blue-600";
+        case 'Alpha': return "bg-red-600 hover:bg-red-700";
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -380,21 +425,25 @@ export default function AttendancePageComponent({
                   }, {} as Record<AttendanceRecord['status'], number>);
                   return (
                     <div key={entry.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                      <div className="flex justify-between items-start">
-                          <div>
-                              <p className="font-semibold">{entry.className} - {entry.subjectName}</p>
-                              <p className="text-sm text-muted-foreground">{format(parseISO(entry.date), 'dd MMMM yyyy')} (Pertemuan ke-{entry.meeting_number})</p>
-                          </div>
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(entry)} disabled={loading} className="ml-auto shrink-0">
+                      <div>
+                          <p className="font-semibold">{entry.className} - {entry.subjectName}</p>
+                          <p className="text-sm text-muted-foreground">{format(parseISO(entry.date), 'dd MMMM yyyy')} (Pertemuan ke-{entry.meeting_number})</p>
+                      </div>
+                      <div className="border-t pt-3 mt-3 text-sm">
+                        <span className="text-green-600 font-medium">Hadir: {summary.Hadir || 0}</span>,{' '}
+                        <span className="text-yellow-600 font-medium">Sakit: {summary.Sakit || 0}</span>,{' '}
+                        <span className="text-blue-600 font-medium">Izin: {summary.Izin || 0}</span>,{' '}
+                        <span className="text-red-600 font-medium">Alpha: {summary.Alpha || 0}</span>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                          <Button variant="secondary" size="sm" className="w-full" onClick={() => handleViewDetails(entry)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Detail
+                          </Button>
+                          <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(entry)} disabled={loading}>
                             <Edit className="mr-2 h-4 w-4" />
                             Ubah
                           </Button>
-                      </div>
-                      <div className="border-t pt-3 mt-3 text-sm">
-                        <span className="text-green-600 font-medium">H: {summary.Hadir || 0}</span>,{' '}
-                        <span className="text-yellow-600 font-medium">S: {summary.Sakit || 0}</span>,{' '}
-                        <span className="text-blue-600 font-medium">I: {summary.Izin || 0}</span>,{' '}
-                        <span className="text-red-600 font-medium">A: {summary.Alpha || 0}</span>
                       </div>
                     </div>
                   )
@@ -434,6 +483,10 @@ export default function AttendancePageComponent({
                                           <span className="text-red-600">A: {summary.Alpha || 0}</span>
                                       </TableCell>
                                       <TableCell className="text-right">
+                                         <Button variant="ghost" size="sm" onClick={() => handleViewDetails(entry)}>
+                                            <Eye className="mr-2 h-4 w-4" />
+                                            Detail
+                                        </Button>
                                           <Button variant="outline" size="sm" onClick={() => handleEdit(entry)} disabled={loading}>
                                               <Edit className="mr-2 h-4 w-4" />
                                               Ubah
@@ -453,6 +506,46 @@ export default function AttendancePageComponent({
             )}
         </CardContent>
       </Card>
+
+       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+            <DialogTitle>Detail Presensi: {viewingEntry?.className}</DialogTitle>
+            <DialogDescription>
+                {viewingEntry?.subjectName} - {viewingEntry ? format(parseISO(viewingEntry.date), "dd MMMM yyyy") : ''}
+            </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto pr-2">
+                {viewingEntry && students.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Nama Siswa</TableHead>
+                            <TableHead className="text-right">Status</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {viewingEntry.records.map(record => (
+                                <TableRow key={record.studentId}>
+                                    <TableCell>{getStudentName(record.studentId)}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Badge variant={getStatusBadgeVariant(record.status)} className={getStatusBadgeClass(record.status)}>
+                                            {record.status}
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : (
+                     <div className="text-center text-muted-foreground py-12">
+                        <Users className="mx-auto h-8 w-8" />
+                        <p className="mt-2">Memuat atau data tidak ditemukan...</p>
+                    </div>
+                )}
+            </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
