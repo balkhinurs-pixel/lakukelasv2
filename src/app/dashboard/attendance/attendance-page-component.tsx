@@ -47,11 +47,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { saveAttendance } from "@/lib/actions";
 import { getStudentsByClass } from "@/lib/data-client";
 
-const attendanceOptions: { value: AttendanceRecord['status'], label: string, color: string, tooltip: string }[] = [
-    { value: 'Hadir', label: 'H', color: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-green-700', tooltip: 'Hadir' },
-    { value: 'Sakit', label: 'S', color: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-yellow-600', tooltip: 'Sakit' },
-    { value: 'Izin', label: 'I', color: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-blue-600', tooltip: 'Izin' },
-    { value: 'Alpha', label: 'A', color: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200 data-[state=checked]:bg-red-600 data-[state=checked]:text-white data-[state=checked]:border-red-700', tooltip: 'Alpha' },
+const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, tooltip: string }[] = [
+    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600 hover:bg-green-500/10 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Hadir' },
+    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600 hover:bg-yellow-500/10 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Sakit' },
+    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600 hover:bg-blue-500/10 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Izin' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600 hover:bg-red-500/10 data-[state=checked]:bg-red-600 data-[state=checked]:text-white data-[state=checked]:border-transparent', tooltip: 'Alpha' },
 ];
 
 
@@ -190,7 +190,7 @@ export default function AttendancePageComponent({
                                 htmlFor={`${studentId}-${opt.value}`}
                                 className={cn(
                                 "flex items-center justify-center size-8 rounded-md border text-xs font-semibold cursor-pointer transition-colors",
-                                opt.color
+                                opt.className
                                 )}
                             >
                                 {opt.label}
@@ -444,4 +444,5 @@ export default function AttendancePageComponent({
   );
 }
 
+    
     
