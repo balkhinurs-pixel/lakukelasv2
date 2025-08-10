@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react";
@@ -253,6 +254,16 @@ export default function ReportsPageComponent({
         docInstance.setLineWidth(0.5);
         docInstance.line(margin, margin + 25, pageWidth - margin, margin + 25);
     }
+
+    const addFooter = (docInstance: jsPDFWithAutoTable) => {
+        const pageCount = (docInstance.internal as any).getNumberOfPages();
+        docInstance.setFontSize(8).setFont(undefined, 'italic');
+        for (let i = 1; i <= pageCount; i++) {
+            docInstance.setPage(i);
+            const text = `Halaman ${i} dari ${pageCount}`;
+            docInstance.text(text, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        }
+    }
     
     try {
         const response = await fetch(schoolData.logo);
@@ -261,6 +272,7 @@ export default function ReportsPageComponent({
         reader.readAsDataURL(blob);
         reader.onloadend = () => {
             const base64data = reader.result as string;
+            // Add logo only to the first page's header
             doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
             generateContent();
         };
@@ -270,6 +282,7 @@ export default function ReportsPageComponent({
     }
     
     const generateContent = () => {
+        // --- PAGE 1 SETUP ---
         addHeader(doc);
         finalY = margin + 25;
 
@@ -294,6 +307,7 @@ export default function ReportsPageComponent({
             finalY = metaYStart + 15;
         }
 
+        // --- CONTENT GENERATION ---
         if (content.head && content.body) {
              doc.autoTable({
                 head: content.head,
@@ -303,7 +317,9 @@ export default function ReportsPageComponent({
                 headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
                 styles: { fontSize: 8, cellPadding: 2, lineWidth: 0.1, cellWidth: 'auto' },
                 didDrawPage: (data) => {
-                    finalY = data.cursor?.y || 0;
+                    // This function is called for every page the table creates, but NOT for the first one.
+                    // We DON'T add a header here to subsequent pages.
+                    finalY = data.cursor?.y || margin;
                 }
             });
             finalY = (doc.lastAutoTable as any).finalY;
@@ -315,8 +331,6 @@ export default function ReportsPageComponent({
                 if (finalY > pageHeight - 60) {
                     doc.addPage();
                     finalY = margin;
-                    addHeader(doc);
-                    finalY += 30;
                 }
                 doc.setFont(undefined, 'bold');
                 const entryHeader = `JURNAL KE-${index + 1}: ${entry.subjectName} - ${entry.className}`;
@@ -331,22 +345,21 @@ export default function ReportsPageComponent({
                 const addSection = (title: string, text: string) => {
                     if (!text) return;
                     const textLines = doc.splitTextToSize(text, pageWidth - margin * 2);
-                    const textHeight = textLines.length * (doc.getLineHeight() / doc.internal.scaleFactor);
-                    const titleHeight = (doc.getLineHeight() / doc.internal.scaleFactor) + 5;
                     
-                    if (finalY + titleHeight + textHeight > pageHeight - pageBottomMargin) {
-                        doc.addPage();
-                        finalY = margin;
-                        addHeader(doc);
-                        finalY += 30;
-                    }
-
                     doc.setFont(undefined, 'bold');
                     doc.text(title, margin, finalY);
                     finalY += 5;
                     doc.setFont(undefined, 'normal');
-                    doc.text(textLines, margin, finalY);
-                    finalY += textHeight + 4;
+                    
+                    textLines.forEach((line: string) => {
+                         if (finalY > pageHeight - pageBottomMargin) {
+                            doc.addPage();
+                            finalY = margin;
+                        }
+                        doc.text(line, margin, finalY);
+                        finalY += 5; // line height
+                    });
+                    finalY += 4;
                 }
 
                 addSection("A. Tujuan Pembelajaran", entry.learning_objectives);
@@ -355,22 +368,21 @@ export default function ReportsPageComponent({
                 addSection("D. Refleksi & Tindak Lanjut", entry.reflection || '-');
 
                 finalY += 5;
-                if (finalY > pageHeight - pageBottomMargin) {
-                    doc.addPage(); finalY = margin; addHeader(doc); finalY += 30;
+                if (finalY < pageHeight - pageBottomMargin) {
+                    doc.setLineDashPattern([1, 1], 0);
+                    doc.line(margin, finalY, pageWidth - margin, finalY);
+                    doc.setLineDashPattern([], 0);
+                    finalY += 8;
                 }
-                doc.setLineDashPattern([1, 1], 0);
-                doc.line(margin, finalY, pageWidth - margin, finalY);
-                doc.setLineDashPattern([], 0);
-                finalY += 8;
             });
         }
         
+        // --- SIGNATURE AND FOOTER ---
         let signatureY = finalY + 15;
         if (signatureY > pageHeight - 50) {
             doc.addPage();
             finalY = margin;
-            addHeader(doc);
-            signatureY = finalY + 30;
+            signatureY = finalY + 15;
         }
 
         const todayDate = format(new Date(), "eeee, dd MMMM yyyy", { locale: id });
@@ -393,6 +405,9 @@ export default function ReportsPageComponent({
 
         doc.setFont(undefined, 'bold').text(teacherData.name, signatureXRight, signatureYName, { align: 'right'});
         doc.setFont(undefined, 'normal').text(`NIP. ${teacherData.nip}`, signatureXRight, signatureYName + 5, { align: 'right'});
+        
+        // Add footer to all pages after content is generated
+        addFooter(doc);
 
         doc.save(`${content.title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
     }
