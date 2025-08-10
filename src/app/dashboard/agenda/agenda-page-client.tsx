@@ -322,5 +322,4 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
       </div>
     </div>
   );
-
-    
+}
