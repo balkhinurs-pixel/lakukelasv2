@@ -275,13 +275,13 @@ export async function getAllStudents(): Promise<Student[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase.from('students').select('*, classes!inner(name, teacher_id)').eq('classes.teacher_id', user.id);
+    const { data, error } = await supabase.from('students').select('*, classes!left(name, teacher_id)').eq('classes.teacher_id', user.id);
     if (error) {
         console.error("Error fetching all students:", error);
         return [];
     }
     // @ts-ignore
-    return data.map(s => ({...s, class_name: s.classes.name}));
+    return data.map(s => ({...s, class_name: s.classes?.name}));
 }
 
 export async function getDashboardData() {
@@ -413,5 +413,3 @@ export async function getReportsData() {
         allStudents,
     };
 }
-
-    
