@@ -48,11 +48,11 @@ import { Check, X, Hand, AlertCircle, Loader2 } from "lucide-react";
 import { saveAttendance } from "@/lib/actions";
 import { getStudentsByClass } from "@/lib/data-client";
 
-const attendanceOptions: { value: AttendanceRecord['status'], label: string, icon: React.ElementType, color: string, tooltip: string }[] = [
-    { value: 'Hadir', label: 'H', icon: Check, color: 'bg-green-100 text-green-800 border-green-200 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-green-700', tooltip: 'Hadir' },
-    { value: 'Sakit', label: 'S', icon: AlertCircle, color: 'bg-yellow-100 text-yellow-800 border-yellow-200 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-yellow-600', tooltip: 'Sakit' },
-    { value: 'Izin', label: 'I', icon: Hand, color: 'bg-blue-100 text-blue-800 border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-blue-600', tooltip: 'Izin' },
-    { value: 'Alpha', label: 'A', icon: X, color: 'bg-red-100 text-red-800 border-red-200 data-[state=checked]:bg-red-600 data-[state=checked]:text-white data-[state=checked]:border-red-700', tooltip: 'Alpha' },
+const attendanceOptions: { value: AttendanceRecord['status'], label: string, color: string, tooltip: string }[] = [
+    { value: 'Hadir', label: 'H', color: 'bg-green-100 text-green-800 border-green-200 data-[state=checked]:bg-green-600 data-[state=checked]:text-white data-[state=checked]:border-green-700', tooltip: 'Hadir' },
+    { value: 'Sakit', label: 'S', color: 'bg-yellow-100 text-yellow-800 border-yellow-200 data-[state=checked]:bg-yellow-500 data-[state=checked]:text-white data-[state=checked]:border-yellow-600', tooltip: 'Sakit' },
+    { value: 'Izin', label: 'I', color: 'bg-blue-100 text-blue-800 border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white data-[state=checked]:border-blue-600', tooltip: 'Izin' },
+    { value: 'Alpha', label: 'A', color: 'bg-red-100 text-red-800 border-red-200 data-[state=checked]:bg-red-600 data-[state=checked]:text-white data-[state=checked]:border-red-700', tooltip: 'Alpha' },
 ];
 
 export default function AttendancePageComponent({
@@ -415,5 +415,3 @@ export default function AttendancePageComponent({
     </div>
   );
 }
-
-    
