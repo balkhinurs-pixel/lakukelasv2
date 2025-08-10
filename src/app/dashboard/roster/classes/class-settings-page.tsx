@@ -143,13 +143,10 @@ export function ClassSettingsPageComponent({ initialClasses }: { initialClasses:
                     {/* Mobile View */}
                     <div className="md:hidden space-y-4">
                         {classes.map((c) => (
-                             <div key={c.id} className="border rounded-lg p-4 space-y-3">
-                                <div className="font-semibold">{c.name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                    <p><span className="font-medium">ID:</span> {c.id}</p>
-                                </div>
-                                <Button variant="outline" size="sm" className="w-full" disabled>
-                                    <Edit className="mr-2 h-4 w-4" /> Ubah (Segera Hadir)
+                             <div key={c.id} className="border rounded-lg p-4 flex justify-between items-center">
+                                <span className="font-semibold">{c.name}</span>
+                                <Button variant="outline" size="sm" disabled>
+                                    <Edit className="mr-2 h-4 w-4" /> Ubah
                                 </Button>
                             </div>
                         ))}

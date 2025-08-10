@@ -160,13 +160,12 @@ export default function SubjectSettingsPageComponent({ initialSubjects }: { init
                     {/* Mobile View */}
                      <div className="md:hidden space-y-4">
                         {subjects.map((s) => (
-                             <div key={s.id} className="border rounded-lg p-4 space-y-3">
-                                <div className="font-semibold">{s.name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                    <p><span className="font-medium">ID:</span> {s.id}</p>
-                                    <p><span className="font-medium">KKM:</span> {s.kkm}</p>
+                             <div key={s.id} className="border rounded-lg p-4 flex justify-between items-center">
+                                <div>
+                                    <p className="font-semibold">{s.name}</p>
+                                    <p className="text-sm text-muted-foreground">KKM: {s.kkm}</p>
                                 </div>
-                                <Button variant="outline" size="sm" className="w-full" onClick={() => handleOpenDialog(s)}>
+                                <Button variant="outline" size="sm" onClick={() => handleOpenDialog(s)}>
                                     <Edit className="mr-2 h-4 w-4" /> Ubah
                                 </Button>
                             </div>
