@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import useEmblaCarousel from "embla-carousel-react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,8 +11,9 @@ import {
   Calendar as CalendarIcon,
   Briefcase,
   Users,
+  ChevronDown
 } from "lucide-react";
-import { format, addMonths, subMonths, startOfWeek, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 import { Button } from "@/components/ui/button";
@@ -54,6 +56,16 @@ const agendaData = {
 export default function AgendaPage() {
   const [currentMonth, setCurrentMonth] = React.useState(new Date(2023, 7, 1));
   const [selectedDate, setSelectedDate] = React.useState(new Date(2023, 7, 2));
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+  });
+
+  React.useEffect(() => {
+    if (emblaApi) {
+      // Logic to scroll to selected date if needed
+    }
+  }, [emblaApi]);
 
   const handlePrevMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
@@ -80,20 +92,19 @@ export default function AgendaPage() {
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <h2 className="text-lg font-semibold font-headline">
-            {format(currentMonth, 'MMMM, yyyy', { locale: id })}
+            {format(currentMonth, 'MMMM yyyy', { locale: id })}
           </h2>
           <Button variant="ghost" size="icon" onClick={handleNextMonth}>
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
 
-        {/* Day Selector */}
-        <div className="relative">
-             <div className="overflow-x-auto pb-2 no-scrollbar">
-                <div className="flex gap-2">
-                {daysInMonth.map((day) => (
+        {/* Day Selector using Embla Carousel */}
+        <div className="overflow-hidden" ref={emblaRef}>
+            <div className="flex gap-2">
+            {daysInMonth.map((day) => (
+                <div key={day.toString()} className="flex-shrink-0 basis-16">
                     <button
-                        key={day.toString()}
                         onClick={() => setSelectedDate(day)}
                         className={cn(
                             "flex flex-col items-center justify-center p-3 rounded-xl w-14 h-20 shrink-0 transition-colors",
@@ -109,8 +120,8 @@ export default function AgendaPage() {
                             {format(day, 'dd')}
                         </span>
                     </button>
-                ))}
                 </div>
+            ))}
             </div>
         </div>
       </Card>
@@ -184,3 +195,4 @@ export default function AgendaPage() {
   );
 }
 
+    
