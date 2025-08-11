@@ -56,6 +56,7 @@ type NewAgendaEntry = Omit<Agenda, 'id' | 'teacher_id' | 'created_at'>;
 
 // Helper function to determine text color based on background brightness
 const getTextColor = (hexColor: string): string => {
+  if (!hexColor) return '#ffffff';
   // Remove # if present
   const hex = hexColor.replace('#', '');
   
@@ -454,7 +455,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                     key={event.id} 
                     className="p-4 flex flex-col gap-3 shadow-sm border-l-4" 
                     style={{
-                        backgroundColor: `${event.color || '#6b7280'}15`,
+                        backgroundColor: `${event.color || '#6b7280'}1A`, // 10% opacity
                         borderLeftColor: event.color || '#6b7280'
                     }}
                 >
