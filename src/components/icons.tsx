@@ -116,3 +116,5 @@ export function AppLogo(props: SVGProps<SVGSVGElement>) {
 <path d="" fill="#00C280" transform="translate(0,0)"/>
 <path d="" fill="#00FF45" transform="translate(0,0)"/>
 </svg>
+  );
+}
