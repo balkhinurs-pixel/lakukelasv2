@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -117,7 +116,6 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const handlePrevMonth = () => {
     const newMonth = subMonths(currentMonth, 1);
     setCurrentMonth(newMonth);
-    // If the selected date is not in the new month, select the first day of the new month
     if (!isSameMonth(selectedDate, newMonth)) {
         setSelectedDate(startOfMonth(newMonth));
     }
@@ -140,11 +138,11 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     if (emblaApi) {
         const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
         if (targetIndex !== -1) {
-            emblaApi.scrollTo(targetIndex, true); // true for instant scroll
+            emblaApi.scrollTo(targetIndex, true);
         } else if (daysInMonth.length > 0) {
             emblaApi.scrollTo(0, true);
         }
-        onSelect(); // update buttons after scrolling
+        onSelect();
     }
   }, [selectedDate, daysInMonth, emblaApi, onSelect]);
 
@@ -274,7 +272,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
 
       <Card className="p-3 sm:p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-lg font-semibold font-headline text-center" suppressHydrationWarning>
+          <h2 className="text-base sm:text-lg font-semibold font-headline" suppressHydrationWarning>
             {format(currentMonth, 'MMMM yyyy', { locale: id })}
           </h2>
           <div className="flex items-center">
