@@ -12,7 +12,7 @@ import {
   Trash2,
   Loader2
 } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, isSameMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
 
@@ -83,13 +83,8 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
 
-  const scrollPrev = React.useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev();
-  }, [emblaApi]);
-
-  const scrollNext = React.useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext();
-  }, [emblaApi]);
+  const scrollPrev = React.useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = React.useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
   const onSelect = React.useCallback(() => {
     if (!emblaApi) return;
@@ -99,25 +94,15 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
 
   React.useEffect(() => {
     if (!emblaApi) return;
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
     onSelect();
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
-    return () => {
-        if(emblaApi) emblaApi.off('select', onSelect);
-    }
   }, [emblaApi, onSelect]);
 
   React.useEffect(() => {
     setAgendas(initialAgendas);
   }, [initialAgendas]);
 
-  const handlePrevMonth = () => {
-    setCurrentMonth(prev => subMonths(prev, 1));
-  };
-  const handleNextMonth = () => {
-    setCurrentMonth(prev => addMonths(prev, 1));
-  };
-  
   const daysInMonth = React.useMemo(() => {
     return eachDayOfInterval({
       start: startOfMonth(currentMonth),
@@ -125,25 +110,40 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     });
   }, [currentMonth]);
 
-  React.useEffect(() => {
-    if (emblaApi) {
-        emblaApi.reInit();
-        const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
-        if (targetIndex !== -1) {
-            emblaApi.scrollTo(targetIndex, true);
-        } else if (daysInMonth.length > 0) {
-            setSelectedDate(daysInMonth[0]);
-            emblaApi.scrollTo(0, true);
-        }
-        onSelect();
+  const handlePrevMonth = () => {
+    const newMonth = subMonths(currentMonth, 1);
+    setCurrentMonth(newMonth);
+    // If the selected date is not in the new month, select the first day of the new month
+    if (!isSameMonth(selectedDate, newMonth)) {
+        setSelectedDate(startOfMonth(newMonth));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [daysInMonth, emblaApi, onSelect]);
+  };
+  const handleNextMonth = () => {
+    const newMonth = addMonths(currentMonth, 1);
+    setCurrentMonth(newMonth);
+    if (!isSameMonth(selectedDate, newMonth)) {
+        setSelectedDate(startOfMonth(newMonth));
+    }
+  };
 
   const handleDateSelect = (day: Date) => {
       setSelectedDate(day);
       setNewAgenda(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') }));
   }
+
+  // Scroll to selected date when month changes or date is selected
+  React.useEffect(() => {
+    if (emblaApi) {
+        const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
+        if (targetIndex !== -1) {
+            emblaApi.scrollTo(targetIndex, true); // true for instant scroll
+        } else {
+             emblaApi.scrollTo(0, true);
+        }
+        onSelect(); // update buttons
+    }
+  }, [selectedDate, daysInMonth, emblaApi, onSelect]);
+
 
   const handleOpenAddDialog = () => {
     setEditingAgenda(null);
@@ -268,7 +268,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             </Dialog>
         </div>
 
-      <Card className="p-3 sm:p-4 shadow-sm max-w-full overflow-hidden">
+      <Card className="p-3 sm:p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-base sm:text-lg font-semibold font-headline text-center" suppressHydrationWarning>
             {format(currentMonth, 'MMMM yyyy', { locale: id })}
@@ -283,15 +283,12 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           </div>
         </div>
 
-        <div className="relative w-full">
-          <div className="absolute inset-y-0 left-0 z-10 flex items-center bg-gradient-to-r from-card to-transparent pr-4 pointer-events-none">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 z-10 flex items-center bg-gradient-to-r from-card via-card to-transparent pr-4 pointer-events-none">
             <Button 
               variant="outline" 
               size="icon" 
-              className={cn(
-                "h-8 w-8 rounded-full shadow-md pointer-events-auto",
-                !canScrollPrev && "opacity-30 cursor-not-allowed"
-              )}
+              className={cn("h-8 w-8 rounded-full shadow-md pointer-events-auto", !canScrollPrev && "opacity-0")}
               onClick={scrollPrev}
               disabled={!canScrollPrev}
             >
@@ -299,54 +296,38 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             </Button>
           </div>
           
-          <div className="absolute inset-y-0 right-0 z-10 flex items-center bg-gradient-to-l from-card to-transparent pl-4 pointer-events-none">
+          <div className="absolute inset-y-0 right-0 z-10 flex items-center bg-gradient-to-l from-card via-card to-transparent pl-4 pointer-events-none">
             <Button 
               variant="outline" 
               size="icon" 
-              className={cn(
-                "h-8 w-8 rounded-full shadow-md pointer-events-auto",
-                !canScrollNext && "opacity-30 cursor-not-allowed"
-              )}
+              className={cn("h-8 w-8 rounded-full shadow-md pointer-events-auto", !canScrollNext && "opacity-0")}
               onClick={scrollNext}
               disabled={!canScrollNext}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          
-          <div className="overflow-hidden w-full max-w-full" ref={emblaRef}>
-            <div className="flex">
-              {daysInMonth.map((day) => (
+
+          <div className="overflow-hidden" ref={emblaRef}>
+            <div className="flex gap-2 pb-1">
+              {daysInMonth.map((day, index) => (
                 <div 
-                  key={day.toString()} 
-                  className="relative shrink-0 basis-1/5 md:basis-[14.28%] lg:basis-[12.5%] xl:basis-[11.11%] p-1"
+                  key={index}
+                  className="relative shrink-0 basis-1/5 md:basis-[14.28%] lg:basis-[11.11%] xl:basis-[9.09%] p-1"
                 >
                   <button
                     onClick={() => handleDateSelect(day)}
                     className={cn(
-                      "flex flex-col items-center justify-center rounded-lg sm:rounded-xl transition-all duration-200 w-full",
-                      "h-20 p-2",
+                      "flex flex-col items-center justify-center rounded-lg sm:rounded-xl transition-all duration-200 w-full h-20 p-2",
                       isSameDay(day, selectedDate)
                         ? "bg-primary text-primary-foreground shadow-md transform-gpu scale-105"
                         : "bg-muted hover:bg-muted/80 text-muted-foreground hover:scale-102"
                     )}
                   >
-                    <span
-                      className={cn(
-                        "text-sm uppercase font-medium leading-none whitespace-nowrap",
-                        isSameDay(day, selectedDate) ? "text-primary-foreground/80" : "text-muted-foreground"
-                      )}
-                      suppressHydrationWarning
-                    >
+                    <span className="text-xs uppercase font-medium leading-none whitespace-nowrap" suppressHydrationWarning>
                       {format(day, "EEE", { locale: id })}
                     </span>
-                    <span
-                      className={cn(
-                        "mt-1 leading-none font-bold",
-                        "text-xl",
-                        isSameDay(day, selectedDate) ? "text-2xl" : "text-xl"
-                      )}
-                    >
+                    <span className="mt-1 text-2xl leading-none font-bold">
                       {format(day, "dd")}
                     </span>
                   </button>
@@ -421,5 +402,3 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     </div>
   );
 }
-
-    
