@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -317,22 +316,22 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
               {daysInMonth.map((day) => (
                 <div 
                   key={day.toString()} 
-                  className="pl-2 basis-[16%] sm:basis-[14%] md:basis-[11%] lg:basis-[9%] shrink-0 grow-0"
+                  className="pl-2 w-16 sm:w-20 shrink-0"
                 >
                   <button
                     onClick={() => handleDateSelect(day)}
                     className={cn(
                       "flex flex-col items-center justify-center rounded-lg sm:rounded-xl transition-all duration-200 w-full",
-                      "h-12 sm:h-14 md:h-16 p-1 sm:p-2",
+                      "h-16 sm:h-20 p-1 sm:p-2",
                       isSameDay(day, selectedDate)
-                        ? "bg-primary text-white shadow-md transform-gpu scale-105"
+                        ? "bg-primary text-primary-foreground shadow-md transform-gpu scale-105"
                         : "bg-muted hover:bg-muted/80 text-muted-foreground hover:scale-102"
                     )}
                   >
                     <span
                       className={cn(
-                        "text-[10px] sm:text-xs uppercase font-medium leading-none whitespace-nowrap",
-                        isSameDay(day, selectedDate) ? "text-white/80" : "text-muted-foreground"
+                        "text-xs sm:text-sm uppercase font-medium leading-none whitespace-nowrap",
+                        isSameDay(day, selectedDate) ? "text-primary-foreground/80" : "text-muted-foreground"
                       )}
                       suppressHydrationWarning
                     >
@@ -340,9 +339,9 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                     </span>
                     <span
                       className={cn(
-                        "mt-0.5 sm:mt-1 leading-none font-semibold",
-                        "text-xs sm:text-sm md:text-base",
-                        isSameDay(day, selectedDate) ? "text-sm sm:text-base md:text-lg" : "text-xs sm:text-sm md:text-base"
+                        "mt-1 leading-none font-bold",
+                        "text-lg sm:text-xl",
+                        isSameDay(day, selectedDate) ? "text-xl sm:text-2xl" : "text-lg sm:text-xl"
                       )}
                     >
                       {format(day, "dd")}
