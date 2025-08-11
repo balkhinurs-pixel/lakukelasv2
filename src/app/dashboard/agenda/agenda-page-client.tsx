@@ -76,17 +76,12 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const [newAgenda, setNewAgenda] = React.useState<NewAgendaEntry>(initialFormState);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "center",
+    align: "start",
     containScroll: "trimSnaps",
-    dragFree: false,
-    loop: false,
-    slidesToScroll: 1,
-    skipSnaps: false
   });
 
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
-  const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const scrollPrev = React.useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -107,86 +102,38 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     onSelect();
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
+    return () => {
+        emblaApi.off('select', onSelect);
+    }
   }, [emblaApi, onSelect]);
 
   React.useEffect(() => {
     setAgendas(initialAgendas);
   }, [initialAgendas]);
 
-  // Add window resize listener to update carousel responsiveness
-  React.useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Initialize window width on mount
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setWindowWidth(window.innerWidth);
-    }
-  }, []);
-
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   
-  // Generate a subset of dates around the selected date for responsive carousel
   const daysInMonth = React.useMemo(() => {
-    const allDaysInMonth = eachDayOfInterval({
+    return eachDayOfInterval({
       start: startOfMonth(currentMonth),
       end: endOfMonth(currentMonth),
     });
-    
-    // Find the index of selected date
-    const selectedIndex = allDaysInMonth.findIndex(day => isSameDay(day, selectedDate));
-    
-    // Calculate how many days to show based on screen size
-     let daysToShow;
-     
-     if (windowWidth < 480) {
-       daysToShow = 5; // Mobile: 5 days
-     } else if (windowWidth < 768) {
-       daysToShow = 7; // Tablet: 7 days
-     } else if (windowWidth < 1024) {
-       daysToShow = 9; // Small desktop: 9 days
-     } else {
-       daysToShow = 11; // Large desktop: 11 days
-     }
-    
-    // Calculate start and end indices to center the selected date
-    const halfRange = Math.floor(daysToShow / 2);
-    let startIndex = Math.max(0, selectedIndex - halfRange);
-    let endIndex = Math.min(allDaysInMonth.length - 1, startIndex + daysToShow - 1);
-    
-    // Adjust if we're at the end of the month
-    if (endIndex - startIndex + 1 < daysToShow) {
-      startIndex = Math.max(0, endIndex - daysToShow + 1);
-    }
-    
-    return allDaysInMonth.slice(startIndex, endIndex + 1);
-  }, [currentMonth, selectedDate, windowWidth]);
+  }, [currentMonth]);
 
-  // Auto scroll to selected date when embla is ready
+  // Auto scroll to selected date when embla is ready or month changes
   React.useEffect(() => {
     if (!emblaApi) return;
     
     const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
     if (targetIndex !== -1) {
-      // Use setTimeout to ensure DOM is ready
-      setTimeout(() => {
-        emblaApi.scrollTo(targetIndex);
-      }, 100);
+      emblaApi.scrollTo(targetIndex, true); // instant scroll
+    } else {
+      emblaApi.scrollTo(0, true); // scroll to beginning if selected date not in month
     }
-  }, [emblaApi, daysInMonth, selectedDate]);
+    onSelect(); // Recalculate canScroll
+  }, [emblaApi, daysInMonth, selectedDate, onSelect]);
 
-  // Initialize selected date to today
-  React.useEffect(() => {
-    const today = new Date();
-    setSelectedDate(today);
-  }, []);
 
   // Update currentMonth when selectedDate changes to different month
   React.useEffect(() => {
@@ -342,7 +289,6 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
         </div>
 
         <div className="relative w-full px-8 sm:px-10">
-          {/* Navigation buttons for carousel */}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -370,11 +316,11 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           </Button>
 
           <div className="overflow-hidden w-full max-w-full" ref={emblaRef}>
-            <div className="flex gap-1 sm:gap-2">
+            <div className="flex gap-1 sm:gap-2 -ml-2">
               {daysInMonth.map((day) => (
                 <div 
                   key={day.toString()} 
-                  className="flex-1 min-w-0"
+                  className="pl-2 basis-[16%] sm:basis-[14%] md:basis-[11%] lg:basis-[9%] shrink-0 grow-0"
                 >
                   <button
                     onClick={() => handleDateSelect(day)}
@@ -382,7 +328,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                       "flex flex-col items-center justify-center rounded-lg sm:rounded-xl transition-all duration-200 w-full",
                       "h-12 sm:h-14 md:h-16 p-1 sm:p-2",
                       isSameDay(day, selectedDate)
-                        ? "bg-violet-500 text-white shadow-md transform-gpu scale-105"
+                        ? "bg-primary text-white shadow-md transform-gpu scale-105"
                         : "bg-muted hover:bg-muted/80 text-muted-foreground hover:scale-102"
                     )}
                   >
