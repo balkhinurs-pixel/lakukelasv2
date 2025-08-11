@@ -496,7 +496,7 @@ export default function AttendancePageComponent({
       </Card>
 
        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent>
+        <DialogContent className="dialog-content-mobile mobile-safe-area">
             <DialogHeader>
             <DialogTitle>Detail Presensi: {viewingEntry?.className}</DialogTitle>
             <DialogDescription>

@@ -156,7 +156,7 @@ export default function SchedulePageComponent({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area">
             <form onSubmit={handleSave}>
                 <DialogHeader>
                   <DialogTitle>{editingItem ? 'Ubah Jadwal' : 'Tambah Jadwal Baru'}</DialogTitle>

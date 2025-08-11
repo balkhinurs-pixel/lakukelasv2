@@ -295,7 +295,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         )}
 
         <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
-            <DialogContent>
+            <DialogContent className="dialog-content-mobile mobile-safe-area">
                 <DialogHeader>
                     <DialogTitle>Kelola Status Pengguna</DialogTitle>
                     <DialogDescription>

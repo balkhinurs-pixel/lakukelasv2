@@ -444,7 +444,7 @@ export default function GradesPageComponent({
       </Card>
 
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent>
+        <DialogContent className="dialog-content-mobile mobile-safe-area">
             <DialogHeader>
             <DialogTitle>Detail Nilai: {viewingEntry?.assessment_type}</DialogTitle>
             <DialogDescription>

@@ -301,7 +301,7 @@ export default function JournalPageComponent({
        </div>
 
         <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg dialog-content-mobile mobile-safe-area">
                 <form onSubmit={handleSaveJournal}>
                     <DialogHeader>
                     <DialogTitle>{editingEntry ? 'Ubah Jurnal Mengajar' : 'Tambah Jurnal Mengajar'}</DialogTitle>
@@ -492,7 +492,7 @@ export default function JournalPageComponent({
         </Card>
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg dialog-content-mobile mobile-safe-area">
             <DialogHeader>
                 <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
                 <DialogDescription>
