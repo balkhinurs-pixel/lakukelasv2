@@ -94,9 +94,13 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
 
   React.useEffect(() => {
     if (!emblaApi) return;
+    onSelect();
     emblaApi.on("select", onSelect);
     emblaApi.on("reInit", onSelect);
-    onSelect();
+    return () => {
+        emblaApi.off("select", onSelect);
+        emblaApi.off("reInit", onSelect);
+    };
   }, [emblaApi, onSelect]);
 
   React.useEffect(() => {
@@ -137,10 +141,10 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
         const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
         if (targetIndex !== -1) {
             emblaApi.scrollTo(targetIndex, true); // true for instant scroll
-        } else {
-             emblaApi.scrollTo(0, true);
+        } else if (daysInMonth.length > 0) {
+            emblaApi.scrollTo(0, true);
         }
-        onSelect(); // update buttons
+        onSelect(); // update buttons after scrolling
     }
   }, [selectedDate, daysInMonth, emblaApi, onSelect]);
 
@@ -282,12 +286,11 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             </Button>
           </div>
         </div>
-
         <div className="relative">
           <Button 
             variant="outline" 
             size="icon" 
-            className={cn("absolute inset-y-0 left-0 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollPrev && "opacity-0 cursor-default")}
+            className={cn("absolute -left-1 top-1/2 -translate-y-1/2 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollPrev && "opacity-0 cursor-default")}
             onClick={scrollPrev}
             disabled={!canScrollPrev}
           >
@@ -297,20 +300,17 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           <Button 
             variant="outline" 
             size="icon" 
-            className={cn("absolute inset-y-0 right-0 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollNext && "opacity-0 cursor-default")}
+            className={cn("absolute -right-1 top-1/2 -translate-y-1/2 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollNext && "opacity-0 cursor-default")}
             onClick={scrollNext}
             disabled={!canScrollNext}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
-
+        
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-2 pb-1">
               {daysInMonth.map((day, index) => (
-                <div 
-                  key={index}
-                  className="relative shrink-0 basis-[16%] sm:basis-[14.28%] p-1"
-                >
+                <div key={index} className="flex-none basis-1/5 sm:basis-[14.28%] lg:basis-[12.5%] xl:basis-[11.11%] p-1">
                   <button
                     onClick={() => handleDateSelect(day)}
                     className={cn(
