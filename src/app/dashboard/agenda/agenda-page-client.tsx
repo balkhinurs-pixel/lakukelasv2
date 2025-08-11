@@ -284,36 +284,32 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
         </div>
 
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 z-10 flex items-center bg-gradient-to-r from-card via-card to-transparent pr-4 pointer-events-none">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className={cn("h-8 w-8 rounded-full shadow-md pointer-events-auto", !canScrollPrev && "opacity-0")}
-              onClick={scrollPrev}
-              disabled={!canScrollPrev}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className={cn("absolute inset-y-0 left-0 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollPrev && "opacity-0 cursor-default")}
+            onClick={scrollPrev}
+            disabled={!canScrollPrev}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
           
-          <div className="absolute inset-y-0 right-0 z-10 flex items-center bg-gradient-to-l from-card via-card to-transparent pl-4 pointer-events-none">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className={cn("h-8 w-8 rounded-full shadow-md pointer-events-auto", !canScrollNext && "opacity-0")}
-              onClick={scrollNext}
-              disabled={!canScrollNext}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className={cn("absolute inset-y-0 right-0 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollNext && "opacity-0 cursor-default")}
+            onClick={scrollNext}
+            disabled={!canScrollNext}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
 
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-2 pb-1">
               {daysInMonth.map((day, index) => (
                 <div 
                   key={index}
-                  className="relative shrink-0 basis-1/5 md:basis-[14.28%] lg:basis-[11.11%] xl:basis-[9.09%] p-1"
+                  className="relative shrink-0 basis-[16%] sm:basis-[14.28%] p-1"
                 >
                   <button
                     onClick={() => handleDateSelect(day)}
