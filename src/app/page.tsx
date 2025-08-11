@@ -165,7 +165,7 @@ export default function LoginPage() {
     return (
         <div className="bg-primary text-primary-foreground p-8 md:p-12 flex flex-col justify-center items-center text-center">
             <div className="mb-8">
-               <Image src="/login.png" alt="LakuKelas Logo" width={280} height={60} className="w-auto h-14" />
+               <Image src="/login.png" alt="LakuKelas Logo" width={280} height={60} className="w-auto h-16" />
             </div>
             <h1 className="text-3xl font-bold font-headline mb-2">
                 {titles[view]}
@@ -299,5 +299,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
 
