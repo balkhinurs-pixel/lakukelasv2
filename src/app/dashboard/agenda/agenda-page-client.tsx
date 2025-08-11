@@ -277,15 +277,17 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
 
       <Card className="p-3 sm:p-4 shadow-sm max-w-full overflow-hidden">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 sm:h-10 sm:w-10">
-            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
           <h2 className="text-base sm:text-lg font-semibold font-headline text-center" suppressHydrationWarning>
             {format(currentMonth, 'MMMM yyyy', { locale: id })}
           </h2>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 sm:h-10 sm:w-10">
-            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 sm:h-10 sm:w-10">
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 sm:h-10 sm:w-10">
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+          </div>
         </div>
 
         <div className="relative w-full px-8 sm:px-10">
@@ -422,3 +424,5 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     </div>
   );
 }
+
+    
