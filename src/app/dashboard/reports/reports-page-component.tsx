@@ -754,7 +754,7 @@ export default function ReportsPageComponent({
                                     <div className="space-y-1">
                                         <p className="font-semibold">{entry.subjectName}</p>
                                         <p className="text-sm text-muted-foreground">{entry.className} {entry.meeting_number ? `(P-${entry.meeting_number})` : ''}</p>
-                                        <p className="text-xs text-muted-foreground">{format(new Date(entry.date), "dd MMM yyyy")}</p>
+                                        <p className="text-xs text-muted-foreground">{format(new Date(entry.date), "EEEE, dd MMM yyyy", { locale: id })}</p>
                                     </div>
                                     <p className="text-sm text-muted-foreground line-clamp-3">{entry.learning_objectives}</p>
                                 </div>
@@ -779,7 +779,7 @@ export default function ReportsPageComponent({
                                     .map((entry) => (
                                 <TableRow key={entry.id}>
                                     <TableCell className="font-medium">
-                                    {format(new Date(entry.date), "dd MMM yyyy")}
+                                    {format(new Date(entry.date), "EEEE, dd MMM yyyy", { locale: id })}
                                     </TableCell>
                                     <TableCell>
                                         <div className="font-medium">{entry.subjectName}</div>

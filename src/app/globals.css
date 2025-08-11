@@ -84,3 +84,101 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
+
+/* Mobile keyboard overlay fixes */
+@layer utilities {
+  /* Prevent zoom on input focus for iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  
+  /* Ensure proper viewport height handling */
+  html {
+    height: 100%;
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  body {
+    min-height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  
+  /* Smooth scrolling for better UX */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Fix for mobile Safari keyboard overlay */
+  @supports (-webkit-touch-callout: none) {
+    .mobile-safe-area {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+  
+  /* Dialog content adjustments for mobile */
+  @media (max-width: 768px) {
+    [role="dialog"] {
+      max-height: 90vh;
+      max-height: 90dvh;
+    }
+    
+    .dialog-content-mobile {
+      max-height: calc(100vh - 2rem);
+      max-height: calc(100dvh - 2rem);
+      overflow-y: auto;
+    }
+  }
+  
+  /* Smooth scrolling for date carousel */
+  .embla {
+    overflow: hidden;
+  }
+  
+  .embla__container {
+    display: flex;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .embla__slide {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  
+  /* Enhanced smooth scrolling */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .smooth-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Date button smooth transitions */
+  .date-button {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+  }
+  
+  .date-button:hover {
+    transform: scale(1.02);
+  }
+  
+  .date-button.selected {
+    transform: scale(1.05);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+}

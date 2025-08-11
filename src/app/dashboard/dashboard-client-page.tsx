@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check } from "lucide-react";
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
 import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -269,7 +270,7 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
                         </TableCell>
                         <TableCell>{entry.className}</TableCell>
                         <TableCell className="text-right">
-                            {format(parseISO(entry.date), "dd MMM yyyy")}
+                            {format(parseISO(entry.date), "EEEE, dd MMM yyyy", { locale: id })}
                         </TableCell>
                         </TableRow>
                     ))}

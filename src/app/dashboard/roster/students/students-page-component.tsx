@@ -222,7 +222,7 @@ export default function StudentsPageComponent({
 
   const AddEditDialog = ({ open, onOpenChange, isEditing }: { open: boolean, onOpenChange: (open: boolean) => void, isEditing: boolean }) => (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area">
             <form onSubmit={handleSaveStudent}>
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Ubah Data Siswa' : 'Tambah Siswa Baru'}</DialogTitle>
@@ -419,7 +419,7 @@ export default function StudentsPageComponent({
 
         {/* Move Student Dialog */}
         <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
-            <DialogContent>
+            <DialogContent className="dialog-content-mobile mobile-safe-area">
                 <form onSubmit={handleMoveStudent}>
                     <DialogHeader>
                         <DialogTitle>Pindahkan Siswa</DialogTitle>

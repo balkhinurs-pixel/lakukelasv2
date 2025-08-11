@@ -100,6 +100,8 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     dragFree: false,
     slidesToScroll: 1,
     skipSnaps: false,
+    duration: 25,
+    startIndex: 0,
   });
 
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
@@ -168,9 +170,9 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     const targetDate = daysInMonth[targetIndex];
     if (targetDate) {
       setSelectedDate(targetDate);
-      emblaApi.scrollTo(targetIndex);
+      emblaApi.scrollTo(targetIndex, true);
     } else {
-      emblaApi.scrollPrev();
+      emblaApi.scrollPrev(true);
     }
   }, [emblaApi, daysInMonth, selectedDate]);
 
@@ -181,9 +183,9 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     const targetDate = daysInMonth[targetIndex];
     if (targetDate) {
       setSelectedDate(targetDate);
-      emblaApi.scrollTo(targetIndex);
+      emblaApi.scrollTo(targetIndex, true);
     } else {
-      emblaApi.scrollNext();
+      emblaApi.scrollNext(true);
     }
   }, [emblaApi, daysInMonth, selectedDate]);
 
@@ -206,6 +208,14 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const handleDateSelect = (day: Date) => {
       setSelectedDate(day);
       setNewAgenda(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') }));
+      
+      // Scroll to the selected date with smooth animation
+      if (emblaApi) {
+        const targetIndex = daysInMonth.findIndex(date => isSameDay(date, day));
+        if (targetIndex !== -1) {
+          emblaApi.scrollTo(targetIndex, true);
+        }
+      }
   }
 
   // Scroll to selected date when month changes or date is selected
@@ -312,7 +322,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                         Tambah Agenda
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogContent className="dialog-content-mobile mobile-safe-area">
                     <form onSubmit={handleSaveAgenda}>
                         <DialogHeader>
                             <DialogTitle>{editingAgenda ? 'Ubah Agenda' : 'Tambah Agenda Baru'}</DialogTitle>
@@ -419,24 +429,24 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             <ChevronRight className="h-4 w-4" />
           </Button>
         
-          <div className="overflow-hidden mx-6" ref={emblaRef} style={{maxWidth: 'calc(100vw - 120px)'}}>
-            <div className="flex gap-2 pb-1">
+          <div className="embla overflow-hidden mx-6 smooth-scroll" ref={emblaRef} style={{maxWidth: 'calc(100vw - 120px)'}}>
+            <div className="embla__container flex gap-2 pb-1">
               {daysInMonth.map((day, index) => (
-                <div key={index} className="flex-none w-16 p-1">
+                <div key={index} className="embla__slide flex-none w-16 p-1">
                   <button
                     onClick={() => handleDateSelect(day)}
                     className={cn(
-                      "flex flex-col items-center justify-center rounded-lg sm:rounded-xl transition-all duration-200 w-full h-20 p-2",
+                      "date-button flex flex-col items-center justify-center rounded-lg sm:rounded-xl w-full h-20 p-2",
                       isSameDay(day, selectedDate)
-                        ? "bg-primary text-primary-foreground shadow-md transform-gpu scale-105"
-                        : "bg-muted hover:bg-muted/80 text-muted-foreground hover:scale-102"
+                        ? "selected bg-primary text-primary-foreground shadow-md"
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground"
                     )}
                   >
                     <span className="text-xs uppercase font-medium leading-none whitespace-nowrap" suppressHydrationWarning>
                       {format(day, "EEE", { locale: id })}
                     </span>
                     <span className="mt-1 text-2xl leading-none font-bold">
-                      {format(day, "dd")}
+                      {format(day, "d")}
                     </span>
                   </button>
                 </div>

@@ -49,7 +49,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, Edit, Trash2, Loader2, Calendar, Mail, User, Users } from "lucide-react";
-import { format } from "date-fns";
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
 import { updateUserStatus, deleteUser } from "@/lib/actions/admin";
@@ -61,7 +62,7 @@ function FormattedDate({ dateString }: { dateString: string }) {
     const [date, setDate] = React.useState('');
     React.useEffect(() => {
         if (dateString) {
-            setDate(format(new Date(dateString), 'dd MMMM yyyy'));
+            setDate(format(new Date(dateString), 'EEEE, dd MMMM yyyy', { locale: id }));
         }
     }, [dateString]);
     
@@ -295,7 +296,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         )}
 
         <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
-            <DialogContent>
+            <DialogContent className="dialog-content-mobile mobile-safe-area">
                 <DialogHeader>
                     <DialogTitle>Kelola Status Pengguna</DialogTitle>
                     <DialogDescription>
