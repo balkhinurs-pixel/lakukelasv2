@@ -341,6 +341,7 @@ create table
     title text not null,
     description text null,
     tag text null,
+    color text default '#6b7280',
     constraint agendas_pkey primary key (id),
     constraint agendas_teacher_id_fkey foreign key (teacher_id) references profiles (id) on update cascade on delete cascade
   );

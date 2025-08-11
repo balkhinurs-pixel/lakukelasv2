@@ -54,6 +54,23 @@ import { saveAgenda, deleteAgenda } from "@/lib/actions";
 
 type NewAgendaEntry = Omit<Agenda, 'id' | 'teacher_id' | 'created_at'>;
 
+// Helper function to determine text color based on background brightness
+const getTextColor = (hexColor: string): string => {
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+  
+  // Convert to RGB
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  
+  // Calculate brightness using luminance formula
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  
+  // Return white for dark colors, black for light colors
+  return brightness > 128 ? '#000000' : '#ffffff';
+};
+
 export default function AgendaPageClient({ initialAgendas }: { initialAgendas: Agenda[] }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -69,6 +86,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     title: "",
     description: "",
     tag: "",
+    color: "#6b7280",
     start_time: "",
     end_time: "",
   };
@@ -216,6 +234,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     setNewAgenda({
       ...initialFormState,
       date: format(selectedDate, 'yyyy-MM-dd'),
+      color: '#6b7280'
     });
     setIsDialogOpen(true);
   };
@@ -223,12 +242,13 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const handleOpenEditDialog = (agenda: Agenda) => {
     setEditingAgenda(agenda);
     setNewAgenda({
-      date: agenda.date,
       title: agenda.title,
-      description: agenda.description || "",
-      tag: agenda.tag || "",
-      start_time: agenda.start_time || "",
-      end_time: agenda.end_time || "",
+      description: agenda.description || '',
+      tag: agenda.tag || '',
+      color: agenda.color || '#6b7280',
+      start_time: agenda.start_time || '',
+      end_time: agenda.end_time || '',
+      date: agenda.date,
     });
     setIsDialogOpen(true);
   };
@@ -247,6 +267,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     formData.append('title', newAgenda.title);
     if (newAgenda.description) formData.append('description', newAgenda.description);
     if (newAgenda.tag) formData.append('tag', newAgenda.tag);
+    if (newAgenda.color) formData.append('color', newAgenda.color);
     if (newAgenda.start_time) formData.append('start_time', newAgenda.start_time);
     if (newAgenda.end_time) formData.append('end_time', newAgenda.end_time);
 
@@ -320,6 +341,34 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                              <div className="space-y-2">
                                 <Label htmlFor="tag">Tag/Kategori (Opsional)</Label>
                                 <Input id="tag" value={newAgenda.tag || ''} onChange={e => setNewAgenda({...newAgenda, tag: e.target.value})} placeholder="e.g. RAPAT"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Warna Tag</Label>
+                                <div className="grid grid-cols-8 gap-2">
+                                    {[
+                                        { color: '#6b7280', name: 'Abu-abu' },
+                                        { color: '#3b82f6', name: 'Biru' },
+                                        { color: '#ef4444', name: 'Merah' },
+                                        { color: '#10b981', name: 'Hijau' },
+                                        { color: '#f59e0b', name: 'Kuning' },
+                                        { color: '#8b5cf6', name: 'Ungu' },
+                                        { color: '#ec4899', name: 'Pink' },
+                                        { color: '#6366f1', name: 'Indigo' }
+                                    ].map((colorOption) => (
+                                        <button
+                                            key={colorOption.color}
+                                            type="button"
+                                            className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                                newAgenda.color === colorOption.color 
+                                                    ? 'border-gray-900 scale-110 shadow-md' 
+                                                    : 'border-gray-300 hover:scale-105'
+                                            }`}
+                                            style={{ backgroundColor: colorOption.color }}
+                                            onClick={() => setNewAgenda({...newAgenda, color: colorOption.color})}
+                                            title={colorOption.name}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>
@@ -401,7 +450,14 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
         <div className="space-y-4">
             {eventsForSelectedDate.length > 0 ? (
             eventsForSelectedDate.map((event) => (
-                <Card key={event.id} className="p-4 flex flex-col gap-3 shadow-sm bg-muted/30">
+                <Card 
+                    key={event.id} 
+                    className="p-4 flex flex-col gap-3 shadow-sm border-l-4" 
+                    style={{
+                        backgroundColor: `${event.color || '#6b7280'}15`,
+                        borderLeftColor: event.color || '#6b7280'
+                    }}
+                >
                     <div className="flex justify-between items-start">
                     <div>
                         <h3 className="font-semibold">{event.title}</h3>
@@ -446,7 +502,18 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                     </AlertDialog>
                     </div>
                     {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
-                    {event.tag && <Badge variant="outline" className="w-fit">{event.tag}</Badge>}
+                    {event.tag && (
+                        <Badge 
+                            variant="outline" 
+                            className="w-fit border-0" 
+                            style={{
+                                backgroundColor: event.color || '#6b7280',
+                                color: getTextColor(event.color || '#6b7280')
+                            }}
+                        >
+                            {event.tag}
+                        </Badge>
+                    )}
                 </Card>
             ))
             ) : (

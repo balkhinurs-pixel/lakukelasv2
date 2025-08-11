@@ -109,6 +109,7 @@ export async function saveAgenda(formData: FormData) {
         title: formData.get('title') as string,
         description: formData.get('description') as string | undefined,
         tag: formData.get('tag') as string | undefined,
+        color: formData.get('color') as string | undefined || '#6b7280',
         start_time: formData.get('start_time') || null,
         end_time: formData.get('end_time') || null,
         teacher_id: user.id,

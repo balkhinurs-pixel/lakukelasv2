@@ -90,6 +90,7 @@ export interface Agenda {
     title: string;
     description?: string | null;
     tag?: string | null;
+    color?: string | null; // Hex color code (e.g., #3b82f6)
     start_time?: string | null; // HH:mm
     end_time?: string | null; // HH:mm
     teacher_id: string;
