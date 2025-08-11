@@ -103,7 +103,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
     return () => {
-        emblaApi.off('select', onSelect);
+        if(emblaApi) emblaApi.off('select', onSelect);
     }
   }, [emblaApi, onSelect]);
 
@@ -131,28 +131,16 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
 
   React.useEffect(() => {
     if (emblaApi) {
-        emblaApi.reInit(); // Re-initialize embla when the days in month change
+        emblaApi.reInit();
         const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
         if (targetIndex !== -1) {
-            emblaApi.scrollTo(targetIndex, true); // instant scroll
+            emblaApi.scrollTo(targetIndex, true);
         } else {
             emblaApi.scrollTo(0, true);
         }
-        onSelect(); // Recalculate canScroll
+        onSelect();
     }
   }, [daysInMonth, emblaApi, selectedDate, onSelect]);
-
-
-  React.useEffect(() => {
-    const selectedMonth = selectedDate.getMonth();
-    const selectedYear = selectedDate.getFullYear();
-    const currentMonthValue = currentMonth.getMonth();
-    const currentYear = currentMonth.getFullYear();
-    
-    if (selectedMonth !== currentMonthValue || selectedYear !== currentYear) {
-      setCurrentMonth(new Date(selectedYear, selectedMonth, 1));
-    }
-  }, [selectedDate, currentMonth]);
 
   const handleDateSelect = (day: Date) => {
       setSelectedDate(day);
