@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -130,12 +131,14 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
         const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
         if (targetIndex !== -1) {
             emblaApi.scrollTo(targetIndex, true);
-        } else {
+        } else if (daysInMonth.length > 0) {
+            setSelectedDate(daysInMonth[0]);
             emblaApi.scrollTo(0, true);
         }
         onSelect();
     }
-  }, [daysInMonth, emblaApi, selectedDate, onSelect]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [daysInMonth, emblaApi, onSelect]);
 
   const handleDateSelect = (day: Date) => {
       setSelectedDate(day);
@@ -281,12 +284,12 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
         </div>
 
         <div className="relative w-full">
-          <div className="absolute inset-y-0 left-0 z-10 flex items-center">
+          <div className="absolute inset-y-0 left-0 z-10 flex items-center bg-gradient-to-r from-card to-transparent pr-4 pointer-events-none">
             <Button 
-              variant="ghost" 
+              variant="outline" 
               size="icon" 
               className={cn(
-                "h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm shadow-md border",
+                "h-8 w-8 rounded-full shadow-md pointer-events-auto",
                 !canScrollPrev && "opacity-30 cursor-not-allowed"
               )}
               onClick={scrollPrev}
@@ -296,12 +299,12 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             </Button>
           </div>
           
-          <div className="absolute inset-y-0 right-0 z-10 flex items-center">
+          <div className="absolute inset-y-0 right-0 z-10 flex items-center bg-gradient-to-l from-card to-transparent pl-4 pointer-events-none">
             <Button 
-              variant="ghost" 
+              variant="outline" 
               size="icon" 
               className={cn(
-                "h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm shadow-md border",
+                "h-8 w-8 rounded-full shadow-md pointer-events-auto",
                 !canScrollNext && "opacity-30 cursor-not-allowed"
               )}
               onClick={scrollNext}
@@ -312,11 +315,11 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           </div>
           
           <div className="overflow-hidden w-full max-w-full" ref={emblaRef}>
-            <div className="flex -ml-2">
+            <div className="flex">
               {daysInMonth.map((day) => (
                 <div 
                   key={day.toString()} 
-                  className="pl-2 shrink-0 w-16 sm:w-20"
+                  className="relative shrink-0 basis-1/5 md:basis-[14.28%] lg:basis-[12.5%] xl:basis-[11.11%] p-1"
                 >
                   <button
                     onClick={() => handleDateSelect(day)}
@@ -418,3 +421,5 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     </div>
   );
 }
+
+    
