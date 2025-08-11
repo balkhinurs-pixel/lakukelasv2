@@ -3,13 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { MailCheck } from "lucide-react";
 import Link from "next/link";
-import { AppLogo } from "@/components/icons";
+import Image from 'next/image';
 
 export default function CheckEmailPage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
             <div className="w-full max-w-md text-center">
-                 <AppLogo className="h-16 w-16 mx-auto mb-6 text-primary" />
+                 <Image src="/login.png" alt="LakuKelas Logo" width={280} height={60} className="w-48 h-auto mx-auto mb-6" />
                 <Card className="shadow-lg">
                     <CardHeader>
                         <div className="mx-auto bg-green-100 p-3 rounded-full w-fit mb-4">
@@ -33,5 +33,3 @@ export default function CheckEmailPage() {
         </div>
     );
 }
-
-    
