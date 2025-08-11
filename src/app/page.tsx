@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AppLogo } from "@/components/icons";
+import { LoginLogo } from "@/components/icons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -164,7 +164,7 @@ export default function LoginPage() {
     return (
         <div className="bg-primary text-primary-foreground p-8 md:p-12 flex flex-col justify-center items-center text-center">
             <div className="mb-8">
-                <AppLogo className="h-14 w-14 mx-auto" />
+                <LoginLogo className="h-20 w-auto mx-auto" />
             </div>
             <h1 className="text-3xl font-bold font-headline mb-2">
                 {titles[view]}
