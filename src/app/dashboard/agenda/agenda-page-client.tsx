@@ -51,6 +51,7 @@ import { cn } from "@/lib/utils";
 import type { Agenda } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { saveAgenda, deleteAgenda } from "@/lib/actions";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type NewAgendaEntry = Omit<Agenda, 'id' | 'teacher_id' | 'created_at'>;
 
@@ -82,30 +83,36 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
 
-  const scrollPrev = React.useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
-  const scrollNext = React.useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
-
   const onSelect = React.useCallback(() => {
     if (!emblaApi) return;
     setCanScrollPrev(emblaApi.canScrollPrev());
     setCanScrollNext(emblaApi.canScrollNext());
   }, [emblaApi]);
 
-  React.useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on("select", onSelect);
-    emblaApi.on("reInit", onSelect);
-    return () => {
-        emblaApi.off("select", onSelect);
-        emblaApi.off("reInit", onSelect);
-    };
-  }, [emblaApi, onSelect]);
+  const scrollPrev = React.useCallback(() => {
+    emblaApi?.scrollPrev();
+  }, [emblaApi]);
 
-  React.useEffect(() => {
-    setAgendas(initialAgendas);
-  }, [initialAgendas]);
-
+  const scrollNext = React.useCallback(() => {
+    emblaApi?.scrollNext();
+  }, [emblaApi]);
+  
+  const handleDateSelect = (day: Date) => {
+      setSelectedDate(day);
+      setNewAgenda(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') }));
+  }
+  
+  const handlePrevMonth = () => {
+    const newMonth = subMonths(currentMonth, 1);
+    setCurrentMonth(newMonth);
+    setSelectedDate(startOfMonth(newMonth));
+  };
+  const handleNextMonth = () => {
+    const newMonth = addMonths(currentMonth, 1);
+    setCurrentMonth(newMonth);
+    setSelectedDate(startOfMonth(newMonth));
+  };
+  
   const daysInMonth = React.useMemo(() => {
     return eachDayOfInterval({
       start: startOfMonth(currentMonth),
@@ -113,39 +120,28 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     });
   }, [currentMonth]);
 
-  const handlePrevMonth = () => {
-    const newMonth = subMonths(currentMonth, 1);
-    setCurrentMonth(newMonth);
-    // If selected date is not in the new month, update it to the first day
-    if (!isSameMonth(selectedDate, newMonth)) {
-        setSelectedDate(startOfMonth(newMonth));
-    }
-  };
-  const handleNextMonth = () => {
-    const newMonth = addMonths(currentMonth, 1);
-    setCurrentMonth(newMonth);
-    if (!isSameMonth(selectedDate, newMonth)) {
-        setSelectedDate(startOfMonth(newMonth));
-    }
-  };
-
-  const handleDateSelect = (day: Date) => {
-      setSelectedDate(day);
-      setNewAgenda(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') }));
-  }
-
-  // Scroll to selected date when month changes or date is selected
   React.useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+  }, [emblaApi, onSelect]);
+
+   React.useEffect(() => {
     if (emblaApi) {
+        emblaApi.reInit();
         const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
         if (targetIndex !== -1) {
-            emblaApi.scrollTo(targetIndex, true); // Use snap-to-slide
+            emblaApi.scrollTo(targetIndex, true); 
         } else if (daysInMonth.length > 0) {
             emblaApi.scrollTo(0, true);
         }
-        onSelect(); // Update button states after scrolling
     }
-  }, [selectedDate, daysInMonth, emblaApi, onSelect]);
+  }, [currentMonth, selectedDate, daysInMonth, emblaApi]);
+
+  React.useEffect(() => {
+    setAgendas(initialAgendas);
+  }, [initialAgendas]);
 
 
   const handleOpenAddDialog = () => {
@@ -235,31 +231,33 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                                 Isi detail acara atau pengingat Anda di bawah ini.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="title">Judul Agenda</Label>
-                                <Input id="title" value={newAgenda.title} onChange={e => setNewAgenda({...newAgenda, title: e.target.value})} placeholder="e.g. Rapat Persiapan Ujian" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Deskripsi (Opsional)</Label>
-                                <Textarea id="description" value={newAgenda.description || ''} onChange={e => setNewAgenda({...newAgenda, description: e.target.value})} placeholder="e.g. Membahas teknis pelaksanaan ujian akhir semester."/>
-                            </div>
-                             <div className="grid grid-cols-2 gap-4">
+                        <ScrollArea className="max-h-[70vh]">
+                            <div className="grid gap-4 py-4 pr-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="start_time">Waktu Mulai</Label>
-                                    <Input id="start_time" type="time" value={newAgenda.start_time || ''} onChange={e => setNewAgenda({...newAgenda, start_time: e.target.value})} />
+                                    <Label htmlFor="title">Judul Agenda</Label>
+                                    <Input id="title" value={newAgenda.title} onChange={e => setNewAgenda({...newAgenda, title: e.target.value})} placeholder="e.g. Rapat Persiapan Ujian" required />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="end_time">Waktu Selesai</Label>
-                                    <Input id="end_time" type="time" value={newAgenda.end_time || ''} onChange={e => setNewAgenda({...newAgenda, end_time: e.target.value})} />
+                                    <Label htmlFor="description">Deskripsi (Opsional)</Label>
+                                    <Textarea id="description" value={newAgenda.description || ''} onChange={e => setNewAgenda({...newAgenda, description: e.target.value})} placeholder="e.g. Membahas teknis pelaksanaan ujian akhir semester."/>
+                                </div>
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="start_time">Waktu Mulai</Label>
+                                        <Input id="start_time" type="time" value={newAgenda.start_time || ''} onChange={e => setNewAgenda({...newAgenda, start_time: e.target.value})} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="end_time">Waktu Selesai</Label>
+                                        <Input id="end_time" type="time" value={newAgenda.end_time || ''} onChange={e => setNewAgenda({...newAgenda, end_time: e.target.value})} />
+                                    </div>
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="tag">Tag/Kategori (Opsional)</Label>
+                                    <Input id="tag" value={newAgenda.tag || ''} onChange={e => setNewAgenda({...newAgenda, tag: e.target.value})} placeholder="e.g. RAPAT"/>
                                 </div>
                             </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="tag">Tag/Kategori (Opsional)</Label>
-                                <Input id="tag" value={newAgenda.tag || ''} onChange={e => setNewAgenda({...newAgenda, tag: e.target.value})} placeholder="e.g. RAPAT"/>
-                            </div>
-                        </div>
-                        <DialogFooter>
+                        </ScrollArea>
+                        <DialogFooter className="border-t pt-4">
                             <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={loading}>Batal</Button>
                             <Button type="submit" disabled={loading}>
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -289,7 +287,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           <Button 
             variant="outline" 
             size="icon" 
-            className={cn("absolute -left-1 top-1/2 -translate-y-1/2 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollPrev && "opacity-0 cursor-default")}
+            className={cn("absolute -left-1 sm:-left-2 top-1/2 -translate-y-1/2 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollPrev && "opacity-0 cursor-default")}
             onClick={scrollPrev}
             disabled={!canScrollPrev}
           >
@@ -299,14 +297,14 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           <Button 
             variant="outline" 
             size="icon" 
-            className={cn("absolute -right-1 top-1/2 -translate-y-1/2 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollNext && "opacity-0 cursor-default")}
+            className={cn("absolute -right-1 sm:-right-2 top-1/2 -translate-y-1/2 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollNext && "opacity-0 cursor-default")}
             onClick={scrollNext}
             disabled={!canScrollNext}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         
-          <div className="overflow-hidden" ref={emblaRef}>
+          <div className="overflow-hidden mx-8" ref={emblaRef}>
             <div className="flex gap-2 pb-1">
               {daysInMonth.map((day, index) => (
                 <div key={index} className="flex-none w-16 p-1">
@@ -397,3 +395,4 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     </div>
   );
 }
+    
