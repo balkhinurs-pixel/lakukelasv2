@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   Sparkles,
   CalendarDays,
-  Home
+  Home,
+  Bell,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -207,6 +208,25 @@ export default function DashboardLayoutClient({
     </Badge>
   );
 
+  const AppHeader = () => (
+    <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
+        <div className="flex items-center justify-between h-16 px-4">
+             <div className="flex items-center gap-2">
+                {isMobile && <SidebarTrigger className="text-white hover:bg-white/20 hover:text-white" />}
+                 <h1 className="text-lg font-bold tracking-tight">
+                    <span className="text-white">Laku</span>
+                    <span className="text-green-300">Kelas</span>
+                </h1>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white rounded-full">
+                    <Bell className="h-5 w-5" />
+                </Button>
+            </div>
+        </div>
+    </header>
+  );
+
   return (
     <>
       <Sidebar collapsible="icon">
@@ -269,10 +289,8 @@ export default function DashboardLayoutClient({
       </Sidebar>
 
       <SidebarInset>
-        <header className="p-4 sm:p-6 lg:p-8 flex items-center md:hidden">
-             <SidebarTrigger />
-        </header>
-        <div className="p-4 sm:p-6 lg:p-8 pt-0 md:pt-8">
+        <AppHeader />
+        <div className="p-4 sm:p-6 lg:p-8">
             {children}
         </div>
       </SidebarInset>
@@ -280,4 +298,3 @@ export default function DashboardLayoutClient({
     </>
   );
 }
-
