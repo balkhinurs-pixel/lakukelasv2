@@ -116,6 +116,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const handlePrevMonth = () => {
     const newMonth = subMonths(currentMonth, 1);
     setCurrentMonth(newMonth);
+    // If selected date is not in the new month, update it to the first day
     if (!isSameMonth(selectedDate, newMonth)) {
         setSelectedDate(startOfMonth(newMonth));
     }
@@ -138,11 +139,11 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     if (emblaApi) {
         const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
         if (targetIndex !== -1) {
-            emblaApi.scrollTo(targetIndex, true);
+            emblaApi.scrollTo(targetIndex, true); // Use snap-to-slide
         } else if (daysInMonth.length > 0) {
             emblaApi.scrollTo(0, true);
         }
-        onSelect();
+        onSelect(); // Update button states after scrolling
     }
   }, [selectedDate, daysInMonth, emblaApi, onSelect]);
 
@@ -308,7 +309,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-2 pb-1">
               {daysInMonth.map((day, index) => (
-                <div key={index} className="flex-none basis-1/5 sm:basis-[14.28%] lg:basis-[12.5%] xl:basis-[11.11%] p-1">
+                <div key={index} className="shrink-0 w-16 p-1">
                   <button
                     onClick={() => handleDateSelect(day)}
                     className={cn(
