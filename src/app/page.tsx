@@ -2,16 +2,17 @@
 "use client";
 
 import * as React from "react";
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LoginLogo } from "@/components/icons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { IconLogo } from "@/components/ui/iconlogo";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -164,7 +165,7 @@ export default function LoginPage() {
     return (
         <div className="bg-primary text-primary-foreground p-8 md:p-12 flex flex-col justify-center items-center text-center">
             <div className="mb-8">
-                <LoginLogo className="h-20 w-auto mx-auto" />
+               <Image src="/login.png" alt="LakuKelas Logo" width={280} height={60} className="w-auto h-20" />
             </div>
             <h1 className="text-3xl font-bold font-headline mb-2">
                 {titles[view]}
