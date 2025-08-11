@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { format, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
 import { Calendar as CalendarIcon, Edit, Eye, Loader2 } from "lucide-react";
@@ -56,7 +57,7 @@ function FormattedDate({ date, formatString }: { date: Date | null, formatString
 
     React.useEffect(() => {
         if (date) {
-            setFormattedDate(format(date, formatString));
+            setFormattedDate(format(date, formatString, { locale: id }));
         }
     }, [date, formatString]);
 

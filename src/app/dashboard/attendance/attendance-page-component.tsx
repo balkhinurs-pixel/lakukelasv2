@@ -2,7 +2,8 @@
 "use client";
 
 import * as React from "react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
@@ -55,10 +56,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string }[] = [
-    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600 hover:bg-green-50', selectedClassName: 'bg-green-600 text-white hover:bg-green-700' },
-    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600 hover:bg-yellow-50', selectedClassName: 'bg-yellow-500 text-white hover:bg-yellow-600' },
-    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600 hover:bg-blue-50', selectedClassName: 'bg-blue-500 text-white hover:bg-blue-600' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600 hover:bg-red-50', selectedClassName: 'bg-red-500 text-white hover:bg-red-600' },
+    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white' },
+    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white' },
+    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white' },
 ];
 
 
@@ -74,7 +75,7 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
                 size="icon"
                 onClick={() => onChange(studentId, opt.value)}
                 className={cn(
-                    "size-8 rounded-md border text-xs font-semibold transition-colors duration-200",
+                    "size-8 rounded-md border text-xs font-semibold",
                     value === opt.value
                         ? opt.selectedClassName
                         : opt.className
@@ -298,7 +299,7 @@ export default function AttendancePageComponent({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pilih tanggal</span>}
+                      {date ? format(date, "PPP", { locale: id }) : <span>Pilih tanggal</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -396,13 +397,14 @@ export default function AttendancePageComponent({
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-            <CardTitle>Riwayat Presensi</CardTitle>
-            <CardDescription>Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
-        </CardHeader>
-        <CardContent>
-           {filteredHistory.length > 0 ? (
+      {selectedClassId && (
+        <Card>
+          <CardHeader>
+              <CardTitle>Riwayat Presensi</CardTitle>
+              <CardDescription>Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             {filteredHistory.length > 0 ? (
             <>
               {/* Mobile View */}
               <div className="md:hidden space-y-4">
@@ -415,13 +417,13 @@ export default function AttendancePageComponent({
                     <div key={entry.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
                       <div>
                           <p className="font-semibold">{entry.className} - {entry.subjectName}</p>
-                          <p className="text-sm text-muted-foreground">{format(parseISO(entry.date), 'dd MMMM yyyy')} (Pertemuan ke-{entry.meeting_number})</p>
+                          <p className="text-sm text-muted-foreground">{format(parseISO(entry.date), 'EEEE, dd MMMM yyyy', { locale: id })} (Pertemuan ke-{entry.meeting_number})</p>
                       </div>
-                      <div className="border-t pt-3 mt-3 text-sm">
-                        <span className="text-green-600 font-medium">Hadir: {summary.Hadir || 0}</span>,{' '}
-                        <span className="text-yellow-600 font-medium">Sakit: {summary.Sakit || 0}</span>,{' '}
-                        <span className="text-blue-600 font-medium">Izin: {summary.Izin || 0}</span>,{' '}
-                        <span className="text-red-600 font-medium">Alpha: {summary.Alpha || 0}</span>
+                      <div className="border-t pt-3 mt-3 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Hadir: {summary.Hadir || 0}</span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Sakit: {summary.Sakit || 0}</span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Izin: {summary.Izin || 0}</span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Alpha: {summary.Alpha || 0}</span>
                       </div>
                       <div className="flex gap-2 pt-2">
                           <Button variant="secondary" size="sm" className="w-full" onClick={() => handleViewDetails(entry)}>
@@ -458,17 +460,19 @@ export default function AttendancePageComponent({
                               }, {} as Record<AttendanceRecord['status'], number>);
                               return (
                                    <TableRow key={entry.id}>
-                                      <TableCell>{format(parseISO(entry.date), 'dd MMM yyyy')}</TableCell>
+                                      <TableCell>{format(parseISO(entry.date), 'EEEE, dd MMM yyyy', { locale: id })}</TableCell>
                                       <TableCell>
                                           <div className="font-medium">{entry.className}</div>
                                           <div className="text-xs text-muted-foreground">{entry.subjectName}</div>
                                       </TableCell>
                                       <TableCell>{entry.meeting_number}</TableCell>
                                       <TableCell className="text-xs">
-                                          <span className="text-green-600">H: {summary.Hadir || 0}</span>,{' '}
-                                          <span className="text-yellow-600">S: {summary.Sakit || 0}</span>,{' '}
-                                          <span className="text-blue-600">I: {summary.Izin || 0}</span>,{' '}
-                                          <span className="text-red-600">A: {summary.Alpha || 0}</span>
+                                          <div className="flex flex-wrap gap-1">
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">H: {summary.Hadir || 0}</span>
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">S: {summary.Sakit || 0}</span>
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">I: {summary.Izin || 0}</span>
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">A: {summary.Alpha || 0}</span>
+                                          </div>
                                       </TableCell>
                                       <TableCell className="text-right">
                                          <Button variant="ghost" size="sm" onClick={() => handleViewDetails(entry)}>
@@ -487,20 +491,21 @@ export default function AttendancePageComponent({
                   </Table>
               </div>
             </>
-           ) : (
-                <div className="text-center text-muted-foreground py-12">
-                    <p>Belum ada riwayat presensi yang tersimpan.</p>
-                </div>
-            )}
-        </CardContent>
-      </Card>
+             ) : (
+                  <div className="text-center text-muted-foreground py-12">
+                      <p>Belum ada riwayat presensi yang tersimpan.</p>
+                  </div>
+              )}
+          </CardContent>
+        </Card>
+      )}
 
        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="dialog-content-mobile mobile-safe-area">
             <DialogHeader>
             <DialogTitle>Detail Presensi: {viewingEntry?.className}</DialogTitle>
             <DialogDescription>
-                {viewingEntry?.subjectName} - {viewingEntry ? format(parseISO(viewingEntry.date), "dd MMMM yyyy") : ''}
+                {viewingEntry?.subjectName} - {viewingEntry ? format(parseISO(viewingEntry.date), "EEEE, dd MMMM yyyy", { locale: id }) : ''}
             </DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh] pr-2">

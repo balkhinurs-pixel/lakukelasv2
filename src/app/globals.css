@@ -138,4 +138,47 @@
       overflow-y: auto;
     }
   }
+  
+  /* Smooth scrolling for date carousel */
+  .embla {
+    overflow: hidden;
+  }
+  
+  .embla__container {
+    display: flex;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .embla__slide {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  
+  /* Enhanced smooth scrolling */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .smooth-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Date button smooth transitions */
+  .date-button {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+  }
+  
+  .date-button:hover {
+    transform: scale(1.02);
+  }
+  
+  .date-button.selected {
+    transform: scale(1.05);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
 }
