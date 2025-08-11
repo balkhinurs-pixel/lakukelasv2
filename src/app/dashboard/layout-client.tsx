@@ -20,7 +20,8 @@ import {
   User as UserIcon,
   CheckCircle2,
   Sparkles,
-  CalendarDays
+  CalendarDays,
+  Home
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -54,7 +55,7 @@ import type { Profile } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dasbor' },
+  { href: '/dashboard', icon: Home, label: 'Home' },
   { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
@@ -63,7 +64,12 @@ const navItems = [
   { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
 ];
 
-const mainMobileNavItems = navItems.slice(0, 4);
+const mainMobileNavItems = [
+    { href: '/dashboard', icon: Home, label: 'Home' },
+    { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
+    { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
+    { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
+];
 
 const rosterNavItems = [
     { href: '/dashboard/roster/school-year', label: 'Tahun Ajaran' },
@@ -116,13 +122,13 @@ export default function DashboardLayoutClient({
             <SidebarMenuButton
               asChild
               isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard'}
-              tooltip={{ children: item.label }}
+              tooltip={{ children: item.label === 'Home' ? 'Dasbor' : item.label }}
               className="group-data-[collapsible=icon]:justify-center"
             >
               <Link href={item.href}>
                 <item.icon className={cn("group-data-[active=true]:text-primary")} />
                 <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
-                  {item.label}
+                  {item.label === 'Home' ? 'Dasbor' : item.label}
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -181,7 +187,7 @@ export default function DashboardLayoutClient({
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
             {mainMobileNavItems.map((item) => (
-                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname === item.href ? "text-primary" : "text-muted-foreground")}>
+                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", (pathname === item.href || (item.href === '/dashboard' && pathname.startsWith('/dashboard'))) ? "text-primary" : "text-muted-foreground")}>
                     <item.icon className="w-5 h-5" />
                     <span className="text-xs">{item.label}</span>
                 </Link>
@@ -274,3 +280,4 @@ export default function DashboardLayoutClient({
     </>
   );
 }
+
