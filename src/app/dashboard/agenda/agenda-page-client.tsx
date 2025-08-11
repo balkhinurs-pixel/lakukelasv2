@@ -111,14 +111,10 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   }, [initialAgendas]);
 
   const handlePrevMonth = () => {
-    const newMonth = subMonths(currentMonth, 1);
-    setCurrentMonth(newMonth);
-    setSelectedDate(startOfMonth(newMonth));
+    setCurrentMonth(prev => subMonths(prev, 1));
   };
   const handleNextMonth = () => {
-    const newMonth = addMonths(currentMonth, 1);
-    setCurrentMonth(newMonth);
-    setSelectedDate(startOfMonth(newMonth));
+    setCurrentMonth(prev => addMonths(prev, 1));
   };
   
   const daysInMonth = React.useMemo(() => {
@@ -284,45 +280,49 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           </div>
         </div>
 
-        <div className="relative w-full px-8 sm:px-10">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className={cn(
-              "absolute left-0 top-1/2 -translate-y-1/2 z-10 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-lg border flex items-center justify-center",
-              !canScrollPrev && "opacity-30 cursor-not-allowed"
-            )}
-            onClick={scrollPrev}
-            disabled={!canScrollPrev}
-          >
-            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-          </Button>
+        <div className="relative w-full">
+          <div className="absolute inset-y-0 left-0 z-10 flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={cn(
+                "h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm shadow-md border",
+                !canScrollPrev && "opacity-30 cursor-not-allowed"
+              )}
+              onClick={scrollPrev}
+              disabled={!canScrollPrev}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </div>
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className={cn(
-              "absolute right-0 top-1/2 -translate-y-1/2 z-10 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-lg border flex items-center justify-center",
-              !canScrollNext && "opacity-30 cursor-not-allowed"
-            )}
-            onClick={scrollNext}
-            disabled={!canScrollNext}
-          >
-            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
-          </Button>
-
+          <div className="absolute inset-y-0 right-0 z-10 flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={cn(
+                "h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm shadow-md border",
+                !canScrollNext && "opacity-30 cursor-not-allowed"
+              )}
+              onClick={scrollNext}
+              disabled={!canScrollNext}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
           <div className="overflow-hidden w-full max-w-full" ref={emblaRef}>
-            <div className="flex gap-1 sm:gap-2 -ml-2">
+            <div className="flex -ml-2">
               {daysInMonth.map((day) => (
                 <div 
                   key={day.toString()} 
-                  className="pl-2 w-16 sm:w-20 shrink-0"
+                  className="pl-2 shrink-0 w-16 sm:w-20"
                 >
                   <button
                     onClick={() => handleDateSelect(day)}
                     className={cn(
                       "flex flex-col items-center justify-center rounded-lg sm:rounded-xl transition-all duration-200 w-full",
-                      "h-16 sm:h-20 p-1 sm:p-2",
+                      "h-20 p-2",
                       isSameDay(day, selectedDate)
                         ? "bg-primary text-primary-foreground shadow-md transform-gpu scale-105"
                         : "bg-muted hover:bg-muted/80 text-muted-foreground hover:scale-102"
@@ -330,7 +330,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                   >
                     <span
                       className={cn(
-                        "text-xs sm:text-sm uppercase font-medium leading-none whitespace-nowrap",
+                        "text-sm uppercase font-medium leading-none whitespace-nowrap",
                         isSameDay(day, selectedDate) ? "text-primary-foreground/80" : "text-muted-foreground"
                       )}
                       suppressHydrationWarning
@@ -340,8 +340,8 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                     <span
                       className={cn(
                         "mt-1 leading-none font-bold",
-                        "text-lg sm:text-xl",
-                        isSameDay(day, selectedDate) ? "text-xl sm:text-2xl" : "text-lg sm:text-xl"
+                        "text-xl",
+                        isSameDay(day, selectedDate) ? "text-2xl" : "text-xl"
                       )}
                     >
                       {format(day, "dd")}
