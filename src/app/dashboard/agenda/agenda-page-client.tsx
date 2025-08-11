@@ -111,8 +111,16 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     setAgendas(initialAgendas);
   }, [initialAgendas]);
 
-  const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+  const handlePrevMonth = () => {
+    const newMonth = subMonths(currentMonth, 1);
+    setCurrentMonth(newMonth);
+    setSelectedDate(startOfMonth(newMonth));
+  };
+  const handleNextMonth = () => {
+    const newMonth = addMonths(currentMonth, 1);
+    setCurrentMonth(newMonth);
+    setSelectedDate(startOfMonth(newMonth));
+  };
   
   const daysInMonth = React.useMemo(() => {
     return eachDayOfInterval({
@@ -121,21 +129,20 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     });
   }, [currentMonth]);
 
-  // Auto scroll to selected date when embla is ready or month changes
   React.useEffect(() => {
-    if (!emblaApi) return;
-    
-    const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
-    if (targetIndex !== -1) {
-      emblaApi.scrollTo(targetIndex, true); // instant scroll
-    } else {
-      emblaApi.scrollTo(0, true); // scroll to beginning if selected date not in month
+    if (emblaApi) {
+        emblaApi.reInit(); // Re-initialize embla when the days in month change
+        const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
+        if (targetIndex !== -1) {
+            emblaApi.scrollTo(targetIndex, true); // instant scroll
+        } else {
+            emblaApi.scrollTo(0, true);
+        }
+        onSelect(); // Recalculate canScroll
     }
-    onSelect(); // Recalculate canScroll
-  }, [emblaApi, daysInMonth, selectedDate, onSelect]);
+  }, [daysInMonth, emblaApi, selectedDate, onSelect]);
 
 
-  // Update currentMonth when selectedDate changes to different month
   React.useEffect(() => {
     const selectedMonth = selectedDate.getMonth();
     const selectedYear = selectedDate.getFullYear();
@@ -424,5 +431,3 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     </div>
   );
 }
-
-    
