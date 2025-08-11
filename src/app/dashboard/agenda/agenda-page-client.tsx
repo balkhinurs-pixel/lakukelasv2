@@ -309,7 +309,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-2 pb-1">
               {daysInMonth.map((day, index) => (
-                <div key={index} className="shrink-0 w-16 p-1">
+                <div key={index} className="flex-none w-16 p-1">
                   <button
                     onClick={() => handleDateSelect(day)}
                     className={cn(
