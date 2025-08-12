@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useActivation } from '@/hooks/use-activation';
+import { useActivation } from '@/hooks/use-activation.tsx';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -274,9 +274,10 @@ export default function DashboardLayoutClient({
   );
 
   const MobileSidebar = () => (
-     <ScrollArea className="flex-1">
+    <>
+      <ProfileHeader />
+      <ScrollArea className="flex-1">
         <SidebarContent className="p-0">
-          <ProfileHeader />
           <SidebarGroup>
             <SidebarGroupLabel>MENU LAINNYA</SidebarGroupLabel>
             <MainNavContent items={mobileSidebarNavItems} />
@@ -288,6 +289,7 @@ export default function DashboardLayoutClient({
           </SidebarGroup>
         </SidebarContent>
       </ScrollArea>
+    </>
   );
 
   const DesktopSidebar = () => (
