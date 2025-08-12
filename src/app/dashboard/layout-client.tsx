@@ -40,6 +40,8 @@ import {
   SidebarTrigger,
   SidebarMenuSubButton,
   SidebarSeparator,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -54,6 +56,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home' },
@@ -115,74 +118,134 @@ export default function DashboardLayoutClient({
     }
   }, [profile, setActivationStatus]);
 
-  const SidebarNavContent = () => (
-    <>
-      <SidebarMenu>
-        {navItems.map((item) => (
+  const StatusBadge = () => (
+    <Badge variant={isPro ? "default" : "secondary"} className={cn("mt-2", isPro ? 'bg-green-500/20 text-green-50 border-green-400/30' : 'bg-gray-500/20 text-gray-50 border-gray-400/30')}>
+      {isPro ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
+      Akun {isPro ? "Pro" : "Gratis"}
+    </Badge>
+  );
+
+  const ProfileHeader = () => (
+    <SidebarHeader className="p-0 text-background">
+      <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden">
+          <Avatar className="h-20 w-20 border-4 border-white/50">
+            <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} data-ai-hint="teacher portrait" />
+            <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+          </Avatar>
+          <div className="text-center">
+            <p className="text-lg font-bold">{profile?.full_name || 'Guru'}</p>
+            <p className="text-sm text-primary-foreground/80">{user?.email}</p>
+            <StatusBadge />
+          </div>
+      </div>
+      <div className="hidden justify-center p-2 group-data-[collapsible=icon]:flex group-data-[state=expanded]:hidden">
+          <Avatar className="h-12 w-12 border-2 border-primary">
+              <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} data-ai-hint="teacher portrait" />
+              <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+          </Avatar>
+      </div>
+    </SidebarHeader>
+  );
+
+  const MainNavContent = () => (
+    <SidebarMenu>
+      {navItems.map((item) => (
+        <SidebarMenuItem key={item.href}>
+          <SidebarMenuButton
+            asChild
+            isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard'}
+            tooltip={{ children: item.label === 'Home' ? 'Dasbor' : item.label }}
+            className="group-data-[collapsible=icon]:justify-center"
+          >
+            <Link href={item.href}>
+              <item.icon className={cn("group-data-[active=true]:text-primary")} />
+              <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
+                {item.label === 'Home' ? 'Dasbor' : item.label}
+              </span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
+
+  const RosterNavContent = () => (
+    <SidebarMenu>
+      <SidebarMenuItem>
+          <Collapsible defaultOpen={isRosterActive}>
+              <div className={cn("flex items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full", isRosterActive && "text-sidebar-primary-foreground font-semibold")}>
+                  <SidebarMenuButton
+                      asChild
+                      isActive={isRosterActive}
+                      className="flex-1 justify-start p-2 group-data-[collapsible=icon]:justify-center"
+                      tooltip={{ children: 'Manajemen Rombel' }}
+                  >
+                      <Link href="/dashboard/roster/students">
+                          <Users className={cn(isRosterActive && "text-primary")} />
+                          <span className={cn("group-data-[collapsible=icon]:hidden", isRosterActive && "text-primary font-semibold")}>
+                            Manajemen Rombel
+                          </span>
+                      </Link>
+                  </SidebarMenuButton>
+
+                  <CollapsibleTrigger asChild>
+                       <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn("h-8 w-8 shrink-0 group-data-[collapsible=icon]:hidden", isRosterActive ? "text-primary" : "text-muted-foreground")}
+                      >
+                          <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-180" />
+                      </Button>
+                  </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
+                  <SidebarMenuSub>
+                      {rosterNavItems.map(item => (
+                          <SidebarMenuItem key={item.href}>
+                              <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
+                                  <Link href={item.href}>{item.label}</Link>
+                              </SidebarMenuSubButton>
+                          </SidebarMenuItem>
+                      ))}
+                  </SidebarMenuSub>
+              </CollapsibleContent>
+          </Collapsible>
+       </SidebarMenuItem>
+    </SidebarMenu>
+  );
+  
+  const SettingsNavContent = () => (
+     <SidebarMenu>
+        {settingsNavItems.map((item) => (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
               asChild
-              isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard'}
-              tooltip={{ children: item.label === 'Home' ? 'Dasbor' : item.label }}
+              isActive={pathname.startsWith(item.href)}
+              tooltip={{ children: item.label }}
               className="group-data-[collapsible=icon]:justify-center"
             >
               <Link href={item.href}>
                 <item.icon className={cn("group-data-[active=true]:text-primary")} />
                 <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
-                  {item.label === 'Home' ? 'Dasbor' : item.label}
+                  {item.label}
                 </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}
-      </SidebarMenu>
-
-      <SidebarSeparator className="my-2" />
-
-      <SidebarMenu>
         <SidebarMenuItem>
-            <Collapsible defaultOpen={isRosterActive}>
-                <div className={cn("flex items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full", isRosterActive && "text-sidebar-primary-foreground font-semibold")}>
-                    <SidebarMenuButton
-                        asChild
-                        isActive={isRosterActive}
-                        className="flex-1 justify-start p-2 group-data-[collapsible=icon]:justify-center"
-                        tooltip={{ children: 'Manajemen Rombel' }}
-                    >
-                        <Link href="/dashboard/roster/students">
-                            <Users className={cn(isRosterActive && "text-primary")} />
-                            <span className={cn("group-data-[collapsible=icon]:hidden", isRosterActive && "text-primary font-semibold")}>
-                              Manajemen Rombel
-                            </span>
-                        </Link>
-                    </SidebarMenuButton>
-
-                    <CollapsibleTrigger asChild>
-                         <Button
-                            variant="ghost"
-                            size="icon"
-                            className={cn("h-8 w-8 shrink-0 group-data-[collapsible=icon]:hidden", isRosterActive ? "text-primary" : "text-muted-foreground")}
-                        >
-                            <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-180" />
-                        </Button>
-                    </CollapsibleTrigger>
-                </div>
-                <CollapsibleContent>
-                    <SidebarMenuSub>
-                        {rosterNavItems.map(item => (
-                            <SidebarMenuItem key={item.href}>
-                                <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
-                                    <Link href={item.href}>{item.label}</Link>
-                                </SidebarMenuSubButton>
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenuSub>
-                </CollapsibleContent>
-            </Collapsible>
-         </SidebarMenuItem>
-      </SidebarMenu>
-    </>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              tooltip={{ children: "Keluar" }}
+              className="group-data-[collapsible=icon]:justify-center"
+            >
+              <LogOut />
+              <span className="group-data-[collapsible=icon]:hidden">Keluar</span>
+            </SidebarMenuButton>
+        </SidebarMenuItem>
+     </SidebarMenu>
   );
+
 
   const BottomNavbar = () => {
     return (
@@ -200,13 +263,6 @@ export default function DashboardLayoutClient({
         </div>
     )
   }
-
-  const StatusBadge = () => (
-    <Badge variant={isPro ? "default" : "secondary"} className={cn("mt-2", isPro ? 'bg-green-500/20 text-green-50 border-green-400/30' : 'bg-gray-500/20 text-gray-50 border-gray-400/30')}>
-      {isPro ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
-      Akun {isPro ? "Pro" : "Gratis"}
-    </Badge>
-  );
 
   const AppHeader = () => (
     <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
@@ -230,61 +286,23 @@ export default function DashboardLayoutClient({
   return (
     <>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="p-0 text-background">
-          <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden">
-              <Avatar className="h-20 w-20 border-4 border-white/50">
-                <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} data-ai-hint="teacher portrait" />
-                <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
-              </Avatar>
-              <div className="text-center">
-                <p className="text-lg font-bold">{profile?.full_name || 'Guru'}</p>
-                <p className="text-sm text-primary-foreground/80">{user?.email}</p>
-                <StatusBadge />
-              </div>
-          </div>
-          <div className="hidden justify-center p-2 group-data-[collapsible=icon]:flex group-data-[state=expanded]:hidden">
-              <Avatar className="h-12 w-12 border-2 border-primary">
-                  <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} data-ai-hint="teacher portrait" />
-                  <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
-              </Avatar>
-          </div>
-        </SidebarHeader>
-
-        <SidebarContent className="p-2">
-            <SidebarNavContent />
+        <ProfileHeader />
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
+            <MainNavContent />
+          </SidebarGroup>
+          <SidebarSeparator />
+          <SidebarGroup>
+            <SidebarGroupLabel>MANAJEMEN</SidebarGroupLabel>
+            <RosterNavContent />
+          </SidebarGroup>
         </SidebarContent>
-
-        <SidebarFooter className="p-2">
-          <SidebarSeparator className="my-2" />
-           <SidebarMenu>
-              {settingsNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={{ children: item.label }}
-                    className="group-data-[collapsible=icon]:justify-center"
-                  >
-                    <Link href={item.href}>
-                      <item.icon className={cn("group-data-[active=true]:text-primary")} />
-                      <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
-                        {item.label}
-                      </span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={handleLogout}
-                    tooltip={{ children: "Keluar" }}
-                    className="group-data-[collapsible=icon]:justify-center"
-                  >
-                    <LogOut />
-                    <span className="group-data-[collapsible=icon]:hidden">Keluar</span>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-           </SidebarMenu>
+        <SidebarFooter>
+          <SidebarSeparator />
+          <SidebarGroup>
+             <SettingsNavContent />
+          </SidebarGroup>
         </SidebarFooter>
       </Sidebar>
 
@@ -298,3 +316,4 @@ export default function DashboardLayoutClient({
     </>
   );
 }
+

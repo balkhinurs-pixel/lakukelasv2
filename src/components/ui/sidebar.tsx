@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent as SheetContentPrimitive } from "@/components/ui/sheet"
+import { Sheet, SheetContent as SheetContentPrimitive, SheetHeader as SheetHeaderPrimitive, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -195,26 +195,34 @@ const Sidebar = React.forwardRef<
     }
 
     if (isMobile) {
-      // On mobile, we render the Sheet for the off-canvas menu, but the sidebar itself is hidden
+      // On mobile, we render the Sheet for the off-canvas menu.
+      const sheetChildren = React.Children.map(children, (child) => {
+        if (React.isValidElement(child) && child.type === SidebarHeader) {
+          return React.cloneElement(child as React.ReactElement<any>, {
+            className: "p-0", // Remove padding from header in mobile sheet
+          });
+        }
+        return child;
+      });
+    
       return (
-         <>
-          <div className="hidden">{children}</div>
-          <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-            <SheetContentPrimitive
-              data-sidebar="sidebar"
-              data-mobile="true"
-              className="bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-              side={side}
-            >
-               <VisuallyHidden>
-                <SheetPrimitive.Title>Mobile Navigation</SheetPrimitive.Title>
-                <SheetPrimitive.Description>Navigation links for the application.</SheetPrimitive.Description>
-              </VisuallyHidden>
-              <div className="flex h-full w-full flex-col">{children}</div>
-            </SheetContentPrimitive>
-          </Sheet>
-        </>
-      )
+        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+          <SheetContentPrimitive
+            data-sidebar="sidebar"
+            data-mobile="true"
+            className="flex flex-col bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            side={side}
+          >
+            <VisuallyHidden asChild>
+              <SheetHeaderPrimitive>
+                  <SheetTitle>Mobile Navigation</SheetTitle>
+                  <SheetDescription>Navigation links for the application.</SheetDescription>
+              </SheetHeaderPrimitive>
+            </VisuallyHidden>
+            {sheetChildren}
+          </SheetContentPrimitive>
+        </Sheet>
+      );
     }
     
     return (
@@ -351,7 +359,7 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("flex flex-col gap-2 p-2 mt-auto", className)}
+      className={cn("flex flex-col gap-2 p-2 mt-auto border-t", className)}
       {...props}
     />
   )
@@ -366,7 +374,7 @@ const SidebarSeparator = React.forwardRef<
     <Separator
       ref={ref}
       data-sidebar="separator"
-      className={cn("mx-2 w-auto bg-sidebar-border", className)}
+      className={cn("mx-0 w-auto bg-sidebar-border", className)}
       {...props}
     />
   )
@@ -736,3 +744,4 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
