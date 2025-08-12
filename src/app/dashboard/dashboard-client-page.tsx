@@ -144,7 +144,7 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
     
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="shadow-sm bg-blue-50 border-blue-200 dark:bg-blue-950/50 dark:border-blue-800/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
@@ -288,3 +288,5 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
     </div>
   );
 }
+
+    
