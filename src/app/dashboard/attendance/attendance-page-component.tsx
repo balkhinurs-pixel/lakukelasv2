@@ -486,7 +486,7 @@ export default function AttendancePageComponent({
                                           </Button>
                                       </TableCell>
                                   </TableRow>
-                              })
+                              )
                           })}
                       </TableBody>
                   </Table>
