@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -165,7 +164,7 @@ export default function StudentsPageComponent({
   const router = useRouter();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [classes] = React.useState<Class[]>(initialClasses);
-  const [students] = React.useState<Student[]>(initialStudents);
+  const [students, setStudents] = React.useState<Student[]>(initialStudents);
   const [selectedClassId, setSelectedClassId] = React.useState<string>(initialClasses.length > 0 ? initialClasses[0].id : "");
   
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
@@ -180,6 +179,10 @@ export default function StudentsPageComponent({
   const { toast } = useToast();
   const { limits, isPro } = useActivation();
   
+  React.useEffect(() => {
+    setStudents(initialStudents);
+  }, [initialStudents]);
+
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const studentsInClass = students.filter(s => s.class_id === selectedClassId);
   const canAddStudent = isPro || (selectedClass ? studentsInClass.length < limits.studentsPerClass : false);
@@ -231,7 +234,6 @@ export default function StudentsPageComponent({
 
     const result = editingStudent ? await updateStudent(formData) : await saveStudent(formData);
     
-    setLoading(false);
     if (result.success) {
       setIsAddDialogOpen(false);
       setIsEditDialogOpen(false);
@@ -240,6 +242,7 @@ export default function StudentsPageComponent({
     } else {
       toast({ title: "Gagal", description: result.error, variant: "destructive" });
     }
+    setLoading(false);
   };
 
   const handleMoveStudent = async (e: React.FormEvent) => {
@@ -251,7 +254,6 @@ export default function StudentsPageComponent({
       setLoading(true);
       const result = await moveStudent(studentToMove.id, newClassIdForMove);
       
-      setLoading(false);
       if (result.success) {
           setIsMoveDialogOpen(false);
           setStudentToMove(null);
@@ -260,6 +262,7 @@ export default function StudentsPageComponent({
       } else {
           toast({ title: "Gagal", description: result.error, variant: "destructive" });
       }
+      setLoading(false);
   }
 
   const handleDownloadTemplate = () => {
@@ -525,5 +528,3 @@ export default function StudentsPageComponent({
     </div>
   );
 }
-
-    
