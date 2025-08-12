@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -61,7 +62,6 @@ interface FormState {
     id: string;
     name: string;
     nis: string;
-    nisn: string;
     gender: Student['gender'] | '';
 }
 
@@ -78,7 +78,6 @@ const AddEditDialog = React.memo(function AddEditDialog({
         id: "",
         name: "",
         nis: "",
-        nisn: "",
         gender: "",
     });
 
@@ -89,11 +88,10 @@ const AddEditDialog = React.memo(function AddEditDialog({
                     id: editingStudent.id,
                     name: editingStudent.name,
                     nis: editingStudent.nis,
-                    nisn: editingStudent.nisn,
                     gender: editingStudent.gender,
                 });
             } else {
-                setFormState({ id: "", name: "", nis: "", nisn: "", gender: "" });
+                setFormState({ id: "", name: "", nis: "", gender: "" });
             }
         }
     }, [open, isEditing, editingStudent]);
@@ -118,15 +116,9 @@ const AddEditDialog = React.memo(function AddEditDialog({
                             <Label htmlFor="student-name">Nama Lengkap Siswa</Label>
                             <Input id="student-name" placeholder="e.g. Ahmad Fauzi" value={formState.name} onChange={e => setFormState({ ...formState, name: e.target.value })} required />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="student-nis">NIS</Label>
-                                <Input id="student-nis" placeholder="e.g. 23241001" value={formState.nis} onChange={e => setFormState({ ...formState, nis: e.target.value })} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="student-nisn">NISN</Label>
-                                <Input id="student-nisn" placeholder="e.g. 0012345678" value={formState.nisn} onChange={e => setFormState({ ...formState, nisn: e.target.value })} required />
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="student-nis">NIS</Label>
+                            <Input id="student-nis" placeholder="e.g. 23241001" value={formState.nis} onChange={e => setFormState({ ...formState, nis: e.target.value })} required />
                         </div>
                         <div className="space-y-2">
                             <Label>Jenis Kelamin</Label>
@@ -216,7 +208,7 @@ export default function StudentsPageComponent({
         setLoading(false);
         return;
     }
-    if (!formState.name || !formState.nis || !formState.nisn || !formState.gender) {
+    if (!formState.name || !formState.nis || !formState.gender) {
         toast({ title: "Gagal", description: "Semua kolom harus diisi.", variant: "destructive" });
         setLoading(false);
         return;
@@ -229,7 +221,6 @@ export default function StudentsPageComponent({
     formData.append('class_id', selectedClassId);
     formData.append('name', formState.name);
     formData.append('nis', formState.nis);
-    formData.append('nisn', formState.nisn);
     formData.append('gender', formState.gender);
 
     const result = editingStudent ? await updateStudent(formData) : await saveStudent(formData);
@@ -266,13 +257,13 @@ export default function StudentsPageComponent({
   }
 
   const handleDownloadTemplate = () => {
-    const csvData = "name,nis,nisn,gender";
+    const csvData = "name,nis,gender";
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "template_siswa.csv");
   };
 
   const handleExportCSV = () => {
-      const dataToExport = studentsInClass.map(({ name, nis, nisn, gender }) => ({ name, nis, nisn, gender }));
+      const dataToExport = studentsInClass.map(({ name, nis, gender }) => ({ name, nis, gender }));
       const csv = Papa.unparse(dataToExport);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const className = selectedClass?.name.replace(/\s+/g, '_') || "export";
@@ -300,9 +291,8 @@ export default function StudentsPageComponent({
               const studentsToImport = parsedData.map(row => ({
                   name: row.name,
                   nis: row.nis,
-                  nisn: row.nisn,
                   gender: row.gender
-              })).filter(s => s.name && s.nis && s.nisn && s.gender);
+              })).filter(s => s.name && s.nis && s.gender);
 
               if (studentsToImport.length === 0) {
                   toast({ title: "Gagal Impor", description: "File CSV tidak valid atau tidak berisi data yang benar.", variant: "destructive" });
@@ -402,7 +392,6 @@ export default function StudentsPageComponent({
                     <div className="font-semibold"><span className="font-normal text-muted-foreground mr-2">{index + 1}.</span>{student.name}</div>
                     <div className="text-sm text-muted-foreground space-y-1 border-t pt-3 mt-3">
                         <p><span className="font-medium">NIS:</span> {student.nis}</p>
-                        <p><span className="font-medium">NISN:</span> {student.nisn}</p>
                         <p><span className="font-medium">Gender:</span> {student.gender}</p>
                     </div>
                     <div className="flex gap-2 pt-2">
@@ -427,7 +416,6 @@ export default function StudentsPageComponent({
                     <TableHead className="w-[50px]">No.</TableHead>
                     <TableHead>Nama Siswa</TableHead>
                     <TableHead>NIS</TableHead>
-                    <TableHead>NISN</TableHead>
                     <TableHead>Jenis Kelamin</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
@@ -438,7 +426,6 @@ export default function StudentsPageComponent({
                         <TableCell className="font-medium text-center">{index + 1}</TableCell>
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell>{student.nis}</TableCell>
-                        <TableCell>{student.nisn}</TableCell>
                         <TableCell>{student.gender}</TableCell>
                         <TableCell className="text-right">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(student)}>

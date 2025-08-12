@@ -21,6 +21,12 @@ async function handleSupabaseAction(action: Promise<any>, successMessage: string
 
     return { success: true, message: successMessage };
   } catch (error: any) {
+    if (error.message.includes('unique constraint')) {
+        if (error.message.includes('students_nis_key')) {
+             return { success: false, error: 'Gagal: NIS yang Anda masukkan sudah terdaftar. NIS harus unik.' };
+        }
+        return { success: false, error: 'Gagal: Terdapat data duplikat. Pastikan data yang Anda masukkan unik.' };
+    }
     return { success: false, error: error.message };
   }
 }
@@ -175,7 +181,6 @@ export async function saveStudent(formData: FormData) {
     const rawData = {
         name: formData.get('name') as string,
         nis: formData.get('nis') as string,
-        nisn: formData.get('nisn') as string,
         gender: formData.get('gender') as 'Laki-laki' | 'Perempuan',
         class_id: classId,
     };
@@ -195,7 +200,6 @@ export async function updateStudent(formData: FormData) {
     const rawData = {
         name: formData.get('name') as string,
         nis: formData.get('nis') as string,
-        nisn: formData.get('nisn') as string,
         gender: formData.get('gender') as 'Laki-laki' | 'Perempuan',
     };
 
@@ -213,7 +217,7 @@ export async function moveStudent(studentId: string, newClassId: string) {
     return handleSupabaseAction(action, 'Siswa berhasil dipindahkan.', '/dashboard/roster/students');
 }
 
-export async function importStudents(classId: string, students: Omit<Student, 'id' | 'class_id'>[]) {
+export async function importStudents(classId: string, students: Omit<Student, 'id' | 'class_id' | 'nisn'>[]) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Authentication required' };
