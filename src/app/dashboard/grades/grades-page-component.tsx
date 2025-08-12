@@ -1,11 +1,11 @@
+
 "use client";
 
 import * as React from "react";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import { useSearchParams } from 'next/navigation';
-import { useRouter } from "next/navigation";
-import { Calendar as CalendarIcon, Edit, Eye, Loader2 } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -90,6 +90,7 @@ export default function GradesPageComponent({
   const [viewingEntry, setViewingEntry] = React.useState<GradeHistoryEntry | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   const { toast } = useToast();
 
@@ -118,6 +119,7 @@ export default function GradesPageComponent({
           setLoading(false);
       };
       fetchStudents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClassId]);
 
   const resetForm = (studentList: Student[]) => {
@@ -129,6 +131,7 @@ export default function GradesPageComponent({
       newGrades.set(student.id, "");
     });
     setGrades(newGrades);
+    setSearchTerm("");
   }
 
   const handleGradeChange = (studentId: string, value: string) => {
@@ -210,6 +213,10 @@ export default function GradesPageComponent({
         (!selectedSubjectId || entry.subject_id === selectedSubjectId)
     );
   }, [initialHistory, selectedClassId, selectedSubjectId]);
+  
+  const filteredStudents = React.useMemo(() => {
+      return students.filter(student => student.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [students, searchTerm]);
 
   const getStudentName = (studentId: string) => {
     return allStudents.find(s => s.id === studentId)?.name || "Siswa Tidak Ditemukan";
@@ -303,6 +310,16 @@ export default function GradesPageComponent({
                     <p className="mt-2">Memuat data siswa...</p>
                 </div>
             ) : students.length > 0 ? (
+                <>
+                <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Cari nama siswa..." 
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
                 <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
@@ -312,7 +329,7 @@ export default function GradesPageComponent({
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {students.map((student) => (
+                    {filteredStudents.map((student) => (
                         <TableRow key={student.id}>
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell className="text-right">
@@ -328,9 +345,17 @@ export default function GradesPageComponent({
                         </TableCell>
                         </TableRow>
                     ))}
+                     {filteredStudents.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={2} className="text-center text-muted-foreground">
+                                Tidak ada siswa yang cocok dengan pencarian Anda.
+                            </TableCell>
+                        </TableRow>
+                     )}
                     </TableBody>
                 </Table>
                 </div>
+                </>
             ) : (
                 <div className="text-center text-muted-foreground py-12">
                     <p>Belum ada siswa di kelas ini.</p>
