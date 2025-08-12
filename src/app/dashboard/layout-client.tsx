@@ -229,7 +229,6 @@ export default function DashboardLayoutClient({
         <div className="flex items-center justify-between h-16 px-4">
              <div className="flex items-center gap-2">
                  <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" />
-                 <GraduationCap className="h-7 w-7 text-green-300"/>
                  <h1 className="text-lg font-bold tracking-tight">
                     <span className="text-white">Laku</span>
                     <span className="text-green-300">Kelas</span>

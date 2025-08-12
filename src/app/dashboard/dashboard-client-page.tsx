@@ -18,14 +18,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check } from "lucide-react";
+import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check, ClipboardEdit } from "lucide-react";
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -72,7 +72,6 @@ export default function DashboardClientPage({
     initialAttendancePercentage,
     initialUnfilledJournalsCount 
 }: DashboardPageProps) {
-    const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
     
     const sortedSchedule = React.useMemo(() => {
@@ -109,77 +108,46 @@ export default function DashboardClientPage({
         return () => clearInterval(interval);
 
     }, [sortedSchedule]);
-
-
-    const handleTaskCompletion = (scheduleId: string, currentStatus: TaskStatus) => {
-        let nextStatus: TaskStatus = 'pending';
-        if (currentStatus === 'pending') nextStatus = 'presensi_done';
-        else if (currentStatus === 'presensi_done') nextStatus = 'nilai_done';
-        else if (currentStatus === 'nilai_done') nextStatus = 'jurnal_done';
-        
-        setTaskStatus(prev => ({ ...prev, [scheduleId]: nextStatus }));
-    }
-
-    const getNextAction = (item: ScheduleItem) => {
-        const status = taskStatus[item.id] || 'pending';
-        const classId = item.class_id;
-        const subjectId = item.subject_id;
-
-        if (!classId || !subjectId) return null;
-
-        const commonButtonProps = {
-            size: "sm",
-            className: "w-full transition-all duration-300",
-        } as const;
-
-        const linkParams = new URLSearchParams({
-            classId: classId,
-            subjectId: subjectId,
-        });
-
-        if (status === 'pending') {
-            return (
-                <Button {...commonButtonProps} variant="outline" asChild>
-                    <Link href={`/dashboard/attendance?${linkParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'pending')}>
-                        Isi Presensi <ArrowRight className="ml-auto h-4 w-4" />
-                    </Link>
-                </Button>
-            );
-        }
-        if (status === 'presensi_done') {
-            return (
-                <Button {...commonButtonProps} asChild>
-                    <Link href={`/dashboard/grades?${linkParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'presensi_done')}>
-                        Input Nilai <ArrowRight className="ml-auto h-4 w-4" />
-                    </Link>
-                </Button>
-            );
-        }
-        if (status === 'nilai_done') {
-             const journalParams = new URLSearchParams({
-                classId: classId,
-                subjectId: subjectId,
-                openDialog: "true"
-            });
-            return (
-                <Button {...commonButtonProps} asChild>
-                     <Link href={`/dashboard/journal?${journalParams.toString()}`} onClick={() => handleTaskCompletion(item.id, 'nilai_done')}>
-                        Isi Jurnal <ArrowRight className="ml-auto h-4 w-4" />
-                    </Link>
-                </Button>
-            );
-        }
-        if (status === 'jurnal_done') {
-            return <div className="text-sm text-green-600 font-semibold text-center py-2">Tugas Selesai</div>;
-        }
-
-        return null;
-    }
     
     const [today, setToday] = React.useState('');
     React.useEffect(() => {
         setToday(new Date().toLocaleDateString('id-ID', { weekday: 'long' }));
     }, []);
+
+    const QuickActionButton = ({ href, icon: Icon, tooltipText }: { href: string, icon: React.ElementType, tooltipText: string }) => (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" asChild>
+                        <Link href={href}>
+                           <Icon className="h-5 w-5"/>
+                        </Link>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{tooltipText}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+
+    const getActionButtons = (item: ScheduleItem) => {
+        const classId = item.class_id;
+        const subjectId = item.subject_id;
+        if (!classId || !subjectId) return null;
+        
+        const attendanceParams = new URLSearchParams({ classId, subjectId }).toString();
+        const gradesParams = new URLSearchParams({ classId, subjectId }).toString();
+        const journalParams = new URLSearchParams({ classId, subjectId, openDialog: "true" }).toString();
+
+        return (
+             <div className="mt-3 flex items-center gap-2">
+                <QuickActionButton href={`/dashboard/attendance?${attendanceParams}`} icon={ClipboardCheck} tooltipText="Isi Presensi"/>
+                <QuickActionButton href={`/dashboard/grades?${gradesParams}`} icon={ClipboardEdit} tooltipText="Input Nilai"/>
+                <QuickActionButton href={`/dashboard/journal?${journalParams}`} icon={BookText} tooltipText="Isi Jurnal"/>
+             </div>
+        );
+    }
     
   return (
     <div className="space-y-6">
@@ -228,24 +196,19 @@ export default function DashboardClientPage({
                     
                     <div className="space-y-8">
                          {sortedSchedule.map((item) => {
-                            const isTaskDone = taskStatus[item.id] === 'jurnal_done';
                             const isActionAvailable = activeSchedules[item.id];
                             return (
                                 <div key={item.id} className="relative flex items-start gap-4">
                                      <div className={cn(
                                         "flex h-10 w-10 items-center justify-center rounded-full shrink-0",
-                                        isTaskDone ? "bg-green-600 text-white" : "bg-primary text-primary-foreground"
+                                        "bg-primary text-primary-foreground"
                                     )}>
-                                        {isTaskDone ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5" />}
+                                        <Clock className="h-5 w-5" />
                                     </div>
                                     <div className="flex-grow pt-1.5">
                                         <p className="font-semibold">{item.subject}</p>
                                         <p className="text-sm text-muted-foreground">{item.class} | {item.start_time} - {item.end_time}</p>
-                                        {isActionAvailable && (
-                                            <div className="mt-3">
-                                                {getNextAction(item)}
-                                            </div>
-                                        )}
+                                        {isActionAvailable && getActionButtons(item)}
                                     </div>
                                 </div>
                             )
