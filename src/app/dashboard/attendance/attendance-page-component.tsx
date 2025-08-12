@@ -78,8 +78,8 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
                     "size-8 rounded-md border text-xs font-semibold",
                     "focus-visible:ring-0 focus-visible:ring-offset-0", // Disable focus ring
                     value === opt.value
-                        ? `${opt.selectedClassName} hover:bg-opacity-90` // Solid color for selected
-                        : `${opt.className} hover:bg-transparent` // No background hover for unselected
+                        ? opt.selectedClassName
+                        : `${opt.className} hover:bg-transparent hover:text-current`
                 )}
             >
                 {opt.label}
