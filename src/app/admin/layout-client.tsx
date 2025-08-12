@@ -74,7 +74,7 @@ export default function AdminLayoutClient({
               tooltip={{ children: item.label }}
               className="group-data-[collapsible=icon]:justify-center"
             >
-              <Link href={item.href}>
+              <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}}>
                 <item.icon className="group-data-[active=true]:text-primary" />
                 <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">{item.label}</span>
               </Link>
@@ -137,7 +137,7 @@ export default function AdminLayoutClient({
                         tooltip={{ children: "Ke Dasbor Guru" }}
                         className="group-data-[collapsible=icon]:justify-center"
                     >
-                        <Link href="/dashboard">
+                        <Link href="/dashboard" onClick={() => {if (isMobile) toggleSidebar()}}>
                             <UserIcon />
                             <span className="group-data-[collapsible=icon]:hidden">Ke Dasbor Guru</span>
                         </Link>

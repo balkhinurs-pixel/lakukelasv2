@@ -167,7 +167,7 @@ export default function DashboardLayoutClient({
             tooltip={{ children: item.label }}
             className="group-data-[collapsible=icon]:justify-center"
           >
-            <Link href={item.href}>
+            <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}}>
               <item.icon className={cn("group-data-[active=true]:text-primary")} />
               <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
                 {item.label}
@@ -189,7 +189,7 @@ export default function DashboardLayoutClient({
             tooltip={{ children: item.label }}
             className="group-data-[collapsible=icon]:justify-center"
           >
-            <Link href={item.href}>
+            <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}}>
               <item.icon className={cn("group-data-[active=true]:text-primary")} />
               <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
                 {item.label}
@@ -257,7 +257,7 @@ export default function DashboardLayoutClient({
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                           <Link href="/dashboard/settings">
+                           <Link href="/dashboard/settings" onClick={() => {if (isMobile) toggleSidebar()}}>
                                 <UserIcon className="mr-2 h-4 w-4" />
                                 Profil Saya
                            </Link>
