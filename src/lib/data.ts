@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda } from './types';
+import { format, startOfDay, endOfDay } from 'date-fns';
 
 // --- Admin Data ---
 
@@ -302,7 +303,7 @@ export async function getAllStudents(): Promise<Student[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase.from('students').select('*, classes!left(name, teacher_id)').eq('classes.teacher_id', user.id).order('name', { ascending: true });
+    const { data, error } = await supabase.from('students').select('*, classes!inner(name, teacher_id)').eq('classes.teacher_id', user.id).order('name', { ascending: true });
     if (error) {
         console.error("Error fetching all students:", error);
         return [];
@@ -315,42 +316,89 @@ export async function getDashboardData() {
     noStore();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { todaySchedule: [], journalEntries: [] };
+    if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
 
-    const today = new Date().toLocaleDateString('id-ID', { weekday: 'long' });
-    const { data: todaySchedule, error: scheduleError } = await supabase
+    // --- Base Data ---
+    const today = new Date();
+    const todayDay = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(today);
+    const todayDate = format(today, 'yyyy-MM-dd');
+    const startOfToday = startOfDay(today).toISOString();
+    const endOfToday = endOfDay(today).toISOString();
+
+
+    const { data: todayScheduleData, error: scheduleError } = await supabase
         .from('schedule')
         .select('*, classes(name), subjects(name)')
         .eq('teacher_id', user.id)
-        .eq('day', today)
+        .eq('day', todayDay)
         .order('start_time', { ascending: true });
-    
-    const { data: journalEntries, error: journalError } = await supabase
+
+    const { data: journalEntriesData, error: journalError } = await supabase
         .from('journals')
         .select('*, classes(name), subjects(name)')
         .eq('teacher_id', user.id)
         .order('date', { ascending: false })
         .limit(5);
 
-    if(scheduleError || journalError) {
+    if (scheduleError || journalError) {
         console.error("Dashboard data error:", scheduleError || journalError);
     }
     
-    // @ts-ignore
-    const formattedSchedule = (todaySchedule || []).map(item => ({
+    // --- Format Base Data ---
+    const todaySchedule = (todayScheduleData || []).map(item => ({
         ...item,
-        class: item.classes.name,
-        subject: item.subjects.name,
+        // @ts-ignore
+        class: item.classes!.name,
+        // @ts-ignore
+        subject: item.subjects!.name,
     }));
-
-    // @ts-ignore
-    const formattedJournals = (journalEntries || []).map(entry => ({
+    const journalEntries = (journalEntriesData || []).map(entry => ({
         ...entry,
-        className: entry.classes.name,
-        subjectName: entry.subjects.name,
+        // @ts-ignore
+        className: entry.classes!.name,
+        // @ts-ignore
+        subjectName: entry.subjects!.name,
     }));
 
-    return { todaySchedule: formattedSchedule, journalEntries: formattedJournals };
+    // --- Calculate Attendance Percentage ---
+    const { data: attendanceTodayData, error: attendanceError } = await supabase
+        .from('attendance_history')
+        .select('records')
+        .eq('teacher_id', user.id)
+        .gte('date', startOfToday)
+        .lte('date', endOfToday);
+    
+    let attendancePercentage = 0;
+    if (!attendanceError && attendanceTodayData.length > 0) {
+        const allRecords = attendanceTodayData.flatMap(entry => entry.records as AttendanceRecord[]);
+        const totalPresent = allRecords.filter(r => r.status === 'Hadir').length;
+        if (allRecords.length > 0) {
+            attendancePercentage = Math.round((totalPresent / allRecords.length) * 100);
+        }
+    }
+
+    // --- Calculate Unfilled Journals ---
+    const { data: filledJournalsToday, error: filledJournalsError } = await supabase
+        .from('journals')
+        .select('class_id, subject_id')
+        .eq('teacher_id', user.id)
+        .eq('date', todayDate);
+
+    let unfilledJournalsCount = 0;
+    if (!filledJournalsError) {
+        unfilledJournalsCount = todaySchedule.filter(scheduleItem => {
+            return !filledJournalsToday.some(journal => 
+                journal.class_id === scheduleItem.class_id && journal.subject_id === scheduleItem.subject_id
+            );
+        }).length;
+    }
+
+    return { 
+        todaySchedule, 
+        journalEntries,
+        attendancePercentage,
+        unfilledJournalsCount
+    };
 }
 
 
@@ -376,7 +424,7 @@ export async function getReportsData(schoolYearId?: string) {
     // Base queries
     let attendanceQuery = supabase.from('attendance_history').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
     let gradesQuery = supabase.from('grade_history').select('*, classes(name), subjects(name, kkm)').eq('teacher_id', user.id);
-    let journalsQuery = supabase.from('journals').select('*').eq('teacher_id', user.id);
+    let journalsQuery = supabase.from('journals').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
 
     // Apply school year filter if available
     if (activeSchoolYearId) {
@@ -419,7 +467,12 @@ export async function getReportsData(schoolYearId?: string) {
         records: entry.records.map((r: any) => ({studentId: r.student_id, score: r.score}))
     }));
 
-    const journalEntries = journalsData || [];
+    const journalEntries = (journalsData as any[]).map(entry => ({
+        ...entry,
+        className: entry.classes.name,
+        subjectName: entry.subjects.name
+    }));
+
 
     // 1. Overall Attendance Rate
     const totalAttendanceRecords = attendanceHistory.reduce((sum, entry) => sum + entry.records.length, 0);

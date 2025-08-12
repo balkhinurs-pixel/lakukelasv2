@@ -30,6 +30,8 @@ type TaskStatus = 'pending' | 'presensi_done' | 'nilai_done' | 'jurnal_done';
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
   journalEntries: JournalEntry[];
+  initialAttendancePercentage: number;
+  initialUnfilledJournalsCount: number;
 }
 
 const StatCard = ({
@@ -64,7 +66,12 @@ const StatCard = ({
 );
 
 
-export default function DashboardClientPage({ todaySchedule, journalEntries }: DashboardPageProps) {
+export default function DashboardClientPage({ 
+    todaySchedule, 
+    journalEntries,
+    initialAttendancePercentage,
+    initialUnfilledJournalsCount 
+}: DashboardPageProps) {
     const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
     
@@ -180,8 +187,8 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
           <StatCard
             icon={ClipboardCheck}
             title="Presensi Hari Ini"
-            value="0%"
-            subtitle="Belum ada data terekam"
+            value={`${initialAttendancePercentage}%`}
+            subtitle={initialAttendancePercentage > 0 ? "Kehadiran terekam" : "Belum ada data"}
             color="bg-gradient-to-br from-green-500 to-green-400"
           />
           <StatCard
@@ -194,8 +201,8 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
           <StatCard
             icon={BookText}
             title="Jurnal Belum Diisi"
-            value="0"
-            subtitle="Tidak ada jurnal tertinggal"
+            value={String(initialUnfilledJournalsCount)}
+            subtitle={initialUnfilledJournalsCount > 0 ? "Jadwal perlu diisi" : "Semua jurnal terisi"}
             color="bg-gradient-to-br from-red-500 to-orange-400"
           />
           <StatCard

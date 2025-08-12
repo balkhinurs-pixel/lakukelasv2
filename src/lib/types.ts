@@ -73,7 +73,7 @@ export interface JournalEntry {
   date: string;
   class_id: string;
   subject_id: string;
-  school_year_id: string;
+  school_year_id?: string | null;
   meeting_number?: number;
   learning_objectives: string;
   learning_activities: string;
@@ -118,7 +118,7 @@ export interface AttendanceHistoryEntry {
   date: string;
   class_id: string;
   subject_id: string;
-  school_year_id: string;
+  school_year_id?: string | null;
   meeting_number: number;
   records: AttendanceRecord[];
   // Joined data
@@ -131,7 +131,7 @@ export interface GradeHistoryEntry {
     date: string;
     class_id: string;
     subject_id: string;
-    school_year_id: string;
+    school_year_id?: string | null;
     assessment_type: string;
     records: GradeRecord[];
     // Joined data
