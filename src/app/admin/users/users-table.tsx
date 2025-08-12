@@ -148,6 +148,13 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         setLoading(false);
     }
 
+    const getStatusClass = (status: 'Pro' | 'Free') => {
+        if (status === 'Pro') {
+            return 'bg-green-100 text-green-800 border-green-200';
+        }
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+    }
+
   return (
     <>
         <div className="flex items-center gap-2 flex-wrap mb-4">
@@ -203,7 +210,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                             <span>{user.email}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Badge variant={user.account_status === 'Pro' ? 'default' : 'secondary'} className={cn("text-xs", user.account_status === 'Pro' ? 'bg-green-600 hover:bg-green-700 text-white' : '')}>
+                            <Badge variant={'outline'} className={cn("text-xs font-semibold", getStatusClass(user.account_status))}>
                                 {user.account_status}
                             </Badge>
                         </div>
@@ -234,7 +241,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                             <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
                             <TableCell className="text-muted-foreground">{user.email}</TableCell>
                             <TableCell>
-                                <Badge variant={user.account_status === 'Pro' ? 'default' : 'secondary'} className={user.account_status === 'Pro' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>
+                                <Badge variant={'outline'} className={cn("font-semibold", getStatusClass(user.account_status))}>
                                     {user.account_status}
                                 </Badge>
                             </TableCell>

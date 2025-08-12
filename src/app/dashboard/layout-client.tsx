@@ -10,7 +10,6 @@ import {
   CalendarClock,
   ClipboardCheck,
   ClipboardEdit,
-  LayoutDashboard,
   LogOut,
   Settings,
   Users,
@@ -83,7 +82,6 @@ const mainMobileNavItems = [
     { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
 ];
 
-// Items for the mobile sidebar menu (excluding those in the bottom bar)
 const mobileSidebarNavItems = navItems.filter(
     (item) => !mainMobileNavItems.some((mobileItem) => mobileItem.href === item.href)
 );
@@ -111,7 +109,6 @@ export default function DashboardLayoutClient({
   const { isPro, setActivationStatus } = useActivation();
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
-  const isRosterActive = pathname.startsWith('/dashboard/roster');
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -128,7 +125,7 @@ export default function DashboardLayoutClient({
   }, [profile, setActivationStatus]);
 
   const StatusBadge = () => (
-    <Badge variant={isPro ? "default" : "secondary"} className={cn("mt-2", isPro ? 'bg-green-500/20 text-green-50 border-green-400/30' : 'bg-gray-500/20 text-gray-50 border-gray-400/30')}>
+    <Badge variant={isPro ? "default" : "secondary"} className={cn("mt-2", isPro ? 'bg-green-500/20 text-green-50 border-green-400/30' : 'bg-amber-500/20 text-amber-50 border-amber-400/30')}>
       {isPro ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
       Akun {isPro ? "Pro" : "Gratis"}
     </Badge>
