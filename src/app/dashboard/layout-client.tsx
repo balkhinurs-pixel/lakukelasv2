@@ -177,46 +177,33 @@ export default function DashboardLayoutClient({
 
   const RosterNavContent = () => (
     <SidebarMenu>
-      <SidebarMenuItem>
-          <Collapsible defaultOpen={isRosterActive}>
-              <div className={cn("flex items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full", isRosterActive && "text-sidebar-primary-foreground font-semibold")}>
-                  <SidebarMenuButton
-                      asChild
-                      isActive={isRosterActive}
-                      className="flex-1 justify-start p-2 group-data-[collapsible=icon]:justify-center"
-                      tooltip={{ children: 'Manajemen Rombel' }}
-                  >
-                      <Link href="/dashboard/roster/students">
-                          <Users className={cn(isRosterActive && "text-primary")} />
-                          <span className={cn("group-data-[collapsible=icon]:hidden", isRosterActive && "text-primary font-semibold")}>
-                            Manajemen Rombel
-                          </span>
-                      </Link>
-                  </SidebarMenuButton>
-
-                  <CollapsibleTrigger asChild>
-                       <Button
-                          variant="ghost"
-                          size="icon"
-                          className={cn("h-8 w-8 shrink-0 group-data-[collapsible=icon]:hidden", isRosterActive ? "text-primary" : "text-muted-foreground")}
-                      >
-                          <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-180" />
-                      </Button>
-                  </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent>
-                  <SidebarMenuSub>
-                      {rosterNavItems.map(item => (
-                          <SidebarMenuItem key={item.href}>
-                              <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
-                                  <Link href={item.href}>{item.label}</Link>
-                              </SidebarMenuSubButton>
-                          </SidebarMenuItem>
-                      ))}
-                  </SidebarMenuSub>
-              </CollapsibleContent>
-          </Collapsible>
-       </SidebarMenuItem>
+      <Collapsible asChild defaultOpen={isRosterActive}>
+        <SidebarMenuItem>
+            <CollapsibleTrigger asChild>
+                <SidebarMenuButton
+                  variant="ghost"
+                  className="w-full justify-start p-2 group-data-[collapsible=icon]:justify-center"
+                  tooltip={{ children: 'Manajemen Rombel' }}
+                  isActive={isRosterActive}
+                >
+                    <Users />
+                    <span className="group-data-[collapsible=icon]:hidden">Manajemen Rombel</span>
+                    <ChevronDown className="ml-auto size-4 shrink-0 transition-transform group-data-[collapsible=icon]:hidden [&[data-state=open]]:-rotate-180" />
+                </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+                <SidebarMenuSub>
+                    {rosterNavItems.map(item => (
+                        <SidebarMenuItem key={item.href}>
+                            <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
+                                <Link href={item.href}>{item.label}</Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuItem>
+                    ))}
+                </SidebarMenuSub>
+            </CollapsibleContent>
+        </SidebarMenuItem>
+      </Collapsible>
     </SidebarMenu>
   );
 
@@ -270,13 +257,13 @@ export default function DashboardLayoutClient({
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
                            <Link href="/dashboard/settings">
-                                <UserIcon className="mr-2" />
+                                <UserIcon className="mr-2 h-4 w-4" />
                                 Profil Saya
                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleLogout}>
-                            <LogOut className="mr-2"/>
+                            <LogOut className="mr-2 h-4 w-4"/>
                             Keluar
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -290,7 +277,7 @@ export default function DashboardLayoutClient({
     <>
        <Sidebar collapsible="icon">
         <ProfileHeader />
-        <ScrollArea>
+        <ScrollArea className="flex-1">
         <SidebarContent className="p-0">
           <SidebarGroup>
             <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
@@ -303,7 +290,7 @@ export default function DashboardLayoutClient({
           </SidebarGroup>
         </SidebarContent>
         </ScrollArea>
-        <SidebarFooter className="p-2 border-none">
+        <SidebarFooter className="p-2 border-t">
              <SidebarMenu>
                  <SidebarMenuItem>
                     <SidebarMenuButton
@@ -329,4 +316,3 @@ export default function DashboardLayoutClient({
     </>
   );
 }
-
