@@ -32,6 +32,38 @@ type DashboardPageProps = {
   journalEntries: JournalEntry[];
 }
 
+const StatCard = ({
+    icon: Icon,
+    title,
+    value,
+    subtitle,
+    color,
+}: {
+    icon: React.ElementType;
+    title: string;
+    value: string;
+    subtitle: string;
+    color: string;
+}) => (
+    <Card className={cn("relative overflow-hidden text-white shadow-lg", color)}>
+        <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-white/20 opacity-50" />
+        <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 opacity-50" />
+        <CardContent className="relative z-10 flex flex-col justify-between p-4 h-full">
+            <div className="flex items-center justify-between">
+                <div className="rounded-full bg-black/20 p-2">
+                    <Icon className="h-5 w-5" />
+                </div>
+            </div>
+            <div>
+                <p className="text-sm font-light">{title}</p>
+                <p className="text-2xl font-bold">{value}</p>
+                <p className="text-xs font-extralight opacity-80">{subtitle}</p>
+            </div>
+        </CardContent>
+    </Card>
+);
+
+
 export default function DashboardClientPage({ todaySchedule, journalEntries }: DashboardPageProps) {
     const [taskStatus, setTaskStatus] = React.useState<Record<string, TaskStatus>>({});
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
@@ -144,59 +176,35 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
     
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card className="shadow-sm bg-blue-50 border-blue-200 dark:bg-blue-950/50 dark:border-blue-800/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Presensi Hari Ini
-            </CardTitle>
-            <ClipboardCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">0%</div>
-            <p className="text-xs text-blue-700 dark:text-blue-300">
-              Belum ada data terekam
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-800/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">Kelas Hari Ini</CardTitle>
-            <Users className="h-4 w-4 text-green-600 dark:text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900 dark:text-green-100">{todaySchedule.length}</div>
-            <p className="text-xs text-green-700 dark:text-green-300">
-              Total kelas dalam jadwal Anda
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm bg-amber-50 border-amber-200 dark:bg-amber-950/50 dark:border-amber-800/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">
-              Jurnal Belum Diisi
-            </CardTitle>
-            <BookText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">0</div>
-            <p className="text-xs text-amber-700 dark:text-amber-300">
-              Tidak ada jurnal tertinggal
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm bg-indigo-50 border-indigo-200 dark:bg-indigo-950/50 dark:border-indigo-800/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-indigo-800 dark:text-indigo-200">Kelas Berikutnya</CardTitle>
-            <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">{sortedSchedule.length > 0 ? sortedSchedule[0].start_time : '-'}</div>
-            <p className="text-xs text-indigo-700 dark:text-indigo-300">
-            {sortedSchedule.length > 0 ? `${sortedSchedule[0].subject} - ${sortedSchedule[0].class}` : 'Tidak ada kelas'}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            icon={ClipboardCheck}
+            title="Presensi Hari Ini"
+            value="0%"
+            subtitle="Belum ada data terekam"
+            color="bg-gradient-to-br from-green-500 to-green-400"
+          />
+          <StatCard
+            icon={Users}
+            title="Kelas Hari Ini"
+            value={String(todaySchedule.length)}
+            subtitle="Total kelas dalam jadwal"
+            color="bg-gradient-to-br from-blue-600 to-blue-500"
+          />
+          <StatCard
+            icon={BookText}
+            title="Jurnal Belum Diisi"
+            value="0"
+            subtitle="Tidak ada jurnal tertinggal"
+            color="bg-gradient-to-br from-red-500 to-orange-400"
+          />
+          <StatCard
+            icon={Clock}
+            title="Kelas Berikutnya"
+            value={sortedSchedule.length > 0 ? sortedSchedule[0].start_time : '-'}
+            subtitle={sortedSchedule.length > 0 ? `${sortedSchedule[0].subject} - ${sortedSchedule[0].class}` : 'Tidak ada kelas'}
+            color="bg-gradient-to-br from-amber-500 to-yellow-400"
+          />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
@@ -288,5 +296,3 @@ export default function DashboardClientPage({ todaySchedule, journalEntries }: D
     </div>
   );
 }
-
-    
