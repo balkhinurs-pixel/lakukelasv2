@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -73,10 +74,12 @@ export default function JournalPageComponent({
     initialJournalEntries,
     classes,
     subjects,
+    activeSchoolYearName,
 }: {
     initialJournalEntries: JournalEntry[];
     classes: Class[];
     subjects: Subject[];
+    activeSchoolYearName: string;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -310,6 +313,10 @@ export default function JournalPageComponent({
                     </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+                        <div className="space-y-2">
+                            <Label>Tahun Ajaran Aktif</Label>
+                            <Input value={activeSchoolYearName} disabled className="font-semibold"/>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="class_id">Kelas</Label>
@@ -385,7 +392,7 @@ export default function JournalPageComponent({
                 <div>
                     <CardTitle>Riwayat Jurnal</CardTitle>
                     <CardDescription>
-                        Entri jurnal mengajar yang telah Anda simpan sebelumnya.
+                        Entri jurnal mengajar yang telah Anda simpan sebelumnya. Riwayat disaring berdasarkan tahun ajaran aktif: <span className="font-semibold">{activeSchoolYearName}</span>
                     </CardDescription>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto md:self-start">

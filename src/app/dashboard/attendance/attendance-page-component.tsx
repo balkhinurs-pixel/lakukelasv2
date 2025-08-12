@@ -56,10 +56,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string }[] = [
-    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white' },
-    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white' },
-    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white' },
+    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white hover:bg-green-700' },
+    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white hover:bg-yellow-600' },
+    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white hover:bg-blue-600' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white hover:bg-red-600' },
 ];
 
 
@@ -77,9 +77,10 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
                 className={cn(
                     "size-8 rounded-md border text-xs font-semibold",
                     "focus-visible:ring-0 focus-visible:ring-offset-0", // Disable focus ring
+                    "hover:bg-inherit hover:text-inherit", // Prevent hover effects on text and bg
                     value === opt.value
                         ? opt.selectedClassName
-                        : `${opt.className} hover:bg-transparent hover:text-inherit`
+                        : `${opt.className}`
                 )}
             >
                 {opt.label}
@@ -94,11 +95,13 @@ AttendanceInput.displayName = 'AttendanceInput';
 export default function AttendancePageComponent({
     classes,
     subjects,
-    initialHistory
+    initialHistory,
+    activeSchoolYearName
 }: {
     classes: Class[];
     subjects: Subject[];
     initialHistory: AttendanceHistoryEntry[];
+    activeSchoolYearName: string;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -257,7 +260,11 @@ export default function AttendancePageComponent({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="space-y-2 lg:col-span-2">
+                <Label>Tahun Ajaran Aktif</Label>
+                <Input value={activeSchoolYearName} disabled className="font-semibold"/>
+            </div>
             <div className="space-y-2">
                 <Label>Kelas</Label>
                 <Select onValueChange={setSelectedClassId} value={selectedClassId}>

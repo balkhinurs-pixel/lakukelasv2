@@ -69,11 +69,13 @@ export default function GradesPageComponent({
     subjects,
     initialHistory,
     allStudents,
+    activeSchoolYearName,
 }: {
     classes: Class[];
     subjects: Subject[];
     initialHistory: GradeHistoryEntry[];
     allStudents: Student[];
+    activeSchoolYearName: string;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -238,7 +240,11 @@ export default function GradesPageComponent({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+             <div className="space-y-2 lg:col-span-2">
+                <Label>Tahun Ajaran Aktif</Label>
+                <Input value={activeSchoolYearName} disabled className="font-semibold"/>
+            </div>
             <div className="space-y-2">
                 <Label>Kelas</Label>
                 <Select onValueChange={setSelectedClassId} value={selectedClassId}>
@@ -287,7 +293,7 @@ export default function GradesPageComponent({
                   </PopoverContent>
                 </Popover>
             </div>
-             <div className="space-y-2">
+             <div className="space-y-2 md:col-span-2 lg:col-span-5">
                 <Label htmlFor="assessmentType">Jenis Penilaian</Label>
                 <Input id="assessmentType" value={assessmentType} onChange={(e) => setAssessmentType(e.target.value)} placeholder="e.g. Ulangan Harian 1" disabled={loading}/>
             </div>
