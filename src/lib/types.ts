@@ -17,6 +17,7 @@ export interface Profile {
   role: 'admin' | 'teacher';
   email?: string;
   active_school_year_id?: string | null;
+  active_school_year_name?: string | null;
 }
 
 export interface ActivationCode {
@@ -73,6 +74,7 @@ export interface JournalEntry {
   date: string;
   class_id: string;
   subject_id: string;
+  school_year_id: string;
   meeting_number?: number;
   learning_objectives: string;
   learning_activities: string;
@@ -117,6 +119,7 @@ export interface AttendanceHistoryEntry {
   date: string;
   class_id: string;
   subject_id: string;
+  school_year_id: string;
   meeting_number: number;
   records: AttendanceRecord[];
   // Joined data
@@ -129,6 +132,7 @@ export interface GradeHistoryEntry {
     date: string;
     class_id: string;
     subject_id: string;
+    school_year_id: string;
     assessment_type: string;
     records: GradeRecord[];
     // Joined data

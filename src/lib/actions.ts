@@ -68,10 +68,13 @@ export async function saveJournal(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Authentication required' };
 
+  const {data: profile} = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+
   const entryId = formData.get('id') as string;
   const rawData = {
     class_id: formData.get('class_id') as string,
     subject_id: formData.get('subject_id') as string,
+    school_year_id: profile?.active_school_year_id,
     meeting_number: Number(formData.get('meeting_number')) || null,
     learning_activities: formData.get('learning_activities') as string,
     learning_objectives: formData.get('learning_objectives') as string,
@@ -282,6 +285,8 @@ export async function saveAttendance(formData: FormData) {
      const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Authentication required' };
     
+    const {data: profile} = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+    
     const attendanceId = formData.get('id') as string;
 
     const records = JSON.parse(formData.get('records') as string);
@@ -289,6 +294,7 @@ export async function saveAttendance(formData: FormData) {
         date: formData.get('date') as string,
         class_id: formData.get('class_id') as string,
         subject_id: formData.get('subject_id') as string,
+        school_year_id: profile?.active_school_year_id,
         meeting_number: Number(formData.get('meeting_number')),
         records: records,
         teacher_id: user.id
@@ -306,6 +312,8 @@ export async function saveGrades(formData: FormData) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Authentication required' };
+    
+    const {data: profile} = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
 
     const gradeId = formData.get('id') as string;
     
@@ -314,6 +322,7 @@ export async function saveGrades(formData: FormData) {
         date: formData.get('date') as string,
         class_id: formData.get('class_id') as string,
         subject_id: formData.get('subject_id') as string,
+        school_year_id: profile?.active_school_year_id,
         assessment_type: formData.get('assessment_type') as string,
         records: records,
         teacher_id: user.id

@@ -44,7 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck } from "lucide-react";
-import type { Class, Student, Subject, JournalEntry, Profile } from "@/lib/types";
+import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear } from "@/lib/types";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useActivation } from "@/hooks/use-activation";
@@ -86,17 +86,19 @@ type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
 export default function ReportsPageComponent({
     classes,
     subjects,
+    schoolYears,
     reportsData,
     profile
 }: {
     classes: Class[];
     subjects: Subject[];
+    schoolYears: SchoolYear[];
     reportsData: ReportsData;
     profile: Profile;
 }) {
   const [selectedClass, setSelectedClass] = React.useState("all");
   const [selectedSubject, setSelectedSubject] = React.useState("all");
-  const [selectedSemester, setSelectedSemester] = React.useState("2");
+  const [selectedSchoolYear, setSelectedSchoolYear] = React.useState(profile.active_school_year_id || "all");
   const { isPro, limits } = useActivation();
   const { toast } = useToast();
 
@@ -138,14 +140,15 @@ export default function ReportsPageComponent({
             const total = hadir + sakit + izin + alpha;
             return [index + 1, student.name, hadir, sakit, izin, alpha, total];
         });
+        
+        const activeSchoolYear = schoolYears.find(sy => sy.id === selectedSchoolYear);
 
         await downloadPdf(doc, { 
             title: title, 
             head: [['No', 'Nama Siswa', 'Hadir (H)', 'Sakit (S)', 'Izin (I)', 'Alpha (A)', 'Total']],
             body: tableBody,
         }, {
-            semester: selectedSemester === "1" ? "Ganjil" : "Genap",
-            tahunAjaran: "2023/2024"
+            tahunAjaran: activeSchoolYear?.name || profile.active_school_year_name || "-"
         });
     }
 
@@ -193,14 +196,15 @@ export default function ReportsPageComponent({
 
             return row;
         });
+        
+        const activeSchoolYear = schoolYears.find(sy => sy.id === selectedSchoolYear);
 
         await downloadPdf(doc, { 
             title: title, 
             head: head,
             body: tableBody,
         }, {
-            semester: selectedSemester === "1" ? "Ganjil" : "Genap",
-            tahunAjaran: "2023/2024"
+            tahunAjaran: activeSchoolYear?.name || profile.active_school_year_name || "-"
         });
     }
   
@@ -217,10 +221,11 @@ export default function ReportsPageComponent({
       (selectedClass === 'all' || j.class_id === selectedClass) &&
       (selectedSubject === 'all' || j.subject_id === selectedSubject)
     );
+    
+    const activeSchoolYear = schoolYears.find(sy => sy.id === selectedSchoolYear);
 
     await downloadPdf(doc, { title: title, journals: filteredJournals }, {
-        semester: selectedSemester === "1" ? "Ganjil" : "Genap",
-        tahunAjaran: "2023/2024"
+        tahunAjaran: activeSchoolYear?.name || profile.active_school_year_name || "-"
     });
   }
 
@@ -300,10 +305,8 @@ export default function ReportsPageComponent({
             doc.text(`: ${activeSubject?.name || 'Semua Mapel'}`, margin + 35, metaYStart);
             doc.text(`Kelas`, margin, metaYStart + 5);
             doc.text(`: ${activeClass?.name || 'Semua Kelas'}`, margin + 35, metaYStart + 5);
-            doc.text(`Semester`, pageWidth / 2, metaYStart);
-            doc.text(`: ${meta.semester || '-'}`, pageWidth / 2 + 35, metaYStart);
-            doc.text(`Tahun Ajaran`, pageWidth / 2, metaYStart + 5);
-            doc.text(`: ${meta.tahunAjaran || '-'}`, pageWidth / 2 + 35, metaYStart + 5);
+            doc.text(`Tahun Ajaran`, pageWidth / 2, metaYStart);
+            doc.text(`: ${meta.tahunAjaran || '-'}`, pageWidth / 2 + 35, metaYStart);
             finalY = metaYStart + 15;
         }
 
@@ -427,6 +430,38 @@ export default function ReportsPageComponent({
             return "bg-muted text-muted-foreground";
     }
   }
+
+  const CommonFilters = () => (
+    <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
+        <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Pilih Tahun Ajaran" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">Semua Tahun</SelectItem>
+                {schoolYears.map(sy => <SelectItem key={sy.id} value={sy.id}>{sy.name}</SelectItem>)}
+            </SelectContent>
+        </Select>
+        <Select value={selectedClass} onValueChange={setSelectedClass}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Pilih kelas" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">Semua Kelas</SelectItem>
+                {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+        </Select>
+         <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Pilih Mapel" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">Semua Mapel</SelectItem>
+                {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+            </SelectContent>
+        </Select>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
@@ -634,33 +669,14 @@ export default function ReportsPageComponent({
                         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                             <div>
                                 <CardTitle>Laporan Kehadiran Siswa</CardTitle>
-                                <CardDescription>Pilih kelas dan mapel untuk mengunduh rekap kehadiran.</CardDescription>
+                                <CardDescription>Pilih filter untuk mengunduh rekap kehadiran.</CardDescription>
                             </div>
                             <Button variant="outline" onClick={handleDownloadAttendance} disabled={!isPro}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Unduh PDF
                             </Button>
                         </div>
-                        <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
-                            <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih kelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Pilih Kelas</SelectItem>
-                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih Mapel" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Pilih Mapel</SelectItem>
-                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <CommonFilters />
                     </CardHeader>
                     <CardContent>
                         <div className="text-center py-12 text-muted-foreground">
@@ -676,33 +692,14 @@ export default function ReportsPageComponent({
                          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                             <div>
                                <CardTitle>Laporan Nilai Siswa</CardTitle>
-                               <CardDescription>Pilih kelas dan mapel untuk mengunduh rekap nilai.</CardDescription>
+                               <CardDescription>Pilih filter untuk mengunduh rekap nilai.</CardDescription>
                             </div>
                             <Button variant="outline" onClick={handleDownloadGrades} disabled={!isPro}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Unduh PDF
                             </Button>
                         </div>
-                         <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
-                            <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih kelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Pilih Kelas</SelectItem>
-                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih Mapel" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Pilih Mapel</SelectItem>
-                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <CommonFilters />
                     </CardHeader>
                     <CardContent>
                         <div className="text-center py-12 text-muted-foreground">
@@ -725,26 +722,7 @@ export default function ReportsPageComponent({
                                 Unduh PDF
                             </Button>
                         </div>
-                        <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
-                            <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih kelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Kelas</SelectItem>
-                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Pilih Mapel" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Mapel</SelectItem>
-                                    {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <CommonFilters />
                     </CardHeader>
                     <CardContent>
                         {/* Mobile View */}

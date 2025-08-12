@@ -83,7 +83,7 @@ export async function getUserProfile() {
 
     const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, school_year:school_years(name)')
         .eq('id', user.id)
         .single();
     
@@ -91,7 +91,13 @@ export async function getUserProfile() {
         console.error("Error fetching user profile:", error);
         return null;
     }
-    return profile;
+
+    const typedProfile = profile as any;
+
+    return {
+        ...typedProfile,
+        active_school_year_name: typedProfile.school_year?.name
+    } as Profile
 }
 
 export async function getClasses(): Promise<Class[]> {
@@ -176,11 +182,20 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase
+    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+
+    let query = supabase
       .from('journals')
       .select('*, classes(name), subjects(name)')
       .eq('teacher_id', user.id)
       .order('date', { ascending: false });
+
+    if(profile?.active_school_year_id) {
+        query = query.eq('school_year_id', profile.active_school_year_id)
+    }
+
+    const { data, error } = await query;
+
 
     if (error) {
       console.error("Error fetching journal entries:", error);
@@ -220,11 +235,19 @@ export async function getAttendanceHistory(): Promise<AttendanceHistoryEntry[]> 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase
+    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+
+    let query = supabase
       .from('attendance_history')
       .select('*, classes(name), subjects(name)')
       .eq('teacher_id', user.id)
       .order('date', { ascending: false });
+
+    if(profile?.active_school_year_id) {
+        query = query.eq('school_year_id', profile.active_school_year_id)
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
         console.error("Error fetching attendance history:", error);
@@ -245,11 +268,19 @@ export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase
+    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+
+    let query = supabase
       .from('grade_history')
       .select('*, classes(name), subjects(name, kkm)')
       .eq('teacher_id', user.id)
       .order('date', { ascending: false });
+    
+    if (profile?.active_school_year_id) {
+        query = query.eq('school_year_id', profile.active_school_year_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error("Error fetching grade history:", error);
@@ -323,19 +354,72 @@ export async function getDashboardData() {
 }
 
 
-export async function getReportsData() {
+export async function getReportsData(schoolYearId?: string) {
     noStore();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const [allStudents, attendanceHistory, gradeHistory, journalEntries, classes] = await Promise.all([
+    let activeSchoolYearId = schoolYearId;
+
+    if (!activeSchoolYearId) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('active_school_year_id')
+            .eq('id', user.id)
+            .single();
+        if (profile?.active_school_year_id) {
+            activeSchoolYearId = profile.active_school_year_id;
+        }
+    }
+    
+    // Base queries
+    let attendanceQuery = supabase.from('attendance_history').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
+    let gradesQuery = supabase.from('grade_history').select('*, classes(name), subjects(name, kkm)').eq('teacher_id', user.id);
+    let journalsQuery = supabase.from('journals').select('*').eq('teacher_id', user.id);
+
+    // Apply school year filter if available
+    if (activeSchoolYearId) {
+        attendanceQuery = attendanceQuery.eq('school_year_id', activeSchoolYearId);
+        gradesQuery = gradesQuery.eq('school_year_id', activeSchoolYearId);
+        journalsQuery = journalsQuery.eq('school_year_id', activeSchoolYearId);
+    }
+
+    const [
+        { data: attendanceData, error: attendanceError },
+        { data: gradesData, error: gradesError },
+        { data: journalsData, error: journalsError },
+        allStudents,
+        classes
+    ] = await Promise.all([
+        attendanceQuery,
+        gradesQuery,
+        journalsQuery,
         getAllStudents(),
-        getAttendanceHistory(),
-        getGradeHistory(),
-        getJournalEntries(),
         getClasses()
     ]);
+
+    if (attendanceError || gradesError || journalsError) {
+        console.error('Error fetching reports data:', attendanceError || gradesError || journalsError);
+        return null;
+    }
+
+    const attendanceHistory = (attendanceData as any[]).map(entry => ({
+        ...entry,
+        className: entry.classes.name,
+        subjectName: entry.subjects.name,
+        records: entry.records.map((r: any) => ({studentId: r.student_id, status: r.status}))
+    }));
+
+    const gradeHistory = (gradesData as any[]).map(entry => ({
+        ...entry,
+        className: entry.classes.name,
+        subjectName: entry.subjects.name,
+        subjectKkm: entry.subjects.kkm,
+        records: entry.records.map((r: any) => ({studentId: r.student_id, score: r.score}))
+    }));
+
+    const journalEntries = journalsData || [];
 
     // 1. Overall Attendance Rate
     const totalAttendanceRecords = attendanceHistory.reduce((sum, entry) => sum + entry.records.length, 0);

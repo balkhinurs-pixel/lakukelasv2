@@ -1,14 +1,17 @@
-import { getClasses, getSubjects, getReportsData, getUserProfile } from "@/lib/data";
+import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears } from "@/lib/data";
 import ReportsPageComponent from "./reports-page-component";
 import type { Profile } from "@/lib/types";
 
 export default async function ReportsPage() {
-    const [classes, subjects, reportsData, profile] = await Promise.all([
+    const [classes, subjects, profile, { schoolYears }] = await Promise.all([
         getClasses(),
         getSubjects(),
-        getReportsData(),
-        getUserProfile()
+        getUserProfile(),
+        getSchoolYears()
     ]);
+    
+    // Initial data load for the active school year
+    const reportsData = await getReportsData(profile?.active_school_year_id);
 
     if (!reportsData || !profile) {
         return (
@@ -21,6 +24,7 @@ export default async function ReportsPage() {
     return <ReportsPageComponent 
         classes={classes} 
         subjects={subjects} 
+        schoolYears={schoolYears}
         reportsData={reportsData}
         profile={profile}
     />;
