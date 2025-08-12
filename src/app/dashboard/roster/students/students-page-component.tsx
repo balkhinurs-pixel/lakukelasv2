@@ -47,6 +47,114 @@ import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
 import { saveStudent, importStudents, updateStudent, moveStudent } from "@/lib/actions";
 
+// --- Extracted and Memoized Add/Edit Dialog Component ---
+interface AddEditDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    isEditing: boolean;
+    editingStudent: Student | null;
+    selectedClass: Class | undefined;
+    handleSaveStudent: (e: React.FormEvent, formState: FormState) => void;
+    loading: boolean;
+}
+
+interface FormState {
+    id: string;
+    name: string;
+    nis: string;
+    nisn: string;
+    gender: Student['gender'] | '';
+}
+
+const AddEditDialog = React.memo(function AddEditDialog({
+    open,
+    onOpenChange,
+    isEditing,
+    editingStudent,
+    selectedClass,
+    handleSaveStudent,
+    loading
+}: AddEditDialogProps) {
+    const [formState, setFormState] = React.useState<FormState>({
+        id: "",
+        name: "",
+        nis: "",
+        nisn: "",
+        gender: "",
+    });
+
+    React.useEffect(() => {
+        if (open) {
+            if (isEditing && editingStudent) {
+                setFormState({
+                    id: editingStudent.id,
+                    name: editingStudent.name,
+                    nis: editingStudent.nis,
+                    nisn: editingStudent.nisn,
+                    gender: editingStudent.gender,
+                });
+            } else {
+                setFormState({ id: "", name: "", nis: "", nisn: "", gender: "" });
+            }
+        }
+    }, [open, isEditing, editingStudent]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleSaveStudent(e, formState);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area">
+                <form onSubmit={handleSubmit}>
+                    <DialogHeader>
+                        <DialogTitle>{isEditing ? 'Ubah Data Siswa' : 'Tambah Siswa Baru'}</DialogTitle>
+                        <DialogDescription>
+                            {isEditing ? `Perbarui detail untuk ${editingStudent?.name}.` : `Masukkan detail siswa baru untuk ditambahkan ke kelas ${selectedClass?.name}.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="student-name">Nama Lengkap Siswa</Label>
+                            <Input id="student-name" placeholder="e.g. Ahmad Fauzi" value={formState.name} onChange={e => setFormState({ ...formState, name: e.target.value })} required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="student-nis">NIS</Label>
+                                <Input id="student-nis" placeholder="e.g. 23241001" value={formState.nis} onChange={e => setFormState({ ...formState, nis: e.target.value })} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="student-nisn">NISN</Label>
+                                <Input id="student-nisn" placeholder="e.g. 0012345678" value={formState.nisn} onChange={e => setFormState({ ...formState, nisn: e.target.value })} required />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Jenis Kelamin</Label>
+                            <Select value={formState.gender} onValueChange={(value: Student['gender']) => setFormState({ ...formState, gender: value })} required>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih jenis kelamin" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                                    <SelectItem value="Perempuan">Perempuan</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="submit" disabled={loading}>
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isEditing ? 'Simpan Perubahan' : 'Simpan Siswa'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+});
+
+
 export default function StudentsPageComponent({
     initialClasses,
     initialStudents,
@@ -66,8 +174,7 @@ export default function StudentsPageComponent({
   const [editingStudent, setEditingStudent] = React.useState<Student | null>(null);
   const [studentToMove, setStudentToMove] = React.useState<Student | null>(null);
   const [newClassIdForMove, setNewClassIdForMove] = React.useState("");
-
-  const [formState, setFormState] = React.useState({ id: "", name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
+  
   const [loading, setLoading] = React.useState(false);
   
   const { toast } = useToast();
@@ -83,13 +190,11 @@ export default function StudentsPageComponent({
 
   const handleOpenAddDialog = () => {
     setEditingStudent(null);
-    setFormState({ id: "", name: "", nis: "", nisn: "", gender: "" as Student['gender'] });
     setIsAddDialogOpen(true);
   };
   
   const handleOpenEditDialog = (student: Student) => {
     setEditingStudent(student);
-    setFormState({ id: student.id, name: student.name, nis: student.nis, nisn: student.nisn, gender: student.gender });
     setIsEditDialogOpen(true);
   };
 
@@ -99,7 +204,7 @@ export default function StudentsPageComponent({
       setIsMoveDialogOpen(true);
   }
 
-  const handleSaveStudent = async (e: React.FormEvent) => {
+  const handleSaveStudent = async (e: React.FormEvent, formState: FormState) => {
     e.preventDefault();
     setLoading(true);
 
@@ -219,56 +324,7 @@ export default function StudentsPageComponent({
       });
       event.target.value = '';
   };
-
-  const AddEditDialog = ({ open, onOpenChange, isEditing }: { open: boolean, onOpenChange: (open: boolean) => void, isEditing: boolean }) => (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area">
-            <form onSubmit={handleSaveStudent}>
-                <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Ubah Data Siswa' : 'Tambah Siswa Baru'}</DialogTitle>
-                    <DialogDescription>
-                        {isEditing ? `Perbarui detail untuk ${formState.name}.` : `Masukkan detail siswa baru untuk ditambahkan ke kelas ${selectedClass?.name}.`}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="student-name">Nama Lengkap Siswa</Label>
-                        <Input id="student-name" placeholder="e.g. Ahmad Fauzi" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} required/>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="student-nis">NIS</Label>
-                            <Input id="student-nis" placeholder="e.g. 23241001" value={formState.nis} onChange={e => setFormState({...formState, nis: e.target.value})} required/>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="student-nisn">NISN</Label>
-                            <Input id="student-nisn" placeholder="e.g. 0012345678" value={formState.nisn} onChange={e => setFormState({...formState, nisn: e.target.value})} required/>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Jenis Kelamin</Label>
-                        <Select value={formState.gender} onValueChange={(value: Student['gender']) => setFormState({...formState, gender: value})} required>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Pilih jenis kelamin" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Laki-laki">Laki-laki</SelectItem>
-                                <SelectItem value="Perempuan">Perempuan</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button type="submit" disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isEditing ? 'Simpan Perubahan' : 'Simpan Siswa'}
-                    </Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
-    </Dialog>
-  );
-
+  
   return (
     <div className="space-y-6">
         <input
@@ -414,8 +470,24 @@ export default function StudentsPageComponent({
         </Card>
 
         {/* Add/Edit Dialog */}
-        <AddEditDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} isEditing={false} />
-        <AddEditDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} isEditing={true} />
+        <AddEditDialog 
+            open={isAddDialogOpen} 
+            onOpenChange={setIsAddDialogOpen} 
+            isEditing={false}
+            editingStudent={null}
+            selectedClass={selectedClass}
+            handleSaveStudent={handleSaveStudent}
+            loading={loading}
+        />
+        <AddEditDialog 
+            open={isEditDialogOpen} 
+            onOpenChange={setIsEditDialogOpen} 
+            isEditing={true}
+            editingStudent={editingStudent}
+            selectedClass={selectedClass}
+            handleSaveStudent={handleSaveStudent}
+            loading={loading}
+        />
 
         {/* Move Student Dialog */}
         <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
@@ -453,3 +525,5 @@ export default function StudentsPageComponent({
     </div>
   );
 }
+
+    
