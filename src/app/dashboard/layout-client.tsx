@@ -36,10 +36,8 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarMenuSub,
   useSidebar,
   SidebarTrigger,
-  SidebarMenuSubButton,
   SidebarSeparator,
   SidebarGroup,
   SidebarGroupLabel,
@@ -52,11 +50,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useActivation } from '@/hooks/use-activation';
@@ -68,7 +61,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Home' },
+  { href: '/dashboard', icon: Home, label: 'Dasbor' },
   { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
@@ -79,11 +72,16 @@ const navItems = [
 ];
 
 const mainMobileNavItems = [
-    { href: '/dashboard', icon: Home, label: 'Home' },
+    { href: '/dashboard', icon: Home, label: 'Dasbor' },
     { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
     { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
     { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
 ];
+
+// Items for the mobile sidebar menu (excluding those in the bottom bar)
+const mobileSidebarNavItems = navItems.filter(
+    (item) => !mainMobileNavItems.some((mobileItem) => mobileItem.href === item.href)
+);
 
 const rosterNavItems = [
     { href: '/dashboard/roster/school-year', label: 'Tahun Ajaran' },
@@ -153,20 +151,20 @@ export default function DashboardLayoutClient({
     </SidebarHeader>
   );
 
-  const MainNavContent = () => (
+  const MainNavContent = ({ items }: { items: typeof navItems }) => (
     <SidebarMenu>
-      {navItems.map((item) => (
+      {items.map((item) => (
         <SidebarMenuItem key={item.href}>
           <SidebarMenuButton
             asChild
             isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard'}
-            tooltip={{ children: item.label === 'Home' ? 'Dasbor' : item.label }}
+            tooltip={{ children: item.label }}
             className="group-data-[collapsible=icon]:justify-center"
           >
             <Link href={item.href}>
               <item.icon className={cn("group-data-[active=true]:text-primary")} />
               <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
-                {item.label === 'Home' ? 'Dasbor' : item.label}
+                {item.label}
               </span>
             </Link>
           </SidebarMenuButton>
@@ -177,33 +175,20 @@ export default function DashboardLayoutClient({
 
   const RosterNavContent = () => (
     <SidebarMenu>
-      <Collapsible asChild defaultOpen={isRosterActive}>
         <SidebarMenuItem>
-            <CollapsibleTrigger asChild>
-                <SidebarMenuButton
-                  variant="ghost"
-                  className="w-full justify-start p-2 group-data-[collapsible=icon]:justify-center"
-                  tooltip={{ children: 'Manajemen Rombel' }}
-                  isActive={isRosterActive}
-                >
+            <SidebarMenuButton
+              variant="ghost"
+              className="w-full justify-start p-2 group-data-[collapsible=icon]:justify-center"
+              tooltip={{ children: 'Manajemen Rombel' }}
+              isActive={isRosterActive}
+              asChild
+            >
+                <Link href="/dashboard/roster/students">
                     <Users />
                     <span className="group-data-[collapsible=icon]:hidden">Manajemen Rombel</span>
-                    <ChevronDown className="ml-auto size-4 shrink-0 transition-transform group-data-[collapsible=icon]:hidden [&[data-state=open]]:-rotate-180" />
-                </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-                <SidebarMenuSub>
-                    {rosterNavItems.map(item => (
-                        <SidebarMenuItem key={item.href}>
-                            <SidebarMenuSubButton asChild isActive={pathname === item.href} size="sm">
-                                <Link href={item.href}>{item.label}</Link>
-                            </SidebarMenuSubButton>
-                        </SidebarMenuItem>
-                    ))}
-                </SidebarMenuSub>
-            </CollapsibleContent>
+                </Link>
+            </SidebarMenuButton>
         </SidebarMenuItem>
-      </Collapsible>
     </SidebarMenu>
   );
 
@@ -211,9 +196,15 @@ export default function DashboardLayoutClient({
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
             {mainMobileNavItems.map((item) => (
-                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", (pathname === item.href || (item.href === '/dashboard' && pathname.startsWith('/dashboard'))) ? "text-primary" : "text-muted-foreground")}>
+                <Link key={item.href} href={item.href} className={cn(
+                  "flex flex-col items-center gap-1 p-2 rounded-md", 
+                  // Special check for dashboard home
+                  item.href === '/dashboard' 
+                    ? (pathname === '/dashboard' ? "text-primary" : "text-muted-foreground") 
+                    : (pathname.startsWith(item.href) ? "text-primary" : "text-muted-foreground")
+                )}>
                     <item.icon className="w-5 h-5" />
-                    <span className="text-xs">{item.label === 'Home' ? 'Dasbor' : item.label}</span>
+                    <span className="text-xs">{item.label}</span>
                 </Link>
             ))}
             <button onClick={toggleSidebar} className="flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
@@ -228,6 +219,7 @@ export default function DashboardLayoutClient({
     <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
         <div className="flex items-center justify-between h-16 px-4">
              <div className="flex items-center gap-2">
+                 <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" />
                  <GraduationCap className="h-7 w-7 text-green-300"/>
                  <h1 className="text-lg font-bold tracking-tight">
                     <span className="text-white">Laku</span>
@@ -240,7 +232,7 @@ export default function DashboardLayoutClient({
                 </Button>
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white rounded-full">
+                        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                              <Avatar className="h-8 w-8">
                                 <AvatarImage src={(profile?.avatar_url || "https://placehold.co/32x32.png")} alt={profile?.full_name || 'Guru'} data-ai-hint="teacher portrait"/>
                                 <AvatarFallback className="text-foreground text-xs">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
@@ -273,15 +265,13 @@ export default function DashboardLayoutClient({
     </header>
   );
 
-  return (
-    <>
-       <Sidebar collapsible="icon">
-        <ProfileHeader />
-        <ScrollArea className="flex-1">
+  const MobileSidebar = () => (
+     <ScrollArea className="flex-1">
         <SidebarContent className="p-0">
+          <ProfileHeader />
           <SidebarGroup>
-            <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
-            <MainNavContent />
+            <SidebarGroupLabel>MENU LAINNYA</SidebarGroupLabel>
+            <MainNavContent items={mobileSidebarNavItems} />
           </SidebarGroup>
           <SidebarSeparator />
           <SidebarGroup>
@@ -289,22 +279,49 @@ export default function DashboardLayoutClient({
             <RosterNavContent />
           </SidebarGroup>
         </SidebarContent>
-        </ScrollArea>
-        <SidebarFooter className="p-2 border-t">
-             <SidebarMenu>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton
-                        onClick={handleLogout}
-                        tooltip={{ children: "Keluar" }}
-                        className="group-data-[collapsible=icon]:justify-center"
-                    >
-                        <LogOut />
-                        <span className="group-data-[collapsible=icon]:hidden">Keluar</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-             </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
+      </ScrollArea>
+  );
+
+  const DesktopSidebar = () => (
+    <>
+      <ProfileHeader />
+      <ScrollArea className="flex-1">
+        <SidebarContent className="p-0">
+          <SidebarGroup>
+            <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
+            <MainNavContent items={navItems} />
+          </SidebarGroup>
+          <SidebarSeparator />
+          <SidebarGroup>
+            <SidebarGroupLabel>MANAJEMEN</SidebarGroupLabel>
+            <RosterNavContent />
+          </SidebarGroup>
+        </SidebarContent>
+      </ScrollArea>
+      <SidebarFooter className="p-2 border-t">
+          <SidebarMenu>
+              <SidebarMenuItem>
+                  <SidebarMenuButton
+                      asChild
+                      tooltip={{ children: "Pengaturan" }}
+                      className="group-data-[collapsible=icon]:justify-center"
+                  >
+                      <Link href="/dashboard/settings">
+                          <Settings />
+                          <span className="group-data-[collapsible=icon]:hidden">Pengaturan</span>
+                      </Link>
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+          </SidebarMenu>
+      </SidebarFooter>
+    </>
+  );
+
+  return (
+    <>
+       <Sidebar>
+          { isMobile ? <MobileSidebar /> : <DesktopSidebar /> }
+       </Sidebar>
 
       <SidebarInset>
         <AppHeader />
@@ -316,3 +333,4 @@ export default function DashboardLayoutClient({
     </>
   );
 }
+
