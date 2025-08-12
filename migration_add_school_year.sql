@@ -1,92 +1,68 @@
--- MIGRATION SCRIPT: Menambahkan school_year_id ke tabel yang ada
--- Aman untuk dijalankan beberapa kali.
+-- This script is designed to be run ONCE on an existing database.
+-- It adds the necessary `school_year_id` column to attendance, grade, and journal tables,
+-- and then backfills the data for existing records based on the currently active school year.
 
--- 1. Tambah kolom 'school_year_id' ke tabel 'journals' jika belum ada.
-ALTER TABLE public.journals
-ADD COLUMN IF NOT EXISTS school_year_id UUID;
-
--- 2. Tambah kolom 'school_year_id' ke tabel 'attendance_history' jika belum ada.
-ALTER TABLE public.attendance_history
-ADD COLUMN IF NOT EXISTS school_year_id UUID;
-
--- 3. Tambah kolom 'school_year_id' ke tabel 'grade_history' jika belum ada.
-ALTER TABLE public.grade_history
-ADD COLUMN IF NOT EXISTS school_year_id UUID;
-
--- 4. Tambahkan Foreign Key constraint ke tabel 'journals' jika belum ada.
 DO $$
+DECLARE
+    -- Variable to hold the active school year ID. This should be set for the user running the script.
+    v_active_school_year_id UUID;
+    v_user_id UUID;
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM   pg_constraint
-        WHERE  conname = 'journals_school_year_id_fkey'
-    )
-    THEN
-        ALTER TABLE public.journals
-        ADD CONSTRAINT journals_school_year_id_fkey
-        FOREIGN KEY (school_year_id)
-        REFERENCES public.school_years(id)
-        ON DELETE SET NULL;
-    END IF;
-END;
-$$;
+    -- Get the current user's ID
+    v_user_id := auth.uid();
 
--- 5. Tambahkan Foreign Key constraint ke tabel 'attendance_history' jika belum ada.
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM   pg_constraint
-        WHERE  conname = 'attendance_history_school_year_id_fkey'
-    )
-    THEN
+    -- Get the current user's active school year ID from their profile
+    SELECT active_school_year_id INTO v_active_school_year_id 
+    FROM public.profiles 
+    WHERE id = v_user_id;
+
+    -- Step 1: Add the school_year_id column to the attendance_history table if it doesn't exist.
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='attendance_history' AND column_name='school_year_id') THEN
         ALTER TABLE public.attendance_history
-        ADD CONSTRAINT attendance_history_school_year_id_fkey
-        FOREIGN KEY (school_year_id)
-        REFERENCES public.school_years(id)
-        ON DELETE SET NULL;
+        ADD COLUMN school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL;
+        RAISE NOTICE 'Added school_year_id to attendance_history.';
+    ELSE
+        RAISE NOTICE 'Column school_year_id already exists in attendance_history.';
     END IF;
-END;
-$$;
 
-
--- 6. Tambahkan Foreign Key constraint ke tabel 'grade_history' jika belum ada.
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM   pg_constraint
-        WHERE  conname = 'grade_history_school_year_id_fkey'
-    )
-    THEN
+    -- Step 2: Add the school_year_id column to the grade_history table if it doesn't exist.
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='grade_history' AND column_name='school_year_id') THEN
         ALTER TABLE public.grade_history
-        ADD CONSTRAINT grade_history_school_year_id_fkey
-        FOREIGN KEY (school_year_id)
-        REFERENCES public.school_years(id)
-        ON DELETE SET NULL;
+        ADD COLUMN school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL;
+        RAISE NOTICE 'Added school_year_id to grade_history.';
+    ELSE
+        RAISE NOTICE 'Column school_year_id already exists in grade_history.';
     END IF;
-END;
-$$;
+    
+    -- Step 3: Add the school_year_id column to the journals table if it doesn't exist.
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='journals' AND column_name='school_year_id') THEN
+        ALTER TABLE public.journals
+        ADD COLUMN school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL;
+        RAISE NOTICE 'Added school_year_id to journals.';
+    ELSE
+        RAISE NOTICE 'Column school_year_id already exists in journals.';
+    END IF;
 
--- 7. Isi kolom school_year_id untuk data yang sudah ada di tabel 'journals'.
---    Menggunakan tahun ajaran aktif dari profil guru yang bersangkutan.
-UPDATE public.journals j
-SET school_year_id = p.active_school_year_id
-FROM public.profiles p
-WHERE j.teacher_id = p.id AND j.school_year_id IS NULL AND p.active_school_year_id IS NOT NULL;
+    -- Step 4: Backfill existing records with the active school year ID if it's set.
+    IF v_active_school_year_id IS NOT NULL THEN
+        RAISE NOTICE 'Backfilling existing records with active school year ID: %', v_active_school_year_id;
+        
+        UPDATE public.attendance_history
+        SET school_year_id = v_active_school_year_id
+        WHERE school_year_id IS NULL AND teacher_id = v_user_id;
+        
+        UPDATE public.grade_history
+        SET school_year_id = v_active_school_year_id
+        WHERE school_year_id IS NULL AND teacher_id = v_user_id;
+        
+        UPDATE public.journals
+        SET school_year_id = v_active_school_year_id
+        WHERE school_year_id IS NULL AND teacher_id = v_user_id;
 
--- 8. Isi kolom school_year_id untuk data yang sudah ada di tabel 'attendance_history'.
-UPDATE public.attendance_history ah
-SET school_year_id = p.active_school_year_id
-FROM public.profiles p
-WHERE ah.teacher_id = p.id AND ah.school_year_id IS NULL AND p.active_school_year_id IS NOT NULL;
+        RAISE NOTICE 'Backfill complete.';
+    ELSE
+        RAISE NOTICE 'No active school year set for the current user. Skipping backfill.';
+    END IF;
 
--- 9. Isi kolom school_year_id untuk data yang sudah ada di tabel 'grade_history'.
-UPDATE public.grade_history gh
-SET school_year_id = p.active_school_year_id
-FROM public.profiles p
-WHERE gh.teacher_id = p.id AND gh.school_year_id IS NULL AND p.active_school_year_id IS NOT NULL;
-
-COMMENT ON COLUMN public.journals.school_year_id IS 'Foreign key ke tabel school_years';
-COMMENT ON COLUMN public.attendance_history.school_year_id IS 'Foreign key ke tabel school_years';
-COMMENT ON COLUMN public.grade_history.school_year_id IS 'Foreign key ke tabel school_years';
+    RAISE NOTICE 'Migration script completed successfully.';
+END $$;
