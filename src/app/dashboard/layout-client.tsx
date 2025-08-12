@@ -202,27 +202,95 @@ export default function DashboardLayoutClient({
   );
 
   const BottomNavbar = () => {
+    const navRef = React.useRef<HTMLDivElement>(null);
+    const [indicatorStyle, setIndicatorStyle] = React.useState({});
+    const [svgPath, setSvgPath] = React.useState('');
+  
+    const itemColors = {
+      '/dashboard': 'text-purple-500',
+      '/dashboard/attendance': 'text-blue-500',
+      '/dashboard/grades': 'text-green-500',
+      '/dashboard/journal': 'text-orange-500',
+      'default': 'text-pink-500',
+    };
+  
+    const getActiveColor = (path: string) => {
+      return itemColors[path as keyof typeof itemColors] || itemColors.default;
+    };
+  
+    React.useEffect(() => {
+      const activeItem = navRef.current?.querySelector<HTMLAnchorElement>('[data-active="true"]');
+      if (activeItem && navRef.current) {
+        const navRect = navRef.current.getBoundingClientRect();
+        const itemRect = activeItem.getBoundingClientRect();
+        const left = itemRect.left - navRect.left;
+        const width = itemRect.width;
+        
+        setIndicatorStyle({
+          transform: `translateX(${left}px)`,
+          width: `${width}px`,
+        });
+  
+        // SVG Path Calculation
+        const notchWidth = 70; // Width of the curve
+        const notchHeight = 12; // Height of the curve
+        const barHeight = 64; // Total height of the navbar
+        const startX = left - (notchWidth - width) / 2;
+        
+        const newPath = `
+          M 0,${notchHeight} 
+          L ${startX},${notchHeight} 
+          C ${startX + 10},${notchHeight} ${startX + 10},0 ${startX + (notchWidth / 2)},0 
+          S ${startX + notchWidth - 10},${notchHeight} ${startX + notchWidth},${notchHeight} 
+          L ${navRect.width},${notchHeight} 
+          L ${navRect.width},${barHeight} 
+          L 0,${barHeight} Z
+        `;
+        setSvgPath(newPath);
+      }
+    }, [pathname]);
+  
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
-            {mainMobileNavItems.map((item) => (
-                <Link key={item.href} href={item.href} className={cn(
-                  "flex flex-col items-center gap-1 p-2 rounded-md", 
-                  // Special check for dashboard home
-                  item.href === '/dashboard' 
-                    ? (pathname === '/dashboard' ? "text-primary" : "text-muted-foreground") 
-                    : (pathname.startsWith(item.href) ? "text-primary" : "text-muted-foreground")
-                )}>
-                    <item.icon className="w-5 h-5" />
-                    <span className="text-xs">{item.label}</span>
-                </Link>
-            ))}
-            <button onClick={toggleSidebar} className="flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
-                <Menu className="w-5 h-5" />
-                <span className="text-xs">Lainnya</span>
-            </button>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 z-50">
+        <div ref={navRef} className="relative h-full w-full flex justify-around items-center px-2 bg-transparent">
+          <svg className="absolute bottom-0 left-0 w-full h-full" width="100%" height="100%" viewBox="0 0 375 64" preserveAspectRatio="none">
+             <path d={svgPath} className="fill-card transition-all duration-300 ease-in-out" />
+          </svg>
+
+          {/* Indicator Bubble */}
+          <div 
+            className="absolute bottom-4 h-12 w-12 flex items-center justify-center rounded-full transition-transform duration-300 ease-in-out"
+            style={{ ...indicatorStyle, bottom: '1.75rem', height: '48px', width: '48px'}}
+          >
+             <div className={cn("h-full w-full rounded-full", getActiveColor(pathname).replace('text-', 'bg-'))} style={{opacity: 0.15}}></div>
+          </div>
+  
+          {mainMobileNavItems.map((item) => {
+            const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-active={isActive}
+                className={cn(
+                  "relative z-10 flex flex-col items-center justify-center w-16 h-16 transition-all duration-300",
+                  isActive ? "-mt-6" : "text-muted-foreground"
+                )}
+              >
+                <div className={cn("flex items-center justify-center h-12 w-12 rounded-full", isActive && getActiveColor(pathname).replace('text-', 'bg-'))}>
+                   <item.icon className={cn("w-6 h-6", isActive ? "text-white" : "")}/>
+                </div>
+                <span className={cn("text-xs mt-1 transition-opacity duration-300", isActive ? "opacity-100 font-semibold" : "opacity-0")}>{item.label}</span>
+              </Link>
+            )
+          })}
+          <button onClick={toggleSidebar} className="relative z-10 flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
+            <Menu className="w-6 h-6" />
+          </button>
         </div>
-    )
-  }
+      </div>
+    );
+  };
 
   const AppHeader = () => (
     <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
