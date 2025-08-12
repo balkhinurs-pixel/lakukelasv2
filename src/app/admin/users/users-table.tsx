@@ -148,7 +148,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         setLoading(false);
     }
 
-    const getStatusClass = (status: 'Pro' | 'Free') => {
+    const getStatusClass = (status: 'Pro' | 'Free' | null) => {
         if (status === 'Pro') {
             return 'bg-green-100 text-green-800 border-green-200';
         }

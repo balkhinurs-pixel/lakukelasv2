@@ -125,7 +125,11 @@ export default function DashboardLayoutClient({
   }, [profile, setActivationStatus]);
 
   const StatusBadge = () => (
-    <Badge variant={isPro ? "default" : "secondary"} className={cn("mt-2", isPro ? 'bg-green-500/20 text-green-50 border-green-400/30' : 'bg-amber-500/20 text-amber-50 border-amber-400/30')}>
+    <Badge variant={'outline'} className={cn("mt-2 text-xs font-semibold", 
+      isPro 
+      ? 'bg-green-100 text-green-800 border-green-200' 
+      : 'bg-amber-100 text-amber-800 border-amber-200'
+    )}>
       {isPro ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
       Akun {isPro ? "Pro" : "Gratis"}
     </Badge>
@@ -327,7 +331,12 @@ export default function DashboardLayoutClient({
   return (
     <>
        <Sidebar>
-          { isMobile ? <MobileSidebar /> : <DesktopSidebar /> }
+          <ProfileHeader />
+          <ScrollArea className="flex-1">
+              <SidebarContent className="p-0">
+                  { isMobile ? <MobileSidebar /> : <DesktopSidebar /> }
+              </SidebarContent>
+          </ScrollArea>
        </Sidebar>
 
       <SidebarInset>
