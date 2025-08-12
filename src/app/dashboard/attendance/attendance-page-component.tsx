@@ -55,11 +55,11 @@ import { getStudentsByClass } from "@/lib/data-client";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string }[] = [
-    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white' },
-    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white' },
-    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white' },
+const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string, hoverClassName: string }[] = [
+    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white', hoverClassName: 'hover:text-green-600' },
+    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white', hoverClassName: 'hover:text-yellow-600' },
+    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white', hoverClassName: 'hover:text-blue-600' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white', hoverClassName: 'hover:text-red-600' },
 ];
 
 
@@ -78,7 +78,7 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
                     "size-8 rounded-md border text-xs font-semibold",
                     value === opt.value
                         ? opt.selectedClassName
-                        : `${opt.className} hover:bg-transparent`
+                        : `${opt.className} hover:bg-transparent ${opt.hoverClassName}`
                 )}
             >
                 {opt.label}
