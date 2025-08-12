@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -206,7 +205,7 @@ export default function DashboardLayoutClient({
     const [indicatorStyle, setIndicatorStyle] = React.useState({});
     const [svgPath, setSvgPath] = React.useState('');
   
-    const itemColors = {
+    const itemColors: { [key: string]: string } = {
       '/dashboard': 'text-purple-500',
       '/dashboard/attendance': 'text-blue-500',
       '/dashboard/grades': 'text-green-500',
@@ -215,39 +214,56 @@ export default function DashboardLayoutClient({
     };
   
     const getActiveColor = (path: string) => {
-      return itemColors[path as keyof typeof itemColors] || itemColors.default;
-    };
-  
-    React.useEffect(() => {
-      const activeItem = navRef.current?.querySelector<HTMLAnchorElement>('[data-active="true"]');
-      if (activeItem && navRef.current) {
-        const navRect = navRef.current.getBoundingClientRect();
-        const itemRect = activeItem.getBoundingClientRect();
-        const left = itemRect.left - navRect.left;
-        const width = itemRect.width;
-        
-        setIndicatorStyle({
-          transform: `translateX(${left}px)`,
-          width: `${width}px`,
-        });
-  
-        // SVG Path Calculation
-        const notchWidth = 70; // Width of the curve
-        const notchHeight = 12; // Height of the curve
-        const barHeight = 64; // Total height of the navbar
-        const startX = left - (notchWidth - width) / 2;
-        
-        const newPath = `
-          M 0,${notchHeight} 
-          L ${startX},${notchHeight} 
-          C ${startX + 10},${notchHeight} ${startX + 10},0 ${startX + (notchWidth / 2)},0 
-          S ${startX + notchWidth - 10},${notchHeight} ${startX + notchWidth},${notchHeight} 
-          L ${navRect.width},${notchHeight} 
-          L ${navRect.width},${barHeight} 
-          L 0,${barHeight} Z
-        `;
-        setSvgPath(newPath);
+      for (const key in itemColors) {
+        if (path.startsWith(key) && key !== '/dashboard') return itemColors[key];
       }
+      if (path === '/dashboard') return itemColors['/dashboard'];
+      return itemColors.default;
+    };
+    
+    // Using a map to cache item positions
+    const itemRefs = React.useRef<Map<string, HTMLAnchorElement>>(new Map());
+
+    React.useEffect(() => {
+        const calculatePath = () => {
+            const activeItem = itemRefs.current.get(pathname);
+            if (activeItem && navRef.current) {
+                const navRect = navRef.current.getBoundingClientRect();
+                const itemRect = activeItem.getBoundingClientRect();
+                const left = itemRect.left - navRect.left;
+                const width = itemRect.width;
+                
+                setIndicatorStyle({
+                    transform: `translateX(${left}px)`,
+                    width: `${width}px`,
+                });
+        
+                // SVG Path Calculation
+                const notchWidth = 70;
+                const notchHeight = 12;
+                const barHeight = 64;
+                const startX = left - (notchWidth - width) / 2;
+                
+                const newPath = `
+                    M 0,${notchHeight} 
+                    L ${startX},${notchHeight} 
+                    C ${startX + 10},${notchHeight} ${startX + 10},0 ${startX + (notchWidth / 2)},0 
+                    S ${startX + notchWidth - 10},${notchHeight} ${startX + notchWidth},${notchHeight} 
+                    L ${navRect.width},${notchHeight} 
+                    L ${navRect.width},${barHeight} 
+                    L 0,${barHeight} Z
+                `;
+                setSvgPath(newPath);
+            }
+        }
+        
+        // Calculate on initial render and on pathname change
+        calculatePath();
+
+        // Recalculate on resize
+        window.addEventListener('resize', calculatePath);
+        return () => window.removeEventListener('resize', calculatePath);
+
     }, [pathname]);
   
     return (
@@ -259,33 +275,36 @@ export default function DashboardLayoutClient({
 
           {/* Indicator Bubble */}
           <div 
-            className="absolute bottom-4 h-12 w-12 flex items-center justify-center rounded-full transition-transform duration-300 ease-in-out"
+            className="absolute h-12 flex items-center justify-center rounded-full transition-transform duration-300 ease-in-out"
             style={{ ...indicatorStyle, bottom: '1.75rem', height: '48px', width: '48px'}}
           >
              <div className={cn("h-full w-full rounded-full", getActiveColor(pathname).replace('text-', 'bg-'))} style={{opacity: 0.15}}></div>
           </div>
   
           {mainMobileNavItems.map((item) => {
-            const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href);
+            const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard';
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                ref={el => el ? itemRefs.current.set(item.href, el) : itemRefs.current.delete(item.href)}
                 data-active={isActive}
                 className={cn(
                   "relative z-10 flex flex-col items-center justify-center w-16 h-16 transition-all duration-300",
                   isActive ? "-mt-6" : "text-muted-foreground"
                 )}
               >
-                <div className={cn("flex items-center justify-center h-12 w-12 rounded-full", isActive && getActiveColor(pathname).replace('text-', 'bg-'))}>
+                <div className={cn("flex items-center justify-center h-12 w-12 rounded-full transition-colors duration-300", isActive && getActiveColor(pathname).replace('text-', 'bg-'))}>
                    <item.icon className={cn("w-6 h-6", isActive ? "text-white" : "")}/>
                 </div>
                 <span className={cn("text-xs mt-1 transition-opacity duration-300", isActive ? "opacity-100 font-semibold" : "opacity-0")}>{item.label}</span>
               </Link>
             )
           })}
-          <button onClick={toggleSidebar} className="relative z-10 flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
-            <Menu className="w-6 h-6" />
+          <button onClick={toggleSidebar} className="relative z-10 flex flex-col items-center justify-center w-16 h-16 text-muted-foreground">
+            <div className="flex items-center justify-center h-12 w-12">
+                <Menu className="w-6 h-6" />
+            </div>
           </button>
         </div>
       </div>
