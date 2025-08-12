@@ -56,10 +56,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string }[] = [
-    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white' },
-    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white' },
-    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white' },
+    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white hover:bg-green-600' },
+    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white hover:bg-yellow-500' },
+    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white hover:bg-blue-500' },
+    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white hover:bg-red-500' },
 ];
 
 
@@ -79,7 +79,7 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
                     "focus-visible:ring-0 focus-visible:ring-offset-0", // Disable focus ring
                     value === opt.value
                         ? opt.selectedClassName
-                        : `${opt.className} hover:bg-transparent hover:text-current`
+                        : `${opt.className} hover:bg-transparent`
                 )}
             >
                 {opt.label}
