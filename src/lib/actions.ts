@@ -22,8 +22,8 @@ async function handleSupabaseAction(action: Promise<any>, successMessage: string
     return { success: true, message: successMessage };
   } catch (error: any) {
     if (error.message.includes('unique constraint')) {
-        if (error.message.includes('students_nis_key')) {
-             return { success: false, error: 'Gagal: NIS yang Anda masukkan sudah terdaftar. NIS harus unik.' };
+        if (error.message.includes('students_teacher_id_nis_key')) {
+             return { success: false, error: 'Gagal: NIS yang Anda masukkan sudah terdaftar untuk guru ini. NIS harus unik per guru.' };
         }
         return { success: false, error: 'Gagal: Terdapat data duplikat. Pastikan data yang Anda masukkan unik.' };
     }
@@ -183,6 +183,7 @@ export async function saveStudent(formData: FormData) {
         nis: formData.get('nis') as string,
         gender: formData.get('gender') as 'Laki-laki' | 'Perempuan',
         class_id: classId,
+        teacher_id: user.id,
     };
     
     const action = supabase.from('students').insert([rawData]);
@@ -217,7 +218,7 @@ export async function moveStudent(studentId: string, newClassId: string) {
     return handleSupabaseAction(action, 'Siswa berhasil dipindahkan.', '/dashboard/roster/students');
 }
 
-export async function importStudents(classId: string, students: Omit<Student, 'id' | 'class_id' | 'nisn'>[]) {
+export async function importStudents(classId: string, students: Omit<Student, 'id' | 'class_id'>[]) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Authentication required' };
@@ -225,6 +226,7 @@ export async function importStudents(classId: string, students: Omit<Student, 'i
     const recordsToInsert = students.map(student => ({
         ...student,
         class_id: classId,
+        teacher_id: user.id
     }));
 
     const action = supabase.from('students').insert(recordsToInsert);

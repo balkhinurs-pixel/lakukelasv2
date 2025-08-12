@@ -34,10 +34,10 @@ export interface Student {
   id: string;
   name: string;
   nis: string;
-  nisn?: string;
   gender: 'Laki-laki' | 'Perempuan';
   class_id: string;
   class_name?: string;
+  teacher_id: string;
 }
 
 export interface Class {

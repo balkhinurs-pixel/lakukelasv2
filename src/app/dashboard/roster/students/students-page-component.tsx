@@ -225,6 +225,7 @@ export default function StudentsPageComponent({
 
     const result = editingStudent ? await updateStudent(formData) : await saveStudent(formData);
     
+    setLoading(false);
     if (result.success) {
       setIsAddDialogOpen(false);
       setIsEditDialogOpen(false);
@@ -233,7 +234,6 @@ export default function StudentsPageComponent({
     } else {
       toast({ title: "Gagal", description: result.error, variant: "destructive" });
     }
-    setLoading(false);
   };
 
   const handleMoveStudent = async (e: React.FormEvent) => {
@@ -245,6 +245,7 @@ export default function StudentsPageComponent({
       setLoading(true);
       const result = await moveStudent(studentToMove.id, newClassIdForMove);
       
+      setLoading(false);
       if (result.success) {
           setIsMoveDialogOpen(false);
           setStudentToMove(null);
@@ -253,7 +254,6 @@ export default function StudentsPageComponent({
       } else {
           toast({ title: "Gagal", description: result.error, variant: "destructive" });
       }
-      setLoading(false);
   }
 
   const handleDownloadTemplate = () => {
@@ -301,18 +301,18 @@ export default function StudentsPageComponent({
               }
 
               const result = await importStudents(selectedClassId, studentsToImport);
-
+              
+              setLoading(false);
               if (result.success) {
                   toast({ title: "Impor Berhasil", description: `${studentsToImport.length} siswa berhasil diimpor.` });
                   router.refresh();
               } else {
                   toast({ title: "Gagal Impor", description: result.error, variant: "destructive" });
               }
-              setLoading(false);
           },
           error: (error) => {
-              toast({ title: "Gagal Membaca File", description: error.message, variant: "destructive" });
               setLoading(false);
+              toast({ title: "Gagal Membaca File", description: error.message, variant: "destructive" });
           }
       });
       event.target.value = '';
