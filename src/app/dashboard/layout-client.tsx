@@ -23,7 +23,12 @@ import {
   CalendarDays,
   Home,
   Bell,
-  GraduationCap
+  GraduationCap,
+  CalendarCheck,
+  School,
+  BookOpen,
+  Users2,
+  ArrowRightLeft
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -84,11 +89,11 @@ const mobileSidebarNavItems = navItems.filter(
 );
 
 const rosterNavItems = [
-    { href: '/dashboard/roster/school-year', label: 'Tahun Ajaran' },
-    { href: '/dashboard/roster/classes', label: 'Pengaturan Kelas' },
-    { href: '/dashboard/roster/subjects', label: 'Pengaturan Mapel' },
-    { href: '/dashboard/roster/students', label: 'Daftar Siswa' },
-    { href: '/dashboard/roster/promotion', label: 'Promosi & Mutasi' },
+    { href: '/dashboard/roster/school-year', icon: CalendarCheck, label: 'Tahun Ajaran' },
+    { href: '/dashboard/roster/classes', icon: School, label: 'Pengaturan Kelas' },
+    { href: '/dashboard/roster/subjects', icon: BookOpen, label: 'Pengaturan Mapel' },
+    { href: '/dashboard/roster/students', icon: Users2, label: 'Daftar Siswa' },
+    { href: '/dashboard/roster/promotion', icon: ArrowRightLeft, label: 'Promosi & Mutasi' },
 ];
 
 
@@ -175,20 +180,23 @@ export default function DashboardLayoutClient({
 
   const RosterNavContent = () => (
     <SidebarMenu>
-        <SidebarMenuItem>
-            <SidebarMenuButton
-              variant="ghost"
-              className="w-full justify-start p-2 group-data-[collapsible=icon]:justify-center"
-              tooltip={{ children: 'Manajemen Rombel' }}
-              isActive={isRosterActive}
-              asChild
-            >
-                <Link href="/dashboard/roster/students">
-                    <Users />
-                    <span className="group-data-[collapsible=icon]:hidden">Manajemen Rombel</span>
-                </Link>
-            </SidebarMenuButton>
+      {rosterNavItems.map((item) => (
+        <SidebarMenuItem key={item.href}>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname.startsWith(item.href)}
+            tooltip={{ children: item.label }}
+            className="group-data-[collapsible=icon]:justify-center"
+          >
+            <Link href={item.href}>
+              <item.icon className={cn("group-data-[active=true]:text-primary")} />
+              <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
+                {item.label}
+              </span>
+            </Link>
+          </SidebarMenuButton>
         </SidebarMenuItem>
+      ))}
     </SidebarMenu>
   );
 
@@ -333,4 +341,3 @@ export default function DashboardLayoutClient({
     </>
   );
 }
-
