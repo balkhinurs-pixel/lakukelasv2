@@ -277,38 +277,38 @@ export default function DashboardLayoutClient({
   const MobileSidebar = () => (
     <>
       <ProfileHeader />
-      <ScrollArea className="flex-1">
-        <SidebarContent className="p-0">
-          <SidebarGroup>
-            <SidebarGroupLabel>MENU LAINNYA</SidebarGroupLabel>
-            <MainNavContent items={mobileSidebarNavItems} />
-          </SidebarGroup>
-          <SidebarSeparator />
-          <SidebarGroup>
-            <SidebarGroupLabel>MANAJEMEN</SidebarGroupLabel>
-            <RosterNavContent />
-          </SidebarGroup>
-        </SidebarContent>
-      </ScrollArea>
+      <SidebarContent className="p-0">
+        <ScrollArea className="flex-1">
+            <SidebarGroup>
+                <SidebarGroupLabel>MENU LAINNYA</SidebarGroupLabel>
+                <MainNavContent items={mobileSidebarNavItems} />
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup>
+                <SidebarGroupLabel>MANAJEMEN</SidebarGroupLabel>
+                <RosterNavContent />
+            </SidebarGroup>
+        </ScrollArea>
+      </SidebarContent>
     </>
   );
 
   const DesktopSidebar = () => (
     <>
       <ProfileHeader />
-      <ScrollArea className="flex-1">
-        <SidebarContent className="p-0">
-          <SidebarGroup>
-            <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
-            <MainNavContent items={navItems} />
-          </SidebarGroup>
-          <SidebarSeparator />
-          <SidebarGroup>
-            <SidebarGroupLabel>MANAJEMEN</SidebarGroupLabel>
-            <RosterNavContent />
-          </SidebarGroup>
-        </SidebarContent>
-      </ScrollArea>
+      <SidebarContent className="p-0">
+        <ScrollArea className="flex-1">
+            <SidebarGroup>
+                <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
+                <MainNavContent items={navItems} />
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup>
+                <SidebarGroupLabel>MANAJEMEN</SidebarGroupLabel>
+                <RosterNavContent />
+            </SidebarGroup>
+        </ScrollArea>
+      </SidebarContent>
       <SidebarFooter className="p-2 border-t">
           <SidebarMenu>
               <SidebarMenuItem>
@@ -331,12 +331,7 @@ export default function DashboardLayoutClient({
   return (
     <>
        <Sidebar>
-          <ProfileHeader />
-          <ScrollArea className="flex-1">
-              <SidebarContent className="p-0">
-                  { isMobile ? <MobileSidebar /> : <DesktopSidebar /> }
-              </SidebarContent>
-          </ScrollArea>
+          { isMobile ? <MobileSidebar /> : <DesktopSidebar /> }
        </Sidebar>
 
       <SidebarInset>
