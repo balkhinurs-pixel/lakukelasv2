@@ -23,6 +23,7 @@ import {
   CalendarDays,
   Home,
   Bell,
+  GraduationCap
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -43,6 +44,14 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
 } from '@/components/ui/sidebar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Collapsible,
   CollapsibleContent,
@@ -66,6 +75,7 @@ const navItems = [
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
   { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
   { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
+  { href: '/dashboard/activation', icon: KeyRound, label: 'Aktivasi' },
 ];
 
 const mainMobileNavItems = [
@@ -83,10 +93,6 @@ const rosterNavItems = [
     { href: '/dashboard/roster/promotion', label: 'Promosi & Mutasi' },
 ];
 
-const settingsNavItems = [
-    { href: '/dashboard/settings', icon: UserIcon, label: 'Profil Saya' },
-    { href: '/dashboard/activation', icon: KeyRound, label: 'Aktivasi Akun' },
-]
 
 export default function DashboardLayoutClient({ 
   children,
@@ -213,39 +219,6 @@ export default function DashboardLayoutClient({
        </SidebarMenuItem>
     </SidebarMenu>
   );
-  
-  const SettingsNavContent = () => (
-     <SidebarMenu>
-        {settingsNavItems.map((item) => (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith(item.href)}
-              tooltip={{ children: item.label }}
-              className="group-data-[collapsible=icon]:justify-center"
-            >
-              <Link href={item.href}>
-                <item.icon className={cn("group-data-[active=true]:text-primary")} />
-                <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
-                  {item.label}
-                </span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-        <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={handleLogout}
-              tooltip={{ children: "Keluar" }}
-              className="group-data-[collapsible=icon]:justify-center"
-            >
-              <LogOut />
-              <span className="group-data-[collapsible=icon]:hidden">Keluar</span>
-            </SidebarMenuButton>
-        </SidebarMenuItem>
-     </SidebarMenu>
-  );
-
 
   const BottomNavbar = () => {
     return (
@@ -253,7 +226,7 @@ export default function DashboardLayoutClient({
             {mainMobileNavItems.map((item) => (
                 <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", (pathname === item.href || (item.href === '/dashboard' && pathname.startsWith('/dashboard'))) ? "text-primary" : "text-muted-foreground")}>
                     <item.icon className="w-5 h-5" />
-                    <span className="text-xs">{item.label}</span>
+                    <span className="text-xs">{item.label === 'Home' ? 'Dasbor' : item.label}</span>
                 </Link>
             ))}
             <button onClick={toggleSidebar} className="flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
@@ -268,16 +241,46 @@ export default function DashboardLayoutClient({
     <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
         <div className="flex items-center justify-between h-16 px-4">
              <div className="flex items-center gap-2">
-                
+                 <GraduationCap className="h-7 w-7 text-green-300"/>
                  <h1 className="text-lg font-bold tracking-tight">
                     <span className="text-white">Laku</span>
                     <span className="text-green-300">Kelas</span>
                 </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white rounded-full">
                     <Bell className="h-5 w-5" />
                 </Button>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white rounded-full">
+                             <Avatar className="h-8 w-8">
+                                <AvatarImage src={(profile?.avatar_url || "https://placehold.co/32x32.png")} alt={profile?.full_name || 'Guru'} data-ai-hint="teacher portrait"/>
+                                <AvatarFallback className="text-foreground text-xs">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+                             </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{profile?.full_name}</p>
+                                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                           <Link href="/dashboard/settings">
+                                <UserIcon className="mr-2" />
+                                Profil Saya
+                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout}>
+                            <LogOut className="mr-2"/>
+                            Keluar
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </div>
     </header>
@@ -285,9 +288,10 @@ export default function DashboardLayoutClient({
 
   return (
     <>
-      <Sidebar collapsible="icon">
+       <Sidebar collapsible="icon">
         <ProfileHeader />
-        <SidebarContent>
+        <ScrollArea>
+        <SidebarContent className="p-0">
           <SidebarGroup>
             <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
             <MainNavContent />
@@ -298,11 +302,20 @@ export default function DashboardLayoutClient({
             <RosterNavContent />
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter>
-          <SidebarSeparator />
-          <SidebarGroup>
-             <SettingsNavContent />
-          </SidebarGroup>
+        </ScrollArea>
+        <SidebarFooter className="p-2 border-none">
+             <SidebarMenu>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={handleLogout}
+                        tooltip={{ children: "Keluar" }}
+                        className="group-data-[collapsible=icon]:justify-center"
+                    >
+                        <LogOut />
+                        <span className="group-data-[collapsible=icon]:hidden">Keluar</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+             </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
 
