@@ -37,10 +37,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog, Loader2 } from "lucide-react";
+import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
 import type { Student, Class } from "@/lib/types";
@@ -145,6 +146,13 @@ const AddEditDialog = React.memo(function AddEditDialog({
     );
 });
 
+type ImportReport = {
+    total: number;
+    successCount: number;
+    failureCount: number;
+    successes: { name: string; nis: string }[];
+    failures: { name: string; nis: string; reason: string }[];
+};
 
 export default function StudentsPageComponent({
     initialClasses,
@@ -162,9 +170,11 @@ export default function StudentsPageComponent({
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = React.useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = React.useState(false);
   const [editingStudent, setEditingStudent] = React.useState<Student | null>(null);
   const [studentToMove, setStudentToMove] = React.useState<Student | null>(null);
   const [newClassIdForMove, setNewClassIdForMove] = React.useState("");
+  const [importReport, setImportReport] = React.useState<ImportReport | null>(null);
   
   const [loading, setLoading] = React.useState(false);
   
@@ -259,7 +269,7 @@ export default function StudentsPageComponent({
   const handleDownloadTemplate = () => {
     const csvData = "name,nis,gender";
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "template_siswa.csv");
+    saveAs(blob, "template_impor_siswa.csv");
   };
 
   const handleExportCSV = () => {
@@ -277,7 +287,6 @@ export default function StudentsPageComponent({
   const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) {
-          toast({ title: "Gagal", description: "Tidak ada file yang dipilih.", variant: "destructive" });
           return;
       }
       setLoading(true);
@@ -292,7 +301,7 @@ export default function StudentsPageComponent({
                   name: row.name,
                   nis: row.nis,
                   gender: row.gender
-              })).filter(s => s.name && s.nis && s.gender);
+              })).filter(s => s.name || s.nis || s.gender);
 
               if (studentsToImport.length === 0) {
                   toast({ title: "Gagal Impor", description: "File CSV tidak valid atau tidak berisi data yang benar.", variant: "destructive" });
@@ -303,9 +312,12 @@ export default function StudentsPageComponent({
               const result = await importStudents(selectedClassId, studentsToImport);
               
               setLoading(false);
-              if (result.success) {
-                  toast({ title: "Impor Berhasil", description: `${studentsToImport.length} siswa berhasil diimpor.` });
-                  router.refresh();
+              if (result.success && result.results) {
+                  setImportReport(result.results);
+                  setIsReportDialogOpen(true);
+                  if (result.results.successCount > 0) {
+                      router.refresh();
+                  }
               } else {
                   toast({ title: "Gagal Impor", description: result.error, variant: "destructive" });
               }
@@ -333,9 +345,9 @@ export default function StudentsPageComponent({
                 <p className="text-muted-foreground">Kelola data induk siswa di setiap kelas.</p>
             </div>
              <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" onClick={handleDownloadTemplate} disabled={!isPro || loading}><FileText /> Unduh Template</Button>
-                <Button variant="outline" onClick={handleImportClick} disabled={!isPro || loading}><Upload /> Impor Siswa</Button>
-                <Button variant="outline" onClick={handleExportCSV} disabled={!isPro || loading || studentsInClass.length === 0}><Download /> Ekspor Siswa</Button>
+                <Button variant="outline" onClick={handleDownloadTemplate} disabled={!isPro || loading}><FileText className="h-4 w-4 mr-2" /> Unduh Template</Button>
+                <Button variant="outline" onClick={handleImportClick} disabled={!isPro || loading || !selectedClassId}><Upload className="h-4 w-4 mr-2" /> Impor Siswa</Button>
+                <Button variant="outline" onClick={handleExportCSV} disabled={!isPro || loading || studentsInClass.length === 0}><Download className="h-4 w-4 mr-2" /> Ekspor Siswa</Button>
             </div>
         </div>
         
@@ -378,7 +390,7 @@ export default function StudentsPageComponent({
                         </SelectContent>
                     </Select>
                     <Button onClick={handleOpenAddDialog} disabled={!canAddStudent || !selectedClassId || loading}>
-                        <UserPlus />
+                        <UserPlus className="h-4 w-4 mr-2" />
                         Tambah Siswa
                     </Button>
                 </div>
@@ -510,6 +522,103 @@ export default function StudentsPageComponent({
                         </Button>
                     </DialogFooter>
                 </form>
+            </DialogContent>
+        </Dialog>
+
+        {/* Import Report Dialog */}
+        <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+            <DialogContent className="max-w-2xl dialog-content-mobile mobile-safe-area">
+                <DialogHeader>
+                    <DialogTitle>Laporan Hasil Impor</DialogTitle>
+                    <DialogDescription>
+                        Berikut adalah ringkasan dari proses impor data siswa.
+                    </DialogDescription>
+                </DialogHeader>
+                {importReport && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="p-4 bg-blue-50 rounded-lg">
+                                <p className="text-2xl font-bold">{importReport.total}</p>
+                                <p className="text-sm text-blue-700">Total Diproses</p>
+                            </div>
+                            <div className="p-4 bg-green-50 rounded-lg">
+                                <p className="text-2xl font-bold text-green-700">{importReport.successCount}</p>
+                                <p className="text-sm text-green-700">Berhasil</p>
+                            </div>
+                            <div className="p-4 bg-red-50 rounded-lg">
+                                <p className="text-2xl font-bold text-red-700">{importReport.failureCount}</p>
+                                <p className="text-sm text-red-700">Gagal</p>
+                            </div>
+                        </div>
+                        <Tabs defaultValue="failures">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="failures">Gagal ({importReport.failureCount})</TabsTrigger>
+                                <TabsTrigger value="successes">Berhasil ({importReport.successCount})</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="failures" className="mt-4">
+                                <ScrollArea className="h-60">
+                                    {importReport.failureCount > 0 ? (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Nama</TableHead>
+                                                    <TableHead>NIS</TableHead>
+                                                    <TableHead>Alasan</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {importReport.failures.map((f, i) => (
+                                                    <TableRow key={i}>
+                                                        <TableCell>{f.name}</TableCell>
+                                                        <TableCell>{f.nis}</TableCell>
+                                                        <TableCell className="text-destructive text-xs">{f.reason}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
+                                            <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                                            <p className="font-semibold">Luar Biasa!</p>
+                                            <p className="text-sm">Semua data siswa berhasil diimpor tanpa ada yang gagal.</p>
+                                        </div>
+                                    )}
+                                </ScrollArea>
+                            </TabsContent>
+                            <TabsContent value="successes" className="mt-4">
+                               <ScrollArea className="h-60">
+                                    {importReport.successCount > 0 ? (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Nama</TableHead>
+                                                    <TableHead>NIS</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {importReport.successes.map((s, i) => (
+                                                    <TableRow key={i}>
+                                                        <TableCell>{s.name}</TableCell>
+                                                        <TableCell>{s.nis}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                     ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
+                                            <XCircle className="h-12 w-12 text-red-500 mb-4" />
+                                            <p className="font-semibold">Tidak Ada Data Berhasil</p>
+                                            <p className="text-sm">Tidak ada data siswa yang berhasil diimpor. Periksa tab "Gagal" untuk detail.</p>
+                                        </div>
+                                    )}
+                                </ScrollArea>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                )}
+                 <DialogFooter>
+                    <Button onClick={() => setIsReportDialogOpen(false)}>Tutup</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     </div>
