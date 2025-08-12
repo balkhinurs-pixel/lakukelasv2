@@ -231,15 +231,15 @@ export default function StudentsPageComponent({
 
     const result = editingStudent ? await updateStudent(formData) : await saveStudent(formData);
     
+    setLoading(false);
     if (result.success) {
-      toast({ title: "Sukses", description: `Data siswa berhasil ${editingStudent ? 'diperbarui' : 'ditambahkan'}.` });
       setIsAddDialogOpen(false);
       setIsEditDialogOpen(false);
+      toast({ title: "Sukses", description: `Data siswa berhasil ${editingStudent ? 'diperbarui' : 'ditambahkan'}.` });
       router.refresh();
     } else {
       toast({ title: "Gagal", description: result.error, variant: "destructive" });
     }
-    setLoading(false);
   };
 
   const handleMoveStudent = async (e: React.FormEvent) => {
@@ -250,16 +250,16 @@ export default function StudentsPageComponent({
       }
       setLoading(true);
       const result = await moveStudent(studentToMove.id, newClassIdForMove);
-
+      
+      setLoading(false);
       if (result.success) {
-          toast({ title: "Sukses", description: `${studentToMove.name} berhasil dipindahkan.` });
           setIsMoveDialogOpen(false);
           setStudentToMove(null);
+          toast({ title: "Sukses", description: `${studentToMove.name} berhasil dipindahkan.` });
           router.refresh();
       } else {
           toast({ title: "Gagal", description: result.error, variant: "destructive" });
       }
-      setLoading(false);
   }
 
   const handleDownloadTemplate = () => {
