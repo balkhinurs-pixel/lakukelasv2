@@ -4,6 +4,8 @@
 import * as React from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
   Card,
   CardContent,
@@ -43,7 +45,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck } from "lucide-react";
+import { TrendingUp, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet } from "lucide-react";
 import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear } from "@/lib/types";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -206,6 +208,134 @@ export default function ReportsPageComponent({
         }, {
             tahunAjaran: activeSchoolYear?.name || profile.active_school_year_name || "-"
         });
+    }
+
+    const handleDownloadGradesExcel = () => {
+        if (!isPro) {
+            toast({ title: "Fitur Akun Pro", description: "Unduh laporan Excel adalah fitur Pro.", variant: "destructive" });
+            return;
+        }
+        if (selectedClass === 'all' || selectedSubject === 'all') {
+            toast({ title: "Filter Dibutuhkan", description: "Silakan pilih Kelas dan Mata Pelajaran untuk mengunduh laporan nilai.", variant: "destructive" });
+            return;
+        }
+
+        const activeClass = classes.find(c => c.id === selectedClass);
+        const activeSubject = subjects.find(s => s.id === selectedSubject);
+        const activeSchoolYear = schoolYears.find(sy => sy.id === selectedSchoolYear);
+        const kkm = activeSubject?.kkm || 75;
+
+        // --- Data Preparation ---
+        const filteredStudents = allStudents.filter(s => s.class_id === selectedClass);
+        const filteredGradeHistory = gradeHistory.filter(h => h.class_id === selectedClass && h.subject_id === selectedSubject);
+        const assessments = [...new Set(filteredGradeHistory.map(h => h.assessment_type))];
+
+        const data: (string | number)[][] = [];
+
+        // --- Header ---
+        data.push(['DAFTAR NILAI SISWA']);
+        data.push([`Mata Pelajaran: ${activeSubject?.name || 'Semua Mapel'}`]);
+        data.push([`Kelas: ${activeClass?.name || 'Semua Kelas'}`]);
+        data.push([`Tahun Ajaran: ${activeSchoolYear?.name || profile.active_school_year_name || "-"}`]);
+        data.push([`KKM: ${kkm}`]);
+        data.push([]); // Spacer row
+
+        // --- Table Header ---
+        const tableHeader = ['No', 'Nama Siswa', ...assessments, 'Rata-rata', 'Predikat'];
+        data.push(tableHeader);
+
+        // --- Table Body ---
+        filteredStudents.forEach((student, index) => {
+            const row: (string | number)[] = [index + 1, student.name];
+            let totalScore = 0;
+            let scoreCount = 0;
+
+            assessments.forEach(assessment => {
+                const gradeEntry = filteredGradeHistory.find(h => h.assessment_type === assessment);
+                const studentRecord = gradeEntry?.records.find(r => r.studentId === student.id);
+                const score = studentRecord ? Number(studentRecord.score) : '';
+                if (typeof score === 'number') {
+                    totalScore += score;
+                    scoreCount++;
+                }
+                row.push(score);
+            });
+
+            const average = scoreCount > 0 ? parseFloat((totalScore / scoreCount).toFixed(2)) : '';
+            const predicate = typeof average === 'number' ? (average >= kkm ? 'Tuntas' : 'Remedial') : '';
+            row.push(average);
+            row.push(predicate);
+            data.push(row);
+        });
+
+        // --- Create Worksheet and Workbook ---
+        const ws = XLSX.utils.aoa_to_sheet(data);
+
+        // --- Styling ---
+        const headerStyle = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4F81BD" } }, alignment: { horizontal: "center", vertical: "center" } };
+        const titleStyle = { font: { bold: true, sz: 16 } };
+        const subtitleStyle = { font: { bold: true } };
+        const centeredStyle = { alignment: { horizontal: "center" } };
+
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: tableHeader.length - 1 } }, // Title
+        ];
+
+        // Apply styles
+        ws['A1'].s = titleStyle;
+        ws['A2'].s = subtitleStyle;
+        ws['A3'].s = subtitleStyle;
+        ws['A4'].s = subtitleStyle;
+        ws['A5'].s = subtitleStyle;
+
+        const tableHeaderRange = XLSX.utils.decode_range(`A7:${XLSX.utils.encode_col(tableHeader.length - 1)}7`);
+        for (let C = tableHeaderRange.s.c; C <= tableHeaderRange.e.c; ++C) {
+            const cell_address = { c: C, r: tableHeaderRange.s.r };
+            const cell_ref = XLSX.utils.encode_cell(cell_address);
+            if (!ws[cell_ref]) ws[cell_ref] = {};
+            ws[cell_ref].s = headerStyle;
+        }
+
+        // --- Conditional Formatting & Cell Styles ---
+        const dataRange = { s: { r: 7, c: 2 }, e: { r: 6 + filteredStudents.length, c: 2 + assessments.length - 1 } };
+        for (let R = dataRange.s.r; R <= dataRange.e.r; ++R) {
+             // Center 'No' column
+            const noCellRef = XLSX.utils.encode_cell({c: 0, r: R});
+            if(ws[noCellRef]) ws[noCellRef].s = centeredStyle;
+
+            for (let C = dataRange.s.c; C <= dataRange.e.c; ++C) {
+                const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
+                if (!ws[cell_ref] || ws[cell_ref].v === '') continue;
+                
+                const score = Number(ws[cell_ref].v);
+                if (!isNaN(score)) {
+                    ws[cell_ref].s = {
+                        fill: { fgColor: { rgb: score < kkm ? "FFD2D2" : "D2FFD2" } },
+                        alignment: { horizontal: "center" }
+                    };
+                }
+            }
+        }
+        
+        // --- Column Widths ---
+        const cols = [{ wch: 5 }, { wch: 35 }]; // 'No' and 'Nama Siswa'
+        assessments.forEach(() => cols.push({ wch: 15 }));
+        cols.push({ wch: 10 }, { wch: 12 }); // Rata-rata, Predikat
+        ws['!cols'] = cols;
+
+        // --- Generate and Download ---
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Laporan Nilai");
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+        
+        function s2ab(s: any) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+
+        saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), `laporan_nilai_${activeClass?.name || 'semua'}.xlsx`);
     }
   
   const handleDownloadJournal = async () => {
@@ -694,16 +824,22 @@ export default function ReportsPageComponent({
                                <CardTitle>Laporan Nilai Siswa</CardTitle>
                                <CardDescription>Pilih filter untuk mengunduh rekap nilai.</CardDescription>
                             </div>
-                            <Button variant="outline" onClick={handleDownloadGrades} disabled={!isPro}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Unduh PDF
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={handleDownloadGradesExcel} disabled={!isPro}>
+                                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                    Unduh Excel
+                                </Button>
+                                <Button variant="outline" onClick={handleDownloadGrades} disabled={!isPro}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Unduh PDF
+                                </Button>
+                            </div>
                         </div>
                         <CommonFilters />
                     </CardHeader>
                     <CardContent>
                         <div className="text-center py-12 text-muted-foreground">
-                            <p>Data detail nilai siswa akan direkap di sini saat Anda mengunduh PDF.</p>
+                            <p>Data detail nilai siswa akan direkap di sini saat Anda mengunduh PDF atau Excel.</p>
                             <p className="text-sm">Fitur ini memerlukan Akun Pro.</p>
                         </div>
                     </CardContent>
