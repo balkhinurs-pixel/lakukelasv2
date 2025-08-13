@@ -46,7 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
 import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
-import { saveStudent, importStudents, updateStudent, moveStudent } from "@/lib/actions";
+import { saveStudent, importStudents, updateStudent } from "@/lib/actions";
 
 // --- Extracted and Memoized Add/Edit Dialog Component ---
 interface AddEditDialogProps {
@@ -145,6 +145,7 @@ const AddEditDialog = React.memo(function AddEditDialog({
         </Dialog>
     );
 });
+AddEditDialog.displayName = 'AddEditDialog';
 
 type ImportReport = {
     total: number;
@@ -169,11 +170,8 @@ export default function StudentsPageComponent({
   
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
-  const [isMoveDialogOpen, setIsMoveDialogOpen] = React.useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = React.useState(false);
   const [editingStudent, setEditingStudent] = React.useState<Student | null>(null);
-  const [studentToMove, setStudentToMove] = React.useState<Student | null>(null);
-  const [newClassIdForMove, setNewClassIdForMove] = React.useState("");
   const [importReport, setImportReport] = React.useState<ImportReport | null>(null);
   
   const [loading, setLoading] = React.useState(false);
@@ -202,12 +200,6 @@ export default function StudentsPageComponent({
     setEditingStudent(student);
     setIsEditDialogOpen(true);
   };
-
-  const handleOpenMoveDialog = (student: Student) => {
-      setStudentToMove(student);
-      setNewClassIdForMove("");
-      setIsMoveDialogOpen(true);
-  }
 
   const handleSaveStudent = async (e: React.FormEvent, formState: FormState) => {
     e.preventDefault();
@@ -246,26 +238,6 @@ export default function StudentsPageComponent({
     }
   };
 
-  const handleMoveStudent = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!studentToMove || !newClassIdForMove) {
-          toast({ title: "Gagal", description: "Siswa atau kelas tujuan tidak dipilih.", variant: "destructive" });
-          return;
-      }
-      setLoading(true);
-      const result = await moveStudent(studentToMove.id, newClassIdForMove);
-      
-      setLoading(false);
-      if (result.success) {
-          setIsMoveDialogOpen(false);
-          setStudentToMove(null);
-          toast({ title: "Sukses", description: `${studentToMove.name} berhasil dipindahkan.` });
-          router.refresh();
-      } else {
-          toast({ title: "Gagal", description: result.error, variant: "destructive" });
-      }
-  }
-
   const handleDownloadTemplate = () => {
     const csvData = "name,nis,gender";
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
@@ -275,7 +247,6 @@ export default function StudentsPageComponent({
   const handleExportCSV = () => {
       const dataToExport = studentsInClass.map(({ name, nis, gender }) => ({ name, nis, gender }));
       const csv = Papa.unparse(dataToExport);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const className = selectedClass?.name.replace(/\s+/g, '_') || "export";
       saveAs(blob, `daftar_siswa_${className}.csv`);
   };
@@ -368,9 +339,9 @@ export default function StudentsPageComponent({
         <CardHeader>
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
-                    <CardTitle>Siswa di Kelas {selectedClass?.name || '...'}</CardTitle>
+                    <CardTitle>Daftar Siswa - {selectedClass?.name || '...'}</CardTitle>
                     <CardDescription>
-                    Lihat, tambah, atau kelola data siswa di kelas ini. ({studentsInClass.length}/{isPro ? '∞' : limits.studentsPerClass} siswa)
+                        Total siswa di kelas ini: <span className="font-semibold">{studentsInClass.length}</span> (batas: {isPro ? 'Tidak Terbatas' : limits.studentsPerClass})
                     </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -411,10 +382,6 @@ export default function StudentsPageComponent({
                           <Edit className="mr-2 h-4 w-4" />
                           Ubah
                       </Button>
-                      <Button variant="ghost" size="sm" className="w-full" onClick={() => handleOpenMoveDialog(student)}>
-                          <UserRoundCog className="mr-2 h-4 w-4" />
-                          Pindahkan
-                      </Button>
                     </div>
                 </div>
               ))}
@@ -443,10 +410,6 @@ export default function StudentsPageComponent({
                         <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(student)}>
                             <Edit className="mr-2 h-3.5 w-3.5"/>
                             Ubah
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenMoveDialog(student)}>
-                            <UserRoundCog className="mr-2 h-3.5 w-3.5"/>
-                            Pindahkan
                         </Button>
                         </TableCell>
                     </TableRow>
@@ -490,40 +453,6 @@ export default function StudentsPageComponent({
             handleSaveStudent={handleSaveStudent}
             loading={loading}
         />
-
-        {/* Move Student Dialog */}
-        <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
-            <DialogContent className="dialog-content-mobile mobile-safe-area">
-                <form onSubmit={handleMoveStudent}>
-                    <DialogHeader>
-                        <DialogTitle>Pindahkan Siswa</DialogTitle>
-                        <DialogDescription>
-                            Pindahkan <span className="font-semibold">{studentToMove?.name}</span> ke kelas lain.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-2">
-                        <Label htmlFor="new-class">Kelas Tujuan Baru</Label>
-                        <Select value={newClassIdForMove} onValueChange={setNewClassIdForMove} required>
-                            <SelectTrigger id="new-class">
-                                <SelectValue placeholder="Pilih kelas tujuan" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {classes.filter(c => c.id !== studentToMove?.class_id).map(c => (
-                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <DialogFooter>
-                        <Button type="button" variant="ghost" onClick={() => setIsMoveDialogOpen(false)}>Batal</Button>
-                        <Button type="submit" disabled={loading}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Pindahkan
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
 
         {/* Import Report Dialog */}
         <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
