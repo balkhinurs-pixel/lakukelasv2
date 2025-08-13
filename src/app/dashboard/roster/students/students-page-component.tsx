@@ -184,7 +184,7 @@ export default function StudentsPageComponent({
   }, [initialStudents]);
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
-  const studentsInClass = students.filter(s => s.class_id === selectedClassId);
+  const studentsInClass = students.filter(s => s.class_id === selectedClassId && s.status === 'active');
   const canAddStudent = isPro || (selectedClass ? studentsInClass.length < limits.studentsPerClass : false);
 
   const handleClassChange = (classId: string) => {
@@ -340,7 +340,7 @@ export default function StudentsPageComponent({
         <CardHeader>
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
-                    <CardTitle>Daftar Siswa - {selectedClass?.name || '...'}</CardTitle>
+                    <CardTitle>Daftar Siswa Aktif - {selectedClass?.name || '...'}</CardTitle>
                     <CardDescription>
                         Total siswa di kelas ini: <span className="font-semibold">{studentsInClass.length}</span> (batas: {isPro ? 'Tidak Terbatas' : limits.studentsPerClass})
                     </CardDescription>
@@ -554,3 +554,5 @@ export default function StudentsPageComponent({
     </div>
   );
 }
+
+    

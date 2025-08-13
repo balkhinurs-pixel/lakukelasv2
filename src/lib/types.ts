@@ -140,3 +140,5 @@ export interface GradeHistoryEntry {
     subjectName?: string;
     subjectKkm?: number;
 }
+
+    
