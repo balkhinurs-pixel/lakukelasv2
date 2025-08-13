@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -501,13 +502,49 @@ export default function JournalPageComponent({
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-lg dialog-content-mobile mobile-safe-area">
             <DialogHeader>
-                <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
-                <DialogDescription>
-                    {selectedEntry?.subjectName} - {selectedEntry?.className} ({selectedEntry ? <FormattedDate date={parseISO(selectedEntry.date)} formatString="eeee, dd MMMM yyyy"/> : ''}) {selectedEntry?.meeting_number ? `- Pertemuan ${selectedEntry.meeting_number}` : ''}
-                </DialogDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
+                        <DialogDescription>
+                            {selectedEntry?.subjectName} - {selectedEntry?.className}
+                        </DialogDescription>
+                    </div>
+                     <div className="flex items-center gap-2 -mt-2 -mr-2">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" disabled={loading}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </AlertDialogTrigger>
+                             {selectedEntry && (
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal <FormattedDate date={parseISO(selectedEntry.date)} formatString="dd MMM yyyy" />?
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => selectedEntry && handleDeleteEntry(selectedEntry.id)} className="bg-destructive hover:bg-destructive/90">
+                                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                            Ya, Hapus
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                             )}
+                        </AlertDialog>
+                         <Button variant="ghost" size="icon" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)} disabled={loading}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
             </DialogHeader>
             {selectedEntry && (
                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+                    <p className="text-sm text-muted-foreground -mt-2">
+                        <FormattedDate date={parseISO(selectedEntry.date)} formatString="eeee, dd MMMM yyyy"/> {selectedEntry.meeting_number ? `- Pertemuan ${selectedEntry.meeting_number}` : ''}
+                    </p>
                     <div className="space-y-1">
                         <h4 className="font-semibold text-sm">Tujuan Pembelajaran</h4>
                         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.learning_objectives}</p>
@@ -526,36 +563,10 @@ export default function JournalPageComponent({
                     </div>
                  </div>
             )}
-            <DialogFooter className="justify-between pt-4 border-t flex-wrap gap-2">
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={loading}>
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4"/>} Hapus
-                        </Button>
-                    </AlertDialogTrigger>
-                     {selectedEntry && (
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal <FormattedDate date={parseISO(selectedEntry.date)} formatString="dd MMM yyyy" />?
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => selectedEntry && handleDeleteEntry(selectedEntry.id)} className="bg-destructive hover:bg-destructive/90">
-                                    Ya, Hapus
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                     )}
-                </AlertDialog>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)} disabled={loading}>
-                      <Edit className="mr-2 h-4 w-4"/> Ubah
-                  </Button>
-                  <Button variant="secondary" onClick={() => setIsViewDialogOpen(false)} disabled={loading}>Tutup</Button>
-                </div>
+            <DialogFooter className="pt-4 border-t">
+                <Button variant="secondary" onClick={() => setIsViewDialogOpen(false)} disabled={loading} className="w-full">
+                    Tutup
+                </Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
