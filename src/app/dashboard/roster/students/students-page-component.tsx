@@ -247,6 +247,7 @@ export default function StudentsPageComponent({
   const handleExportCSV = () => {
       const dataToExport = studentsInClass.map(({ name, nis, gender }) => ({ name, nis, gender }));
       const csv = Papa.unparse(dataToExport);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const className = selectedClass?.name.replace(/\s+/g, '_') || "export";
       saveAs(blob, `daftar_siswa_${className}.csv`);
   };
