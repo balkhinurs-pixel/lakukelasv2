@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -422,8 +423,8 @@ export async function getReportsData(schoolYearId?: string) {
     }
     
     // Base queries
-    let attendanceQuery = supabase.from('attendance_history').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
-    let gradesQuery = supabase.from('grade_history').select('*, classes(name), subjects(name, kkm)').eq('teacher_id', user.id);
+    let attendanceQuery = supabase.from('v_attendance_history').select('*').eq('teacher_id', user.id);
+    let gradesQuery = supabase.from('v_grade_history').select('*').eq('teacher_id', user.id);
     let journalsQuery = supabase.from('journals').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
 
     // Apply school year filter if available
@@ -437,13 +438,11 @@ export async function getReportsData(schoolYearId?: string) {
         { data: attendanceData, error: attendanceError },
         { data: gradesData, error: gradesError },
         { data: journalsData, error: journalsError },
-        allStudents,
         classes
     ] = await Promise.all([
         attendanceQuery,
         gradesQuery,
         journalsQuery,
-        getAllStudents(),
         getClasses()
     ]);
 
@@ -454,16 +453,11 @@ export async function getReportsData(schoolYearId?: string) {
 
     const attendanceHistory = (attendanceData as any[]).map(entry => ({
         ...entry,
-        className: entry.classes.name,
-        subjectName: entry.subjects.name,
         records: entry.records.map((r: any) => ({studentId: r.student_id, status: r.status}))
     }));
 
     const gradeHistory = (gradesData as any[]).map(entry => ({
         ...entry,
-        className: entry.classes.name,
-        subjectName: entry.subjects.name,
-        subjectKkm: entry.subjects.kkm,
         records: entry.records.map((r: any) => ({studentId: r.student_id, score: r.score}))
     }));
 
@@ -472,6 +466,34 @@ export async function getReportsData(schoolYearId?: string) {
         className: entry.classes.name,
         subjectName: entry.subjects.name
     }));
+
+    // --- Build a historical student list from the data itself ---
+    const historicalStudentsMap = new Map<string, { id: string; name: string; class_name: string; class_id: string }>();
+    attendanceHistory.forEach(entry => {
+        entry.records.forEach((rec: any) => {
+            if (!historicalStudentsMap.has(rec.studentId) && entry.student_names[rec.studentId]) {
+                 historicalStudentsMap.set(rec.studentId, {
+                    id: rec.studentId,
+                    name: entry.student_names[rec.studentId],
+                    class_name: entry.class_name,
+                    class_id: entry.class_id
+                });
+            }
+        });
+    });
+    gradeHistory.forEach(entry => {
+         entry.records.forEach((rec: any) => {
+            if (!historicalStudentsMap.has(rec.studentId) && entry.student_names[rec.studentId]) {
+                 historicalStudentsMap.set(rec.studentId, {
+                    id: rec.studentId,
+                    name: entry.student_names[rec.studentId],
+                    class_name: entry.class_name,
+                    class_id: entry.class_id
+                });
+            }
+        });
+    });
+    const allStudents = Array.from(historicalStudentsMap.values());
 
 
     // 1. Overall Attendance Rate

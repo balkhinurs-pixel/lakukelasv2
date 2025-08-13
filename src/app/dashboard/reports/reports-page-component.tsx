@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react";
@@ -192,7 +193,7 @@ export default function ReportsPageComponent({
             });
 
             const average = scoreCount > 0 ? (totalScore / scoreCount).toFixed(2) : '-';
-            const predicate = typeof average === 'string' ? '-' : (parseFloat(average) >= kkm ? 'Tuntas' : 'Remedial');
+            const predicate = typeof average === 'string' || average === '-' ? '-' : (parseFloat(average) >= kkm ? 'Tuntas' : 'Remedial');
             row.push(average);
             row.push(predicate);
 
