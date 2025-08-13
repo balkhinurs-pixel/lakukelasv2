@@ -1,3 +1,4 @@
+
 import { getClasses, getAllStudents } from "@/lib/data";
 import StudentsPageComponent from './students-page-component';
 

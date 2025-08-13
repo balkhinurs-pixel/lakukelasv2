@@ -204,14 +204,14 @@ export async function updateStudent(formData: FormData) {
     return handleSupabaseAction(action, 'Data siswa berhasil diperbarui.', '/dashboard/roster/students');
 }
 
-export async function moveStudent(studentId: string, newClassId: string) {
+export async function moveStudents(studentIds: string[], newClassId: string) {
     const supabase = createClient();
-    if (!studentId || !newClassId) {
+    if (!studentIds || studentIds.length === 0 || !newClassId) {
         return { success: false, error: 'ID Siswa atau ID Kelas baru tidak valid.' };
     }
 
-    const action = supabase.from('students').update({ class_id: newClassId }).eq('id', studentId);
-    return handleSupabaseAction(action, 'Siswa berhasil dipindahkan.', '/dashboard/roster/students');
+    const action = supabase.from('students').update({ class_id: newClassId }).in('id', studentIds);
+    return handleSupabaseAction(action, 'Siswa berhasil dipindahkan.', '/dashboard/roster/promotion');
 }
 
 type ImportResult = {
