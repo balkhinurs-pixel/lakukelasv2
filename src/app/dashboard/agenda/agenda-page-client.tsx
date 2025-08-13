@@ -14,9 +14,9 @@ import {
 import { format, addMonths, subMonths, isSameDay, parseISO, startOfDay, isSameMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
+import { DayContent, DayPicker } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -117,6 +117,27 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     });
     return map;
   }, [agendas]);
+
+  const CustomDayContent = (props: DayContentProps) => {
+    const dateKey = format(startOfDay(props.date), 'yyyy-MM-dd');
+    const colors = eventsByDate.get(dateKey) || [];
+    return (
+      <div className="relative h-full w-full">
+        {props.date.getDate()}
+        {colors.length > 0 && (
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-1">
+            {colors.slice(0, 3).map((color, index) => (
+              <div
+                key={index}
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
 
   const handleOpenAddDialog = () => {
@@ -280,119 +301,121 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             </Dialog>
         </div>
 
-      <div className="grid md:grid-cols-5 lg:grid-cols-3 gap-6 items-start">
-        <Card className="p-3 shadow-sm md:col-span-2 lg:col-span-1">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              month={currentMonth}
-              onMonthChange={setCurrentMonth}
-              className="w-full"
-              classNames={{
-                day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
-                day_today: "bg-accent text-accent-foreground",
-              }}
-              components={{
-                DayContent: ({ date }) => {
-                    const dateKey = format(startOfDay(date), 'yyyy-MM-dd');
-                    const colors = eventsByDate.get(dateKey);
-                    return (
-                        <div className="relative h-full w-full flex items-center justify-center">
-                            <span>{date.getDate()}</span>
-                            {colors && colors.length > 0 && (
-                                <div className="absolute bottom-1 flex space-x-1">
-                                    {colors.slice(0, 3).map((color, index) => (
-                                        <div key={index} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    );
-                }
-              }}
-            />
-        </Card>
+        <div className="grid md:grid-cols-7 gap-6">
+            <Card className="p-3 sm:p-4 shadow-sm md:col-span-4">
+                <DayPicker
+                    locale={id}
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    month={currentMonth}
+                    onMonthChange={setCurrentMonth}
+                    components={{ DayContent: CustomDayContent }}
+                    classNames={{
+                      root: "w-full",
+                      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                      month: "space-y-4 w-full",
+                      caption: "flex justify-center pt-1 relative items-center",
+                      caption_label: "text-lg font-bold font-headline",
+                      nav: "space-x-1 flex items-center",
+                      nav_button: cn(
+                        "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                      ),
+                      nav_button_previous: "absolute left-1",
+                      nav_button_next: "absolute right-1",
+                      table: "w-full border-collapse space-y-1",
+                      head_row: "flex",
+                      head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
+                      row: "flex w-full mt-2",
+                      cell: "h-9 w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+                      day: "h-9 w-full p-0 font-normal aria-selected:opacity-100",
+                      day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
+                      day_today: "bg-accent text-accent-foreground rounded-full",
+                      day_outside: "text-muted-foreground opacity-50",
+                      day_disabled: "text-muted-foreground opacity-50",
+                    }}
+                />
+            </Card>
       
-        <div className="md:col-span-3 lg:col-span-2 space-y-4">
-            <h3 className="text-xl font-bold font-headline" suppressHydrationWarning>Agenda untuk {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}</h3>
-            <div className="space-y-4">
-                {eventsForSelectedDate.length > 0 ? (
-                eventsForSelectedDate.map((event) => (
-                    <Card 
-                        key={event.id} 
-                        className="p-4 flex flex-col gap-3 shadow-sm border-l-4" 
-                        style={{
-                            backgroundColor: `${event.color || '#6b7280'}1A`, // 10% opacity
-                            borderLeftColor: event.color || '#6b7280'
-                        }}
-                    >
-                        <div className="flex justify-between items-start">
-                        <div>
-                            <h3 className="font-semibold">{event.title}</h3>
-                            {event.start_time && 
-                                <p className="text-sm text-muted-foreground">
-                                    {event.start_time} {event.end_time && `- ${event.end_time}`}
-                                </p>
-                            }
-                        </div>
-                         <AlertDialog>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(event)}>
-                                        <Edit className="mr-2 h-4 w-4" /> Ubah
-                                    </DropdownMenuItem>
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                            <Trash2 className="mr-2 h-4 w-4" /> Hapus
+            <div className="md:col-span-3 space-y-4">
+                <h3 className="text-xl font-bold font-headline" suppressHydrationWarning>Agenda untuk {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}</h3>
+                <div className="space-y-4">
+                    {eventsForSelectedDate.length > 0 ? (
+                    eventsForSelectedDate.map((event) => (
+                        <Card 
+                            key={event.id} 
+                            className="p-4 flex flex-col gap-3 shadow-sm border-l-4" 
+                            style={{
+                                backgroundColor: `${event.color || '#6b7280'}1A`, // 10% opacity
+                                borderLeftColor: event.color || '#6b7280'
+                            }}
+                        >
+                            <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-semibold">{event.title}</h3>
+                                {event.start_time && 
+                                    <p className="text-sm text-muted-foreground">
+                                        {event.start_time} {event.end_time && `- ${event.end_time}`}
+                                    </p>
+                                }
+                            </div>
+                            <AlertDialog>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleOpenEditDialog(event)}>
+                                            <Edit className="mr-2 h-4 w-4" /> Ubah
                                         </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Hapus Agenda?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Anda yakin ingin menghapus agenda <span className="font-semibold">&quot;{event.title}&quot;</span>? Tindakan ini tidak dapat dibatalkan.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-destructive hover:bg-destructive/90">
-                                        Ya, Hapus
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                        </div>
-                        {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
-                        {event.tag && (
-                            <Badge 
-                                variant="outline" 
-                                className="w-fit border-0" 
-                                style={{
-                                    backgroundColor: event.color || '#6b7280',
-                                    color: getTextColor(event.color || '#6b7280')
-                                }}
-                            >
-                                {event.tag}
-                            </Badge>
-                        )}
-                    </Card>
-                ))
-                ) : (
-                <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-                    <p>Tidak ada agenda untuk tanggal ini.</p>
-                    <p className="text-sm">Klik tombol "Tambah Agenda" untuk membuat yang baru.</p>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Hapus Agenda?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Anda yakin ingin menghapus agenda <span className="font-semibold">&quot;{event.title}&quot;</span>? Tindakan ini tidak dapat dibatalkan.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-destructive hover:bg-destructive/90">
+                                            Ya, Hapus
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            </div>
+                            {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
+                            {event.tag && (
+                                <Badge 
+                                    variant="outline" 
+                                    className="w-fit border-0" 
+                                    style={{
+                                        backgroundColor: event.color || '#6b7280',
+                                        color: getTextColor(event.color || '#6b7280')
+                                    }}
+                                >
+                                    {event.tag}
+                                </Badge>
+                            )}
+                        </Card>
+                    ))
+                    ) : (
+                    <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
+                        <p>Tidak ada agenda untuk tanggal ini.</p>
+                        <p className="text-sm">Klik tombol "Tambah Agenda" untuk membuat yang baru.</p>
+                    </div>
+                    )}
                 </div>
-                )}
             </div>
-        </div>
       </div>
     </div>
   );
