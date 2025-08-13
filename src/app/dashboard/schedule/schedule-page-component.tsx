@@ -44,6 +44,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import type { ScheduleItem, Class, Subject } from "@/lib/types";
 import { saveSchedule, deleteSchedule } from "@/lib/actions";
+import { formatTime } from "@/lib/utils";
 
 const daysOfWeek: ScheduleItem['day'][] = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
@@ -254,7 +255,7 @@ export default function SchedulePageComponent({
                     <div>
                       <p className="font-semibold">{item.subject}</p>
                       <p className="text-sm text-muted-foreground">{item.class}</p>
-                      <p className="text-sm text-muted-foreground">{item.start_time} - {item.end_time}</p>
+                      <p className="text-sm text-muted-foreground">{formatTime(item.start_time)} - {formatTime(item.end_time)}</p>
                     </div>
                     <AlertDialog>
                         <DropdownMenu>
@@ -307,3 +308,4 @@ export default function SchedulePageComponent({
     </div>
   );
 }
+

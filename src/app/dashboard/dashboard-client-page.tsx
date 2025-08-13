@@ -23,7 +23,7 @@ import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import type { ScheduleItem, JournalEntry } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
@@ -176,7 +176,7 @@ export default function DashboardClientPage({
           <StatCard
             icon={Clock}
             title="Kelas Berikutnya"
-            value={sortedSchedule.length > 0 ? sortedSchedule[0].start_time : '-'}
+            value={sortedSchedule.length > 0 ? formatTime(sortedSchedule[0].start_time) : '-'}
             subtitle={sortedSchedule.length > 0 ? `${sortedSchedule[0].subject} - ${sortedSchedule[0].class}` : 'Tidak ada kelas'}
             color="bg-gradient-to-br from-amber-500 to-yellow-400"
           />
@@ -207,7 +207,7 @@ export default function DashboardClientPage({
                                     </div>
                                     <div className="flex-grow pt-1.5">
                                         <p className="font-semibold">{item.subject}</p>
-                                        <p className="text-sm text-muted-foreground">{item.class} | {item.start_time} - {item.end_time}</p>
+                                        <p className="text-sm text-muted-foreground">{item.class} | {formatTime(item.start_time)} - {formatTime(item.end_time)}</p>
                                         {isActionAvailable && getActionButtons(item)}
                                     </div>
                                 </div>
@@ -266,3 +266,4 @@ export default function DashboardClientPage({
     </div>
   );
 }
+
