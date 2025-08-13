@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -429,7 +430,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             <ChevronRight className="h-4 w-4" />
           </Button>
         
-          <div className="embla overflow-hidden mx-6 smooth-scroll" ref={emblaRef} style={{maxWidth: 'calc(100vw - 120px)'}}>
+          <div className="embla overflow-hidden mx-6 smooth-scroll" ref={emblaRef}>
             <div className="embla__container flex gap-2 pb-1">
               {daysInMonth.map((day, index) => (
                 <div key={index} className="embla__slide flex-none w-16 p-1">
