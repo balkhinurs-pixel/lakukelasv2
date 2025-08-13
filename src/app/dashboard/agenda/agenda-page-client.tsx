@@ -48,7 +48,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import type { Agenda } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { saveAgenda, deleteAgenda } from "@/lib/actions";
@@ -110,20 +110,20 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
         if (agenda.color) {
            const colors = map.get(dateKey);
            // Add color only if it's not already in the array for that day
-           if (!colors!.includes(agenda.color)) {
-               colors!.push(agenda.color);
+           if (colors && !colors.includes(agenda.color)) {
+               colors.push(agenda.color);
            }
         }
     });
     return map;
   }, [agendas]);
 
-  const CustomDayContent = (props: DayContentProps) => {
+  const CustomDayContent: React.FC<DayContentProps> = (props) => {
     const dateKey = format(startOfDay(props.date), 'yyyy-MM-dd');
     const colors = eventsByDate.get(dateKey) || [];
     return (
-      <div className="relative h-full w-full">
-        {props.date.getDate()}
+      <div className="relative h-full w-full flex items-center justify-center">
+        <span>{props.date.getDate()}</span>
         {colors.length > 0 && (
           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-1">
             {colors.slice(0, 3).map((color, index) => (
@@ -157,8 +157,8 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
       description: agenda.description || '',
       tag: agenda.tag || '',
       color: agenda.color || '#6b7280',
-      start_time: agenda.start_time || '',
-      end_time: agenda.end_time || '',
+      start_time: formatTime(agenda.start_time || ''),
+      end_time: formatTime(agenda.end_time || ''),
       date: agenda.date,
     });
     setIsDialogOpen(true);
@@ -355,7 +355,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                                 <h3 className="font-semibold">{event.title}</h3>
                                 {event.start_time && 
                                     <p className="text-sm text-muted-foreground">
-                                        {event.start_time} {event.end_time && `- ${event.end_time}`}
+                                        {formatTime(event.start_time)} {event.end_time && `- ${formatTime(event.end_time)}`}
                                     </p>
                                 }
                             </div>
