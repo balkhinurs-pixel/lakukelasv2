@@ -2,19 +2,19 @@
 "use client";
 
 import * as React from "react";
-import useEmblaCarousel from "embla-carousel-react";
 import {
-  ChevronLeft,
-  ChevronRight,
   PlusCircle,
   MoreHorizontal,
   Edit,
   Trash2,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, isSameMonth } from 'date-fns';
+import { format, addMonths, subMonths, isSameDay, parseISO, startOfDay, isSameMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
+import { DayContent, DayPicker } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -77,8 +77,8 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const router = useRouter();
   const { toast } = useToast();
   const [agendas, setAgendas] = React.useState(initialAgendas);
+  const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
-  const [selectedDate, setSelectedDate] = React.useState(new Date());
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingAgenda, setEditingAgenda] = React.useState<Agenda | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -94,151 +94,50 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   };
   const [newAgenda, setNewAgenda] = React.useState<NewAgendaEntry>(initialFormState);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "center",
-    containScroll: "trimSnaps",
-    loop: false,
-    dragFree: false,
-    slidesToScroll: 1,
-    skipSnaps: false,
-    duration: 25,
-    startIndex: 0,
-  });
-
-  const [canScrollPrev, setCanScrollPrev] = React.useState(false);
-  const [canScrollNext, setCanScrollNext] = React.useState(false);
-
-  const onSelect = React.useCallback(() => {
-    if (!emblaApi) return;
-    setCanScrollPrev(emblaApi.canScrollPrev());
-    setCanScrollNext(emblaApi.canScrollNext());
-  }, [emblaApi]);
-
-  React.useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on("select", onSelect);
-    emblaApi.on("reInit", onSelect);
-    return () => {
-        emblaApi.off("select", onSelect);
-        emblaApi.off("reInit", onSelect);
-    };
-  }, [emblaApi, onSelect]);
-
   React.useEffect(() => {
     setAgendas(initialAgendas);
   }, [initialAgendas]);
 
-  const daysInMonth = React.useMemo(() => {
-    return eachDayOfInterval({
-      start: startOfMonth(currentMonth),
-      end: endOfMonth(currentMonth),
+  // Create a map of dates to their event colors for quick lookup
+  const eventsByDate = React.useMemo(() => {
+    const map = new Map<string, string[]>();
+    agendas.forEach(agenda => {
+        const dateKey = format(startOfDay(parseISO(agenda.date)), 'yyyy-MM-dd');
+        if (!map.has(dateKey)) {
+            map.set(dateKey, []);
+        }
+        // Only add color if it's not null/undefined
+        if (agenda.color) {
+           const colors = map.get(dateKey);
+           // Add color only if it's not already in the array for that day
+           if (!colors!.includes(agenda.color)) {
+               colors!.push(agenda.color);
+           }
+        }
     });
-  }, [currentMonth]);
+    return map;
+  }, [agendas]);
 
-  // Add scroll listener to update selected date when user scrolls manually
-  const isScrollingRef = React.useRef(false);
-  
-  React.useEffect(() => {
-    if (!emblaApi || !daysInMonth.length) return;
-    
-    const onScroll = () => {
-      if (isScrollingRef.current) return; // Prevent infinite loop
-      
-      const selectedIndex = emblaApi.selectedScrollSnap();
-      const targetDate = daysInMonth[selectedIndex];
-      if (targetDate && !isSameDay(targetDate, selectedDate)) {
-        isScrollingRef.current = true;
-        setSelectedDate(targetDate);
-        setNewAgenda(prev => ({ ...prev, date: format(targetDate, 'yyyy-MM-dd') }));
-        setTimeout(() => {
-          isScrollingRef.current = false;
-        }, 100);
-      }
-    };
-    
-    emblaApi.on("scroll", onScroll);
-    
-    return () => {
-        emblaApi.off("scroll", onScroll);
-    };
-  }, [emblaApi, daysInMonth, selectedDate]);
-
-  const scrollPrev = React.useCallback(() => {
-    if (!emblaApi) return;
-    const currentIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
-    const targetIndex = Math.max(0, currentIndex - 1);
-    const targetDate = daysInMonth[targetIndex];
-    if (targetDate) {
-      setSelectedDate(targetDate);
-      emblaApi.scrollTo(targetIndex, true);
-    } else {
-      emblaApi.scrollPrev(true);
-    }
-  }, [emblaApi, daysInMonth, selectedDate]);
-
-  const scrollNext = React.useCallback(() => {
-    if (!emblaApi) return;
-    const currentIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
-    const targetIndex = Math.min(daysInMonth.length - 1, currentIndex + 1);
-    const targetDate = daysInMonth[targetIndex];
-    if (targetDate) {
-      setSelectedDate(targetDate);
-      emblaApi.scrollTo(targetIndex, true);
-    } else {
-      emblaApi.scrollNext(true);
-    }
-  }, [emblaApi, daysInMonth, selectedDate]);
-
-  const handlePrevMonth = () => {
-    const newMonth = subMonths(currentMonth, 1);
-    setCurrentMonth(newMonth);
-    // If selected date is not in the new month, update it to the first day
-    if (!isSameMonth(selectedDate, newMonth)) {
-        setSelectedDate(startOfMonth(newMonth));
-    }
+  const CustomDayContent = (props: DayContentProps) => {
+    const dateKey = format(startOfDay(props.date), 'yyyy-MM-dd');
+    const colors = eventsByDate.get(dateKey) || [];
+    return (
+      <div className="relative h-full w-full">
+        {props.date.getDate()}
+        {colors.length > 0 && (
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-1">
+            {colors.slice(0, 3).map((color, index) => (
+              <div
+                key={index}
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
-  const handleNextMonth = () => {
-    const newMonth = addMonths(currentMonth, 1);
-    setCurrentMonth(newMonth);
-    if (!isSameMonth(selectedDate, newMonth)) {
-        setSelectedDate(startOfMonth(newMonth));
-    }
-  };
-
-  const handleDateSelect = (day: Date) => {
-      setSelectedDate(day);
-      setNewAgenda(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') }));
-      
-      // Scroll to the selected date with smooth animation
-      if (emblaApi) {
-        const targetIndex = daysInMonth.findIndex(date => isSameDay(date, day));
-        if (targetIndex !== -1) {
-          emblaApi.scrollTo(targetIndex, true);
-        }
-      }
-  }
-
-  // Scroll to selected date when month changes or date is selected
-  React.useEffect(() => {
-    if (emblaApi && !isScrollingRef.current) {
-        const targetIndex = daysInMonth.findIndex(day => isSameDay(day, selectedDate));
-        if (targetIndex !== -1) {
-            isScrollingRef.current = true;
-            emblaApi.scrollTo(targetIndex, true); // Use snap-to-slide
-            setTimeout(() => {
-              isScrollingRef.current = false;
-            }, 100);
-        } else if (daysInMonth.length > 0) {
-            isScrollingRef.current = true;
-            emblaApi.scrollTo(0, true);
-            setTimeout(() => {
-              isScrollingRef.current = false;
-            }, 100);
-        }
-        onSelect(); // Update button states after scrolling
-    }
-  }, [selectedDate, daysInMonth, emblaApi, onSelect]);
 
 
   const handleOpenAddDialog = () => {
@@ -306,6 +205,13 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     }
     setLoading(false);
   }
+  
+  const handleDateSelect = (day: Date | undefined) => {
+    if (day) {
+        setSelectedDate(day);
+        setNewAgenda(prev => ({...prev, date: format(day, 'yyyy-MM-dd')}));
+    }
+  }
 
   const eventsForSelectedDate = agendas.filter(agenda => isSameDay(parseISO(agenda.date), selectedDate));
 
@@ -372,8 +278,8 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                                             type="button"
                                             className={`w-8 h-8 rounded-full border-2 transition-all ${
                                                 newAgenda.color === colorOption.color 
-                                                    ? 'border-gray-900 scale-110 shadow-md' 
-                                                    : 'border-gray-300 hover:scale-105'
+                                                    ? 'border-primary shadow-md ring-2 ring-primary ring-offset-2' 
+                                                    : 'border-transparent hover:scale-105'
                                             }`}
                                             style={{ backgroundColor: colorOption.color }}
                                             onClick={() => setNewAgenda({...newAgenda, color: colorOption.color})}
@@ -395,146 +301,121 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             </Dialog>
         </div>
 
-      <Card className="p-3 sm:p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-lg font-semibold font-headline" suppressHydrationWarning>
-            {format(currentMonth, 'MMMM yyyy', { locale: id })}
-          </h2>
-          <div className="flex items-center">
-            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 sm:h-10 sm:w-10">
-                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 sm:h-10 sm:w-10">
-                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          </div>
-        </div>
-        <div className="relative">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className={cn("absolute -left-4 top-1/2 -translate-y-1/2 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollPrev && "opacity-0 cursor-default")}
-            onClick={scrollPrev}
-            disabled={!canScrollPrev}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className={cn("absolute -right-4 top-1/2 -translate-y-1/2 z-10 my-auto h-8 w-8 rounded-full shadow-md", !canScrollNext && "opacity-0 cursor-default")}
-            onClick={scrollNext}
-            disabled={!canScrollNext}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        
-          <div className="embla overflow-hidden mx-6 smooth-scroll" ref={emblaRef}>
-            <div className="embla__container flex gap-2 pb-1">
-              {daysInMonth.map((day, index) => (
-                <div key={index} className="embla__slide flex-none w-16 p-1">
-                  <button
-                    onClick={() => handleDateSelect(day)}
-                    className={cn(
-                      "date-button flex flex-col items-center justify-center rounded-lg sm:rounded-xl w-full h-20 p-2",
-                      isSameDay(day, selectedDate)
-                        ? "selected bg-primary text-primary-foreground shadow-md"
-                        : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                    )}
-                  >
-                    <span className="text-xs uppercase font-medium leading-none whitespace-nowrap" suppressHydrationWarning>
-                      {format(day, "EEE", { locale: id })}
-                    </span>
-                    <span className="mt-1 text-2xl leading-none font-bold">
-                      {format(day, "d")}
-                    </span>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Card>
-      
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold font-headline" suppressHydrationWarning>Agenda untuk {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}</h3>
-        <div className="space-y-4">
-            {eventsForSelectedDate.length > 0 ? (
-            eventsForSelectedDate.map((event) => (
-                <Card 
-                    key={event.id} 
-                    className="p-4 flex flex-col gap-3 shadow-sm border-l-4" 
-                    style={{
-                        backgroundColor: `${event.color || '#6b7280'}1A`, // 10% opacity
-                        borderLeftColor: event.color || '#6b7280'
+        <div className="grid md:grid-cols-7 gap-6">
+            <Card className="p-3 sm:p-4 shadow-sm md:col-span-4">
+                <DayPicker
+                    locale={id}
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    month={currentMonth}
+                    onMonthChange={setCurrentMonth}
+                    components={{ DayContent: CustomDayContent }}
+                    classNames={{
+                      root: "w-full",
+                      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                      month: "space-y-4 w-full",
+                      caption: "flex justify-center pt-1 relative items-center",
+                      caption_label: "text-lg font-bold font-headline",
+                      nav: "space-x-1 flex items-center",
+                      nav_button: cn(
+                        "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                      ),
+                      nav_button_previous: "absolute left-1",
+                      nav_button_next: "absolute right-1",
+                      table: "w-full border-collapse space-y-1",
+                      head_row: "flex",
+                      head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
+                      row: "flex w-full mt-2",
+                      cell: "h-9 w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+                      day: "h-9 w-full p-0 font-normal aria-selected:opacity-100",
+                      day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
+                      day_today: "bg-accent text-accent-foreground rounded-full",
+                      day_outside: "text-muted-foreground opacity-50",
+                      day_disabled: "text-muted-foreground opacity-50",
                     }}
-                >
-                    <div className="flex justify-between items-start">
-                    <div>
-                        <h3 className="font-semibold">{event.title}</h3>
-                        {event.start_time && 
-                            <p className="text-sm text-muted-foreground">
-                                {event.start_time} {event.end_time && `- ${event.end_time}`}
-                            </p>
-                        }
-                    </div>
-                     <AlertDialog>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleOpenEditDialog(event)}>
-                                    <Edit className="mr-2 h-4 w-4" /> Ubah
-                                </DropdownMenuItem>
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                        <Trash2 className="mr-2 h-4 w-4" /> Hapus
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Agenda?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Anda yakin ingin menghapus agenda <span className="font-semibold">&quot;{event.title}&quot;</span>? Tindakan ini tidak dapat dibatalkan.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-destructive hover:bg-destructive/90">
-                                    Ya, Hapus
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                    </div>
-                    {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
-                    {event.tag && (
-                        <Badge 
-                            variant="outline" 
-                            className="w-fit border-0" 
+                />
+            </Card>
+      
+            <div className="md:col-span-3 space-y-4">
+                <h3 className="text-xl font-bold font-headline" suppressHydrationWarning>Agenda untuk {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}</h3>
+                <div className="space-y-4">
+                    {eventsForSelectedDate.length > 0 ? (
+                    eventsForSelectedDate.map((event) => (
+                        <Card 
+                            key={event.id} 
+                            className="p-4 flex flex-col gap-3 shadow-sm border-l-4" 
                             style={{
-                                backgroundColor: event.color || '#6b7280',
-                                color: getTextColor(event.color || '#6b7280')
+                                backgroundColor: `${event.color || '#6b7280'}1A`, // 10% opacity
+                                borderLeftColor: event.color || '#6b7280'
                             }}
                         >
-                            {event.tag}
-                        </Badge>
+                            <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-semibold">{event.title}</h3>
+                                {event.start_time && 
+                                    <p className="text-sm text-muted-foreground">
+                                        {event.start_time} {event.end_time && `- ${event.end_time}`}
+                                    </p>
+                                }
+                            </div>
+                            <AlertDialog>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleOpenEditDialog(event)}>
+                                            <Edit className="mr-2 h-4 w-4" /> Ubah
+                                        </DropdownMenuItem>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Hapus Agenda?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Anda yakin ingin menghapus agenda <span className="font-semibold">&quot;{event.title}&quot;</span>? Tindakan ini tidak dapat dibatalkan.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-destructive hover:bg-destructive/90">
+                                            Ya, Hapus
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            </div>
+                            {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
+                            {event.tag && (
+                                <Badge 
+                                    variant="outline" 
+                                    className="w-fit border-0" 
+                                    style={{
+                                        backgroundColor: event.color || '#6b7280',
+                                        color: getTextColor(event.color || '#6b7280')
+                                    }}
+                                >
+                                    {event.tag}
+                                </Badge>
+                            )}
+                        </Card>
+                    ))
+                    ) : (
+                    <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
+                        <p>Tidak ada agenda untuk tanggal ini.</p>
+                        <p className="text-sm">Klik tombol "Tambah Agenda" untuk membuat yang baru.</p>
+                    </div>
                     )}
-                </Card>
-            ))
-            ) : (
-            <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-                <p>Tidak ada agenda untuk tanggal ini.</p>
-                <p className="text-sm">Klik tombol "Tambah Agenda" untuk membuat yang baru.</p>
+                </div>
             </div>
-            )}
-        </div>
       </div>
     </div>
   );
