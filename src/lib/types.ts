@@ -36,6 +36,7 @@ export interface Student {
   nis: string;
   gender: 'Laki-laki' | 'Perempuan';
   class_id: string;
+  status: 'active' | 'graduated';
   class_name?: string;
 }
 

@@ -15,6 +15,7 @@ export async function getStudentsByClass(classId: string): Promise<Student[]> {
         .from('students')
         .select('*')
         .eq('class_id', classId)
+        .eq('status', 'active') // Only fetch active students
         .order('name', { ascending: true });
 
     if (error) {

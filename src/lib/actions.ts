@@ -180,6 +180,7 @@ export async function saveStudent(formData: FormData) {
         nis: formData.get('nis') as string,
         gender: formData.get('gender') as 'Laki-laki' | 'Perempuan',
         class_id: classId,
+        status: 'active',
     };
     
     const action = supabase.from('students').insert([rawData]);
@@ -212,6 +213,15 @@ export async function moveStudents(studentIds: string[], newClassId: string) {
 
     const action = supabase.from('students').update({ class_id: newClassId }).in('id', studentIds);
     return handleSupabaseAction(action, 'Siswa berhasil dipindahkan.', '/dashboard/roster/promotion');
+}
+
+export async function graduateStudents(studentIds: string[]) {
+    const supabase = createClient();
+    if (!studentIds || studentIds.length === 0) {
+        return { success: false, error: 'ID Siswa tidak valid.' };
+    }
+    const action = supabase.from('students').update({ status: 'graduated' }).in('id', studentIds);
+    return handleSupabaseAction(action, 'Siswa berhasil diluluskan.', ['/dashboard/roster/promotion', '/dashboard/roster/students']);
 }
 
 type ImportResult = {
