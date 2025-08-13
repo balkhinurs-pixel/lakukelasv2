@@ -304,7 +304,7 @@ export default function GradesPageComponent({
       {selectedClassId && (
         <Card>
           <CardHeader>
-            <CardTitle>Daftar Nilai - {selectedClass?.name}</CardTitle>
+            <CardTitle>Daftar Nilai - {selectedClass?.name} ({students.length > 0 ? `${students.length} siswa` : '...'})</CardTitle>
             <CardDescription>
               Input nilai (0-100) untuk setiap siswa. Kosongkan jika tidak ada nilai.
             </CardDescription>

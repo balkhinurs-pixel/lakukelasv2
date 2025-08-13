@@ -247,7 +247,6 @@ export default function StudentsPageComponent({
   const handleExportCSV = () => {
       const dataToExport = studentsInClass.map(({ name, nis, gender }) => ({ name, nis, gender }));
       const csv = Papa.unparse(dataToExport);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const className = selectedClass?.name.replace(/\s+/g, '_') || "export";
       saveAs(blob, `daftar_siswa_${className}.csv`);
   };
@@ -340,9 +339,9 @@ export default function StudentsPageComponent({
         <CardHeader>
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
-                    <CardTitle>Siswa di Kelas {selectedClass?.name || '...'}</CardTitle>
+                    <CardTitle>Daftar Siswa - {selectedClass?.name || '...'}</CardTitle>
                     <CardDescription>
-                    Lihat, tambah, atau kelola data siswa di kelas ini. ({studentsInClass.length}/{isPro ? '∞' : limits.studentsPerClass} siswa)
+                        Total siswa di kelas ini: <span className="font-semibold">{studentsInClass.length}</span> (batas: {isPro ? 'Tidak Terbatas' : limits.studentsPerClass})
                     </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">

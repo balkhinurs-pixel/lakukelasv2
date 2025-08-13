@@ -331,7 +331,7 @@ export default function AttendancePageComponent({
       {selectedClassId && (
         <Card>
           <CardHeader>
-            <CardTitle>Daftar Siswa - {selectedClass?.name}</CardTitle>
+            <CardTitle>Daftar Siswa - {selectedClass?.name} ({students.length > 0 ? `${students.length} siswa` : '...'})</CardTitle>
             <CardDescription>Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.</CardDescription>
           </CardHeader>
           <CardContent>
