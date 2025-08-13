@@ -502,43 +502,10 @@ export default function JournalPageComponent({
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-lg dialog-content-mobile mobile-safe-area">
             <DialogHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
-                        <DialogDescription>
-                            {selectedEntry?.subjectName} - {selectedEntry?.className}
-                        </DialogDescription>
-                    </div>
-                     <div className="flex items-center gap-2 -mt-2 -mr-2">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" disabled={loading}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                            </AlertDialogTrigger>
-                             {selectedEntry && (
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal <FormattedDate date={parseISO(selectedEntry.date)} formatString="dd MMM yyyy" />?
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => selectedEntry && handleDeleteEntry(selectedEntry.id)} className="bg-destructive hover:bg-destructive/90">
-                                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                            Ya, Hapus
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                             )}
-                        </AlertDialog>
-                         <Button variant="ghost" size="icon" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)} disabled={loading}>
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
+                <DialogTitle>Detail Jurnal Mengajar</DialogTitle>
+                <DialogDescription>
+                    {selectedEntry?.subjectName} - {selectedEntry?.className}
+                </DialogDescription>
             </DialogHeader>
             {selectedEntry && (
                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
@@ -563,10 +530,41 @@ export default function JournalPageComponent({
                     </div>
                  </div>
             )}
-            <DialogFooter className="pt-4 border-t">
-                <Button variant="secondary" onClick={() => setIsViewDialogOpen(false)} disabled={loading} className="w-full">
+            <DialogFooter className="pt-4 border-t flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+                <Button variant="ghost" onClick={() => setIsViewDialogOpen(false)} disabled={loading}>
                     Tutup
                 </Button>
+                <div className="flex flex-col-reverse sm:flex-row gap-2">
+                     <Button variant="outline" onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)} disabled={loading}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Ubah
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button variant="destructive" disabled={loading}>
+                                {loading === true ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4" />}
+                                Hapus
+                            </Button>
+                        </AlertDialogTrigger>
+                         {selectedEntry && (
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Hapus Jurnal?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Tindakan ini tidak dapat dibatalkan. Anda yakin ingin menghapus jurnal untuk <span className="font-semibold">{selectedEntry.subjectName} di {selectedEntry.className}</span> pada tanggal <FormattedDate date={parseISO(selectedEntry.date)} formatString="dd MMM yyyy" />?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => selectedEntry && handleDeleteEntry(selectedEntry.id)} className="bg-destructive hover:bg-destructive/90">
+                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                        Ya, Hapus
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                         )}
+                    </AlertDialog>
+                </div>
             </DialogFooter>
         </DialogContent>
       </Dialog>
