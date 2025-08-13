@@ -422,7 +422,7 @@ export async function getReportsData(schoolYearId?: string) {
         }
     }
     
-    // Base queries
+    // Base queries using the new views
     let attendanceQuery = supabase.from('v_attendance_history').select('*').eq('teacher_id', user.id);
     let gradesQuery = supabase.from('v_grade_history').select('*').eq('teacher_id', user.id);
     let journalsQuery = supabase.from('journals').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
@@ -451,47 +451,48 @@ export async function getReportsData(schoolYearId?: string) {
         return null;
     }
 
-    const attendanceHistory = (attendanceData as any[]).map(entry => ({
+    // --- Process Data ---
+    const attendanceHistory = (attendanceData || []).map(entry => ({
         ...entry,
         records: entry.records.map((r: any) => ({studentId: r.student_id, status: r.status}))
     }));
 
-    const gradeHistory = (gradesData as any[]).map(entry => ({
+    const gradeHistory = (gradesData || []).map(entry => ({
         ...entry,
         records: entry.records.map((r: any) => ({studentId: r.student_id, score: r.score}))
     }));
 
-    const journalEntries = (journalsData as any[]).map(entry => ({
+    const journalEntries = (journalsData || []).map(entry => ({
         ...entry,
         className: entry.classes.name,
         subjectName: entry.subjects.name
     }));
 
-    // --- Build a historical student list from the data itself ---
+    // Build a historical student list from the data itself
     const historicalStudentsMap = new Map<string, { id: string; name: string; class_name: string; class_id: string }>();
     attendanceHistory.forEach(entry => {
-        entry.records.forEach((rec: any) => {
-            if (!historicalStudentsMap.has(rec.studentId) && entry.student_names[rec.studentId]) {
-                 historicalStudentsMap.set(rec.studentId, {
-                    id: rec.studentId,
-                    name: entry.student_names[rec.studentId],
+        (Object.entries(entry.student_names || {})).forEach(([studentId, studentName]) => {
+            if (!historicalStudentsMap.has(studentId)) {
+                historicalStudentsMap.set(studentId, {
+                    id: studentId,
+                    name: studentName as string,
                     class_name: entry.class_name,
                     class_id: entry.class_id
                 });
             }
-        });
+        })
     });
-    gradeHistory.forEach(entry => {
-         entry.records.forEach((rec: any) => {
-            if (!historicalStudentsMap.has(rec.studentId) && entry.student_names[rec.studentId]) {
-                 historicalStudentsMap.set(rec.studentId, {
-                    id: rec.studentId,
-                    name: entry.student_names[rec.studentId],
+     gradeHistory.forEach(entry => {
+        (Object.entries(entry.student_names || {})).forEach(([studentId, studentName]) => {
+            if (!historicalStudentsMap.has(studentId)) {
+                historicalStudentsMap.set(studentId, {
+                    id: studentId,
+                    name: studentName as string,
                     class_name: entry.class_name,
                     class_id: entry.class_id
                 });
             }
-        });
+        })
     });
     const allStudents = Array.from(historicalStudentsMap.values());
 
