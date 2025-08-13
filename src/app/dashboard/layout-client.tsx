@@ -238,7 +238,7 @@ export default function DashboardLayoutClient({
     <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
         <div className="flex items-center justify-between h-16 px-4">
              <div className="flex items-center gap-2">
-                 <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" />
+                 {/* <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" /> */}
                  <h1 className="text-lg font-bold tracking-tight">
                     <span className="text-white">Laku</span>
                     <span className="text-green-300">Kelas</span>
