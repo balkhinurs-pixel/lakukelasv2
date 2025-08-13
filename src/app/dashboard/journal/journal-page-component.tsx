@@ -506,12 +506,14 @@ export default function JournalPageComponent({
                 <DialogDescription>
                     {selectedEntry?.subjectName} - {selectedEntry?.className}
                 </DialogDescription>
+                {selectedEntry && (
+                    <p className="text-sm text-muted-foreground pt-1">
+                        <FormattedDate date={parseISO(selectedEntry.date)} formatString="eeee, dd MMMM yyyy"/> {selectedEntry.meeting_number ? `• Pertemuan ke-${selectedEntry.meeting_number}` : ''}
+                    </p>
+                )}
             </DialogHeader>
             {selectedEntry && (
-                 <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
-                    <p className="text-sm text-muted-foreground -mt-2">
-                        <FormattedDate date={parseISO(selectedEntry.date)} formatString="eeee, dd MMMM yyyy"/> {selectedEntry.meeting_number ? `- Pertemuan ${selectedEntry.meeting_number}` : ''}
-                    </p>
+                 <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4 pt-2">
                     <div className="space-y-1">
                         <h4 className="font-semibold text-sm">Tujuan Pembelajaran</h4>
                         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedEntry.learning_objectives}</p>
@@ -530,7 +532,7 @@ export default function JournalPageComponent({
                     </div>
                  </div>
             )}
-            <DialogFooter className="pt-4 border-t flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <DialogFooter className="pt-4 border-t flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button variant="ghost" onClick={() => setIsViewDialogOpen(false)} disabled={loading}>
                     Tutup
                 </Button>
