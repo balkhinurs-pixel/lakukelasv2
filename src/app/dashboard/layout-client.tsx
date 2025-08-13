@@ -200,139 +200,39 @@ export default function DashboardLayoutClient({
     </SidebarMenu>
   );
 
-  const BottomNavbar = () => {
-    const navRef = React.useRef<HTMLDivElement>(null);
-    const itemRefs = React.useRef<Map<string, HTMLAnchorElement | HTMLButtonElement>>(new Map());
-  
-    const [indicatorStyle, setIndicatorStyle] = React.useState({});
-    const [svgPath, setSvgPath] = React.useState('');
-  
-    const itemColors: { [key: string]: string } = {
-      '/dashboard': 'text-purple-500',
-      '/dashboard/attendance': 'text-blue-500',
-      '/dashboard/grades': 'text-green-500',
-      '/dashboard/journal': 'text-orange-500',
-      'default': 'text-pink-500', // For the 'More' button
-    };
-  
-    const getActivePath = () => {
-        // Find the most specific matching path
-        let activePath = mainMobileNavItems.find(item => pathname.startsWith(item.href) && item.href !== '/dashboard')?.href;
-        if (!activePath) {
-            // If no specific path matches (and not on /dashboard), it's the 'More' button
-            if (pathname === '/dashboard') {
-                activePath = '/dashboard';
-            } else {
-                 activePath = 'more';
-            }
-        }
-        // Handle exact match for dashboard
-        if(pathname === '/dashboard') activePath = '/dashboard';
-
-        return activePath;
-    }
-
-    const getActiveColorClass = (path: string) => {
-        for (const key in itemColors) {
-            if (path.startsWith(key)) return itemColors[key].replace('text-', 'bg-');
-        }
-        return itemColors.default.replace('text-', 'bg-');
-    };
-
-    React.useEffect(() => {
-        const calculatePath = () => {
-            const activePath = getActivePath();
-            const activeItem = itemRefs.current.get(activePath);
-
-            if (activeItem && navRef.current) {
-                const navRect = navRef.current.getBoundingClientRect();
-                const itemRect = activeItem.getBoundingClientRect();
-                const left = itemRect.left - navRect.left;
-                const width = itemRect.width;
-
-                setIndicatorStyle({
-                    transform: `translateX(${left}px)`,
-                    width: `${width}px`,
-                });
-
-                // SVG Path Calculation for the notch effect
-                const notchWidth = 70;
-                const notchHeight = 12;
-                const barHeight = 64;
-                const startX = left + (width / 2) - (notchWidth / 2);
-
-                const newPath = `
-                    M 0,${notchHeight} 
-                    L ${startX},${notchHeight} 
-                    C ${startX + 10},${notchHeight} ${startX + 15},0 ${startX + (notchWidth / 2)},0 
-                    S ${startX + notchWidth - 15},${notchHeight} ${startX + notchWidth},${notchHeight} 
-                    L ${navRect.width},${notchHeight} 
-                    L ${navRect.width},${barHeight} 
-                    L 0,${barHeight} Z
-                `;
-                setSvgPath(newPath);
-            }
-        }
-
-        calculatePath();
-        window.addEventListener('resize', calculatePath);
-        return () => window.removeEventListener('resize', calculatePath);
-    }, [pathname]);
-
-    const activePath = getActivePath();
-
-    return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-20 z-50">
-            <div ref={navRef} className="relative h-full w-full flex justify-around items-center px-2 bg-transparent">
-                <svg className="absolute bottom-0 left-0 w-full h-full" width="100%" height="100%" viewBox={`0 0 ${navRef.current?.offsetWidth || 375} 80`} preserveAspectRatio="none">
-                    <path d={svgPath} className="fill-card shadow-lg transition-all duration-300 ease-in-out" />
-                </svg>
-
+    const BottomNavbar = () => {
+        return (
+            <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t z-50 flex justify-around items-center">
                 {mainMobileNavItems.map((item) => {
-                    const isActive = item.href === activePath;
+                    // More specific path matching for active state
+                    const isActive = (item.href === '/dashboard') 
+                        ? pathname === item.href 
+                        : pathname.startsWith(item.href);
+
                     return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            ref={el => el ? itemRefs.current.set(item.href, el) : itemRefs.current.delete(item.href)}
+                        <Link 
+                            key={item.href} 
+                            href={item.href} 
                             className={cn(
-                                "relative z-10 flex flex-col items-center justify-center w-16 h-16 transition-all duration-300 ease-in-out",
-                                isActive ? "-mt-8" : "text-muted-foreground mt-4"
+                                "flex flex-col items-center justify-center gap-1 p-2 rounded-md w-16 transition-colors", 
+                                isActive ? "text-primary" : "text-muted-foreground"
                             )}
                         >
-                            <div className={cn(
-                                "flex items-center justify-center h-12 w-12 rounded-full transition-colors duration-300",
-                                isActive && getActiveColorClass(item.href),
-                                isActive && 'shadow-lg'
-                            )}>
-                                <item.icon className={cn("w-6 h-6", isActive ? "text-white" : "")} />
-                            </div>
-                            <span className={cn("text-xs mt-1.5 transition-opacity duration-300", isActive ? "opacity-100 font-semibold text-foreground" : "opacity-0")}>{item.label}</span>
+                            <item.icon className="w-5 h-5" />
+                            <span className="text-xs font-medium">{item.label}</span>
                         </Link>
                     )
                 })}
-                
-                <button
-                    ref={el => el ? itemRefs.current.set('more', el) : itemRefs.current.delete('more')}
-                    onClick={toggleSidebar}
-                    className={cn(
-                        "relative z-10 flex flex-col items-center justify-center w-16 h-16 transition-all duration-300 ease-in-out",
-                        activePath === 'more' ? "-mt-8" : "text-muted-foreground mt-4"
-                    )}
+                <button 
+                    onClick={toggleSidebar} 
+                    className="flex flex-col items-center justify-center gap-1 p-2 rounded-md w-16 text-muted-foreground"
                 >
-                     <div className={cn(
-                        "flex items-center justify-center h-12 w-12 rounded-full transition-colors duration-300",
-                        activePath === 'more' && getActiveColorClass('default'),
-                        activePath === 'more' && 'shadow-lg'
-                    )}>
-                        <Menu className={cn("w-6 h-6", activePath === 'more' ? "text-white" : "")} />
-                    </div>
-                    <span className={cn("text-xs mt-1.5 transition-opacity duration-300", activePath === 'more' ? "opacity-100 font-semibold text-foreground" : "opacity-0")}>Lainnya</span>
+                    <Menu className="w-5 h-5" />
+                    <span className="text-xs font-medium">Lainnya</span>
                 </button>
             </div>
-        </div>
-    );
-};
+        )
+    };
   
   const AppHeader = () => (
     <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
