@@ -38,7 +38,7 @@ export default function PromotionPageClient({
     const { toast } = useToast();
     const [loading, setLoading] = React.useState(false);
     const [sourceClassId, setSourceClassId] = React.useState<string>("");
-    const [destinationClassId, setDestinationClassId = React.useState<string>("");
+    const [destinationClassId, setDestinationClassId] = React.useState<string>("");
     const [selectedStudentIds, setSelectedStudentIds] = React.useState<Set<string>>(new Set());
 
     const studentsInSourceClass = React.useMemo(() => {
