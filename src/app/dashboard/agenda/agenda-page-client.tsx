@@ -98,14 +98,24 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
     setAgendas(initialAgendas);
   }, [initialAgendas]);
 
-  // Create a set of dates that have events for quick lookup
-  const eventDays = React.useMemo(() => {
-    const datesWithEvents = new Set<string>();
+  // Create a map of dates to their event colors for quick lookup
+  const eventsByDate = React.useMemo(() => {
+    const map = new Map<string, string[]>();
     agendas.forEach(agenda => {
-        // Normalize date to avoid timezone issues
-        datesWithEvents.add(format(startOfDay(parseISO(agenda.date)), 'yyyy-MM-dd'));
+        const dateKey = format(startOfDay(parseISO(agenda.date)), 'yyyy-MM-dd');
+        if (!map.has(dateKey)) {
+            map.set(dateKey, []);
+        }
+        // Only add color if it's not null/undefined
+        if (agenda.color) {
+           const colors = map.get(dateKey);
+           // Add color only if it's not already in the array for that day
+           if (!colors!.includes(agenda.color)) {
+               colors!.push(agenda.color);
+           }
+        }
     });
-    return datesWithEvents;
+    return map;
   }, [agendas]);
 
 
@@ -247,8 +257,8 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                                             type="button"
                                             className={`w-8 h-8 rounded-full border-2 transition-all ${
                                                 newAgenda.color === colorOption.color 
-                                                    ? 'border-gray-900 scale-110 shadow-md' 
-                                                    : 'border-gray-300 hover:scale-105'
+                                                    ? 'border-primary shadow-md ring-2 ring-primary ring-offset-2' 
+                                                    : 'border-transparent hover:scale-105'
                                             }`}
                                             style={{ backgroundColor: colorOption.color }}
                                             onClick={() => setNewAgenda({...newAgenda, color: colorOption.color})}
@@ -285,11 +295,18 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
               }}
               components={{
                 DayContent: ({ date }) => {
-                    const hasEvent = eventDays.has(format(startOfDay(date), 'yyyy-MM-dd'));
+                    const dateKey = format(startOfDay(date), 'yyyy-MM-dd');
+                    const colors = eventsByDate.get(dateKey);
                     return (
                         <div className="relative h-full w-full flex items-center justify-center">
-                            {date.getDate()}
-                            {hasEvent && <div className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-primary" />}
+                            <span>{date.getDate()}</span>
+                            {colors && colors.length > 0 && (
+                                <div className="absolute bottom-1 flex space-x-1">
+                                    {colors.slice(0, 3).map((color, index) => (
+                                        <div key={index} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     );
                 }
