@@ -403,7 +403,7 @@ export async function getDashboardData() {
 }
 
 
-export async function getReportsData(schoolYearId?: string) {
+export async function getReportsData(schoolYearId?: string, month?: number) {
     noStore();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -433,6 +433,14 @@ export async function getReportsData(schoolYearId?: string) {
         gradesQuery = gradesQuery.eq('school_year_id', activeSchoolYearId);
         journalsQuery = journalsQuery.eq('school_year_id', activeSchoolYearId);
     }
+    
+    // Apply month filter if available
+    if (month && month > 0) {
+        attendanceQuery = attendanceQuery.eq('month', month);
+        gradesQuery = gradesQuery.eq('month', month);
+        journalsQuery = journalsQuery.eq('month', month);
+    }
+
 
     const [
         { data: attendanceData, error: attendanceError },

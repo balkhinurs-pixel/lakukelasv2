@@ -55,6 +55,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { getReportsData } from "@/lib/data";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 
 // Extend jsPDF with autoTable
@@ -86,24 +87,59 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, fill }:
 
 type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
 
+const months = [
+    { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' },
+    { value: 3, label: 'Maret' }, { value: 4, label: 'April' },
+    { value: 5, label: 'Mei' }, { value: 6, label: 'Juni' },
+    { value: 7, label: 'Juli' }, { value: 8, label: 'Agustus' },
+    { value: 9, label: 'September' }, { value: 10, label: 'Oktober' },
+    { value: 11, label: 'November' }, { value: 12, label: 'Desember' }
+];
+
 export default function ReportsPageComponent({
     classes,
     subjects,
     schoolYears,
     reportsData,
-    profile
+    profile,
+    currentMonth,
+    currentSchoolYear
 }: {
     classes: Class[];
     subjects: Subject[];
     schoolYears: SchoolYear[];
     reportsData: ReportsData;
     profile: Profile;
+    currentMonth?: number;
+    currentSchoolYear: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [selectedClass, setSelectedClass] = React.useState("all");
   const [selectedSubject, setSelectedSubject] = React.useState("all");
-  const [selectedSchoolYear, setSelectedSchoolYear] = React.useState(profile.active_school_year_id || "all");
   const { isPro, limits } = useActivation();
   const { toast } = useToast();
+  
+  const createQueryString = React.useCallback(
+    (paramsToUpdate: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(paramsToUpdate).forEach(([name, value]) => {
+          if (value === 'all' || !value) {
+              params.delete(name);
+          } else {
+              params.set(name, value);
+          }
+      });
+      return params.toString();
+    },
+    [searchParams]
+  );
+  
+  const handleFilterChange = (type: 'schoolYear' | 'month', value: string) => {
+      router.push(pathname + '?' + createQueryString({ [type]: value }));
+  };
 
   const {
       summaryCards,
@@ -144,7 +180,7 @@ export default function ReportsPageComponent({
             return [index + 1, student.name, hadir, sakit, izin, alpha, total];
         });
         
-        const activeSchoolYear = schoolYears.find(sy => sy.id === selectedSchoolYear);
+        const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYear);
 
         await downloadPdf(doc, { 
             title: title, 
@@ -200,7 +236,7 @@ export default function ReportsPageComponent({
             return row;
         });
         
-        const activeSchoolYear = schoolYears.find(sy => sy.id === selectedSchoolYear);
+        const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYear);
 
         await downloadPdf(doc, { 
             title: title, 
@@ -223,7 +259,7 @@ export default function ReportsPageComponent({
 
         const activeClass = classes.find(c => c.id === selectedClass);
         const activeSubject = subjects.find(s => s.id === selectedSubject);
-        const activeSchoolYear = schoolYears.find(sy => sy.id === selectedSchoolYear);
+        const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYear);
         const kkm = activeSubject?.kkm || 75;
 
         // --- Data Preparation ---
@@ -353,7 +389,7 @@ export default function ReportsPageComponent({
       (selectedSubject === 'all' || j.subject_id === selectedSubject)
     );
     
-    const activeSchoolYear = schoolYears.find(sy => sy.id === selectedSchoolYear);
+    const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYear);
 
     await downloadPdf(doc, { title: title, journals: filteredJournals }, {
         tahunAjaran: activeSchoolYear?.name || profile.active_school_year_name || "-"
@@ -564,13 +600,22 @@ export default function ReportsPageComponent({
 
   const CommonFilters = () => (
     <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
-        <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
+        <Select value={currentSchoolYear} onValueChange={(value) => handleFilterChange('schoolYear', value)}>
             <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Pilih Tahun Ajaran" />
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">Semua Tahun</SelectItem>
                 {schoolYears.map(sy => <SelectItem key={sy.id} value={sy.id}>{sy.name}</SelectItem>)}
+            </SelectContent>
+        </Select>
+         <Select value={String(currentMonth || "all")} onValueChange={(value) => handleFilterChange('month', value)}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Pilih Bulan" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">Semua Bulan</SelectItem>
+                {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
             </SelectContent>
         </Select>
         <Select value={selectedClass} onValueChange={setSelectedClass}>

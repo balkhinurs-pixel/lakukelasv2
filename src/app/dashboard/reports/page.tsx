@@ -2,7 +2,14 @@ import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears
 import ReportsPageComponent from "./reports-page-component";
 import type { Profile } from "@/lib/types";
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+    searchParams
+}: {
+    searchParams: { [key: string]: string | string[] | undefined }
+}) {
+    const month = searchParams.month ? Number(searchParams.month) : undefined;
+    const schoolYear = searchParams.schoolYear as string | undefined;
+
     const [classes, subjects, profile, { schoolYears }] = await Promise.all([
         getClasses(),
         getSubjects(),
@@ -11,7 +18,7 @@ export default async function ReportsPage() {
     ]);
     
     // Initial data load for the active school year
-    const reportsData = await getReportsData(profile?.active_school_year_id);
+    const reportsData = await getReportsData(schoolYear || profile?.active_school_year_id, month);
 
     if (!reportsData || !profile) {
         return (
@@ -27,5 +34,7 @@ export default async function ReportsPage() {
         schoolYears={schoolYears}
         reportsData={reportsData}
         profile={profile}
+        currentMonth={month}
+        currentSchoolYear={schoolYear || profile?.active_school_year_id || "all"}
     />;
 }

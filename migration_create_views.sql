@@ -1,52 +1,52 @@
--- Skrip Migrasi untuk Membuat Views Laporan
--- Jalankan skrip ini SATU KALI di SQL Editor Supabase Anda.
+-- Run this SQL in your Supabase SQL Editor to create the views
+-- that are necessary for the reporting page to function correctly.
 
-CREATE OR REPLACE VIEW public.v_attendance_history AS
-SELECT 
+drop view if exists public.v_attendance_history;
+create or replace view public.v_attendance_history as
+select
     ah.id,
     ah.date,
+    extract(month from ah.date) as month,
     ah.class_id,
+    c.name as class_name,
     ah.subject_id,
+    s.name as subject_name,
     ah.school_year_id,
     ah.meeting_number,
     ah.records,
     ah.teacher_id,
-    c.name as class_name,
-    s.name as subject_name,
-    (
-        SELECT jsonb_object_agg(st.id, st.name)
-        FROM jsonb_to_recordset(ah.records) as r(student_id uuid, status text)
-        JOIN students st on st.id = r.student_id
-    ) as student_names
-FROM 
+    (select jsonb_object_agg(student.id, student.name)
+     from jsonb_to_recordset(ah.records) as item(student_id uuid),
+          public.students as student
+     where student.id = item.student_id) as student_names
+from
     attendance_history ah
-JOIN 
-    classes c ON ah.class_id = c.id
-JOIN 
-    subjects s ON ah.subject_id = s.id;
+join
+    classes c on ah.class_id = c.id
+join
+    subjects s on ah.subject_id = s.id;
 
-
-CREATE OR REPLACE VIEW public.v_grade_history AS
-SELECT 
+drop view if exists public.v_grade_history;
+create or replace view public.v_grade_history as
+select
     gh.id,
     gh.date,
+    extract(month from gh.date) as month,
     gh.class_id,
+    c.name as class_name,
     gh.subject_id,
+    s.name as subject_name,
     gh.school_year_id,
     gh.assessment_type,
     gh.records,
     gh.teacher_id,
-    c.name as class_name,
-    s.name as subject_name,
-    s.kkm as subject_kkm,
-     (
-        SELECT jsonb_object_agg(st.id, st.name)
-        FROM jsonb_to_recordset(gh.records) as r(student_id uuid, score text)
-        JOIN students st on st.id = r.student_id
-    ) as student_names
-FROM 
+    (select jsonb_object_agg(student.id, student.name)
+     from jsonb_to_recordset(gh.records) as item(student_id uuid),
+          public.students as student
+     where student.id = item.student_id) as student_names
+from
     grade_history gh
-JOIN 
-    classes c ON gh.class_id = c.id
-JOIN 
-    subjects s ON gh.subject_id = s.id;
+join
+    classes c on gh.class_id = c.id
+join
+    subjects s on gh.subject_id = s.id;
