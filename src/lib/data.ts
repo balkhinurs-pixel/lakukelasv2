@@ -402,84 +402,39 @@ export async function getReportsData(schoolYearIdParam?: string, monthParam?: nu
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    let activeSchoolYearId = schoolYearIdParam;
-    if (!activeSchoolYearId) {
+    let p_school_year_id = schoolYearIdParam;
+    // If schoolYearIdParam is not provided, fetch the active one from profile
+    if (!p_school_year_id) {
         const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-        if (profile?.active_school_year_id) {
-            activeSchoolYearId = profile.active_school_year_id;
-        }
+        p_school_year_id = profile?.active_school_year_id || undefined;
     }
 
     const { data, error } = await supabase.rpc('get_report_data', {
         p_teacher_id: user.id,
-        p_school_year_id: activeSchoolYearId,
+        p_school_year_id: p_school_year_id,
         p_month: monthParam
     });
-
+    
     if (error) {
         console.error('Error calling get_report_data RPC:', error);
         return null;
     }
 
+    // The RPC function is designed to always return a single row with all fields.
+    // If it returns nothing, something is wrong with the function itself.
     if (!data) {
-        console.error('No data returned from get_report_data RPC');
+        console.error('No data returned from get_report_data RPC. This should not happen.');
         return null;
     }
-
-    const result = data; // The function returns a single row object directly
-
-    const attendanceHistory = (result.attendance_history || []).map((entry:any) => ({
-        ...entry,
-        records: entry.records.map((r: any) => ({studentId: r.student_id, status: r.status}))
-    }));
-
-    const gradeHistory = (result.grade_history || []).map((entry:any) => ({
-        ...entry,
-        records: entry.records.map((r: any) => ({studentId: r.student_id, score: r.score}))
-    }));
-
-    const journalEntries = result.journal_entries || [];
-    const allStudents = result.all_students || [];
-
-    const totalAttendanceRecords = attendanceHistory.reduce((sum:number, entry:any) => sum + entry.records.length, 0);
-    const totalHadirRecords = attendanceHistory.reduce((sum:number, entry:any) => sum + entry.records.filter((r:any) => r.status === 'Hadir').length, 0);
-    const overallAttendanceRate = totalAttendanceRecords > 0 ? (totalHadirRecords / totalAttendanceRecords) * 100 : 0;
-
-    const allGradeRecords = gradeHistory.flatMap((entry:any) => entry.records);
-    const totalScore = allGradeRecords.reduce((sum:number, record:any) => sum + Number(record.score), 0);
-    const overallAverageGrade = allGradeRecords.length > 0 ? totalScore / allGradeRecords.length : 0;
-
-    const overallAttendanceDistribution: Record<AttendanceRecord['status'], number> = { Hadir: 0, Sakit: 0, Izin: 0, Alpha: 0 };
-    attendanceHistory.flatMap((entry:any) => entry.records).forEach((record:any) => {
-        overallAttendanceDistribution[record.status]++;
-    });
-
-    const attendanceByClass = (result.attendance_by_class || []).map((c:any) => {
-        const distribution: Record<AttendanceRecord['status'], number> = { Hadir: 0, Sakit: 0, Izin: 0, Alpha: 0 };
-        c.distribution.forEach((d:any) => {
-            distribution[d.status as AttendanceRecord['status']] = d.count;
-        });
-        return { name: c.class_name, ...distribution };
-    });
-
-    const studentPerformance = (result.student_performance || []).map((student:any) => ({
-      ...student,
-      average_grade: parseFloat(student.average_grade ? student.average_grade.toFixed(1) : '0.0'),
-      attendance: parseFloat(student.attendance_percentage ? student.attendance_percentage.toFixed(1) : '0.0'),
-    }));
-
-    return {
-        summaryCards: {
-            overallAttendanceRate: parseFloat(overallAttendanceRate.toFixed(1)),
-            overallAverageGrade: parseFloat(overallAverageGrade.toFixed(1)),
-            totalJournals: journalEntries.length
-        },
-        studentPerformance,
-        attendanceByClass,
-        overallAttendanceDistribution,
-        journalEntries,
-        attendanceHistory,
-        gradeHistory,
-        allStudents,
+    
+    return data as {
+        summary_cards: any;
+        student_performance: any[];
+        attendance_by_class: any[];
+        overall_attendance_distribution: any;
+        journal_entries: any[];
+        attendance_history: any[];
+        grade_history: any[];
+        all_students: any[];
     };
 }

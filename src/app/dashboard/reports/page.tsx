@@ -55,11 +55,21 @@ export default async function ReportsPage({
     }
 
     const reportsData = await getReportsData(schoolYearToFetch, month);
-
+    
     if (!reportsData) {
         return (
-            <div className="p-4 text-center text-muted-foreground">
-                Tidak dapat memuat data laporan. Pastikan Anda sudah login dan profil Anda ada.
+            <div className="space-y-6 max-w-xl mx-auto">
+                 <div>
+                    <h1 className="text-2xl font-bold font-headline">Laporan Akademik</h1>
+                    <p className="text-muted-foreground">Analisis komprehensif tentang kehadiran dan nilai siswa.</p>
+                </div>
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Gagal Memuat Data Laporan</AlertTitle>
+                    <AlertDescription>
+                        Terjadi kesalahan saat mengambil data dari database. Silakan coba lagi atau hubungi dukungan jika masalah berlanjut.
+                    </AlertDescription>
+                </Alert>
             </div>
         )
     }
