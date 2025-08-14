@@ -43,7 +43,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,7 @@ import { cn, formatTime } from "@/lib/utils";
 import type { Agenda } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { saveAgenda, deleteAgenda } from "@/lib/actions";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type NewAgendaEntry = Omit<Agenda, 'id' | 'teacher_id' | 'created_at'>;
 
@@ -301,8 +302,8 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
             </Dialog>
         </div>
 
-        <div className="grid md:grid-cols-7 gap-6">
-            <Card className="p-3 sm:p-4 shadow-sm md:col-span-4">
+        <div className="grid md:grid-cols-7 md:gap-6 md:items-start">
+            <Card className="p-3 sm:p-4 shadow-sm md:col-span-4 lg:col-span-3">
                 <DayPicker
                     locale={id}
                     mode="single"
@@ -337,85 +338,91 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                 />
             </Card>
       
-            <div className="md:col-span-3 space-y-4">
-                <h3 className="text-xl font-bold font-headline" suppressHydrationWarning>Agenda untuk {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}</h3>
-                <div className="space-y-4">
-                    {eventsForSelectedDate.length > 0 ? (
-                    eventsForSelectedDate.map((event) => (
-                        <Card 
-                            key={event.id} 
-                            className="p-4 flex flex-col gap-3 shadow-sm border-l-4" 
-                            style={{
-                                backgroundColor: `${event.color || '#6b7280'}1A`, // 10% opacity
-                                borderLeftColor: event.color || '#6b7280'
-                            }}
-                        >
-                            <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="font-semibold">{event.title}</h3>
-                                {event.start_time && 
-                                    <p className="text-sm text-muted-foreground">
-                                        {formatTime(event.start_time)} {event.end_time && `- ${formatTime(event.end_time)}`}
-                                    </p>
-                                }
-                            </div>
-                            <AlertDialog>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleOpenEditDialog(event)}>
-                                            <Edit className="mr-2 h-4 w-4" /> Ubah
-                                        </DropdownMenuItem>
-                                        <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Hapus
+            <Card className="shadow-sm md:col-span-3 lg:col-span-4 mt-6 md:mt-0 h-full max-h-[500px] flex flex-col">
+                 <CardHeader>
+                    <h3 className="text-xl font-bold font-headline" suppressHydrationWarning>Agenda untuk {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}</h3>
+                </CardHeader>
+                <CardContent className="flex-grow overflow-hidden">
+                  <ScrollArea className="h-full pr-4">
+                    <div className="space-y-4">
+                        {eventsForSelectedDate.length > 0 ? (
+                        eventsForSelectedDate.map((event) => (
+                            <div 
+                                key={event.id} 
+                                className="p-4 flex flex-col gap-3 rounded-lg border-l-4" 
+                                style={{
+                                    backgroundColor: `${event.color || '#6b7280'}1A`, // 10% opacity
+                                    borderLeftColor: event.color || '#6b7280'
+                                }}
+                            >
+                                <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="font-semibold">{event.title}</h3>
+                                    {event.start_time && 
+                                        <p className="text-sm text-muted-foreground">
+                                            {formatTime(event.start_time)} {event.end_time && `- ${formatTime(event.end_time)}`}
+                                        </p>
+                                    }
+                                </div>
+                                <AlertDialog>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleOpenEditDialog(event)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Ubah
                                             </DropdownMenuItem>
-                                        </AlertDialogTrigger>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Hapus Agenda?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Anda yakin ingin menghapus agenda <span className="font-semibold">&quot;{event.title}&quot;</span>? Tindakan ini tidak dapat dibatalkan.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-destructive hover:bg-destructive/90">
-                                            Ya, Hapus
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Hapus Agenda?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Anda yakin ingin menghapus agenda <span className="font-semibold">&quot;{event.title}&quot;</span>? Tindakan ini tidak dapat dibatalkan.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-destructive hover:bg-destructive/90">
+                                                Ya, Hapus
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                </div>
+                                {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
+                                {event.tag && (
+                                    <Badge 
+                                        variant="outline" 
+                                        className="w-fit border-0" 
+                                        style={{
+                                            backgroundColor: event.color || '#6b7280',
+                                            color: getTextColor(event.color || '#6b7280')
+                                        }}
+                                    >
+                                        {event.tag}
+                                    </Badge>
+                                )}
                             </div>
-                            {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
-                            {event.tag && (
-                                <Badge 
-                                    variant="outline" 
-                                    className="w-fit border-0" 
-                                    style={{
-                                        backgroundColor: event.color || '#6b7280',
-                                        color: getTextColor(event.color || '#6b7280')
-                                    }}
-                                >
-                                    {event.tag}
-                                </Badge>
-                            )}
-                        </Card>
-                    ))
-                    ) : (
-                    <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-                        <p>Tidak ada agenda untuk tanggal ini.</p>
-                        <p className="text-sm">Klik tombol "Tambah Agenda" untuk membuat yang baru.</p>
+                        ))
+                        ) : (
+                        <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center py-16 border-2 border-dashed rounded-lg">
+                            <p>Tidak ada agenda untuk tanggal ini.</p>
+                            <p className="text-sm">Klik tombol "Tambah Agenda" untuk membuat yang baru.</p>
+                        </div>
+                        )}
                     </div>
-                    )}
-                </div>
-            </div>
+                  </ScrollArea>
+                </CardContent>
+            </Card>
       </div>
     </div>
   );
