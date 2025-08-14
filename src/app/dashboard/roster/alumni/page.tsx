@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import type { Student } from "@/lib/types";
 
 export default async function AlumniPage() {
     const alumni = await getAlumni();
@@ -25,6 +26,32 @@ export default async function AlumniPage() {
     const getClassName = (classId: string) => {
         return classes.find(c => c.id === classId)?.name || "N/A";
     }
+
+    const getStatusLabel = (status: Student['status']) => {
+        switch (status) {
+            case 'graduated': return 'Lulus';
+            case 'dropout': return 'Pindah/Keluar';
+            case 'inactive': return 'Tidak Aktif';
+            default: return 'Lainnya';
+        }
+    }
+
+    const getStatusBadgeVariant = (status: Student['status']) => {
+        switch (status) {
+            case 'graduated': return 'default';
+            case 'dropout': return 'secondary';
+            case 'inactive': return 'secondary';
+            default: return 'outline';
+        }
+    }
+
+     const getStatusBadgeClass = (status: Student['status']) => {
+        switch (status) {
+            case 'graduated': return 'bg-blue-600 hover:bg-blue-700';
+            default: return '';
+        }
+    }
+
 
     return (
         <div className="space-y-6">
@@ -36,7 +63,7 @@ export default async function AlumniPage() {
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Alumni</CardTitle>
+                    <CardTitle>Alumni & Siswa Tidak Aktif</CardTitle>
                     <CardDescription>
                         Total siswa tidak aktif yang tercatat: {alumni.length}
                     </CardDescription>
@@ -48,8 +75,8 @@ export default async function AlumniPage() {
                             <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
                                 <div className="flex justify-between items-start">
                                     <p className="font-semibold">{student.name}</p>
-                                    <Badge variant={student.status === 'graduated' ? 'default' : 'secondary'} className={student.status === 'graduated' ? "bg-blue-600" : ""}>
-                                        {student.status === 'graduated' ? 'Lulus' : 'Tidak Aktif'}
+                                    <Badge variant={getStatusBadgeVariant(student.status)} className={getStatusBadgeClass(student.status)}>
+                                        {getStatusLabel(student.status)}
                                     </Badge>
                                 </div>
                                 <div className="text-sm text-muted-foreground space-y-1 border-t pt-3 mt-3">
@@ -79,8 +106,8 @@ export default async function AlumniPage() {
                                         <TableCell>{student.nis}</TableCell>
                                         <TableCell>{getClassName(student.class_id)}</TableCell>
                                         <TableCell>
-                                            <Badge variant={student.status === 'graduated' ? 'default' : 'secondary'} className={student.status === 'graduated' ? "bg-blue-600" : ""}>
-                                                {student.status === 'graduated' ? 'Lulus' : 'Tidak Aktif'}
+                                            <Badge variant={getStatusBadgeVariant(student.status)} className={getStatusBadgeClass(student.status)}>
+                                                {getStatusLabel(student.status)}
                                             </Badge>
                                         </TableCell>
                                     </TableRow>
@@ -93,7 +120,7 @@ export default async function AlumniPage() {
                         <div className="text-center text-muted-foreground py-16">
                             <GraduationCap className="mx-auto h-12 w-12 text-gray-400" />
                             <h3 className="mt-2 text-sm font-medium">Belum Ada Alumni</h3>
-                            <p className="mt-1 text-sm text-gray-500">Siswa yang telah lulus akan ditampilkan di sini.</p>
+                            <p className="mt-1 text-sm text-gray-500">Siswa yang telah lulus atau keluar akan ditampilkan di sini.</p>
                         </div>
                     )}
                 </CardContent>

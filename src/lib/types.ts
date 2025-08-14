@@ -36,7 +36,7 @@ export interface Student {
   nis: string;
   gender: 'Laki-laki' | 'Perempuan';
   class_id: string;
-  status: 'active' | 'graduated';
+  status: 'active' | 'graduated' | 'dropout' | 'inactive';
   class_name?: string;
 }
 
@@ -140,5 +140,3 @@ export interface GradeHistoryEntry {
     subjectName?: string;
     subjectKkm?: number;
 }
-
-    

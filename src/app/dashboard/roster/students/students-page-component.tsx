@@ -47,7 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
 import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
-import { saveStudent, importStudents, updateStudent } from "@/lib/actions";
+import { saveStudent, updateStudent } from "@/lib/actions";
 
 // --- Extracted and Memoized Add/Edit Dialog Component ---
 interface AddEditDialogProps {
@@ -65,6 +65,7 @@ interface FormState {
     name: string;
     nis: string;
     gender: Student['gender'] | '';
+    status: Student['status'];
 }
 
 const AddEditDialog = React.memo(function AddEditDialog({
@@ -81,6 +82,7 @@ const AddEditDialog = React.memo(function AddEditDialog({
         name: "",
         nis: "",
         gender: "",
+        status: "active",
     });
 
     React.useEffect(() => {
@@ -91,9 +93,10 @@ const AddEditDialog = React.memo(function AddEditDialog({
                     name: editingStudent.name,
                     nis: editingStudent.nis,
                     gender: editingStudent.gender,
+                    status: editingStudent.status,
                 });
             } else {
-                setFormState({ id: "", name: "", nis: "", gender: "" });
+                setFormState({ id: "", name: "", nis: "", gender: "", status: "active" });
             }
         }
     }, [open, isEditing, editingStudent]);
@@ -134,6 +137,23 @@ const AddEditDialog = React.memo(function AddEditDialog({
                                 </SelectContent>
                             </Select>
                         </div>
+                        {isEditing && (
+                             <div className="space-y-2">
+                                <Label>Status Siswa</Label>
+                                <Select value={formState.status} onValueChange={(value: Student['status']) => setFormState({ ...formState, status: value })} required>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih status siswa" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="active">Aktif</SelectItem>
+                                        <SelectItem value="graduated">Lulus</SelectItem>
+                                        <SelectItem value="dropout">Pindah/Keluar</SelectItem>
+                                        <SelectItem value="inactive">Tidak Aktif Lainnya</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">Mengubah status selain 'Aktif' akan memindahkan siswa ke daftar Alumni.</p>
+                            </div>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button type="submit" disabled={loading}>
@@ -225,6 +245,7 @@ export default function StudentsPageComponent({
     formData.append('name', formState.name);
     formData.append('nis', formState.nis);
     formData.append('gender', formState.gender);
+    formData.append('status', formState.status);
 
     const result = editingStudent ? await updateStudent(formData) : await saveStudent(formData);
     
@@ -423,8 +444,8 @@ export default function StudentsPageComponent({
                         <TableCell>{student.gender}</TableCell>
                         <TableCell className="text-right">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(student)}>
-                            <Edit className="mr-2 h-3.5 w-3.5"/>
-                            Ubah
+                            <UserRoundCog className="mr-2 h-3.5 w-3.5"/>
+                            Kelola
                         </Button>
                         </TableCell>
                     </TableRow>
