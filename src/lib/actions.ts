@@ -22,7 +22,7 @@ async function handleSupabaseAction(action: Promise<any>, successMessage: string
     return { success: true, message: successMessage };
   } catch (error: any) {
     if (error.message.includes('unique constraint')) {
-        return { success: false, error: 'Gagal: Terdapat data duplikat. Pastikan data yang Anda masukkan unik.' };
+        return { success: false, error: 'Gagal: Data yang sama sudah ada di sistem.' };
     }
     return { success: false, error: error.message };
   }
@@ -280,14 +280,28 @@ export async function importStudents(classId: string, students: { name: string; 
 }
 
 
-export async function saveSchoolYear(formData: FormData) {
+export async function createSchoolYear(startYear: number) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Authentication required' };
-
-    const yearName = formData.get('name') as string;
-    const action = supabase.from('school_years').insert([{ name: yearName, teacher_id: user.id }]);
-    return handleSupabaseAction(action, 'Tahun ajaran berhasil dibuat.', '/dashboard/roster/school-year');
+  
+    const yearGanjil = `${startYear}/${startYear + 1} - Semester Ganjil`;
+    const yearGenap = `${startYear}/${startYear + 1} - Semester Genap`;
+  
+    const { error } = await supabase.from('school_years').insert([
+      { name: yearGanjil, teacher_id: user.id },
+      { name: yearGenap, teacher_id: user.id },
+    ]);
+  
+    if (error) {
+        if (error.code === '23505') { // unique_violation
+            return { success: false, error: `Tahun ajaran ${startYear}/${startYear + 1} sudah ada.` };
+        }
+        return { success: false, error: error.message };
+    }
+  
+    revalidatePath('/dashboard/roster/school-year');
+    return { success: true };
 }
 
 export async function setActiveSchoolYear(schoolYearId: string) {

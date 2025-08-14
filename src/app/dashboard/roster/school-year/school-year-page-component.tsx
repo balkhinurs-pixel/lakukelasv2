@@ -32,7 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { SchoolYear } from "@/lib/types";
-import { saveSchoolYear, setActiveSchoolYear } from "@/lib/actions";
+import { createSchoolYear, setActiveSchoolYear } from "@/lib/actions";
 
 export default function SchoolYearPageComponent({
     initialSchoolYears,
@@ -45,8 +45,7 @@ export default function SchoolYearPageComponent({
     const [schoolYears, setSchoolYears] = React.useState<SchoolYear[]>(initialSchoolYears);
     const [activeSchoolYearId, setActiveSchoolYearId] = React.useState(initialActiveSchoolYearId || "");
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-    const [newYear, setNewYear] = React.useState("");
-    const [newSemester, setNewSemester] = React.useState("");
+    const [newStartYear, setNewStartYear] = React.useState<number | "">("");
     const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
     
@@ -72,25 +71,18 @@ export default function SchoolYearPageComponent({
     
     const handleAddNewYear = async (e: React.FormEvent) => {
         e.preventDefault();
-        const startYear = parseInt(newYear);
-        if (!newYear || isNaN(startYear) || !newSemester) {
-             toast({ title: "Gagal", description: "Mohon isi semua kolom dengan benar.", variant: "destructive" });
+        
+        if (!newStartYear) {
+             toast({ title: "Gagal", description: "Mohon isi tahun mulai ajaran.", variant: "destructive" });
             return;
         }
 
         setLoading(true);
-        const endYear = startYear + 1;
-        const newSchoolYearName = `${startYear}/${endYear} - Semester ${newSemester}`;
-        
-        const formData = new FormData();
-        formData.append('name', newSchoolYearName);
-
-        const result = await saveSchoolYear(formData);
+        const result = await createSchoolYear(Number(newStartYear));
         
         if (result.success) {
             toast({ title: "Sukses", description: "Tahun ajaran baru berhasil ditambahkan." });
-            setNewYear("");
-            setNewSemester("");
+            setNewStartYear("");
             setIsDialogOpen(false);
             router.refresh();
         } else {
@@ -118,25 +110,21 @@ export default function SchoolYearPageComponent({
                             <DialogHeader>
                                 <DialogTitle>Tambah Tahun Ajaran Baru</DialogTitle>
                                 <DialogDescription>
-                                    Definisikan tahun ajaran dan semester baru.
+                                    Cukup masukkan tahun awal. Sistem akan otomatis membuat Semester Ganjil dan Genap.
                                 </DialogDescription>
                             </DialogHeader>
                              <div className="grid gap-4 py-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="start-year">Tahun Mulai Ajaran</Label>
-                                    <Input id="start-year" type="number" placeholder="e.g. 2024" value={newYear} onChange={e => setNewYear(e.target.value)} required/>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="semester">Semester</Label>
-                                    <Select value={newSemester} onValueChange={setNewSemester} required>
-                                        <SelectTrigger id="semester">
-                                            <SelectValue placeholder="Pilih semester" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Ganjil">Semester Ganjil</SelectItem>
-                                            <SelectItem value="Genap">Semester Genap</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <Input 
+                                        id="start-year" 
+                                        type="number" 
+                                        placeholder="e.g. 2024" 
+                                        value={newStartYear} 
+                                        onChange={e => setNewStartYear(Number(e.target.value))} 
+                                        required
+                                    />
+                                    <p className="text-xs text-muted-foreground">Contoh: Masukkan `2024` untuk membuat `2024/2025 - Ganjil` dan `2024/2025 - Genap`.</p>
                                 </div>
                             </div>
                             <DialogFooter>
