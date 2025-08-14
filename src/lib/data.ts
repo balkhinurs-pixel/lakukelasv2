@@ -402,36 +402,108 @@ export async function getDashboardData() {
 }
 
 export async function getReportsData(schoolYearId: string, month?: number) {
-  noStore();
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+    noStore();
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return null;
-  }
-  
-  const { data, error } = await supabase.rpc('get_report_data', {
-      p_teacher_id: user.id,
-      p_school_year_id: schoolYearId,
-      p_month: month,
-  }).single();
+    if (!user) {
+        return null;
+    }
 
+    try {
+        // Fetch all necessary raw data in parallel
+        const [attendanceData, gradesData, journalsData, studentsData] = await Promise.all([
+            supabase.from('attendance_history').select('*, class:classes(name), subject:subjects(name)').eq('teacher_id', user.id).eq('school_year_id', schoolYearId),
+            supabase.from('grade_history').select('*, class:classes(name), subject:subjects(name, kkm)').eq('teacher_id', user.id).eq('school_year_id', schoolYearId),
+            supabase.from('journals').select('*, class:classes(name), subject:subjects(name)').eq('teacher_id', user.id).eq('school_year_id', schoolYearId),
+            supabase.from('students').select('*, class:classes(name)').eq('status', 'active')
+        ]);
 
-  if (error) {
-    console.error('Error fetching reports data via RPC:', error);
-    return null;
-  }
-  
-  // The data from RPC is a single object with JSON fields. We need to parse them.
-  // This structure matches the one in `reports-page-component`
-  return {
-    summaryCards: data.summary_cards ?? { overallAttendanceRate: 0, overallAverageGrade: 0, totalJournals: 0 },
-    studentPerformance: data.student_performance ?? [],
-    attendanceByClass: data.attendance_by_class ?? [],
-    overallAttendanceDistribution: data.overall_attendance_distribution ?? {},
-    journalEntries: data.journal_entries ?? [],
-    attendanceHistory: data.attendance_history ?? [],
-    gradeHistory: data.grade_history ?? [],
-    allStudents: data.all_students ?? [],
-  };
+        if (attendanceData.error || gradesData.error || journalsData.error || studentsData.error) {
+            throw new Error('Failed to fetch raw report data.');
+        }
+
+        let filteredAttendance = attendanceData.data;
+        let filteredGrades = gradesData.data;
+        let filteredJournals = journalsData.data;
+
+        if (month) {
+            filteredAttendance = filteredAttendance.filter(item => getMonth(new Date(item.date)) + 1 === month);
+            filteredGrades = filteredGrades.filter(item => getMonth(new Date(item.date)) + 1 === month);
+            filteredJournals = filteredJournals.filter(item => getMonth(new Date(item.date)) + 1 === month);
+        }
+
+        const allAttendanceRecords = filteredAttendance.flatMap(a => a.records as any[]);
+        const overallAttendanceRate = allAttendanceRecords.length > 0
+            ? Math.round((allAttendanceRecords.filter(r => r.status === 'Hadir').length / allAttendanceRecords.length) * 100)
+            : 0;
+
+        const allGradeRecords = filteredGrades.flatMap(g => g.records as any[]);
+        const overallAverageGrade = allGradeRecords.length > 0
+            ? Math.round(allGradeRecords.reduce((sum, r) => sum + Number(r.score), 0) / allGradeRecords.length)
+            : 0;
+
+        const summaryCards = {
+            overallAttendanceRate,
+            overallAverageGrade,
+            totalJournals: filteredJournals.length,
+        };
+
+        const studentPerformance = studentsData.data.map(student => {
+            const studentGrades = allGradeRecords.filter(r => r.student_id === student.id).map(r => Number(r.score));
+            const studentAttendance = allAttendanceRecords.filter(r => r.student_id === student.id);
+            const averageGrade = studentGrades.length > 0 ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length) : 0;
+            const attendancePercentage = studentAttendance.length > 0 ? Math.round(studentAttendance.filter(r => r.status === 'Hadir').length / studentAttendance.length * 100) : 100;
+            
+            let status = 'Butuh Perhatian';
+            if (averageGrade >= 85 && attendancePercentage >= 90) status = 'Sangat Baik';
+            else if (averageGrade >= 75 && attendancePercentage >= 80) status = 'Stabil';
+            else if (averageGrade < 75 && attendancePercentage < 80) status = 'Berisiko';
+
+            return {
+                id: student.id,
+                name: student.name,
+                // @ts-ignore
+                class: student.class?.name || '-',
+                average_grade: averageGrade,
+                attendance: attendancePercentage,
+                status,
+            };
+        });
+        
+        const attendanceByClass = filteredAttendance.reduce((acc, curr) => {
+            // @ts-ignore
+            const className = curr.class.name;
+            if (!acc[className]) {
+                acc[className] = { name: className, Hadir: 0, Sakit: 0, Izin: 0, Alpha: 0 };
+            }
+            (curr.records as any[]).forEach(record => {
+                acc[className][record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha']++;
+            });
+            return acc;
+        }, {} as Record<string, any>);
+
+        const overallAttendanceDistribution = allAttendanceRecords.reduce((acc, record) => {
+            acc[record.status] = (acc[record.status] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return {
+            summaryCards,
+            studentPerformance,
+            attendanceByClass: Object.values(attendanceByClass),
+            overallAttendanceDistribution,
+            // @ts-ignore
+            journalEntries: filteredJournals.map(j => ({ ...j, className: j.class.name, subjectName: j.subject.name })),
+            // @ts-ignore
+            attendanceHistory: filteredAttendance.map(a => ({ ...a, className: a.class.name, subjectName: a.subject.name, records: (a.records as any[]).map(r => ({studentId: r.student_id, status: r.status})) })),
+            // @ts-ignore
+            gradeHistory: filteredGrades.map(g => ({ ...g, className: g.class.name, subjectName: g.subject.name, records: (g.records as any[]).map(r => ({studentId: r.student_id, score: r.score})) })),
+            allStudents: studentsData.data.map(s => ({ ...s, class_name: (s.class as any)?.name })),
+        };
+
+    } catch (error) {
+        console.error("Error processing report data:", error);
+        return null;
+    }
 }
