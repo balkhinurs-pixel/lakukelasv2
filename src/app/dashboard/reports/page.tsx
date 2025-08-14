@@ -13,6 +13,8 @@ export default async function ReportsPage({
 }: {
     searchParams: { [key: string]: string | string[] | undefined }
 }) {
+    const classId = searchParams.class as string | undefined;
+    const subjectId = searchParams.subject as string | undefined;
     const month = searchParams.month ? Number(searchParams.month) : undefined;
     const schoolYearIdFromParams = searchParams.schoolYear as string | undefined;
 
@@ -23,10 +25,6 @@ export default async function ReportsPage({
         getSchoolYears()
     ]);
     
-    // Determine the definitive school year ID to use for fetching data.
-    // Priority: URL parameter > Profile's active year.
-    const schoolYearToFetch = schoolYearIdFromParams || defaultActiveSchoolYearId;
-
     if (!profile) {
          return (
             <div className="p-4 text-center text-muted-foreground">
@@ -34,6 +32,8 @@ export default async function ReportsPage({
             </div>
         )
     }
+
+    const schoolYearToFetch = schoolYearIdFromParams || defaultActiveSchoolYearId;
 
     if (!schoolYearToFetch) {
          return (
@@ -56,9 +56,17 @@ export default async function ReportsPage({
         )
     }
 
-    const reportsData = await getReportsData(schoolYearToFetch, month);
+    // Pass the filters to the data fetching function
+    const reportsData = await getReportsData({
+        schoolYearId: schoolYearToFetch,
+        month,
+        classId,
+        subjectId,
+    });
     
-    // This check is crucial. Even if the function is robust, we check its output.
+    // The data fetching function is now robust and will not return null
+    // It will return an object with empty arrays if no data is found.
+    // So the null check below is good practice but might not be strictly necessary anymore.
     if (!reportsData) {
         return (
             <div className="space-y-6 max-w-xl mx-auto">
