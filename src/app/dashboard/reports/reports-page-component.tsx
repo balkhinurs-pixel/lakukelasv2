@@ -96,14 +96,20 @@ const EmptyStatePlaceholder = ({ icon: Icon, title, description }: { icon: React
 
 type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
 
-const months = [
-    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
-    { value: "3", label: 'Maret' }, { value: "4", label: 'April' },
-    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' },
+const monthsGanjil = [
     { value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' },
     { value: "9", label: 'September' }, { value: "10", label: 'Oktober' },
     { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
 ];
+
+const monthsGenap = [
+    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
+    { value: "3", label: 'Maret' }, { value: "4", label: 'April' },
+    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' },
+];
+
+const allMonths = [...monthsGenap, ...monthsGanjil].sort((a,b) => parseInt(a.value) - parseInt(b.value));
+
 
 export default function ReportsPageComponent({
     classes,
@@ -125,7 +131,7 @@ export default function ReportsPageComponent({
   const [selectedClass, setSelectedClass] = React.useState(searchParams.get('class') || "all");
   const [selectedSubject, setSelectedSubject] = React.useState(searchParams.get('subject') || "all");
   
-  const currentSchoolYear = searchParams.get('schoolYear') || profile?.active_school_year_id || "all";
+  const currentSchoolYearId = searchParams.get('schoolYear') || profile?.active_school_year_id || "all";
   const currentMonth = searchParams.get('month') || "all";
 
   const { isPro, limits } = useActivation();
@@ -139,9 +145,23 @@ export default function ReportsPageComponent({
       } else {
         params.set(key, value);
       }
+
+      // If we change school year, reset month if it's no longer valid
+      if (key === 'schoolYear') {
+        const newSchoolYear = schoolYears.find(sy => sy.id === value);
+        const currentMonthValue = params.get('month');
+        if (newSchoolYear && currentMonthValue) {
+            const isGanjil = newSchoolYear.name.toLowerCase().includes('ganjil');
+            const validMonths = isGanjil ? monthsGanjil.map(m => m.value) : monthsGenap.map(m => m.value);
+            if (!validMonths.includes(currentMonthValue)) {
+                params.delete('month');
+            }
+        }
+      }
+
       router.push(`${pathname}?${params.toString()}`);
     },
-    [searchParams, router, pathname]
+    [searchParams, router, pathname, schoolYears]
   );
   
   React.useEffect(() => {
@@ -159,6 +179,14 @@ export default function ReportsPageComponent({
       gradeHistory,
       allStudents
   } = reportsData;
+
+    const selectedSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYearId);
+    const availableMonths = React.useMemo(() => {
+        if (!selectedSchoolYear) return allMonths;
+        if (selectedSchoolYear.name.toLowerCase().includes('ganjil')) return monthsGanjil;
+        if (selectedSchoolYear.name.toLowerCase().includes('genap')) return monthsGenap;
+        return allMonths;
+    }, [selectedSchoolYear]);
 
   const pieData = Object.entries(overallAttendanceDistribution).map(([name, value]) => ({name, value})).filter(item => item.value > 0);
 
@@ -188,14 +216,15 @@ export default function ReportsPageComponent({
             return [index + 1, student.name, hadir, sakit, izin, alpha, total];
         });
         
-        const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYear);
+        const monthLabel = availableMonths.find(m => m.value === currentMonth)?.label;
 
         await downloadPdf(doc, { 
             title: title, 
             head: [['No', 'Nama Siswa', 'Hadir (H)', 'Sakit (S)', 'Izin (I)', 'Alpha (A)', 'Total']],
             body: tableBody,
         }, {
-            tahunAjaran: activeSchoolYear?.name || profile.active_school_year_name || "-"
+            tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
+            periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
         });
     }
 
@@ -244,14 +273,15 @@ export default function ReportsPageComponent({
             return row;
         });
         
-        const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYear);
+        const monthLabel = availableMonths.find(m => m.value === currentMonth)?.label;
 
         await downloadPdf(doc, { 
             title: title, 
             head: head,
             body: tableBody,
         }, {
-            tahunAjaran: activeSchoolYear?.name || profile.active_school_year_name || "-"
+            tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
+            periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
         });
     }
 
@@ -267,8 +297,9 @@ export default function ReportsPageComponent({
 
         const activeClass = classes.find(c => c.id === selectedClass);
         const activeSubject = subjects.find(s => s.id === selectedSubject);
-        const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYear);
+        const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYearId);
         const kkm = activeSubject?.kkm || 75;
+        const monthLabel = availableMonths.find(m => m.value === currentMonth)?.label;
 
         // --- Data Preparation ---
         const filteredStudents = allStudents.filter(s => s.class_id === selectedClass);
@@ -282,6 +313,7 @@ export default function ReportsPageComponent({
         data.push([`Mata Pelajaran: ${activeSubject?.name || 'Semua Mapel'}`]);
         data.push([`Kelas: ${activeClass?.name || 'Semua Kelas'}`]);
         data.push([`Tahun Ajaran: ${activeSchoolYear?.name || profile.active_school_year_name || "-"}`]);
+        data.push([`Periode: ${monthLabel ? `Bulan ${monthLabel}` : 'Satu Semester'}`]);
         data.push([`KKM: ${kkm}`]);
         data.push([]); // Spacer row
 
@@ -328,12 +360,9 @@ export default function ReportsPageComponent({
 
         // Apply styles
         ws['A1'].s = titleStyle;
-        ws['A2'].s = subtitleStyle;
-        ws['A3'].s = subtitleStyle;
-        ws['A4'].s = subtitleStyle;
-        ws['A5'].s = subtitleStyle;
+        ['A2','A3','A4','A5','A6'].forEach(cell => { if(ws[cell]) ws[cell].s = subtitleStyle; });
 
-        const tableHeaderRange = XLSX.utils.decode_range(`A7:${XLSX.utils.encode_col(tableHeader.length - 1)}7`);
+        const tableHeaderRange = XLSX.utils.decode_range(`A8:${XLSX.utils.encode_col(tableHeader.length - 1)}8`);
         for (let C = tableHeaderRange.s.c; C <= tableHeaderRange.e.c; ++C) {
             const cell_address = { c: C, r: tableHeaderRange.s.r };
             const cell_ref = XLSX.utils.encode_cell(cell_address);
@@ -342,7 +371,7 @@ export default function ReportsPageComponent({
         }
 
         // --- Conditional Formatting & Cell Styles ---
-        const dataRange = { s: { r: 7, c: 2 }, e: { r: 6 + filteredStudents.length, c: 2 + assessments.length - 1 } };
+        const dataRange = { s: { r: 8, c: 2 }, e: { r: 7 + filteredStudents.length, c: 2 + assessments.length - 1 } };
         for (let R = dataRange.s.r; R <= dataRange.e.r; ++R) {
              // Center 'No' column
             const noCellRef = XLSX.utils.encode_cell({c: 0, r: R});
@@ -397,10 +426,11 @@ export default function ReportsPageComponent({
       (selectedSubject === 'all' || j.subject_id === selectedSubject)
     );
     
-    const activeSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYear);
+    const monthLabel = availableMonths.find(m => m.value === currentMonth)?.label;
 
     await downloadPdf(doc, { title: title, journals: filteredJournals }, {
-        tahunAjaran: activeSchoolYear?.name || profile.active_school_year_name || "-"
+        tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
+        periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
     });
   }
 
@@ -482,6 +512,9 @@ export default function ReportsPageComponent({
             doc.text(`: ${activeClass?.name || 'Semua Kelas'}`, margin + 35, metaYStart + 5);
             doc.text(`Tahun Ajaran`, pageWidth / 2, metaYStart);
             doc.text(`: ${meta.tahunAjaran || '-'}`, pageWidth / 2 + 35, metaYStart);
+            doc.text(`Periode`, pageWidth / 2, metaYStart + 5);
+            doc.text(`: ${meta.periode || '-'}`, pageWidth / 2 + 35, metaYStart + 5);
+
             finalY = metaYStart + 15;
         }
 
@@ -608,7 +641,7 @@ export default function ReportsPageComponent({
 
   const CommonFilters = () => (
     <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
-        <Select value={currentSchoolYear} onValueChange={(value) => handleFilterChange('schoolYear', value)}>
+        <Select value={currentSchoolYearId} onValueChange={(value) => handleFilterChange('schoolYear', value)}>
             <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Pilih Tahun Ajaran" />
             </SelectTrigger>
@@ -623,7 +656,7 @@ export default function ReportsPageComponent({
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">Semua Bulan</SelectItem>
-                {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
+                {availableMonths.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
             </SelectContent>
         </Select>
         <Select value={selectedClass} onValueChange={(value) => handleFilterChange('class', value)}>
