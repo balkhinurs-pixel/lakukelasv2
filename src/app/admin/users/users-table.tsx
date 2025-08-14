@@ -312,9 +312,9 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="subscription-plan">Status Akun</Label>
+                        <Label htmlFor="account-status">Status Akun</Label>
                         <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ('Pro' | 'Free'))}>
-                            <SelectTrigger id="subscription-plan">
+                            <SelectTrigger id="account-status">
                                 <SelectValue placeholder="Pilih status baru" />
                             </SelectTrigger>
                             <SelectContent>
