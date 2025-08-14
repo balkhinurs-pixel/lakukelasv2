@@ -1,6 +1,10 @@
 import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears } from "@/lib/data";
 import ReportsPageComponent from "./reports-page-component";
 import type { Profile } from "@/lib/types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default async function ReportsPage({
     searchParams
@@ -8,19 +12,51 @@ export default async function ReportsPage({
     searchParams: { [key: string]: string | string[] | undefined }
 }) {
     const month = searchParams.month ? Number(searchParams.month) : undefined;
-    const schoolYearId = searchParams.schoolYear as string | undefined;
+    const schoolYearIdFromParams = searchParams.schoolYear as string | undefined;
 
-    const [classes, subjects, profile, { schoolYears }] = await Promise.all([
+    const [classes, subjects, profile, { schoolYears, activeSchoolYearId: defaultActiveSchoolYearId }] = await Promise.all([
         getClasses(),
         getSubjects(),
         getUserProfile(),
         getSchoolYears()
     ]);
     
-    // Initial data load for the active school year
-    const reportsData = await getReportsData(schoolYearId || profile?.active_school_year_id, month);
+    // Determine the definitive school year ID to use for fetching data.
+    // Priority: URL parameter > Profile's active year.
+    const schoolYearToFetch = schoolYearIdFromParams || defaultActiveSchoolYearId;
 
-    if (!reportsData || !profile) {
+    if (!profile) {
+         return (
+            <div className="p-4 text-center text-muted-foreground">
+                Tidak dapat memuat profil Anda. Silakan coba lagi.
+            </div>
+        )
+    }
+
+    if (!schoolYearToFetch) {
+         return (
+            <div className="space-y-6 max-w-xl mx-auto">
+                 <div>
+                    <h1 className="text-2xl font-bold font-headline">Laporan Akademik</h1>
+                    <p className="text-muted-foreground">Analisis komprehensif tentang kehadiran dan nilai siswa.</p>
+                </div>
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Tahun Ajaran Belum Diatur</AlertTitle>
+                    <AlertDescription>
+                        Anda harus mengatur tahun ajaran aktif terlebih dahulu untuk dapat melihat laporan.
+                        <Button asChild variant="link" className="p-0 h-auto ml-1 font-semibold">
+                            <Link href="/dashboard/roster/school-year">Buka Pengaturan Tahun Ajaran</Link>
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            </div>
+        )
+    }
+
+    const reportsData = await getReportsData(schoolYearToFetch, month);
+
+    if (!reportsData) {
         return (
             <div className="p-4 text-center text-muted-foreground">
                 Tidak dapat memuat data laporan. Pastikan Anda sudah login dan profil Anda ada.
