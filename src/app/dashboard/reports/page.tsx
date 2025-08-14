@@ -1,3 +1,4 @@
+
 import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears } from "@/lib/data";
 import ReportsPageComponent from "./reports-page-component";
 import type { Profile } from "@/lib/types";
