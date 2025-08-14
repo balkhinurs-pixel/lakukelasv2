@@ -403,7 +403,6 @@ export async function getReportsData(schoolYearIdParam?: string, monthParam?: nu
     if (!user) return null;
 
     let p_school_year_id = schoolYearIdParam;
-    // If schoolYearIdParam is not provided, fetch the active one from profile
     if (!p_school_year_id) {
         const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
         p_school_year_id = profile?.active_school_year_id || undefined;
@@ -413,17 +412,10 @@ export async function getReportsData(schoolYearIdParam?: string, monthParam?: nu
         p_teacher_id: user.id,
         p_school_year_id: p_school_year_id,
         p_month: monthParam
-    });
+    }).single();
     
     if (error) {
         console.error('Error calling get_report_data RPC:', error);
-        return null;
-    }
-
-    // The RPC function is designed to always return a single row with all fields.
-    // If it returns nothing, something is wrong with the function itself.
-    if (!data) {
-        console.error('No data returned from get_report_data RPC. This should not happen.');
         return null;
     }
     
