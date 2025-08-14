@@ -1,17 +1,14 @@
--- Langkah 1: Hapus data duplikat, hanya simpan entri yang paling awal dibuat.
--- Kita menggunakan 'ctid' yang merupakan pengenal unik internal untuk setiap baris.
+-- Step 1: Delete duplicate school years, keeping only the one with the earliest created_at timestamp.
+-- This ensures that if a user has created the same "year-semester" multiple times, only the first one remains.
 DELETE FROM public.school_years a
-WHERE a.ctid <> (
-    SELECT min(b.ctid)
-    FROM public.school_years b
-    WHERE a.name = b.name AND a.teacher_id = b.teacher_id
-);
+USING public.school_years b
+WHERE
+    a.ctid < b.ctid
+    AND a.name = b.name
+    AND a.teacher_id = b.teacher_id;
 
--- Langkah 2: Tambahkan batasan UNIK ke tabel untuk mencegah duplikasi di masa depan.
--- Perintah ini akan gagal jika masih ada duplikat, itulah mengapa langkah 1 penting.
--- 'IF NOT EXISTS' akan mencegah error jika batasan sudah ada.
+-- Step 2: Add a UNIQUE constraint to the table.
+-- This will prevent any new duplicate entries from being created in the future.
+-- The constraint is on the combination of the 'name' and 'teacher_id' columns.
 ALTER TABLE public.school_years
-ADD CONSTRAINT IF NOT EXISTS unique_school_year_for_teacher UNIQUE (name, teacher_id);
-
--- Catatan: Jika Anda mendapatkan error pada langkah 2, itu berarti langkah 1 gagal menghapus semua duplikat.
--- Pastikan tidak ada kondisi aneh pada data Anda, lalu coba jalankan kembali langkah 1.
+ADD CONSTRAINT school_years_name_teacher_id_key UNIQUE (name, teacher_id);
