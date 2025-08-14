@@ -1,4 +1,5 @@
 
+
 import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears } from "@/lib/data";
 import ReportsPageComponent from "./reports-page-component";
 import type { Profile } from "@/lib/types";
@@ -57,6 +58,7 @@ export default async function ReportsPage({
 
     const reportsData = await getReportsData(schoolYearToFetch, month);
     
+    // This check is crucial. Even if the function is robust, we check its output.
     if (!reportsData) {
         return (
             <div className="space-y-6 max-w-xl mx-auto">

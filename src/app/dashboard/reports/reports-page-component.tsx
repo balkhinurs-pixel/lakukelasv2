@@ -94,7 +94,7 @@ const EmptyStatePlaceholder = ({ icon: Icon, title, description }: { icon: React
 );
 
 
-type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
+type ReportsData = Awaited<ReturnType<typeof getReportsData>>;
 
 const months = [
     { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },

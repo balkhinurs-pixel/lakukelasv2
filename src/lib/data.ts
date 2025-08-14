@@ -396,37 +396,127 @@ export async function getDashboardData() {
     };
 }
 
-export async function getReportsData(schoolYearIdParam?: string, monthParam?: number) {
+export async function getReportsData(schoolYearId: string, month?: number) {
     noStore();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
 
-    let p_school_year_id = schoolYearIdParam;
-    if (!p_school_year_id) {
-        const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-        p_school_year_id = profile?.active_school_year_id || undefined;
+    if (!user) {
+        // Return a default, empty structure if user is not found
+        return {
+            summaryCards: { overallAttendanceRate: 0, overallAverageGrade: 0, totalJournals: 0 },
+            studentPerformance: [],
+            attendanceByClass: [],
+            overallAttendanceDistribution: {},
+            journalEntries: [],
+            attendanceHistory: [],
+            gradeHistory: [],
+            allStudents: []
+        };
     }
 
-    const { data, error } = await supabase.rpc('get_report_data', {
-        p_teacher_id: user.id,
-        p_school_year_id: p_school_year_id,
-        p_month: monthParam
-    }).single();
-    
-    if (error) {
-        console.error('Error calling get_report_data RPC:', error);
-        return null;
+    // --- Fetch Raw Data ---
+    let attendanceQuery = supabase.from('attendance_history').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
+    let gradesQuery = supabase.from('grade_history').select('*, classes(name), subjects(name, kkm)').eq('teacher_id', user.id);
+    let journalsQuery = supabase.from('journals').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
+
+    if (schoolYearId) {
+        attendanceQuery = attendanceQuery.eq('school_year_id', schoolYearId);
+        gradesQuery = gradesQuery.eq('school_year_id', schoolYearId);
+        journalsQuery = journalsQuery.eq('school_year_id', schoolYearId);
     }
+    if (month) {
+        // Supabase doesn't have a direct month filter, so we filter in JS after fetching for the whole year.
+        // This is less efficient but necessary without complex date range logic.
+    }
+
+    const [
+        attendanceHistoryRes,
+        gradeHistoryRes,
+        journalEntriesRes,
+        allStudentsRes,
+        classesRes
+    ] = await Promise.all([
+        attendanceQuery.order('date', { ascending: false }),
+        gradesQuery.order('date', { ascending: false }),
+        journalsQuery.order('date', { ascending: false }),
+        getAllStudents(),
+        getClasses()
+    ]);
     
-    return data as {
-        summary_cards: any;
-        student_performance: any[];
-        attendance_by_class: any[];
-        overall_attendance_distribution: any;
-        journal_entries: any[];
-        attendance_history: any[];
-        grade_history: any[];
-        all_students: any[];
+    // --- Data Processing and Filtering ---
+    let attendanceHistory = attendanceHistoryRes.data || [];
+    let gradeHistory = gradeHistoryRes.data || [];
+    let journalEntries = journalEntriesRes.data || [];
+
+    if (month) {
+        attendanceHistory = attendanceHistory.filter(r => new Date(r.date).getMonth() + 1 === month);
+        gradeHistory = gradeHistory.filter(r => new Date(r.date).getMonth() + 1 === month);
+        journalEntries = journalEntries.filter(r => new Date(r.date).getMonth() + 1 === month);
+    }
+
+    // --- Calculations ---
+    const allAttendanceRecords = attendanceHistory.flatMap(h => h.records as AttendanceRecord[]);
+    const totalPresent = allAttendanceRecords.filter(r => r.status === 'Hadir').length;
+    const overallAttendanceRate = allAttendanceRecords.length > 0 ? Math.round((totalPresent / allAttendanceRecords.length) * 100) : 0;
+
+    const allGradeRecords = gradeHistory.flatMap(h => h.records as GradeRecord[]);
+    const totalScore = allGradeRecords.reduce((acc, r) => acc + Number(r.score || 0), 0);
+    const overallAverageGrade = allGradeRecords.length > 0 ? Math.round(totalScore / allGradeRecords.length) : 0;
+    
+    const summaryCards = {
+        overallAttendanceRate: isNaN(overallAttendanceRate) ? 0 : overallAttendanceRate,
+        overallAverageGrade: isNaN(overallAverageGrade) ? 0 : overallAverageGrade,
+        totalJournals: journalEntries.length
+    };
+
+    const overallAttendanceDistribution: { [key: string]: number } = allAttendanceRecords.reduce((acc, record) => {
+        acc[record.status] = (acc[record.status] || 0) + 1;
+        return acc;
+    }, {} as { [key: string]: number });
+    
+    const studentPerformance = allStudentsRes.map(student => {
+        const studentGrades = allGradeRecords.filter(g => g.studentId === student.id).map(g => Number(g.score));
+        const studentAttendance = allAttendanceRecords.filter(a => a.studentId === student.id);
+        const presentCount = studentAttendance.filter(a => a.status === 'Hadir').length;
+
+        const averageGrade = studentGrades.length > 0 ? studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length : 0;
+        const attendancePercentage = studentAttendance.length > 0 ? (presentCount / studentAttendance.length) * 100 : 100;
+        
+        let status = 'Butuh Perhatian';
+        if (averageGrade >= 85 && attendancePercentage >= 90) status = 'Sangat Baik';
+        else if (averageGrade >= 75 && attendancePercentage >= 80) status = 'Stabil';
+        else if (averageGrade < 70 || attendancePercentage < 70) status = 'Berisiko';
+
+        return {
+            id: student.id,
+            name: student.name,
+            class: student.class_name,
+            average_grade: Math.round(averageGrade),
+            attendance: Math.round(attendancePercentage),
+            status: status
+        };
+    });
+
+    const attendanceByClass = classesRes.map(c => {
+        const classAttendance = attendanceHistory.filter(h => h.class_id === c.id).flatMap(h => h.records as AttendanceRecord[]);
+        return {
+            name: c.name,
+            Hadir: classAttendance.filter(r => r.status === 'Hadir').length,
+            Sakit: classAttendance.filter(r => r.status === 'Sakit').length,
+            Izin: classAttendance.filter(r => r.status === 'Izin').length,
+            Alpha: classAttendance.filter(r => r.status === 'Alpha').length,
+        };
+    }).filter(c => c.Hadir > 0 || c.Sakit > 0 || c.Izin > 0 || c.Alpha > 0);
+
+    return {
+        summaryCards,
+        studentPerformance,
+        attendanceByClass,
+        overallAttendanceDistribution,
+        journalEntries: journalEntries.map((j: any) => ({...j, className: j.classes.name, subjectName: j.subjects.name})),
+        attendanceHistory: attendanceHistory.map((a: any) => ({...a, className: a.classes.name, subjectName: a.subjects.name, records: a.records.map((r:any) => ({studentId: r.student_id, status: r.status}))})),
+        gradeHistory: gradeHistory.map((g: any) => ({...g, className: g.classes.name, subjectName: g.subjects.name, records: g.records.map((r:any) => ({studentId: r.student_id, score: r.score}))})),
+        allStudents: allStudentsRes
     };
 }
