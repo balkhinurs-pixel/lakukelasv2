@@ -88,12 +88,12 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, fill }:
 type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
 
 const months = [
-    { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' },
-    { value: 3, label: 'Maret' }, { value: 4, label: 'April' },
-    { value: 5, label: 'Mei' }, { value: 6, label: 'Juni' },
-    { value: 7, label: 'Juli' }, { value: 8, label: 'Agustus' },
-    { value: 9, label: 'September' }, { value: 10, label: 'Oktober' },
-    { value: 11, label: 'November' }, { value: 12, label: 'Desember' }
+    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
+    { value: "3", label: 'Maret' }, { value: "4", label: 'April' },
+    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' },
+    { value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' },
+    { value: "9", label: 'September' }, { value: "10", label: 'Oktober' },
+    { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
 ];
 
 export default function ReportsPageComponent({
@@ -102,44 +102,43 @@ export default function ReportsPageComponent({
     schoolYears,
     reportsData,
     profile,
-    currentMonth,
-    currentSchoolYear
 }: {
     classes: Class[];
     subjects: Subject[];
     schoolYears: SchoolYear[];
     reportsData: ReportsData;
     profile: Profile;
-    currentMonth?: number;
-    currentSchoolYear: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [selectedClass, setSelectedClass] = React.useState("all");
-  const [selectedSubject, setSelectedSubject] = React.useState("all");
+  const [selectedClass, setSelectedClass] = React.useState(searchParams.get('class') || "all");
+  const [selectedSubject, setSelectedSubject] = React.useState(searchParams.get('subject') || "all");
+  
+  const currentSchoolYear = searchParams.get('schoolYear') || profile?.active_school_year_id || "all";
+  const currentMonth = searchParams.get('month') || "all";
+
   const { isPro, limits } = useActivation();
   const { toast } = useToast();
   
-  const createQueryString = React.useCallback(
-    (paramsToUpdate: Record<string, string>) => {
+  const handleFilterChange = React.useCallback(
+    (key: 'schoolYear' | 'month' | 'class' | 'subject', value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      Object.entries(paramsToUpdate).forEach(([name, value]) => {
-          if (value === 'all' || !value) {
-              params.delete(name);
-          } else {
-              params.set(name, value);
-          }
-      });
-      return params.toString();
+      if (value === 'all') {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+      router.push(`${pathname}?${params.toString()}`);
     },
-    [searchParams]
+    [searchParams, router, pathname]
   );
   
-  const handleFilterChange = (type: 'schoolYear' | 'month', value: string) => {
-      router.push(pathname + '?' + createQueryString({ [type]: value }));
-  };
+  React.useEffect(() => {
+    setSelectedClass(searchParams.get('class') || "all");
+    setSelectedSubject(searchParams.get('subject') || "all");
+  }, [searchParams]);
 
   const {
       summaryCards,
@@ -609,7 +608,7 @@ export default function ReportsPageComponent({
                 {schoolYears.map(sy => <SelectItem key={sy.id} value={sy.id}>{sy.name}</SelectItem>)}
             </SelectContent>
         </Select>
-         <Select value={String(currentMonth || "all")} onValueChange={(value) => handleFilterChange('month', value)}>
+         <Select value={currentMonth} onValueChange={(value) => handleFilterChange('month', value)}>
             <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Pilih Bulan" />
             </SelectTrigger>
@@ -618,7 +617,7 @@ export default function ReportsPageComponent({
                 {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
             </SelectContent>
         </Select>
-        <Select value={selectedClass} onValueChange={setSelectedClass}>
+        <Select value={selectedClass} onValueChange={(value) => handleFilterChange('class', value)}>
             <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Pilih kelas" />
             </SelectTrigger>
@@ -627,7 +626,7 @@ export default function ReportsPageComponent({
                 {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
         </Select>
-         <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+         <Select value={selectedSubject} onValueChange={(value) => handleFilterChange('subject', value)}>
             <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Pilih Mapel" />
             </SelectTrigger>
