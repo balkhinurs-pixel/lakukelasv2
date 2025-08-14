@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -41,7 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog, Loader2, CheckCircle, XCircle, School } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
 import type { Student, Class } from "@/lib/types";
@@ -302,6 +303,19 @@ export default function StudentsPageComponent({
       event.target.value = '';
   };
   
+  if (classes.length === 0) {
+    return (
+        <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-full py-16">
+            <School className="h-16 w-16 mb-4 text-gray-400" />
+            <h3 className="text-xl font-semibold">Anda Belum Membuat Kelas</h3>
+            <p className="text-sm mt-2 max-w-md">Untuk dapat mengelola siswa, Anda perlu membuat setidaknya satu kelas terlebih dahulu. Silakan pergi ke menu pengaturan kelas.</p>
+            <Button asChild className="mt-4">
+                <Link href="/dashboard/roster/classes">Buat Kelas Baru</Link>
+            </Button>
+        </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
         <input
@@ -554,5 +568,3 @@ export default function StudentsPageComponent({
     </div>
   );
 }
-
-    

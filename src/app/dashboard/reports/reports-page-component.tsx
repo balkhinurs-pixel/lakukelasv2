@@ -46,7 +46,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet } from "lucide-react";
+import { TrendingUp, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Users2 } from "lucide-react";
 import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear } from "@/lib/types";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -84,6 +84,15 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, fill }:
     </text>
   );
 };
+
+const EmptyStatePlaceholder = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
+    <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-full py-16">
+        <Icon className="h-12 w-12 mb-4 text-gray-400" />
+        <h3 className="text-lg font-semibold">{title}</h3>
+        <p className="text-sm mt-1">{description}</p>
+    </div>
+);
+
 
 type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
 
@@ -151,7 +160,7 @@ export default function ReportsPageComponent({
       allStudents
   } = reportsData;
 
-  const pieData = Object.entries(overallAttendanceDistribution).map(([name, value]) => ({name, value}));
+  const pieData = Object.entries(overallAttendanceDistribution).map(([name, value]) => ({name, value})).filter(item => item.value > 0);
 
     const handleDownloadAttendance = async () => {
         if (!limits.canDownloadPdf) {
@@ -709,74 +718,75 @@ export default function ReportsPageComponent({
                         <CardDescription>Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {/* Mobile View */}
-                        <div className="md:hidden space-y-4">
-                            {studentPerformance.map((student) => (
-                                <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="font-semibold">{student.name}</p>
-                                            <p className="text-sm text-muted-foreground">{student.class}</p>
-                                        </div>
-                                        <Badge variant="outline" className={cn("font-semibold text-xs", getStatusBadge(student.status))}>
-                                            {student.status === 'Sangat Baik' && <TrendingUp className="mr-1 h-3 w-3" />}
-                                            {student.status === 'Stabil' && <UserCheck className="mr-1 h-3 w-3" />}
-                                            {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-1 h-3 w-3" />}
-                                            {student.status === 'Berisiko' && <UserX className="mr-1 h-3 w-3" />}
-                                            {student.status}
-                                        </Badge>
-                                    </div>
-                                    <div className="flex justify-around text-center text-sm pt-2">
-                                        <div>
-                                            <p className="font-bold text-base">{student.average_grade}</p>
-                                            <p className="text-xs text-muted-foreground">Rata-rata Nilai</p>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-base">{student.attendance}%</p>
-                                            <p className="text-xs text-muted-foreground">Kehadiran</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        
-                        {/* Desktop View */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                    <TableHead>Nama Siswa</TableHead>
-                                    <TableHead>Kelas</TableHead>
-                                    <TableHead className="text-center">Rata-rata Nilai</TableHead>
-                                    <TableHead className="text-center">Kehadiran</TableHead>
-                                    <TableHead className="text-center">Status</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                        {studentPerformance.length > 0 ? (
+                            <>
+                                {/* Mobile View */}
+                                <div className="md:hidden space-y-4">
                                     {studentPerformance.map((student) => (
-                                    <TableRow key={student.id}>
-                                        <TableCell className="font-medium">{student.name}</TableCell>
-                                        <TableCell>{student.class}</TableCell>
-                                        <TableCell className="text-center font-mono">{student.average_grade}</TableCell>
-                                        <TableCell className="text-center font-mono">{student.attendance}%</TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge variant="outline" className={cn("font-semibold", getStatusBadge(student.status))}>
-                                                {student.status === 'Sangat Baik' && <TrendingUp className="mr-2 h-3 w-3" />}
-                                                {student.status === 'Stabil' && <UserCheck className="mr-2 h-3 w-3" />}
-                                                {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-2 h-3 w-3" />}
-                                                {student.status === 'Berisiko' && <UserX className="mr-2 h-3 w-3" />}
-                                                {student.status}
-                                            </Badge>
-                                        </TableCell>
-                                    </TableRow>
+                                        <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-semibold">{student.name}</p>
+                                                    <p className="text-sm text-muted-foreground">{student.class}</p>
+                                                </div>
+                                                <Badge variant="outline" className={cn("font-semibold text-xs", getStatusBadge(student.status))}>
+                                                    {student.status === 'Sangat Baik' && <TrendingUp className="mr-1 h-3 w-3" />}
+                                                    {student.status === 'Stabil' && <UserCheck className="mr-1 h-3 w-3" />}
+                                                    {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-1 h-3 w-3" />}
+                                                    {student.status === 'Berisiko' && <UserX className="mr-1 h-3 w-3" />}
+                                                    {student.status}
+                                                </Badge>
+                                            </div>
+                                            <div className="flex justify-around text-center text-sm pt-2">
+                                                <div>
+                                                    <p className="font-bold text-base">{student.average_grade}</p>
+                                                    <p className="text-xs text-muted-foreground">Rata-rata Nilai</p>
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-base">{student.attendance}%</p>
+                                                    <p className="text-xs text-muted-foreground">Kehadiran</p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                        {studentPerformance.length === 0 && (
-                            <div className="text-center text-muted-foreground py-12">
-                                <p>Belum ada data nilai atau kehadiran yang cukup untuk dianalisis.</p>
-                            </div>
+                                </div>
+                                
+                                {/* Desktop View */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                            <TableHead>Nama Siswa</TableHead>
+                                            <TableHead>Kelas</TableHead>
+                                            <TableHead className="text-center">Rata-rata Nilai</TableHead>
+                                            <TableHead className="text-center">Kehadiran</TableHead>
+                                            <TableHead className="text-center">Status</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {studentPerformance.map((student) => (
+                                            <TableRow key={student.id}>
+                                                <TableCell className="font-medium">{student.name}</TableCell>
+                                                <TableCell>{student.class}</TableCell>
+                                                <TableCell className="text-center font-mono">{student.average_grade}</TableCell>
+                                                <TableCell className="text-center font-mono">{student.attendance}%</TableCell>
+                                                <TableCell className="text-center">
+                                                    <Badge variant="outline" className={cn("font-semibold", getStatusBadge(student.status))}>
+                                                        {student.status === 'Sangat Baik' && <TrendingUp className="mr-2 h-3 w-3" />}
+                                                        {student.status === 'Stabil' && <UserCheck className="mr-2 h-3 w-3" />}
+                                                        {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-2 h-3 w-3" />}
+                                                        {student.status === 'Berisiko' && <UserX className="mr-2 h-3 w-3" />}
+                                                        {student.status}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </>
+                        ) : (
+                             <EmptyStatePlaceholder icon={Users2} title="Belum Ada Data Performa" description="Catat presensi dan nilai untuk melihat analisis performa siswa." />
                         )}
                     </CardContent>
                 </Card>
@@ -788,21 +798,25 @@ export default function ReportsPageComponent({
                             <CardDescription>Visualisasi persentase kehadiran untuk setiap status.</CardDescription>
                         </CardHeader>
                         <CardContent className="pl-2">
-                             <div className="w-full overflow-x-auto">
-                                <ResponsiveContainer width="100%" height={300} minWidth={500}>
-                                    <BarChart data={attendanceByClass}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip />
-                                        <Legend wrapperStyle={{fontSize: "12px"}}/>
-                                        <Bar dataKey="Hadir" stackId="a" fill="#22c55e" name="Hadir" />
-                                        <Bar dataKey="Sakit" stackId="a" fill="#f97316" name="Sakit"/>
-                                        <Bar dataKey="Izin" stackId="a" fill="#0ea5e9" name="Izin"/>
-                                        <Bar dataKey="Alpha" stackId="a" fill="#ef4444" name="Alpha"/>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                             {attendanceByClass.length > 0 ? (
+                                <div className="w-full overflow-x-auto">
+                                    <ResponsiveContainer width="100%" height={300} minWidth={500}>
+                                        <BarChart data={attendanceByClass}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                            <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                            <Tooltip />
+                                            <Legend wrapperStyle={{fontSize: "12px"}}/>
+                                            <Bar dataKey="Hadir" stackId="a" fill="#22c55e" name="Hadir" />
+                                            <Bar dataKey="Sakit" stackId="a" fill="#f97316" name="Sakit"/>
+                                            <Bar dataKey="Izin" stackId="a" fill="#0ea5e9" name="Izin"/>
+                                            <Bar dataKey="Alpha" stackId="a" fill="#ef4444" name="Alpha"/>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                             ) : (
+                                <EmptyStatePlaceholder icon={BarChart2} title="Grafik Kosong" description="Data kehadiran antar kelas akan muncul di sini." />
+                             )}
                         </CardContent>
                     </Card>
                     <Card className="lg:col-span-2">
@@ -811,29 +825,33 @@ export default function ReportsPageComponent({
                             <CardDescription>Proporsi setiap status kehadiran keseluruhan.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={pieData}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={renderCustomizedLabel}
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                        nameKey="name"
-                                    >
-                                        {pieData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend wrapperStyle={{fontSize: "12px", paddingTop: "20px"}}/>
-                                </PieChart>
-                            </ResponsiveContainer>
+                            {pieData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={renderCustomizedLabel}
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                            nameKey="name"
+                                        >
+                                            {pieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend wrapperStyle={{fontSize: "12px", paddingTop: "20px"}}/>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <EmptyStatePlaceholder icon={PieChartIcon} title="Grafik Kosong" description="Data distribusi kehadiran akan muncul di sini." />
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -854,10 +872,7 @@ export default function ReportsPageComponent({
                         <CommonFilters />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-center py-12 text-muted-foreground">
-                            <p>Data detail kehadiran siswa akan direkap di sini saat Anda mengunduh PDF.</p>
-                            <p className="text-sm">Fitur ini memerlukan Akun Pro.</p>
-                        </div>
+                        <EmptyStatePlaceholder icon={FileSpreadsheet} title="Unduh Rekap Kehadiran" description="Data detail kehadiran siswa akan direkap dalam format PDF." />
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -883,10 +898,7 @@ export default function ReportsPageComponent({
                         <CommonFilters />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-center py-12 text-muted-foreground">
-                            <p>Data detail nilai siswa akan direkap di sini saat Anda mengunduh PDF atau Excel.</p>
-                            <p className="text-sm">Fitur ini memerlukan Akun Pro.</p>
-                        </div>
+                        <EmptyStatePlaceholder icon={FileSpreadsheet} title="Unduh Rekap Nilai" description="Data detail nilai siswa akan direkap dalam format PDF atau Excel." />
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -906,57 +918,58 @@ export default function ReportsPageComponent({
                         <CommonFilters />
                     </CardHeader>
                     <CardContent>
-                        {/* Mobile View */}
-                         <div className="md:hidden space-y-4">
-                            {journalEntries.map((entry) => (
-                                <div key={entry.id} className="border rounded-lg p-4 space-y-3">
-                                    <div className="space-y-1">
-                                        <p className="font-semibold">{entry.subjectName}</p>
-                                        <p className="text-sm text-muted-foreground">{entry.className} {entry.meeting_number ? `(P-${entry.meeting_number})` : ''}</p>
-                                        <p className="text-xs text-muted-foreground">{format(new Date(entry.date), "EEEE, dd MMM yyyy", { locale: id })}</p>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground line-clamp-3">{entry.learning_objectives}</p>
+                        {journalEntries.length > 0 ? (
+                            <>
+                                {/* Mobile View */}
+                                <div className="md:hidden space-y-4">
+                                    {journalEntries.map((entry) => (
+                                        <div key={entry.id} className="border rounded-lg p-4 space-y-3">
+                                            <div className="space-y-1">
+                                                <p className="font-semibold">{entry.subjectName}</p>
+                                                <p className="text-sm text-muted-foreground">{entry.className} {entry.meeting_number ? `(P-${entry.meeting_number})` : ''}</p>
+                                                <p className="text-xs text-muted-foreground">{format(new Date(entry.date), "EEEE, dd MMM yyyy", { locale: id })}</p>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground line-clamp-3">{entry.learning_objectives}</p>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                         </div>
-                        {/* Desktop View */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead className="w-[120px]">Tanggal</TableHead>
-                                <TableHead>Info</TableHead>
-                                <TableHead>Tujuan Pembelajaran</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {journalEntries
-                                    .filter(j => 
-                                        (selectedClass === 'all' || j.class_id === selectedClass) &&
-                                        (selectedSubject === 'all' || j.subject_id === selectedSubject)
-                                    )
-                                    .map((entry) => (
-                                <TableRow key={entry.id}>
-                                    <TableCell className="font-medium">
-                                    {format(new Date(entry.date), "EEEE, dd MMM yyyy", { locale: id })}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="font-medium">{entry.subjectName}</div>
-                                        <div className="text-sm text-muted-foreground">{entry.className} {entry.meeting_number ? `(P-${entry.meeting_number})` : ''}</div>
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                        <p className="line-clamp-2">{entry.learning_objectives}</p>
-                                    </TableCell>
-                                </TableRow>
-                                ))}
-                            </TableBody>
-                            </Table>
-                        </div>
-                         {journalEntries.length === 0 && (
-                            <div className="text-center text-muted-foreground py-12">
-                                <p>Belum ada jurnal yang dibuat.</p>
-                            </div>
-                        )}
+                                {/* Desktop View */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                        <TableHead className="w-[120px]">Tanggal</TableHead>
+                                        <TableHead>Info</TableHead>
+                                        <TableHead>Tujuan Pembelajaran</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {journalEntries
+                                            .filter(j => 
+                                                (selectedClass === 'all' || j.class_id === selectedClass) &&
+                                                (selectedSubject === 'all' || j.subject_id === selectedSubject)
+                                            )
+                                            .map((entry) => (
+                                        <TableRow key={entry.id}>
+                                            <TableCell className="font-medium">
+                                            {format(new Date(entry.date), "EEEE, dd MMM yyyy", { locale: id })}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{entry.subjectName}</div>
+                                                <div className="text-sm text-muted-foreground">{entry.className} {entry.meeting_number ? `(P-${entry.meeting_number})` : ''}</div>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                <p className="line-clamp-2">{entry.learning_objectives}</p>
+                                            </TableCell>
+                                        </TableRow>
+                                        ))}
+                                    </TableBody>
+                                    </Table>
+                                </div>
+                            </>
+                         ) : (
+                            <EmptyStatePlaceholder icon={BookCheck} title="Belum Ada Jurnal" description="Data jurnal yang telah Anda buat akan ditampilkan di sini." />
+                         )}
                     </CardContent>
                 </Card>
             </TabsContent>
