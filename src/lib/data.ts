@@ -34,8 +34,6 @@ export async function getAllUsers(): Promise<Profile[]> {
     noStore();
     const supabase = createClient();
     
-    // Simplified and more reliable query directly from the profiles table.
-    // The on_auth_user_created trigger ensures this table is populated.
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*')
@@ -319,7 +317,6 @@ export async function getDashboardData() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
 
-    // --- Base Data ---
     const today = new Date();
     const todayDay = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(today);
     const todayDate = format(today, 'yyyy-MM-dd');
@@ -345,7 +342,6 @@ export async function getDashboardData() {
         console.error("Dashboard data error:", scheduleError || journalError);
     }
     
-    // --- Format Base Data ---
     const todaySchedule = (todayScheduleData || []).map(item => ({
         ...item,
         // @ts-ignore
@@ -361,7 +357,6 @@ export async function getDashboardData() {
         subjectName: entry.subjects!.name,
     }));
 
-    // --- Calculate Attendance Percentage ---
     const { data: attendanceTodayData, error: attendanceError } = await supabase
         .from('attendance_history')
         .select('records')
@@ -378,7 +373,6 @@ export async function getDashboardData() {
         }
     }
 
-    // --- Calculate Unfilled Journals ---
     const { data: filledJournalsToday, error: filledJournalsError } = await supabase
         .from('journals')
         .select('class_id, subject_id')
@@ -402,166 +396,72 @@ export async function getDashboardData() {
     };
 }
 
-
-export async function getReportsData(schoolYearId?: string, month?: number) {
+export async function getReportsData(schoolYearIdParam?: string, monthParam?: number) {
     noStore();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    let activeSchoolYearId = schoolYearId;
-
+    let activeSchoolYearId = schoolYearIdParam;
     if (!activeSchoolYearId) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('active_school_year_id')
-            .eq('id', user.id)
-            .single();
+        const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
         if (profile?.active_school_year_id) {
             activeSchoolYearId = profile.active_school_year_id;
         }
     }
-    
-    // Base queries using the new views
-    let attendanceQuery = supabase.from('v_attendance_history').select('*').eq('teacher_id', user.id);
-    let gradesQuery = supabase.from('v_grade_history').select('*').eq('teacher_id', user.id);
-    let journalsQuery = supabase.from('journals').select('*, classes(name), subjects(name)').eq('teacher_id', user.id);
 
-    // Apply school year filter if available
-    if (activeSchoolYearId) {
-        attendanceQuery = attendanceQuery.eq('school_year_id', activeSchoolYearId);
-        gradesQuery = gradesQuery.eq('school_year_id', activeSchoolYearId);
-        journalsQuery = journalsQuery.eq('school_year_id', activeSchoolYearId);
-    }
-    
-    // Apply month filter if available
-    if (month && month > 0) {
-        attendanceQuery = attendanceQuery.eq('month', month);
-        gradesQuery = gradesQuery.eq('month', month);
-        journalsQuery = journalsQuery.eq('month', month);
-    }
+    const { data, error } = await supabase.rpc('get_report_data', {
+        p_teacher_id: user.id,
+        p_school_year_id: activeSchoolYearId,
+        p_month: monthParam
+    });
 
-
-    const [
-        { data: attendanceData, error: attendanceError },
-        { data: gradesData, error: gradesError },
-        { data: journalsData, error: journalsError },
-        classes
-    ] = await Promise.all([
-        attendanceQuery,
-        gradesQuery,
-        journalsQuery,
-        getClasses()
-    ]);
-
-    if (attendanceError || gradesError || journalsError) {
-        console.error('Error fetching reports data:', attendanceError || gradesError || journalsError);
+    if (error) {
+        console.error('Error calling get_report_data RPC:', error);
         return null;
     }
 
-    // --- Process Data ---
-    const attendanceHistory = (attendanceData || []).map(entry => ({
+    const result = data[0];
+
+    const attendanceHistory = (result.attendance_history || []).map((entry:any) => ({
         ...entry,
         records: entry.records.map((r: any) => ({studentId: r.student_id, status: r.status}))
     }));
 
-    const gradeHistory = (gradesData || []).map(entry => ({
+    const gradeHistory = (result.grade_history || []).map((entry:any) => ({
         ...entry,
         records: entry.records.map((r: any) => ({studentId: r.student_id, score: r.score}))
     }));
 
-    const journalEntries = (journalsData || []).map(entry => ({
-        ...entry,
-        // @ts-ignore
-        className: entry.classes.name,
-        // @ts-ignore
-        subjectName: entry.subjects.name
-    }));
+    const journalEntries = result.journal_entries || [];
+    const allStudents = result.all_students || [];
 
-    // Build a historical student list from the data itself
-    const historicalStudentsMap = new Map<string, { id: string; name: string; class_name: string; class_id: string }>();
-    attendanceHistory.forEach(entry => {
-        (Object.entries(entry.student_names || {})).forEach(([studentId, studentName]) => {
-            if (!historicalStudentsMap.has(studentId)) {
-                historicalStudentsMap.set(studentId, {
-                    id: studentId,
-                    name: studentName as string,
-                    class_name: entry.class_name,
-                    class_id: entry.class_id
-                });
-            }
-        })
-    });
-     gradeHistory.forEach(entry => {
-        (Object.entries(entry.student_names || {})).forEach(([studentId, studentName]) => {
-            if (!historicalStudentsMap.has(studentId)) {
-                historicalStudentsMap.set(studentId, {
-                    id: studentId,
-                    name: studentName as string,
-                    class_name: entry.class_name,
-                    class_id: entry.class_id
-                });
-            }
-        })
-    });
-    const allStudents = Array.from(historicalStudentsMap.values());
-
-
-    // 1. Overall Attendance Rate
-    const totalAttendanceRecords = attendanceHistory.reduce((sum, entry) => sum + entry.records.length, 0);
-    const totalHadirRecords = attendanceHistory.reduce((sum, entry) => sum + entry.records.filter(r => r.status === 'Hadir').length, 0);
+    const totalAttendanceRecords = attendanceHistory.reduce((sum:number, entry:any) => sum + entry.records.length, 0);
+    const totalHadirRecords = attendanceHistory.reduce((sum:number, entry:any) => sum + entry.records.filter((r:any) => r.status === 'Hadir').length, 0);
     const overallAttendanceRate = totalAttendanceRecords > 0 ? (totalHadirRecords / totalAttendanceRecords) * 100 : 0;
 
-    // 2. Overall Average Grade
-    const allGradeRecords = gradeHistory.flatMap(entry => entry.records);
-    const totalScore = allGradeRecords.reduce((sum, record) => sum + Number(record.score), 0);
+    const allGradeRecords = gradeHistory.flatMap((entry:any) => entry.records);
+    const totalScore = allGradeRecords.reduce((sum:number, record:any) => sum + Number(record.score), 0);
     const overallAverageGrade = allGradeRecords.length > 0 ? totalScore / allGradeRecords.length : 0;
 
-    // 3. Overall Attendance Distribution (for Pie Chart)
     const overallAttendanceDistribution: Record<AttendanceRecord['status'], number> = { Hadir: 0, Sakit: 0, Izin: 0, Alpha: 0 };
-    attendanceHistory.flatMap(entry => entry.records).forEach(record => {
+    attendanceHistory.flatMap((entry:any) => entry.records).forEach((record:any) => {
         overallAttendanceDistribution[record.status]++;
     });
 
-    // 4. Attendance by Class (for Bar Chart)
-    const attendanceByClass = classes.map(c => {
-        const classAttendance = attendanceHistory.filter(h => h.class_id === c.id).flatMap(h => h.records);
+    const attendanceByClass = (result.attendance_by_class || []).map((c:any) => {
         const distribution: Record<AttendanceRecord['status'], number> = { Hadir: 0, Sakit: 0, Izin: 0, Alpha: 0 };
-        classAttendance.forEach(record => {
-            distribution[record.status]++;
+        c.distribution.forEach((d:any) => {
+            distribution[d.status as AttendanceRecord['status']] = d.count;
         });
-        return { name: c.name, ...distribution };
+        return { name: c.class_name, ...distribution };
     });
 
-    // 5. Student Performance Analysis
-    const studentPerformance = allStudents.map(student => {
-        const studentGrades = gradeHistory.flatMap(g => g.records.filter(r => r.studentId === student.id).map(r => Number(r.score)));
-        const studentAttendance = attendanceHistory.flatMap(a => a.records.filter(r => r.studentId === student.id));
-        
-        const average_grade = studentGrades.length > 0 ? studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length : 0;
-        const total_attendance = studentAttendance.length;
-        const total_hadir = studentAttendance.filter(a => a.status === 'Hadir').length;
-        const attendance_rate = total_attendance > 0 ? (total_hadir / total_attendance) * 100 : 100;
-
-        let status = 'Stabil';
-        if (average_grade >= 90 && attendance_rate >= 95) {
-            status = 'Sangat Baik';
-        } else if (average_grade < 75 && attendance_rate < 85) {
-            status = 'Berisiko';
-        } else if (average_grade < 75 || attendance_rate < 85) {
-            status = 'Butuh Perhatian';
-        }
-
-        return {
-            id: student.id,
-            name: student.name,
-            class: student.class_name,
-            average_grade: parseFloat(average_grade.toFixed(1)),
-            attendance: parseFloat(attendance_rate.toFixed(1)),
-            status,
-        };
-    }).sort((a,b) => b.average_grade - a.average_grade);
-
+    const studentPerformance = (result.student_performance || []).map((student:any) => ({
+      ...student,
+      average_grade: parseFloat(student.average_grade.toFixed(1)),
+      attendance: parseFloat(student.attendance_percentage.toFixed(1)),
+    }));
 
     return {
         summaryCards: {
@@ -573,7 +473,6 @@ export async function getReportsData(schoolYearId?: string, month?: number) {
         attendanceByClass,
         overallAttendanceDistribution,
         journalEntries,
-        // Pass detailed history for PDF generation
         attendanceHistory,
         gradeHistory,
         allStudents,

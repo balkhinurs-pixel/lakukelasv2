@@ -1,265 +1,118 @@
--- RLS (Row Level Security) Policies
--- These policies ensure that users can only access their own data.
 
--- Enable RLS for all tables
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.schedule ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.attendance_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.grade_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.journals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.agendas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.school_years ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.activation_codes ENABLE ROW LEVEL SECURITY;
-
+-- RLS POLICIES
+alter table profiles enable row level security;
+alter table classes enable row level security;
+alter table subjects enable row level security;
+alter table students enable row level security;
+alter table schedule enable row level security;
+alter table attendance_history enable row level security;
+alter table grade_history enable row level security;
+alter table journals enable row level security;
+alter table agendas enable row level security;
+alter table activation_codes enable row level security;
+alter table school_years enable row level security;
 
 -- PROFILES
--- Users can see their own profile.
-CREATE POLICY "Users can view their own profile"
-ON public.profiles FOR SELECT
-USING (auth.uid() = id);
-
--- Users can update their own profile.
-CREATE POLICY "Users can update their own profile"
-ON public.profiles FOR UPDATE
-USING (auth.uid() = id);
-
+create policy "Users can view their own profile" on profiles
+  for select using (auth.uid() = id);
+create policy "Users can update their own profile" on profiles
+  for update using (auth.uid() = id);
 
 -- CLASSES
--- Users can view their own classes.
-CREATE POLICY "Users can view their own classes"
-ON public.classes FOR SELECT
-USING (auth.uid() = teacher_id);
-
--- Users can insert new classes for themselves.
-CREATE POLICY "Users can insert their own classes"
-ON public.classes FOR INSERT
-WITH CHECK (auth.uid() = teacher_id);
-
+create policy "Users can view their own classes" on classes
+  for select using (auth.uid() = teacher_id);
+create policy "Users can insert their own classes" on classes
+  for insert with check (auth.uid() = teacher_id);
 
 -- SUBJECTS
--- Users can view their own subjects.
-CREATE POLICY "Users can view their own subjects"
-ON public.subjects FOR SELECT
-USING (auth.uid() = teacher_id);
-
--- Users can insert new subjects for themselves.
-CREATE POLICY "Users can insert their own subjects"
-ON public.subjects FOR INSERT
-WITH CHECK (auth.uid() = teacher_id);
-
--- Users can update their own subjects.
-CREATE POLICY "Users can update their own subjects"
-ON public.subjects FOR UPDATE
-USING (auth.uid() = teacher_id);
-
-
--- STUDENTS
--- Users can view students in their own classes.
-CREATE POLICY "Users can view students in their classes"
-ON public.students FOR SELECT
-USING (
-  auth.uid() = (
-    SELECT teacher_id FROM classes WHERE id = students.class_id
-  )
-);
-
--- Users can insert students into their own classes.
-CREATE POLICY "Users can insert students into their classes"
-ON public.students FOR INSERT
-WITH CHECK (
-  auth.uid() = (
-    SELECT teacher_id FROM classes WHERE id = students.class_id
-  )
-);
-
--- Users can update students in their own classes.
-CREATE POLICY "Teachers can update their own students"
-ON public.students FOR UPDATE
-USING (
-  auth.uid() = (
-    SELECT teacher_id FROM classes WHERE id = students.class_id
-  )
-);
-
--- SCHEDULE
--- Users can view, insert, update, and delete their own schedule entries.
-CREATE POLICY "Users can manage their own schedule"
-ON public.schedule FOR ALL
-USING (auth.uid() = teacher_id);
-
-
--- ATTENDANCE HISTORY
--- Users can manage their own attendance records.
-CREATE POLICY "Users can manage their own attendance history"
-ON public.attendance_history FOR ALL
-USING (auth.uid() = teacher_id);
-
-
--- GRADE HISTORY
--- Users can manage their own grade records.
-CREATE POLICY "Users can manage their own grade history"
-ON public.grade_history FOR ALL
-USING (auth.uid() = teacher_id);
-
-
--- JOURNALS
--- Users can manage their own journal entries.
-CREATE POLICY "Users can manage their own journals"
-ON public.journals FOR ALL
-USING (auth.uid() = teacher_id);
-
--- AGENDAS
--- Users can manage their own agenda entries.
-CREATE POLICY "Users can manage their own agendas"
-ON public.agendas FOR ALL
-USING (auth.uid() = teacher_id);
-
+create policy "Users can view their own subjects" on subjects
+  for select using (auth.uid() = teacher_id);
+create policy "Users can insert their own subjects" on subjects
+  for insert with check (auth.uid() = teacher_id);
+create policy "Users can update their own subjects" on subjects
+  for update using (auth.uid() = teacher_id);
 
 -- SCHOOL YEARS
--- Users can manage their own school year entries.
-CREATE POLICY "Users can manage their own school years"
-ON public.school_years FOR ALL
-USING (auth.uid() = teacher_id);
+create policy "Users can view their own school years" on school_years
+  for select using (auth.uid() = teacher_id);
+create policy "Users can insert their own school years" on school_years
+  for insert with check (auth.uid() = teacher_id);
 
+-- STUDENTS
+create policy "Teachers can view their own students" on students
+  for select using (
+    auth.uid() = (
+      select teacher_id from classes where id = students.class_id
+    )
+  );
+
+create policy "Teachers can insert students into their own classes" on students
+  for insert with check (
+    auth.uid() = (
+      select teacher_id from classes where id = students.class_id
+    )
+  );
+  
+create policy "Teachers can update their own students" on students
+  for update using (
+    auth.uid() = (
+      select teacher_id from classes where id = students.class_id
+    )
+  );
+
+
+-- SCHEDULE
+create policy "Users can manage their own schedule" on schedule
+  for all using (auth.uid() = teacher_id);
+
+-- ATTENDANCE HISTORY
+create policy "Users can manage their own attendance history" on attendance_history
+  for all using (auth.uid() = teacher_id);
+
+-- GRADE HISTORY
+create policy "Users can manage their own grade history" on grade_history
+  for all using (auth.uid() = teacher_id);
+
+-- JOURNALS
+create policy "Users can manage their own journals" on journals
+  for all using (auth.uid() = teacher_id);
+
+-- AGENDAS
+create policy "Users can manage their own agendas" on agendas
+  for all using (auth.uid() = teacher_id);
+  
 -- ACTIVATION CODES
--- Admin can manage all codes.
-CREATE POLICY "Admin can manage all codes"
-ON public.activation_codes FOR ALL
-USING (
-  (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
-)
-WITH CHECK (
-  (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
-);
--- Users can view codes they have used.
-CREATE POLICY "Users can view their used code"
-ON public.activation_codes FOR SELECT
-USING (auth.uid() = used_by);
+create policy "Admins can manage activation codes" on activation_codes
+  for all using ( (select role from profiles where id = auth.uid()) = 'admin' );
+
+create policy "Users can view their own used code" on activation_codes
+  for select using ( auth.uid() = used_by );
 
 
---
--- Functions
---
+-- FUNCTIONS
 
--- Function to handle new user creation
+-- This trigger automatically creates a profile entry when a new user signs up.
+-- see https://supabase.com/docs/guides/auth/managing-user-data
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, email, avatar_url, role, account_status)
-  values (
-      new.id, 
-      new.raw_user_meta_data->>'full_name',
-      new.email,
-      new.raw_user_meta_data->>'avatar_url',
-      'teacher', -- Default role for new users
-      'Free'     -- Default account status for new users
-  );
+  insert into public.profiles (id, full_name, avatar_url, email)
+  values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url', new.email);
   return new;
 end;
 $$;
 
--- Trigger to call the function when a new user signs up
+-- trigger the function every time a user is created
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
 
--- Function to ensure a student's NIS is unique per teacher
-CREATE OR REPLACE FUNCTION is_nis_unique_for_teacher(p_nis TEXT, p_teacher_id UUID)
-RETURNS BOOLEAN AS $$
-DECLARE
-    is_unique BOOLEAN;
-BEGIN
-    SELECT NOT EXISTS (
-        SELECT 1
-        FROM students s
-        JOIN classes c ON s.class_id = c.id
-        WHERE s.nis = p_nis AND c.teacher_id = p_teacher_id
-    ) INTO is_unique;
-    
-    RETURN is_unique;
-END;
-$$ LANGUAGE plpgsql;
-
--- Function to add a student, with a check for NIS uniqueness for the teacher
-CREATE OR REPLACE FUNCTION add_student_with_teacher_check(
-    p_class_id UUID,
-    p_nis TEXT,
-    p_name TEXT,
-    p_gender TEXT
-)
-RETURNS void AS $$
-DECLARE
-    v_teacher_id UUID;
-BEGIN
-    -- Get the teacher_id from the class
-    SELECT teacher_id INTO v_teacher_id FROM classes WHERE id = p_class_id;
-
-    -- Check if the NIS is unique for this teacher
-    IF NOT is_nis_unique_for_teacher(p_nis, v_teacher_id) THEN
-        RAISE EXCEPTION 'NIS already exists for this teacher';
-    END IF;
-
-    -- Insert the new student
-    INSERT INTO students (class_id, nis, name, gender, status)
-    VALUES (p_class_id, p_nis, p_name, p_gender, 'active');
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-
--- Function for account activation
-CREATE OR REPLACE FUNCTION activate_account_with_code(
-    activation_code_to_use TEXT,
-    user_id_to_activate UUID,
-    user_email_to_set TEXT
-)
-RETURNS void
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    code_id_to_update UUID;
-    code_is_used BOOLEAN;
-BEGIN
-    -- Find the code and lock the row for update to prevent race conditions
-    SELECT id, is_used INTO code_id_to_update, code_is_used
-    FROM public.activation_codes
-    WHERE code = activation_code_to_use
-    FOR UPDATE;
-
-    -- Check if the code exists
-    IF code_id_to_update IS NULL THEN
-        RAISE EXCEPTION 'Code not found';
-    END IF;
-
-    -- Check if the code has already been used
-    IF code_is_used THEN
-        RAISE EXCEPTION 'Code already used';
-    END IF;
-
-    -- Update the profiles table to set the user's account status to 'Pro'
-    UPDATE public.profiles
-    SET account_status = 'Pro'
-    WHERE id = user_id_to_activate;
-
-    -- Mark the activation code as used
-    UPDATE public.activation_codes
-    SET 
-        is_used = TRUE,
-        used_by = user_id_to_activate,
-        used_at = now(),
-        used_by_email = user_email_to_set
-    WHERE id = code_id_to_update;
-END;
-$$;
-
--- Function to handle user deletion, cascading to profiles
-create or replace function public.on_delete_user()
+-- This trigger automatically deletes a profile entry when a user is deleted.
+create or replace function public.handle_user_delete()
 returns trigger
 language plpgsql
 security definer set search_path = public
@@ -270,64 +123,171 @@ begin
 end;
 $$;
 
--- Trigger to call the user deletion function
 create or replace trigger on_auth_user_deleted
   after delete on auth.users
-  for each row execute procedure public.on_delete_user();
+  for each row execute procedure public.handle_user_delete();
+
+-- Function to activate account and redeem code
+create or replace function public.activate_account_with_code(
+    activation_code_to_use text,
+    user_id_to_activate uuid,
+    user_email_to_set text
+)
+returns void
+language plpgsql
+as $$
+declare
+    code_id uuid;
+begin
+    -- Check if the code exists and is not used, and get its ID
+    select id into code_id from public.activation_codes
+    where code = activation_code_to_use and is_used = false;
+
+    -- If no such code is found, raise an exception
+    if code_id is null then
+        raise exception 'Code not found or already used';
+    end if;
+    
+    -- Update the profiles table
+    update public.profiles
+    set account_status = 'Pro'
+    where id = user_id_to_activate;
+
+    -- Update the activation_codes table
+    update public.activation_codes
+    set 
+        is_used = true,
+        used_by = user_id_to_activate,
+        used_by_email = user_email_to_set,
+        used_at = now()
+    where id = code_id;
+
+end;
+$$;
 
 
---
--- Views for Reporting
---
--- Drop the existing views if they exist to avoid column name/order conflicts
-DROP VIEW IF EXISTS public.v_attendance_history;
-DROP VIEW IF EXISTS public.v_grade_history;
+-- Function to add student with teacher check
+create or replace function public.add_student_with_teacher_check(
+    p_class_id uuid,
+    p_nis text,
+    p_name text,
+    p_gender text
+)
+returns void
+language plpgsql
+as $$
+declare
+    v_teacher_id uuid;
+begin
+    -- Ensure the user is the teacher of the target class
+    select teacher_id into v_teacher_id from public.classes where id = p_class_id;
+    if v_teacher_id is null or v_teacher_id != auth.uid() then
+        raise exception 'User is not the teacher of the target class';
+    end if;
 
--- Recreate the attendance history view with the correct column definitions and joins
-CREATE OR REPLACE VIEW public.v_attendance_history AS
-SELECT
-  ah.id,
-  ah.date,
-  date_part('month', ah.date) as month,
-  ah.class_id,
-  c.name AS class_name,
-  ah.subject_id,
-  s.name AS subject_name,
-  ah.teacher_id,
-  ah.school_year_id,
-  ah.meeting_number,
-  ah.records,
-  (
-    SELECT json_object_agg(st.id, st.name)
-    FROM jsonb_to_recordset(ah.records) AS r(student_id uuid, status text)
-    JOIN students st ON st.id = r.student_id
-  ) AS student_names
-FROM
-  attendance_history ah
-  JOIN classes c ON ah.class_id = c.id
-  JOIN subjects s ON ah.subject_id = s.id;
+    -- Check if a student with the same NIS already exists for this teacher across all their classes
+    if exists (
+        select 1
+        from public.students s
+        join public.classes c on s.class_id = c.id
+        where c.teacher_id = v_teacher_id and s.nis = p_nis
+    ) then
+        raise exception 'NIS already exists for this teacher';
+    end if;
 
--- Recreate the grade history view with the correct column definitions and joins
-CREATE OR REPLACE VIEW public.v_grade_history AS
-SELECT
-  gh.id,
-  gh.date,
-  date_part('month', gh.date) as month,
-  gh.class_id,
-  c.name AS class_name,
-  gh.subject_id,
-  s.name AS subject_name,
-  s.kkm AS subject_kkm,
-  gh.teacher_id,
-  gh.school_year_id,
-  gh.assessment_type,
-  gh.records,
-  (
-    SELECT json_object_agg(st.id, st.name)
-    FROM jsonb_to_recordset(gh.records) AS r(student_id uuid, score numeric)
-    JOIN students st ON st.id = r.student_id
-  ) AS student_names
-FROM
-  grade_history gh
-  JOIN classes c ON gh.class_id = c.id
-  JOIN subjects s ON gh.subject_id = s.id;
+    -- Insert the new student
+    insert into public.students (class_id, nis, name, gender, status)
+    values (p_class_id, p_nis, p_name, p_gender, 'active');
+end;
+$$;
+
+
+-- Function to get all report data
+drop function if exists get_report_data(uuid, uuid, integer);
+create or replace function get_report_data(p_teacher_id uuid, p_school_year_id uuid, p_month integer)
+returns table (
+    attendance_history json[],
+    grade_history json[],
+    journal_entries json[],
+    all_students json[],
+    attendance_by_class json[]
+)
+language plpgsql
+as $$
+begin
+    return query
+    with filtered_attendance as (
+        select * from public.attendance_history ah
+        where ah.teacher_id = p_teacher_id
+          and (p_month is null or extract(month from ah.date) = p_month)
+          and (p_month is not null or ah.school_year_id = p_school_year_id)
+    ),
+    filtered_grades as (
+        select * from public.grade_history gh
+        where gh.teacher_id = p_teacher_id
+          and (p_month is null or extract(month from gh.date) = p_month)
+          and (p_month is not null or gh.school_year_id = p_school_year_id)
+    ),
+    filtered_journals as (
+        select * from public.journals j
+        where j.teacher_id = p_teacher_id
+          and (p_month is null or extract(month from j.date) = p_month)
+          and (p_month is not null or j.school_year_id = p_school_year_id)
+    ),
+    distinct_students as (
+        select distinct s.id, s.name, s.nis, c.id as class_id, c.name as class_name from public.students s
+        join public.classes c on s.class_id = c.id
+        where c.teacher_id = p_teacher_id
+    )
+    select
+        (select array_to_json(array_agg(row_to_json(t))) from (
+            select ah.id, ah.date, ah.meeting_number, ah.records, ah.class_id, ah.subject_id,
+                   c.name as class_name, sub.name as subject_name
+            from filtered_attendance ah
+            join public.classes c on ah.class_id = c.id
+            join public.subjects sub on ah.subject_id = sub.id
+        ) t) as attendance_history,
+
+        (select array_to_json(array_agg(row_to_json(t))) from (
+            select gh.id, gh.date, gh.assessment_type, gh.records, gh.class_id, gh.subject_id,
+                   c.name as class_name, sub.name as subject_name
+            from filtered_grades gh
+            join public.classes c on gh.class_id = c.id
+            join public.subjects sub on gh.subject_id = sub.id
+        ) t) as grade_history,
+
+        (select array_to_json(array_agg(row_to_json(t))) from (
+             select j.id, j.date, j.meeting_number, j.learning_objectives, j.class_id, j.subject_id,
+                   c.name as class_name, sub.name as subject_name
+            from filtered_journals j
+            join public.classes c on j.class_id = c.id
+            join public.subjects sub on j.subject_id = sub.id
+        ) t) as journal_entries,
+        
+        (select array_to_json(array_agg(row_to_json(t))) from (
+            select * from distinct_students
+        ) t) as all_students,
+
+        (select array_to_json(array_agg(row_to_json(t))) from (
+            select
+                c.id as class_id,
+                c.name as class_name,
+                json_agg(json_build_object('status', r.status, 'count', r.count)) as distribution
+            from
+                public.classes c
+            left join (
+                select
+                    ah.class_id,
+                    (jsonb_array_elements(ah.records)->>'status') as status,
+                    count(*) as count
+                from
+                    filtered_attendance ah
+                group by
+                    ah.class_id,
+                    status
+            ) r on c.id = r.class_id
+            where c.teacher_id = p_teacher_id
+            group by c.id, c.name
+        ) t) as attendance_by_class;
+end;
+$$;
