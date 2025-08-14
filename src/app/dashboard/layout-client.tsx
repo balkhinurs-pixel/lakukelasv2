@@ -91,6 +91,7 @@ const rosterNavItems = [
     { href: '/dashboard/roster/subjects', icon: BookOpen, label: 'Pengaturan Mapel' },
     { href: '/dashboard/roster/students', icon: Users2, label: 'Daftar Siswa' },
     { href: '/dashboard/roster/promotion', icon: ArrowRightLeft, label: 'Promosi & Mutasi' },
+    { href: '/dashboard/roster/alumni', icon: GraduationCap, label: 'Alumni' },
 ];
 
 

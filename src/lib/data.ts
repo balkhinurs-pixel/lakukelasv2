@@ -296,6 +296,48 @@ export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
     }));
 }
 
+export async function getActiveStudents(): Promise<Student[]> {
+    noStore();
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+        .from('students')
+        .select('*, classes!inner(name, teacher_id)')
+        .eq('classes.teacher_id', user.id)
+        .eq('status', 'active')
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.error("Error fetching active students:", error);
+        return [];
+    }
+    // @ts-ignore
+    return data.map(s => ({...s, class_name: s.classes?.name}));
+}
+
+export async function getAlumni(): Promise<Student[]> {
+    noStore();
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+        .from('students')
+        .select('*, classes!inner(name, teacher_id)')
+        .eq('classes.teacher_id', user.id)
+        .neq('status', 'active') // Fetch students who are NOT active
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.error("Error fetching alumni:", error);
+        return [];
+    }
+    // @ts-ignore
+    return data.map(s => ({...s, class_name: s.classes?.name}));
+}
+
 export async function getAllStudents(): Promise<Student[]> {
     noStore();
     const supabase = createClient();
