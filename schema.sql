@@ -1,334 +1,1154 @@
--- Users table
-create table profiles (
-  id uuid not null primary key,
-  created_at timestamp with time zone default now(),
-  full_name text not null,
-  avatar_url text,
-  nip text,
-  pangkat text,
-  jabatan text,
-  school_name text,
-  school_address text,
-  headmaster_name text,
-  headmaster_nip text,
-  school_logo_url text,
-  account_status text not null default 'Free', -- 'Free' or 'Pro'
-  role text not null default 'teacher', -- 'teacher' or 'admin'
-  email text unique,
-  active_school_year_id uuid references public.school_years(id) on delete set null
-);
+--
+-- PostgreSQL database dump
+--
 
--- Activation codes table
-create table activation_codes (
-  id uuid not null primary key default gen_random_uuid(),
-  code text not null unique,
-  is_used boolean not null default false,
-  used_by uuid references public.profiles(id) on delete set null,
-  used_at timestamp with time zone,
-  created_at timestamp with time zone default now()
-);
+-- Dumped from database version 15.1
+-- Dumped by pg_dump version 15.1 (Debian 15.1-1.pgdg110+1)
 
--- Classes table
-create table classes (
-  id uuid not null primary key default gen_random_uuid(),
-  name text not null,
-  teacher_id uuid not null references public.profiles(id) on delete cascade
-);
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
 
--- Subjects table
-create table subjects (
-  id uuid not null primary key default gen_random_uuid(),
-  name text not null,
-  kkm integer not null default 75,
-  teacher_id uuid not null references public.profiles(id) on delete cascade
-);
+--
+-- Name: pgsodium; Type: EXTENSION; Schema: -; Owner: -
+--
 
--- School Years table
-create table school_years (
-  id uuid not null primary key default gen_random_uuid(),
-  name text not null,
-  teacher_id uuid not null references public.profiles(id) on delete cascade
-);
-
--- Students table
-create table students (
-  id uuid not null primary key default gen_random_uuid(),
-  name text not null,
-  nis text not null,
-  gender text not null,
-  class_id uuid not null references public.classes(id) on delete cascade,
-  status text not null default 'active', -- 'active' or 'graduated'
-  -- unique constraint for a teacher's students' nis
-  constraint unique_teacher_student_nis unique (nis, class_id)
-);
-
--- Schedule table
-create table schedule (
-  id uuid not null primary key default gen_random_uuid(),
-  day text not null,
-  start_time time not null,
-  end_time time not null,
-  subject_id uuid not null references public.subjects(id) on delete cascade,
-  class_id uuid not null references public.classes(id) on delete cascade,
-  teacher_id uuid not null references public.profiles(id) on delete cascade
-);
-
--- Attendance History table
-create table attendance_history (
-    id uuid not null primary key default gen_random_uuid(),
-    date date not null,
-    class_id uuid not null references public.classes(id) on delete cascade,
-    subject_id uuid not null references public.subjects(id) on delete cascade,
-    school_year_id uuid references public.school_years(id) on delete set null,
-    meeting_number integer,
-    records jsonb, -- [{ "student_id": "uuid", "status": "Hadir" | "Sakit" | "Izin" | "Alpha" }]
-    teacher_id uuid not null references public.profiles(id) on delete cascade,
-    created_at timestamp with time zone default now(),
-    -- make sure each entry is unique for a given day, class, subject and meeting number
-    unique (date, class_id, subject_id, meeting_number)
-);
-
--- Grade History table
-create table grade_history (
-    id uuid not null primary key default gen_random_uuid(),
-    date date not null,
-    class_id uuid not null references public.classes(id) on delete cascade,
-    subject_id uuid not null references public.subjects(id) on delete cascade,
-    school_year_id uuid references public.school_years(id) on delete set null,
-    assessment_type text not null,
-    records jsonb, -- [{ "student_id": "uuid", "score": number }]
-    teacher_id uuid not null references public.profiles(id) on delete cascade,
-    created_at timestamp with time zone default now(),
-    unique(date, class_id, subject_id, assessment_type)
-);
-
--- Teaching Journal table
-create table journals (
-    id uuid not null primary key default gen_random_uuid(),
-    date date not null default now(),
-    class_id uuid not null references public.classes(id) on delete cascade,
-    subject_id uuid not null references public.subjects(id) on delete cascade,
-    school_year_id uuid references public.school_years(id) on delete set null,
-    meeting_number integer,
-    learning_objectives text not null,
-    learning_activities text not null,
-    assessment text,
-    reflection text,
-    teacher_id uuid not null references public.profiles(id) on delete cascade,
-    created_at timestamp with time zone default now()
-);
-
--- Personal Agenda table
-create table agendas (
-    id uuid not null primary key default gen_random_uuid(),
-    date date not null,
-    title text not null,
-    description text,
-    tag text,
-    color text default '#6b7280', -- default gray
-    start_time time,
-    end_time time,
-    teacher_id uuid not null references public.profiles(id) on delete cascade,
-    created_at timestamp with time zone default now()
-);
+CREATE EXTENSION IF NOT EXISTS "pgsodium" WITH SCHEMA "pgsodium";
 
 
--- RLS Policies
-alter table profiles enable row level security;
-create policy "Users can view their own profile" on profiles for select using (auth.uid() = id);
-create policy "Users can update their own profile" on profiles for update using (auth.uid() = id);
-create policy "Admins can manage all profiles" on profiles for all using ( (select role from profiles where id = auth.uid()) = 'admin' );
+--
+-- Name: pg_graphql; Type: EXTENSION; Schema: -; Owner: -
+--
 
-alter table activation_codes enable row level security;
-create policy "Admins can manage activation codes" on activation_codes for all using ( (select role from profiles where id = auth.uid()) = 'admin' );
-create policy "Users can view activation codes" on activation_codes for select using (auth.role() = 'authenticated');
+CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
 
-alter table classes enable row level security;
-create policy "Users can view their own classes" on classes for select using (auth.uid() = teacher_id);
-create policy "Users can manage their own classes" on classes for all using (auth.uid() = teacher_id);
 
-alter table subjects enable row level security;
-create policy "Users can view their own subjects" on subjects for select using (auth.uid() = teacher_id);
-create policy "Users can manage their own subjects" on subjects for all using (auth.uid() = teacher_id);
+--
+-- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
+--
 
-alter table school_years enable row level security;
-create policy "Users can view their own school years" on school_years for select using (auth.uid() = teacher_id);
-create policy "Users can manage their own school years" on school_years for all using (auth.uid() = teacher_id);
+CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
 
-alter table students enable row level security;
-create policy "Teachers can view their own students" on students for select using (auth.uid() = (select teacher_id from classes where id = students.class_id));
-create policy "Teachers can insert students into their own classes" on students for insert with check (auth.uid() = (select teacher_id from classes where id = students.class_id));
-create policy "Teachers can update their own students" on students for update using (auth.uid() = (select teacher_id from classes where id = students.class_id));
 
-alter table schedule enable row level security;
-create policy "Users can view their own schedule" on schedule for select using (auth.uid() = teacher_id);
-create policy "Users can manage their own schedule" on schedule for all using (auth.uid() = teacher_id);
+--
+-- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
+--
 
-alter table attendance_history enable row level security;
-create policy "Users can view their own attendance history" on attendance_history for select using (auth.uid() = teacher_id);
-create policy "Users can manage their own attendance history" on attendance_history for all using (auth.uid() = teacher_id);
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 
-alter table grade_history enable row level security;
-create policy "Users can view their own grade history" on grade_history for select using (auth.uid() = teacher_id);
-create policy "Users can manage their own grade history" on grade_history for all using (auth.uid() = teacher_id);
 
-alter table journals enable row level security;
-create policy "Users can view their own journals" on journals for select using (auth.uid() = teacher_id);
-create policy "Users can manage their own journals" on journals for all using (auth.uid() = teacher_id);
+--
+-- Name: pgjwt; Type: EXTENSION; Schema: -; Owner: -
+--
 
-alter table agendas enable row level security;
-create policy "Users can view their own agendas" on agendas for select using (auth.uid() = teacher_id);
-create policy "Users can manage their own agendas" on agendas for all using (auth.uid() = teacher_id);
+CREATE EXTENSION IF NOT EXISTS "pgjwt" WITH SCHEMA "extensions";
 
--- This trigger automatically creates a profile for a new user.
-create function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
+
+--
+-- Name: supabase_vault; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
+
+
+--
+-- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
+
+
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA "public" OWNER TO "postgres";
+
+--
+-- Name: activate_account_with_code("text", "uuid", "text"); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."activate_account_with_code"("activation_code_to_use" "text", "user_id_to_activate" "uuid", "user_email_to_set" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+DECLARE
+  code_id_to_use UUID;
+  is_code_used BOOLEAN;
+BEGIN
+  -- Find the code and lock the row for update
+  SELECT id, is_used INTO code_id_to_use, is_code_used
+  FROM public.activation_codes
+  WHERE code = activation_code_to_use
+  FOR UPDATE;
+
+  -- Check if the code exists
+  IF code_id_to_use IS NULL THEN
+    RAISE EXCEPTION 'Code not found';
+  END IF;
+
+  -- Check if the code has already been used
+  IF is_code_used = TRUE THEN
+    RAISE EXCEPTION 'Code already used';
+  END IF;
+
+  -- Update the profiles table
+  UPDATE public.profiles
+  SET account_status = 'Pro'
+  WHERE id = user_id_to_activate;
+
+  -- Mark the code as used
+  UPDATE public.activation_codes
+  SET 
+    is_used = TRUE,
+    used_by = user_id_to_activate,
+    used_at = NOW(),
+    used_by_email = user_email_to_set
+  WHERE id = code_id_to_use;
+
+END;
+$$;
+
+
+ALTER FUNCTION "public"."activate_account_with_code"("activation_code_to_use" "text", "user_id_to_activate" "uuid", "user_email_to_set" "text") OWNER TO "postgres";
+
+--
+-- Name: add_student_with_teacher_check("uuid", "text", "text", "text"); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."add_student_with_teacher_check"("p_class_id" "uuid", "p_nis" "text", "p_name" "text", "p_gender" "text") RETURNS "void"
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+    v_teacher_id UUID;
+    v_nis_exists BOOLEAN;
+BEGIN
+    -- Get the teacher_id associated with the provided p_class_id
+    SELECT teacher_id INTO v_teacher_id
+    FROM public.classes
+    WHERE id = p_class_id;
+
+    -- Check if the teacher_id matches the currently authenticated user
+    IF v_teacher_id != auth.uid() THEN
+        RAISE EXCEPTION 'Permission denied: You can only add students to your own classes.';
+    END IF;
+
+    -- Check if the NIS already exists for any student associated with this teacher
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.students s
+        JOIN public.classes c ON s.class_id = c.id
+        WHERE s.nis = p_nis AND c.teacher_id = auth.uid()
+    ) INTO v_nis_exists;
+
+    IF v_nis_exists THEN
+        RAISE EXCEPTION 'NIS already exists for this teacher';
+    END IF;
+
+    -- Insert the new student
+    INSERT INTO public.students (class_id, nis, name, gender, status)
+    VALUES (p_class_id, p_nis, p_name, p_gender, 'active');
+END;
+$$;
+
+
+ALTER FUNCTION "public"."add_student_with_teacher_check"("p_class_id" "uuid", "p_nis" "text", "p_name" "text", "p_gender" "text") OWNER TO "postgres";
+
+--
+-- Name: handle_new_user(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
 begin
-  insert into public.profiles (id, full_name, avatar_url, email)
-  values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url', new.email);
+  insert into public.profiles (id, full_name, avatar_url, email, role, account_status)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'avatar_url',
+    new.email,
+    'teacher',
+    'Free'
+  );
   return new;
 end;
 $$;
 
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-  
--- This trigger automatically deletes a profile when a user is deleted.
-create function public.handle_delete_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  delete from public.profiles where id = old.id;
+
+ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
+
+--
+-- Name: on_delete_user(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."on_delete_user"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  DELETE from public.profiles where id = old.id;
   return old;
-end;
-$$;
-
-create trigger on_auth_user_deleted
-  after delete on auth.users
-  for each row execute procedure public.handle_delete_user();
-
--- Function to activate account and use a code
-create or replace function activate_account_with_code(activation_code_to_use text, user_id_to_activate uuid, user_email_to_set text)
-returns void
-language plpgsql
-as $$
-declare
-  code_id uuid;
-begin
-  -- Find the code and lock it
-  select id into code_id from activation_codes
-  where code = activation_code_to_use and not is_used for update;
-
-  -- If code doesn't exist or is used, raise an error
-  if not found then
-    raise exception 'Kode aktivasi tidak valid atau sudah pernah digunakan.';
-  end if;
-  
-  -- Update profile status
-  update profiles
-  set account_status = 'Pro'
-  where id = user_id_to_activate;
-
-  -- Mark the code as used
-  update activation_codes
-  set is_used = true, used_by = user_id_to_activate, used_at = now()
-  where id = code_id;
-end;
+END;
 $$;
 
 
--- RPC to add student with teacher check
-create or replace function add_student_with_teacher_check(
-    p_class_id uuid,
-    p_nis text,
-    p_name text,
-    p_gender text
-)
-returns void
-language plpgsql
-as $$
-declare
-    v_teacher_id uuid;
-begin
-    -- Get the teacher_id from the class
-    select teacher_id into v_teacher_id
-    from public.classes
-    where id = p_class_id;
+ALTER FUNCTION "public"."on_delete_user"() OWNER TO "postgres";
 
-    -- Check if the calling user is the teacher of the class
-    if v_teacher_id is null or v_teacher_id != auth.uid() then
-        raise exception 'User is not authorized to add students to this class.';
-    end if;
+SET default_tablespace = '';
 
-    -- Check for duplicate NIS for the same teacher across all their classes
-    if exists (
-        select 1
-        from public.students s
-        join public.classes c on s.class_id = c.id
-        where c.teacher_id = v_teacher_id and s.nis = p_nis
-    ) then
-        raise exception 'NIS already exists for this teacher.';
-    end if;
+SET default_table_access_method = "heap";
 
-    -- Insert the new student
-    insert into public.students (class_id, nis, name, gender, status)
-    values (p_class_id, p_nis, p_name, p_gender, 'active');
-end;
-$$;
+--
+-- Name: activation_codes; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."activation_codes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "code" "text" NOT NULL,
+    "is_used" boolean DEFAULT false NOT NULL,
+    "used_by" "uuid",
+    "used_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "used_by_email" "text"
+);
 
 
--- Views for easier reporting
-create or replace view public.v_attendance_history as
-select
-    ah.id,
-    ah.date,
-    extract(month from ah.date) as month,
-    ah.class_id,
-    c.name as class_name,
-    ah.subject_id,
-    s.name as subject_name,
-    ah.school_year_id,
-    ah.meeting_number,
-    ah.records,
-    ah.teacher_id,
-    (select jsonb_object_agg(student.id, student.name)
-     from jsonb_to_recordset(ah.records) as item(student_id uuid),
-          public.students as student
-     where student.id = item.student_id) as student_names
-from
-    attendance_history ah
-join
-    classes c on ah.class_id = c.id
-join
-    subjects s on ah.subject_id = s.id;
+ALTER TABLE "public"."activation_codes" OWNER TO "postgres";
+
+--
+-- Name: agendas; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."agendas" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "date" "date" NOT NULL,
+    "title" "text" NOT NULL,
+    "description" "text",
+    "tag" "text",
+    "color" "text" DEFAULT '#808080'::"text",
+    "start_time" time without time zone,
+    "end_time" time without time zone,
+    "teacher_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
 
 
-create or replace view public.v_grade_history as
-select
-    gh.id,
-    gh.date,
-    extract(month from gh.date) as month,
-    gh.class_id,
-    c.name as class_name,
-    gh.subject_id,
-    s.name as subject_name,
-    gh.school_year_id,
-    gh.assessment_type,
-    gh.records,
-    gh.teacher_id,
-    (select jsonb_object_agg(student.id, student.name)
-     from jsonb_to_recordset(gh.records) as item(student_id uuid),
-          public.students as student
-     where student.id = item.student_id) as student_names
-from
-    grade_history gh
-join
-    classes c on gh.class_id = c.id
-join
-    subjects s on gh.subject_id = s.id;
+ALTER TABLE "public"."agendas" OWNER TO "postgres";
+
+--
+-- Name: attendance_history; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."attendance_history" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "date" "date" NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "subject_id" "uuid" NOT NULL,
+    "meeting_number" integer NOT NULL,
+    "records" "jsonb" NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "school_year_id" "uuid"
+);
+
+
+ALTER TABLE "public"."attendance_history" OWNER TO "postgres";
+
+--
+-- Name: classes; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."classes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."classes" OWNER TO "postgres";
+
+--
+-- Name: grade_history; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."grade_history" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "date" "date" NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "subject_id" "uuid" NOT NULL,
+    "assessment_type" "text" NOT NULL,
+    "records" "jsonb" NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "school_year_id" "uuid"
+);
+
+
+ALTER TABLE "public"."grade_history" OWNER TO "postgres";
+
+--
+-- Name: journals; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."journals" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "date" "date" NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "subject_id" "uuid" NOT NULL,
+    "meeting_number" integer,
+    "learning_objectives" "text" NOT NULL,
+    "learning_activities" "text" NOT NULL,
+    "assessment" "text",
+    "reflection" "text",
+    "teacher_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "school_year_id" "uuid"
+);
+
+
+ALTER TABLE "public"."journals" OWNER TO "postgres";
+
+--
+-- Name: profiles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."profiles" (
+    "id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "full_name" "text",
+    "avatar_url" "text",
+    "nip" "text",
+    "pangkat" "text",
+    "jabatan" "text",
+    "school_name" "text",
+    "school_address" "text",
+    "headmaster_name" "text",
+    "headmaster_nip" "text",
+    "school_logo_url" "text",
+    "account_status" "text" DEFAULT 'Free'::"text" NOT NULL,
+    "role" "text" DEFAULT 'teacher'::"text" NOT NULL,
+    "email" "text",
+    "active_school_year_id" "uuid"
+);
+
+
+ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+--
+-- Name: schedule; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."schedule" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "day" "text" NOT NULL,
+    "start_time" time without time zone NOT NULL,
+    "end_time" time without time zone NOT NULL,
+    "subject_id" "uuid" NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "schedule_day_check" CHECK (("day" = ANY (ARRAY['Senin'::"text", 'Selasa'::"text", 'Rabu'::"text", 'Kamis'::"text", 'Jumat'::"text", 'Sabtu'::"text", 'Minggu'::"text"])))
+);
+
+
+ALTER TABLE "public"."schedule" OWNER TO "postgres";
+
+--
+-- Name: school_years; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."school_years" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."school_years" OWNER TO "postgres";
+
+--
+-- Name: students; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."students" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "nis" "text" NOT NULL,
+    "gender" "text" NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "status" "text" DEFAULT 'active'::"text" NOT NULL,
+    CONSTRAINT "students_gender_check" CHECK ((("gender" = 'Laki-laki'::"text") OR ("gender" = 'Perempuan'::"text")))
+);
+
+
+ALTER TABLE "public"."students" OWNER TO "postgres";
+
+--
+-- Name: subjects; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."subjects" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "kkm" integer DEFAULT 75 NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."subjects" OWNER TO "postgres";
+
+--
+-- Name: v_attendance_history; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW "public"."v_attendance_history" AS
+ SELECT "ah"."id",
+    "ah"."date",
+    "ah"."class_id",
+    "ah"."subject_id",
+    "ah"."school_year_id",
+    "ah"."meeting_number",
+    "ah"."records",
+    "ah"."teacher_id",
+    "ah"."created_at",
+    "date_part"('month'::"text", "ah"."date") AS "month",
+    "c"."name" AS "class_name",
+    "s"."name" AS "subject_name",
+    ( SELECT "jsonb_object_agg"("st"."id", "st"."name") AS "jsonb_object_agg"
+           FROM ("jsonb_to_recordset"("ah"."records") "r"("student_id" "uuid", "status" "text")
+             JOIN "public"."students" "st" ON (("st"."id" = "r"."student_id")))) AS "student_names"
+   FROM (("public"."attendance_history" "ah"
+     JOIN "public"."classes" "c" ON (("ah"."class_id" = "c"."id")))
+     JOIN "public"."subjects" "s" ON (("ah"."subject_id" = "s"."id")));
+
+
+ALTER TABLE "public"."v_attendance_history" OWNER TO "postgres";
+
+--
+-- Name: v_grade_history; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW "public"."v_grade_history" AS
+ SELECT "gh"."id",
+    "gh"."date",
+    "gh"."class_id",
+    "gh"."subject_id",
+    "gh"."school_year_id",
+    "gh"."assessment_type",
+    "gh"."records",
+    "gh"."teacher_id",
+    "gh"."created_at",
+    "date_part"('month'::"text", "gh"."date") AS "month",
+    "c"."name" AS "class_name",
+    "s"."name" AS "subject_name",
+    ( SELECT "jsonb_object_agg"("st"."id", "st"."name") AS "jsonb_object_agg"
+           FROM ("jsonb_to_recordset"("gh"."records") "r"("student_id" "uuid", "score" "numeric")
+             JOIN "public"."students" "st" ON (("st"."id" = "r"."student_id")))) AS "student_names"
+   FROM (("public"."grade_history" "gh"
+     JOIN "public"."classes" "c" ON (("gh"."class_id" = "c"."id")))
+     JOIN "public"."subjects" "s" ON (("gh"."subject_id" = "s"."id")));
+
+
+ALTER TABLE "public"."v_grade_history" OWNER TO "postgres";
+
+--
+-- Name: activation_codes activation_codes_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."activation_codes"
+    ADD CONSTRAINT "activation_codes_code_key" UNIQUE ("code");
+
+
+--
+-- Name: activation_codes activation_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."activation_codes"
+    ADD CONSTRAINT "activation_codes_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: agendas agendas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."agendas"
+    ADD CONSTRAINT "agendas_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: attendance_history attendance_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."attendance_history"
+    ADD CONSTRAINT "attendance_history_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: classes classes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."classes"
+    ADD CONSTRAINT "classes_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: grade_history grade_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."grade_history"
+    ADD CONSTRAINT "grade_history_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: journals journals_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."journals"
+    ADD CONSTRAINT "journals_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: schedule schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."schedule"
+    ADD CONSTRAINT "schedule_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: school_years school_years_name_teacher_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."school_years"
+    ADD CONSTRAINT "school_years_name_teacher_id_key" UNIQUE ("name", "teacher_id");
+
+
+--
+-- Name: school_years school_years_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."school_years"
+    ADD CONSTRAINT "school_years_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: students students_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."students"
+    ADD CONSTRAINT "students_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: subjects subjects_name_teacher_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."subjects"
+    ADD CONSTRAINT "subjects_name_teacher_id_key" UNIQUE ("name", "teacher_id");
+
+
+--
+-- Name: subjects subjects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."subjects"
+    ADD CONSTRAINT "subjects_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: activation_codes activation_codes_used_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."activation_codes"
+    ADD CONSTRAINT "activation_codes_used_by_fkey" FOREIGN KEY ("used_by") REFERENCES "public"."profiles"("id");
+
+
+--
+-- Name: agendas agendas_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."agendas"
+    ADD CONSTRAINT "agendas_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: attendance_history attendance_history_class_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."attendance_history"
+    ADD CONSTRAINT "attendance_history_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: attendance_history attendance_history_school_year_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."attendance_history"
+    ADD CONSTRAINT "attendance_history_school_year_id_fkey" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE SET NULL;
+
+
+--
+-- Name: attendance_history attendance_history_subject_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."attendance_history"
+    ADD CONSTRAINT "attendance_history_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: attendance_history attendance_history_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."attendance_history"
+    ADD CONSTRAINT "attendance_history_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: classes classes_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."classes"
+    ADD CONSTRAINT "classes_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: grade_history grade_history_class_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."grade_history"
+    ADD CONSTRAINT "grade_history_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: grade_history grade_history_school_year_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."grade_history"
+    ADD CONSTRAINT "grade_history_school_year_id_fkey" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE SET NULL;
+
+
+--
+-- Name: grade_history grade_history_subject_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."grade_history"
+    ADD CONSTRAINT "grade_history_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: grade_history grade_history_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."grade_history"
+    ADD CONSTRAINT "grade_history_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: journals journals_class_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."journals"
+    ADD CONSTRAINT "journals_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: journals journals_school_year_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."journals"
+    ADD CONSTRAINT "journals_school_year_id_fkey" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE SET NULL;
+
+
+--
+-- Name: journals journals_subject_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."journals"
+    ADD CONSTRAINT "journals_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: journals journals_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."journals"
+    ADD CONSTRAINT "journals_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: profiles profiles_active_school_year_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_active_school_year_id_fkey" FOREIGN KEY ("active_school_year_id") REFERENCES "public"."school_years"("id") ON DELETE SET NULL;
+
+
+--
+-- Name: profiles profiles_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: schedule schedule_class_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."schedule"
+    ADD CONSTRAINT "schedule_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: schedule schedule_subject_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."schedule"
+    ADD CONSTRAINT "schedule_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: schedule schedule_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."schedule"
+    ADD CONSTRAINT "schedule_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: school_years school_years_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."school_years"
+    ADD CONSTRAINT "school_years_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: students students_class_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."students"
+    ADD CONSTRAINT "students_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: subjects subjects_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."subjects"
+    ADD CONSTRAINT "subjects_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: on_auth_user_deleted; Type: TRIGGER; Schema: auth; Owner: supabase_auth_admin
+--
+
+CREATE TRIGGER on_auth_user_deleted AFTER DELETE ON auth.users FOR EACH ROW EXECUTE FUNCTION public.on_delete_user();
+
+
+--
+-- Name: agendas; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."agendas" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: activation_codes; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."activation_codes" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: All can see codes; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "All can see codes" ON "public"."activation_codes" FOR SELECT USING (true);
+
+
+--
+-- Name: All users can view agendas; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "All users can view agendas" ON "public"."agendas" FOR SELECT USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: attendance_history; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."attendance_history" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: classes; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."classes" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: grade_history; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."grade_history" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: journals; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."journals" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: profiles; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: Public profiles are viewable by everyone.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public profiles are viewable by everyone." ON "public"."profiles" FOR SELECT USING (true);
+
+
+--
+-- Name: schedule; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."schedule" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: school_years; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."school_years" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: students; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."students" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: subjects; Type: ROW LEVEL SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."subjects" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: Teachers can delete their own agendas.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own agendas." ON "public"."agendas" FOR DELETE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can delete their own attendance records.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own attendance records." ON "public"."attendance_history" FOR DELETE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can delete their own classes.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own classes." ON "public"."classes" FOR DELETE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can delete their own grade records.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own grade records." ON "public"."grade_history" FOR DELETE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can delete their own journals.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own journals." ON "public"."journals" FOR DELETE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can delete their own schedule.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own schedule." ON "public"."schedule" FOR DELETE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can delete their own school years.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own school years." ON "public"."school_years" FOR DELETE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can delete their own students; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own students" ON "public"."students" FOR DELETE USING ((("auth"."uid"() = ( SELECT "classes"."teacher_id"
+   FROM "public"."classes"
+  WHERE ("classes"."id" = "students"."class_id")))));
+
+
+--
+-- Name: Teachers can delete their own subjects.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can delete their own subjects." ON "public"."subjects" FOR DELETE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can insert their own agendas.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own agendas." ON "public"."agendas" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can insert their own attendance records.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own attendance records." ON "public"."attendance_history" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can insert their own classes.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own classes." ON "public"."classes" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can insert their own grade records.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own grade records." ON "public"."grade_history" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can insert their own journals.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own journals." ON "public"."journals" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can insert their own schedule.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own schedule." ON "public"."schedule" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can insert their own school years.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own school years." ON "public"."school_years" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can insert their own students; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own students" ON "public"."students" FOR INSERT WITH CHECK ((("auth"."uid"() = ( SELECT "classes"."teacher_id"
+   FROM "public"."classes"
+  WHERE ("classes"."id" = "students"."class_id")))));
+
+
+--
+-- Name: Teachers can insert their own subjects.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can insert their own subjects." ON "public"."subjects" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can update their own agendas.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own agendas." ON "public"."agendas" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can update their own attendance records.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own attendance records." ON "public"."attendance_history" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can update their own classes.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own classes." ON "public"."classes" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can update their own grade records.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own grade records." ON "public"."grade_history" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can update their own journals.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own journals." ON "public"."journals" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can update their own schedule.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own schedule." ON "public"."schedule" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can update their own school years.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own school years." ON "public"."school_years" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can update their own students; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own students" ON "public"."students" FOR UPDATE USING ((("auth"."uid"() = ( SELECT "classes"."teacher_id"
+   FROM "public"."classes"
+  WHERE ("classes"."id" = "students"."class_id")))));
+
+
+--
+-- Name: Teachers can update their own subjects.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can update their own subjects." ON "public"."subjects" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can view their own attendance records.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can view their own attendance records." ON "public"."attendance_history" FOR SELECT USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can view their own classes.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can view their own classes." ON "public"."classes" FOR SELECT USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can view their own grade records.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can view their own grade records." ON "public"."grade_history" FOR SELECT USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can view their own journals.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can view their own journals." ON "public"."journals" FOR SELECT USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can view their own schedule.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can view their own schedule." ON "public"."schedule" FOR SELECT USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can view their own school years.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can view their own school years." ON "public"."school_years" FOR SELECT USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Teachers can view their own students; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can view their own students" ON "public"."students" FOR SELECT USING ((("auth"."uid"() = ( SELECT "classes"."teacher_id"
+   FROM "public"."classes"
+  WHERE ("classes"."id" = "students"."class_id")))));
+
+
+--
+-- Name: Teachers can view their own subjects.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Teachers can view their own subjects." ON "public"."subjects" FOR SELECT USING (("auth"."uid"() = "teacher_id"));
+
+
+--
+-- Name: Users can update their own profiles.; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can update their own profiles." ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id"));
+
+
+--
+-- Name: Enable read access for admin users; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Enable read access for admin users" ON "public"."activation_codes" FOR SELECT USING ((get_my_claim('user_role'::"text") = '"admin"'::"jsonb"));
+
+
+--
+-- Name: supabase_realtime; Type: PUBLICATION; Schema: -; Owner: -
+--
+
+CREATE PUBLICATION "supabase_realtime" FOR ALL TABLES;
+
+
+ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
+--
+-- Name: Triggers; Type: SECTION; Schema: -; Owner: -
+--
+
+--
+-- Name: on_auth_user_created; Type: TRIGGER; Schema: auth; Owner: supabase_auth_admin
+--
+
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+--
+-- Dbmate schema migrations
+--
+
+INSERT INTO public.schema_migrations (version) VALUES
+    ('20240813000000');

@@ -472,7 +472,9 @@ export async function getReportsData(schoolYearId?: string, month?: number) {
 
     const journalEntries = (journalsData || []).map(entry => ({
         ...entry,
+        // @ts-ignore
         className: entry.classes.name,
+        // @ts-ignore
         subjectName: entry.subjects.name
     }));
 
