@@ -421,7 +421,12 @@ export async function getReportsData(schoolYearIdParam?: string, monthParam?: nu
         return null;
     }
 
-    const result = data[0];
+    if (!data) {
+        console.error('No data returned from get_report_data RPC');
+        return null;
+    }
+
+    const result = data; // The function returns a single row object directly
 
     const attendanceHistory = (result.attendance_history || []).map((entry:any) => ({
         ...entry,
@@ -459,8 +464,8 @@ export async function getReportsData(schoolYearIdParam?: string, monthParam?: nu
 
     const studentPerformance = (result.student_performance || []).map((student:any) => ({
       ...student,
-      average_grade: parseFloat(student.average_grade.toFixed(1)),
-      attendance: parseFloat(student.attendance_percentage.toFixed(1)),
+      average_grade: parseFloat(student.average_grade ? student.average_grade.toFixed(1) : '0.0'),
+      attendance: parseFloat(student.attendance_percentage ? student.attendance_percentage.toFixed(1) : '0.0'),
     }));
 
     return {
