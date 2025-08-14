@@ -49,7 +49,7 @@
 - **Dasbor Laporan**: Visualisasi data dalam bentuk grafik (grafik batang dan diagram lingkaran) untuk kehadiran dan performa umum.
 - **Analisis Performa Siswa**: Tabel cerdas yang mengkategorikan siswa berdasarkan performa (e.g., Sangat Baik, Stabil, Butuh Perhatian) berdasarkan nilai dan kehadiran.
 - **Laporan Detail**: Tabel laporan terperinci untuk Kehadiran, Nilai, dan Jurnal dengan opsi filter.
-- **Unduh PDF (Fitur Premium)**: Kemampuan untuk mengunduh semua laporan dalam format PDF profesional lengkap dengan kop surat sekolah.
+- **Unduh PDF (Fitur Pro)**: Kemampuan untuk mengunduh semua laporan dalam format PDF profesional lengkap dengan kop surat sekolah.
 
 ### 2.6. Manajemen Rombongan Belajar (Rombel)
 - **Pengaturan Siswa**: Mengelola data induk siswa per kelas.
@@ -82,6 +82,7 @@
 
 - **Dasbor Admin**: Ringkasan statistik penggunaan aplikasi secara keseluruhan (total pengguna, jumlah akun Pro yang aktif).
 - **Manajemen Pengguna**: Melihat daftar pengguna (guru) dan mengelola status aktivasi mereka secara manual.
+- **Manajemen Kode Aktivasi**: Membuat kode aktivasi unik untuk didistribusikan atau dijual.
 - **Analitik Aplikasi**: Grafik pertumbuhan pengguna dan tingkat adopsi fitur.
 
 ---

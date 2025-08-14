@@ -171,6 +171,6 @@ Aplikasi ini memiliki panel admin terpisah untuk mengelola pengguna dan kode akt
 4.  **Akses Panel Admin**:
     -   Sekarang, logout dari aplikasi jika Anda sedang login.
     -   Login kembali menggunakan akun yang baru saja Anda atur sebagai admin.
-    -   Setelah login, Anda akan berada di dasbor guru. Di menu navigasi samping, akan ada tautan untuk beralih ke panel admin, atau Anda bisa mengaksesnya langsung dengan menambahkan `/admin` ke URL (contoh: `https://lakukelas-anda.vercel.app/admin`).
+    -   Setelah login, Anda akan berada di dasbor admin. Di menu navigasi samping, akan ada tautan untuk beralih ke panel guru, atau Anda bisa mengaksesnya langsung dengan menambahkan `/admin` ke URL (contoh: `https://lakukelas-anda.vercel.app/admin`).
 
     

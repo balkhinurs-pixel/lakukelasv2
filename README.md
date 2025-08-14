@@ -1,4 +1,4 @@
-per# Product Requirements Document (PRD) - Lakukelas
+# Product Requirements Document (PRD) - Lakukelas
 
 ## 1. Visi & Misi
 
@@ -49,7 +49,7 @@ per# Product Requirements Document (PRD) - Lakukelas
 - **Dasbor Laporan**: Visualisasi data dalam bentuk grafik (grafik batang dan diagram lingkaran) untuk kehadiran dan performa umum.
 - **Analisis Performa Siswa**: Tabel cerdas yang mengkategorikan siswa berdasarkan performa (e.g., Sangat Baik, Stabil, Butuh Perhatian) berdasarkan nilai dan kehadiran.
 - **Laporan Detail**: Tabel laporan terperinci untuk Kehadiran, Nilai, dan Jurnal dengan opsi filter.
-- **Unduh PDF (Fitur Premium)**: Kemampuan untuk mengunduh semua laporan dalam format PDF profesional lengkap dengan kop surat sekolah.
+- **Unduh PDF (Fitur Pro)**: Kemampuan untuk mengunduh semua laporan dalam format PDF profesional lengkap dengan kop surat sekolah.
 
 ### 2.6. Manajemen Rombongan Belajar (Rombel)
 - **Pengaturan Siswa**: Mengelola data induk siswa per kelas.
@@ -65,26 +65,25 @@ per# Product Requirements Document (PRD) - Lakukelas
 
 ---
 
-## 3. Fitur Langganan & Monetisasi
+## 3. Fitur Aktivasi Akun (Monetisasi)
 
-- **Model Freemium**: Aplikasi menawarkan paket Gratis dan Premium.
+- **Model Freemium**: Aplikasi menawarkan paket Gratis dan Pro.
 - **Paket Gratis**:
     - Fungsionalitas inti dengan batasan (e.g., jumlah kelas, siswa per kelas).
-- **Paket Premium (Semester & Tahunan)**:
+- **Paket Pro (Aktivasi Sekali)**:
+    - Didapatkan dengan memasukkan kode aktivasi yang valid.
     - Membuka semua batasan (kelas, siswa, entri tanpa batas).
     - Mengaktifkan fitur eksklusif seperti Impor/Ekspor data siswa dan Unduh Laporan PDF.
-- **Halaman Langganan**: Antarmuka untuk memilih dan membeli paket langganan.
-- **Integrasi Pembayaran**: Alur kerja pembayaran terintegrasi dengan payment gateway (Duitku).
+- **Halaman Aktivasi**: Antarmuka untuk memasukkan kode aktivasi dan beralih ke Akun Pro.
 
 ---
 
 ## 4. Panel Admin
 
-- **Dasbor Admin**: Ringkasan statistik penggunaan aplikasi secara keseluruhan (total pengguna, pendapatan, langganan aktif).
-- **Manajemen Pengguna**: Melihat daftar pengguna (guru) dan mengelola status langganan mereka secara manual.
-- **Analitik Aplikasi**: Grafik pertumbuhan pengguna dan distribusi langganan.
-- **Manajemen Harga**: Mengatur harga untuk paket langganan yang ditampilkan di halaman Subscription.
-- **Manajemen Kupon**: Membuat dan mengelola kupon diskon untuk promosi.
+- **Dasbor Admin**: Ringkasan statistik penggunaan aplikasi secara keseluruhan (total pengguna, jumlah akun Pro yang aktif).
+- **Manajemen Pengguna**: Melihat daftar pengguna (guru) dan mengelola status aktivasi mereka secara manual.
+- **Manajemen Kode Aktivasi**: Membuat kode aktivasi unik untuk didistribusikan atau dijual.
+- **Analitik Aplikasi**: Grafik pertumbuhan pengguna dan tingkat adopsi fitur.
 
 ---
 

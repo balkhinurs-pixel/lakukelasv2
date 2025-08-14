@@ -48,7 +48,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Edit, Trash2, Loader2, Calendar, Mail, User, Users } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Loader2, Calendar, Mail, User, Users, KeyRound } from "lucide-react";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
@@ -191,8 +191,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                 <DropdownMenuItem onSelect={() => handleManageClick(user)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Ubah Status
+                                    <KeyRound className="mr-2 h-4 w-4" />
+                                    Ubah Status Aktivasi
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <AlertDialogTrigger asChild>
@@ -259,8 +259,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                             <DropdownMenuItem onSelect={() => handleManageClick(user)}>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                Ubah Status
+                                                <KeyRound className="mr-2 h-4 w-4" />
+                                                Ubah Status Aktivasi
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <AlertDialogTrigger asChild>
@@ -305,7 +305,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
             <DialogContent className="dialog-content-mobile mobile-safe-area">
                 <DialogHeader>
-                    <DialogTitle>Kelola Status Pengguna</DialogTitle>
+                    <DialogTitle>Kelola Status Aktivasi</DialogTitle>
                     <DialogDescription>
                         Ubah status aktivasi untuk <span className="font-semibold">{selectedUser?.full_name}</span>.
                     </DialogDescription>
