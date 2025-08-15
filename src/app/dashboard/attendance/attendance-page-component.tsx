@@ -4,7 +4,7 @@
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
 
@@ -55,35 +55,61 @@ import { getStudentsByClass } from "@/lib/data-client";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const attendanceOptions: { value: AttendanceRecord['status'], label: string, className: string, selectedClassName: string }[] = [
-    { value: 'Hadir', label: 'H', className: 'border-green-500 text-green-600', selectedClassName: 'bg-green-600 text-white hover:bg-green-700' },
-    { value: 'Sakit', label: 'S', className: 'border-yellow-500 text-yellow-600', selectedClassName: 'bg-yellow-500 text-white hover:bg-yellow-600' },
-    { value: 'Izin', label: 'I', className: 'border-blue-500 text-blue-600', selectedClassName: 'bg-blue-500 text-white hover:bg-blue-600' },
-    { value: 'Alpha', label: 'A', className: 'border-red-500 text-red-600', selectedClassName: 'bg-red-500 text-white hover:bg-red-600' },
+const attendanceOptions: { value: AttendanceRecord['status'], label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
+    { 
+        value: 'Hadir', 
+        label: 'Hadir', 
+        icon: <CheckCircle2 className="h-4 w-4" />,
+        className: 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300', 
+        selectedClassName: 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600 shadow-md shadow-emerald-200' 
+    },
+    { 
+        value: 'Sakit', 
+        label: 'Sakit', 
+        icon: <AlertCircle className="h-4 w-4" />,
+        className: 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:border-amber-300', 
+        selectedClassName: 'bg-amber-500 text-white hover:bg-amber-600 border-amber-500 shadow-md shadow-amber-200' 
+    },
+    { 
+        value: 'Izin', 
+        label: 'Izin', 
+        icon: <Clock className="h-4 w-4" />,
+        className: 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300', 
+        selectedClassName: 'bg-blue-500 text-white hover:bg-blue-600 border-blue-500 shadow-md shadow-blue-200' 
+    },
+    { 
+        value: 'Alpha', 
+        label: 'Alpha', 
+        icon: <XCircle className="h-4 w-4" />,
+        className: 'border-red-200 text-red-700 bg-red-50 hover:bg-red-100 hover:border-red-300', 
+        selectedClassName: 'bg-red-500 text-white hover:bg-red-600 border-red-500 shadow-md shadow-red-200' 
+    },
 ];
 
 
 // Isolated component to prevent re-rendering the entire list on a single change
 const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: AttendanceRecord['status'], onChange: (studentId: string, status: AttendanceRecord['status']) => void }) => {
     return (
-        <div className="flex gap-1 justify-end">
+        <div className="flex flex-wrap gap-2 justify-end">
         {attendanceOptions.map(opt => (
             <Button
                 key={opt.value}
                 type="button"
                 variant="outline"
-                size="icon"
+                size="sm"
                 onClick={() => onChange(studentId, opt.value)}
                 className={cn(
-                    "size-8 rounded-md border text-xs font-semibold",
-                    "focus-visible:ring-0 focus-visible:ring-offset-0", // Disable focus ring
-                    "hover:bg-inherit hover:text-inherit", // Prevent hover effects on text and bg
+                    "h-9 px-3 rounded-lg border text-sm font-medium transition-all duration-200 ease-in-out",
+                    "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-current/20",
+                    "active:scale-95 transform",
                     value === opt.value
-                        ? opt.selectedClassName
+                        ? `${opt.selectedClassName} scale-105`
                         : `${opt.className}`
                 )}
             >
-                {opt.label}
+                <span className="mr-1.5">{opt.icon}</span>
+                <span className="hidden sm:inline">{opt.label}</span>
+                <span className="sm:hidden">{opt.label.charAt(0)}</span>
             </Button>
         ))}
         </div>
@@ -251,24 +277,38 @@ export default function AttendancePageComponent({
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{editingId ? 'Ubah Presensi' : 'Input Presensi'}</CardTitle>
-          <CardDescription>
-            {editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mencatat presensi siswa.'}
-          </CardDescription>
+    <div className="space-y-6 p-1">
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "p-2 rounded-xl",
+              editingId ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
+            )}>
+              {editingId ? <Edit className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+            </div>
+            <div>
+              <CardTitle className="text-xl">{editingId ? 'Ubah Presensi' : 'Input Presensi'}</CardTitle>
+              <CardDescription className="mt-1">
+                {editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mencatat presensi siswa.'}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="space-y-2 lg:col-span-2">
-                <Label>Tahun Ajaran Aktif</Label>
-                <Input value={activeSchoolYearName} disabled className="font-semibold"/>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <div className="space-y-2 xl:col-span-2">
+                <Label className="text-sm font-medium text-slate-700">Tahun Ajaran Aktif</Label>
+                <Input 
+                  value={activeSchoolYearName} 
+                  disabled 
+                  className="font-semibold bg-slate-50 border-slate-200 text-slate-600"
+                />
             </div>
             <div className="space-y-2">
-                <Label>Kelas</Label>
+                <Label className="text-sm font-medium text-slate-700">Kelas</Label>
                 <Select onValueChange={setSelectedClassId} value={selectedClassId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                     <SelectValue placeholder="Pilih kelas" />
                   </SelectTrigger>
                   <SelectContent>
@@ -281,9 +321,9 @@ export default function AttendancePageComponent({
                 </Select>
             </div>
              <div className="space-y-2">
-                <Label>Mata Pelajaran</Label>
+                <Label className="text-sm font-medium text-slate-700">Mata Pelajaran</Label>
                  <Select onValueChange={setSelectedSubjectId} value={selectedSubjectId}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                         <SelectValue placeholder="Pilih mata pelajaran" />
                     </SelectTrigger>
                     <SelectContent>
@@ -295,14 +335,14 @@ export default function AttendancePageComponent({
                     </SelectContent>
                 </Select>
             </div>
-            <div className="space-y-2">
-                <Label>Tanggal</Label>
+            <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                <Label className="text-sm font-medium text-slate-700">Tanggal</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20",
                         !date && "text-muted-foreground"
                       )}
                     >
@@ -320,34 +360,76 @@ export default function AttendancePageComponent({
                   </PopoverContent>
                 </Popover>
             </div>
-             <div className="space-y-2">
-                <Label htmlFor="pertemuan">Pertemuan Ke</Label>
-                <Input id="pertemuan" type="number" placeholder="e.g. 5" value={meetingNumber} onChange={(e) => setMeetingNumber(Number(e.target.value))}/>
+             <div className="space-y-2 sm:col-span-1 lg:col-span-1 xl:col-span-1">
+                <Label htmlFor="pertemuan" className="text-sm font-medium text-slate-700">Pertemuan Ke</Label>
+                <Input 
+                  id="pertemuan" 
+                  type="number" 
+                  placeholder="e.g. 5" 
+                  value={meetingNumber} 
+                  onChange={(e) => setMeetingNumber(Number(e.target.value))}
+                  className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+                />
             </div>
           </div>
         </CardContent>
       </Card>
 
       {selectedClassId && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Daftar Siswa - {selectedClass?.name} ({students.length > 0 ? `${students.length} siswa` : '...'})</CardTitle>
-            <CardDescription>Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.</CardDescription>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">
+                  Daftar Siswa - {selectedClass?.name}
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    ({students.length > 0 ? `${students.length} siswa` : '...'})
+                  </span>
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {loading && students.length === 0 ? (
                 <div className="text-center text-muted-foreground py-12">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-                    <p className="mt-2">Memuat data siswa...</p>
+                    <div className="flex flex-col items-center gap-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                      <div className="space-y-2">
+                        <p className="font-medium">Memuat data siswa...</p>
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        </div>
+                      </div>
+                    </div>
                 </div>
             ) : students.length > 0 ? (
                 <>
                     {/* Mobile View */}
-                    <div className="md:hidden space-y-4">
+                    <div className="md:hidden space-y-3">
                         {students.map((student, index) => (
-                            <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                                <p><span className="font-bold mr-2">{index + 1}.</span>{student.name}</p>
-                                <div className="border-t pt-3 mt-3">
+                            <div key={student.id} className="group relative border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-all duration-200 hover:border-slate-300">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-semibold">
+                                        {index + 1}
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="font-semibold text-slate-900 truncate">{student.name}</p>
+                                        <p className="text-xs text-slate-500 mt-0.5">Status kehadiran</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100">
                                    <AttendanceInput 
                                         studentId={student.id} 
                                         value={attendance.get(student.id) || 'Hadir'}
@@ -359,20 +441,24 @@ export default function AttendancePageComponent({
                     </div>
 
                     {/* Desktop View */}
-                    <div className="hidden md:block overflow-x-auto">
+                    <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
                     <Table>
                         <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[50px]">No.</TableHead>
-                            <TableHead>Nama Siswa</TableHead>
-                            <TableHead className="text-right">Status Kehadiran</TableHead>
+                        <TableRow className="bg-slate-50 hover:bg-slate-50">
+                            <TableHead className="w-[80px] text-center font-semibold text-slate-700">No.</TableHead>
+                            <TableHead className="font-semibold text-slate-700">Nama Siswa</TableHead>
+                            <TableHead className="text-right font-semibold text-slate-700">Status Kehadiran</TableHead>
                         </TableRow>
                         </TableHeader>
                         <TableBody>
                         {students.map((student, index) => (
-                            <TableRow key={student.id}>
-                            <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                            <TableCell className="font-medium">{student.name}</TableCell>
+                            <TableRow key={student.id} className="hover:bg-slate-50/50 transition-colors duration-150">
+                            <TableCell className="text-center">
+                              <div className="w-6 h-6 bg-gradient-to-br from-slate-500 to-slate-600 rounded-md flex items-center justify-center text-white text-xs font-semibold mx-auto">
+                                {index + 1}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium text-slate-900">{student.name}</TableCell>
                             <TableCell className="text-right">
                                 <AttendanceInput 
                                     studentId={student.id} 
@@ -387,61 +473,132 @@ export default function AttendancePageComponent({
                     </div>
                 </>
             ) : (
-                <div className="text-center text-muted-foreground py-12">
-                    <p>Belum ada siswa di kelas ini.</p>
-                    <p className="text-sm">Silakan tambahkan siswa di menu Manajemen Rombel.</p>
+                <div className="text-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="p-4 rounded-full bg-slate-100">
+                        <Users className="h-8 w-8 text-slate-400" />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="font-medium text-slate-700">Belum ada siswa di kelas ini</p>
+                        <p className="text-sm text-slate-500">Silakan tambahkan siswa di menu Manajemen Rombel</p>
+                      </div>
+                    </div>
                 </div>
             )}
           </CardContent>
           {students.length > 0 && (
-            <CardFooter className="border-t px-6 py-4 justify-between flex-wrap gap-2">
-              <Button onClick={handleSubmit} disabled={loading || !meetingNumber}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}
-              </Button>
-              {editingId && <Button variant="ghost" onClick={() => resetForm(students)} disabled={loading}>Batal Mengubah</Button>}
+            <CardFooter className="border-t border-slate-200 bg-slate-50/50 px-6 py-4 rounded-b-xl">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:justify-between sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button 
+                    onClick={handleSubmit} 
+                    disabled={loading || !meetingNumber}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                  >
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}
+                  </Button>
+                  {editingId && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => resetForm(students)} 
+                      disabled={loading}
+                      className="border-slate-300 hover:bg-slate-50"
+                    >
+                      Batal Mengubah
+                    </Button>
+                  )}
+                </div>
+                <div className="text-sm text-slate-600">
+                  Total siswa: <span className="font-semibold">{students.length}</span>
+                </div>
+              </div>
             </CardFooter>
           )}
         </Card>
       )}
 
       {selectedClassId && (
-        <Card>
-          <CardHeader>
-              <CardTitle>Riwayat Presensi</CardTitle>
-              <CardDescription>Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.</CardDescription>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-purple-100 text-purple-600">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Riwayat Presensi</CardTitle>
+                <CardDescription className="mt-1">
+                  Daftar presensi yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
              {filteredHistory.length > 0 ? (
             <>
               {/* Mobile View */}
-              <div className="md:hidden space-y-4">
+              <div className="md:hidden space-y-3">
                 {filteredHistory.map(entry => {
                   const summary = entry.records.reduce((acc, record) => {
                       acc[record.status] = (acc[record.status] || 0) + 1;
                       return acc;
                   }, {} as Record<AttendanceRecord['status'], number>);
                   return (
-                    <div key={entry.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                      <div>
-                          <p className="font-semibold">{entry.className} - {entry.subjectName}</p>
-                          <p className="text-sm text-muted-foreground">{format(parseISO(entry.date), 'EEEE, dd MMMM yyyy', { locale: id })} (Pertemuan ke-{entry.meeting_number})</p>
-                      </div>
-                      <div className="border-t pt-3 mt-3 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Hadir: {summary.Hadir || 0}</span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Sakit: {summary.Sakit || 0}</span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Izin: {summary.Izin || 0}</span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Alpha: {summary.Alpha || 0}</span>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                          <Button variant="secondary" size="sm" className="w-full" onClick={() => handleViewDetails(entry)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Detail
-                          </Button>
-                          <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(entry)} disabled={loading}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Ubah
-                          </Button>
+                    <div key={entry.id} className="group border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-all duration-200 hover:border-slate-300">
+                      <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-slate-900 truncate">{entry.className} - {entry.subjectName}</p>
+                              <p className="text-sm text-slate-500 mt-1">
+                                {format(parseISO(entry.date), 'EEEE, dd MMMM yyyy', { locale: id })}
+                              </p>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                Pertemuan ke-{entry.meeting_number}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50">
+                              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                              <div className="text-sm">
+                                <span className="font-medium text-emerald-800">Hadir</span>
+                                <span className="ml-1 text-emerald-600">{summary.Hadir || 0}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50">
+                              <AlertCircle className="h-4 w-4 text-amber-600" />
+                              <div className="text-sm">
+                                <span className="font-medium text-amber-800">Sakit</span>
+                                <span className="ml-1 text-amber-600">{summary.Sakit || 0}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50">
+                              <Clock className="h-4 w-4 text-blue-600" />
+                              <div className="text-sm">
+                                <span className="font-medium text-blue-800">Izin</span>
+                                <span className="ml-1 text-blue-600">{summary.Izin || 0}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50">
+                              <XCircle className="h-4 w-4 text-red-600" />
+                              <div className="text-sm">
+                                <span className="font-medium text-red-800">Alpha</span>
+                                <span className="ml-1 text-red-600">{summary.Alpha || 0}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 pt-2">
+                              <Button variant="secondary" size="sm" className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => handleViewDetails(entry)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Detail
+                              </Button>
+                              <Button variant="outline" size="sm" className="flex-1 border-slate-300 hover:bg-slate-50" onClick={() => handleEdit(entry)} disabled={loading}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Ubah
+                              </Button>
+                          </div>
                       </div>
                     </div>
                   )
@@ -449,15 +606,15 @@ export default function AttendancePageComponent({
               </div>
             
               {/* Desktop View */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
                   <Table>
                       <TableHeader>
-                          <TableRow>
-                              <TableHead>Tanggal</TableHead>
-                              <TableHead>Info</TableHead>
-                              <TableHead>Pertemuan Ke</TableHead>
-                              <TableHead>Ringkasan</TableHead>
-                              <TableHead className="text-right">Aksi</TableHead>
+                          <TableRow className="bg-slate-50 hover:bg-slate-50">
+                              <TableHead className="font-semibold text-slate-700">Tanggal</TableHead>
+                              <TableHead className="font-semibold text-slate-700">Info</TableHead>
+                              <TableHead className="font-semibold text-slate-700">Pertemuan</TableHead>
+                              <TableHead className="font-semibold text-slate-700">Ringkasan</TableHead>
+                              <TableHead className="text-right font-semibold text-slate-700">Aksi</TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -467,30 +624,61 @@ export default function AttendancePageComponent({
                                   return acc;
                               }, {} as Record<AttendanceRecord['status'], number>);
                               return (
-                                   <TableRow key={entry.id}>
-                                      <TableCell>{format(parseISO(entry.date), 'EEEE, dd MMM yyyy', { locale: id })}</TableCell>
-                                      <TableCell>
-                                          <div className="font-medium">{entry.className}</div>
-                                          <div className="text-xs text-muted-foreground">{entry.subjectName}</div>
+                                   <TableRow key={entry.id} className="hover:bg-slate-50/50 transition-colors duration-150">
+                                      <TableCell className="font-medium text-slate-900">
+                                        {format(parseISO(entry.date), 'EEEE, dd MMM yyyy', { locale: id })}
                                       </TableCell>
-                                      <TableCell>{entry.meeting_number}</TableCell>
-                                      <TableCell className="text-xs">
+                                      <TableCell>
+                                          <div className="font-medium text-slate-900">{entry.className}</div>
+                                          <div className="text-sm text-slate-500">{entry.subjectName}</div>
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-700">
+                                          {entry.meeting_number}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell>
                                           <div className="flex flex-wrap gap-1">
-                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">H: {summary.Hadir || 0}</span>
-                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">S: {summary.Sakit || 0}</span>
-                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">I: {summary.Izin || 0}</span>
-                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">A: {summary.Alpha || 0}</span>
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800">
+                                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                                              {summary.Hadir || 0}
+                                            </span>
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-800">
+                                              <AlertCircle className="w-3 h-3 mr-1" />
+                                              {summary.Sakit || 0}
+                                            </span>
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                              <Clock className="w-3 h-3 mr-1" />
+                                              {summary.Izin || 0}
+                                            </span>
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-800">
+                                              <XCircle className="w-3 h-3 mr-1" />
+                                              {summary.Alpha || 0}
+                                            </span>
                                           </div>
                                       </TableCell>
                                       <TableCell className="text-right">
-                                         <Button variant="ghost" size="sm" onClick={() => handleViewDetails(entry)}>
-                                            <Eye className="mr-2 h-4 w-4" />
-                                            Detail
-                                        </Button>
-                                          <Button variant="outline" size="sm" onClick={() => handleEdit(entry)} disabled={loading}>
+                                        <div className="flex justify-end gap-2">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={() => handleViewDetails(entry)}
+                                            className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                                          >
+                                              <Eye className="mr-2 h-4 w-4" />
+                                              Detail
+                                          </Button>
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={() => handleEdit(entry)} 
+                                            disabled={loading}
+                                            className="border-slate-300 hover:bg-slate-50 text-slate-700"
+                                          >
                                               <Edit className="mr-2 h-4 w-4" />
                                               Ubah
                                           </Button>
+                                        </div>
                                       </TableCell>
                                   </TableRow>
                               )
@@ -500,8 +688,16 @@ export default function AttendancePageComponent({
               </div>
             </>
              ) : (
-                  <div className="text-center text-muted-foreground py-12">
-                      <p>Belum ada riwayat presensi yang tersimpan.</p>
+                  <div className="text-center py-12">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="p-4 rounded-full bg-slate-100">
+                          <Clock className="h-8 w-8 text-slate-400" />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="font-medium text-slate-700">Belum ada riwayat presensi</p>
+                          <p className="text-sm text-slate-500">Riwayat presensi yang sudah disimpan akan muncul di sini</p>
+                        </div>
+                      </div>
                   </div>
               )}
           </CardContent>
@@ -509,39 +705,61 @@ export default function AttendancePageComponent({
       )}
 
        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="dialog-content-mobile mobile-safe-area">
-            <DialogHeader>
-            <DialogTitle>Detail Presensi: {viewingEntry?.className}</DialogTitle>
-            <DialogDescription>
-                {viewingEntry?.subjectName} - {viewingEntry ? format(parseISO(viewingEntry.date), "EEEE, dd MMMM yyyy", { locale: id }) : ''}
-            </DialogDescription>
+        <DialogContent className="dialog-content-mobile mobile-safe-area max-w-2xl">
+            <DialogHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
+                  <Eye className="h-5 w-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl">Detail Presensi: {viewingEntry?.className}</DialogTitle>
+                  <DialogDescription className="mt-1">
+                      {viewingEntry?.subjectName} - {viewingEntry ? format(parseISO(viewingEntry.date), "EEEE, dd MMMM yyyy", { locale: id }) : ''}
+                  </DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh] pr-2">
                 {viewingEntry && students.length > 0 ? (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead>Nama Siswa</TableHead>
-                            <TableHead className="text-right">Status</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {viewingEntry.records.map(record => (
-                                <TableRow key={record.studentId}>
-                                    <TableCell>{getStudentName(record.studentId)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Badge variant={getStatusBadgeVariant(record.status)} className={getStatusBadgeClass(record.status)}>
-                                            {record.status}
-                                        </Badge>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                      <Table>
+                          <TableHeader>
+                              <TableRow className="bg-slate-50 hover:bg-slate-50">
+                              <TableHead className="font-semibold text-slate-700">Nama Siswa</TableHead>
+                              <TableHead className="text-right font-semibold text-slate-700">Status</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {viewingEntry.records.map(record => (
+                                  <TableRow key={record.studentId} className="hover:bg-slate-50/50 transition-colors duration-150">
+                                      <TableCell className="font-medium text-slate-900">{getStudentName(record.studentId)}</TableCell>
+                                      <TableCell className="text-right">
+                                          <Badge 
+                                            variant={getStatusBadgeVariant(record.status)} 
+                                            className={cn(
+                                              getStatusBadgeClass(record.status),
+                                              "px-3 py-1 text-sm font-medium"
+                                            )}
+                                          >
+                                              {record.status}
+                                          </Badge>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                    </div>
                 ) : (
-                     <div className="text-center text-muted-foreground py-12">
-                        <Users className="mx-auto h-8 w-8" />
-                        <p className="mt-2">Memuat atau data tidak ditemukan...</p>
+                     <div className="text-center py-12">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="p-4 rounded-full bg-slate-100">
+                            <Users className="h-8 w-8 text-slate-400" />
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-medium text-slate-700">Memuat data...</p>
+                            <p className="text-sm text-slate-500">Mohon tunggu sebentar</p>
+                          </div>
+                        </div>
                     </div>
                 )}
             </ScrollArea>
