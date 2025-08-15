@@ -22,7 +22,7 @@ import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check, ClipboardEdi
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import { zonedTimeToUtc, utcToZonedTime, format as formatTz } from 'date-fns-tz';
+import { utcToZonedTime, format as formatTz } from 'date-fns-tz';
 import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";

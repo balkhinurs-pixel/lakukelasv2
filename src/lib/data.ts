@@ -5,8 +5,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda } from './types';
-import { format } from 'date-fns';
 import { utcToZonedTime, format as formatTz } from 'date-fns-tz';
+import { format } from 'date-fns';
 
 // --- Admin Data ---
 
@@ -361,7 +361,7 @@ export async function getDashboardData(userTimeZone: string) {
     if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
 
     const todayInUserTz = utcToZonedTime(new Date(), userTimeZone);
-    const todayDay = formatTz(todayInUserTz, 'eeee', { locale: id, timeZone: userTimeZone });
+    const todayDay = formatTz(todayInUserTz, 'eeee', { timeZone: userTimeZone });
     const todayDateFormatted = formatTz(todayInUserTz, 'yyyy-MM-dd', { timeZone: userTimeZone });
     
     const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
