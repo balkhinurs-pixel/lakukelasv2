@@ -230,9 +230,9 @@ export default function ActivationPage() {
                             <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 rounded-2xl blur-xl opacity-75 animate-pulse"></div>
                             
                             <Card className="relative p-8 h-full flex flex-col bg-gradient-to-br from-primary/5 via-white to-purple-500/5 dark:from-primary/10 dark:via-slate-900 dark:to-purple-500/10 border-2 border-primary/20">
-                                {/* Popular badge */}
-                                <Badge className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary hover:to-purple-600 text-white px-6 py-2 text-sm font-semibold shadow-lg">
-                                    <Star className="h-4 w-4 mr-1 fill-current" />
+                                {/* Popular badge - Optimized */}
+                                <Badge className="absolute top-4 right-4 bg-gradient-to-r from-primary to-purple-600 hover:from-primary hover:to-purple-600 text-white px-3 py-1 text-xs font-semibold shadow-lg">
+                                    <Star className="h-3 w-3 mr-1 fill-current" />
                                     Paling Populer
                                 </Badge>
 
