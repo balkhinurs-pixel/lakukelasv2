@@ -80,37 +80,47 @@ export default function DashboardClientPage({
     initialUnfilledJournalsCount 
 }: DashboardPageProps) {
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
+    const [endedSchedules, setEndedSchedules] = React.useState<Record<string, boolean>>({});
     
     const sortedSchedule = React.useMemo(() => {
         return todaySchedule.sort((a,b) => a.start_time.localeCompare(b.start_time));
     }, [todaySchedule]);
 
     React.useEffect(() => {
-        const now = new Date();
-        const newActiveSchedules: Record<string, boolean> = {};
-        sortedSchedule.forEach(item => {
-            const [hours, minutes] = item.start_time.split(':').map(Number);
-            const scheduleDate = new Date();
-            scheduleDate.setHours(hours, minutes, 0, 0);
-            if (now >= scheduleDate) {
-                newActiveSchedules[item.id] = true;
-            }
-        });
-        setActiveSchedules(newActiveSchedules);
-
-        const interval = setInterval(() => {
-             const now = new Date();
-             const updatedSchedules: Record<string, boolean> = {};
-             sortedSchedule.forEach(item => {
-                const [hours, minutes] = item.start_time.split(':').map(Number);
-                const scheduleDate = new Date();
-                scheduleDate.setHours(hours, minutes, 0, 0);
-                if (now >= scheduleDate) {
-                    updatedSchedules[item.id] = true;
+        const updateScheduleStatus = () => {
+            const now = new Date();
+            const newActiveSchedules: Record<string, boolean> = {};
+            const newEndedSchedules: Record<string, boolean> = {};
+            
+            sortedSchedule.forEach(item => {
+                const [startHours, startMinutes] = item.start_time.split(':').map(Number);
+                const [endHours, endMinutes] = item.end_time.split(':').map(Number);
+                
+                const startTime = new Date();
+                startTime.setHours(startHours, startMinutes, 0, 0);
+                
+                const endTime = new Date();
+                endTime.setHours(endHours, endMinutes, 0, 0);
+                
+                if (now >= endTime) {
+                    // Class has ended
+                    newEndedSchedules[item.id] = true;
+                    newActiveSchedules[item.id] = true; // Keep actions available
+                } else if (now >= startTime) {
+                    // Class is ongoing
+                    newActiveSchedules[item.id] = true;
                 }
             });
-            setActiveSchedules(current => ({...current, ...updatedSchedules}));
-        }, 60000); // Check every minute
+            
+            setActiveSchedules(newActiveSchedules);
+            setEndedSchedules(newEndedSchedules);
+        };
+
+        // Initial check
+        updateScheduleStatus();
+
+        // Check every minute
+        const interval = setInterval(updateScheduleStatus, 60000);
 
         return () => clearInterval(interval);
 
@@ -268,13 +278,18 @@ export default function DashboardClientPage({
                     <div className="space-y-6">
                          {sortedSchedule.map((item, index) => {
                             const isActionAvailable = activeSchedules[item.id];
+                            const hasEnded = endedSchedules[item.id];
                             return (
                                 <div 
                                     key={item.id} 
                                     className={cn(
                                         "relative flex items-start gap-6 p-4 rounded-2xl transition-all duration-300 group",
                                         "hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/2 hover:shadow-md hover:scale-[1.02]",
-                                        isActionAvailable ? "bg-gradient-to-r from-green-50/50 to-emerald-50/30 border border-green-200/30" : "hover:bg-muted/30"
+                                        hasEnded 
+                                            ? "bg-gradient-to-r from-red-50/50 to-rose-50/30 border border-red-200/30"
+                                            : isActionAvailable 
+                                                ? "bg-gradient-to-r from-green-50/50 to-emerald-50/30 border border-green-200/30" 
+                                                : "hover:bg-muted/30"
                                     )}
                                     style={{ 
                                         animationDelay: `${index * 100}ms`,
@@ -287,15 +302,24 @@ export default function DashboardClientPage({
                                             "flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 shadow-lg transition-all duration-300",
                                             "bg-gradient-to-br from-primary/90 to-primary text-white",
                                             "group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-primary/25",
-                                            isActionAvailable && "bg-gradient-to-br from-green-500 to-emerald-600 animate-pulse"
+                                            hasEnded 
+                                                ? "bg-gradient-to-br from-red-500 to-rose-600"
+                                                : isActionAvailable && "bg-gradient-to-br from-green-500 to-emerald-600 animate-pulse"
                                         )}>
                                             <Clock className="h-6 w-6 drop-shadow-sm" />
                                         </div>
                                         
                                         {/* Status indicator */}
-                                        {isActionAvailable && (
+                                        {isActionAvailable && !hasEnded && (
                                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-bounce shadow-sm">
                                                 <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75" />
+                                            </div>
+                                        )}
+                                        
+                                        {/* Ended status indicator */}
+                                        {hasEnded && (
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-sm">
+                                                <div className="w-full h-full bg-red-600 rounded-full" />
                                             </div>
                                         )}
                                     </div>
@@ -317,10 +341,17 @@ export default function DashboardClientPage({
                                         
                                         {isActionAvailable && (
                                             <div className="relative">
-                                                <div className="text-xs text-green-600 font-semibold mb-2 flex items-center gap-1">
-                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                                    Kelas sudah dimulai - Aksi tersedia
-                                                </div>
+                                                {hasEnded ? (
+                                                    <div className="text-xs text-red-600 font-semibold mb-2 flex items-center gap-1">
+                                                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                                                        Kelas sudah berakhir
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs text-green-600 font-semibold mb-2 flex items-center gap-1">
+                                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                                        Kelas sudah dimulai - Aksi tersedia
+                                                    </div>
+                                                )}
                                                 {getActionButtons(item)}
                                             </div>
                                         )}

@@ -687,39 +687,39 @@ export default function ReportsPageComponent({
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 p-1">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
         {/* Hero Section */}
         <div className={cn(
-            "relative overflow-hidden pt-8 pb-6 transition-all duration-1000 ease-out",
+            "relative overflow-hidden pt-4 sm:pt-6 lg:pt-8 pb-4 sm:pb-6 transition-all duration-1000 ease-out",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         )}>
             {/* Background decorations */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+                <div className="absolute top-0 right-1/4 w-48 h-48 sm:w-96 sm:h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute bottom-0 left-1/4 w-48 h-48 sm:w-96 sm:h-96 bg-primary/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
             </div>
 
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div className="space-y-4">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium">
-                            <BarChart3 className="h-4 w-4" />
+            <div className="relative max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+                <div className="flex flex-col gap-4 sm:gap-6">
+                    <div className="space-y-3 sm:space-y-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-medium">
+                            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
                             Laporan & Analitik
                         </div>
                         <div>
-                            <h1 className="text-3xl lg:text-5xl font-bold font-headline bg-gradient-to-r from-slate-900 via-blue-600 to-primary dark:from-slate-100 dark:via-blue-400 dark:to-primary bg-clip-text text-transparent">
+                            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold font-headline bg-gradient-to-r from-slate-900 via-blue-600 to-primary dark:from-slate-100 dark:via-blue-400 dark:to-primary bg-clip-text text-transparent leading-tight">
                                 Laporan Akademik
                             </h1>
-                            <p className="text-lg lg:text-xl text-muted-foreground max-w-2xl mt-2">
+                            <p className="text-sm sm:text-base lg:text-xl text-muted-foreground max-w-2xl mt-1 sm:mt-2 leading-relaxed">
                                 Analisis komprehensif tentang kehadiran dan nilai siswa dengan visualisasi data yang informatif
                             </p>
                         </div>
                     </div>
                     
                     {isPro && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-full border border-primary/20">
-                            <Crown className="h-5 w-5 text-primary" />
-                            <span className="text-primary font-medium">Premium Active</span>
+                        <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-full border border-primary/20 w-fit">
+                            <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            <span className="text-primary font-medium text-sm sm:text-base">Premium Active</span>
                         </div>
                     )}
                 </div>
@@ -727,20 +727,20 @@ export default function ReportsPageComponent({
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 pb-8 sm:pb-16">
             {!isPro && (
                 <div className={cn(
-                    "mb-8 transition-all duration-1000 ease-out delay-200",
+                    "mb-4 sm:mb-8 transition-all duration-1000 ease-out delay-200",
                     isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 )}>
                     <Alert className="border-primary/20 bg-gradient-to-r from-primary/5 to-purple-500/5">
-                        <Crown className="h-5 w-5 text-primary" />
-                        <AlertTitle className="text-primary">Dapatkan Laporan Profesional dengan Akun Pro</AlertTitle>
-                        <AlertDescription className="text-foreground">
+                        <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                        <AlertTitle className="text-primary text-sm sm:text-base">Dapatkan Laporan Profesional dengan Akun Pro</AlertTitle>
+                        <AlertDescription className="text-foreground text-xs sm:text-sm">
                             Aktivasi akun Pro untuk dapat mengunduh semua laporan dalam format PDF profesional dengan kop surat sekolah Anda.
-                            <Button variant="link" className="p-0 h-auto ml-1 text-primary font-semibold" asChild>
+                            <Button variant="link" className="p-0 h-auto ml-1 text-primary font-semibold text-xs sm:text-sm" asChild>
                                 <Link href="/dashboard/activation">
-                                    Aktivasi sekarang <Star className="h-3 w-3 ml-1" />
+                                    Aktivasi sekarang <Star className="h-2 w-2 sm:h-3 sm:w-3 ml-1" />
                                 </Link>
                             </Button>
                         </AlertDescription>
@@ -753,80 +753,84 @@ export default function ReportsPageComponent({
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             )}>
                 <Tabs defaultValue="summary">
-                    <div className="overflow-x-auto pb-2">
-                        <TabsList className="w-full sm:w-auto justify-start bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
-                            <TabsTrigger value="summary" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                Ringkasan
+                    <div className="overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
+                        <TabsList className="w-full sm:w-auto justify-start bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg min-w-max">
+                            <TabsTrigger value="summary" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3">
+                                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden xs:inline sm:inline">Ringkasan</span>
+                                <span className="xs:hidden sm:hidden">Ring</span>
                             </TabsTrigger>
-                            <TabsTrigger value="attendance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Kehadiran
+                            <TabsTrigger value="attendance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3">
+                                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden xs:inline sm:inline">Kehadiran</span>
+                                <span className="xs:hidden sm:hidden">Hadir</span>
                             </TabsTrigger>
-                            <TabsTrigger value="grades" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                                <Award className="h-4 w-4 mr-2" />
-                                Nilai
+                            <TabsTrigger value="grades" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3">
+                                <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden xs:inline sm:inline">Nilai</span>
+                                <span className="xs:hidden sm:hidden">Nilai</span>
                             </TabsTrigger>
-                            <TabsTrigger value="journal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                                <FileText className="h-4 w-4 mr-2" />
-                                Jurnal
+                            <TabsTrigger value="journal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3">
+                                <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden xs:inline sm:inline">Jurnal</span>
+                                <span className="xs:hidden sm:hidden">Jurnal</span>
                             </TabsTrigger>
                         </TabsList>
                     </div>
-                    <TabsContent value="summary" className="mt-8 space-y-8">
-                        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <TabsContent value="summary" className="mt-4 sm:mt-8 space-y-6 sm:space-y-8">
+                        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                             <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                                    <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">Tingkat Kehadiran Rata-rata</CardTitle>
-                                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                        <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-green-500/10 rounded-full blur-2xl"></div>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+                                    <CardTitle className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-200 leading-tight">Tingkat Kehadiran Rata-rata</CardTitle>
+                                    <div className="p-1.5 sm:p-2 bg-green-100 dark:bg-green-900/30 rounded-lg shrink-0">
+                                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
                                     </div>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-green-700 dark:text-green-300">{summaryCards.overallAttendanceRate}%</div>
-                                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">Rata-rata semua kelas</p>
+                                <CardContent className="pt-0">
+                                    <div className="text-2xl sm:text-3xl font-bold text-green-700 dark:text-green-300">{summaryCards.overallAttendanceRate}%</div>
+                                    <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 mt-1">Rata-rata semua kelas</p>
                                 </CardContent>
                             </Card>
                             
                             <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                                    <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">Rata-rata Nilai</CardTitle>
-                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                        <Award className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+                                    <CardTitle className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-200">Rata-rata Nilai</CardTitle>
+                                    <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
+                                        <Award className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">{summaryCards.overallAverageGrade}</div>
-                                    <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">Skor rata-rata semua penilaian</p>
+                                <CardContent className="pt-0">
+                                    <div className="text-2xl sm:text-3xl font-bold text-blue-700 dark:text-blue-300">{summaryCards.overallAverageGrade}</div>
+                                    <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 mt-1">Skor rata-rata semua penilaian</p>
                                 </CardContent>
                             </Card>
                             
-                            <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200 dark:border-purple-800">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl"></div>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                                    <CardTitle className="text-sm font-medium text-purple-800 dark:text-purple-200">Jurnal Mengajar Terisi</CardTitle>
-                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                        <BookCheck className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                            <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200 dark:border-purple-800 sm:col-span-2 lg:col-span-1">
+                                <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-purple-500/10 rounded-full blur-2xl"></div>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+                                    <CardTitle className="text-xs sm:text-sm font-medium text-purple-800 dark:text-purple-200">Jurnal Mengajar Terisi</CardTitle>
+                                    <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
+                                        <BookCheck className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                                     </div>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">{summaryCards.totalJournals}</div>
-                                    <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">Total jurnal yang telah dibuat</p>
+                                <CardContent className="pt-0">
+                                    <div className="text-2xl sm:text-3xl font-bold text-purple-700 dark:text-purple-300">{summaryCards.totalJournals}</div>
+                                    <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 mt-1">Total jurnal yang telah dibuat</p>
                                 </CardContent>
                             </Card>
                         </div>
 
                         <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
-                            <CardHeader className="space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-lg">
-                                        <GraduationCap className="h-6 w-6 text-primary" />
+                            <CardHeader className="space-y-3 pb-4 sm:pb-6">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-lg shrink-0">
+                                        <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                                     </div>
-                                    <div>
-                                        <CardTitle className="text-xl">Analisis Performa Siswa</CardTitle>
-                                        <CardDescription className="text-base">Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran</CardDescription>
+                                    <div className="min-w-0 flex-1">
+                                        <CardTitle className="text-base sm:text-xl leading-tight">Analisis Performa Siswa</CardTitle>
+                                        <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran</CardDescription>
                                     </div>
                                 </div>
                             </CardHeader>
@@ -904,16 +908,16 @@ export default function ReportsPageComponent({
                     </CardContent>
                 </Card>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
                             <Card className="lg:col-span-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
-                                <CardHeader className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg">
-                                            <BarChart2 className="h-6 w-6 text-blue-600" />
+                                <CardHeader className="space-y-3 pb-4 sm:pb-6">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-1.5 sm:p-2 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg shrink-0">
+                                            <BarChart2 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-xl">Perbandingan Kehadiran Antar Kelas</CardTitle>
-                                            <CardDescription className="text-base">Visualisasi persentase kehadiran untuk setiap status</CardDescription>
+                                        <div className="min-w-0 flex-1">
+                                            <CardTitle className="text-base sm:text-xl leading-tight">Perbandingan Kehadiran Antar Kelas</CardTitle>
+                                            <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Visualisasi persentase kehadiran untuk setiap status</CardDescription>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -940,14 +944,14 @@ export default function ReportsPageComponent({
                         </CardContent>
                     </Card>
                             <Card className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
-                                <CardHeader className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg">
-                                            <PieChartIcon className="h-6 w-6 text-green-600" />
+                                <CardHeader className="space-y-3 pb-4 sm:pb-6">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-1.5 sm:p-2 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg shrink-0">
+                                            <PieChartIcon className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-xl">Distribusi Kehadiran Umum</CardTitle>
-                                            <CardDescription className="text-base">Proporsi setiap status kehadiran keseluruhan</CardDescription>
+                                        <div className="min-w-0 flex-1">
+                                            <CardTitle className="text-base sm:text-xl leading-tight">Distribusi Kehadiran Umum</CardTitle>
+                                            <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Proporsi setiap status kehadiran keseluruhan</CardDescription>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -983,35 +987,37 @@ export default function ReportsPageComponent({
                     </Card>
                 </div>
             </TabsContent>
-                    <TabsContent value="attendance" className="mt-8">
+                    <TabsContent value="attendance" className="mt-4 sm:mt-8">
                         <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
-                            <CardHeader className="space-y-6">
-                                <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-6">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-3 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
+                            <CardHeader className="space-y-4 sm:space-y-6">
+                                <div className="flex flex-col gap-4 sm:gap-6">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                                        <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                                            <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl shrink-0">
+                                                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <CardTitle className="text-lg sm:text-2xl leading-tight">Laporan Kehadiran Siswa</CardTitle>
+                                                <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Pilih filter untuk mengunduh rekap kehadiran dalam format PDF profesional</CardDescription>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-2xl">Laporan Kehadiran Siswa</CardTitle>
-                                            <CardDescription className="text-base mt-1">Pilih filter untuk mengunduh rekap kehadiran dalam format PDF profesional</CardDescription>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handleDownloadAttendance} 
+                                            disabled={!isPro}
+                                            className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-200 hover:bg-green-50 dark:hover:bg-green-900/20 shrink-0 text-sm sm:text-base"
+                                        >
+                                            <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                            Unduh PDF
+                                        </Button>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Filter Laporan</span>
                                         </div>
+                                        <CommonFilters />
                                     </div>
-                                    <Button 
-                                        variant="outline" 
-                                        onClick={handleDownloadAttendance} 
-                                        disabled={!isPro}
-                                        className="h-12 px-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-200 hover:bg-green-50 dark:hover:bg-green-900/20"
-                                    >
-                                        <Download className="mr-2 h-5 w-5" />
-                                        Unduh PDF
-                                    </Button>
-                                </div>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Filter className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm font-medium text-muted-foreground">Filter Laporan</span>
-                                    </div>
-                                    <CommonFilters />
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-0">
@@ -1021,46 +1027,48 @@ export default function ReportsPageComponent({
                             </CardContent>
                         </Card>
                     </TabsContent>
-                    <TabsContent value="grades" className="mt-8">
+                    <TabsContent value="grades" className="mt-4 sm:mt-8">
                         <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
-                            <CardHeader className="space-y-6">
-                                <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-6">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-3 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-xl">
-                                            <Award className="h-8 w-8 text-blue-600" />
+                            <CardHeader className="space-y-4 sm:space-y-6">
+                                <div className="flex flex-col gap-4 sm:gap-6">
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                                            <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-xl shrink-0">
+                                                <Award className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <CardTitle className="text-lg sm:text-2xl leading-tight">Laporan Nilai Siswa</CardTitle>
+                                                <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Pilih filter untuk mengunduh rekap nilai dalam format PDF atau Excel</CardDescription>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-2xl">Laporan Nilai Siswa</CardTitle>
-                                            <CardDescription className="text-base mt-1">Pilih filter untuk mengunduh rekap nilai dalam format PDF atau Excel</CardDescription>
+                                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={handleDownloadGradesExcel} 
+                                                disabled={!isPro}
+                                                className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-emerald-500/10 to-green-500/10 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm sm:text-base"
+                                            >
+                                                <FileSpreadsheet className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                                Unduh Excel
+                                            </Button>
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={handleDownloadGrades} 
+                                                disabled={!isPro}
+                                                className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm sm:text-base"
+                                            >
+                                                <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                                Unduh PDF
+                                            </Button>
                                         </div>
                                     </div>
-                                    <div className="flex gap-3">
-                                        <Button 
-                                            variant="outline" 
-                                            onClick={handleDownloadGradesExcel} 
-                                            disabled={!isPro}
-                                            className="h-12 px-6 bg-gradient-to-r from-emerald-500/10 to-green-500/10 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                                        >
-                                            <FileSpreadsheet className="mr-2 h-5 w-5" />
-                                            Unduh Excel
-                                        </Button>
-                                        <Button 
-                                            variant="outline" 
-                                            onClick={handleDownloadGrades} 
-                                            disabled={!isPro}
-                                            className="h-12 px-6 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                        >
-                                            <Download className="mr-2 h-5 w-5" />
-                                            Unduh PDF
-                                        </Button>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Filter Laporan</span>
+                                        </div>
+                                        <CommonFilters />
                                     </div>
-                                </div>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Filter className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm font-medium text-muted-foreground">Filter Laporan</span>
-                                    </div>
-                                    <CommonFilters />
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-0">
@@ -1070,35 +1078,37 @@ export default function ReportsPageComponent({
                             </CardContent>
                         </Card>
                     </TabsContent>
-                    <TabsContent value="journal" className="mt-8">
+                    <TabsContent value="journal" className="mt-4 sm:mt-8">
                         <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
-                            <CardHeader className="space-y-6">
-                                <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-6">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-3 bg-gradient-to-br from-purple-500/10 to-violet-500/10 rounded-xl">
-                                            <FileText className="h-8 w-8 text-purple-600" />
+                            <CardHeader className="space-y-4 sm:space-y-6">
+                                <div className="flex flex-col gap-4 sm:gap-6">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                                        <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                                            <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-500/10 to-violet-500/10 rounded-xl shrink-0">
+                                                <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <CardTitle className="text-lg sm:text-2xl leading-tight">Laporan Jurnal Mengajar</CardTitle>
+                                                <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Arsip semua jurnal mengajar yang telah Anda buat dengan format profesional</CardDescription>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-2xl">Laporan Jurnal Mengajar</CardTitle>
-                                            <CardDescription className="text-base mt-1">Arsip semua jurnal mengajar yang telah Anda buat dengan format profesional</CardDescription>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handleDownloadJournal} 
+                                            disabled={!isPro}
+                                            className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-purple-500/10 to-violet-500/10 border-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/20 shrink-0 text-sm sm:text-base"
+                                        >
+                                            <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                            Unduh PDF
+                                        </Button>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Filter Laporan</span>
                                         </div>
+                                        <CommonFilters />
                                     </div>
-                                    <Button 
-                                        variant="outline" 
-                                        onClick={handleDownloadJournal} 
-                                        disabled={!isPro}
-                                        className="h-12 px-6 bg-gradient-to-r from-purple-500/10 to-violet-500/10 border-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                                    >
-                                        <Download className="mr-2 h-5 w-5" />
-                                        Unduh PDF
-                                    </Button>
-                                </div>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Filter className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm font-medium text-muted-foreground">Filter Laporan</span>
-                                    </div>
-                                    <CommonFilters />
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-0">
@@ -1152,7 +1162,7 @@ export default function ReportsPageComponent({
                                 </div>
                             </>
                                 ) : (
-                                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-xl p-8">
+                                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-xl p-6 sm:p-8">
                                         <EmptyStatePlaceholder icon={BookCheck} title="Belum Ada Jurnal" description="Data jurnal yang telah Anda buat akan ditampilkan di sini dengan format yang rapi dan mudah dibaca." />
                                     </div>
                                 )}

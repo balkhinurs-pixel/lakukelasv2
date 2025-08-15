@@ -11,22 +11,22 @@ export default function Loading() {
           <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-40 rounded-full" />
-              <div>
-                <Skeleton className="h-12 lg:h-16 w-80 lg:w-96 mb-3" />
-                <Skeleton className="h-6 w-96 lg:w-[500px]" />
-              </div>
+              <div className="relative max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <div className="space-y-3 sm:space-y-4">
+            <Skeleton className="h-6 sm:h-8 w-32 sm:w-40 rounded-full" />
+            <div>
+              <Skeleton className="h-8 sm:h-12 lg:h-16 w-64 sm:w-80 lg:w-96 mb-2 sm:mb-3" />
+              <Skeleton className="h-4 sm:h-6 w-80 sm:w-96 lg:w-[500px]" />
             </div>
-            <Skeleton className="h-10 w-40 rounded-full" />
           </div>
+          <Skeleton className="h-8 sm:h-10 w-32 sm:w-40 rounded-full" />
         </div>
+      </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 pb-8 sm:pb-16">
         {/* Alert Skeleton */}
         <div className="mb-8">
           <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-purple-500/5">
