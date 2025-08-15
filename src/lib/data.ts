@@ -5,8 +5,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda } from './types';
-import { utcToZonedTime, format as formatTz } from 'date-fns-tz';
 import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
+
 
 // --- Admin Data ---
 
@@ -354,18 +355,16 @@ export async function getAllStudents(): Promise<Student[]> {
     return data.map(s => ({...s, class_name: s.classes?.name}));
 }
 
-export async function getDashboardData(userTimeZone: string) {
+export async function getDashboardData() {
     noStore();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
 
-    const todayInUserTz = utcToZonedTime(new Date(), userTimeZone);
-    const todayDay = formatTz(todayInUserTz, 'eeee', { timeZone: userTimeZone });
-    const todayDateFormatted = formatTz(todayInUserTz, 'yyyy-MM-dd', { timeZone: userTimeZone });
+    const todayDay = format(new Date(), 'eeee', { locale: id });
+    const todayDateFormatted = format(new Date(), 'yyyy-MM-dd');
     
     const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-
 
     const { data: todayScheduleData, error: scheduleError } = await supabase
         .from('schedule')

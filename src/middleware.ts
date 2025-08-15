@@ -39,13 +39,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
-  
-  // Set timezone cookie if not present
-  if (!request.cookies.has('timezone')) {
-    // The 'x-vercel-ip-timezone' header is automatically provided by Vercel
-    const timezone = request.headers.get('x-vercel-ip-timezone') || 'Asia/Jakarta';
-    response.cookies.set('timezone', timezone, { path: '/' });
-  }
 
   // If user is not logged in, and tries to access a protected route, redirect to login
   if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {

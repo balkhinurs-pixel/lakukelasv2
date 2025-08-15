@@ -22,7 +22,6 @@ import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check, ClipboardEdi
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import { utcToZonedTime, format as formatTz } from 'date-fns-tz';
 import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -33,7 +32,6 @@ type DashboardPageProps = {
   journalEntries: JournalEntry[];
   initialAttendancePercentage: number;
   initialUnfilledJournalsCount: number;
-  userTimeZone: string;
 }
 
 const StatCard = ({
@@ -80,7 +78,6 @@ export default function DashboardClientPage({
     journalEntries,
     initialAttendancePercentage,
     initialUnfilledJournalsCount,
-    userTimeZone
 }: DashboardPageProps) {
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
     const [endedSchedules, setEndedSchedules] = React.useState<Record<string, boolean>>({});
@@ -91,7 +88,7 @@ export default function DashboardClientPage({
 
     React.useEffect(() => {
         const updateScheduleStatus = () => {
-            const now = utcToZonedTime(new Date(), userTimeZone);
+            const now = new Date();
             const newActiveSchedules: Record<string, boolean> = {};
             const newEndedSchedules: Record<string, boolean> = {};
             
@@ -118,13 +115,12 @@ export default function DashboardClientPage({
         const interval = setInterval(updateScheduleStatus, 60000);
         return () => clearInterval(interval);
 
-    }, [sortedSchedule, userTimeZone]);
+    }, [sortedSchedule]);
     
     const [today, setToday] = React.useState('');
     React.useEffect(() => {
-        const userDate = utcToZonedTime(new Date(), userTimeZone);
-        setToday(formatTz(userDate, 'eeee', { locale: id, timeZone: userTimeZone }));
-    }, [userTimeZone]);
+        setToday(format(new Date(), 'eeee', { locale: id }));
+    }, []);
 
     const QuickActionButton = ({ 
         href, 
