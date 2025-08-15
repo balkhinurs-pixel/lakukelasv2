@@ -22,6 +22,7 @@ import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check, ClipboardEdi
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
+import { utcToZonedTime, format as formatTz } from 'date-fns-tz';
 import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -32,6 +33,7 @@ type DashboardPageProps = {
   journalEntries: JournalEntry[];
   initialAttendancePercentage: number;
   initialUnfilledJournalsCount: number;
+  userTimeZone: string;
 }
 
 const StatCard = ({
@@ -77,7 +79,8 @@ export default function DashboardClientPage({
     todaySchedule, 
     journalEntries,
     initialAttendancePercentage,
-    initialUnfilledJournalsCount 
+    initialUnfilledJournalsCount,
+    userTimeZone
 }: DashboardPageProps) {
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
     const [endedSchedules, setEndedSchedules] = React.useState<Record<string, boolean>>({});
@@ -88,7 +91,7 @@ export default function DashboardClientPage({
 
     React.useEffect(() => {
         const updateScheduleStatus = () => {
-            const now = new Date();
+            const now = utcToZonedTime(new Date(), userTimeZone);
             const newActiveSchedules: Record<string, boolean> = {};
             const newEndedSchedules: Record<string, boolean> = {};
             
@@ -96,18 +99,13 @@ export default function DashboardClientPage({
                 const [startHours, startMinutes] = item.start_time.split(':').map(Number);
                 const [endHours, endMinutes] = item.end_time.split(':').map(Number);
                 
-                const startTime = new Date();
-                startTime.setHours(startHours, startMinutes, 0, 0);
-                
-                const endTime = new Date();
-                endTime.setHours(endHours, endMinutes, 0, 0);
+                const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHours, startMinutes, 0);
+                const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHours, endMinutes, 0);
                 
                 if (now >= endTime) {
-                    // Class has ended
                     newEndedSchedules[item.id] = true;
-                    newActiveSchedules[item.id] = true; // Keep actions available
+                    newActiveSchedules[item.id] = true;
                 } else if (now >= startTime) {
-                    // Class is ongoing
                     newActiveSchedules[item.id] = true;
                 }
             });
@@ -116,20 +114,17 @@ export default function DashboardClientPage({
             setEndedSchedules(newEndedSchedules);
         };
 
-        // Initial check
         updateScheduleStatus();
-
-        // Check every minute
         const interval = setInterval(updateScheduleStatus, 60000);
-
         return () => clearInterval(interval);
 
-    }, [sortedSchedule]);
+    }, [sortedSchedule, userTimeZone]);
     
     const [today, setToday] = React.useState('');
     React.useEffect(() => {
-        setToday(new Date().toLocaleDateString('id-ID', { weekday: 'long' }));
-    }, []);
+        const userDate = utcToZonedTime(new Date(), userTimeZone);
+        setToday(formatTz(userDate, 'eeee', { locale: id, timeZone: userTimeZone }));
+    }, [userTimeZone]);
 
     const QuickActionButton = ({ 
         href, 
