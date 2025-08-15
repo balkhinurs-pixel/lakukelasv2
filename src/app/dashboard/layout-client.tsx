@@ -142,19 +142,35 @@ export default function DashboardLayoutClient({
 
   const ProfileHeader = () => (
     <SidebarHeader className="p-0 text-background">
-      <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden">
-          <Avatar className="h-20 w-20 border-4 border-white/50">
+      <div className="relative flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 via-purple-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden overflow-hidden">
+          {/* Background pattern overlay */}
+          <div className="absolute inset-0 bg-white/[0.05] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
+          
+          {/* Animated floating elements */}
+          <div className="absolute top-4 right-4 w-2 h-2 bg-white/20 rounded-full animate-pulse" />
+          <div className="absolute bottom-6 left-6 w-1 h-1 bg-white/30 rounded-full animate-ping" style={{animationDelay: '1s'}} />
+          
+          <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 transition-transform duration-300 hover:scale-105 hover:border-white/50 relative z-10">
             <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} data-ai-hint="teacher portrait" />
-            <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+            <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
           </Avatar>
-          <div className="text-center">
-            <p className="text-lg font-bold">{profile?.full_name || 'Guru'}</p>
-            <p className="text-sm text-primary-foreground/80">{user?.email}</p>
-            <StatusBadge />
+          <div className="text-center relative z-10">
+            <p className="text-lg font-bold text-white drop-shadow-sm">{profile?.full_name || 'Guru'}</p>
+            <p className="text-sm text-white/80 drop-shadow-sm">{user?.email}</p>
+            <div className="mt-2">
+              <Badge variant={'outline'} className={cn("text-xs font-semibold backdrop-blur-sm border-white/30", 
+                isPro 
+                ? 'bg-green-500/20 text-green-100 border-green-300/30 shadow-green-500/20' 
+                : 'bg-amber-500/20 text-amber-100 border-amber-300/30 shadow-amber-500/20'
+              )}>
+                {isPro ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
+                Akun {isPro ? "Pro" : "Gratis"}
+              </Badge>
+            </div>
           </div>
       </div>
       <div className="hidden justify-center p-2 group-data-[collapsible=icon]:flex group-data-[state=expanded]:hidden">
-          <Avatar className="h-12 w-12 border-2 border-primary">
+          <Avatar className="h-12 w-12 border-2 border-primary shadow-lg transition-transform duration-300 hover:scale-105">
               <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} data-ai-hint="teacher portrait" />
               <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
           </Avatar>
@@ -163,46 +179,106 @@ export default function DashboardLayoutClient({
   );
 
   const MainNavContent = ({ items }: { items: typeof navItems }) => (
-    <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton
-            asChild
-            isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard'}
-            tooltip={{ children: item.label }}
-            className="group-data-[collapsible=icon]:justify-center"
-          >
-            <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}}>
-              <item.icon className={cn("group-data-[active=true]:text-primary")} />
-              <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
-                {item.label}
-              </span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+    <SidebarMenu className="gap-2">
+      {items.map((item, index) => {
+        const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard';
+        return (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive}
+              tooltip={{ children: item.label }}
+              className={cn(
+                "group-data-[collapsible=icon]:justify-center relative transition-all duration-300 ease-out rounded-xl mx-2",
+                "hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-lg hover:shadow-primary/10",
+                "hover:scale-[1.02] hover:-translate-y-0.5",
+                isActive && "bg-gradient-to-r from-primary/15 to-primary/10 shadow-lg shadow-primary/20 border border-primary/20",
+                isActive && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-6 before:bg-primary before:rounded-r-full",
+                "after:absolute after:inset-0 after:rounded-xl after:bg-gradient-to-r after:from-transparent after:via-white/[0.02] after:to-transparent after:opacity-0 hover:after:opacity-100 after:transition-opacity after:duration-300"
+              )}
+              style={{
+                animationDelay: `${index * 50}ms`
+              }}
+            >
+              <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}} className="flex items-center gap-3 w-full">
+                <div className={cn(
+                  "relative transition-all duration-300",
+                  isActive && "text-primary scale-110"
+                )}>
+                  <item.icon className={cn(
+                    "transition-all duration-300",
+                    isActive ? "w-5 h-5 drop-shadow-sm" : "w-4 h-4"
+                  )} />
+                  {isActive && (
+                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-pulse" />
+                  )}
+                </div>
+                <span className={cn(
+                  "group-data-[collapsible=icon]:hidden transition-all duration-300 font-medium",
+                  isActive ? "text-primary font-semibold tracking-wide" : "text-muted-foreground"
+                )}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50" />
+                )}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )
+      })}
     </SidebarMenu>
   );
 
   const RosterNavContent = () => (
-    <SidebarMenu>
-      {rosterNavItems.map((item) => (
-        <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith(item.href)}
-            tooltip={{ children: item.label }}
-            className="group-data-[collapsible=icon]:justify-center"
-          >
-            <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}}>
-              <item.icon className={cn("group-data-[active=true]:text-primary")} />
-              <span className="group-data-[collapsible=icon]:hidden group-data-[active=true]:text-primary group-data-[active=true]:font-semibold">
-                {item.label}
-              </span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+    <SidebarMenu className="gap-2">
+      {rosterNavItems.map((item, index) => {
+        const isActive = pathname.startsWith(item.href);
+        return (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive}
+              tooltip={{ children: item.label }}
+              className={cn(
+                "group-data-[collapsible=icon]:justify-center relative transition-all duration-300 ease-out rounded-xl mx-2",
+                "hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-lg hover:shadow-primary/10",
+                "hover:scale-[1.02] hover:-translate-y-0.5",
+                isActive && "bg-gradient-to-r from-primary/15 to-primary/10 shadow-lg shadow-primary/20 border border-primary/20",
+                isActive && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-6 before:bg-primary before:rounded-r-full",
+                "after:absolute after:inset-0 after:rounded-xl after:bg-gradient-to-r after:from-transparent after:via-white/[0.02] after:to-transparent after:opacity-0 hover:after:opacity-100 after:transition-opacity after:duration-300"
+              )}
+              style={{
+                animationDelay: `${index * 50}ms`
+              }}
+            >
+              <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}} className="flex items-center gap-3 w-full">
+                <div className={cn(
+                  "relative transition-all duration-300",
+                  isActive && "text-primary scale-110"
+                )}>
+                  <item.icon className={cn(
+                    "transition-all duration-300",
+                    isActive ? "w-5 h-5 drop-shadow-sm" : "w-4 h-4"
+                  )} />
+                  {isActive && (
+                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-pulse" />
+                  )}
+                </div>
+                <span className={cn(
+                  "group-data-[collapsible=icon]:hidden transition-all duration-300 font-medium",
+                  isActive ? "text-primary font-semibold tracking-wide" : "text-muted-foreground"
+                )}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50" />
+                )}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )
+      })}
     </SidebarMenu>
   );
 
@@ -223,11 +299,11 @@ export default function DashboardLayoutClient({
         };
 
         return (
-            <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
                 {/* Modern glassmorphism container */}
-                <div className="relative bg-background/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl shadow-black/10 p-2">
+                <div className="relative bg-background/80 backdrop-blur-xl border-t border-white/20 rounded-t-3xl shadow-2xl shadow-black/20 p-2 pb-safe">
                     {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-green-500/10 rounded-3xl" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-green-500/10 rounded-t-3xl" />
                     
                     {/* Navigation items container */}
                     <div className="relative flex justify-around items-center">
@@ -399,15 +475,21 @@ export default function DashboardLayoutClient({
   const MobileSidebar = () => (
     <>
       <ProfileHeader />
-      <SidebarContent className="p-0">
+      <SidebarContent className="p-0 bg-gradient-to-b from-background to-background/95">
         <ScrollArea className="flex-1">
-            <SidebarGroup>
-                <SidebarGroupLabel>MENU LAINNYA</SidebarGroupLabel>
+            <SidebarGroup className="p-4">
+                <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4">
+                  <Grid3X3 className="w-4 h-4 mr-2 inline" />
+                  Menu Lainnya
+                </SidebarGroupLabel>
                 <MainNavContent items={mobileSidebarNavItems} />
             </SidebarGroup>
-            <SidebarSeparator />
-            <SidebarGroup>
-                <SidebarGroupLabel>MANAJEMEN</SidebarGroupLabel>
+            <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+            <SidebarGroup className="p-4">
+                <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4">
+                  <Users2 className="w-4 h-4 mr-2 inline" />
+                  Manajemen
+                </SidebarGroupLabel>
                 <RosterNavContent />
             </SidebarGroup>
         </ScrollArea>
