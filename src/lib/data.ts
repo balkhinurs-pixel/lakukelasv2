@@ -5,7 +5,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda } from './types';
-import { format, startOfDay, endOfDay, getMonth, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
+import { utcToZonedTime, format as formatTz } from 'date-fns-tz';
 
 // --- Admin Data ---
 
@@ -353,14 +354,15 @@ export async function getAllStudents(): Promise<Student[]> {
     return data.map(s => ({...s, class_name: s.classes?.name}));
 }
 
-export async function getDashboardData() {
+export async function getDashboardData(userTimeZone: string) {
     noStore();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
 
-    const today = new Date();
-    const todayDay = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(today);
+    const todayInUserTz = utcToZonedTime(new Date(), userTimeZone);
+    const todayDay = formatTz(todayInUserTz, 'eeee', { locale: id, timeZone: userTimeZone });
+    const todayDateFormatted = formatTz(todayInUserTz, 'yyyy-MM-dd', { timeZone: userTimeZone });
     
     const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
 
@@ -408,11 +410,10 @@ export async function getDashboardData() {
         .from('attendance_history')
         .select('records')
         .eq('teacher_id', user.id)
-        .gte('date', format(today, 'yyyy-MM-dd'))
-        .lte('date', format(today, 'yyyy-MM-dd'));
+        .eq('date', todayDateFormatted);
     
     let attendancePercentage = 0;
-    if (!attendanceError && attendanceTodayData.length > 0) {
+    if (!attendanceError && attendanceTodayData && attendanceTodayData.length > 0) {
         const allRecords = attendanceTodayData.flatMap(entry => entry.records as AttendanceRecord[]);
         const totalPresent = allRecords.filter(r => r.status === 'Hadir').length;
         if (allRecords.length > 0) {
@@ -424,12 +425,12 @@ export async function getDashboardData() {
         .from('journals')
         .select('class_id, subject_id')
         .eq('teacher_id', user.id)
-        .eq('date', format(today, 'yyyy-MM-dd'));
+        .eq('date', todayDateFormatted);
 
     let unfilledJournalsCount = 0;
-    if (!filledJournalsError) {
+    if (!filledJournalsError && todaySchedule) {
         unfilledJournalsCount = todaySchedule.filter(scheduleItem => {
-            return !filledJournalsToday.some(journal => 
+            return !(filledJournalsToday || []).some(journal => 
                 journal.class_id === scheduleItem.class_id && journal.subject_id === scheduleItem.subject_id
             );
         }).length;
@@ -468,8 +469,16 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
             journalsQuery = journalsQuery.eq('school_year_id', schoolYearId);
         }
         if (month) {
-            const startDate = format(startOfMonth(new Date(2024, month - 1)), 'yyyy-MM-dd');
-            const endDate = format(endOfMonth(new Date(2024, month - 1)), 'yyyy-MM-dd');
+            // Note: This month filter assumes the same year for all entries.
+            // A more robust solution might involve full date ranges.
+            const { data: schoolYear } = await supabase.from('school_years').select('name').eq('id', schoolYearId).single();
+            const year = schoolYear ? parseInt(schoolYear.name.substring(0, 4)) : new Date().getFullYear();
+            const semester = schoolYear?.name.toLowerCase().includes('ganjil') ? 1 : 2;
+            const effectiveYear = month < 7 && semester === 2 ? year + 1 : year;
+            
+            const startDate = format(new Date(effectiveYear, month - 1, 1), 'yyyy-MM-dd');
+            const endDate = format(new Date(effectiveYear, month, 0), 'yyyy-MM-dd');
+            
             attendanceQuery = attendanceQuery.gte('date', startDate).lte('date', endDate);
             gradesQuery = gradesQuery.gte('date', startDate).lte('date', endDate);
             journalsQuery = journalsQuery.gte('date', startDate).lte('date', endDate);
@@ -566,6 +575,15 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
 
     } catch (error: any) {
         console.error("Error processing report data:", error);
-        return null;
+        return {
+            summaryCards: { overallAttendanceRate: 0, overallAverageGrade: 0, totalJournals: 0 },
+            studentPerformance: [],
+            attendanceByClass: [],
+            overallAttendanceDistribution: {},
+            journalEntries: [],
+            attendanceHistory: [],
+            gradeHistory: [],
+            allStudents: [],
+        };
     }
 }
