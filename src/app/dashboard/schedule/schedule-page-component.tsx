@@ -425,6 +425,7 @@ export default function SchedulePageComponent({
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                    </div>
                   </div>
                 ))}
               </CardContent>
@@ -493,4 +494,3 @@ export default function SchedulePageComponent({
     </div>
   );
 }
-
