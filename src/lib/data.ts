@@ -355,13 +355,13 @@ export async function getAllStudents(): Promise<Student[]> {
     return data.map(s => ({...s, class_name: s.classes?.name}));
 }
 
-export async function getDashboardData() {
+export async function getDashboardData(todayDay: string) {
     noStore();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
-
-    const todayDay = format(new Date(), 'eeee', { locale: id });
+    
+    // Use the client-provided day name for accuracy
     const todayDateFormatted = format(new Date(), 'yyyy-MM-dd');
     
     const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
