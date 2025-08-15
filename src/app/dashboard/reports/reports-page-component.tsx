@@ -646,9 +646,9 @@ export default function ReportsPageComponent({
   }
 
   const CommonFilters = () => (
-    <div className="mt-4 flex flex-col sm:flex-row gap-2 flex-wrap">
+    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select value={currentSchoolYearId} onValueChange={(value) => handleFilterChange('schoolYear', value)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger>
                 <SelectValue placeholder="Pilih Tahun Ajaran" />
             </SelectTrigger>
             <SelectContent>
@@ -657,7 +657,7 @@ export default function ReportsPageComponent({
             </SelectContent>
         </Select>
          <Select value={currentMonth} onValueChange={(value) => handleFilterChange('month', value)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger>
                 <SelectValue placeholder="Pilih Bulan" />
             </SelectTrigger>
             <SelectContent>
@@ -666,7 +666,7 @@ export default function ReportsPageComponent({
             </SelectContent>
         </Select>
         <Select value={selectedClass} onValueChange={(value) => handleFilterChange('class', value)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger>
                 <SelectValue placeholder="Pilih kelas" />
             </SelectTrigger>
             <SelectContent>
@@ -675,7 +675,7 @@ export default function ReportsPageComponent({
             </SelectContent>
         </Select>
          <Select value={selectedSubject} onValueChange={(value) => handleFilterChange('subject', value)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger>
                 <SelectValue placeholder="Pilih Mapel" />
             </SelectTrigger>
             <SelectContent>
@@ -687,7 +687,7 @@ export default function ReportsPageComponent({
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 p-1">
         {/* Hero Section */}
         <div className={cn(
             "relative overflow-hidden pt-8 pb-6 transition-all duration-1000 ease-out",
@@ -753,7 +753,7 @@ export default function ReportsPageComponent({
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             )}>
                 <Tabs defaultValue="summary">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto pb-2">
                         <TabsList className="w-full sm:w-auto justify-start bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
                             <TabsTrigger value="summary" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                                 <BarChart3 className="h-4 w-4 mr-2" />
@@ -987,7 +987,7 @@ export default function ReportsPageComponent({
                         <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
                             <CardHeader className="space-y-6">
                                 <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-6">
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-start gap-4">
                                         <div className="p-3 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl">
                                             <CheckCircle className="h-8 w-8 text-green-600" />
                                         </div>
@@ -1025,7 +1025,7 @@ export default function ReportsPageComponent({
                         <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
                             <CardHeader className="space-y-6">
                                 <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-6">
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-start gap-4">
                                         <div className="p-3 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-xl">
                                             <Award className="h-8 w-8 text-blue-600" />
                                         </div>
@@ -1074,7 +1074,7 @@ export default function ReportsPageComponent({
                         <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
                             <CardHeader className="space-y-6">
                                 <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-6">
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-start gap-4">
                                         <div className="p-3 bg-gradient-to-br from-purple-500/10 to-violet-500/10 rounded-xl">
                                             <FileText className="h-8 w-8 text-purple-600" />
                                         </div>
