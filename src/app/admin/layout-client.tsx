@@ -86,19 +86,140 @@ export default function AdminLayoutClient({
   );
 
   const BottomNavbar = () => {
+    const [rippleEffect, setRippleEffect] = React.useState<{x: number, y: number, show: boolean}>({
+      x: 0,
+      y: 0,
+      show: false
+    });
+
+    const handleRippleEffect = (event: React.MouseEvent<HTMLElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      setRippleEffect({ x, y, show: true });
+      setTimeout(() => setRippleEffect(prev => ({ ...prev, show: false })), 600);
+    };
+
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 flex justify-around items-center">
-            {navItems.map((item) => (
-                <Link key={item.href} href={item.href} className={cn("flex flex-col items-center gap-1 p-2 rounded-md", pathname === item.href ? "text-primary" : "text-muted-foreground")}>
-                    <item.icon className="w-5 h-5" />
-                    <span className="text-xs">{item.label}</span>
+      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+        {/* Modern glassmorphism container */}
+        <div className="relative bg-background/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl shadow-black/10 p-2">
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-green-500/10 rounded-3xl" />
+          
+          {/* Navigation items container */}
+          <div className="relative flex justify-around items-center">
+            {navItems.map((item, index) => {
+              const isActive = pathname === item.href;
+
+              return (
+                <Link 
+                  key={item.href} 
+                  href={item.href}
+                  onClick={handleRippleEffect}
+                  className={cn(
+                    "relative flex flex-col items-center justify-center gap-1 p-3 rounded-2xl w-16 h-16 transition-all duration-500 ease-out transform group overflow-hidden",
+                    "hover:scale-110 active:scale-95",
+                    isActive 
+                      ? "text-primary shadow-lg shadow-primary/25 bg-primary/10 backdrop-blur-sm -translate-y-2" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+                  )}
+                  style={{
+                    animationDelay: `${index * 100}ms`
+                  }}
+                >
+                  {/* Ripple effect */}
+                  {rippleEffect.show && (
+                    <span 
+                      className="absolute inset-0 bg-primary/20 rounded-full animate-ping"
+                      style={{
+                        left: rippleEffect.x - 10,
+                        top: rippleEffect.y - 10,
+                        width: '20px',
+                        height: '20px'
+                      }}
+                    />
+                  )}
+                  
+                  {/* Active glow effect */}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-primary/20 rounded-2xl animate-pulse" />
+                  )}
+                  
+                  {/* Icon with animation */}
+                  <div className={cn(
+                    "relative z-10 transition-all duration-300",
+                    isActive && "animate-bounce"
+                  )}>
+                    <item.icon className={cn(
+                      "transition-all duration-300",
+                      isActive ? "w-6 h-6" : "w-5 h-5"
+                    )} />
+                  </div>
+                  
+                  {/* Label with fade animation */}
+                  <span className={cn(
+                    "text-xs font-medium transition-all duration-300 relative z-10",
+                    isActive ? "opacity-100 font-semibold" : "opacity-70 group-hover:opacity-100"
+                  )}>
+                    {item.label}
+                  </span>
+
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <div className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full animate-pulse" />
+                  )}
                 </Link>
-            ))}
-             <button onClick={toggleSidebar} className="flex flex-col items-center gap-1 p-2 rounded-md text-muted-foreground">
+              )
+            })}
+            
+            {/* Menu button with enhanced styling */}
+            <button 
+              onClick={(e) => {
+                handleRippleEffect(e);
+                toggleSidebar();
+              }}
+              className={cn(
+                "relative flex flex-col items-center justify-center gap-1 p-3 rounded-2xl w-16 h-16",
+                "text-muted-foreground hover:text-foreground transition-all duration-500 ease-out transform group overflow-hidden",
+                "hover:scale-110 active:scale-95 hover:bg-foreground/5"
+              )}
+            >
+              {/* Ripple effect for menu button */}
+              {rippleEffect.show && (
+                <span 
+                  className="absolute inset-0 bg-foreground/10 rounded-full animate-ping"
+                  style={{
+                    left: rippleEffect.x - 10,
+                    top: rippleEffect.y - 10,
+                    width: '20px',
+                    height: '20px'
+                  }}
+                />
+              )}
+              
+              <div className="relative z-10 transition-transform duration-300 group-hover:rotate-180">
                 <Menu className="w-5 h-5" />
-                <span className="text-xs">Lainnya</span>
+              </div>
+              <span className="text-xs font-medium transition-all duration-300 relative z-10 opacity-70 group-hover:opacity-100">
+                Lainnya
+              </span>
             </button>
+          </div>
         </div>
+
+        {/* Floating animation keyframes */}
+        <style jsx>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+          }
+          .animate-float {
+            animation: float 3s ease-in-out infinite;
+          }
+        `}</style>
+      </div>
     )
   }
 
