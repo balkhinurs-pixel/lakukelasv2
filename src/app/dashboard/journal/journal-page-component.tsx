@@ -621,33 +621,27 @@ export default function JournalPageComponent({
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-2xl dialog-content-mobile mobile-safe-area">
-            <DialogHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
-                  <Eye className="h-5 w-5" />
-                </div>
-                <div>
-                  <DialogTitle className="text-xl">Detail Jurnal Mengajar</DialogTitle>
-                  <DialogDescription className="mt-1">
+          <DialogHeader className="pb-4 text-center">
+              <DialogTitle className="text-xl">Detail Jurnal Mengajar</DialogTitle>
+              {selectedEntry && (
+                  <DialogDescription className="text-base">
                       {selectedEntry?.subjectName} - {selectedEntry?.className}
                   </DialogDescription>
-                  {selectedEntry && (
-                      <p className="text-sm text-slate-500 pt-1 flex items-center gap-2">
-                          <Calendar className="h-3.5 w-3.5" />
-                          <FormattedDate date={parseISO(selectedEntry.date)} formatString="eeee, dd MMMM yyyy"/>
-                          {selectedEntry.meeting_number && (
-                            <>
-                              <span>•</span>
-                              <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">
-                                Pertemuan ke-{selectedEntry.meeting_number}
-                              </span>
-                            </>
-                          )}
-                      </p>
-                  )}
-                </div>
-              </div>
-            </DialogHeader>
+              )}
+              {selectedEntry && (
+                  <div className="text-sm text-slate-500 pt-1 flex flex-col items-center gap-1">
+                      <div className="flex items-center gap-2">
+                           <Calendar className="h-3.5 w-3.5" />
+                           <FormattedDate date={parseISO(selectedEntry.date)} formatString="eeee, dd MMMM yyyy"/>
+                      </div>
+                      {selectedEntry.meeting_number && (
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">
+                          Pertemuan ke-{selectedEntry.meeting_number}
+                        </span>
+                      )}
+                  </div>
+              )}
+          </DialogHeader>
             {selectedEntry && (
                  <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-4 pt-2">
                     <div className="space-y-3 p-4 rounded-lg border border-slate-200 bg-slate-50/50">
