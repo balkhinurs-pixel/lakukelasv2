@@ -353,7 +353,7 @@ export default function DashboardClientPage({
                     </div>
                     
                     {/* CSS Animation keyframes */}
-                    <style jsx>{\`
+                    <style jsx>{`
                         @keyframes fadeInUp {
                             from {
                                 opacity: 0;
@@ -364,7 +364,7 @@ export default function DashboardClientPage({
                                 transform: translateY(0);
                             }
                         }
-                    \`}</style>
+                    `}</style>
                 </div>
             ) : (
                 <div className="text-center text-muted-foreground py-8">
@@ -437,7 +437,7 @@ export default function DashboardClientPage({
           </CardContent>
           
           {/* CSS Animation for journal entries */}
-          <style jsx>{\`
+          <style jsx>{`
             @keyframes fadeInRight {
                 from {
                     opacity: 0;
@@ -448,7 +448,7 @@ export default function DashboardClientPage({
                     transform: translateX(0);
                 }
             }
-          \`}</style>
+          `}</style>
         </Card>
       </div>
     </div>
