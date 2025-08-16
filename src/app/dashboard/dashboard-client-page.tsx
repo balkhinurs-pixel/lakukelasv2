@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check, ClipboardEdit } from "lucide-react";
+import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check, ClipboardEdit, CheckCircle } from "lucide-react";
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
@@ -81,14 +81,17 @@ export default function DashboardClientPage({
 }: DashboardPageProps) {
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
     const [endedSchedules, setEndedSchedules] = React.useState<Record<string, boolean>>({});
-    
+    const [now, setNow] = React.useState(new Date());
+
     const sortedSchedule = React.useMemo(() => {
         return todaySchedule.sort((a,b) => a.start_time.localeCompare(b.start_time));
     }, [todaySchedule]);
 
     React.useEffect(() => {
         const updateScheduleStatus = () => {
-            const now = new Date();
+            const currentTime = new Date();
+            setNow(currentTime); // Update current time for real-time check
+
             const newActiveSchedules: Record<string, boolean> = {};
             const newEndedSchedules: Record<string, boolean> = {};
             
@@ -96,13 +99,13 @@ export default function DashboardClientPage({
                 const [startHours, startMinutes] = item.start_time.split(':').map(Number);
                 const [endHours, endMinutes] = item.end_time.split(':').map(Number);
                 
-                const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHours, startMinutes, 0);
-                const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHours, endMinutes, 0);
+                const startTime = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), startHours, startMinutes, 0);
+                const endTime = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), endHours, endMinutes, 0);
                 
-                if (now >= endTime) {
+                if (currentTime >= endTime) {
                     newEndedSchedules[item.id] = true;
                     newActiveSchedules[item.id] = true;
-                } else if (now >= startTime) {
+                } else if (currentTime >= startTime) {
                     newActiveSchedules[item.id] = true;
                 }
             });
@@ -112,10 +115,40 @@ export default function DashboardClientPage({
         };
 
         updateScheduleStatus();
-        const interval = setInterval(updateScheduleStatus, 60000);
+        const interval = setInterval(updateScheduleStatus, 60000); // Check every minute
         return () => clearInterval(interval);
 
     }, [sortedSchedule]);
+
+    const getNextClassInfo = () => {
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+
+        const upcomingOrCurrentClass = sortedSchedule.find(item => {
+             const [endHours, endMinutes] = item.end_time.split(':').map(Number);
+             // Return true if class has not ended yet
+             return currentHour < endHours || (currentHour === endHours && currentMinute < endMinutes);
+        });
+
+        if (upcomingOrCurrentClass) {
+            const [startHours, startMinutes] = upcomingOrCurrentClass.start_time.split(':').map(Number);
+            const isOngoing = now.getHours() > startHours || (now.getHours() === startHours && now.getMinutes() >= startMinutes);
+            
+            return {
+                title: isOngoing ? "Sedang Berlangsung" : "Kelas Berikutnya",
+                value: formatTime(upcomingOrCurrentClass.start_time),
+                subtitle: `${upcomingOrCurrentClass.subject} - ${upcomingOrCurrentClass.class}`
+            };
+        }
+        
+        return {
+            title: "Jadwal Hari Ini",
+            value: "Selesai",
+            subtitle: "Semua kelas telah berakhir"
+        };
+    };
+
+    const nextClassInfo = getNextClassInfo();
     
     const [today, setToday] = React.useState('');
     React.useEffect(() => {
@@ -211,7 +244,7 @@ export default function DashboardClientPage({
              </div>
         );
     }
-    
+  
   return (
     <div className="space-y-8 p-1">
       {/* Enhanced stats grid with better spacing */}
@@ -239,9 +272,9 @@ export default function DashboardClientPage({
           />
           <StatCard
             icon={Clock}
-            title="Kelas Berikutnya"
-            value={sortedSchedule.length > 0 ? formatTime(sortedSchedule[0].start_time) : '-'}
-            subtitle={sortedSchedule.length > 0 ? `${sortedSchedule[0].subject} - ${sortedSchedule[0].class}` : 'Tidak ada kelas'}
+            title={nextClassInfo.title}
+            value={nextClassInfo.value}
+            subtitle={nextClassInfo.subtitle}
             color="bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-400"
           />
       </div>
@@ -334,7 +367,7 @@ export default function DashboardClientPage({
                                             <div className="relative">
                                                 {hasEnded ? (
                                                     <div className="text-xs text-red-600 font-semibold mb-2 flex items-center gap-1">
-                                                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                                                        <CheckCircle className="w-3 h-3" />
                                                         Kelas sudah berakhir
                                                     </div>
                                                 ) : (
@@ -454,3 +487,4 @@ export default function DashboardClientPage({
     </div>
   );
 }
+
