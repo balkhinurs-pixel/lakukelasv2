@@ -162,7 +162,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="bg-primary text-primary-foreground p-8 md:p-12 flex flex-col justify-center items-center text-center">
+        <div className="bg-primary text-primary-foreground p-8 md:p-12 flex-col justify-center items-center text-center hidden md:flex">
              <div className="flex flex-col items-center justify-center mb-4">
                 <Image src="/login.png" alt="LakuKelas Illustration" width={280} height={60} className="w-48 h-auto" />
                 <h1 className="text-5xl font-bold tracking-tighter">
@@ -275,6 +275,13 @@ export default function LoginPage() {
         <Card className="grid grid-cols-1 md:grid-cols-2 overflow-hidden shadow-2xl rounded-2xl">
           <WelcomePanel />
           <div className="bg-card text-card-foreground p-8 md:p-12 flex flex-col justify-center">
+            <div className="flex flex-col items-center justify-center mb-6 md:hidden">
+                <Image src="/login.png" alt="LakuKelas Illustration" width={280} height={60} className="w-48 h-auto" />
+                <h1 className="text-5xl font-bold tracking-tighter">
+                    <span className="text-foreground">Laku</span>
+                    <span className="text-primary">Kelas</span>
+                </h1>
+            </div>
              <h2 className="text-2xl font-bold text-left mb-6">{FormTitle()}</h2>
              
              <FormContent />
@@ -296,9 +303,17 @@ export default function LoginPage() {
                 </Button>
                 </>
              )}
+
+            <div className="mt-6 text-center text-sm md:hidden">
+                {view === 'login' ? 'Belum punya akun?' : 'Sudah punya akun?'}{' '}
+                <Button variant="link" className="p-0 h-auto" onClick={() => setView(view === 'login' ? 'register' : 'login')}>
+                    {view === 'login' ? 'Buat Akun' : 'Masuk di Sini'}
+                </Button>
+            </div>
           </div>
         </Card>
       </div>
     </div>
   );
 }
+
