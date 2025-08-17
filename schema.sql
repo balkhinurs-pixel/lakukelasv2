@@ -1,46 +1,225 @@
 
--- RLS Policies for user data access
-alter table "public"."profiles" enable row level security;
-create policy "Users can view their own profile." on profiles for select using (auth.uid() = id);
-create policy "Users can update their own profile." on profiles for update using (auth.uid() = id);
+-- RLS POLICIES
 
-alter table "public"."classes" enable row level security;
-create policy "Users can manage their own classes" on classes for all using (auth.uid() = teacher_id);
-
-alter table "public"."subjects" enable row level security;
-create policy "Users can manage their own subjects" on subjects for all using (auth.uid() = teacher_id);
-
-alter table "public"."school_years" enable row level security;
-create policy "Users can manage their own school years" on school_years for all using (auth.uid() = teacher_id);
-
-alter table "public"."schedule" enable row level security;
-create policy "Users can manage their own schedule" on schedule for all using (auth.uid() = teacher_id);
-
-alter table "public"."students" enable row level security;
-CREATE POLICY "Users can manage students in their classes" ON public.students
-FOR ALL
-USING (
-  teacher_id_of_class(class_id) = auth.uid()
-);
-
-alter table "public"."attendance_history" enable row level security;
-create policy "Users can manage their own attendance history" on attendance_history for all using (auth.uid() = teacher_id);
-
-alter table "public"."grade_history" enable row level security;
-create policy "Users can manage their own grade history" on grade_history for all using (auth.uid() = teacher_id);
-
-alter table "public"."journals" enable row level security;
-create policy "Users can manage their own journals" on journals for all using (auth.uid() = teacher_id);
-
-alter table "public"."agendas" enable row level security;
-create policy "Users can manage their own agendas" on agendas for all using (auth.uid() = teacher_id);
-
-alter table "public"."activation_codes" enable row level security;
-create policy "Allow admin full access" on activation_codes for all using (is_admin(auth.uid())) with check (is_admin(auth.uid()));
-create policy "Allow users to read their own code" on activation_codes for select using (used_by = auth.uid());
+alter table profiles enable row level security;
+alter table activation_codes enable row level security;
+alter table classes enable row level security;
+alter table subjects enable row level security;
+alter table students enable row level security;
+alter table schedule enable row level security;
+alter table journals enable row level security;
+alter table attendance_history enable row level security;
+alter table grade_history enable row level security;
+alter table school_years enable row level security;
+alter table agendas enable row level security;
 
 
--- This trigger automatically creates a profile entry when a new user signs up.
+-- PROFILES TABLE
+
+drop policy if exists "Profiles are viewable by users who created them." on profiles;
+create policy "Profiles are viewable by users who created them." on profiles
+  for select using (auth.uid() = id);
+
+drop policy if exists "Users can insert their own profile." on profiles;
+create policy "Users can insert their own profile." on profiles
+  for insert with check (auth.uid() = id);
+
+drop policy if exists "Users can update their own profile." on profiles;
+create policy "Users can update their own profile." on profiles
+  for update using (auth.uid() = id);
+
+drop policy if exists "Admin users can view all profiles" on profiles;
+create policy "Admin users can view all profiles" on profiles for select
+  using (
+    (select role from profiles where id = auth.uid()) = 'admin'
+  );
+
+drop policy if exists "Admin users can update any profile" on profiles;
+create policy "Admin users can update any profile" on profiles for update
+    using (
+        (select role from profiles where id = auth.uid()) = 'admin'
+    )
+    with check (
+        (select role from profiles where id = auth.uid()) = 'admin'
+    );
+
+
+-- ACTIVATION_CODES TABLE
+
+drop policy if exists "Admin users can manage activation codes" on activation_codes;
+create policy "Admin users can manage activation codes" on activation_codes for all
+    using (
+        (select role from profiles where id = auth.uid()) = 'admin'
+    )
+    with check (
+        (select role from profiles where id = auth.uid()) = 'admin'
+    );
+
+drop policy if exists "Authenticated users can view unused codes for activation" on activation_codes;
+create policy "Authenticated users can view unused codes for activation" on activation_codes for select
+    using (
+        auth.role() = 'authenticated' and is_used = false
+    );
+
+
+-- CLASSES TABLE
+
+drop policy if exists "Users can view their own classes" on classes;
+create policy "Users can view their own classes" on classes for select
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can create classes for themselves" on classes;
+create policy "Users can create classes for themselves" on classes for insert
+    with check (auth.uid() = teacher_id);
+
+drop policy if exists "Users can update their own classes" on classes;
+create policy "Users can update their own classes" on classes for update
+    using (auth.uid() = teacher_id);
+
+
+-- SUBJECTS TABLE
+
+drop policy if exists "Users can view their own subjects" on subjects;
+create policy "Users can view their own subjects" on subjects for select
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can create subjects for themselves" on subjects;
+create policy "Users can create subjects for themselves" on subjects for insert
+    with check (auth.uid() = teacher_id);
+
+drop policy if exists "Users can update their own subjects" on subjects;
+create policy "Users can update their own subjects" on subjects for update
+    using (auth.uid() = teacher_id);
+
+
+-- STUDENTS TABLE
+
+drop policy if exists "Users can view students in their classes" on students;
+create policy "Users can view students in their classes" on students for select
+    using (
+        class_id in (
+            select id from classes where teacher_id = auth.uid()
+        )
+    );
+
+drop policy if exists "Users can add students to their classes" on students;
+create policy "Users can add students to their classes" on students for insert
+    with check (
+        class_id in (
+            select id from classes where teacher_id = auth.uid()
+        )
+    );
+
+drop policy if exists "Users can update students in their classes" on students;
+create policy "Users can update students in their classes" on students for update
+    using (
+        class_id in (
+            select id from classes where teacher_id = auth.uid()
+        )
+    );
+
+-- SCHEDULE TABLE
+
+drop policy if exists "Users can view their own schedule" on schedule;
+create policy "Users can view their own schedule" on schedule for select
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can create schedule for themselves" on schedule;
+create policy "Users can create schedule for themselves" on schedule for insert
+    with check (auth.uid() = teacher_id);
+
+drop policy if exists "Users can update their own schedule" on schedule;
+create policy "Users can update their own schedule" on schedule for update
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can delete their own schedule" on schedule;
+create policy "Users can delete their own schedule" on schedule for delete
+    using (auth.uid() = teacher_id);
+
+
+-- JOURNALS TABLE
+
+drop policy if exists "Users can view their own journals" on journals;
+create policy "Users can view their own journals" on journals for select
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can create journals for themselves" on journals;
+create policy "Users can create journals for themselves" on journals for insert
+    with check (auth.uid() = teacher_id);
+
+drop policy if exists "Users can update their own journals" on journals;
+create policy "Users can update their own journals" on journals for update
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can delete their own journals" on journals;
+create policy "Users can delete their own journals" on journals for delete
+    using (auth.uid() = teacher_id);
+
+-- ATTENDANCE_HISTORY TABLE
+
+drop policy if exists "Users can view their own attendance history" on attendance_history;
+create policy "Users can view their own attendance history" on attendance_history for select
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can create attendance history for themselves" on attendance_history;
+create policy "Users can create attendance history for themselves" on attendance_history for insert
+    with check (auth.uid() = teacher_id);
+
+drop policy if exists "Users can update their own attendance history" on attendance_history;
+create policy "Users can update their own attendance history" on attendance_history for update
+    using (auth.uid() = teacher_id);
+
+-- GRADE_HISTORY TABLE
+
+drop policy if exists "Users can view their own grade history" on grade_history;
+create policy "Users can view their own grade history" on grade_history for select
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can create grade history for themselves" on grade_history;
+create policy "Users can create grade history for themselves" on grade_history for insert
+    with check (auth.uid() = teacher_id);
+
+drop policy if exists "Users can update their own grade history" on grade_history;
+create policy "Users can update their own grade history" on grade_history for update
+    using (auth.uid() = teacher_id);
+
+
+-- SCHOOL_YEARS TABLE
+
+drop policy if exists "Users can view their own school years" on school_years;
+create policy "Users can view their own school years" on school_years for select
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can create school years for themselves" on school_years;
+create policy "Users can create school years for themselves" on school_years for insert
+    with check (auth.uid() = teacher_id);
+
+drop policy if exists "Users can delete their own school years" on school_years;
+create policy "Users can delete their own school years" on school_years for delete
+    using (auth.uid() = teacher_id);
+
+-- AGENDAS TABLE
+
+drop policy if exists "Users can view their own agendas" on agendas;
+create policy "Users can view their own agendas" on agendas for select
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can create agendas for themselves" on agendas;
+create policy "Users can create agendas for themselves" on agendas for insert
+    with check (auth.uid() = teacher_id);
+
+drop policy if exists "Users can update their own agendas" on agendas;
+create policy "Users can update their own agendas" on agendas for update
+    using (auth.uid() = teacher_id);
+
+drop policy if exists "Users can delete their own agendas" on agendas;
+create policy "Users can delete their own agendas" on agendas for delete
+    using (auth.uid() = teacher_id);
+
+
+-- FUNCTIONS AND TRIGGERS
+
+-- This trigger automatically creates a profile for a new user.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -49,138 +228,29 @@ as $$
 begin
   insert into public.profiles (id, full_name, avatar_url, email, role, account_status)
   values (
-      new.id,
-      new.raw_user_meta_data->>'full_name',
-      new.raw_user_meta_data->>'avatar_url',
-      new.email,
-      'teacher',
-      'Free'
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'avatar_url',
+    new.email,
+    'teacher',
+    'Free'
   );
   return new;
 end;
 $$;
 
--- trigger the function every time a user is created
-create or replace trigger on_auth_user_created
+-- Trigger the function every time a user is created
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
 
--- Function to get teacher_id from a class_id
-CREATE OR REPLACE FUNCTION teacher_id_of_class(p_class_id UUID)
-RETURNS UUID AS $$
-DECLARE
-  v_teacher_id UUID;
-BEGIN
-  SELECT teacher_id INTO v_teacher_id
-  FROM public.classes
-  WHERE id = p_class_id;
-  
-  RETURN v_teacher_id;
-END;
-$$ LANGUAGE plpgsql;
-
-
--- Function to check if a user is an admin
-create or replace function is_admin(user_id uuid)
-returns boolean
-language plpgsql
-as $$
-declare
-  user_role text;
-begin
-  select role into user_role from public.profiles where id = user_id;
-  return user_role = 'admin';
-end;
-$$;
-
--- Function to add a student, ensuring the teacher owns the class and the NIS is unique for that teacher.
-CREATE OR REPLACE FUNCTION add_student_with_teacher_check(
-    p_class_id UUID,
-    p_nis TEXT,
-    p_name TEXT,
-    p_gender TEXT
-)
-RETURNS void AS $$
-DECLARE
-    v_teacher_id UUID;
-    v_nis_exists INTEGER;
-BEGIN
-    -- 1. Get the teacher_id for the given class_id
-    SELECT teacher_id INTO v_teacher_id
-    FROM public.classes
-    WHERE id = p_class_id;
-
-    -- 2. Check if the calling user is the teacher for that class
-    IF v_teacher_id IS NULL OR v_teacher_id != auth.uid() THEN
-        RAISE EXCEPTION 'User is not authorized to add students to this class.';
-    END IF;
-
-    -- 3. Check if the NIS already exists for any student belonging to this teacher
-    SELECT 1 INTO v_nis_exists
-    FROM public.students s
-    JOIN public.classes c ON s.class_id = c.id
-    WHERE c.teacher_id = v_teacher_id AND s.nis = p_nis;
-
-    IF v_nis_exists = 1 THEN
-        RAISE EXCEPTION 'NIS already exists for this teacher.';
-    END IF;
-
-    -- 4. If all checks pass, insert the new student
-    INSERT INTO public.students (class_id, nis, name, gender, status)
-    VALUES (p_class_id, p_nis, p_name, p_gender, 'active');
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-ALTER FUNCTION add_student_with_teacher_check(uuid, text, text, text) OWNER TO postgres;
-
-
--- RPC to activate a user account with a code
-CREATE OR REPLACE FUNCTION activate_account_with_code(p_code TEXT, p_user_id UUID)
-RETURNS VOID AS $$
-DECLARE
-    v_code_id UUID;
-BEGIN
-    -- Find the specific, unused code.
-    SELECT id INTO v_code_id
-    FROM public.activation_codes
-    WHERE code = p_code AND is_used = FALSE
-    LIMIT 1;
-
-    -- If no such code is found, raise an error.
-    IF v_code_id IS NULL THEN
-        RAISE EXCEPTION 'Activation code is invalid or has already been used.';
-    END IF;
-
-    -- If we found a valid code, proceed with the transaction.
-    -- Update the activation code record.
-    UPDATE public.activation_codes
-    SET 
-        is_used = TRUE,
-        used_by = p_user_id,
-        used_at = now()
-    WHERE id = v_code_id;
-
-    -- Update the user's profile to 'Pro'.
-    UPDATE public.profiles
-    SET account_status = 'Pro'
-    WHERE id = p_user_id;
-
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-ALTER FUNCTION activate_account_with_code(text, uuid) OWNER TO postgres;
-
-
-
--- This function will be called by the admin to delete a user.
--- It deletes from auth.users, and the trigger on_user_deleted will clean up the profile.
--- Note: This requires the 'supabase_admin' role which server-side clients have.
--- We are not creating this function anymore as it's handled by the server action with admin client.
-
--- This trigger automatically deletes a profile entry when a user is deleted.
+-- Function to delete a user's profile when they are deleted from auth.users
 create or replace function public.handle_user_delete()
 returns trigger
 language plpgsql
-security definer set search_path = public
+security definer
 as $$
 begin
   delete from public.profiles where id = old.id;
@@ -188,6 +258,106 @@ begin
 end;
 $$;
 
-create or replace trigger on_auth_user_deleted
+drop trigger if exists on_auth_user_deleted on auth.users;
+create trigger on_auth_user_deleted
   after delete on auth.users
-  for each row execute procedure public.handle_user_delete();
+  for each row
+  execute procedure public.handle_user_delete();
+
+-- Function to add a student, ensuring the NIS is unique for the teacher
+CREATE OR REPLACE FUNCTION add_student_with_teacher_check(p_class_id uuid, p_nis text, p_name text, p_gender text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_teacher_id uuid;
+  v_nis_exists boolean;
+BEGIN
+  -- Get the teacher_id from the class
+  SELECT teacher_id INTO v_teacher_id FROM public.classes WHERE id = p_class_id;
+
+  -- Check if the NIS already exists for any student in any class belonging to this teacher
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.students s
+    JOIN public.classes c ON s.class_id = c.id
+    WHERE s.nis = p_nis AND c.teacher_id = v_teacher_id
+  ) INTO v_nis_exists;
+
+  IF v_nis_exists THEN
+    RAISE EXCEPTION 'NIS already exists for this teacher';
+  END IF;
+
+  -- If NIS does not exist for this teacher, insert the new student
+  INSERT INTO public.students (class_id, nis, name, gender, status)
+  VALUES (p_class_id, p_nis, p_name, p_gender, 'active');
+END;
+$$;
+
+
+-- First, drop the existing function to avoid conflicts with return type changes.
+DROP FUNCTION IF EXISTS activate_account_with_code(text, uuid, text);
+
+-- Then, create the function with the correct logic and explicit return type.
+CREATE OR REPLACE FUNCTION activate_account_with_code(p_code text, p_user_id uuid, p_user_email text)
+RETURNS void -- Explicitly state that this function does not return a value.
+LANGUAGE plpgsql
+SECURITY DEFINER -- Allows the function to run with the permissions of the user who defined it.
+AS $$
+DECLARE
+  v_code_id UUID;
+BEGIN
+  -- 1. Find the ID of a valid, unused activation code.
+  SELECT id INTO v_code_id FROM public.activation_codes
+  WHERE code = p_code AND is_used = false
+  LIMIT 1;
+
+  -- 2. If no valid code is found, raise a specific error.
+  IF v_code_id IS NULL THEN
+    RAISE EXCEPTION 'Code not found or already used';
+  END IF;
+
+  -- 3. Update the user's profile to 'Pro'.
+  UPDATE public.profiles
+  SET account_status = 'Pro'
+  WHERE id = p_user_id;
+
+  -- 4. Mark the specific code as used, recording who used it and when.
+  UPDATE public.activation_codes
+  SET 
+    is_used = true,
+    used_by = p_user_id,
+    used_at = now(),
+    used_by_email = p_user_email
+  WHERE id = v_code_id;
+  
+END;
+$$;
+
+-- Grant ownership to the postgres superuser to ensure it has all necessary permissions.
+ALTER FUNCTION activate_account_with_code(text, uuid, text) OWNER TO postgres;
+
+-- STORAGE POLICIES
+-- Create a bucket for profile images
+insert into storage.buckets (id, name, public)
+values ('profile-images', 'profile-images', true)
+on conflict (id) do nothing;
+
+-- Set up RLS policies for the profile-images bucket
+drop policy if exists "Avatar images are publicly accessible." on storage.objects;
+create policy "Avatar images are publicly accessible." on storage.objects
+  for select using (bucket_id = 'profile-images');
+
+drop policy if exists "Anyone can upload an avatar." on storage.objects;
+create policy "Anyone can upload an avatar." on storage.objects
+  for insert with check (bucket_id = 'profile-images');
+
+drop policy if exists "Users can update their own images." on storage.objects;
+create policy "Users can update their own images." on storage.objects
+    for update using (auth.uid() = owner);
+
+drop policy if exists "Users can delete their own images." on storage.objects;
+create policy "Users can delete their own images." on storage.objects
+    for delete using (auth.uid() = owner);
+
