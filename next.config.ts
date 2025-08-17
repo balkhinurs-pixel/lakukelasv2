@@ -6,9 +6,6 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
-  theme_color: '#8d34e6',
-  background_color: '#8d34e6',
-  // cache-busting version
 })
 
 const nextConfig: NextConfig = {
