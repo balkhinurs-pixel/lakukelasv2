@@ -42,7 +42,7 @@ export async function activateAccount(code: string) {
   const { error } = await supabase.rpc('activate_account_with_code', {
     activation_code_to_use: code,
     user_id_to_activate: user.id,
-    user_email_to_set: user.email // This parameter was missing
+    user_email_to_set: user.email
   });
 
   if (error) {
@@ -485,5 +485,3 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 
     return { success: true, message: 'Image uploaded successfully', url: publicUrl };
 }
-
-

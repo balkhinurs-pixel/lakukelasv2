@@ -1,71 +1,64 @@
 
--- Enable RLS
-alter default privileges in schema public grant all on tables to postgres, anon, authenticated, service_role;
-alter default privileges in schema public grant all on functions to postgres, anon, authenticated, service_role;
-alter default privileges in schema public grant all on sequences to postgres, anon, authenticated, service_role;
+-- Enable UUID generation
+create extension if not exists "uuid-ossp" with schema "extensions";
 
--- Allow anonymous access to the public schema
-grant usage on schema public to postgres, anon, authenticated, service_role;
-
--- Allow anonymous access to all tables, functions, and sequences in the public schema
-grant all on all tables in schema public to anon, authenticated, service_role;
-grant all on all functions in schema public to anon, authenticated, service_role;
-grant all on all sequences in schema public to anon, authenticated, service_role;
-
--- Drop existing tables if they exist
-drop table if exists "public"."attendance_history" cascade;
-drop table if exists "public"."grade_history" cascade;
-drop table if exists "public"."journals" cascade;
-drop table if exists "public"."schedule" cascade;
-drop table if exists "public"."students" cascade;
-drop table if exists "public"."classes" cascade;
-drop table if exists "public"."subjects" cascade;
-drop table if exists "public"."school_years" cascade;
-drop table if exists "public"."profiles" cascade;
-drop table if exists "public"."activation_codes" cascade;
-drop table if exists "public"."agendas" cascade;
-
--- Custom Types
+-- Create custom types
 do $$
 begin
-    if not exists (select 1 from pg_type where typname = 'gender') then
-        create type public.gender as enum ('Laki-laki', 'Perempuan');
+    if not exists (select 1 from pg_type where typname = 'account_status') then
+        create type public.account_status as enum ('Free', 'Pro');
     end if;
+end$$;
+
+do $$
+begin
+    if not exists (select 1 from pg_type where typname = 'user_role') then
+        create type public.user_role as enum ('admin', 'teacher');
+    end if;
+end$$;
+
+do $$
+begin
     if not exists (select 1 from pg_type where typname = 'student_status') then
         create type public.student_status as enum ('active', 'graduated', 'dropout', 'inactive');
     end if;
+end$$;
+
+do $$
+begin
     if not exists (select 1 from pg_type where typname = 'attendance_status') then
-       create type public.attendance_status as enum ('Hadir', 'Sakit', 'Izin', 'Alpha');
+        create type public.attendance_status as enum ('Hadir', 'Sakit', 'Izin', 'Alpha');
     end if;
-     if not exists (select 1 from pg_type where typname = 'account_status') then
-       create type public.account_status as enum ('Free', 'Pro');
+end$$;
+
+-- Define a composite type for attendance records
+do $$
+begin
+    if not exists (select 1 from pg_type where typname = 'attendance_record') then
+        create type public.attendance_record as (
+            student_id uuid,
+            status attendance_status
+        );
     end if;
-     if not exists (select 1 from pg_type where typname = 'user_role') then
-       create type public.user_role as enum ('teacher', 'admin');
+end$$;
+
+-- Define a composite type for grade records
+do $$
+begin
+    if not exists (select 1 from pg_type where typname = 'grade_record') then
+        create type public.grade_record as (
+            student_id uuid,
+            score numeric(5, 2)
+        );
     end if;
 end$$;
 
 
--- School Years Table
-create table public.school_years (
-    id uuid not null default gen_random_uuid(),
+-- Create tables
+create table if not exists public.profiles (
+    id uuid not null primary key,
     created_at timestamp with time zone not null default now(),
-    name text not null,
-    teacher_id uuid not null references auth.users(id) on delete cascade,
-    primary key (id),
-    unique (teacher_id, name)
-);
-alter table public.school_years enable row level security;
-create policy "Enable access to all users" on public.school_years for select using (true);
-create policy "Users can insert their own school years" on public.school_years for insert with check (auth.uid() = teacher_id);
-create policy "Users can update their own school years" on public.school_years for update using (auth.uid() = teacher_id);
-create policy "Users can delete their own school years" on public.school_years for delete using (auth.uid() = teacher_id);
-
--- Profiles Table
-create table public.profiles (
-    id uuid not null references auth.users(id) on delete cascade,
-    created_at timestamp with time zone not null default now(),
-    full_name text not null,
+    full_name text,
     email text,
     avatar_url text,
     nip text,
@@ -76,284 +69,364 @@ create table public.profiles (
     headmaster_name text,
     headmaster_nip text,
     school_logo_url text,
-    account_status public.account_status not null default 'Free',
-    role public.user_role not null default 'teacher',
-    active_school_year_id uuid references public.school_years(id) on delete set null,
-    primary key (id),
-    unique(email)
+    account_status public.account_status not null default 'Free'::public.account_status,
+    role public.user_role not null default 'teacher'::public.user_role,
+    active_school_year_id uuid,
+    constraint profiles_id_fkey foreign key (id) references auth.users (id) on delete cascade
 );
-alter table public.profiles enable row level security;
-create policy "Public profiles are viewable by everyone." on public.profiles for select using (true);
-create policy "Users can insert their own profile." on public.profiles for insert with check (auth.uid() = id);
-create policy "Users can update their own profile." on public.profiles for update using (auth.uid() = id);
+comment on table public.profiles is 'User profiles supplementing auth.users.';
 
-
--- Function to create a profile for a new user
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (id, full_name, email, avatar_url)
-  values (new.id, new.raw_user_meta_data->>'full_name', new.email, new.raw_user_meta_data->>'avatar_url');
-  return new;
-end;
-$$;
-
--- Trigger to call the function when a new user is created
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-
-
--- Activation Codes Table
-create table public.activation_codes (
-    id uuid not null default gen_random_uuid(),
-    code text not null,
-    is_used boolean not null default false,
-    used_by uuid null references public.profiles(id) on delete set null,
-    used_at timestamp with time zone,
-    created_at timestamp with time zone not null default now(),
-    primary key (id),
-    unique(code)
-);
-alter table public.activation_codes enable row level security;
--- Admin-only access
-create policy "Enable read access for admins" on public.activation_codes for select using (public.is_admin());
-create policy "Enable insert access for admins" on public.activation_codes for insert with check (public.is_admin());
-create policy "Enable update access for admins" on public.activation_codes for update using (public.is_admin());
-
--- Classes Table
-create table public.classes (
-    id uuid not null default gen_random_uuid(),
+create table if not exists public.school_years (
+    id uuid not null primary key default uuid_generate_v4(),
     name text not null,
-    teacher_id uuid not null references auth.users(id) on delete cascade,
-    primary key (id)
+    teacher_id uuid not null,
+    created_at timestamp with time zone not null default now(),
+    constraint school_years_teacher_id_fkey foreign key (teacher_id) references auth.users (id) on delete cascade,
+    unique(teacher_id, name)
 );
-alter table public.classes enable row level security;
-create policy "Users can manage their own classes" on public.classes for all using (auth.uid() = teacher_id);
+comment on table public.school_years is 'Stores school academic years and semesters.';
 
--- Subjects Table
-create table public.subjects (
-    id uuid not null default gen_random_uuid(),
+-- Add foreign key from profiles to school_years
+alter table public.profiles
+    add constraint profiles_active_school_year_id_fkey foreign key (active_school_year_id) references public.school_years (id) on delete set null;
+
+
+create table if not exists public.classes (
+    id uuid not null primary key default uuid_generate_v4(),
+    name text not null,
+    teacher_id uuid not null,
+    created_at timestamp with time zone not null default now(),
+    constraint classes_teacher_id_fkey foreign key (teacher_id) references auth.users (id) on delete cascade
+);
+comment on table public.classes is 'Stores class information.';
+
+create table if not exists public.subjects (
+    id uuid not null primary key default uuid_generate_v4(),
     name text not null,
     kkm integer not null default 75,
-    teacher_id uuid not null references auth.users(id) on delete cascade,
-    primary key (id)
+    teacher_id uuid not null,
+    created_at timestamp with time zone not null default now(),
+    constraint subjects_teacher_id_fkey foreign key (teacher_id) references auth.users (id) on delete cascade
 );
-alter table public.subjects enable row level security;
-create policy "Users can manage their own subjects" on public.subjects for all using (auth.uid() = teacher_id);
+comment on table public.subjects is 'Stores subject information.';
 
--- Students Table
-create table public.students (
-    id uuid not null default gen_random_uuid(),
+create table if not exists public.students (
+    id uuid not null primary key default uuid_generate_v4(),
     name text not null,
     nis text not null,
-    gender public.gender not null,
-    class_id uuid not null references public.classes(id) on delete cascade,
-    status public.student_status not null default 'active',
-    primary key (id)
+    gender text not null,
+    class_id uuid not null,
+    status public.student_status not null default 'active'::public.student_status,
+    created_at timestamp with time zone not null default now(),
+    constraint students_class_id_fkey foreign key (class_id) references public.classes (id) on delete cascade,
+    constraint students_nis_class_id_teacher_id_key unique (nis, class_id)
 );
-create unique index "unique_nis_per_teacher" on public.students (nis, (
-    select teacher_id from public.classes where id = class_id
-));
-alter table public.students enable row level security;
-create policy "Users can view students in their classes" on public.students for select using (
-    exists (select 1 from public.classes where id = class_id and teacher_id = auth.uid())
-);
-create policy "Users can insert students into their classes" on public.students for insert with check (
-    exists (select 1 from public.classes where id = class_id and teacher_id = auth.uid())
-);
-create policy "Users can update students in their classes" on public.students for update using (
-    exists (select 1 from public.classes where id = class_id and teacher_id = auth.uid())
-);
+comment on table public.students is 'Stores student data.';
+
+-- Add index for faster lookups
+create index if not exists students_class_id_idx on public.students (class_id);
+create index if not exists students_status_idx on public.students (status);
 
 
--- Schedule Table
-create table public.schedule (
-    id uuid not null default gen_random_uuid(),
-    day text not null,
-    start_time time without time zone not null,
-    end_time time without time zone not null,
-    subject_id uuid not null references public.subjects(id) on delete cascade,
-    class_id uuid not null references public.classes(id) on delete cascade,
-    teacher_id uuid not null references auth.users(id) on delete cascade,
-    primary key (id)
-);
-alter table public.schedule enable row level security;
-create policy "Users can manage their own schedule" on public.schedule for all using (auth.uid() = teacher_id);
-
--- Attendance History Table
-create table public.attendance_history (
-    id uuid not null default gen_random_uuid(),
+create table if not exists public.journals (
+    id uuid not null primary key default uuid_generate_v4(),
     date date not null,
-    class_id uuid not null references public.classes(id) on delete cascade,
-    subject_id uuid not null references public.subjects(id) on delete cascade,
-    school_year_id uuid references public.school_years(id) on delete cascade,
-    meeting_number integer,
-    records jsonb not null,
-    teacher_id uuid not null references auth.users(id) on delete cascade,
-    primary key(id)
-);
-alter table public.attendance_history enable row level security;
-create policy "Users can manage their own attendance history" on public.attendance_history for all using (auth.uid() = teacher_id);
-
--- Grade History Table
-create table public.grade_history (
-    id uuid not null default gen_random_uuid(),
-    date date not null,
-    class_id uuid not null references public.classes(id) on delete cascade,
-    subject_id uuid not null references public.subjects(id) on delete cascade,
-    school_year_id uuid references public.school_years(id) on delete cascade,
-    assessment_type text not null,
-    records jsonb not null,
-    teacher_id uuid not null references auth.users(id) on delete cascade,
-    primary key(id)
-);
-alter table public.grade_history enable row level security;
-create policy "Users can manage their own grade history" on public.grade_history for all using (auth.uid() = teacher_id);
-
--- Journals Table
-create table public.journals (
-    id uuid not null default gen_random_uuid(),
-    date date not null,
-    class_id uuid not null references public.classes(id) on delete cascade,
-    subject_id uuid not null references public.subjects(id) on delete cascade,
-    school_year_id uuid references public.school_years(id) on delete cascade,
+    class_id uuid not null,
+    subject_id uuid not null,
+    school_year_id uuid,
     meeting_number integer,
     learning_objectives text not null,
     learning_activities text not null,
     assessment text,
     reflection text,
-    teacher_id uuid not null references auth.users(id) on delete cascade,
+    teacher_id uuid not null,
     created_at timestamp with time zone not null default now(),
-    primary key(id)
+    constraint journals_class_id_fkey foreign key (class_id) references public.classes (id) on delete cascade,
+    constraint journals_subject_id_fkey foreign key (subject_id) references public.subjects (id) on delete cascade,
+    constraint journals_teacher_id_fkey foreign key (teacher_id) references auth.users (id) on delete cascade,
+    constraint journals_school_year_id_fkey foreign key (school_year_id) references public.school_years(id) on delete set null
 );
-alter table public.journals enable row level security;
-create policy "Users can manage their own journals" on public.journals for all using (auth.uid() = teacher_id);
+comment on table public.journals is 'Teaching journals for each session.';
 
-
--- Agendas Table
-create table public.agendas (
-    id uuid not null default gen_random_uuid(),
+create table if not exists public.agendas (
+    id uuid not null primary key default uuid_generate_v4(),
     date date not null,
     title text not null,
     description text,
     tag text,
     color text,
-    start_time time without time zone,
-    end_time time without time zone,
-    teacher_id uuid not null references auth.users(id) on delete cascade,
+    start_time time,
+    end_time time,
+    teacher_id uuid not null,
     created_at timestamp with time zone not null default now(),
-    primary key(id)
+    constraint agendas_teacher_id_fkey foreign key (teacher_id) references auth.users(id) on delete cascade
 );
-alter table public.agendas enable row level security;
-create policy "Users can manage their own agendas" on public.agendas for all using (auth.uid() = teacher_id);
+comment on table public.agendas is 'Personal agendas and reminders for teachers.';
 
 
--- Function to check if user is admin
-create or replace function public.is_admin()
-returns boolean
-language sql
-security definer
-as $$
-  select exists (
-    select 1
-    from public.profiles
-    where id = auth.uid() and role = 'admin'
-  );
-$$;
+create table if not exists public.schedule (
+    id uuid not null primary key default uuid_generate_v4(),
+    day text not null,
+    start_time time not null,
+    end_time time not null,
+    class_id uuid not null,
+    subject_id uuid not null,
+    teacher_id uuid not null,
+    constraint schedule_class_id_fkey foreign key (class_id) references public.classes (id) on delete cascade,
+    constraint schedule_subject_id_fkey foreign key (subject_id) references public.subjects (id) on delete cascade,
+    constraint schedule_teacher_id_fkey foreign key (teacher_id) references auth.users (id) on delete cascade
+);
+comment on table public.schedule is 'Weekly teaching schedule.';
 
--- Function to activate an account
-create or replace function public.activate_account_with_code(
+create table if not exists public.attendance_history (
+    id uuid not null primary key default uuid_generate_v4(),
+    date date not null,
+    class_id uuid not null,
+    subject_id uuid not null,
+    school_year_id uuid,
+    meeting_number integer not null,
+    records jsonb not null,
+    teacher_id uuid not null,
+    constraint attendance_history_class_id_fkey foreign key (class_id) references public.classes (id) on delete cascade,
+    constraint attendance_history_subject_id_fkey foreign key (subject_id) references public.subjects (id) on delete cascade,
+    constraint attendance_history_teacher_id_fkey foreign key (teacher_id) references auth.users (id) on delete cascade,
+    constraint attendance_history_school_year_id_fkey foreign key (school_year_id) references public.school_years(id) on delete set null
+);
+comment on table public.attendance_history is 'Historical attendance records.';
+
+create table if not exists public.grade_history (
+    id uuid not null primary key default uuid_generate_v4(),
+    date date not null,
+    class_id uuid not null,
+    subject_id uuid not null,
+    school_year_id uuid,
+    assessment_type text not null,
+    records jsonb not null,
+    teacher_id uuid not null,
+    constraint grade_history_class_id_fkey foreign key (class_id) references public.classes (id) on delete cascade,
+    constraint grade_history_subject_id_fkey foreign key (subject_id) references public.subjects (id) on delete cascade,
+    constraint grade_history_teacher_id_fkey foreign key (teacher_id) references auth.users (id) on delete cascade,
+    constraint grade_history_school_year_id_fkey foreign key (school_year_id) references public.school_years(id) on delete set null
+);
+comment on table public.grade_history is 'Historical grade records.';
+
+create table if not exists public.activation_codes (
+    id serial primary key,
+    code text not null unique,
+    is_used boolean not null default false,
+    used_by uuid,
+    used_at timestamp with time zone,
+    created_at timestamp with time zone not null default now(),
+    used_by_email text,
+    constraint activation_codes_used_by_fkey foreign key (used_by) references public.profiles (id) on delete set null
+);
+comment on table public.activation_codes is 'Activation codes for Pro accounts.';
+
+-- Function to handle new user creation
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, full_name, email, avatar_url)
+  values (new.id, new.raw_user_meta_data->>'full_name', new.email, new.raw_user_meta_data->>'avatar_url');
+  return new;
+end;
+$$ language plpgsql security definer;
+comment on function public.handle_new_user() is 'Automatically creates a profile for a new user.';
+
+-- Trigger for new user creation
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- Function to handle user deletion
+create or replace function public.handle_user_delete()
+returns trigger as $$
+begin
+  delete from public.profiles where id = old.id;
+  return old;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger for user deletion
+create or replace trigger on_auth_user_deleted
+  after delete on auth.users
+  for each row execute procedure public.handle_user_delete();
+
+-- Function to activate a user account with a code
+create or replace function activate_account_with_code(
     activation_code_to_use text,
     user_id_to_activate uuid,
     user_email_to_set text
 )
-returns void
-language plpgsql
-as $$
+returns void as $$
 declare
-    code_id uuid;
-    is_code_used boolean;
+    code_id_to_use int;
 begin
-    -- Find the code and check its status
-    select id, is_used into code_id, is_code_used
+    -- Find the ID of the provided, unused activation code
+    select id into code_id_to_use
     from public.activation_codes
-    where code = activation_code_to_use;
+    where code = activation_code_to_use and not is_used;
 
-    if code_id is null then
-        raise exception 'Code not found';
+    -- If no such code is found, raise an exception
+    if code_id_to_use is null then
+        raise exception 'Code not found or already used';
     end if;
 
-    if is_code_used then
-        raise exception 'Code already used';
-    end if;
-
-    -- Update the activation_codes table
+    -- Mark the code as used
     update public.activation_codes
-    set is_used = true,
+    set 
+        is_used = true,
         used_by = user_id_to_activate,
+        used_by_email = user_email_to_set,
         used_at = now()
-    where id = code_id;
+    where id = code_id_to_use;
 
-    -- Update the profiles table
+    -- Update the user's profile to Pro
     update public.profiles
     set account_status = 'Pro'
     where id = user_id_to_activate;
 end;
-$$;
+$$ language plpgsql security definer;
 
 
--- Function to safely add a student, checking for teacher ownership and duplicate NIS
+-- Function to add a student, ensuring the class belongs to the calling teacher
 create or replace function add_student_with_teacher_check(
     p_class_id uuid,
     p_nis text,
     p_name text,
-    p_gender text -- Corrected data type from 'gender' to 'text'
+    p_gender text
 )
 returns void as $$
 declare
     v_teacher_id uuid;
-    v_existing_nis_teacher_id uuid;
 begin
-    -- 1. Get the teacher_id from the provided p_class_id
-    select teacher_id into v_teacher_id
-    from public.classes
-    where id = p_class_id;
+    -- Get the teacher_id of the current authenticated user
+    v_teacher_id := auth.uid();
 
-    -- If the class doesn't exist or doesn't belong to any teacher, raise an exception.
-    if v_teacher_id is null then
-        raise exception 'Kelas dengan ID yang diberikan tidak ditemukan.';
+    -- Check if a student with the same NIS already exists for this teacher across all their classes
+    if exists (
+        select 1
+        from public.students s
+        join public.classes c on s.class_id = c.id
+        where s.nis = p_nis and c.teacher_id = v_teacher_id
+    ) then
+        raise exception 'NIS already exists for this teacher';
     end if;
 
-    -- 2. Check if the NIS already exists for another class under the same teacher
-    select c.teacher_id into v_existing_nis_teacher_id
-    from public.students s
-    join public.classes c on s.class_id = c.id
-    where s.nis = p_nis and c.teacher_id = v_teacher_id
-    limit 1;
-
-    -- If the NIS is found for the same teacher, it's a violation.
-    if v_existing_nis_teacher_id is not null then
-        raise exception 'NIS sudah terdaftar untuk guru ini di kelas lain.';
+    -- Verify that the class_id belongs to the current teacher
+    if not exists (
+        select 1 from public.classes
+        where id = p_class_id and teacher_id = v_teacher_id
+    ) then
+        raise exception 'Invalid class ID for this teacher';
     end if;
-    
-    -- 3. If all checks pass, insert the new student
+
+    -- Insert the new student
     insert into public.students (class_id, nis, name, gender, status)
     values (p_class_id, p_nis, p_name, p_gender, 'active');
+
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer;
 
--- Reset all changes
--- alter default privileges in schema public revoke all on tables from postgres, anon, authenticated, service_role;
--- alter default privileges in schema public revoke all on functions from postgres, anon, authenticated, service_role;
--- alter default privileges in schema public revoke all on sequences from postgres, anon, authenticated, service_role;
+-- Enable Row Level Security (RLS)
+alter table public.profiles enable row level security;
+alter table public.classes enable row level security;
+alter table public.subjects enable row level security;
+alter table public.students enable row level security;
+alter table public.journals enable row level security;
+alter table public.schedule enable row level security;
+alter table public.attendance_history enable row level security;
+alter table public.grade_history enable row level security;
+alter table public.activation_codes enable row level security;
+alter table public.school_years enable row level security;
+alter table public.agendas enable row level security;
 
--- revoke all on all tables in schema public from anon, authenticated, service_role;
--- revoke all on all functions in schema public from anon, authenticated, service_role;
--- revoke all on all sequences in schema public from anon, authenticated, service_role;
+-- Policies for profiles
+create or replace policy "Users can view their own profile." on public.profiles for select using (auth.uid() = id);
+create or replace policy "Users can update their own profile." on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+create or replace policy "Admins can manage all profiles." on public.profiles for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
 
--- revoke usage on schema public from anon, authenticated, service_role;
+-- Policies for classes
+create or replace policy "Teachers can manage their own classes." on public.classes for all using (auth.uid() = teacher_id);
+create or replace policy "Admins can manage all classes." on public.classes for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+
+-- Policies for subjects
+create or replace policy "Teachers can manage their own subjects." on public.subjects for all using (auth.uid() = teacher_id);
+create or replace policy "Admins can manage all subjects." on public.subjects for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+
+-- Policies for school_years
+create or replace policy "Teachers can manage their own school years." on public.school_years for all using (auth.uid() = teacher_id);
+create or replace policy "Admins can manage all school years." on public.school_years for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+
+-- Policies for students
+create or replace policy "Teachers can manage students in their own classes." on public.students for all
+using (
+  class_id in (select id from public.classes where teacher_id = auth.uid())
+);
+create or replace policy "Admins can manage all students." on public.students for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+
+-- Policies for journals
+create or replace policy "Teachers can manage their own journals." on public.journals for all using (auth.uid() = teacher_id);
+create or replace policy "Admins can read all journals." on public.journals for select using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+
+-- Policies for schedule
+create or replace policy "Teachers can manage their own schedule." on public.schedule for all using (auth.uid() = teacher_id);
+create or replace policy "Admins can read all schedules." on public.schedule for select using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+
+-- Policies for agendas
+create or replace policy "Teachers can manage their own agendas." on public.agendas for all using (auth.uid() = teacher_id);
+
+-- Policies for attendance_history
+create or replace policy "Teachers can manage their own attendance history." on public.attendance_history for all using (auth.uid() = teacher_id);
+create or replace policy "Admins can read all attendance history." on public.attendance_history for select using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+
+-- Policies for grade_history
+create or replace policy "Teachers can manage their own grade history." on public.grade_history for all using (auth.uid() = teacher_id);
+create or replace policy "Admins can read all grade history." on public.grade_history for select using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+
+-- Policies for activation_codes
+create or replace policy "Admins can manage activation codes." on public.activation_codes for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+);
+create or replace policy "Authenticated users can read activation codes." on public.activation_codes for select using (auth.role() = 'authenticated');
+
+
+-- Storage policies
+CREATE POLICY "Allow public read access to profile images" ON storage.objects
+FOR SELECT
+USING ( bucket_id = 'profile-images' );
+
+CREATE POLICY "Allow authenticated users to upload their own images" ON storage.objects
+FOR INSERT
+WITH CHECK (
+  bucket_id = 'profile-images' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+
+CREATE POLICY "Allow authenticated users to update their own images" ON storage.objects
+FOR UPDATE
+USING (
+  auth.uid()::text = (storage.foldername(name))[1]
+)
+WITH CHECK (
+  bucket_id = 'profile-images' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
