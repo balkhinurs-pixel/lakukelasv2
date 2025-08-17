@@ -163,7 +163,8 @@ export default function LoginPage() {
 
     return (
         <div className="bg-primary text-primary-foreground p-8 md:p-12 flex-col justify-center items-center text-center hidden md:flex">
-             <div className="flex flex-col items-center justify-center mb-4">
+             <div className="flex items-center justify-center gap-4 mb-4">
+                <Image src="/login.png" alt="LakuKelas Logo" width={80} height={80} className="w-20 h-20" />
                 <h1 className="text-5xl font-bold tracking-tighter">
                     <span className="text-white">Laku</span>
                     <span style={{ color: '#48c4c2' }}>Kelas</span>
@@ -274,7 +275,8 @@ export default function LoginPage() {
         <Card className="grid grid-cols-1 md:grid-cols-2 overflow-hidden shadow-2xl rounded-2xl">
           <WelcomePanel />
           <div className="bg-card text-card-foreground p-8 md:p-12 flex flex-col justify-center">
-            <div className="flex flex-col items-center justify-center mb-6 md:hidden">
+            <div className="flex items-center justify-center gap-2 mb-6 md:hidden">
+                 <Image src="/login.png" alt="LakuKelas Logo" width={60} height={60} className="w-12 h-12" />
                 <h1 className="text-5xl font-bold tracking-tighter">
                     <span className="text-foreground">Laku</span>
                     <span className="text-primary">Kelas</span>
