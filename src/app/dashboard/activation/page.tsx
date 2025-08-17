@@ -125,7 +125,7 @@ export default function ActivationPage() {
                     ) : (
                         <Card className="max-w-2xl mx-auto shadow-2xl shadow-primary/10 border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
                             <form onSubmit={handleActivation}>
-                                <CardHeader className="text-center space-y-4 pb-6">
+                                <CardHeader className="text-center items-center space-y-4 pb-6">
                                     <div className="relative">
                                         <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse"></div>
                                         <div className="relative bg-gradient-to-br from-primary to-purple-600 p-4 rounded-full">
@@ -282,4 +282,3 @@ export default function ActivationPage() {
         </div>
     );
 }
-
