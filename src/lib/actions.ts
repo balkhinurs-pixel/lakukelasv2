@@ -34,15 +34,15 @@ export async function activateAccount(code: string) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { success: false, error: 'Pengguna tidak terautentikasi.' };
+  if (!user || !user.email) {
+    return { success: false, error: 'Pengguna tidak terautentikasi atau email tidak ditemukan.' };
   }
 
   // Use a transaction to ensure both updates succeed or both fail
   const { error } = await supabase.rpc('activate_account_with_code', {
     activation_code_to_use: code,
     user_id_to_activate: user.id,
-    user_email_to_set: user.email
+    user_email_to_set: user.email // This parameter was missing
   });
 
   if (error) {
@@ -485,4 +485,5 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 
     return { success: true, message: 'Image uploaded successfully', url: publicUrl };
 }
+
 
