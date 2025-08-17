@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -233,7 +234,7 @@ type ImportResult = {
     failures: { name: string; nis: string; reason: string }[];
 };
 
-export async function importStudents(classId: string, students: { name: string; nis: string; gender: Student['gender'] }[]): Promise<{ success: boolean; results?: ImportResult; error?: string }> {
+export async function importStudents(classId: string, students: { name: string; nis: string; gender: 'Laki-laki' | 'Perempuan' }[]): Promise<{ success: boolean; results?: ImportResult; error?: string }> {
     const supabase = createClient();
     
     const results: ImportResult = {
@@ -484,3 +485,4 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 
     return { success: true, message: 'Image uploaded successfully', url: publicUrl };
 }
+

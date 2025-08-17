@@ -47,7 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useActivation } from "@/hooks/use-activation";
 import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
-import { saveStudent, updateStudent } from "@/lib/actions";
+import { saveStudent, updateStudent, importStudents } from "@/lib/actions";
 
 // --- Extracted and Memoized Add/Edit Dialog Component ---
 interface AddEditDialogProps {
@@ -261,13 +261,17 @@ export default function StudentsPageComponent({
   };
 
   const handleDownloadTemplate = () => {
-    const csvData = "name,nis,gender";
+    const csvData = "nis,name,gender\n12345678,Contoh Siswa,L";
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "template_impor_siswa.csv");
   };
 
   const handleExportCSV = () => {
-      const dataToExport = studentsInClass.map(({ name, nis, gender }) => ({ name, nis, gender }));
+      const dataToExport = studentsInClass.map(({ nis, name, gender }) => ({
+        nis,
+        name,
+        gender: gender === 'Laki-laki' ? 'L' : 'P'
+      }));
       const csv = Papa.unparse(dataToExport);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const className = selectedClass?.name.replace(/\s+/g, '_') || "export";
@@ -291,19 +295,23 @@ export default function StudentsPageComponent({
           complete: async (results) => {
               const parsedData = results.data as any[];
               
-              const studentsToImport = parsedData.map(row => ({
-                  name: row.name,
-                  nis: row.nis,
-                  gender: row.gender
-              })).filter(s => s.name || s.nis || s.gender);
+              const studentsToImport = parsedData.map(row => {
+                  const genderRaw = (row.gender || '').toUpperCase();
+                  const gender = genderRaw === 'L' ? 'Laki-laki' : genderRaw === 'P' ? 'Perempuan' : null;
+                  return {
+                      name: row.name,
+                      nis: row.nis,
+                      gender: gender
+                  };
+              }).filter(s => s.name && s.nis && s.gender);
 
               if (studentsToImport.length === 0) {
-                  toast({ title: "Gagal Impor", description: "File CSV tidak valid atau tidak berisi data yang benar.", variant: "destructive" });
+                  toast({ title: "Gagal Impor", description: "File CSV tidak valid atau tidak berisi data yang benar. Pastikan kolom adalah nis, name, gender (L/P).", variant: "destructive" });
                   setLoading(false);
                   return;
               }
 
-              const result = await importStudents(selectedClassId, studentsToImport);
+              const result = await importStudents(selectedClassId, studentsToImport as { name: string, nis: string, gender: 'Laki-laki' | 'Perempuan' }[]);
               
               setLoading(false);
               if (result.success && result.results) {
@@ -589,3 +597,4 @@ export default function StudentsPageComponent({
     </div>
   );
 }
+
