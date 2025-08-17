@@ -42,7 +42,7 @@ export async function activateAccount(code: string) {
   const { error } = await supabase.rpc('activate_account_with_code', {
     p_code: code,
     p_user_id: user.id,
-    p_user_email: user.email
+    p_user_email: user.email,
   });
 
   if (error) {
