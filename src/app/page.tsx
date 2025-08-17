@@ -185,7 +185,7 @@ export default function LoginPage() {
                     </div>
                     <h1 className="text-5xl font-bold tracking-tighter">
                         <span className="text-white drop-shadow-md">Laku</span>
-                        <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">Kelas</span>
+                        <span className="drop-shadow-md" style={{ color: '#47c4c1' }}>Kelas</span>
                     </h1>
                 </div>
                 
