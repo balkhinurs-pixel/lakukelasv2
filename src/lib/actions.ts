@@ -38,7 +38,6 @@ export async function activateAccount(code: string) {
     return { success: false, error: 'Pengguna tidak terautentikasi atau email tidak ditemukan.' };
   }
 
-  // Use a transaction to ensure both updates succeed or both fail
   const { error } = await supabase.rpc('activate_account_with_code', {
     p_code: code,
     p_user_id: user.id,
