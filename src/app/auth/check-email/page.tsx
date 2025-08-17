@@ -9,7 +9,13 @@ export default function CheckEmailPage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
             <div className="w-full max-w-md text-center">
-                 <Image src="/login.png" alt="LakuKelas Logo" width={280} height={60} className="w-48 h-auto mx-auto mb-6" />
+                 <div className="flex flex-col items-center justify-center mb-6">
+                    <Image src="/login.png" alt="LakuKelas Illustration" width={280} height={60} className="w-48 h-auto" />
+                    <h1 className="text-5xl font-bold tracking-tighter text-foreground">
+                        <span>Laku</span>
+                        <span className="text-primary">Kelas</span>
+                    </h1>
+                </div>
                 <Card className="shadow-lg">
                     <CardHeader>
                         <div className="mx-auto bg-green-100 p-3 rounded-full w-fit mb-4">

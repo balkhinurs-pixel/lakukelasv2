@@ -12,7 +12,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { IconLogo } from "@/components/ui/iconlogo";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -164,10 +163,16 @@ export default function LoginPage() {
 
     return (
         <div className="bg-primary text-primary-foreground p-8 md:p-12 flex flex-col justify-center items-center text-center">
-             <Image src="/login.png" alt="LakuKelas Logo" width={280} height={60} className="w-48 h-auto mb-4" />
-            <h1 className="text-3xl font-bold font-headline mb-2">
+             <div className="flex flex-col items-center justify-center mb-4">
+                <Image src="/login.png" alt="LakuKelas Illustration" width={280} height={60} className="w-48 h-auto" />
+                <h1 className="text-5xl font-bold tracking-tighter">
+                    <span className="text-white">Laku</span>
+                    <span style={{ color: '#48c4c2' }}>Kelas</span>
+                </h1>
+            </div>
+            <h2 className="text-3xl font-bold font-headline mb-2">
                 {titles[view]}
-            </h1>
+            </h2>
             <p className="text-primary-foreground/80 mb-8 max-w-sm">
                 {descriptions[view]}
             </p>
