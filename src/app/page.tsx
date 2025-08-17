@@ -179,8 +179,8 @@ export default function LoginPage() {
             </div>
             
             <div className={`relative z-10 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-                <div className="flex items-center justify-center gap-4 mb-6">
-                    <div>
+                <div className="flex flex-col items-center justify-center mb-6">
+                    <div className="mb-4">
                         <Image src="/login.png" alt="LakuKelas Logo" width={80} height={80} className="w-20 h-20 drop-shadow-lg" />
                     </div>
                     <h1 className="text-5xl font-bold tracking-tighter">
