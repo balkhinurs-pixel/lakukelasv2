@@ -153,9 +153,9 @@ export default function LoginPage() {
         'forgot-password': 'Lupa Kata Sandi?'
     };
     const descriptions = {
-        login: 'Anda hanya selangkah lagi untuk mengelola kelas Anda secara efisien.',
-        register: 'Bergabunglah dengan ribuan guru lain dan modernisasi cara Anda mengajar.',
-        'forgot-password': 'Tidak masalah. Kami akan membantu Anda mendapatkan kembali akses ke akun Anda.'
+        login: 'Sistem manajemen kelas yang dirancang khusus untuk meningkatkan efisiensi pengajaran dan pembelajaran.',
+        register: 'Bergabunglah dengan komunitas guru modern dan transformasi cara Anda mengelola kelas.',
+        'forgot-password': 'Tenang, kami akan membantu Anda mendapatkan kembali akses ke akun dengan aman.'
     };
     const buttonLabels = {
         login: 'Buat Akun',
@@ -180,9 +180,8 @@ export default function LoginPage() {
             
             <div className={`relative z-10 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
                 <div className="flex items-center justify-center gap-4 mb-6">
-                    <div className="relative">
+                    <div>
                         <Image src="/login.png" alt="LakuKelas Logo" width={80} height={80} className="w-20 h-20 drop-shadow-lg" />
-                        <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 to-teal-400 rounded-full blur opacity-30 animate-pulse"></div>
                     </div>
                     <h1 className="text-5xl font-bold tracking-tighter">
                         <span className="text-white drop-shadow-md">Laku</span>
@@ -385,15 +384,17 @@ export default function LoginPage() {
         <Card className={`grid grid-cols-1 md:grid-cols-2 overflow-hidden shadow-2xl rounded-3xl backdrop-blur-sm bg-white/95 border-0 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-95'}`}>
           <WelcomePanel />
           <div className="bg-white/90 backdrop-blur-sm text-card-foreground p-8 md:p-12 flex flex-col justify-center">
-            <div className="flex items-center justify-center gap-4 mb-8 md:hidden">
-                <div className="relative">
-                    <Image src="/login.png" alt="LakuKelas Logo" width={60} height={60} className="w-16 h-16 drop-shadow-lg" />
-                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-teal-400 rounded-full blur opacity-20 animate-pulse"></div>
+            <div className="flex flex-col items-center justify-center mb-8 md:hidden">
+                <div className="mb-4">
+                    <Image src="/login.png" alt="LakuKelas Logo" width={80} height={80} className="w-20 h-20 drop-shadow-lg" />
                 </div>
-                <h1 className="text-4xl font-bold tracking-tighter">
+                <h1 className="text-4xl font-bold tracking-tighter mb-2">
                     <span className="text-gray-800">Laku</span>
                     <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Kelas</span>
                 </h1>
+                <p className="text-sm text-gray-600 text-center max-w-xs leading-relaxed">
+                    Sistem Manajemen Kelas Modern untuk Guru Profesional
+                </p>
             </div>
              <h2 className="text-3xl font-bold text-left mb-8 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{FormTitle()}</h2>
              
@@ -417,11 +418,19 @@ export default function LoginPage() {
                 </>
              )}
 
-            <div className="mt-8 text-center text-sm md:hidden">
-                <span className="text-gray-600">{view === 'login' ? 'Belum punya akun?' : 'Sudah punya akun?'}</span>{' '}
-                <Button variant="link" className="p-0 h-auto text-blue-600 hover:text-blue-800 font-medium" onClick={() => setView(view === 'login' ? 'register' : 'login')}>
-                    {view === 'login' ? 'Buat Akun' : 'Masuk di Sini'}
-                </Button>
+            <div className="mt-8 text-center md:hidden">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <p className="text-sm text-gray-600 mb-2">
+                        {view === 'login' ? 'Belum punya akun?' : view === 'register' ? 'Sudah punya akun?' : 'Ingat kata sandi Anda?'}
+                    </p>
+                    <Button 
+                        variant="outline" 
+                        className="w-full rounded-xl border-2 border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 font-medium transition-all duration-200" 
+                        onClick={() => setView(view === 'login' ? 'register' : view === 'register' ? 'login' : 'login')}
+                    >
+                        {view === 'login' ? 'Buat Akun' : view === 'register' ? 'Masuk di Sini' : 'Kembali untuk Masuk'}
+                    </Button>
+                </div>
             </div>
           </div>
         </Card>
