@@ -41,11 +41,16 @@ export async function activateAccount(code: string) {
   // Use a transaction to ensure both updates succeed or both fail
   const { error } = await supabase.rpc('activate_account_with_code', {
     p_code: code,
-    p_user_id: user.id
+    p_user_id: user.id,
+    p_user_email: user.email
   });
 
   if (error) {
       console.error('RPC Error:', error);
+      // Check for specific error messages from the function
+      if (error.message.includes('Code not found or already used')) {
+          return { success: false, error: 'Kode aktivasi tidak valid atau sudah digunakan.' };
+      }
       return { success: false, error: `Terjadi kesalahan pada server saat aktivasi.` };
   }
   
