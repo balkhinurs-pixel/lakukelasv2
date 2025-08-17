@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { IconLogo } from "@/components/ui/iconlogo";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -316,4 +317,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
