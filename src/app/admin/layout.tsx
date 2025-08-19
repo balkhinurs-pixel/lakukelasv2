@@ -1,51 +1,38 @@
 
+
 'use server';
 
-import Link from 'next/link';
 import * as React from 'react';
-import {
-  LayoutDashboard,
-  LogOut,
-  Users,
-  KeySquare,
-  User as UserIcon
-} from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarFooter, SidebarTrigger } from '@/components/ui/sidebar';
-import AdminLayoutClient from './layout-client'; // We will create this client component
+import { SidebarProvider } from '@/components/ui/sidebar';
+import AdminLayoutClient from './layout-client';
+import type { Profile } from '@/lib/types';
+import type { User } from '@supabase/supabase-js';
 
-const navItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
-  { href: '/admin/users', icon: Users, label: 'Pengguna' },
-  { href: '/admin/codes', icon: KeySquare, label: 'Kode Aktivasi' },
-];
+// Dummy data for design mode
+const DUMMY_USER: User = {
+    id: 'admin-dummy-id',
+    app_metadata: {},
+    user_metadata: { full_name: "Admin LakuKelas" },
+    aud: 'authenticated',
+    created_at: new Date().toISOString(),
+    email: 'admin.dummy@lakukelas.id'
+};
+
+const DUMMY_PROFILE: Pick<Profile, 'full_name' | 'avatar_url'> = {
+    full_name: 'Admin LakuKelas',
+    avatar_url: 'https://placehold.co/100x100.png',
+};
+
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/');
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, avatar_url, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
-      redirect('/dashboard');
-  }
 
   return (
     <SidebarProvider>
-        <AdminLayoutClient user={user} profile={profile}>
+        <AdminLayoutClient user={DUMMY_USER} profile={DUMMY_PROFILE}>
             {children}
         </AdminLayoutClient>
     </SidebarProvider>
