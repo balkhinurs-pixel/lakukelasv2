@@ -11,6 +11,12 @@ import {
   Menu,
   KeySquare,
   User as UserIcon,
+  Users2,
+  CalendarCheck,
+  School,
+  BookOpen,
+  ArrowRightLeft,
+  GraduationCap,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -26,6 +32,8 @@ import {
   SidebarTrigger,
   SidebarSeparator,
   useSidebar,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -33,12 +41,22 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
   { href: '/admin/users', icon: Users, label: 'Pengguna' },
   { href: '/admin/codes', icon: KeySquare, label: 'Kode Aktivasi' },
+];
+
+const rosterNavItems = [
+    { href: '/admin/roster/school-year', icon: CalendarCheck, label: 'Tahun Ajaran' },
+    { href: '/admin/roster/classes', icon: School, label: 'Pengaturan Kelas' },
+    { href: '/admin/roster/subjects', icon: BookOpen, label: 'Pengaturan Mapel' },
+    { href: '/admin/roster/students', icon: Users2, label: 'Daftar Siswa' },
+    { href: '/admin/roster/promotion', icon: ArrowRightLeft, label: 'Promosi & Mutasi' },
+    { href: '/admin/roster/alumni', icon: GraduationCap, label: 'Alumni' },
 ];
 
 export default function AdminLayoutClient({ 
@@ -63,10 +81,9 @@ export default function AdminLayoutClient({
     router.refresh();
   }
 
-  const SidebarNavContent = () => (
-    <>
-      <SidebarMenu className="gap-2">
-        {navItems.map((item, index) => {
+  const NavContent = ({ items }: { items: typeof navItems | typeof rosterNavItems }) => (
+     <SidebarMenu className="gap-2">
+        {items.map((item, index) => {
           const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/admin';
           return (
             <SidebarMenuItem key={item.href}>
@@ -114,7 +131,6 @@ export default function AdminLayoutClient({
           )
         })}
       </SidebarMenu>
-    </>
   );
 
   const BottomNavbar = () => {
@@ -289,14 +305,26 @@ export default function AdminLayoutClient({
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="p-4 bg-gradient-to-b from-background to-background/95">
-          <div className="mb-4">
-            <div className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 flex items-center">
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              Admin Panel
-            </div>
-          </div>
-          <SidebarNavContent />
+        <SidebarContent className="p-0 bg-gradient-to-b from-background to-background/95">
+          <ScrollArea className="h-full">
+            <SidebarGroup className="p-4">
+              <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Admin Panel
+              </SidebarGroupLabel>
+              <NavContent items={navItems} />
+            </SidebarGroup>
+            
+            <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+            
+            <SidebarGroup className="p-4">
+              <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
+                <Users2 className="w-4 h-4 mr-2" />
+                Manajemen Data
+              </SidebarGroupLabel>
+              <NavContent items={rosterNavItems} />
+            </SidebarGroup>
+          </ScrollArea>
         </SidebarContent>
 
         <SidebarFooter className="p-4 border-t border-border/50">

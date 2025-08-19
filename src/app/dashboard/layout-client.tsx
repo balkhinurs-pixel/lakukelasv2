@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -90,16 +91,6 @@ const mobileSidebarNavItems = navItems.filter(
     (item) => !mainMobileNavItems.some((mobileItem) => mobileItem.href === item.href)
 );
 
-const rosterNavItems = [
-    { href: '/dashboard/roster/school-year', icon: CalendarCheck, label: 'Tahun Ajaran' },
-    { href: '/dashboard/roster/classes', icon: School, label: 'Pengaturan Kelas' },
-    { href: '/dashboard/roster/subjects', icon: BookOpen, label: 'Pengaturan Mapel' },
-    { href: '/dashboard/roster/students', icon: Users2, label: 'Daftar Siswa' },
-    { href: '/dashboard/roster/promotion', icon: ArrowRightLeft, label: 'Promosi & Mutasi' },
-    { href: '/dashboard/roster/alumni', icon: GraduationCap, label: 'Alumni' },
-];
-
-
 export default function DashboardLayoutClient({ 
   children,
   user,
@@ -182,58 +173,6 @@ export default function DashboardLayoutClient({
     <SidebarMenu className="gap-2">
       {items.map((item, index) => {
         const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard';
-        return (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive}
-              tooltip={{ children: item.label }}
-              className={cn(
-                "group-data-[collapsible=icon]:justify-center relative transition-all duration-300 ease-out rounded-xl mx-2",
-                "hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-lg hover:shadow-primary/10",
-                "hover:scale-[1.02] hover:-translate-y-0.5",
-                isActive && "bg-gradient-to-r from-primary/15 to-primary/10 shadow-lg shadow-primary/20 border border-primary/20",
-                isActive && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-6 before:bg-primary before:rounded-r-full",
-                "after:absolute after:inset-0 after:rounded-xl after:bg-gradient-to-r after:from-transparent after:via-white/[0.02] after:to-transparent after:opacity-0 hover:after:opacity-100 after:transition-opacity after:duration-300"
-              )}
-              style={{
-                animationDelay: `${index * 50}ms`
-              }}
-            >
-              <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}} className="flex items-center gap-3 w-full">
-                <div className={cn(
-                  "relative transition-all duration-300",
-                  isActive && "text-primary scale-110"
-                )}>
-                  <item.icon className={cn(
-                    "transition-all duration-300",
-                    isActive ? "w-5 h-5 drop-shadow-sm" : "w-4 h-4"
-                  )} />
-                  {isActive && (
-                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-pulse" />
-                  )}
-                </div>
-                <span className={cn(
-                  "group-data-[collapsible=icon]:hidden transition-all duration-300 font-medium",
-                  isActive ? "text-primary font-semibold tracking-wide" : "text-muted-foreground"
-                )}>
-                  {item.label}
-                </span>
-                {isActive && (
-                  <div className="ml-auto w-2 h-2 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50" />
-                )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        )
-      })}
-    </SidebarMenu>
-  );
-
-  const RosterNavContent = () => (
-    <SidebarMenu className="gap-2">
-      {rosterNavItems.map((item, index) => {
-        const isActive = pathname.startsWith(item.href);
         return (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
@@ -484,14 +423,6 @@ export default function DashboardLayoutClient({
                 </SidebarGroupLabel>
                 <MainNavContent items={mobileSidebarNavItems} />
             </SidebarGroup>
-            <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
-            <SidebarGroup className="p-4">
-                <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4">
-                  <Users2 className="w-4 h-4 mr-2 inline" />
-                  Manajemen
-                </SidebarGroupLabel>
-                <RosterNavContent />
-            </SidebarGroup>
         </ScrollArea>
       </SidebarContent>
     </>
@@ -505,11 +436,6 @@ export default function DashboardLayoutClient({
             <SidebarGroup>
                 <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
                 <MainNavContent items={navItems} />
-            </SidebarGroup>
-            <SidebarSeparator />
-            <SidebarGroup>
-                <SidebarGroupLabel>MANAJEMEN</SidebarGroupLabel>
-                <RosterNavContent />
             </SidebarGroup>
         </ScrollArea>
       </SidebarContent>
