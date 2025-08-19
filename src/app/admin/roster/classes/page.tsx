@@ -1,3 +1,4 @@
+
 import { ClassSettingsPageComponent } from "./class-settings-page";
 import { getClasses } from "@/lib/data";
 

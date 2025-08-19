@@ -1,3 +1,4 @@
+
 import { getSubjects } from "@/lib/data";
 import SubjectSettingsPageComponent from "./subject-settings-page";
 

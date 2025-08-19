@@ -7,7 +7,7 @@ export default function RosterPage() {
     const router = useRouter();
 
     useEffect(() => {
-        router.replace('/dashboard/roster/students');
+        router.replace('/admin/roster/students');
     }, [router]);
 
     return null; 

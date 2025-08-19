@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -339,7 +338,7 @@ export default function StudentsPageComponent({
             <h3 className="text-xl font-semibold">Anda Belum Membuat Kelas</h3>
             <p className="text-sm mt-2 max-w-md">Untuk dapat mengelola siswa, Anda perlu membuat setidaknya satu kelas terlebih dahulu. Silakan pergi ke menu pengaturan kelas.</p>
             <Button asChild className="mt-4">
-                <Link href="/dashboard/roster/classes">Buat Kelas Baru</Link>
+                <Link href="/admin/roster/classes">Buat Kelas Baru</Link>
             </Button>
         </div>
     )
@@ -597,4 +596,3 @@ export default function StudentsPageComponent({
     </div>
   );
 }
-
