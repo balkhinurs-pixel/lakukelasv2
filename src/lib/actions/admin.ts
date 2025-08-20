@@ -24,3 +24,16 @@ export async function deleteSchedule(scheduleId: string) {
     await new Promise(resolve => setTimeout(resolve, 1000));
     return { success: true, message: 'Jadwal berhasil dihapus (mode dummy).' };
 }
+
+
+export async function saveClass(formData: FormData) {
+    console.log("Admin attempted to save class:", Object.fromEntries(formData.entries()));
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return { success: true, message: 'Kelas berhasil disimpan (mode dummy).' };
+}
+
+export async function deleteClass(classId: string) {
+    console.log("Admin attempted to delete class:", classId);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return { success: true, message: 'Kelas berhasil dihapus (mode dummy).' };
+}
