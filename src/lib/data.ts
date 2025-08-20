@@ -59,22 +59,40 @@ const DUMMY_SCHOOL_YEARS: SchoolYear[] = [
 ];
 
 const DUMMY_TEACHER_ATTENDANCE: TeacherAttendance[] = [
-    { id: 'ta-1', teacherId: '1', teacherName: 'Guru Dummy', date: new Date().toISOString(), checkIn: '07:15', checkOut: '15:30', status: 'Tepat Waktu' },
-    { id: 'ta-2', teacherId: '2', teacherName: 'Guru Kedua', date: new Date().toISOString(), checkIn: '07:45', checkOut: '15:32', status: 'Terlambat' },
-    { id: 'ta-3', teacherId: '3', teacherName: 'Guru Ketiga', date: new Date().toISOString(), checkIn: null, checkOut: null, status: 'Tidak Hadir' },
+    { id: 'ta-1', teacherId: '1', teacherName: 'Guru A', date: new Date().toISOString(), checkIn: '07:15', checkOut: '15:30', status: 'Tepat Waktu' },
+    { id: 'ta-2', teacherId: '2', teacherName: 'Guru B', date: new Date().toISOString(), checkIn: '07:45', checkOut: '15:32', status: 'Terlambat' },
 ];
 
 
 // --- Admin Data ---
 
 export async function getAdminDashboardData() {
-    return { totalUsers: 125 };
+    return {
+        totalUsers: 12,
+        presentToday: 9,
+        lateToday: 1,
+        absentToday: 2,
+        weeklyAttendance: [
+            { day: 'Sen', hadir: 10, tidak_hadir: 2 },
+            { day: 'Sel', hadir: 11, tidak_hadir: 1 },
+            { day: 'Rab', hadir: 9, tidak_hadir: 3 },
+            { day: 'Kam', hadir: 12, tidak_hadir: 0 },
+            { day: 'Jum', hadir: 10, tidak_hadir: 2 },
+            { day: 'Sab', hadir: 11, tidak_hadir: 1 },
+        ],
+        recentActivities: [
+            { text: 'Guru A menginput nilai Matematika Kelas 10-A', time: '5 menit lalu'},
+            { text: 'Guru B mengisi jurnal Fisika Kelas 12-C', time: '1 jam lalu'},
+            { text: 'Guru C mengubah presensi Bahasa Indonesia Kelas 11-B', time: '3 jam lalu'},
+        ]
+    };
 }
 
 export async function getAllUsers(): Promise<Profile[]> {
     return [
-        { id: '1', full_name: 'Guru A', email: 'guru.a@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
-        { id: '2', full_name: 'Guru B', email: 'guru.b@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
+        { id: '1', full_name: 'Ahmad Fauzi, S.Pd.', email: 'ahmad.fauzi@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
+        { id: '2', full_name: 'Budi Santoso, M.Kom.', email: 'budi.santoso@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
+        { id: '3', full_name: 'Citra Lestari, S.S.', email: 'citra.lestari@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
     ];
 }
 

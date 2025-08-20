@@ -20,16 +20,6 @@ export interface Profile {
   active_school_year_name?: string | null;
 }
 
-export interface ActivationCode {
-    id: string;
-    code: string;
-    is_used: boolean;
-    used_by: string | null;
-    used_at: string | null;
-    created_at: string;
-    used_by_email?: string | null;
-}
-
 export interface Student {
   id: string;
   name: string;
