@@ -43,6 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { ScheduleItem, Class, Subject, Profile } from "@/lib/types";
 import { saveSchedule, deleteSchedule } from "@/lib/actions/admin";
 import { formatTime } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const daysOfWeek: ScheduleItem['day'][] = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
@@ -201,7 +202,7 @@ export default function ScheduleManagementClient({
        </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg dialog-content-mobile mobile-safe-area">
           <form onSubmit={handleSave}>
             <DialogHeader>
                 <DialogTitle>{editingItem ? 'Ubah Jadwal' : 'Tambah Jadwal Baru'}</DialogTitle>
@@ -209,44 +210,46 @@ export default function ScheduleManagementClient({
                   {editingItem ? 'Perbarui informasi jadwal mengajar.' : 'Isi detail jadwal mengajar yang baru.'}
                 </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-               <div className="space-y-2">
-                    <Label>Guru</Label>
-                    <Input value={teachers.find(t => t.id === selectedTeacherId)?.full_name} disabled />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="day">Hari</Label>
-                    <Select value={newEntry.day} onValueChange={(value: ScheduleItem['day']) => setNewEntry({...newEntry, day: value})} required>
-                        <SelectTrigger id="day"><SelectValue placeholder="Pilih hari" /></SelectTrigger>
-                        <SelectContent>{daysOfWeek.map((day) => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="class_id">Kelas</Label>
-                    <Select value={newEntry.class_id} onValueChange={(value) => setNewEntry({...newEntry, class_id: value})} required>
-                        <SelectTrigger id="class_id"><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
-                        <SelectContent>{classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="subject_id">Mata Pelajaran</Label>
-                    <Select value={newEntry.subject_id} onValueChange={(value) => setNewEntry({...newEntry, subject_id: value})} required>
-                        <SelectTrigger id="subject_id"><SelectValue placeholder="Pilih mata pelajaran" /></SelectTrigger>
-                        <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="start_time">Waktu Mulai</Label>
-                        <Input id="start_time" type="time" value={newEntry.start_time} onChange={e => setNewEntry({...newEntry, start_time: e.target.value})} required/>
+            <ScrollArea className="max-h-[70vh] pr-4">
+                <div className="grid gap-4 py-4">
+                   <div className="space-y-2">
+                        <Label>Guru</Label>
+                        <Input value={teachers.find(t => t.id === selectedTeacherId)?.full_name} disabled />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="end_time">Waktu Selesai</Label>
-                        <Input id="end_time" type="time" value={newEntry.end_time} onChange={e => setNewEntry({...newEntry, end_time: e.target.value})} required/>
+                        <Label htmlFor="day">Hari</Label>
+                        <Select value={newEntry.day} onValueChange={(value: ScheduleItem['day']) => setNewEntry({...newEntry, day: value})} required>
+                            <SelectTrigger id="day"><SelectValue placeholder="Pilih hari" /></SelectTrigger>
+                            <SelectContent>{daysOfWeek.map((day) => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="class_id">Kelas</Label>
+                        <Select value={newEntry.class_id} onValueChange={(value) => setNewEntry({...newEntry, class_id: value})} required>
+                            <SelectTrigger id="class_id"><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
+                            <SelectContent>{classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="subject_id">Mata Pelajaran</Label>
+                        <Select value={newEntry.subject_id} onValueChange={(value) => setNewEntry({...newEntry, subject_id: value})} required>
+                            <SelectTrigger id="subject_id"><SelectValue placeholder="Pilih mata pelajaran" /></SelectTrigger>
+                            <SelectContent>{subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="start_time">Waktu Mulai</Label>
+                            <Input id="start_time" type="time" value={newEntry.start_time} onChange={e => setNewEntry({...newEntry, start_time: e.target.value})} required/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="end_time">Waktu Selesai</Label>
+                            <Input id="end_time" type="time" value={newEntry.end_time} onChange={e => setNewEntry({...newEntry, end_time: e.target.value})} required/>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <DialogFooter>
+            </ScrollArea>
+            <DialogFooter className="pt-4 mt-4 border-t">
                 <Button type="submit" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingItem ? 'Perbarui' : 'Simpan'}
