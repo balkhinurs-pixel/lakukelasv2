@@ -112,6 +112,16 @@ export interface ScheduleItem {
   class?: string;
 }
 
+export interface TeacherAttendance {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  date: string; // ISO 8601 string
+  checkIn: string | null; // HH:mm
+  checkOut: string | null; // HH:mm
+  status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir';
+}
+
 // --- History Types ---
 
 export interface AttendanceHistoryEntry {

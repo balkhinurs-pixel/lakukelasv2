@@ -3,26 +3,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UserCheck } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { getTeacherAttendanceHistory } from "@/lib/data";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import type { TeacherAttendance } from "@/lib/types";
 
-export default function TeacherAttendanceRecapPage() {
+export default async function TeacherAttendanceRecapPage() {
+    const attendanceHistory = await getTeacherAttendanceHistory();
 
-    // Dummy data for display
-    const dummyAttendance = [
-        { id: '1', teacherName: 'Guru A', date: '2023-10-27', checkIn: '07:15', checkOut: '15:30', status: 'Tepat Waktu' },
-        { id: '2', teacherName: 'Guru B', date: '2023-10-27', checkIn: '07:35', checkOut: '15:32', status: 'Terlambat' },
-        { id: '3', teacherName: 'Guru C', date: '2023-10-27', checkIn: null, checkOut: null, status: 'Tidak Hadir' },
-    ];
-
-    const getStatusBadge = (status: string) => {
+    const getStatusBadge = (status: TeacherAttendance['status']) => {
         switch (status) {
             case 'Tepat Waktu':
-                return 'bg-green-100 text-green-800 border-green-200';
+                return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100';
             case 'Terlambat':
-                return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                return 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100';
             case 'Tidak Hadir':
-                return 'bg-red-100 text-red-800 border-red-200';
+                return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100';
             default:
-                return 'bg-gray-100 text-gray-800 border-gray-200';
+                return 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100';
         }
     }
 
@@ -40,9 +39,9 @@ export default function TeacherAttendanceRecapPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Laporan Kehadiran Hari Ini</CardTitle>
+                    <CardTitle>Laporan Kehadiran</CardTitle>
                     <CardDescription>
-                        Menampilkan data absensi guru untuk tanggal 27 Oktober 2023.
+                        Menampilkan data absensi guru.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -57,19 +56,26 @@ export default function TeacherAttendanceRecapPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {dummyAttendance.map(item => (
+                            {attendanceHistory.map(item => (
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">{item.teacherName}</TableCell>
-                                    <TableCell>{item.date}</TableCell>
+                                    <TableCell>{format(new Date(item.date), 'EEEE, dd MMM yyyy', { locale: id })}</TableCell>
                                     <TableCell>{item.checkIn || '-'}</TableCell>
                                     <TableCell>{item.checkOut || '-'}</TableCell>
                                     <TableCell>
-                                        <Badge variant="outline" className={getStatusBadge(item.status)}>{item.status}</Badge>
+                                        <Badge variant="outline" className={cn("font-semibold", getStatusBadge(item.status))}>{item.status}</Badge>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
+                    {attendanceHistory.length === 0 && (
+                        <div className="text-center text-muted-foreground py-16">
+                            <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
+                            <h3 className="mt-2 text-sm font-medium">Belum Ada Data</h3>
+                            <p className="mt-1 text-sm text-gray-500">Data kehadiran guru akan muncul di sini setelah mereka melakukan absensi.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

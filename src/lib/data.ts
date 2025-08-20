@@ -2,7 +2,7 @@
 
 'use server';
 
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda, TeacherAttendance } from './types';
 
 // --- DUMMY DATA FOR DESIGN MODE ---
 
@@ -58,6 +58,12 @@ const DUMMY_SCHOOL_YEARS: SchoolYear[] = [
     { id: 'school-year-2', name: '2023/2024 - Semester Ganjil', teacher_id: DUMMY_TEACHER_ID },
 ];
 
+const DUMMY_TEACHER_ATTENDANCE: TeacherAttendance[] = [
+    { id: 'ta-1', teacherId: '1', teacherName: 'Guru Dummy', date: new Date().toISOString(), checkIn: '07:15', checkOut: '15:30', status: 'Tepat Waktu' },
+    { id: 'ta-2', teacherId: '2', teacherName: 'Guru Kedua', date: new Date().toISOString(), checkIn: '07:45', checkOut: '15:32', status: 'Terlambat' },
+    { id: 'ta-3', teacherId: '3', teacherName: 'Guru Ketiga', date: new Date().toISOString(), checkIn: null, checkOut: null, status: 'Tidak Hadir' },
+];
+
 
 // --- Admin Data ---
 
@@ -77,6 +83,10 @@ export async function getActivationCodes(): Promise<ActivationCode[]> {
         { id: 'code-1', code: 'XXXX-XXXX-XXXX-XXXX', is_used: true, used_by: '1', used_at: new Date().toISOString(), created_at: new Date().toISOString(), used_by_email: 'guru.a@sekolah.id' },
         { id: 'code-2', code: 'YYYY-YYYY-YYYY-YYYY', is_used: false, used_by: null, used_at: null, created_at: new Date().toISOString() }
     ];
+}
+
+export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]> {
+    return DUMMY_TEACHER_ATTENDANCE;
 }
 
 
