@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -15,12 +16,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, CheckCircle, Clock, UserX, Percent, BarChart2, Activity, UserCheck } from "lucide-react";
+import { Users, Clock, UserX, Activity, UserCheck } from "lucide-react";
 import { getAdminDashboardData, getAllUsers, getTeacherAttendanceHistory } from "@/lib/data";
-import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from "recharts";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
+import WeeklyAttendanceChart from "./weekly-attendance-chart";
 
 const StatCard = ({ icon: Icon, title, value, subtitle, color, bgColor }: { icon: React.ElementType, title: string, value: string | number, subtitle: string, color: string, bgColor: string }) => (
     <Card className={cn("border-0 shadow-lg", bgColor)}>
@@ -177,33 +178,7 @@ export default async function AdminDashboardPage() {
                 <CardDescription>Tren kehadiran guru dalam 7 hari terakhir.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={dashboardData.weeklyAttendance}>
-                        <XAxis
-                            dataKey="day"
-                            stroke="#888888"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                        />
-                        <YAxis
-                            stroke="#888888"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(value) => `${value}`}
-                        />
-                        <Tooltip
-                            contentStyle={{
-                                borderRadius: '0.5rem',
-                                border: '1px solid hsl(var(--border))',
-                                background: 'hsl(var(--background))'
-                            }}
-                        />
-                        <Bar dataKey="hadir" name="Hadir" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="tidak_hadir" name="Tidak Hadir" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
+                <WeeklyAttendanceChart data={dashboardData.weeklyAttendance} />
             </CardContent>
         </Card>
     </div>
