@@ -32,7 +32,8 @@ import {
   ScanLine,
   Award,
   PenTool,
-  Grid3X3
+  Grid3X3,
+  MapPin,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -71,6 +72,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Dasbor' },
+  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absensi Guru' },
   { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
@@ -366,7 +368,7 @@ export default function DashboardLayoutClient({
     <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
         <div className="flex items-center justify-between h-16 px-4">
              <div className="flex items-center gap-2">
-                 {/* <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" /> */}
+                 <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" />
                  <h1 className="text-lg font-bold tracking-tight">
                     <span className="text-white">Laku</span>
                     <span className="text-green-300">Kelas</span>
@@ -433,8 +435,10 @@ export default function DashboardLayoutClient({
       <ProfileHeader />
       <SidebarContent className="p-0">
         <ScrollArea className="flex-1">
-            <SidebarGroup>
-                <SidebarGroupLabel>UTAMA</SidebarGroupLabel>
+            <SidebarGroup className="p-4">
+                <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4">
+                    Menu Utama
+                </SidebarGroupLabel>
                 <MainNavContent items={navItems} />
             </SidebarGroup>
         </ScrollArea>

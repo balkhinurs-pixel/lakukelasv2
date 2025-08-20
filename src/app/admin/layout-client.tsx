@@ -17,6 +17,8 @@ import {
   BookOpen,
   ArrowRightLeft,
   GraduationCap,
+  MapPin,
+  UserCheck as UserCheckIcon,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -44,10 +46,11 @@ import type { Profile } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 
-const navItems = [
+const adminNavItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
   { href: '/admin/users', icon: Users, label: 'Pengguna' },
   { href: '/admin/codes', icon: KeySquare, label: 'Kode Aktivasi' },
+  { href: '/admin/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
 ];
 
 const rosterNavItems = [
@@ -58,6 +61,10 @@ const rosterNavItems = [
     { href: '/admin/roster/promotion', icon: ArrowRightLeft, label: 'Promosi & Mutasi' },
     { href: '/admin/roster/alumni', icon: GraduationCap, label: 'Alumni' },
 ];
+
+const settingsNavItems = [
+    { href: '/admin/settings/location', icon: MapPin, label: 'Pengaturan Lokasi' },
+]
 
 export default function AdminLayoutClient({ 
   children,
@@ -81,7 +88,7 @@ export default function AdminLayoutClient({
     router.refresh();
   }
 
-  const NavContent = ({ items }: { items: typeof navItems | typeof rosterNavItems }) => (
+  const NavContent = ({ items }: { items: typeof adminNavItems | typeof rosterNavItems | typeof settingsNavItems }) => (
      <SidebarMenu className="gap-2">
         {items.map((item, index) => {
           const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/admin';
@@ -158,7 +165,7 @@ export default function AdminLayoutClient({
           
           {/* Navigation items container */}
           <div className="relative flex justify-around items-center">
-            {navItems.map((item, index) => {
+            {adminNavItems.map((item, index) => {
               const isActive = pathname === item.href;
 
               return (
@@ -312,7 +319,7 @@ export default function AdminLayoutClient({
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 Admin Panel
               </SidebarGroupLabel>
-              <NavContent items={navItems} />
+              <NavContent items={adminNavItems} />
             </SidebarGroup>
             
             <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
@@ -323,6 +330,16 @@ export default function AdminLayoutClient({
                 Manajemen Data
               </SidebarGroupLabel>
               <NavContent items={rosterNavItems} />
+            </SidebarGroup>
+
+            <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+            
+            <SidebarGroup className="p-4">
+              <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
+                <Users2 className="w-4 h-4 mr-2" />
+                Pengaturan
+              </SidebarGroupLabel>
+              <NavContent items={settingsNavItems} />
             </SidebarGroup>
           </ScrollArea>
         </SidebarContent>
