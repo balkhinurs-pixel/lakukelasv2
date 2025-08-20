@@ -90,18 +90,6 @@ export async function setActiveSchoolYear(schoolYearId: string) {
     return { success: true, message: "Tahun ajaran aktif berhasil diperbarui (mode dummy)." };
 }
 
-export async function saveSchedule(formData: FormData) {
-    console.log("Attempted to save schedule:", Object.fromEntries(formData.entries()));
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, message: 'Jadwal berhasil disimpan (mode dummy).' };
-}
-
-export async function deleteSchedule(scheduleId: string) {
-    console.log("Attempted to delete schedule:", scheduleId);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, message: 'Jadwal berhasil dihapus (mode dummy).' };
-}
-
 export async function saveAttendance(formData: FormData) {
     console.log("Attempted to save attendance:", Object.fromEntries(formData.entries()));
     await new Promise(resolve => setTimeout(resolve, 1000));

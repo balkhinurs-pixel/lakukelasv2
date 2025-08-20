@@ -18,6 +18,7 @@ import {
   GraduationCap,
   MapPin,
   UserCheck as UserCheckIcon,
+  CalendarClock,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -62,6 +63,7 @@ const rosterNavItems = [
 
 const settingsNavItems = [
     { href: '/admin/settings/location', icon: MapPin, label: 'Pengaturan Lokasi' },
+    { href: '/admin/settings/schedule', icon: CalendarClock, label: 'Kelola Jadwal Guru' },
 ]
 
 export default function AdminLayoutClient({ 
