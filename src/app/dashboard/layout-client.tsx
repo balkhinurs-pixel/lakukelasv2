@@ -14,7 +14,6 @@ import {
   Settings,
   Users,
   ChevronDown,
-  KeyRound,
   Menu,
   User as UserIcon,
   CheckCircle2,
@@ -62,7 +61,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useActivation } from '@/hooks/use-activation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -79,7 +77,6 @@ const navItems = [
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
   { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
   { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
-  { href: '/dashboard/activation', icon: KeyRound, label: 'Aktivasi' },
 ];
 
 const mainMobileNavItems = [
@@ -104,9 +101,9 @@ export default function DashboardLayoutClient({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isPro, setActivationStatus } = useActivation();
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
+  const isPro = true; // All users are now Pro
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -115,23 +112,6 @@ export default function DashboardLayoutClient({
     router.push('/');
     router.refresh();
   };
-
-  React.useEffect(() => {
-    if (profile?.account_status) {
-        setActivationStatus(profile.account_status === 'Pro');
-    }
-  }, [profile, setActivationStatus]);
-
-  const StatusBadge = () => (
-    <Badge variant={'outline'} className={cn("mt-2 text-xs font-semibold", 
-      isPro 
-      ? 'bg-green-100 text-green-800 border-green-200' 
-      : 'bg-amber-100 text-amber-800 border-amber-200'
-    )}>
-      {isPro ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
-      Akun {isPro ? "Pro" : "Gratis"}
-    </Badge>
-  );
 
   const ProfileHeader = () => (
     <SidebarHeader className="p-0 text-background">
@@ -151,13 +131,9 @@ export default function DashboardLayoutClient({
             <p className="text-lg font-bold text-white drop-shadow-sm">{profile?.full_name || 'Guru'}</p>
             <p className="text-sm text-white/80 drop-shadow-sm">{user?.email}</p>
             <div className="mt-2">
-              <Badge variant={'outline'} className={cn("text-xs font-semibold backdrop-blur-sm border-white/30", 
-                isPro 
-                ? 'bg-green-500/20 text-green-100 border-green-300/30 shadow-green-500/20' 
-                : 'bg-amber-500/20 text-amber-100 border-amber-300/30 shadow-amber-500/20'
-              )}>
-                {isPro ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
-                Akun {isPro ? "Pro" : "Gratis"}
+              <Badge variant={'outline'} className="text-xs font-semibold backdrop-blur-sm border-white/30 bg-green-500/20 text-green-100 border-green-300/30 shadow-green-500/20">
+                <CheckCircle2 className="w-3 h-3 mr-1.5" />
+                Akun Pro
               </Badge>
             </div>
           </div>

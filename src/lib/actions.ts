@@ -5,16 +5,6 @@
 // THIS FILE IS DISABLED FOR DESIGN MODE.
 // All actions are mocked to prevent database writes.
 
-export async function activateAccount(code: string) {
-    console.log("Attempted to activate with code:", code);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Simulate a failure for a specific code for testing purposes
-    if (code.includes('FAIL')) {
-         return { success: false, error: 'Kode aktivasi tidak valid atau sudah digunakan.' };
-    }
-    return { success: true };
-}
-
 export async function saveJournal(formData: FormData) {
     console.log("Attempted to save journal:", Object.fromEntries(formData.entries()));
     await new Promise(resolve => setTimeout(resolve, 1000));

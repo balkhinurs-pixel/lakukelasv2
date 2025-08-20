@@ -42,16 +42,13 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, CheckCircle, Award, Download, Sparkles, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Users2, Filter, Calendar, GraduationCap, BarChart3, FileText, Crown, Star } from "lucide-react";
+import { TrendingUp, CheckCircle, Award, Download, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Users2, Filter, Calendar, GraduationCap, BarChart3, FileText } from "lucide-react";
 import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear } from "@/lib/types";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { useActivation } from "@/hooks/use-activation";
-import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { getReportsData } from "@/lib/data";
@@ -135,7 +132,6 @@ export default function ReportsPageComponent({
   const currentSchoolYearId = searchParams.get('schoolYear') || profile?.active_school_year_id || "all";
   const currentMonth = searchParams.get('month') || "all";
 
-  const { isPro, limits } = useActivation();
   const { toast } = useToast();
 
   // Animation trigger
@@ -197,10 +193,6 @@ export default function ReportsPageComponent({
   const pieData = Object.entries(overallAttendanceDistribution).map(([name, value]) => ({name, value})).filter(item => item.value > 0);
 
     const handleDownloadAttendance = async () => {
-        if (!limits.canDownloadPdf) {
-            toast({ title: "Fitur Akun Pro", description: "Unduh laporan PDF adalah fitur Pro.", variant: "destructive" });
-            return;
-        }
         if (selectedClass === 'all' || selectedSubject === 'all') {
             toast({ title: "Filter Dibutuhkan", description: "Silakan pilih Kelas dan Mata Pelajaran untuk mengunduh laporan kehadiran.", variant: "destructive"});
             return;
@@ -235,10 +227,6 @@ export default function ReportsPageComponent({
     }
 
     const handleDownloadGrades = async () => {
-        if (!limits.canDownloadPdf) {
-            toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
-            return;
-        }
         if (selectedClass === 'all' || selectedSubject === 'all') {
             toast({ title: "Filter Dibutuhkan", description: "Silakan pilih Kelas dan Mata Pelajaran untuk mengunduh laporan nilai.", variant: "destructive"});
             return;
@@ -292,10 +280,6 @@ export default function ReportsPageComponent({
     }
 
     const handleDownloadGradesExcel = () => {
-        if (!isPro) {
-            toast({ title: "Fitur Akun Pro", description: "Unduh laporan Excel adalah fitur Pro.", variant: "destructive" });
-            return;
-        }
         if (selectedClass === 'all' || selectedSubject === 'all') {
             toast({ title: "Filter Dibutuhkan", description: "Silakan pilih Kelas dan Mata Pelajaran untuk mengunduh laporan nilai.", variant: "destructive" });
             return;
@@ -419,11 +403,6 @@ export default function ReportsPageComponent({
     }
   
   const handleDownloadJournal = async () => {
-    if (!limits.canDownloadPdf) {
-        toast({ title: "Fitur Akun Pro", description: "Unduh PDF adalah fitur Pro.", variant: "destructive" });
-        return;
-    }
-
     const doc = new jsPDF() as jsPDFWithAutoTable;
     const title = 'JURNAL MENGAJAR GURU';
     
@@ -715,39 +694,12 @@ export default function ReportsPageComponent({
                             </p>
                         </div>
                     </div>
-                    
-                    {isPro && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-full border border-primary/20 w-fit">
-                            <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                            <span className="text-primary font-medium text-sm sm:text-base">Premium Active</span>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 pb-8 sm:pb-16">
-            {!isPro && (
-                <div className={cn(
-                    "mb-4 sm:mb-8 transition-all duration-1000 ease-out delay-200",
-                    isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                )}>
-                    <Alert className="border-primary/20 bg-gradient-to-r from-primary/5 to-purple-500/5">
-                        <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                        <AlertTitle className="text-primary text-sm sm:text-base">Dapatkan Laporan Profesional dengan Akun Pro</AlertTitle>
-                        <AlertDescription className="text-foreground text-xs sm:text-sm">
-                            Aktivasi akun Pro untuk dapat mengunduh semua laporan dalam format PDF profesional dengan kop surat sekolah Anda.
-                            <Button variant="link" className="p-0 h-auto ml-1 text-primary font-semibold text-xs sm:text-sm" asChild>
-                                <Link href="/dashboard/activation">
-                                    Aktivasi sekarang <Star className="h-2 w-2 sm:h-3 sm:w-3 ml-1" />
-                                </Link>
-                            </Button>
-                        </AlertDescription>
-                    </Alert>
-                </div>
-            )}
-
             <div className={cn(
                 "transition-all duration-1000 ease-out delay-300",
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
@@ -1004,7 +956,6 @@ export default function ReportsPageComponent({
                                         <Button 
                                             variant="outline" 
                                             onClick={handleDownloadAttendance} 
-                                            disabled={!isPro}
                                             className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-200 hover:bg-green-50 dark:hover:bg-green-900/20 shrink-0 text-sm sm:text-base"
                                         >
                                             <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -1045,7 +996,6 @@ export default function ReportsPageComponent({
                                             <Button 
                                                 variant="outline" 
                                                 onClick={handleDownloadGradesExcel} 
-                                                disabled={!isPro}
                                                 className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-emerald-500/10 to-green-500/10 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm sm:text-base"
                                             >
                                                 <FileSpreadsheet className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -1054,7 +1004,6 @@ export default function ReportsPageComponent({
                                             <Button 
                                                 variant="outline" 
                                                 onClick={handleDownloadGrades} 
-                                                disabled={!isPro}
                                                 className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm sm:text-base"
                                             >
                                                 <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -1095,7 +1044,6 @@ export default function ReportsPageComponent({
                                         <Button 
                                             variant="outline" 
                                             onClick={handleDownloadJournal} 
-                                            disabled={!isPro}
                                             className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-purple-500/10 to-violet-500/10 border-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/20 shrink-0 text-sm sm:text-base"
                                         >
                                             <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />

@@ -11,21 +11,6 @@ import {
     TableRow,
   } from "@/components/ui/table";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from "@/components/ui/select";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -45,15 +30,14 @@ import {
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Edit, Trash2, Loader2, Calendar, Mail, User, Users, KeyRound } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users } from "lucide-react";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
-import { updateUserStatus, deleteUser } from "@/lib/actions/admin";
+import { deleteUser } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -75,10 +59,6 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
     const router = useRouter();
     const [users, setUsers] = React.useState<Profile[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [filterStatus, setFilterStatus] = React.useState('all');
-    const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
-    const [selectedUser, setSelectedUser] = React.useState<Profile | null>(null);
-    const [newStatus, setNewStatus] = React.useState<'Pro' | 'Free'>('Free');
     const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
 
@@ -88,43 +68,9 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
 
     const filteredUsers = users.filter(user => {
         const matchesSearch = (user.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'all' || user.account_status === filterStatus;
-        return matchesSearch && matchesStatus;
+        return matchesSearch;
     });
 
-    const handleManageClick = (user: Profile) => {
-        setSelectedUser(user);
-        if (user.account_status) {
-            setNewStatus(user.account_status);
-        }
-        setIsManageDialogOpen(true);
-    };
-
-    const handleStatusChange = async () => {
-        if (!selectedUser) return;
-        setLoading(true);
-
-        const result = await updateUserStatus(selectedUser.id, newStatus);
-        
-        if (result.success) {
-            toast({
-                title: "Status Diperbarui",
-                description: result.message,
-            });
-            router.refresh();
-        } else {
-             toast({
-                title: "Gagal Memperbarui",
-                description: result.error,
-                variant: "destructive"
-            });
-        }
-
-        setLoading(false);
-        setIsManageDialogOpen(false);
-        setSelectedUser(null);
-    }
-    
     const handleDeleteUser = async (userId: string) => {
         setLoading(true);
         const userToDelete = users.find(u => u.id === userId);
@@ -147,14 +93,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         }
         setLoading(false);
     }
-
-    const getStatusClass = (status: 'Pro' | 'Free' | null) => {
-        if (status === 'Pro') {
-            return 'bg-green-100 text-green-800 border-green-200';
-        }
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-    }
-
+    
   return (
     <>
         <div className="flex items-center gap-2 flex-wrap mb-4">
@@ -164,16 +103,6 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Filter Status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Semua Status</SelectItem>
-                    <SelectItem value="Pro">Pro</SelectItem>
-                    <SelectItem value="Free">Free</SelectItem>
-                </SelectContent>
-            </Select>
         </div>
 
         {/* Mobile View */}
@@ -190,10 +119,6 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => handleManageClick(user)}>
-                                    <KeyRound className="mr-2 h-4 w-4" />
-                                    Ubah Status Aktivasi
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
@@ -210,8 +135,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                             <span>{user.email}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Badge variant={'outline'} className={cn("text-xs font-semibold", getStatusClass(user.account_status))}>
-                                {user.account_status}
+                           <Badge variant={'outline'} className="text-xs font-semibold bg-green-100 text-green-800 border-green-200">
+                                Akun Pro
                             </Badge>
                         </div>
                          <div className="flex items-center gap-2">
@@ -241,8 +166,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                             <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
                             <TableCell className="text-muted-foreground">{user.email}</TableCell>
                             <TableCell>
-                                <Badge variant={'outline'} className={cn("font-semibold", getStatusClass(user.account_status))}>
-                                    {user.account_status}
+                                <Badge variant={'outline'} className="font-semibold bg-green-100 text-green-800 border-green-200">
+                                    Pro
                                 </Badge>
                             </TableCell>
                             <TableCell>
@@ -258,10 +183,6 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                            <DropdownMenuItem onSelect={() => handleManageClick(user)}>
-                                                <KeyRound className="mr-2 h-4 w-4" />
-                                                Ubah Status Aktivasi
-                                            </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <AlertDialogTrigger asChild>
                                                 <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
@@ -301,38 +222,6 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                 <p className="mt-1 text-sm text-gray-500">Coba ubah filter atau kata kunci pencarian Anda.</p>
             </div>
         )}
-
-        <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
-            <DialogContent className="dialog-content-mobile mobile-safe-area">
-                <DialogHeader>
-                    <DialogTitle>Kelola Status Aktivasi</DialogTitle>
-                    <DialogDescription>
-                        Ubah status aktivasi untuk <span className="font-semibold">{selectedUser?.full_name}</span>.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="account-status">Status Akun</Label>
-                        <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ('Pro' | 'Free'))}>
-                            <SelectTrigger id="account-status">
-                                <SelectValue placeholder="Pilih status baru" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Free">Free</SelectItem>
-                                <SelectItem value="Pro">Pro</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsManageDialogOpen(false)} disabled={loading}>Batal</Button>
-                    <Button onClick={handleStatusChange} disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Simpan Perubahan
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     </>
   );
 }

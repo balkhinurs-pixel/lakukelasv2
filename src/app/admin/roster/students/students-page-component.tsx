@@ -43,7 +43,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog, Loader2, CheckCircle, XCircle, School } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useActivation } from "@/hooks/use-activation";
 import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
 import { saveStudent, updateStudent, importStudents } from "@/lib/actions";
@@ -197,7 +196,6 @@ export default function StudentsPageComponent({
   const [loading, setLoading] = React.useState(false);
   
   const { toast } = useToast();
-  const { limits, isPro } = useActivation();
   
   React.useEffect(() => {
     setStudents(initialStudents);
@@ -205,7 +203,6 @@ export default function StudentsPageComponent({
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const studentsInClass = students.filter(s => s.class_id === selectedClassId && s.status === 'active');
-  const canAddStudent = isPro || (selectedClass ? studentsInClass.length < limits.studentsPerClass : false);
 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
@@ -225,11 +222,6 @@ export default function StudentsPageComponent({
     e.preventDefault();
     setLoading(true);
 
-    if (!canAddStudent && !editingStudent) {
-        toast({ title: "Batas Siswa Tercapai", description: `Akun gratis hanya bisa menampung ${limits.studentsPerClass} siswa per kelas.`, variant: "destructive" });
-        setLoading(false);
-        return;
-    }
     if (!formState.name || !formState.nis || !formState.gender) {
         toast({ title: "Gagal", description: "Semua kolom harus diisi.", variant: "destructive" });
         setLoading(false);
@@ -359,24 +351,11 @@ export default function StudentsPageComponent({
                 <p className="text-muted-foreground">Kelola data induk siswa di setiap kelas.</p>
             </div>
              <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" onClick={handleDownloadTemplate} disabled={!isPro || loading}><FileText className="h-4 w-4 mr-2" /> Unduh Template</Button>
-                <Button variant="outline" onClick={handleImportClick} disabled={!isPro || loading || !selectedClassId}><Upload className="h-4 w-4 mr-2" /> Impor Siswa</Button>
-                <Button variant="outline" onClick={handleExportCSV} disabled={!isPro || loading || studentsInClass.length === 0}><Download className="h-4 w-4 mr-2" /> Ekspor Siswa</Button>
+                <Button variant="outline" onClick={handleDownloadTemplate} disabled={loading}><FileText className="h-4 w-4 mr-2" /> Unduh Template</Button>
+                <Button variant="outline" onClick={handleImportClick} disabled={loading || !selectedClassId}><Upload className="h-4 w-4 mr-2" /> Impor Siswa</Button>
+                <Button variant="outline" onClick={handleExportCSV} disabled={loading || studentsInClass.length === 0}><Download className="h-4 w-4 mr-2" /> Ekspor Siswa</Button>
             </div>
         </div>
-        
-        {!isPro && (
-            <Alert>
-                <Sparkles className="h-4 w-4" />
-                <AlertTitle>Fitur Akun Pro</AlertTitle>
-                <AlertDescription>
-                    Impor, ekspor, dan unduh template siswa adalah fitur Pro. Batas siswa per kelas juga lebih banyak.
-                    <Button variant="link" className="p-0 h-auto ml-1" asChild>
-                        <Link href="/dashboard/activation">Aktivasi sekarang</Link>
-                    </Button> untuk mengelola data siswa dengan lebih efisien.
-                </AlertDescription>
-            </Alert>
-        )}
 
         <Card>
         <CardHeader>
@@ -384,7 +363,7 @@ export default function StudentsPageComponent({
                 <div>
                     <CardTitle>Daftar Siswa Aktif - {selectedClass?.name || '...'}</CardTitle>
                     <CardDescription>
-                        Total siswa di kelas ini: <span className="font-semibold">{studentsInClass.length}</span> (batas: {isPro ? 'Tidak Terbatas' : limits.studentsPerClass})
+                        Total siswa di kelas ini: <span className="font-semibold">{studentsInClass.length}</span>
                     </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -403,7 +382,7 @@ export default function StudentsPageComponent({
                         ))}
                         </SelectContent>
                     </Select>
-                    <Button onClick={handleOpenAddDialog} disabled={!canAddStudent || !selectedClassId || loading}>
+                    <Button onClick={handleOpenAddDialog} disabled={!selectedClassId || loading}>
                         <UserPlus className="h-4 w-4 mr-2" />
                         Tambah Siswa
                     </Button>

@@ -68,20 +68,13 @@ const DUMMY_TEACHER_ATTENDANCE: TeacherAttendance[] = [
 // --- Admin Data ---
 
 export async function getAdminDashboardData() {
-    return { totalUsers: 125, proUsers: 30 };
+    return { totalUsers: 125 };
 }
 
 export async function getAllUsers(): Promise<Profile[]> {
     return [
         { id: '1', full_name: 'Guru A', email: 'guru.a@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
-        { id: '2', full_name: 'Guru B', email: 'guru.b@sekolah.id', account_status: 'Free', role: 'teacher', created_at: new Date().toISOString() },
-    ];
-}
-
-export async function getActivationCodes(): Promise<ActivationCode[]> {
-    return [
-        { id: 'code-1', code: 'XXXX-XXXX-XXXX-XXXX', is_used: true, used_by: '1', used_at: new Date().toISOString(), created_at: new Date().toISOString(), used_by_email: 'guru.a@sekolah.id' },
-        { id: 'code-2', code: 'YYYY-YYYY-YYYY-YYYY', is_used: false, used_by: null, used_at: null, created_at: new Date().toISOString() }
+        { id: '2', full_name: 'Guru B', email: 'guru.b@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
     ];
 }
 

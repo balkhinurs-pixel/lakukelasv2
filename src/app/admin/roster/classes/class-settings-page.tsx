@@ -31,7 +31,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PlusCircle, Sparkles, Edit, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useActivation } from "@/hooks/use-activation";
 import type { Class } from "@/lib/types";
 import Link from "next/link";
 import { saveClass } from "@/lib/actions";
@@ -44,23 +43,14 @@ export function ClassSettingsPageComponent({ initialClasses }: { initialClasses:
     const [newClassName, setNewClassName] = React.useState("");
     const [loading, setLoading] = React.useState(false);
     const { toast } = useToast();
-    const { limits, isPro } = useActivation();
 
     React.useEffect(() => {
         setClasses(initialClasses);
     }, [initialClasses]);
 
-    const canCreateClass = isPro || classes.length < limits.classes;
-
     const handleSaveClass = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-
-        if (!canCreateClass) {
-            toast({ title: "Batas Tercapai", description: "Anda telah mencapai batas maksimal jumlah kelas untuk akun gratis.", variant: "destructive" });
-            setLoading(false);
-            return;
-        }
 
         if (!newClassName) {
             toast({ title: "Gagal", description: "Nama kelas tidak boleh kosong.", variant: "destructive" });
@@ -93,7 +83,7 @@ export function ClassSettingsPageComponent({ initialClasses }: { initialClasses:
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button disabled={!canCreateClass}>
+                        <Button>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Buat Kelas Baru
                         </Button>
@@ -121,23 +111,10 @@ export function ClassSettingsPageComponent({ initialClasses }: { initialClasses:
                 </Dialog>
             </div>
 
-            {!isPro && (
-                 <Alert>
-                    <Sparkles className="h-4 w-4" />
-                    <AlertTitle>Aktivasi Akun Pro!</AlertTitle>
-                    <AlertDescription>
-                        Anda menggunakan akun gratis dengan batas **{limits.classes} kelas**.
-                        <Button variant="link" className="p-0 h-auto ml-1" asChild>
-                           <Link href="/dashboard/activation">Aktivasi sekarang</Link>
-                        </Button> untuk membuat kelas tanpa batas.
-                    </AlertDescription>
-                </Alert>
-            )}
-
             <Card>
                 <CardHeader>
                     <CardTitle>Daftar Kelas</CardTitle>
-                    <CardDescription>Berikut adalah semua kelas yang terdaftar di sistem. ({classes.length}/{isPro ? '∞' : limits.classes})</CardDescription>
+                    <CardDescription>Berikut adalah semua kelas yang terdaftar di sistem. ({classes.length})</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {/* Mobile View */}

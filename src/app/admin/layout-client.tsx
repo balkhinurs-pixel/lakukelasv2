@@ -9,7 +9,6 @@ import {
   LogOut,
   Users,
   Menu,
-  KeySquare,
   User as UserIcon,
   Users2,
   CalendarCheck,
@@ -49,7 +48,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 const adminNavItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
   { href: '/admin/users', icon: Users, label: 'Pengguna' },
-  { href: '/admin/codes', icon: KeySquare, label: 'Kode Aktivasi' },
   { href: '/admin/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
 ];
 
