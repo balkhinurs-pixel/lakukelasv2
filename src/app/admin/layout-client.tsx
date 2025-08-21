@@ -349,27 +349,6 @@ export default function AdminLayoutClient({
             <SidebarMenu className="gap-2">
                 <SidebarMenuItem>
                     <SidebarMenuButton
-                        asChild
-                        tooltip={{ children: "Ke Dasbor Guru" }}
-                        className={cn(
-                          "group-data-[collapsible=icon]:justify-center relative transition-all duration-300 ease-out rounded-xl mx-2",
-                          "hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-blue-500/5 hover:shadow-lg hover:shadow-blue-500/10",
-                          "hover:scale-[1.02] hover:-translate-y-0.5",
-                          "after:absolute after:inset-0 after:rounded-xl after:bg-gradient-to-r after:from-transparent after:via-white/[0.02] after:to-transparent after:opacity-0 hover:after:opacity-100 after:transition-opacity after:duration-300"
-                        )}
-                    >
-                        <Link href="/dashboard" onClick={() => {if (isMobile) toggleSidebar()}} className="flex items-center gap-3 w-full">
-                            <div className="relative transition-all duration-300">
-                              <UserIcon className="w-4 h-4 transition-all duration-300" />
-                            </div>
-                            <span className="group-data-[collapsible=icon]:hidden transition-all duration-300 font-medium text-muted-foreground">
-                              Ke Dasbor Guru
-                            </span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton
                         onClick={handleLogout}
                         tooltip={{ children: "Keluar" }}
                         className={cn(
