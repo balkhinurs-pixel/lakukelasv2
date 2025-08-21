@@ -47,12 +47,22 @@ interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
 }
 
+const months = [
+    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
+    { value: "3", label: 'Maret' }, { value: "4", label: 'April' },
+    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' },
+    { value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' },
+    { value: "9", label: 'September' }, { value: "10", label: 'Oktober' },
+    { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
+];
+
 export default function TeacherAttendanceRecapPage() {
   const [history, setHistory] = React.useState<TeacherAttendance[]>([]);
   const [users, setUsers] = React.useState<Profile[]>([]);
   const [profile, setProfile] = React.useState<Profile | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>();
   const [selectedTeacher, setSelectedTeacher] = React.useState<string>("all");
+  const [selectedMonth, setSelectedMonth] = React.useState<string>("all");
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -73,15 +83,20 @@ export default function TeacherAttendanceRecapPage() {
 
   const filteredHistory = React.useMemo(() => {
     return history.filter((item) => {
-      const dateMatch =
-        !selectedDate ||
-        format(new Date(item.date), "yyyy-MM-dd") ===
-          format(selectedDate, "yyyy-MM-dd");
-      const teacherMatch =
-        selectedTeacher === "all" || item.teacherId === selectedTeacher;
-      return dateMatch && teacherMatch;
+      const itemDate = new Date(item.date);
+      const teacherMatch = selectedTeacher === "all" || item.teacherId === selectedTeacher;
+
+      // If a specific date is selected, it takes precedence over the month filter.
+      if (selectedDate) {
+          const dateMatch = format(itemDate, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
+          return dateMatch && teacherMatch;
+      }
+
+      // If no specific date is selected, use the month filter.
+      const monthMatch = selectedMonth === 'all' || format(itemDate, 'M') === selectedMonth;
+      return monthMatch && teacherMatch;
     });
-  }, [history, selectedDate, selectedTeacher]);
+  }, [history, selectedDate, selectedTeacher, selectedMonth]);
 
   const handleDownloadPdf = async () => {
     if (!profile) return;
@@ -115,9 +130,13 @@ export default function TeacherAttendanceRecapPage() {
         
         doc.setFontSize(10).setFont(undefined, 'normal');
         const teacherName = users.find(u => u.id === selectedTeacher)?.full_name || 'Semua Guru';
-        const dateLabel = selectedDate ? format(selectedDate, "d MMMM yyyy", { locale: id }) : 'Semua Tanggal';
+        const monthLabel = months.find(m => m.value === selectedMonth)?.label;
+        const dateLabel = selectedDate 
+            ? format(selectedDate, "d MMMM yyyy", { locale: id }) 
+            : (selectedMonth !== 'all' ? `Bulan ${monthLabel}` : 'Semua Tanggal');
+            
         doc.text(`Guru: ${teacherName}`, margin, margin + 45);
-        doc.text(`Tanggal: ${dateLabel}`, margin, margin + 50);
+        doc.text(`Periode: ${dateLabel}`, margin, margin + 50);
 
         const tableBody = filteredHistory.map((item) => [
             item.teacherName,
@@ -212,9 +231,9 @@ export default function TeacherAttendanceRecapPage() {
         <CardHeader>
           <CardTitle>Filter Laporan</CardTitle>
           <CardDescription>
-            Saring data absensi berdasarkan guru atau tanggal tertentu.
+            Saring data absensi berdasarkan guru, bulan, atau tanggal tertentu.
           </CardDescription>
-          <div className="pt-4 flex flex-col md:flex-row gap-2">
+          <div className="pt-4 grid grid-cols-1 md:grid-cols-3 gap-2">
             <div className="flex items-center gap-2 w-full">
               <UserIcon className="h-4 w-4 text-muted-foreground" />
               <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
@@ -232,6 +251,20 @@ export default function TeacherAttendanceRecapPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2 w-full">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                <Select value={selectedMonth} onValueChange={(value) => { setSelectedMonth(value); setSelectedDate(undefined); }}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Filter berdasarkan bulan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Semua Bulan</SelectItem>
+                        {months.map((month) => (
+                             <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center gap-2 w-full">
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
               <Popover>
                 <PopoverTrigger asChild>
@@ -246,7 +279,7 @@ export default function TeacherAttendanceRecapPage() {
                     {selectedDate ? (
                       format(selectedDate, "PPP", { locale: id })
                     ) : (
-                      <span>Pilih tanggal</span>
+                      <span>Pilih tanggal spesifik</span>
                     )}
                   </Button>
                 </PopoverTrigger>
