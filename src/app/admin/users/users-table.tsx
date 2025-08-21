@@ -80,8 +80,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
 
         if (result.success) {
             toast({
-                title: "Pengguna Dihapus",
-                description: `Pengguna ${userToDelete.full_name} telah berhasil dihapus.`,
+                title: "Guru Dihapus",
+                description: `Guru ${userToDelete.full_name} telah berhasil dihapus.`,
             });
             router.refresh();
         } else {
@@ -98,7 +98,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
     <>
         <div className="flex items-center gap-2 flex-wrap mb-4">
             <Input 
-                placeholder="Cari nama atau email..." 
+                placeholder="Cari nama atau email guru..." 
                 className="w-full md:w-auto flex-grow"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -123,7 +123,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Hapus Pengguna
+                                        Hapus Guru
                                     </DropdownMenuItem>
                                 </AlertDialogTrigger>
                             </DropdownMenuContent>
@@ -153,9 +153,9 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Nama Pengguna</TableHead>
+                        <TableHead>Nama Guru</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Status Akun</TableHead>
                         <TableHead>Tanggal Bergabung</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
@@ -187,7 +187,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                             <AlertDialogTrigger asChild>
                                                 <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                                     <Trash2 className="mr-2 h-4 w-4" />
-                                                    Hapus Pengguna
+                                                    Hapus Guru
                                                 </DropdownMenuItem>
                                             </AlertDialogTrigger>
                                         </DropdownMenuContent>
@@ -196,14 +196,14 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Tindakan ini tidak dapat dibatalkan. Ini akan menghapus pengguna <span className="font-semibold">{user.full_name}</span> secara permanen dari server.
+                                                Tindakan ini tidak dapat dibatalkan. Ini akan menghapus guru <span className="font-semibold">{user.full_name}</span> secara permanen dari server.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Batal</AlertDialogCancel>
                                             <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading}>
                                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Ya, Hapus Pengguna
+                                                Ya, Hapus Guru
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
@@ -218,7 +218,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         {filteredUsers.length === 0 && (
             <div className="text-center text-muted-foreground py-12">
                 <Users className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium">Pengguna Tidak Ditemukan</h3>
+                <h3 className="mt-2 text-sm font-medium">Guru Tidak Ditemukan</h3>
                 <p className="mt-1 text-sm text-gray-500">Coba ubah filter atau kata kunci pencarian Anda.</p>
             </div>
         )}

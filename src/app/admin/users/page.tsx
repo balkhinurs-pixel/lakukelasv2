@@ -15,26 +15,27 @@ import { UsersTable } from './users-table';
 
 export default async function AdminUsersPage() {
     const users = await getAllUsers();
+    const teachers = users.filter(u => u.role === 'teacher');
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold font-headline">Kelola Pengguna</h1>
-                    <p className="text-muted-foreground">Lihat, cari, dan kelola semua pengguna terdaftar.</p>
+                    <h1 className="text-2xl font-bold font-headline">Daftar Guru</h1>
+                    <p className="text-muted-foreground">Kelola semua akun guru yang terdaftar di sistem.</p>
                 </div>
                 <Button disabled>
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Tambah Pengguna
+                    Tambah Guru
                 </Button>
             </div>
             <Card className="shadow-sm">
                 <CardHeader>
-                    <CardTitle>Daftar Pengguna</CardTitle>
-                    <CardDescription>Total pengguna terdaftar: {users.length}</CardDescription>
+                    <CardTitle>Daftar Guru</CardTitle>
+                    <CardDescription>Total guru terdaftar: {teachers.length}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <UsersTable initialUsers={users} />
+                    <UsersTable initialUsers={teachers} />
                 </CardContent>
             </Card>
         </div>

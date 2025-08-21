@@ -48,7 +48,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const adminNavItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
-  { href: '/admin/users', icon: Users, label: 'Pengguna' },
+  { href: '/admin/users', icon: Users, label: 'Daftar Guru' },
   { href: '/admin/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
 ];
 
