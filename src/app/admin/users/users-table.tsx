@@ -32,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search } from "lucide-react";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
@@ -46,7 +46,7 @@ function FormattedDate({ dateString }: { dateString: string }) {
     const [date, setDate] = React.useState('');
     React.useEffect(() => {
         if (dateString) {
-            setDate(format(new Date(dateString), 'EEEE, dd MMMM yyyy', { locale: id }));
+            setDate(format(new Date(dateString), 'dd MMMM yyyy', { locale: id }));
         }
     }, [dateString]);
     
@@ -97,12 +97,15 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
   return (
     <>
         <div className="flex items-center gap-2 flex-wrap mb-4">
-            <Input 
-                placeholder="Cari nama atau email guru..." 
-                className="w-full md:w-auto flex-grow"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="relative w-full md:w-auto flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input 
+                  placeholder="Cari nama atau email guru..." 
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
         </div>
 
         {/* Mobile View */}
@@ -111,33 +114,45 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                  <div key={user.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
                      <div className="flex justify-between items-start">
                         <p className="font-semibold">{user.full_name || 'N/A'}</p>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" disabled={loading} className="h-8 w-8 -mt-2 -mr-2">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Hapus Guru
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                         <AlertDialog>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" disabled={loading} className="h-8 w-8 -mt-2 -mr-2">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Hapus Guru
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                             <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Tindakan ini tidak dapat dibatalkan. Ini akan menghapus guru <span className="font-semibold">{user.full_name}</span> secara permanen dari server.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading}>
+                                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Ya, Hapus Guru
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                         </AlertDialog>
                      </div>
                      <div className="text-sm text-muted-foreground space-y-2 border-t pt-3 mt-3">
                          <div className="flex items-center gap-2">
                             <Mail className="w-4 h-4 text-primary"/>
                             <span>{user.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <Badge variant={'outline'} className="text-xs font-semibold bg-green-100 text-green-800 border-green-200">
-                                Akun Pro
-                            </Badge>
                         </div>
                          <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-primary"/>
@@ -155,7 +170,6 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                     <TableRow>
                         <TableHead>Nama Guru</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Status Akun</TableHead>
                         <TableHead>Tanggal Bergabung</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
@@ -165,11 +179,6 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                         <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
                             <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                            <TableCell>
-                                <Badge variant={'outline'} className="font-semibold bg-green-100 text-green-800 border-green-200">
-                                    Pro
-                                </Badge>
-                            </TableCell>
                             <TableCell>
                               <FormattedDate dateString={user.created_at} />
                             </TableCell>
