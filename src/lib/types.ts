@@ -1,5 +1,6 @@
 
 
+
 export interface Profile {
   id: string;
   created_at: string;
@@ -29,6 +30,7 @@ export interface Student {
   class_id: string;
   status: 'active' | 'graduated' | 'dropout' | 'inactive';
   class_name?: string;
+  avatar_url?: string;
 }
 
 export interface Class {
@@ -140,4 +142,31 @@ export interface GradeHistoryEntry {
     className?: string;
     subjectName?: string;
     subjectKkm?: number;
+}
+
+
+// --- Ledger Types ---
+export interface StudentLedgerGradeEntry {
+    id: string;
+    subjectName: string;
+    assessment_type: string;
+    date: string;
+    score: number;
+    kkm: number;
+}
+
+export interface StudentLedgerAttendanceEntry {
+    id: string;
+    subjectName: string;
+    date: string;
+    meeting_number: number;
+    status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha';
+}
+
+export interface StudentNote {
+    id: string;
+    date: string;
+    teacher_name: string;
+    note: string;
+    type: 'positive' | 'improvement' | 'neutral';
 }

@@ -24,7 +24,7 @@ const DUMMY_SUBJECTS: Subject[] = [
 ];
 
 const DUMMY_STUDENTS: Student[] = [
-    ...Array.from({ length: 15 }, (_, i) => ({ id: `student-1-${i}`, name: `Siswa A-${i + 1}`, nis: `1001${i}`, gender: i % 2 ? 'Laki-laki' : 'Perempuan', class_id: 'class-1', status: 'active' as const })),
+    ...Array.from({ length: 15 }, (_, i) => ({ id: `student-1-${i}`, name: `Siswa A-${i + 1}`, nis: `1001${i}`, gender: i % 2 ? 'Laki-laki' : 'Perempuan', class_id: 'class-1', status: 'active' as const, avatar_url: `https://placehold.co/100x100.png` })),
     ...Array.from({ length: 12 }, (_, i) => ({ id: `student-2-${i}`, name: `Siswa B-${i + 1}`, nis: `1002${i}`, gender: i % 2 ? 'Perempuan' : 'Laki-laki', class_id: 'class-2', status: 'active' as const })),
     ...Array.from({ length: 10 }, (_, i) => ({ id: `student-3-${i}`, name: `Siswa C-${i + 1}`, nis: `1003${i}`, gender: i % 2 ? 'Laki-laki' : 'Perempuan', class_id: 'class-3', status: 'active' as const })),
     { id: 'alumni-1', name: 'Alumni Sukses', nis: '9001', gender: 'Laki-laki', class_id: 'class-3', status: 'graduated' as const },
@@ -240,3 +240,67 @@ export async function getHomeroomStudentProgress() {
 
     return { studentData, className: homeroomClass.name };
 }
+
+export async function getHomeroomClassDetails() {
+    // This is a dummy function. In a real app, it would fetch data from a database.
+    const homeroomClass = DUMMY_CLASSES.find(c => c.teacher_id === DUMMY_USER_ID);
+
+    if (!homeroomClass) {
+        return null; // The current user is not a homeroom teacher
+    }
+
+    const studentsInClass = DUMMY_STUDENTS.filter(s => s.class_id === homeroomClass.id && s.status === 'active');
+
+    return {
+        homeroomClass,
+        studentsInClass,
+        subjects: DUMMY_SUBJECTS, // Assuming the homeroom teacher might need a list of all subjects
+    };
+}
+
+export async function getStudentLedgerData(studentId: string) {
+    // This is a dummy function to simulate fetching detailed ledger data for a single student.
+    if (!studentId) {
+        return { grades: [], attendance: [], notes: [] };
+    }
+
+    // Dummy Grades
+    const grades = DUMMY_SUBJECTS.map(subject => ({
+        id: `grade-${studentId}-${subject.id}`,
+        subjectName: subject.name,
+        assessment_type: "Ulangan Harian 1",
+        date: "2024-05-10",
+        score: Math.floor(Math.random() * 30) + 70, // Random score between 70-100
+        kkm: subject.kkm,
+    }));
+
+    // Dummy Attendance
+    const attendance = DUMMY_SUBJECTS.map((subject, index) => ({
+        id: `att-${studentId}-${subject.id}`,
+        subjectName: subject.name,
+        date: `2024-05-${10 + index}`,
+        meeting_number: index + 1,
+        status: ['Hadir', 'Hadir', 'Hadir', 'Sakit', 'Izin', 'Alpha'][Math.floor(Math.random() * 6)] as any,
+    }));
+    
+    // Dummy Notes
+    const notes = [
+        {
+            id: 'note-1',
+            date: '2024-05-15',
+            teacher_name: 'Ahmad Fauzi, S.Pd.',
+            note: 'Siswa menunjukkan peningkatan yang signifikan dalam pemecahan masalah aljabar. Sangat aktif bertanya di kelas.',
+            type: 'positive' as const,
+        },
+        {
+            id: 'note-2',
+            date: '2024-05-12',
+            teacher_name: 'Budi Santoso, M.Kom.',
+            note: 'Perlu lebih fokus saat praktikum. Terkadang mengobrol dengan teman sebangku.',
+            type: 'improvement' as const,
+        }
+    ];
+
+    return { grades, attendance, notes };
+}
+
