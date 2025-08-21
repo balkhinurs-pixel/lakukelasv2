@@ -2,6 +2,8 @@
 
 'use server';
 
+import type { StudentNote } from './types';
+
 // THIS FILE IS DISABLED FOR DESIGN MODE.
 // All actions are mocked to prevent database writes.
 
@@ -121,4 +123,11 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     // Create a dummy URL for the uploaded image to be displayed on the client
     const dummyUrl = URL.createObjectURL(file);
     return { success: true, message: 'Gambar berhasil diunggah (mode dummy).', url: dummyUrl };
+}
+
+export async function addStudentNote(data: { studentId: string; note: string; type: StudentNote['type'] }) {
+    console.log("Attempted to add student note:", data);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    // In a real app, this would insert into the student_notes table.
+    return { success: true, message: 'Catatan berhasil disimpan (mode dummy).' };
 }

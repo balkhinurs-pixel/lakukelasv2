@@ -4,7 +4,7 @@
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
 
@@ -45,12 +45,15 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject } from "@/lib/types";
-import { saveAttendance } from "@/lib/actions";
+import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject, StudentNote } from "@/lib/types";
+import { saveAttendance, addStudentNote } from "@/lib/actions";
 import { getStudentsByClass } from "@/lib/data-client";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -116,6 +119,80 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
     );
 });
 AttendanceInput.displayName = 'AttendanceInput';
+
+const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNoteSaved: () => void }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [note, setNote] = React.useState('');
+    const [noteType, setNoteType] = React.useState<StudentNote['type']>('neutral');
+    const [loading, setLoading] = React.useState(false);
+    const { toast } = useToast();
+
+    const handleSaveNote = async () => {
+        if (!student || !note) {
+            toast({ title: "Gagal", description: "Isi catatan tidak boleh kosong.", variant: "destructive" });
+            return;
+        }
+        setLoading(true);
+        const result = await addStudentNote({ studentId: student.id, note, type: noteType });
+        if (result.success) {
+            toast({ title: "Catatan Disimpan", description: `Catatan untuk ${student.name} telah disimpan.` });
+            onNoteSaved();
+            setIsOpen(false);
+            setNote('');
+            setNoteType('neutral');
+        } else {
+            toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
+        }
+        setLoading(false);
+    }
+
+    if (!student) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+                    <MessageSquarePlus className="h-4 w-4" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Tambah Catatan untuk {student.name}</DialogTitle>
+                    <DialogDescription>Catatan ini akan dapat dilihat oleh wali kelas.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="note-content">Isi Catatan</Label>
+                        <Textarea id="note-content" value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Tidak mengerjakan PR, sangat aktif di kelas, dll." />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Jenis Catatan</Label>
+                        <RadioGroup value={noteType} onValueChange={(value: StudentNote['type']) => setNoteType(value)} className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="positive" id="r-positive" />
+                                <Label htmlFor="r-positive" className="flex items-center gap-1"><TrendingUp className="h-4 w-4 text-green-500"/> Positif</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="improvement" id="r-improvement" />
+                                <Label htmlFor="r-improvement" className="flex items-center gap-1"><TrendingDown className="h-4 w-4 text-yellow-500"/> Perbaikan</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="neutral" id="r-neutral" />
+                                <Label htmlFor="r-neutral" className="flex items-center gap-1">Netral</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleSaveNote} disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Simpan Catatan
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 
 export default function AttendancePageComponent({
@@ -428,6 +505,7 @@ export default function AttendancePageComponent({
                                       </div>
                                     </div>
                                   </div>
+                                   <AddNoteDialog student={student} onNoteSaved={() => router.refresh()} />
                                 </div>
                                 <div className="mt-4 pt-3 border-t border-slate-100">
                                    <AttendanceInput 
@@ -447,7 +525,7 @@ export default function AttendancePageComponent({
                         <TableRow className="bg-slate-50 hover:bg-slate-50">
                             <TableHead className="w-[80px] text-center font-semibold text-slate-700">No.</TableHead>
                             <TableHead className="font-semibold text-slate-700">Nama Siswa</TableHead>
-                            <TableHead className="text-right font-semibold text-slate-700">Status Kehadiran</TableHead>
+                            <TableHead className="text-right font-semibold text-slate-700 w-[420px]">Status Kehadiran</TableHead>
                         </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -458,7 +536,12 @@ export default function AttendancePageComponent({
                                 {index + 1}
                               </div>
                             </TableCell>
-                            <TableCell className="font-medium text-slate-900">{student.name}</TableCell>
+                            <TableCell className="font-medium text-slate-900">
+                                <div className="flex items-center gap-2">
+                                    <span>{student.name}</span>
+                                    <AddNoteDialog student={student} onNoteSaved={() => router.refresh()} />
+                                </div>
+                            </TableCell>
                             <TableCell className="text-right">
                                 <AttendanceInput 
                                     studentId={student.id} 

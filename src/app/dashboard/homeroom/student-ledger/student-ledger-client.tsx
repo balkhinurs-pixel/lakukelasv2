@@ -55,6 +55,9 @@ import { cn } from "@/lib/utils";
 import { getStudentLedgerData } from "@/lib/data-client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { addStudentNote } from "@/lib/actions";
+import { useRouter } from "next/navigation";
+
 
 import type {
   Class,
@@ -111,6 +114,78 @@ const getNoteInfo = (type: StudentNote["type"]) => {
     }
 }
 
+const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNoteSaved: () => void }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [note, setNote] = React.useState('');
+    const [noteType, setNoteType] = React.useState<StudentNote['type']>('neutral');
+    const [loading, setLoading] = React.useState(false);
+    const { toast } = useToast();
+
+    const handleSaveNote = async () => {
+        if (!student || !note) {
+            toast({ title: "Gagal", description: "Isi catatan tidak boleh kosong.", variant: "destructive" });
+            return;
+        }
+        setLoading(true);
+        const result = await addStudentNote({ studentId: student.id, note, type: noteType });
+        if (result.success) {
+            toast({ title: "Catatan Disimpan", description: `Catatan untuk ${student.name} telah disimpan.` });
+            onNoteSaved();
+            setIsOpen(false);
+            setNote('');
+            setNoteType('neutral');
+        } else {
+            toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
+        }
+        setLoading(false);
+    }
+
+    if (!student) return null;
+
+    return (
+         <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button><PlusCircle className="mr-2 h-4 w-4"/>Tambah Catatan</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Tambah Catatan Baru untuk {student.name}</DialogTitle>
+                    <DialogDescription>Catatan ini akan dapat dilihat oleh guru mapel lain yang mengajar siswa ini.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="note">Isi Catatan</Label>
+                        <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Tulis catatan perkembangan siswa di sini..."/>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Jenis Catatan</Label>
+                        <RadioGroup defaultValue="neutral" value={noteType} onValueChange={(value: StudentNote['type']) => setNoteType(value)} className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="positive" id="r-positive" />
+                                <Label htmlFor="r-positive">Positif</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="improvement" id="r-improvement" />
+                                <Label htmlFor="r-improvement">Butuh Perbaikan</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="neutral" id="r-neutral" />
+                                <Label htmlFor="r-neutral">Netral</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleSaveNote} type="submit" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Simpan Catatan
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function StudentLedgerClientPage({
   homeroomClass,
   studentsInClass,
@@ -128,25 +203,27 @@ export default function StudentLedgerClientPage({
   };
   initialStudentId: string;
 }) {
+  const router = useRouter();
   const [selectedStudentId, setSelectedStudentId] = React.useState(initialStudentId);
   const [ledgerData, setLedgerData] = React.useState(initialLedgerData);
   const [loading, setLoading] = React.useState(false);
 
   const selectedStudent = studentsInClass.find(s => s.id === selectedStudentId);
 
+  const fetchLedger = React.useCallback(async (studentId: string) => {
+    if (!studentId) return;
+    setLoading(true);
+    const data = await getStudentLedgerData(studentId);
+    setLedgerData(data);
+    setLoading(false);
+  }, []);
+
   React.useEffect(() => {
-    const fetchLedger = async () => {
-      if (!selectedStudentId) return;
-      setLoading(true);
-      const data = await getStudentLedgerData(selectedStudentId);
-      setLedgerData(data);
-      setLoading(false);
-    };
     // Don't refetch for the initial student
     if (selectedStudentId !== initialStudentId) {
-        fetchLedger();
+        fetchLedger(selectedStudentId);
     }
-  }, [selectedStudentId, initialStudentId]);
+  }, [selectedStudentId, initialStudentId, fetchLedger]);
 
   return (
     <div className="space-y-6">
@@ -294,43 +371,7 @@ export default function StudentLedgerClientPage({
                                 <CardTitle>Catatan Perkembangan Siswa</CardTitle>
                                 <CardDescription>Catatan dari wali kelas dan guru mapel.</CardDescription>
                             </div>
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button><PlusCircle className="mr-2 h-4 w-4"/>Tambah Catatan</Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Tambah Catatan Baru untuk {selectedStudent.name}</DialogTitle>
-                                        <DialogDescription>Catatan ini akan dapat dilihat oleh guru mapel lain yang mengajar siswa ini.</DialogDescription>
-                                    </DialogHeader>
-                                    <div className="grid gap-4 py-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="note">Isi Catatan</Label>
-                                            <Textarea id="note" placeholder="Tulis catatan perkembangan siswa di sini..."/>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Jenis Catatan</Label>
-                                            <RadioGroup defaultValue="neutral" className="flex gap-4">
-                                                <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="positive" id="r-positive" />
-                                                    <Label htmlFor="r-positive">Positif</Label>
-                                                </div>
-                                                 <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="improvement" id="r-improvement" />
-                                                    <Label htmlFor="r-improvement">Butuh Perbaikan</Label>
-                                                </div>
-                                                 <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="neutral" id="r-neutral" />
-                                                    <Label htmlFor="r-neutral">Netral</Label>
-                                                </div>
-                                            </RadioGroup>
-                                        </div>
-                                    </div>
-                                    <DialogFooter>
-                                        <Button type="submit">Simpan Catatan</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                            <AddNoteDialog student={selectedStudent} onNoteSaved={() => fetchLedger(selectedStudentId)} />
                         </CardHeader>
                         <CardContent>
                             <ScrollArea className="h-96 pr-4">
