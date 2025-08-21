@@ -19,6 +19,7 @@ import {
   MapPin,
   UserCheck as UserCheckIcon,
   CalendarClock,
+  Bell
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -37,6 +38,14 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
 } from '@/components/ui/sidebar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -138,6 +147,48 @@ export default function AdminLayoutClient({
           )
         })}
       </SidebarMenu>
+  );
+
+  const AppHeader = () => (
+    <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
+        <div className="flex items-center justify-between h-16 px-4">
+             <div className="flex items-center gap-2">
+                 <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" />
+                 <h1 className="text-lg font-bold tracking-tight">
+                    <span className="text-white">Panel</span>
+                    <span className="text-red-300">Admin</span>
+                </h1>
+            </div>
+            <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white rounded-full">
+                    <Bell className="h-5 w-5" />
+                </Button>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                             <Avatar className="h-8 w-8">
+                                <AvatarImage src={(profile?.avatar_url || "https://placehold.co/32x32.png")} alt={profile?.full_name || 'Admin'} data-ai-hint="admin portrait"/>
+                                <AvatarFallback className="text-foreground text-xs">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
+                             </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{profile?.full_name}</p>
+                                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout}>
+                            <LogOut className="mr-2 h-4 w-4"/>
+                            Keluar
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </div>
+    </header>
   );
 
   const BottomNavbar = () => {
@@ -373,10 +424,8 @@ export default function AdminLayoutClient({
       </Sidebar>
       
       <SidebarInset>
-        <header className="p-4 sm:p-6 lg:p-8 flex items-center md:hidden">
-            <SidebarTrigger />
-        </header>
-        <div className="p-4 sm:p-6 lg:p-8 pt-0 md:pt-8">
+        <AppHeader />
+        <div className="p-4 sm:p-6 lg:p-8">
             {children}
         </div>
       </SidebarInset>
