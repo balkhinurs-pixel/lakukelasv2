@@ -22,6 +22,15 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -32,14 +41,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus } from "lucide-react";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
-import { deleteUser } from "@/lib/actions/admin";
+import { deleteUser, inviteTeacher } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 
 function FormattedDate({ dateString }: { dateString: string }) {
@@ -52,6 +62,75 @@ function FormattedDate({ dateString }: { dateString: string }) {
     
     if (!dateString) return null;
     return <>{date}</>;
+}
+
+const InviteTeacherDialog = ({ onInviteSuccess }: { onInviteSuccess: () => void }) => {
+    const [open, setOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const { toast } = useToast();
+    
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setLoading(true);
+        const formData = new FormData(event.currentTarget);
+        const fullName = formData.get('fullName') as string;
+        const email = formData.get('email') as string;
+
+        const result = await inviteTeacher(fullName, email);
+
+        if (result.success) {
+            toast({
+                title: "Undangan Terkirim",
+                description: `Email undangan telah dikirim ke ${email}.`,
+            });
+            onInviteSuccess();
+            setOpen(false);
+        } else {
+            toast({
+                title: "Gagal Mengundang",
+                description: result.error,
+                variant: "destructive"
+            });
+        }
+        setLoading(false);
+    }
+
+    return (
+         <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Tambah Guru
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <form onSubmit={handleSubmit}>
+                    <DialogHeader>
+                        <DialogTitle>Undang Guru Baru</DialogTitle>
+                        <DialogDescription>
+                           Masukkan nama dan email guru. Sistem akan mengirim email undangan agar mereka dapat mengatur kata sandi dan login.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="fullName">Nama Lengkap</Label>
+                            <Input id="fullName" name="fullName" placeholder="Contoh: Budi Sanjaya, S.Pd." required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Alamat Email</Label>
+                            <Input id="email" name="email" type="email" placeholder="contoh@sekolah.id" required />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="submit" disabled={loading}>
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Kirim Undangan
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    )
 }
 
 
@@ -96,8 +175,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
     
   return (
     <>
-        <div className="flex items-center gap-2 flex-wrap mb-4">
-            <div className="relative w-full md:w-auto flex-grow">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div className="relative w-full sm:w-auto sm:flex-grow max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
                   placeholder="Cari nama atau email guru..." 
@@ -106,6 +185,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                   onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <InviteTeacherDialog onInviteSuccess={() => router.refresh()} />
         </div>
 
         {/* Mobile View */}

@@ -7,6 +7,17 @@ import type { ActivationCode } from '../types';
 // THIS FILE IS DISABLED FOR DESIGN MODE.
 // All actions are mocked to prevent database writes.
 
+export async function inviteTeacher(fullName: string, email: string) {
+    console.log(`Attempted to invite teacher: ${fullName} <${email}>`);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    // In a real app, you would use supabase.auth.admin.inviteUserByEmail() here
+    // and handle potential errors like "user already exists".
+    if (email.includes('exists')) {
+        return { success: false, error: 'Seorang pengguna dengan email ini sudah ada.' };
+    }
+    return { success: true, message: 'Undangan berhasil dikirim.' };
+}
+
 export async function deleteUser(userId: string) {
     console.log("Attempted to delete user:", userId);
     await new Promise(resolve => setTimeout(resolve, 1000));
