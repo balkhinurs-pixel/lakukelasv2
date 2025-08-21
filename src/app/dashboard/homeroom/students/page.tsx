@@ -12,9 +12,9 @@ export default function HomeroomStudentsPage() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Users2 /> Data Siswa Wali Kelas</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Users2 /> Data Siswa</CardTitle>
                     <CardDescription>
-                        Ini adalah halaman untuk wali kelas mengelola data siswa di kelasnya.
+                        Halaman ini akan dihapus dan fungsinya digabungkan ke dalam menu "Catatan & Leger Siswa".
                         Fitur ini sedang dalam pengembangan.
                     </CardDescription>
                 </CardHeader>

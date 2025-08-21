@@ -35,7 +35,8 @@ import {
   Grid3X3,
   MapPin,
   Contact,
-  TrendingUp
+  TrendingUp,
+  ClipboardList
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -83,8 +84,8 @@ const navItems = [
 ];
 
 const homeroomNavItems = [
-    { href: '/dashboard/homeroom/students', icon: Users2, label: 'Data Siswa Kelas' },
     { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Perkembangan Siswa' },
+    { href: '/dashboard/homeroom/student-ledger', icon: ClipboardList, label: 'Catatan & Leger Siswa' },
     { href: '/dashboard/homeroom/reports', icon: BarChart3, label: 'Laporan Kelas' },
 ];
 
