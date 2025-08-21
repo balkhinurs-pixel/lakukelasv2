@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -33,6 +34,7 @@ import {
   PenTool,
   Grid3X3,
   MapPin,
+  Contact
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -79,6 +81,11 @@ const navItems = [
   { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
 ];
 
+const homeroomNavItems = [
+    { href: '/dashboard/homeroom/students', icon: Users2, label: 'Data Siswa Kelas' },
+    { href: '/dashboard/homeroom/reports', icon: BarChart3, label: 'Laporan Kelas' },
+];
+
 const mainMobileNavItems = [
     { href: '/dashboard', icon: Zap, label: 'Dasbor' },
     { href: '/dashboard/attendance', icon: ScanLine, label: 'Presensi' },
@@ -97,7 +104,7 @@ export default function DashboardLayoutClient({
 }: { 
   children: React.ReactNode;
   user: User | null;
-  profile: Pick<Profile, 'full_name' | 'avatar_url' | 'account_status'> | null
+  profile: Pick<Profile, 'full_name' | 'avatar_url' | 'account_status' | 'is_homeroom_teacher'> | null
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -147,7 +154,7 @@ export default function DashboardLayoutClient({
     </SidebarHeader>
   );
 
-  const MainNavContent = ({ items }: { items: typeof navItems }) => (
+  const MainNavContent = ({ items }: { items: (typeof navItems | typeof homeroomNavItems) }) => (
     <SidebarMenu className="gap-2">
       {items.map((item, index) => {
         const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard';
@@ -394,6 +401,15 @@ export default function DashboardLayoutClient({
       <ProfileHeader />
       <SidebarContent className="p-0 bg-gradient-to-b from-background to-background/95">
         <ScrollArea className="flex-1">
+            {profile?.is_homeroom_teacher && (
+                <SidebarGroup className="p-4">
+                    <SidebarGroupLabel className="text-orange-600 font-semibold text-sm tracking-wider uppercase bg-orange-500/10 px-3 py-2 rounded-lg border border-orange-500/20 mb-4">
+                      <Contact className="w-4 h-4 mr-2 inline" />
+                      Menu Wali Kelas
+                    </SidebarGroupLabel>
+                    <MainNavContent items={homeroomNavItems} />
+                </SidebarGroup>
+            )}
             <SidebarGroup className="p-4">
                 <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4">
                   <Grid3X3 className="w-4 h-4 mr-2 inline" />
@@ -417,6 +433,18 @@ export default function DashboardLayoutClient({
                 </SidebarGroupLabel>
                 <MainNavContent items={navItems} />
             </SidebarGroup>
+             {profile?.is_homeroom_teacher && (
+                <>
+                    <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+                    <SidebarGroup className="p-4">
+                        <SidebarGroupLabel className="text-orange-600 font-semibold text-sm tracking-wider uppercase bg-orange-500/10 px-3 py-2 rounded-lg border border-orange-500/20 mb-4">
+                            <Contact className="w-4 h-4 mr-2 inline" />
+                            Wali Kelas
+                        </SidebarGroupLabel>
+                        <MainNavContent items={homeroomNavItems} />
+                    </SidebarGroup>
+                </>
+            )}
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">

@@ -12,8 +12,8 @@ const DUMMY_ACTIVE_SCHOOL_YEAR_ID = 'school-year-1';
 
 const DUMMY_CLASSES: Class[] = [
     { id: 'class-1', name: 'Kelas 10-A', teacher_id: DUMMY_TEACHER_ID },
-    { id: 'class-2', name: 'Kelas 11-B', teacher_id: DUMMY_TEACHER_ID },
-    { id: 'class-3', name: 'Kelas 12-C', teacher_id: DUMMY_TEACHER_ID },
+    { id: 'class-2', name: 'Kelas 11-B', teacher_id: 'another-teacher-id' }, // Not the dummy user
+    { id: 'class-3', name: 'Kelas 12-C', teacher_id: 'another-teacher-id-2' },
 ];
 
 const DUMMY_SUBJECTS: Subject[] = [
@@ -104,15 +104,18 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 // --- User (Teacher) Data ---
 
 export async function getUserProfile() {
+    const isHomeroomTeacher = DUMMY_CLASSES.some(c => c.teacher_id === DUMMY_USER_ID);
+
     return {
         id: DUMMY_USER_ID,
         full_name: 'Guru Dummy',
         email: 'guru.dummy@sekolah.id',
         avatar_url: 'https://placehold.co/100x100.png',
-        account_status: 'Pro',
-        role: 'teacher',
+        account_status: 'Pro' as const,
+        role: 'teacher' as const,
         active_school_year_id: DUMMY_ACTIVE_SCHOOL_YEAR_ID,
-        active_school_year_name: '2023/2024 - Semester Genap'
+        active_school_year_name: '2023/2024 - Semester Genap',
+        is_homeroom_teacher: isHomeroomTeacher,
     } as Profile;
 }
 

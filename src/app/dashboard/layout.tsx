@@ -17,10 +17,11 @@ const DUMMY_USER: User = {
     created_at: new Date().toISOString(),
 };
 
-const DUMMY_PROFILE: Pick<Profile, 'full_name' | 'avatar_url' | 'account_status'> = {
+const DUMMY_PROFILE: Pick<Profile, 'full_name' | 'avatar_url' | 'account_status' | 'is_homeroom_teacher'> = {
     full_name: 'Guru Dummy',
     avatar_url: 'https://placehold.co/100x100.png',
     account_status: 'Pro',
+    is_homeroom_teacher: true, // Set to true for design mode to see the menu
 };
 
 export default async function DashboardLayout({
