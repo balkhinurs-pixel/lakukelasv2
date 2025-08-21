@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda, TeacherAttendance } from './types';
@@ -11,8 +12,8 @@ const DUMMY_TEACHER_ID = 'teacher-dummy-id';
 const DUMMY_ACTIVE_SCHOOL_YEAR_ID = 'school-year-1';
 
 const DUMMY_CLASSES: Class[] = [
-    { id: 'class-1', name: 'Kelas 10-A', teacher_id: DUMMY_TEACHER_ID },
-    { id: 'class-2', name: 'Kelas 11-B', teacher_id: 'another-teacher-id' }, // Not the dummy user
+    { id: 'class-1', name: 'Kelas 10-A', teacher_id: DUMMY_USER_ID }, // This user is a homeroom teacher
+    { id: 'class-2', name: 'Kelas 11-B', teacher_id: 'another-teacher-id' },
     { id: 'class-3', name: 'Kelas 12-C', teacher_id: 'another-teacher-id-2' },
 ];
 
@@ -197,4 +198,45 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
         gradeHistory: DUMMY_GRADES,
         allStudents: DUMMY_STUDENTS,
     };
+}
+
+export async function getHomeroomStudentProgress() {
+    // In a real app, this would get the logged-in teacher's ID.
+    const homeroomClass = DUMMY_CLASSES.find(c => c.teacher_id === DUMMY_USER_ID);
+
+    if (!homeroomClass) {
+        return { studentData: [], className: null };
+    }
+
+    const studentsInClass = DUMMY_STUDENTS.filter(s => s.class_id === homeroomClass.id && s.status === 'active');
+
+    const studentData = studentsInClass.map(student => {
+        // Dummy data generation for progress
+        const average_grade = Math.floor(Math.random() * (95 - 70 + 1) + 70); // 70-95
+        const attendance_percentage = Math.floor(Math.random() * (100 - 85 + 1) + 85); // 85-100
+        
+        let status = "Stabil";
+        if (average_grade >= 85 && attendance_percentage >= 95) {
+            status = "Sangat Baik";
+        } else if (average_grade < 75 && attendance_percentage < 90) {
+            status = "Berisiko";
+        } else if (average_grade < 78 || attendance_percentage < 92) {
+            status = "Butuh Perhatian";
+        }
+
+        return {
+            id: student.id,
+            name: student.name,
+            nis: student.nis,
+            average_grade,
+            attendance_percentage,
+            status,
+        };
+    }).sort((a, b) => {
+        // Sort by status priority
+        const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
+        return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
+    });
+
+    return { studentData, className: homeroomClass.name };
 }
