@@ -19,7 +19,7 @@ export async function getStudentsByClass(classId: string): Promise<Student[]> {
         .order('name', { ascending: true });
 
     if (error) {
-        console.error("Error fetching students:", error);
+        console.error("Error fetching students:", error.message || error);
         return [];
     }
     return data;
