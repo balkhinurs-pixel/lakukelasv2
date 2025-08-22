@@ -1,4 +1,9 @@
 
+"use client"
+
+import * as React from "react";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
   Card,
   CardContent,
@@ -16,13 +21,176 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BarChart3, Download, Printer, User, Info, CalendarCheck, FileText, FileSpreadsheet } from "lucide-react";
-import { getHomeroomClassDetails } from "@/lib/data";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { BarChart3, Download, Printer, User, Info, FileSpreadsheet, Loader2 } from "lucide-react";
+import { getHomeroomClassDetails, getReportsData } from "@/lib/data";
+import { useToast } from "@/hooks/use-toast";
+import type { Student } from "@/lib/types";
 
-export default async function HomeroomReportsPage() {
-    const homeroomData = await getHomeroomClassDetails();
+export default function HomeroomReportsPage() {
+    const [homeroomData, setHomeroomData] = React.useState<Awaited<ReturnType<typeof getHomeroomClassDetails>> | null>(null);
+    const [reportsData, setReportsData] = React.useState<Awaited<ReturnType<typeof getReportsData>> | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [downloading, setDownloading] = React.useState(false);
+    const { toast } = useToast();
+
+    React.useEffect(() => {
+      async function fetchData() {
+        setLoading(true);
+        const [homeroom, reports] = await Promise.all([
+          getHomeroomClassDetails(),
+          // Fetch reports data for the entire school year by default
+          getReportsData({})
+        ]);
+        setHomeroomData(homeroom);
+        setReportsData(reports);
+        setLoading(false);
+      }
+      fetchData();
+    }, []);
+
+    const handleDownloadLedgerExcel = () => {
+        if (!homeroomData || !reportsData) return;
+
+        setDownloading(true);
+
+        const { homeroomClass, studentsInClass } = homeroomData;
+        const { gradeHistory, subjects, allStudents } = reportsData;
+
+        // Filter grade history for the current homeroom class
+        const homeroomGradeHistory = gradeHistory.filter(gh => gh.class_id === homeroomClass.id);
+        
+        // Get all unique assessment types for the header
+        const assessments = [...new Set(homeroomGradeHistory.flatMap(gh => gh.assessment_type))];
+        const allSubjectsInClass = [...new Set(homeroomGradeHistory.map(gh => gh.subjectName))];
+
+        const data: (string | number)[][] = [];
+
+        // --- Header ---
+        data.push([`LEGER NILAI KELAS ${homeroomClass.name.toUpperCase()}`]);
+        data.push([`TAHUN AJARAN: ${reportsData.summaryCards.activeSchoolYearName}`]);
+        data.push([]); // Spacer
+
+        // --- Table Header ---
+        const tableHeader: (string | number)[] = ['No', 'NIS', 'Nama Siswa'];
+        subjects.forEach(subject => {
+            const subjectAssessments = [...new Set(homeroomGradeHistory.filter(gh => gh.subject_id === subject.id).map(gh => gh.assessment_type))];
+            tableHeader.push(subject.name);
+            // Add empty cells for merging
+            for (let i = 1; i < Math.max(1, subjectAssessments.length); i++) {
+                tableHeader.push('');
+            }
+        });
+        tableHeader.push('Rata-Rata Total');
+        data.push(tableHeader);
+
+        const subHeader: (string | number)[] = ['', '', ''];
+        subjects.forEach(subject => {
+             const subjectAssessments = [...new Set(homeroomGradeHistory.filter(gh => gh.subject_id === subject.id).map(gh => gh.assessment_type))];
+             if (subjectAssessments.length > 0) {
+                 subjectAssessments.forEach(ass => subHeader.push(ass));
+             } else {
+                 subHeader.push('Nilai'); // Fallback if no assessments
+             }
+        });
+        subHeader.push(''); // For average
+        data.push(subHeader);
+
+        // --- Table Body ---
+        studentsInClass.forEach((student, index) => {
+            const row: (string | number)[] = [index + 1, student.nis, student.name];
+            let totalScore = 0;
+            let scoreCount = 0;
+
+            subjects.forEach(subject => {
+                const subjectAssessments = [...new Set(homeroomGradeHistory.filter(gh => gh.subject_id === subject.id).map(gh => gh.assessment_type))];
+                if (subjectAssessments.length > 0) {
+                    subjectAssessments.forEach(assessment => {
+                        const gradeEntry = homeroomGradeHistory.find(h => h.subject_id === subject.id && h.assessment_type === assessment);
+                        const studentRecord = gradeEntry?.records.find(r => r.studentId === student.id);
+                        const score = studentRecord ? Number(studentRecord.score) : '';
+                        row.push(score);
+                        if (typeof score === 'number') {
+                            totalScore += score;
+                            scoreCount++;
+                        }
+                    });
+                } else {
+                     row.push(''); // No assessments for this subject
+                }
+            });
+
+            const average = scoreCount > 0 ? parseFloat((totalScore / scoreCount).toFixed(2)) : '';
+            row.push(average);
+            data.push(row);
+        });
+
+
+        // --- Create Worksheet and Workbook ---
+        const ws = XLSX.utils.aoa_to_sheet(data);
+
+        // --- Merging cells ---
+        const merges = [{ s: { r: 0, c: 0 }, e: { r: 0, c: tableHeader.length - 1 } }]; // Title
+        let col_idx = 3;
+        subjects.forEach(subject => {
+            const subjectAssessments = [...new Set(homeroomGradeHistory.filter(gh => gh.subject_id === subject.id).map(gh => gh.assessment_type))];
+            const span = Math.max(1, subjectAssessments.length);
+            if (span > 1) {
+                merges.push({ s: { r: 3, c: col_idx }, e: { r: 3, c: col_idx + span - 1 } });
+            }
+            col_idx += span;
+        });
+        ws['!merges'] = merges;
+        
+
+        // --- Styling ---
+        const headerStyle = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4F81BD" } }, alignment: { horizontal: "center", vertical: "center" } };
+        const subHeaderStyle = { font: { bold: true }, fill: { fgColor: { rgb: "DDEBF7" } }, alignment: { horizontal: "center", vertical: "center" } };
+        const titleStyle = { font: { bold: true, sz: 16 }, alignment: { horizontal: "center" } };
+        const subtitleStyle = { font: { bold: true }, alignment: { horizontal: "center" } };
+        const centerAlign = { alignment: { horizontal: "center" }};
+
+        ws['A1'].s = titleStyle;
+        ws['A2'].s = subtitleStyle;
+
+        for(let c = 0; c < tableHeader.length; c++) {
+            ws[XLSX.utils.encode_cell({r:3, c})].s = headerStyle;
+            ws[XLSX.utils.encode_cell({r:4, c})].s = subHeaderStyle;
+        }
+
+        // --- Column Widths ---
+        const cols = [{ wch: 5 }, { wch: 15 }, { wch: 35 }]; // No, NIS, Nama
+        let current_col = 3;
+        subjects.forEach(subject => {
+            const subjectAssessments = [...new Set(homeroomGradeHistory.filter(gh => gh.subject_id === subject.id).map(gh => gh.assessment_type))];
+            const span = Math.max(1, subjectAssessments.length);
+            for(let i=0; i<span; i++) {
+                cols.push({wch: 15});
+            }
+            current_col += span;
+        });
+        cols.push({wch: 15}); // Average
+        ws['!cols'] = cols;
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Leger Nilai");
+
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+        
+        function s2ab(s: any) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+
+        saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), `leger_kelas_${homeroomClass.name}.xlsx`);
+
+        setDownloading(false);
+    }
+
+    if (loading) {
+        return <div className="text-center py-16"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>;
+    }
 
     if (!homeroomData) {
         return (
@@ -124,26 +292,11 @@ export default async function HomeroomReportsPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-3 mt-4 border-t pt-4">
-                                <h4 className="text-sm font-medium">Daftar Siswa</h4>
-                                <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
-                                    {studentsInClass.map(student => (
-                                        <div key={student.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                                            <div className="flex items-center gap-2">
-                                                <User className="h-4 w-4 text-muted-foreground"/>
-                                                <span className="text-sm font-medium">{student.name}</span>
-                                            </div>
-                                            <Button variant="outline" size="sm" disabled>
-                                                <Printer className="mr-2 h-3.5 w-3.5"/> Cetak
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
                         </CardContent>
                         <CardFooter className="flex-col gap-2">
-                             <Button disabled className="w-full bg-green-600 hover:bg-green-700">
-                                <FileSpreadsheet className="mr-2 h-4 w-4"/> Unduh Leger Kelas (Excel)
+                             <Button onClick={handleDownloadLedgerExcel} disabled={downloading} className="w-full bg-green-600 hover:bg-green-700">
+                                {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileSpreadsheet className="mr-2 h-4 w-4"/>}
+                                Unduh Leger Kelas (Excel)
                             </Button>
                             <Button disabled className="w-full">
                                 <Printer className="mr-2 h-4 w-4"/> Cetak Semua Rapor

@@ -45,7 +45,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, CheckCircle, Award, Download, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Users2, Filter, Calendar, GraduationCap, BarChart3, FileText } from "lucide-react";
+import { TrendingUp, CheckCircle, Award, Download, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Users2, Filter, Calendar, GraduationCap, BarChart3, FileText, Loader2 } from "lucide-react";
 import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear } from "@/lib/types";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -128,6 +128,7 @@ export default function ReportsPageComponent({
   const [selectedClass, setSelectedClass] = React.useState(searchParams.get('class') || "all");
   const [selectedSubject, setSelectedSubject] = React.useState(searchParams.get('subject') || "all");
   const [isVisible, setIsVisible] = React.useState(false);
+  const [downloading, setDownloading] = React.useState(false);
   
   const currentSchoolYearId = searchParams.get('schoolYear') || profile?.active_school_year_id || "all";
   const currentMonth = searchParams.get('month') || "all";
@@ -198,6 +199,8 @@ export default function ReportsPageComponent({
             return;
         }
 
+        setDownloading(true);
+
         const doc = new jsPDF() as jsPDFWithAutoTable;
         const title = 'REKAPITULASI KEHADIRAN SISWA';
 
@@ -224,6 +227,7 @@ export default function ReportsPageComponent({
             tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
             periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
         });
+        setDownloading(false);
     }
 
     const handleDownloadGrades = async () => {
@@ -231,6 +235,7 @@ export default function ReportsPageComponent({
             toast({ title: "Filter Dibutuhkan", description: "Silakan pilih Kelas dan Mata Pelajaran untuk mengunduh laporan nilai.", variant: "destructive"});
             return;
         }
+        setDownloading(true);
 
         const doc = new jsPDF() as jsPDFWithAutoTable;
         const title = 'DAFTAR NILAI SISWA';
@@ -277,6 +282,7 @@ export default function ReportsPageComponent({
             tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
             periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
         });
+        setDownloading(false);
     }
 
     const handleDownloadGradesExcel = () => {
@@ -284,6 +290,7 @@ export default function ReportsPageComponent({
             toast({ title: "Filter Dibutuhkan", description: "Silakan pilih Kelas dan Mata Pelajaran untuk mengunduh laporan nilai.", variant: "destructive" });
             return;
         }
+        setDownloading(true);
 
         const activeClass = classes.find(c => c.id === selectedClass);
         const activeSubject = subjects.find(s => s.id === selectedSubject);
@@ -400,9 +407,11 @@ export default function ReportsPageComponent({
         }
 
         saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), `laporan_nilai_${activeClass?.name || 'semua'}.xlsx`);
+        setDownloading(false);
     }
   
   const handleDownloadJournal = async () => {
+    setDownloading(true);
     const doc = new jsPDF() as jsPDFWithAutoTable;
     const title = 'JURNAL MENGAJAR GURU';
     
@@ -417,6 +426,7 @@ export default function ReportsPageComponent({
         tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
         periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
     });
+    setDownloading(false);
   }
 
 
@@ -956,9 +966,10 @@ export default function ReportsPageComponent({
                                         <Button 
                                             variant="outline" 
                                             onClick={handleDownloadAttendance} 
+                                            disabled={downloading}
                                             className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-200 hover:bg-green-50 dark:hover:bg-green-900/20 shrink-0 text-sm sm:text-base"
                                         >
-                                            <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                            {downloading ? <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin"/> : <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />}
                                             Unduh PDF
                                         </Button>
                                     </div>
@@ -996,17 +1007,19 @@ export default function ReportsPageComponent({
                                             <Button 
                                                 variant="outline" 
                                                 onClick={handleDownloadGradesExcel} 
+                                                disabled={downloading}
                                                 className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-emerald-500/10 to-green-500/10 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm sm:text-base"
                                             >
-                                                <FileSpreadsheet className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                                {downloading ? <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin"/> : <FileSpreadsheet className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />}
                                                 Unduh Excel
                                             </Button>
                                             <Button 
                                                 variant="outline" 
                                                 onClick={handleDownloadGrades} 
+                                                disabled={downloading}
                                                 className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm sm:text-base"
                                             >
-                                                <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                                {downloading ? <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin"/> : <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />}
                                                 Unduh PDF
                                             </Button>
                                         </div>
@@ -1044,9 +1057,10 @@ export default function ReportsPageComponent({
                                         <Button 
                                             variant="outline" 
                                             onClick={handleDownloadJournal} 
+                                            disabled={downloading}
                                             className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-purple-500/10 to-violet-500/10 border-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/20 shrink-0 text-sm sm:text-base"
                                         >
-                                            <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                            {downloading ? <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin"/> : <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />}
                                             Unduh PDF
                                         </Button>
                                     </div>
