@@ -5,18 +5,30 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from './supabase/server';
 import type { StudentNote } from './types';
+import { z } from 'zod';
 
-// This function is obsolete now that all accounts are Pro by default.
-// It can be removed or kept for reference.
 export async function activateAccount(code: string) {
-    console.log("Attempted to activate account with code:", code);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // In a real scenario, this would call a database function to validate the code
-    // and update the user's profile.
-    if (code.toLowerCase() === 'gagal') {
-       return { success: false, error: 'Kode aktivasi tidak valid atau sudah digunakan.' };
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+    
+    const { error } = await supabase.rpc('activate_account_with_code', {
+        p_code: code,
+        p_user_id: user.id,
+        p_user_email: user.email!,
+    });
+
+    if (error) {
+        console.error('Activation RPC error:', error);
+        if (error.message.includes("not found")) {
+             return { success: false, error: "Profil pengguna tidak ditemukan." };
+        }
+        return { success: false, error: error.message };
     }
-    return { success: true, message: 'Akun berhasil diaktivasi (mode dummy).' };
+    
+    revalidatePath('/dashboard/activation');
+    revalidatePath('/dashboard/layout');
+    return { success: true };
 }
 
 
@@ -127,37 +139,6 @@ export async function deleteAgenda(agendaId: string) {
     return { success: true };
 }
 
-// These functions remain for admin use, but they are now in lib/actions/admin.ts
-// The stubs are removed from here to avoid confusion.
-export async function saveClass(formData: FormData) {
-    return { success: false, error: 'This action is admin-only.' };
-}
-export async function saveSubject(formData: FormData) {
-     return { success: false, error: 'This action is admin-only.' };
-}
-export async function saveStudent(formData: FormData) {
-     return { success: false, error: 'This action is admin-only.' };
-}
-export async function updateStudent(formData: FormData) {
-    return { success: false, error: 'This action is admin-only.' };
-}
-export async function moveStudents(studentIds: string[], newClassId: string) {
-    return { success: false, error: 'This action is admin-only.' };
-}
-export async function graduateStudents(studentIds: string[]) {
-    return { success: false, error: 'This action is admin-only.' };
-}
-export async function importStudents(classId: string, students: any[]) {
-    return { success: false, error: 'This action is admin-only.' };
-}
-export async function createSchoolYear(startYear: number) {
-    return { success: false, error: 'This action is admin-only.' };
-}
-export async function setActiveSchoolYear(schoolYearId: string) {
-    return { success: false, error: 'This action is admin-only.' };
-}
-
-
 export async function saveAttendance(formData: FormData) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -185,7 +166,11 @@ export async function saveAttendance(formData: FormData) {
 
     let error;
     if (attendanceData.id) {
-        const { error: updateError } = await supabase.from('attendance').update(attendanceData).eq('id', attendanceData.id);
+        const { error: updateError } = await supabase.from('attendance').update({ 
+            records: attendanceData.records, 
+            meeting_number: attendanceData.meeting_number,
+            date: attendanceData.date,
+        }).eq('id', attendanceData.id);
         error = updateError;
     } else {
         const { error: insertError } = await supabase.from('attendance').insert(attendanceData);
@@ -229,7 +214,11 @@ export async function saveGrades(formData: FormData) {
 
     let error;
     if (gradeData.id) {
-        const { error: updateError } = await supabase.from('grades').update(gradeData).eq('id', gradeData.id);
+        const { error: updateError } = await supabase.from('grades').update({
+            records: gradeData.records,
+            assessment_type: gradeData.assessment_type,
+            date: gradeData.date,
+        }).eq('id', gradeData.id);
         error = updateError;
     } else {
         const { error: insertError } = await supabase.from('grades').insert(gradeData);
@@ -264,6 +253,7 @@ export async function updateProfile(profileData: { fullName: string, nip: string
     }
 
     revalidatePath('/dashboard/settings');
+    revalidatePath('/dashboard');
     return { success: true };
 }
 
@@ -323,6 +313,7 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     }
     
     revalidatePath('/dashboard/settings');
+    revalidatePath('/dashboard');
     return { success: true, url: publicUrl };
 }
 
@@ -346,6 +337,147 @@ export async function addStudentNote(data: { studentId: string; note: string; ty
         return { success: false, error: "Gagal menyimpan catatan siswa." };
     }
     
+    revalidatePath('/dashboard/attendance');
     revalidatePath('/dashboard/homeroom/student-ledger');
     return { success: true };
 }
+
+const StudentSchema = z.object({
+  name: z.string(),
+  nis: z.string(),
+  gender: z.enum(['Laki-laki', 'Perempuan']),
+});
+type StudentImport = z.infer<typeof StudentSchema>;
+
+
+export async function importStudents(classId: string, students: StudentImport[]) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const report = {
+        total: students.length,
+        successCount: 0,
+        failureCount: 0,
+        successes: [] as { name: string, nis: string }[],
+        failures: [] as { name: string, nis: string, reason: string }[],
+    };
+
+    // Fetch existing NIS for this teacher to prevent duplicates
+    const { data: existingStudents, error: fetchError } = await supabase
+        .from('students')
+        .select('nis');
+        
+    if (fetchError) {
+        return { success: false, error: "Gagal memverifikasi data siswa yang ada." };
+    }
+    const existingNis = new Set(existingStudents.map(s => s.nis));
+
+    const studentsToInsert = [];
+
+    for (const student of students) {
+        const validation = StudentSchema.safeParse(student);
+        if (!validation.success) {
+            report.failureCount++;
+            report.failures.push({ name: student.name || 'N/A', nis: student.nis || 'N/A', reason: 'Data tidak valid' });
+            continue;
+        }
+
+        if (existingNis.has(student.nis)) {
+            report.failureCount++;
+            report.failures.push({ name: student.name, nis: student.nis, reason: 'NIS sudah ada di database.' });
+            continue;
+        }
+
+        studentsToInsert.push({ ...student, class_id: classId, status: 'active' });
+        existingNis.add(student.nis); // Add to set to catch duplicates within the same file
+    }
+
+    if (studentsToInsert.length > 0) {
+        const { error } = await supabase.from('students').insert(studentsToInsert);
+
+        if (error) {
+            console.error('Batch insert error:', error);
+            // Since it's a batch, if it fails, all fail.
+            report.failureCount += studentsToInsert.length;
+            report.failures.push(...studentsToInsert.map(s => ({ name: s.name, nis: s.nis, reason: "Gagal menyimpan ke database." })));
+        } else {
+            report.successCount += studentsToInsert.length;
+            report.successes.push(...studentsToInsert.map(s => ({ name: s.name, nis: s.nis })));
+        }
+    }
+    
+    revalidatePath('/admin/roster/students');
+    return { success: true, results: report };
+}
+
+export async function moveStudents(studentIds: string[], newClassId: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from('students')
+        .update({ class_id: newClassId })
+        .in('id', studentIds);
+    
+    if (error) {
+        console.error("Error moving students:", error);
+        return { success: false, error: "Gagal memindahkan siswa." };
+    }
+
+    revalidatePath('/admin/roster/promotion');
+    revalidatePath('/admin/roster/students');
+    return { success: true };
+}
+
+export async function graduateStudents(studentIds: string[]) {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from('students')
+        .update({ status: 'graduated' })
+        .in('id', studentIds);
+
+    if (error) {
+        console.error("Error graduating students:", error);
+        return { success: false, error: "Gagal meluluskan siswa." };
+    }
+    
+    revalidatePath('/admin/roster/promotion');
+    revalidatePath('/admin/roster/alumni');
+    return { success: true };
+}
+
+export async function createSchoolYear(startYear: number) {
+    const supabase = createClient();
+    const ganjilName = `${startYear}/${startYear + 1} - Ganjil`;
+    const genapName = `${startYear}/${startYear + 1} - Genap`;
+
+    const { error } = await supabase.from('school_years').insert([
+        { name: ganjilName },
+        { name: genapName }
+    ]);
+    
+    if (error) {
+        console.error("Error creating school year:", error);
+        return { success: false, error: "Gagal membuat tahun ajaran. Mungkin sudah ada." };
+    }
+    
+    revalidatePath('/admin/roster/school-year');
+    return { success: true };
+}
+
+export async function setActiveSchoolYear(schoolYearId: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from('settings')
+        .upsert({ key: 'active_school_year_id', value: schoolYearId });
+
+    if (error) {
+        console.error("Error setting active school year:", error);
+        return { success: false, error: "Gagal mengatur tahun ajaran aktif." };
+    }
+
+    revalidatePath('/admin/roster/school-year');
+    revalidatePath('/dashboard');
+    return { success: true };
+}
+
+

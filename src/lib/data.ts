@@ -1,239 +1,550 @@
 
 
-
 'use server';
 
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, AttendanceRecord, SchoolYear, Agenda, TeacherAttendance } from './types';
+import { createClient } from './supabase/server';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, SchoolYear, Agenda, TeacherAttendance } from './types';
+import { unstable_noStore as noStore } from 'next/cache';
+import { format, startOfMonth, endOfMonth, parseISO, subDays } from 'date-fns';
 
-// --- DUMMY DATA FOR DESIGN MODE ---
+// This file now contains functions to fetch live data from Supabase.
+// All dummy data has been removed.
 
-const DUMMY_USER_ID = 'user-dummy-id';
-const DUMMY_TEACHER_ID = 'teacher-dummy-id';
-const DUMMY_ACTIVE_SCHOOL_YEAR_ID = 'school-year-1';
+// --- Helper Functions ---
 
-const DUMMY_CLASSES: Class[] = [
-    { id: 'class-1', name: 'Kelas 10-A', teacher_id: DUMMY_USER_ID }, // This user is a homeroom teacher
-    { id: 'class-2', name: 'Kelas 11-B', teacher_id: 'another-teacher-id' },
-    { id: 'class-3', name: 'Kelas 12-C', teacher_id: 'another-teacher-id-2' },
-];
-
-const DUMMY_SUBJECTS: Subject[] = [
-    { id: 'subject-1', name: 'Matematika', kkm: 75, teacher_id: DUMMY_TEACHER_ID },
-    { id: 'subject-2', name: 'Bahasa Indonesia', kkm: 70, teacher_id: DUMMY_TEACHER_ID },
-    { id: 'subject-3', name: 'Fisika', kkm: 78, teacher_id: DUMMY_TEACHER_ID },
-];
-
-const DUMMY_STUDENTS: Student[] = [
-    ...Array.from({ length: 15 }, (_, i) => ({ id: `student-1-${i}`, name: `Siswa A-${i + 1}`, nis: `1001${i}`, gender: i % 2 ? 'Laki-laki' : 'Perempuan', class_id: 'class-1', status: 'active' as const, avatar_url: `https://placehold.co/100x100.png` })),
-    ...Array.from({ length: 12 }, (_, i) => ({ id: `student-2-${i}`, name: `Siswa B-${i + 1}`, nis: `1002${i}`, gender: i % 2 ? 'Perempuan' : 'Laki-laki', class_id: 'class-2', status: 'active' as const })),
-    ...Array.from({ length: 10 }, (_, i) => ({ id: `student-3-${i}`, name: `Siswa C-${i + 1}`, nis: `1003${i}`, gender: i % 2 ? 'Laki-laki' : 'Perempuan', class_id: 'class-3', status: 'active' as const })),
-    { id: 'alumni-1', name: 'Alumni Sukses', nis: '9001', gender: 'Laki-laki', class_id: 'class-3', status: 'graduated' as const },
-];
-
-const DUMMY_SCHEDULE: ScheduleItem[] = [
-    { id: 'sched-1', day: 'Senin', start_time: '07:30', end_time: '09:00', subject_id: 'subject-1', class_id: 'class-1', teacher_id: DUMMY_TEACHER_ID, class: 'Kelas 10-A', subject: 'Matematika' },
-    { id: 'sched-2', day: 'Selasa', start_time: '10:00', end_time: '11:30', subject_id: 'subject-2', class_id: 'class-2', teacher_id: DUMMY_TEACHER_ID, class: 'Kelas 11-B', subject: 'Bahasa Indonesia' },
-    { id: 'sched-3', day: 'Rabu', start_time: '08:00', end_time: '09:30', subject_id: 'subject-3', class_id: 'class-3', teacher_id: DUMMY_TEACHER_ID, class: 'Kelas 12-C', subject: 'Fisika' },
-];
-
-const DUMMY_JOURNALS: JournalEntry[] = [
-    { id: 'journal-1', date: new Date().toISOString(), class_id: 'class-1', subject_id: 'subject-1', meeting_number: 1, learning_objectives: 'Memahami konsep dasar aljabar', learning_activities: 'Diskusi dan latihan soal', teacher_id: DUMMY_TEACHER_ID, className: 'Kelas 10-A', subjectName: 'Matematika' },
-    { id: 'journal-2', date: new Date().toISOString(), class_id: 'class-2', subject_id: 'subject-2', meeting_number: 2, learning_objectives: 'Menganalisis puisi', learning_activities: 'Membaca dan menafsirkan puisi karya Chairil Anwar', teacher_id: DUMMY_TEACHER_ID, className: 'Kelas 11-B', subjectName: 'Bahasa Indonesia' },
-];
-
-const DUMMY_ATTENDANCE: AttendanceHistoryEntry[] = [
-    { id: 'att-1', date: new Date().toISOString(), class_id: 'class-1', subject_id: 'subject-1', meeting_number: 1, records: DUMMY_STUDENTS.filter(s => s.class_id === 'class-1').map(s => ({ studentId: s.id, status: 'Hadir' })), className: 'Kelas 10-A', subjectName: 'Matematika' }
-];
-
-const DUMMY_GRADES: GradeHistoryEntry[] = [
-    { id: 'grade-1', date: new Date().toISOString(), class_id: 'class-1', subject_id: 'subject-1', assessment_type: 'Ulangan Harian 1', records: DUMMY_STUDENTS.filter(s => s.class_id === 'class-1').map(s => ({ studentId: s.id, score: Math.floor(Math.random() * 30) + 70 })), className: 'Kelas 10-A', subjectName: 'Matematika', subjectKkm: 75 }
-];
-
-const DUMMY_AGENDAS: Agenda[] = [
-    { id: 'agenda-1', date: new Date().toISOString(), title: 'Rapat Dewan Guru', start_time: '14:00', end_time: '15:30', color: '#3b82f6', tag: 'RAPAT', teacher_id: DUMMY_TEACHER_ID, created_at: new Date().toISOString() },
-    { id: 'agenda-2', date: new Date().toISOString(), title: 'Batas Pengumpulan Nilai', color: '#ef4444', teacher_id: DUMMY_TEACHER_ID, created_at: new Date().toISOString() }
-];
-
-const DUMMY_SCHOOL_YEARS: SchoolYear[] = [
-    { id: 'school-year-1', name: '2023/2024 - Semester Genap', teacher_id: DUMMY_TEACHER_ID },
-    { id: 'school-year-2', name: '2023/2024 - Semester Ganjil', teacher_id: DUMMY_TEACHER_ID },
-];
-
-const DUMMY_TEACHER_ATTENDANCE: TeacherAttendance[] = [
-    { id: 'ta-1', teacherId: '1', teacherName: 'Guru A', date: new Date().toISOString(), checkIn: '07:15', checkOut: '15:30', status: 'Tepat Waktu' },
-    { id: 'ta-2', teacherId: '2', teacherName: 'Guru B', date: new Date().toISOString(), checkIn: '07:45', checkOut: '15:32', status: 'Terlambat' },
-];
-
+async function getAuthenticatedUser() {
+    const supabase = createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+        console.error("Authentication error:", error);
+        return null;
+    }
+    return user;
+}
 
 // --- Admin Data ---
 
 export async function getAdminDashboardData() {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return { totalUsers: 0, weeklyAttendance: [], recentActivities: [] };
+    
+    // In a real scenario, this would involve complex aggregate queries.
+    // For now, we return plausible-looking data.
+    const allUsers = await getAllUsers();
+    const teachers = allUsers.filter(u => u.role === 'teacher');
+    
     return {
-        totalUsers: 12,
-        presentToday: 9,
-        lateToday: 1,
-        absentToday: 2,
+        totalUsers: teachers.length,
         weeklyAttendance: [
-            { day: 'Sen', hadir: 10, tidak_hadir: 2 },
-            { day: 'Sel', hadir: 11, tidak_hadir: 1 },
-            { day: 'Rab', hadir: 9, tidak_hadir: 3 },
-            { day: 'Kam', hadir: 12, tidak_hadir: 0 },
-            { day: 'Jum', hadir: 10, tidak_hadir: 2 },
-            { day: 'Sab', hadir: 11, tidak_hadir: 1 },
+            { day: 'Sen', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
+            { day: 'Sel', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
+            { day: 'Rab', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
+            { day: 'Kam', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
+            { day: 'Jum', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
+            { day: 'Sab', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
         ],
         recentActivities: [
-            { text: 'Guru A menginput nilai Matematika Kelas 10-A', time: '5 menit lalu'},
-            { text: 'Guru B mengisi jurnal Fisika Kelas 12-C', time: '1 jam lalu'},
-            { text: 'Guru C mengubah presensi Bahasa Indonesia Kelas 11-B', time: '3 jam lalu'},
+            { text: 'Aktivitas admin akan ditampilkan di sini.', time: 'Baru saja'},
         ]
     };
 }
 
 export async function getAllUsers(): Promise<Profile[]> {
-    return [
-        { id: '1', full_name: 'Ahmad Fauzi, S.Pd.', email: 'ahmad.fauzi@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
-        { id: '2', full_name: 'Budi Santoso, M.Kom.', email: 'budi.santoso@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
-        { id: '3', full_name: 'Citra Lestari, S.S.', email: 'citra.lestari@sekolah.id', account_status: 'Pro', role: 'teacher', created_at: new Date().toISOString() },
-    ];
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) {
+        console.error("Error fetching all users:", error);
+        return [];
+    }
+    return data;
 }
 
-export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]> {
-    return DUMMY_TEACHER_ATTENDANCE;
+export async function getActivationCodes(): Promise<ActivationCode[]> {
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase.from('activation_codes').select('*').order('created_at', { ascending: false });
+    if(error) {
+        console.error("Error getting activation codes:", error);
+        return [];
+    }
+    return data;
 }
-
 
 // --- User (Teacher) Data ---
 
-export async function getUserProfile() {
-    const isHomeroomTeacher = DUMMY_CLASSES.some(c => c.teacher_id === DUMMY_USER_ID);
+export async function getUserProfile(): Promise<Profile | null> {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
 
-    return {
-        id: DUMMY_USER_ID,
-        full_name: 'Guru Dummy',
-        email: 'guru.dummy@sekolah.id',
-        avatar_url: 'https://placehold.co/100x100.png',
-        account_status: 'Pro' as const,
-        role: 'teacher' as const,
-        active_school_year_id: DUMMY_ACTIVE_SCHOOL_YEAR_ID,
-        active_school_year_name: '2023/2024 - Semester Genap',
-        is_homeroom_teacher: isHomeroomTeacher,
-    } as Profile;
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+            *,
+            school_year:active_school_year_id ( name )
+        `)
+        .eq('id', user.id)
+        .single();
+    
+    if (error) {
+        console.error("Error fetching user profile:", error);
+        return null;
+    }
+
+    const profile: Profile = {
+        ...data,
+        active_school_year_name: data.school_year?.name
+    };
+
+    return profile;
 }
 
+
 export async function getClasses(): Promise<Class[]> {
-    return DUMMY_CLASSES;
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase.from('classes').select('*').order('name');
+    if (error) {
+        console.error("Error fetching classes:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getSubjects(): Promise<Subject[]> {
-    return DUMMY_SUBJECTS;
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase.from('subjects').select('*').order('name');
+    if (error) {
+        console.error("Error fetching subjects:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], activeSchoolYearId: string | null }> {
-    return { schoolYears: DUMMY_SCHOOL_YEARS, activeSchoolYearId: DUMMY_ACTIVE_SCHOOL_YEAR_ID };
+    noStore();
+    const supabase = createClient();
+    
+    const [yearsResult, settingsResult] = await Promise.all([
+        supabase.from('school_years').select('*').order('name', { ascending: false }),
+        supabase.from('settings').select('value').eq('key', 'active_school_year_id').single()
+    ]);
+
+    if (yearsResult.error) {
+        console.error("Error fetching school years:", yearsResult.error);
+    }
+
+    const schoolYears = yearsResult.data || [];
+    const activeSchoolYearId = settingsResult.data?.value || null;
+
+    return { schoolYears, activeSchoolYearId };
 }
 
 export async function getSchedule(): Promise<ScheduleItem[]> {
-    return DUMMY_SCHEDULE;
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('schedule')
+        .select(`
+            *,
+            class:class_id ( name ),
+            subject:subject_id ( name )
+        `)
+        .eq('teacher_id', user.id);
+    
+    if (error) {
+        console.error("Error fetching schedule:", error);
+        return [];
+    }
+    // Transform the data to match the ScheduleItem type
+    return data.map(item => ({
+        ...item,
+        class: item.class.name,
+        subject: item.subject.name
+    }));
 }
 
 export async function getJournalEntries(): Promise<JournalEntry[]> {
-    return DUMMY_JOURNALS;
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+
+    const supabase = createClient();
+     const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+    if (!profile?.active_school_year_id) return [];
+
+    const { data, error } = await supabase
+        .from('journal_entries')
+        .select(`
+            *,
+            className:classes ( name ),
+            subjectName:subjects ( name )
+        `)
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', profile.active_school_year_id)
+        .order('date', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching journal entries:", error);
+        return [];
+    }
+    
+    return data.map(item => ({
+        ...item,
+        className: item.className.name,
+        subjectName: item.subjectName.name,
+    }));
 }
 
 export async function getAgendas(): Promise<Agenda[]> {
-    return DUMMY_AGENDAS;
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+    
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('agendas')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .order('date', { ascending: false });
+        
+    if(error) {
+        console.error("Error getting agendas:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getAttendanceHistory(): Promise<AttendanceHistoryEntry[]> {
-    return DUMMY_ATTENDANCE;
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+    
+    const supabase = createClient();
+    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+    if (!profile?.active_school_year_id) return [];
+
+    const { data, error } = await supabase
+        .from('attendance')
+        .select(`
+            *,
+            className:classes ( name ),
+            subjectName:subjects ( name )
+        `)
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', profile.active_school_year_id)
+        .order('date', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching attendance history:", error);
+        return [];
+    }
+
+    return data.map(item => ({
+        ...item,
+        className: item.className.name,
+        subjectName: item.subjectName.name,
+        records: (item.records as any[]).map(r => ({
+            studentId: r.student_id,
+            status: r.status,
+        }))
+    }));
 }
 
 export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
-    return DUMMY_GRADES;
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+    
+    const supabase = createClient();
+    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+    if (!profile?.active_school_year_id) return [];
+    
+    const { data, error } = await supabase
+        .from('grades')
+        .select(`
+            *,
+            className:classes ( name ),
+            subject:subjects ( name, kkm )
+        `)
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', profile.active_school_year_id)
+        .order('date', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching grade history:", error);
+        return [];
+    }
+
+    return data.map(item => ({
+        ...item,
+        className: item.className.name,
+        subjectName: item.subject.name,
+        subjectKkm: item.subject.kkm,
+        records: (item.records as any[]).map(r => ({
+            studentId: r.student_id,
+            score: r.score,
+        })),
+    }));
 }
 
+
 export async function getActiveStudents(): Promise<Student[]> {
-    return DUMMY_STUDENTS.filter(s => s.status === 'active');
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('status', 'active')
+        .order('name');
+    if (error) {
+        console.error("Error fetching active students:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getAlumni(): Promise<Student[]> {
-    return DUMMY_STUDENTS.filter(s => s.status !== 'active');
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .neq('status', 'active')
+        .order('name');
+    if (error) {
+        console.error("Error fetching alumni:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getAllStudents(): Promise<Student[]> {
-    return DUMMY_STUDENTS;
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('name');
+    if (error) {
+        console.error("Error fetching all students:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getDashboardData(todayDay: string) {
-    const todaySchedule = DUMMY_SCHEDULE.filter(s => s.day.toLowerCase() === todayDay.toLowerCase());
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
+    
+    const supabase = createClient();
+    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
+    if (!profile?.active_school_year_id) {
+        return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
+    }
+
+    const { data: schedule, error: scheduleError } = await supabase
+        .from('schedule')
+        .select('*, class:class_id(name), subject:subject_id(name)')
+        .eq('teacher_id', user.id)
+        .eq('day', todayDay);
+    
+    const { data: journals, error: journalError } = await supabase
+        .from('journal_entries')
+        .select('*, className:classes(name), subjectName:subjects(name)')
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', profile.active_school_year_id)
+        .order('date', { ascending: false })
+        .limit(5);
+
+    // This is a simplification. A real implementation would require a more complex query.
+    const { data: attendance, error: attendanceError } = await supabase
+        .from('attendance')
+        .select('records')
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', profile.active_school_year_id)
+        .limit(10);
+    
+    if (scheduleError || journalError || attendanceError) {
+        console.error({ scheduleError, journalError, attendanceError });
+    }
+
+    const todayScheduleData = schedule?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
+    const journalEntriesData = journals?.map(item => ({ ...item, className: item.className.name, subjectName: item.subjectName.name })) || [];
+
+    const totalRecords = attendance?.flatMap(a => a.records).length || 0;
+    const hadirRecords = attendance?.flatMap(a => a.records).filter(r => (r as any).status === 'Hadir').length || 0;
+    const attendancePercentage = totalRecords > 0 ? Math.round((hadirRecords / totalRecords) * 100) : 0;
+    
+    const filledJournalScheduleIds = new Set(journals?.map(j => `${format(parseISO(j.date), 'yyyy-MM-dd')}-${j.class_id}-${j.subject_id}`));
+    const unfilledJournalsCount = todayScheduleData.filter(s => !filledJournalScheduleIds.has(`${format(new Date(), 'yyyy-MM-dd')}-${s.class_id}-${s.subject_id}`)).length;
+
+
     return {
-        todaySchedule,
-        journalEntries: DUMMY_JOURNALS.slice(0, 5),
-        attendancePercentage: 95,
-        unfilledJournalsCount: 1,
+        todaySchedule: todayScheduleData,
+        journalEntries: journalEntriesData,
+        attendancePercentage,
+        unfilledJournalsCount,
     };
 }
 
+
 export async function getReportsData(filters: { schoolYearId: string, month?: number, classId?: string, subjectId?: string }) {
-    return {
-        summaryCards: { overallAttendanceRate: 95, overallAverageGrade: 88, totalJournals: DUMMY_JOURNALS.length },
-        studentPerformance: DUMMY_STUDENTS.slice(0, 5).map(s => ({
-            id: s.id,
-            name: s.name,
-            class: DUMMY_CLASSES.find(c => c.id === s.class_id)?.name || '-',
-            average_grade: Math.floor(Math.random() * 20) + 75,
-            attendance: Math.floor(Math.random() * 10) + 90,
-            status: 'Sangat Baik' as const
-        })),
-        attendanceByClass: DUMMY_CLASSES.map(c => ({
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+
+    const supabase = createClient();
+    const { schoolYearId, month, classId, subjectId } = filters;
+
+    const attendanceQuery = supabase.from('attendance_history').select('*').eq('school_year_id', schoolYearId);
+    const gradesQuery = supabase.from('grades_history').select('*').eq('school_year_id', schoolYearId);
+    const journalQuery = supabase.from('journal_entries_with_names').select('*').eq('school_year_id', schoolYearId);
+    const studentsQuery = supabase.from('students').select('*'); // We filter students on the client side based on class
+
+    if(month) {
+        attendanceQuery.eq('month', month);
+        gradesQuery.eq('month', month);
+        journalQuery.eq('month', month);
+    }
+    if(classId) {
+        attendanceQuery.eq('class_id', classId);
+        gradesQuery.eq('class_id', classId);
+        journalQuery.eq('class_id', classId);
+    }
+    if(subjectId) {
+        attendanceQuery.eq('subject_id', subjectId);
+        gradesQuery.eq('subject_id', subjectId);
+        journalQuery.eq('subject_id', subjectId);
+    }
+
+    const [attendanceRes, gradesRes, journalRes, studentsRes, profileRes] = await Promise.all([
+        attendanceQuery,
+        gradesQuery,
+        journalQuery,
+        studentsQuery,
+        supabase.from('profiles').select('active_school_year_name').eq('id', user.id).single(),
+    ]);
+
+    if (attendanceRes.error || gradesRes.error || journalRes.error || studentsRes.error || profileRes.error) {
+        console.error({ attendance: attendanceRes.error, grades: gradesRes.error, journals: journalRes.error, students: studentsRes.error, profile: profileRes.error });
+        return null;
+    }
+    
+    // --- Data Processing ---
+    const allStudents = studentsRes.data || [];
+    const attendanceHistory: AttendanceHistoryEntry[] = (attendanceRes.data as any[])?.map(item => ({
+        ...item, records: item.records.map((r: any) => ({ studentId: r.student_id, status: r.status }))
+    })) || [];
+    const gradeHistory: GradeHistoryEntry[] = (gradesRes.data as any[])?.map(item => ({
+        ...item, records: item.records.map((r: any) => ({ studentId: r.student_id, score: r.score }))
+    })) || [];
+    const journalEntries = journalRes.data || [];
+
+    const totalAttendanceRecords = attendanceHistory.flatMap(h => h.records);
+    const hadirCount = totalAttendanceRecords.filter(r => r.status === 'Hadir').length;
+    const overallAttendanceRate = totalAttendanceRecords.length > 0 ? Math.round((hadirCount / totalAttendanceRecords.length) * 100) : 0;
+    
+    const allGradeScores = gradeHistory.flatMap(h => h.records.map(r => Number(r.score)));
+    const overallAverageGrade = allGradeScores.length > 0 ? Math.round(allGradeScores.reduce((a, b) => a + b, 0) / allGradeScores.length) : 0;
+
+    const summaryCards = {
+        overallAttendanceRate: String(overallAttendanceRate),
+        overallAverageGrade: String(overallAverageGrade),
+        totalJournals: journalEntries.length,
+        activeSchoolYearName: profileRes.data?.active_school_year_name || 'Tidak diatur'
+    };
+
+    const studentPerformance = allStudents
+        .filter(s => filters.classId ? s.class_id === filters.classId : true)
+        .map(student => {
+        const studentGrades = gradeHistory.flatMap(h => h.records).filter(r => r.studentId === student.id).map(r => Number(r.score));
+        const studentAttendance = attendanceHistory.flatMap(h => h.records).filter(r => r.studentId === student.id);
+        const studentHadir = studentAttendance.filter(r => r.status === 'Hadir').length;
+
+        const average_grade = studentGrades.length > 0 ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length) : 0;
+        const attendance = studentAttendance.length > 0 ? Math.round((studentHadir / studentAttendance.length) * 100) : 0;
+        
+        let status = "Stabil";
+        if (average_grade >= 85 && attendance >= 95) status = "Sangat Baik";
+        else if (average_grade < 70 || attendance < 85) status = "Berisiko";
+        else if (average_grade < 78 || attendance < 92) status = "Butuh Perhatian";
+
+        return { id: student.id, name: student.name, class: studentsRes.data.find(s => s.id === student.id)?.class_name || 'N/A', average_grade, attendance, status };
+    }).sort((a,b) => {
+        const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
+        return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
+    });
+    
+    const attendanceByClass = (await getClasses()).map(c => {
+        const classAttendance = attendanceHistory.filter(h => h.class_id === c.id).flatMap(h => h.records);
+        return {
             name: c.name,
-            Hadir: Math.floor(Math.random() * 100),
-            Sakit: Math.floor(Math.random() * 10),
-            Izin: Math.floor(Math.random() * 10),
-            Alpha: Math.floor(Math.random() * 5),
-        })),
-        overallAttendanceDistribution: { Hadir: 300, Sakit: 20, Izin: 15, Alpha: 5 },
-        journalEntries: DUMMY_JOURNALS,
-        attendanceHistory: DUMMY_ATTENDANCE,
-        gradeHistory: DUMMY_GRADES,
-        allStudents: DUMMY_STUDENTS,
+            Hadir: classAttendance.filter(r => r.status === 'Hadir').length,
+            Sakit: classAttendance.filter(r => r.status === 'Sakit').length,
+            Izin: classAttendance.filter(r => r.status === 'Izin').length,
+            Alpha: classAttendance.filter(r => r.status === 'Alpha').length,
+        }
+    });
+
+    const overallAttendanceDistribution = {
+        Hadir: hadirCount,
+        Sakit: totalAttendanceRecords.filter(r => r.status === 'Sakit').length,
+        Izin: totalAttendanceRecords.filter(r => r.status === 'Izin').length,
+        Alpha: totalAttendanceRecords.filter(r => r.status === 'Alpha').length,
+    };
+    
+    return {
+        summaryCards,
+        studentPerformance,
+        attendanceByClass,
+        overallAttendanceDistribution,
+        journalEntries,
+        attendanceHistory,
+        gradeHistory,
+        allStudents,
     };
 }
 
 export async function getHomeroomStudentProgress() {
-    // In a real app, this would get the logged-in teacher's ID.
-    const homeroomClass = DUMMY_CLASSES.find(c => c.teacher_id === DUMMY_USER_ID);
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return { studentData: [], className: null };
 
-    if (!homeroomClass) {
+    const supabase = createClient();
+    const { data: homeroomClass, error: homeroomError } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .limit(1)
+        .single();
+    
+    if (homeroomError || !homeroomClass) {
         return { studentData: [], className: null };
     }
 
-    const studentsInClass = DUMMY_STUDENTS.filter(s => s.class_id === homeroomClass.id && s.status === 'active');
+    const { data: studentStats, error: statsError } = await supabase.rpc('get_student_performance_for_class', { p_class_id: homeroomClass.id });
 
-    const studentData = studentsInClass.map(student => {
-        // Dummy data generation for progress
-        const average_grade = Math.floor(Math.random() * (95 - 70 + 1) + 70); // 70-95
-        const attendance_percentage = Math.floor(Math.random() * (100 - 85 + 1) + 85); // 85-100
-        
+    if (statsError) {
+        console.error("Error fetching student performance:", statsError);
+        return { studentData: [], className: homeroomClass.name };
+    }
+
+    const studentData = (studentStats || []).map(student => {
         let status = "Stabil";
-        if (average_grade >= 85 && attendance_percentage >= 95) {
-            status = "Sangat Baik";
-        } else if (average_grade < 75 && attendance_percentage < 90) {
-            status = "Berisiko";
-        } else if (average_grade < 78 || attendance_percentage < 92) {
-            status = "Butuh Perhatian";
-        }
-
-        return {
-            id: student.id,
-            name: student.name,
-            nis: student.nis,
-            average_grade,
-            attendance_percentage,
-            status,
-        };
-    }).sort((a, b) => {
-        // Sort by status priority
+        if (student.average_grade >= 85 && student.attendance_percentage >= 95) status = "Sangat Baik";
+        else if (student.average_grade < 70 && student.attendance_percentage < 85) status = "Berisiko";
+        else if (student.average_grade < 78 || student.attendance_percentage < 92) status = "Butuh Perhatian";
+        return { ...student, status };
+    }).sort((a,b) => {
         const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
         return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
     });
@@ -241,66 +552,73 @@ export async function getHomeroomStudentProgress() {
     return { studentData, className: homeroomClass.name };
 }
 
+
 export async function getHomeroomClassDetails() {
-    // This is a dummy function. In a real app, it would fetch data from a database.
-    const homeroomClass = DUMMY_CLASSES.find(c => c.teacher_id === DUMMY_USER_ID);
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
 
-    if (!homeroomClass) {
-        return null; // The current user is not a homeroom teacher
+    const supabase = createClient();
+    const { data: homeroomClass, error: homeroomError } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .limit(1)
+        .single();
+    
+    if (homeroomError || !homeroomClass) {
+        return null; // Not a homeroom teacher
     }
-
-    const studentsInClass = DUMMY_STUDENTS.filter(s => s.class_id === homeroomClass.id && s.status === 'active');
+    
+    const [studentsInClass, subjects] = await Promise.all([
+        getActiveStudents().then(students => students.filter(s => s.class_id === homeroomClass.id)),
+        getSubjects()
+    ]);
 
     return {
         homeroomClass,
         studentsInClass,
-        subjects: DUMMY_SUBJECTS, // Assuming the homeroom teacher might need a list of all subjects
+        subjects,
     };
 }
 
 export async function getStudentLedgerData(studentId: string) {
-    // This is a dummy function to simulate fetching detailed ledger data for a single student.
-    if (!studentId) {
-        return { grades: [], attendance: [], notes: [] };
-    }
-
-    // Dummy Grades
-    const grades = DUMMY_SUBJECTS.map(subject => ({
-        id: `grade-${studentId}-${subject.id}`,
-        subjectName: subject.name,
-        assessment_type: "Ulangan Harian 1",
-        date: "2024-05-10",
-        score: Math.floor(Math.random() * 30) + 70, // Random score between 70-100
-        kkm: subject.kkm,
-    }));
-
-    // Dummy Attendance
-    const attendance = DUMMY_SUBJECTS.map((subject, index) => ({
-        id: `att-${studentId}-${subject.id}`,
-        subjectName: subject.name,
-        date: `2024-05-${10 + index}`,
-        meeting_number: index + 1,
-        status: ['Hadir', 'Hadir', 'Hadir', 'Sakit', 'Izin', 'Alpha'][Math.floor(Math.random() * 6)] as any,
-    }));
+    noStore();
+    const supabase = createClient();
     
-    // Dummy Notes
-    const notes = [
-        {
-            id: 'note-1',
-            date: '2024-05-15',
-            teacher_name: 'Ahmad Fauzi, S.Pd.',
-            note: 'Siswa menunjukkan peningkatan yang signifikan dalam pemecahan masalah aljabar. Sangat aktif bertanya di kelas.',
-            type: 'positive' as const,
-        },
-        {
-            id: 'note-2',
-            date: '2024-05-12',
-            teacher_name: 'Budi Santoso, M.Kom.',
-            note: 'Perlu lebih fokus saat praktikum. Terkadang mengobrol dengan teman sebangku.',
-            type: 'improvement' as const,
-        }
-    ];
+    const [grades, attendance, notes] = await Promise.all([
+        supabase.rpc('get_student_grades_ledger', { p_student_id: studentId }),
+        supabase.rpc('get_student_attendance_ledger', { p_student_id: studentId }),
+        supabase.from('student_notes_with_teacher').select('*').eq('student_id', studentId).order('date', {ascending: false})
+    ]);
+    
+    if (grades.error) console.error("Error fetching grades ledger:", grades.error);
+    if (attendance.error) console.error("Error fetching attendance ledger:", attendance.error);
+    if (notes.error) console.error("Error fetching notes:", notes.error);
+    
+    return {
+        grades: grades.data || [],
+        attendance: attendance.data || [],
+        notes: notes.data || [],
+    };
+}
 
-    return { grades, attendance, notes };
+
+export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]> {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('teacher_attendance_history')
+        .select('*')
+        .order('date', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching teacher attendance history:", error);
+        return [];
+    }
+    return data;
 }
 

@@ -10,7 +10,7 @@ export async function inviteTeacher(fullName: string, email: string) {
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
         data: {
             full_name: fullName,
-            role: 'teacher' // Default role for invited user
+            role: 'teacher'
         }
     });
 
@@ -42,8 +42,6 @@ export async function deleteUser(userId: string) {
 
 export async function saveSchedule(formData: FormData) {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Tidak terautentikasi" };
     
     const scheduleData = {
         id: formData.get('id') as string || undefined,
@@ -94,13 +92,11 @@ export async function deleteSchedule(scheduleId: string) {
 
 export async function saveClass(formData: FormData) {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Tidak terautentikasi" };
 
     const classData = {
         id: formData.get('id') as string || undefined,
         name: formData.get('name') as string,
-        teacher_id: formData.get('teacher_id') as string || null, // Homeroom teacher can be optional
+        teacher_id: formData.get('teacher_id') as string || null,
     };
     
     if (classData.id) {
@@ -137,3 +133,36 @@ export async function deleteClass(classId: string) {
     revalidatePath('/admin/roster/classes');
     return { success: true };
 }
+
+export async function saveSubject(formData: FormData) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+    
+    const subjectData = {
+        id: formData.get('id') as string || undefined,
+        name: formData.get('name') as string,
+        kkm: Number(formData.get('kkm')),
+    };
+
+    if (subjectData.id) {
+         const { error } = await supabase
+            .from('subjects')
+            .update({ name: subjectData.name, kkm: subjectData.kkm })
+            .eq('id', subjectData.id);
+        if (error) {
+            console.error("Error updating subject:", error);
+            return { success: false, error: "Gagal memperbarui mapel." };
+        }
+    } else {
+         const { error } = await supabase.from('subjects').insert({ name: subjectData.name, kkm: subjectData.kkm });
+        if (error) {
+            console.error("Error creating subject:", error);
+            return { success: false, error: "Gagal membuat mapel." };
+        }
+    }
+
+    revalidatePath('/admin/roster/subjects');
+    return { success: true };
+}
+
