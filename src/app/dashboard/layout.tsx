@@ -5,34 +5,30 @@
 import * as React from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import DashboardLayoutClient from './layout-client';
-import type { Profile } from '@/lib/types';
-import type { User } from '@supabase/supabase-js';
-
-// Dummy data for design mode
-const DUMMY_USER: User = {
-    id: 'user-dummy-id',
-    app_metadata: {},
-    user_metadata: {},
-    aud: 'authenticated',
-    created_at: new Date().toISOString(),
-};
-
-const DUMMY_PROFILE: Pick<Profile, 'full_name' | 'avatar_url' | 'account_status' | 'is_homeroom_teacher'> = {
-    full_name: 'Guru Dummy',
-    avatar_url: 'https://placehold.co/100x100.png',
-    account_status: 'Pro',
-    is_homeroom_teacher: true, // Set to true for design mode to see the menu
-};
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    redirect('/');
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url, account_status, is_homeroom_teacher')
+    .eq('id', user.id)
+    .single();
 
   return (
     <SidebarProvider>
-      <DashboardLayoutClient user={DUMMY_USER} profile={DUMMY_PROFILE}>
+      <DashboardLayoutClient user={user} profile={profile}>
         {children}
       </DashboardLayoutClient>
     </SidebarProvider>

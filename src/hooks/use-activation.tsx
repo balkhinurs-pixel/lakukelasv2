@@ -1,67 +1,29 @@
+
 "use client";
 
 import * as React from 'react';
 
-// Tipe untuk status aktivasi
-export type ActivationStatus = 'free' | 'pro';
+// This file is no longer needed in its current form as activation
+// is handled by the user's profile data from the database.
+// It is kept for reference but its provider is no longer wrapping the app.
+// It can be repurposed for client-side permission checks in the future if needed.
 
-// Konfigurasi batasan untuk setiap tier
-const TIER_LIMITS = {
-  free: {
-    classes: 1,
-    studentsPerClass: 10,
-    journalEntries: 20,
-    canDownloadPdf: false,
-    canImportExport: false,
-  },
-  pro: {
-    classes: Infinity,
-    studentsPerClass: Infinity,
-    journalEntries: Infinity,
-    canDownloadPdf: true,
-    canImportExport: true,
-  },
-};
+export type ActivationStatus = 'Free' | 'Pro';
 
-// Konteks untuk berbagi status aktivasi
-const ActivationContext = React.createContext<{
-    status: ActivationStatus;
-    limits: typeof TIER_LIMITS['free'] | typeof TIER_LIMITS['pro'];
-    isPro: boolean;
-    setActivationStatus: (isActivated: boolean) => void;
-} | null>(null);
-
-
-// Provider untuk membungkus aplikasi
-export function ActivationProvider({ children }: { children: React.ReactNode }) {
-    // Di aplikasi nyata, status awal akan diambil dari database atau local storage
-    const [status, setStatus] = React.useState<ActivationStatus>('pro');
-
-    const setActivationStatus = (isActivated: boolean) => {
-        setStatus(isActivated ? 'pro' : 'free');
-        // Di aplikasi nyata, simpan status ini ke database/local storage
-    };
-
-    const value = {
-        status,
-        limits: TIER_LIMITS[status],
-        isPro: status === 'pro',
-        setActivationStatus,
-    };
-    
-    return (
-        <ActivationContext.Provider value={value}>
-            {children}
-        </ActivationContext.Provider>
-    );
-};
-
-
-// Hook untuk mendapatkan status aktivasi dan batasannya
+// This hook can be adapted later to use profile data passed from server components.
 export const useActivation = () => {
-  const context = React.useContext(ActivationContext);
-  if (!context) {
-    throw new Error('useActivation must be used within an ActivationProvider');
-  }
-  return context;
+  // For now, we assume all users are Pro as per the new model.
+  // This can be replaced with a context provider that gets the real status.
+  const status: ActivationStatus = 'Pro';
+
+  const limits = {
+    canDownloadPdf: status === 'Pro',
+    canImportExport: status === 'Pro',
+  };
+  
+  return {
+      status,
+      limits,
+      isPro: status === 'Pro'
+  };
 };

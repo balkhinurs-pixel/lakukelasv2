@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { GeistSans } from 'geist/font/sans';
-import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: 'LakuKelas - Sistem Manajemen Kelas Modern',
@@ -107,9 +106,7 @@ export default function RootLayout({
         />
       </head>
       <body className={cn("font-body antialiased")}>
-        <Providers>
-            {children}
-        </Providers>
+        {children}
         <Toaster />
       </body>
     </html>

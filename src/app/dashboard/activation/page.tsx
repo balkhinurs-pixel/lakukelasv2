@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -12,7 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { KeyRound, CheckCircle, Sparkles, Loader2, Users, Download, ArrowRightLeft, ShieldCheck, XCircle, Star, Crown, Zap, Gift } from "lucide-react";
-import { useActivation } from "@/hooks/use-activation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -20,9 +20,10 @@ import { activateAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useActivation } from "@/hooks/use-activation";
 
 export default function ActivationPage() {
-    const { isPro, limits, setActivationStatus } = useActivation();
+    const { isPro, setActivationStatus } = useActivation();
     const [activationCode, setActivationCode] = React.useState("");
     const [loading, setLoading] = React.useState(false);
     const [isVisible, setIsVisible] = React.useState(false);
@@ -183,39 +184,40 @@ export default function ActivationPage() {
                     isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 )}>
                     <div className="text-center space-y-4">
-                        <h2 className="text-3xl md:text-4xl font-bold font-headline">Perbandingan Fitur</h2>
+                        <h2 className="text-3xl md:text-4xl font-bold font-headline">Akun Pro Tanpa Batas</h2>
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            Lihat perbedaan antara akun Gratis dan Pro
+                            Semua pengguna kini mendapatkan akses penuh ke fitur-fitur Pro secara gratis.
                         </p>
                     </div>
 
-                    <div className="grid lg:grid-cols-2 gap-8 items-stretch">
-                        {/* Free Plan */}
-                        <Card className="relative p-8 h-full flex flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-2">
+                    <div className="max-w-3xl mx-auto">
+                         <Card className="relative p-8 h-full flex flex-col bg-gradient-to-br from-primary/5 via-white to-purple-500/5 dark:from-primary/10 dark:via-slate-900 dark:to-purple-500/10 border-2 border-primary/20">
+                            {/* Popular badge - Optimized */}
+                            <Badge className="absolute top-4 right-4 bg-gradient-to-r from-primary to-purple-600 hover:from-primary hover:to-purple-600 text-white px-3 py-1 text-xs font-semibold shadow-lg">
+                                <Star className="h-3 w-3 mr-1 fill-current" />
+                                Akses Penuh
+                            </Badge>
+
                             <div className="space-y-6">
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-2xl md:text-3xl font-bold font-headline">Gratis</h3>
-                                    <p className="text-muted-foreground">Fitur dasar untuk memulai</p>
+                                    <h3 className="text-2xl md:text-3xl font-bold font-headline flex items-center justify-center gap-2">
+                                        Fitur Pro
+                                        <Sparkles className="h-6 w-6 text-primary" />
+                                    </h3>
+                                    <p className="text-muted-foreground">Fitur lengkap tanpa batas untuk semua</p>
                                 </div>
                                 
                                 <div className="space-y-4 flex-grow">
                                     {[
-                                        { icon: CheckCircle, text: `Manajemen ${limits.classes} kelas`, available: true },
-                                        { icon: CheckCircle, text: `Manajemen ${limits.studentsPerClass} siswa per kelas`, available: true },
-                                        { icon: CheckCircle, text: "Pencatatan Presensi, Nilai, & Jurnal", available: true },
-                                        { icon: XCircle, text: "Unduh Laporan PDF", available: false },
-                                        { icon: XCircle, text: "Impor & Ekspor Data Siswa", available: false },
-                                        { icon: XCircle, text: "Fitur Promosi & Mutasi Siswa", available: false },
+                                        { icon: Users, text: "Manajemen Kelas & Siswa Tanpa Batas" },
+                                        { icon: Download, text: "Unduh Laporan PDF Profesional" },
+                                        { icon: ArrowRightLeft, text: "Impor & Ekspor Data Siswa" },
+                                        { icon: ShieldCheck, text: "Fitur Promosi & Mutasi Siswa" },
+                                        { icon: Gift, text: "Dukungan Prioritas" },
                                     ].map((feature, index) => (
-                                        <div key={index} className="flex items-start gap-4 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <feature.icon className={cn(
-                                                "h-6 w-6 mt-0.5 shrink-0",
-                                                feature.available ? "text-green-500" : "text-red-400"
-                                            )} />
-                                            <p className={cn(
-                                                "text-base leading-relaxed",
-                                                feature.available ? "text-foreground" : "text-muted-foreground"
-                                            )}>
+                                        <div key={index} className="flex items-start gap-4 p-3 rounded-lg bg-white/50 dark:bg-slate-800/30 hover:bg-white/80 dark:hover:bg-slate-800/50 transition-all duration-300">
+                                            <feature.icon className="h-6 w-6 mt-0.5 shrink-0 text-primary" />
+                                            <p className="text-base leading-relaxed font-medium text-foreground">
                                                 {feature.text}
                                             </p>
                                         </div>
@@ -223,62 +225,10 @@ export default function ActivationPage() {
                                 </div>
                             </div>
                         </Card>
-
-                        {/* Pro Plan */}
-                        <div className="relative">
-                            {/* Glow effect */}
-                            <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 rounded-2xl blur-xl opacity-75 animate-pulse"></div>
-                            
-                            <Card className="relative p-8 h-full flex flex-col bg-gradient-to-br from-primary/5 via-white to-purple-500/5 dark:from-primary/10 dark:via-slate-900 dark:to-purple-500/10 border-2 border-primary/20">
-                                {/* Popular badge - Optimized */}
-                                <Badge className="absolute top-4 right-4 bg-gradient-to-r from-primary to-purple-600 hover:from-primary hover:to-purple-600 text-white px-3 py-1 text-xs font-semibold shadow-lg">
-                                    <Star className="h-3 w-3 mr-1 fill-current" />
-                                    Paling Populer
-                                </Badge>
-
-                                <div className="space-y-6">
-                                    <div className="text-center space-y-2">
-                                        <h3 className="text-2xl md:text-3xl font-bold font-headline flex items-center justify-center gap-2">
-                                            Pro
-                                            <Sparkles className="h-6 w-6 text-primary" />
-                                        </h3>
-                                        <p className="text-muted-foreground">Fitur lengkap tanpa batas</p>
-                                    </div>
-                                    
-                                    <div className="space-y-4 flex-grow">
-                                        {[
-                                            { icon: CheckCircle, text: "Semua fitur Gratis, plus:", highlight: true },
-                                            { icon: Users, text: "Manajemen Kelas & Siswa Tanpa Batas", highlight: true },
-                                            { icon: Download, text: "Unduh Laporan PDF Profesional", highlight: true },
-                                            { icon: ArrowRightLeft, text: "Impor & Ekspor Data Siswa", highlight: true },
-                                            { icon: ShieldCheck, text: "Fitur Promosi & Mutasi Siswa", highlight: true },
-                                            { icon: Gift, text: "Dukungan Prioritas", highlight: true },
-                                        ].map((feature, index) => (
-                                            <div key={index} className="flex items-start gap-4 p-3 rounded-lg bg-white/50 dark:bg-slate-800/30 hover:bg-white/80 dark:hover:bg-slate-800/50 transition-all duration-300">
-                                                <feature.icon className="h-6 w-6 mt-0.5 shrink-0 text-primary" />
-                                                <p className="text-base leading-relaxed font-medium text-foreground">
-                                                    {feature.text}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {!isPro && (
-                                        <Button 
-                                            size="lg" 
-                                            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-xl transition-all duration-300" 
-                                            onClick={() => document.getElementById('activation-code')?.focus()}
-                                        >
-                                            <Crown className="mr-2 h-5 w-5" />
-                                            Aktifkan Sekarang
-                                        </Button>
-                                    )}
-                                </div>
-                            </Card>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+

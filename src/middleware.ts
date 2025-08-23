@@ -2,11 +2,6 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // This is a dummy middleware that allows all requests to pass through.
-  // The original authentication and routing logic is commented out for design purposes.
-  return NextResponse.next();
-  
-  /*
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -82,7 +77,6 @@ export async function middleware(request: NextRequest) {
 
 
   return response
-  */
 }
 
 export const config = {
