@@ -61,17 +61,6 @@ export async function getAllUsers(): Promise<Profile[]> {
     return data;
 }
 
-export async function getActivationCodes(): Promise<ActivationCode[]> {
-    noStore();
-    const supabase = createClient();
-    const { data, error } = await supabase.from('activation_codes').select('*').order('created_at', { ascending: false });
-    if(error) {
-        console.error("Error getting activation codes:", error);
-        return [];
-    }
-    return data;
-}
-
 // --- User (Teacher) Data ---
 
 export async function getUserProfile(): Promise<Profile | null> {
@@ -622,3 +611,6 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
     return data;
 }
 
+
+
+    

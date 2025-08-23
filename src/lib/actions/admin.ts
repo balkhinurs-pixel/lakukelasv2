@@ -136,8 +136,6 @@ export async function deleteClass(classId: string) {
 
 export async function saveSubject(formData: FormData) {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Tidak terautentikasi" };
     
     const subjectData = {
         id: formData.get('id') as string || undefined,
@@ -166,3 +164,5 @@ export async function saveSubject(formData: FormData) {
     return { success: true };
 }
 
+
+    
