@@ -90,6 +90,64 @@ export async function deleteSchedule(scheduleId: string) {
 }
 
 
+export async function syncHomeroomTeacherStatus() {
+    const supabase = createClient();
+    
+    try {
+        // Get all teachers who are assigned as homeroom teachers
+        const { data: homeroomAssignments } = await supabase
+            .from('classes')
+            .select('teacher_id')
+            .not('teacher_id', 'is', null);
+        
+        if (!homeroomAssignments) return { success: false, error: 'Gagal mengambil data kelas.' };
+        
+        // Get unique teacher IDs
+        const homeroomTeacherIds = [...new Set(homeroomAssignments.map(c => c.teacher_id))];
+        
+        // Set is_homeroom_teacher to true for all homeroom teachers
+        if (homeroomTeacherIds.length > 0) {
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ is_homeroom_teacher: true })
+                .in('id', homeroomTeacherIds);
+            
+            if (updateError) {
+                console.error('Error updating homeroom teacher status:', updateError);
+                return { success: false, error: 'Gagal memperbarui status wali kelas.' };
+            }
+        }
+        
+        // Set is_homeroom_teacher to false for teachers who are not homeroom teachers
+        if (homeroomTeacherIds.length > 0) {
+            const { error: resetError } = await supabase
+                .from('profiles')
+                .update({ is_homeroom_teacher: false })
+                .not('id', 'in', `(${homeroomTeacherIds.join(',')})`);
+            
+            if (resetError) {
+                console.error('Error resetting homeroom teacher status:', resetError);
+                return { success: false, error: 'Gagal mereset status wali kelas.' };
+            }
+        } else {
+            // If no homeroom teachers, set all to false
+            const { error: resetError } = await supabase
+                .from('profiles')
+                .update({ is_homeroom_teacher: false });
+            
+            if (resetError) {
+                console.error('Error resetting all homeroom teacher status:', resetError);
+                return { success: false, error: 'Gagal mereset semua status wali kelas.' };
+            }
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error syncing homeroom teacher status:', error);
+        return { success: false, error: 'Gagal menyinkronisasi status wali kelas.' };
+    }
+}
+
 export async function saveClass(formData: FormData) {
     const supabase = createClient();
 
@@ -99,6 +157,22 @@ export async function saveClass(formData: FormData) {
         teacher_id: formData.get('teacher_id') as string || null,
     };
     
+    let previousTeacherId: string | null = null;
+    
+    // If updating an existing class, get the previous teacher_id
+    if (classData.id) {
+        const { data: existingClass } = await supabase
+            .from('classes')
+            .select('teacher_id')
+            .eq('id', classData.id)
+            .single();
+        
+        if (existingClass) {
+            previousTeacherId = existingClass.teacher_id;
+        }
+    }
+    
+    // Update or create the class
     if (classData.id) {
         const { error } = await supabase
             .from('classes')
@@ -117,17 +191,79 @@ export async function saveClass(formData: FormData) {
         }
     }
     
+    // Update homeroom teacher status in profiles table
+    try {
+        // If the previous teacher was different and not null, remove their homeroom status
+        if (previousTeacherId && previousTeacherId !== classData.teacher_id) {
+            // Check if this teacher is still homeroom teacher for other classes
+            const { data: otherClasses } = await supabase
+                .from('classes')
+                .select('id')
+                .eq('teacher_id', previousTeacherId)
+                .neq('id', classData.id || '');
+            
+            // If they're not homeroom teacher for any other class, remove the status
+            if (!otherClasses || otherClasses.length === 0) {
+                await supabase
+                    .from('profiles')
+                    .update({ is_homeroom_teacher: false })
+                    .eq('id', previousTeacherId);
+            }
+        }
+        
+        // If a new teacher is assigned, set their homeroom status to true
+        if (classData.teacher_id) {
+            await supabase
+                .from('profiles')
+                .update({ is_homeroom_teacher: true })
+                .eq('id', classData.teacher_id);
+        }
+    } catch (error) {
+        console.error("Error updating homeroom teacher status:", error);
+        // Don't fail the whole operation if profile update fails
+    }
+    
     revalidatePath('/admin/roster/classes');
     return { success: true };
 }
 
 export async function deleteClass(classId: string) {
     const supabase = createClient();
+    
+    // Get the teacher_id before deleting the class
+    const { data: classToDelete } = await supabase
+        .from('classes')
+        .select('teacher_id')
+        .eq('id', classId)
+        .single();
+    
     const { error } = await supabase.from('classes').delete().eq('id', classId);
     
     if (error) {
         console.error("Error deleting class:", error);
         return { success: false, error: 'Gagal menghapus kelas. Pastikan tidak ada siswa atau jadwal yang terkait.' };
+    }
+    
+    // If the deleted class had a homeroom teacher, check if they should lose homeroom status
+    if (classToDelete?.teacher_id) {
+        try {
+            // Check if this teacher is still homeroom teacher for other classes
+            const { data: otherClasses } = await supabase
+                .from('classes')
+                .select('id')
+                .eq('teacher_id', classToDelete.teacher_id);
+            
+            // If they're not homeroom teacher for any other class, remove the status
+            if (!otherClasses || otherClasses.length === 0) {
+                await supabase
+                    .from('profiles')
+                    .update({ is_homeroom_teacher: false })
+                    .eq('id', classToDelete.teacher_id);
+            }
+        } catch (error) {
+            console.error("Error updating homeroom teacher status after class deletion:", error);
+            // Don't fail the whole operation if profile update fails
+        }
     }
     
     revalidatePath('/admin/roster/classes');

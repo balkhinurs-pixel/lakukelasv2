@@ -44,10 +44,10 @@ import {
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Edit, Loader2, Users, School, User, MoreHorizontal, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Loader2, Users, School, User, MoreHorizontal, Trash2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Class, Profile, Student } from "@/lib/types";
-import { saveClass, deleteClass } from "@/lib/actions/admin";
+import { saveClass, deleteClass, syncHomeroomTeacherStatus } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
 
 export function ClassSettingsPageComponent({ 
@@ -70,6 +70,7 @@ export function ClassSettingsPageComponent({
     const [teacherId, setTeacherId] = React.useState<string | undefined>(undefined);
     
     const [loading, setLoading] = React.useState(false);
+    const [syncing, setSyncing] = React.useState(false);
 
     const studentCounts = React.useMemo(() => {
         return initialClasses.reduce((acc, c) => {
@@ -77,6 +78,34 @@ export function ClassSettingsPageComponent({
             return acc;
         }, {} as Record<string, number>);
     }, [initialClasses, students]);
+
+    const handleSyncHomeroomStatus = async () => {
+        setSyncing(true);
+        try {
+            const result = await syncHomeroomTeacherStatus();
+            if (result.success) {
+                toast({ 
+                    title: "Sukses", 
+                    description: "Status wali kelas berhasil disinkronisasi. Guru yang ditunjuk sebagai wali kelas sekarang memiliki akses menu walikelas." 
+                });
+                router.refresh();
+            } else {
+                toast({ 
+                    title: "Gagal", 
+                    description: result.error, 
+                    variant: "destructive" 
+                });
+            }
+        } catch (error) {
+            toast({ 
+                title: "Error", 
+                description: "Terjadi kesalahan saat menyinkronisasi status wali kelas.", 
+                variant: "destructive" 
+            });
+        } finally {
+            setSyncing(false);
+        }
+    };
 
     const handleOpenDialog = (cls: Class | null) => {
         if (cls) {
@@ -146,10 +175,20 @@ export function ClassSettingsPageComponent({
                         <p className="text-muted-foreground">Kelola semua rombongan belajar dan wali kelasnya.</p>
                     </div>
                 </div>
-                <Button onClick={() => handleOpenDialog(null)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Buat Kelas Baru
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={handleSyncHomeroomStatus} disabled={syncing}>
+                        {syncing ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                        )}
+                        Sinkronisasi Status Walikelas
+                    </Button>
+                    <Button onClick={() => handleOpenDialog(null)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Buat Kelas Baru
+                    </Button>
+                </div>
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
