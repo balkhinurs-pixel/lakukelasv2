@@ -31,8 +31,7 @@ export default async function SettingsPage() {
                 full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
                 email: user.email,
                 avatar_url: user.user_metadata?.avatar_url || null,
-                role: 'teacher',
-                account_status: 'Free'
+                role: 'teacher'
             })
             .select('*')
             .single();

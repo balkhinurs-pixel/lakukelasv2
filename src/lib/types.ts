@@ -14,7 +14,6 @@ export interface Profile {
   headmaster_name?: string;
   headmaster_nip?: string;
   school_logo_url?: string;
-  account_status: 'Free' | 'Pro';
   role: 'admin' | 'teacher';
   email?: string;
   active_school_year_id?: string | null;

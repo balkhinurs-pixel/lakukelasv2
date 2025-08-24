@@ -23,7 +23,7 @@ export default async function AdminUsersPage() {
             </div>
             <Card className="shadow-sm">
                 <CardHeader>
-                    <CardTitle>Daftar Guru</CardTitle>
+                    <CardTitle>Semua Guru</CardTitle>
                     <CardDescription>Total guru terdaftar: {teachers.length}</CardDescription>
                 </CardHeader>
                 <CardContent>

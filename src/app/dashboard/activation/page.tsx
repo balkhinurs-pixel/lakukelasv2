@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -8,58 +7,22 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { KeyRound, CheckCircle, Sparkles, Loader2, Users, Download, ArrowRightLeft, ShieldCheck, XCircle, Star, Crown, Zap, Gift } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { activateAccount } from "@/lib/actions";
+import { CheckCircle, Sparkles, Users, Download, ArrowRightLeft, ShieldCheck, Star, Crown, Zap, Gift } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useActivation } from "@/hooks/use-activation";
 
 export default function ActivationPage() {
-    const { isPro, setActivationStatus } = useActivation();
-    const [activationCode, setActivationCode] = React.useState("");
-    const [loading, setLoading] = React.useState(false);
     const [isVisible, setIsVisible] = React.useState(false);
-    const { toast } = useToast();
     const router = useRouter();
 
     // Animation trigger
     React.useEffect(() => {
         setIsVisible(true);
     }, []);
-
-    const handleActivation = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!activationCode) return;
-        setLoading(true);
-
-        const result = await activateAccount(activationCode);
-
-        if (result.success) {
-            setActivationStatus(true);
-            toast({
-                title: "Aktivasi Berhasil!",
-                description: "Akun Anda kini Pro. Semua fitur telah terbuka.",
-                className: "bg-green-100 text-green-900 border-green-200",
-            });
-            router.refresh();
-        } else {
-            toast({
-                title: "Aktivasi Gagal",
-                description: result.error || "Kode aktivasi tidak valid atau sudah digunakan.",
-                variant: "destructive",
-            });
-        }
-        setLoading(false);
-        setActivationCode("");
-    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
@@ -80,13 +43,13 @@ export default function ActivationPage() {
                         <div className="space-y-4">
                             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
                                 <Crown className="h-4 w-4" />
-                                Upgrade ke Pro
+                                Akses Penuh
                             </div>
                             <h1 className="text-4xl md:text-6xl font-bold font-headline bg-gradient-to-r from-slate-900 via-primary to-purple-600 dark:from-slate-100 dark:via-primary dark:to-purple-400 bg-clip-text text-transparent">
-                                Aktivasi Akun Pro
+                                Selamat Datang di Akun Pro
                             </h1>
                             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                                Buka semua fitur premium dan rasakan pengalaman tanpa batas dengan Lakukelas Pro
+                                Semua fitur premium kini telah terbuka dan dapat Anda nikmati sepenuhnya, gratis.
                             </p>
                         </div>
                     </div>
@@ -95,87 +58,32 @@ export default function ActivationPage() {
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-                {/* Activation Card */}
                 <div className={cn(
                     "mb-16 transition-all duration-1000 ease-out delay-200",
                     isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 )}>
-                    {isPro ? (
-                        <Card className="max-w-2xl mx-auto border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 shadow-xl shadow-green-100/50 dark:shadow-green-900/20">
-                            <CardHeader className="text-center items-center space-y-4 pb-8">
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-green-500/20 rounded-full blur-xl animate-pulse"></div>
-                                    <div className="relative bg-gradient-to-br from-green-400 to-emerald-500 p-4 rounded-full">
-                                        <ShieldCheck className="h-12 w-12 text-white" />
-                                    </div>
+                    <Card className="max-w-2xl mx-auto border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 shadow-xl shadow-green-100/50 dark:shadow-green-900/20">
+                        <CardHeader className="text-center items-center space-y-4 pb-8">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-green-500/20 rounded-full blur-xl animate-pulse"></div>
+                                <div className="relative bg-gradient-to-br from-green-400 to-emerald-500 p-4 rounded-full">
+                                    <ShieldCheck className="h-12 w-12 text-white" />
                                 </div>
-                                <div className="space-y-2">
-                                    <CardTitle className="text-2xl md:text-3xl text-green-800 dark:text-green-200">
-                                        Akun Anda Sudah Pro! 🎉
-                                    </CardTitle>
-                                    <CardDescription className="text-green-700 dark:text-green-300 text-lg">
-                                        Terima kasih telah melakukan aktivasi. Nikmati semua fitur Lakukelas tanpa batas!
-                                    </CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-                                    <Star className="h-4 w-4 text-green-600 fill-current" />
-                                    <span className="text-green-700 dark:text-green-300 font-medium">Status: Premium Active</span>
-                                </div>
-                            </CardHeader>
-                        </Card>
-                    ) : (
-                        <Card className="max-w-2xl mx-auto shadow-2xl shadow-primary/10 border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-                            <form onSubmit={handleActivation}>
-                                <CardHeader className="text-center items-center space-y-4 pb-6">
-                                    <div className="relative">
-                                        <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse"></div>
-                                        <div className="relative bg-gradient-to-br from-primary to-purple-600 p-4 rounded-full">
-                                            <KeyRound className="h-12 w-12 text-white" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <CardTitle className="text-2xl md:text-3xl">Masukkan Kode Aktivasi</CardTitle>
-                                        <CardDescription className="text-base">
-                                            Dapatkan kode aktivasi dari vendor atau distributor resmi kami
-                                        </CardDescription>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-6 px-8">
-                                    <div className="space-y-3">
-                                        <Label htmlFor="activation-code" className="text-base font-medium">
-                                            Kode Aktivasi
-                                        </Label>
-                                        <div className="relative">
-                                            <Input 
-                                                id="activation-code" 
-                                                placeholder="XXXXXXXX-XXXX-XXXX-XXXXXXXX" 
-                                                value={activationCode}
-                                                onChange={(e) => setActivationCode(e.target.value)}
-                                                required
-                                                className="h-14 text-lg text-center font-mono tracking-wider border-2 focus:border-primary/50 focus:ring-primary/20"
-                                            />
-                                            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-primary/5 to-purple-500/5 pointer-events-none"></div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="px-8 pb-8">
-                                    <Button 
-                                        type="submit" 
-                                        className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-xl transition-all duration-300" 
-                                        disabled={loading || !activationCode}
-                                    >
-                                        {loading && <Loader2 className="mr-3 h-5 w-5 animate-spin" />}
-                                        {loading ? "Memverifikasi..." : (
-                                            <>
-                                                <Zap className="mr-2 h-5 w-5" />
-                                                Aktifkan Akun Pro
-                                            </>
-                                        )}
-                                    </Button>
-                                </CardFooter>
-                            </form>
-                        </Card>
-                    )}
+                            </div>
+                            <div className="space-y-2">
+                                <CardTitle className="text-2xl md:text-3xl text-green-800 dark:text-green-200">
+                                    Akun Anda Sudah Pro! 🎉
+                                </CardTitle>
+                                <CardDescription className="text-green-700 dark:text-green-300 text-lg">
+                                    Nikmati semua fitur Lakukelas tanpa batas dan tanpa biaya tambahan.
+                                </CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                <Star className="h-4 w-4 text-green-600 fill-current" />
+                                <span className="text-green-700 dark:text-green-300 font-medium">Status: Premium Active</span>
+                            </div>
+                        </CardHeader>
+                    </Card>
                 </div>
 
                 {/* Feature Comparison */}
@@ -184,15 +92,14 @@ export default function ActivationPage() {
                     isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 )}>
                     <div className="text-center space-y-4">
-                        <h2 className="text-3xl md:text-4xl font-bold font-headline">Akun Pro Tanpa Batas</h2>
+                        <h2 className="text-3xl md:text-4xl font-bold font-headline">Fitur Tanpa Batas</h2>
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            Semua pengguna kini mendapatkan akses penuh ke fitur-fitur Pro secara gratis.
+                            Semua pengguna kini mendapatkan akses penuh ke fitur-fitur terbaik kami.
                         </p>
                     </div>
 
                     <div className="max-w-3xl mx-auto">
                          <Card className="relative p-8 h-full flex flex-col bg-gradient-to-br from-primary/5 via-white to-purple-500/5 dark:from-primary/10 dark:via-slate-900 dark:to-purple-500/10 border-2 border-primary/20">
-                            {/* Popular badge - Optimized */}
                             <Badge className="absolute top-4 right-4 bg-gradient-to-r from-primary to-purple-600 hover:from-primary hover:to-purple-600 text-white px-3 py-1 text-xs font-semibold shadow-lg">
                                 <Star className="h-3 w-3 mr-1 fill-current" />
                                 Akses Penuh
@@ -201,7 +108,7 @@ export default function ActivationPage() {
                             <div className="space-y-6">
                                 <div className="text-center space-y-2">
                                     <h3 className="text-2xl md:text-3xl font-bold font-headline flex items-center justify-center gap-2">
-                                        Fitur Pro
+                                        Fitur Unggulan
                                         <Sparkles className="h-6 w-6 text-primary" />
                                     </h3>
                                     <p className="text-muted-foreground">Fitur lengkap tanpa batas untuk semua</p>
@@ -231,4 +138,3 @@ export default function ActivationPage() {
         </div>
     );
 }
-

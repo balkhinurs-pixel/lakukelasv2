@@ -107,13 +107,12 @@ export default function DashboardLayoutClient({
 }: { 
   children: React.ReactNode;
   user: User | null;
-  profile: Pick<Profile, 'full_name' | 'avatar_url' | 'account_status' | 'is_homeroom_teacher'> | null
+  profile: Pick<Profile, 'full_name' | 'avatar_url' | 'is_homeroom_teacher'> | null
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
-  const isPro = true; // All users are now Pro
 
   const handleLogout = async () => {
     const supabase = createClient();

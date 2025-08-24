@@ -7,31 +7,6 @@ import { createClient } from './supabase/server';
 import type { StudentNote } from './types';
 import { z } from 'zod';
 
-export async function activateAccount(code: string) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Tidak terautentikasi" };
-    
-    const { error } = await supabase.rpc('activate_account_with_code', {
-        p_code: code,
-        p_user_id: user.id,
-        p_user_email: user.email!,
-    });
-
-    if (error) {
-        console.error('Activation RPC error:', error);
-        if (error.message.includes("not found")) {
-             return { success: false, error: "Profil pengguna tidak ditemukan." };
-        }
-        return { success: false, error: error.message };
-    }
-    
-    revalidatePath('/dashboard/activation');
-    revalidatePath('/dashboard/layout');
-    return { success: true };
-}
-
-
 export async function saveJournal(formData: FormData) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -479,5 +454,3 @@ export async function setActiveSchoolYear(schoolYearId: string) {
     revalidatePath('/dashboard');
     return { success: true };
 }
-
-

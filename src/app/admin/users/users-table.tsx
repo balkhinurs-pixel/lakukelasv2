@@ -40,7 +40,6 @@ import {
   } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus } from "lucide-react";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -48,7 +47,6 @@ import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
 import { deleteUser, inviteTeacher } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
 
