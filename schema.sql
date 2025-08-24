@@ -15,35 +15,80 @@
 -- Drop Triggers (if any were created, none in final version but good practice)
 -- No triggers on auth.users anymore.
 
--- Drop Policies
-DROP POLICY IF EXISTS "Admin dapat mengelola semua profil." ON public.profiles;
-DROP POLICY IF EXISTS "Pengguna dapat melihat profil mereka sendiri." ON public.profiles;
-DROP POLICY IF EXISTS "Pengguna dapat memperbarui profil mereka sendiri." ON public.profiles;
-DROP POLICY IF EXISTS "Admin dapat mengelola kelas." ON public.classes;
-DROP POLICY IF EXISTS "Guru dapat melihat semua kelas." ON public.classes;
-DROP POLICY IF EXISTS "Admin dapat mengelola mapel." ON public.subjects;
-DROP POLICY IF EXISTS "Guru dapat melihat semua mapel." ON public.subjects;
-DROP POLICY IF EXISTS "Admin dapat mengelola siswa." ON public.students;
-DROP POLICY IF EXISTS "Guru dapat melihat siswa di kelasnya." ON public.students;
-DROP POLICY IF EXISTS "Admin dapat melihat semua presensi." ON public.attendance;
-DROP POLICY IF EXISTS "Guru dapat mengelola presensi mereka sendiri." ON public.attendance;
-DROP POLICY IF EXISTS "Admin dapat melihat semua nilai." ON public.grades;
-DROP POLICY IF EXISTS "Guru dapat mengelola nilai mereka sendiri." ON public.grades;
-DROP POLICY IF EXISTS "Admin dapat melihat semua jurnal." ON public.journal_entries;
-DROP POLICY IF EXISTS "Guru dapat mengelola jurnal mereka sendiri." ON public.journal_entries;
-DROP POLICY IF EXISTS "Admin dan wali kelas dapat melihat semua catatan." ON public.student_notes;
-DROP POLICY IF EXISTS "Guru dapat melihat catatan siswa yang mereka ajar." ON public.student_notes;
-DROP POLICY IF EXISTS "Guru dapat membuat catatan untuk siswa." ON public.student_notes;
-DROP POLICY IF EXISTS "Admin dapat mengelola semua jadwal." ON public.schedule;
-DROP POLICY IF EXISTS "Guru dapat melihat jadwal mereka." ON public.schedule;
-DROP POLICY IF EXISTS "Admin dapat mengelola tahun ajaran." ON public.school_years;
-DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat tahun ajaran." ON public.school_years;
-DROP POLICY IF EXISTS "Admin dapat mengelola pengaturan." ON public.settings;
-DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat pengaturan." ON public.settings;
-DROP POLICY IF EXISTS "Admin dapat melihat semua absensi guru." ON public.teacher_attendance;
-DROP POLICY IF EXISTS "Guru dapat melihat absensi mereka sendiri." ON public.teacher_attendance;
-DROP POLICY IF EXISTS "Admin dapat mengelola agenda." ON public.agendas;
-DROP POLICY IF EXISTS "Guru dapat mengelola agenda mereka sendiri." ON public.agendas;
+-- Drop Policies (Only if tables exist)
+DO $$ 
+BEGIN
+    -- Drop policies only if the tables exist
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'profiles') THEN
+        DROP POLICY IF EXISTS "Admin dapat mengelola semua profil." ON public.profiles;
+        DROP POLICY IF EXISTS "Pengguna dapat melihat profil mereka sendiri." ON public.profiles;
+        DROP POLICY IF EXISTS "Pengguna dapat memperbarui profil mereka sendiri." ON public.profiles;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'classes') THEN
+        DROP POLICY IF EXISTS "Admin dapat mengelola kelas." ON public.classes;
+        DROP POLICY IF EXISTS "Guru dapat melihat semua kelas." ON public.classes;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'subjects') THEN
+        DROP POLICY IF EXISTS "Admin dapat mengelola mapel." ON public.subjects;
+        DROP POLICY IF EXISTS "Guru dapat melihat semua mapel." ON public.subjects;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'students') THEN
+        DROP POLICY IF EXISTS "Admin dapat mengelola siswa." ON public.students;
+        DROP POLICY IF EXISTS "Guru dapat melihat siswa di kelasnya." ON public.students;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'attendance') THEN
+        DROP POLICY IF EXISTS "Admin dapat melihat semua presensi." ON public.attendance;
+        DROP POLICY IF EXISTS "Guru dapat mengelola presensi mereka sendiri." ON public.attendance;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'grades') THEN
+        DROP POLICY IF EXISTS "Admin dapat melihat semua nilai." ON public.grades;
+        DROP POLICY IF EXISTS "Guru dapat mengelola nilai mereka sendiri." ON public.grades;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'journal_entries') THEN
+        DROP POLICY IF EXISTS "Admin dapat melihat semua jurnal." ON public.journal_entries;
+        DROP POLICY IF EXISTS "Guru dapat mengelola jurnal mereka sendiri." ON public.journal_entries;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'student_notes') THEN
+        DROP POLICY IF EXISTS "Admin dan wali kelas dapat melihat semua catatan." ON public.student_notes;
+        DROP POLICY IF EXISTS "Guru dapat melihat catatan siswa yang mereka ajar." ON public.student_notes;
+        DROP POLICY IF EXISTS "Guru dapat membuat catatan untuk siswa." ON public.student_notes;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'schedule') THEN
+        DROP POLICY IF EXISTS "Admin dapat mengelola semua jadwal." ON public.schedule;
+        DROP POLICY IF EXISTS "Guru dapat melihat jadwal mereka." ON public.schedule;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'school_years') THEN
+        DROP POLICY IF EXISTS "Admin dapat mengelola tahun ajaran." ON public.school_years;
+        DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat tahun ajaran." ON public.school_years;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'settings') THEN
+        DROP POLICY IF EXISTS "Admin dapat mengelola pengaturan." ON public.settings;
+        DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat pengaturan." ON public.settings;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'teacher_attendance') THEN
+        DROP POLICY IF EXISTS "Admin dapat melihat semua absensi guru." ON public.teacher_attendance;
+        DROP POLICY IF EXISTS "Guru dapat melihat absensi mereka sendiri." ON public.teacher_attendance;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'agendas') THEN
+        DROP POLICY IF EXISTS "Admin dapat mengelola agenda." ON public.agendas;
+        DROP POLICY IF EXISTS "Guru dapat mengelola agenda mereka sendiri." ON public.agendas;
+    END IF;
+END $$;
+
+-- Drop Triggers
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 -- Drop Views
 DROP VIEW IF EXISTS public.attendance_history;
@@ -533,3 +578,12 @@ CREATE POLICY "Guru dapat mengelola agenda mereka sendiri." ON public.agendas FO
 
 -- Seed initial settings if they don't exist
 INSERT INTO public.settings (key, value) VALUES ('active_school_year_id', NULL) ON CONFLICT (key) DO NOTHING;
+
+-- -----------------------------------------------------------------
+--  STEP 7: CREATE TRIGGERS
+-- -----------------------------------------------------------------
+
+-- Create trigger for new user registration
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
