@@ -32,7 +32,7 @@ import {
 import { PlusCircle, Edit, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Subject } from "@/lib/types";
-import { saveSubject } from "@/lib/actions";
+import { saveSubject } from "@/lib/actions/admin";
 
 type NewSubjectData = {
     name: string;
