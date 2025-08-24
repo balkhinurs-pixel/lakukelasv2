@@ -3,9 +3,10 @@
 'use server';
 
 import { createClient } from './supabase/server';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, ActivationCode, SchoolYear, Agenda, TeacherAttendance } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
 import { format, startOfMonth, endOfMonth, parseISO, subDays } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 // This file now contains functions to fetch live data from Supabase.
 // All dummy data has been removed.
@@ -29,25 +30,114 @@ export async function getAdminDashboardData() {
     const user = await getAuthenticatedUser();
     if (!user) return { totalUsers: 0, weeklyAttendance: [], recentActivities: [] };
     
-    // In a real scenario, this would involve complex aggregate queries.
-    // For now, we return plausible-looking data.
-    const allUsers = await getAllUsers();
-    const teachers = allUsers.filter(u => u.role === 'teacher');
-    
-    return {
-        totalUsers: teachers.length,
-        weeklyAttendance: [
-            { day: 'Sen', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
-            { day: 'Sel', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
-            { day: 'Rab', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
-            { day: 'Kam', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
-            { day: 'Jum', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
-            { day: 'Sab', hadir: Math.floor(Math.random() * teachers.length), tidak_hadir: Math.floor(Math.random() * 2) },
-        ],
-        recentActivities: [
-            { text: 'Aktivitas admin akan ditampilkan di sini.', time: 'Baru saja'},
-        ]
-    };
+    try {
+        // Fetch all necessary data in parallel
+        const [allUsers, attendanceHistory, journalEntries] = await Promise.all([
+            getAllUsers(),
+            getTeacherAttendanceHistory(),
+            getJournalEntries() // For recent activities
+        ]);
+        
+        const teachers = allUsers.filter(u => u.role === 'teacher');
+        
+        // Calculate weekly attendance data (last 7 days)
+        const weeklyAttendance = [];
+        const dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const dayName = dayNames[date.getDay() === 0 ? 6 : date.getDay() - 1]; // Adjust for Monday start
+            
+            const dayAttendance = attendanceHistory.filter(a => a.date === dateStr);
+            const hadirCount = dayAttendance.filter(a => a.status === 'Tepat Waktu' || a.status === 'Terlambat').length;
+            const tidakHadirCount = dayAttendance.filter(a => a.status === 'Tidak Hadir').length;
+            
+            weeklyAttendance.push({
+                day: dayName,
+                hadir: hadirCount,
+                tidak_hadir: tidakHadirCount
+            });
+        }
+        
+        // Generate recent activities based on actual data
+        const recentActivities = [];
+        
+        // Add recent teacher attendance activities
+        const recentAttendance = attendanceHistory
+            .filter(a => {
+                const diffTime = new Date().getTime() - new Date(a.date).getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 3; // Last 3 days
+            })
+            .slice(0, 3);
+            
+        recentAttendance.forEach(attendance => {
+            const timeAgo = (() => {
+                const diffTime = new Date().getTime() - new Date(attendance.date).getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) return 'Kemarin';
+                if (diffDays === 2) return '2 hari lalu';
+                if (diffDays === 3) return '3 hari lalu';
+                return 'Hari ini';
+            })();
+            
+            recentActivities.push({
+                text: `${attendance.teacherName} ${attendance.status.toLowerCase()} pada ${format(new Date(attendance.date), 'dd MMM yyyy', { locale: id })}`,
+                time: timeAgo
+            });
+        });
+        
+        // Add recent journal entries
+        const recentJournals = journalEntries
+            .filter(j => {
+                const diffTime = new Date().getTime() - new Date(j.date).getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 2; // Last 2 days
+            })
+            .slice(0, 2);
+            
+        recentJournals.forEach(journal => {
+            const timeAgo = (() => {
+                const diffTime = new Date().getTime() - new Date(journal.date).getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) return 'Kemarin';
+                if (diffDays === 2) return '2 hari lalu';
+                return 'Hari ini';
+            })();
+            
+            recentActivities.push({
+                text: `Jurnal pembelajaran ${journal.subjectName} - ${journal.className} telah dibuat`,
+                time: timeAgo
+            });
+        });
+        
+        // If no activities, show a default message
+        if (recentActivities.length === 0) {
+            recentActivities.push({
+                text: 'Belum ada aktivitas terbaru',
+                time: 'Hari ini'
+            });
+        }
+        
+        return {
+            totalUsers: teachers.length,
+            weeklyAttendance,
+            recentActivities: recentActivities.slice(0, 5) // Limit to 5 activities
+        };
+        
+    } catch (error) {
+        console.error('Error fetching admin dashboard data:', error);
+        return {
+            totalUsers: 0,
+            weeklyAttendance: [],
+            recentActivities: [{
+                text: 'Error memuat data aktivitas',
+                time: 'Baru saja'
+            }]
+        };
+    }
 }
 
 export async function getAllUsers(): Promise<Profile[]> {
