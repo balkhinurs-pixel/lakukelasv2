@@ -454,3 +454,172 @@ export async function setActiveSchoolYear(schoolYearId: string) {
     revalidatePath('/dashboard');
     return { success: true };
 }
+
+export async function recordTeacherAttendance(formData: FormData) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const attendanceType = formData.get('type') as 'in' | 'out';
+    const userLatitude = parseFloat(formData.get('latitude') as string);
+    const userLongitude = parseFloat(formData.get('longitude') as string);
+    const currentTime = formData.get('time') as string;
+
+    // Get attendance settings from database
+    const { data: settings, error: settingsError } = await supabase
+        .from('settings')
+        .select('key, value')
+        .in('key', [
+            'attendance_latitude', 
+            'attendance_longitude', 
+            'attendance_radius', 
+            'attendance_check_in_start', 
+            'attendance_check_in_deadline'
+        ]);
+
+    if (settingsError || !settings || settings.length === 0) {
+        return { success: false, error: "Pengaturan absensi belum dikonfigurasi oleh admin." };
+    }
+
+    // Convert settings array to object
+    const attendanceSettings = settings.reduce((acc, item) => {
+        const key = item.key.replace('attendance_', '');
+        acc[key] = item.value;
+        return acc;
+    }, {} as Record<string, string>);
+
+    // Validate that all required settings exist
+    if (!attendanceSettings.latitude || !attendanceSettings.longitude || !attendanceSettings.radius) {
+        return { success: false, error: "Koordinat atau radius belum dikonfigurasi oleh admin." };
+    }
+
+    // Calculate distance between user location and school location using Haversine formula
+    const schoolLat = parseFloat(attendanceSettings.latitude);
+    const schoolLng = parseFloat(attendanceSettings.longitude);
+    const maxRadius = parseInt(attendanceSettings.radius);
+
+    const distance = calculateDistance(userLatitude, userLongitude, schoolLat, schoolLng);
+    
+    // Check if user is within radius
+    if (distance > maxRadius) {
+        return { 
+            success: false, 
+            error: `Anda berada ${Math.round(distance)}m dari sekolah. Maksimal jarak ${maxRadius}m.` 
+        };
+    }
+
+    // For check-in, validate time constraints
+    let status = 'Tepat Waktu';
+    if (attendanceType === 'in') {
+        const checkInStart = attendanceSettings.check_in_start || '06:30';
+        const checkInDeadline = attendanceSettings.check_in_deadline || '07:15';
+        
+        const currentTimeOnly = currentTime.substring(11, 16); // Extract HH:MM from datetime
+        
+        if (currentTimeOnly < checkInStart) {
+            return { success: false, error: `Absen masuk belum dibuka. Mulai jam ${checkInStart}.` };
+        }
+        
+        if (currentTimeOnly > checkInDeadline) {
+            status = 'Terlambat';
+        }
+    }
+
+    // Get today's date
+    const today = new Date().toISOString().split('T')[0];
+
+    try {
+        if (attendanceType === 'in') {
+            // Check if already checked in today
+            const { data: existingAttendance } = await supabase
+                .from('teacher_attendance')
+                .select('id')
+                .eq('teacher_id', user.id)
+                .eq('date', today)
+                .single();
+
+            if (existingAttendance) {
+                return { success: false, error: "Anda sudah melakukan absen masuk hari ini." };
+            }
+
+            // Create new attendance record
+            const { error: insertError } = await supabase
+                .from('teacher_attendance')
+                .insert({
+                    teacher_id: user.id,
+                    date: today,
+                    check_in: currentTime.substring(11, 19), // Extract HH:MM:SS
+                    status: status
+                });
+
+            if (insertError) {
+                console.error('Error recording check-in:', insertError);
+                return { success: false, error: "Gagal menyimpan absen masuk." };
+            }
+        } else {
+            // Check out - update existing record
+            const { data: existingAttendance } = await supabase
+                .from('teacher_attendance')
+                .select('id, check_in')
+                .eq('teacher_id', user.id)
+                .eq('date', today)
+                .single();
+
+            if (!existingAttendance) {
+                return { success: false, error: "Anda belum melakukan absen masuk hari ini." };
+            }
+
+            if (existingAttendance.check_in && currentTime.substring(11, 19) <= existingAttendance.check_in) {
+                return { success: false, error: "Waktu absen pulang tidak boleh lebih awal dari absen masuk." };
+            }
+
+            const { error: updateError } = await supabase
+                .from('teacher_attendance')
+                .update({
+                    check_out: currentTime.substring(11, 19) // Extract HH:MM:SS
+                })
+                .eq('id', existingAttendance.id);
+
+            if (updateError) {
+                console.error('Error recording check-out:', updateError);
+                return { success: false, error: "Gagal menyimpan absen pulang." };
+            }
+        }
+
+        revalidatePath('/dashboard/teacher-attendance');
+        revalidatePath('/admin');
+        revalidatePath('/admin/teacher-attendance');
+        
+        return { 
+            success: true, 
+            message: `Absen ${attendanceType === 'in' ? 'masuk' : 'pulang'} berhasil dicatat.`,
+            status: status,
+            distance: Math.round(distance)
+        };
+    } catch (error) {
+        console.error('Error recording teacher attendance:', error);
+        return { success: false, error: "Terjadi kesalahan saat menyimpan absensi." };
+    }
+}
+
+// Helper function to calculate distance between two coordinates using Haversine formula
+function calculateDistance(
+    lat1: number, 
+    lon1: number, 
+    lat2: number, 
+    lon2: number
+): number {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in meters
+}
+
+function toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
+}

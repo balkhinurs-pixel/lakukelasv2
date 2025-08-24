@@ -133,6 +133,48 @@ export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], act
     return { schoolYears, activeSchoolYearId };
 }
 
+export async function getAttendanceSettings() {
+    noStore();
+    const supabase = createClient();
+    
+    const { data, error } = await supabase
+        .from('settings')
+        .select('key, value')
+        .in('key', [
+            'attendance_latitude', 
+            'attendance_longitude', 
+            'attendance_radius', 
+            'attendance_check_in_start', 
+            'attendance_check_in_deadline'
+        ]);
+    
+    if (error) {
+        console.error('Error fetching attendance settings:', error);
+        return {
+            latitude: '',
+            longitude: '',
+            radius: 30,
+            check_in_start: '06:30',
+            check_in_deadline: '07:15'
+        };
+    }
+    
+    // Convert array to object
+    const settings = data.reduce((acc, item) => {
+        const key = item.key.replace('attendance_', '');
+        acc[key] = item.value;
+        return acc;
+    }, {} as Record<string, string>);
+    
+    return {
+        latitude: settings.latitude || '',
+        longitude: settings.longitude || '',
+        radius: parseInt(settings.radius) || 30,
+        check_in_start: settings.check_in_start || '06:30',
+        check_in_deadline: settings.check_in_deadline || '07:15'
+    };
+}
+
 export async function getSchedule(): Promise<ScheduleItem[]> {
     noStore();
     const user = await getAuthenticatedUser();

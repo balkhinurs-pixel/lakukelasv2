@@ -163,3 +163,60 @@ export async function saveSubject(formData: FormData) {
     revalidatePath('/admin/roster/subjects');
     return { success: true };
 }
+
+export async function saveAttendanceSettings(formData: FormData) {
+    const supabase = createClient();
+    
+    const settingsData = {
+        latitude: formData.get('latitude') as string,
+        longitude: formData.get('longitude') as string,
+        radius: Number(formData.get('radius')),
+        check_in_start: formData.get('check_in_start') as string,
+        check_in_deadline: formData.get('check_in_deadline') as string,
+    };
+
+    // Validate required fields
+    if (!settingsData.latitude || !settingsData.longitude || !settingsData.radius || !settingsData.check_in_start || !settingsData.check_in_deadline) {
+        return { success: false, error: 'Semua field wajib diisi.' };
+    }
+
+    // Validate latitude and longitude format
+    const lat = parseFloat(settingsData.latitude);
+    const lng = parseFloat(settingsData.longitude);
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return { success: false, error: 'Format koordinat tidak valid.' };
+    }
+
+    // Validate radius
+    if (settingsData.radius <= 0 || settingsData.radius > 1000) {
+        return { success: false, error: 'Radius harus antara 1-1000 meter.' };
+    }
+
+    try {
+        // Save all settings to the settings table
+        const settingsToSave = [
+            { key: 'attendance_latitude', value: settingsData.latitude },
+            { key: 'attendance_longitude', value: settingsData.longitude },
+            { key: 'attendance_radius', value: settingsData.radius.toString() },
+            { key: 'attendance_check_in_start', value: settingsData.check_in_start },
+            { key: 'attendance_check_in_deadline', value: settingsData.check_in_deadline },
+        ];
+
+        for (const setting of settingsToSave) {
+            const { error } = await supabase
+                .from('settings')
+                .upsert(setting, { onConflict: 'key' });
+            
+            if (error) {
+                console.error('Error saving setting:', setting.key, error);
+                return { success: false, error: `Gagal menyimpan pengaturan: ${setting.key}` };
+            }
+        }
+
+        revalidatePath('/admin/settings/location');
+        return { success: true };
+    } catch (error) {
+        console.error('Error saving attendance settings:', error);
+        return { success: false, error: 'Gagal menyimpan pengaturan absensi.' };
+    }
+}

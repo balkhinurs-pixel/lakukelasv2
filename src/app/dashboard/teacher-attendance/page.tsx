@@ -7,37 +7,112 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MapPin, LogIn, LogOut, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { recordTeacherAttendance } from "@/lib/actions";
 
 export default function TeacherAttendancePage() {
     const [loading, setLoading] = React.useState(false);
     const [status, setStatus] = React.useState<'idle' | 'checking' | 'success' | 'error'>('idle');
     const [message, setMessage] = React.useState('');
+    const [locationSupported, setLocationSupported] = React.useState(true);
 
     const { toast } = useToast();
 
-    // Dummy function to simulate geolocation check
+    React.useEffect(() => {
+        // Check if geolocation is supported
+        if (!navigator.geolocation) {
+            setLocationSupported(false);
+            setStatus('error');
+            setMessage('Browser Anda tidak mendukung fitur lokasi.');
+        }
+    }, []);
+
+    const getCurrentLocation = (): Promise<{ latitude: number; longitude: number }> => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation tidak didukung'));
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    });
+                },
+                (error) => {
+                    let errorMessage = 'Gagal mendapatkan lokasi';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Akses lokasi ditolak. Mohon izinkan akses lokasi.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Informasi lokasi tidak tersedia.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Waktu habis saat mencari lokasi.';
+                            break;
+                    }
+                    reject(new Error(errorMessage));
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        });
+    };
+
     const handleAttendance = async (type: 'in' | 'out') => {
+        if (!locationSupported) {
+            toast({
+                title: "Fitur Tidak Didukung",
+                description: "Browser Anda tidak mendukung fitur lokasi.",
+                variant: "destructive"
+            });
+            return;
+        }
+
         setLoading(true);
         setStatus('checking');
         setMessage(`Mencari lokasi Anda untuk absen ${type === 'in' ? 'masuk' : 'pulang'}...`);
 
-        // Simulate getting geolocation and checking against admin settings
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            // Get user's current location
+            const location = await getCurrentLocation();
+            
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('type', type);
+            formData.append('latitude', location.latitude.toString());
+            formData.append('longitude', location.longitude.toString());
+            formData.append('time', new Date().toISOString());
 
-        // Simulate a successful check
-        const isSuccess = Math.random() > 0.3; // 70% chance of success for demo
+            // Call server action
+            const result = await recordTeacherAttendance(formData);
 
-        if (isSuccess) {
-            setStatus('success');
-            const successMessage = `Absen ${type === 'in' ? 'masuk' : 'pulang'} berhasil pada ${new Date().toLocaleTimeString('id-ID')}!`;
-            setMessage(successMessage);
-            toast({
-                title: "Absensi Berhasil",
-                description: successMessage,
-            });
-        } else {
+            if (result.success) {
+                setStatus('success');
+                const successMessage = result.message || `Absen ${type === 'in' ? 'masuk' : 'pulang'} berhasil!`;
+                const detailMessage = `${successMessage} (${result.distance}m dari sekolah)${result.status ? ` - Status: ${result.status}` : ''}`;
+                setMessage(detailMessage);
+                toast({
+                    title: "Absensi Berhasil",
+                    description: detailMessage,
+                });
+            } else {
+                setStatus('error');
+                setMessage(result.error || 'Terjadi kesalahan saat melakukan absensi.');
+                toast({
+                    title: "Absensi Gagal",
+                    description: result.error,
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
             setStatus('error');
-            const errorMessage = "Anda berada di luar radius lokasi yang diizinkan.";
+            const errorMessage = error instanceof Error ? error.message : 'Gagal mendapatkan lokasi Anda.';
             setMessage(errorMessage);
             toast({
                 title: "Absensi Gagal",
@@ -74,7 +149,7 @@ export default function TeacherAttendancePage() {
                             size="lg" 
                             className="w-full max-w-xs h-14 text-lg"
                             onClick={() => handleAttendance('in')}
-                            disabled={loading}
+                            disabled={loading || !locationSupported}
                         >
                             {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
                             Absen Masuk
@@ -84,14 +159,24 @@ export default function TeacherAttendancePage() {
                             variant="outline"
                             className="w-full max-w-xs h-14 text-lg"
                             onClick={() => handleAttendance('out')}
-                            disabled={loading}
+                            disabled={loading || !locationSupported}
                         >
                             {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogOut className="mr-2 h-5 w-5" />}
                             Absen Pulang
                         </Button>
                     </div>
 
-                    {status !== 'idle' && (
+                    {!locationSupported && (
+                        <Alert variant="destructive">
+                            <XCircle className="h-4 w-4" />
+                            <AlertTitle>Fitur Tidak Didukung</AlertTitle>
+                            <AlertDescription>
+                                Browser Anda tidak mendukung fitur lokasi. Mohon gunakan browser yang lebih modern.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {status !== 'idle' && locationSupported && (
                         <Alert variant={status === 'error' ? 'destructive' : 'default'} className={
                             status === 'success' ? 'bg-green-50 border-green-200 text-green-800 [&>svg]:text-green-600' : ''
                         }>
