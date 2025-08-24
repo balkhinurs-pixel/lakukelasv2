@@ -4,16 +4,25 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, LogIn, LogOut, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, LogIn, LogOut, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { recordTeacherAttendance } from "@/lib/actions";
+import { createClient } from "@/lib/supabase/client";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import type { TeacherAttendance } from "@/lib/types";
 
 export default function TeacherAttendancePage() {
     const [loading, setLoading] = React.useState(false);
     const [status, setStatus] = React.useState<'idle' | 'checking' | 'success' | 'error'>('idle');
     const [message, setMessage] = React.useState('');
     const [locationSupported, setLocationSupported] = React.useState(true);
+    const [attendanceHistory, setAttendanceHistory] = React.useState<TeacherAttendance[]>([]);
+    const [historyLoading, setHistoryLoading] = React.useState(true);
 
     const { toast } = useToast();
 
@@ -24,7 +33,56 @@ export default function TeacherAttendancePage() {
             setStatus('error');
             setMessage('Browser Anda tidak mendukung fitur lokasi.');
         }
+        
+        // Load attendance history
+        loadAttendanceHistory();
     }, []);
+
+    const loadAttendanceHistory = async () => {
+        try {
+            setHistoryLoading(true);
+            const supabase = createClient();
+            
+            // Get current user
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                setAttendanceHistory([]);
+                return;
+            }
+            
+            // Fetch attendance history for current user
+            const { data, error } = await supabase
+                .from('teacher_attendance')
+                .select('*')
+                .eq('teacher_id', user.id)
+                .order('date', { ascending: false })
+                .limit(30);
+            
+            if (error) {
+                console.error('Error loading attendance history:', error);
+                setAttendanceHistory([]);
+                return;
+            }
+            
+            // Transform data to match TeacherAttendance interface
+            const transformedData: TeacherAttendance[] = data.map((item: any) => ({
+                id: item.id,
+                teacherId: item.teacher_id,
+                teacherName: '',
+                date: item.date,
+                checkIn: item.check_in,
+                checkOut: item.check_out,
+                status: item.status
+            }));
+            
+            setAttendanceHistory(transformedData);
+        } catch (error) {
+            console.error('Error loading attendance history:', error);
+            setAttendanceHistory([]);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
 
     const getCurrentLocation = (): Promise<{ latitude: number; longitude: number }> => {
         return new Promise((resolve, reject) => {
@@ -101,6 +159,8 @@ export default function TeacherAttendancePage() {
                     title: "Absensi Berhasil",
                     description: detailMessage,
                 });
+                // Reload attendance history
+                loadAttendanceHistory();
             } else {
                 setStatus('error');
                 setMessage(result.error || 'Terjadi kesalahan saat melakukan absensi.');
@@ -122,6 +182,17 @@ export default function TeacherAttendancePage() {
         }
 
         setLoading(false);
+    };
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'Tepat Waktu':
+                return 'text-green-700 bg-green-50 border-green-200';
+            case 'Terlambat':
+                return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+            default:
+                return 'text-gray-700 bg-gray-50 border-gray-200';
+        }
     };
 
     return (
@@ -204,9 +275,84 @@ export default function TeacherAttendancePage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <div className="text-center text-muted-foreground py-8">
-                        <p>Tampilan riwayat absensi akan segera hadir.</p>
-                    </div>
+                    {historyLoading ? (
+                        <div className="text-center py-8">
+                            <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+                            <p className="mt-2 text-muted-foreground">Memuat riwayat absensi...</p>
+                        </div>
+                    ) : attendanceHistory.length > 0 ? (
+                        <div className="space-y-4">
+                            {/* Mobile view */}
+                            <div className="md:hidden space-y-3">
+                                {attendanceHistory.map((record: TeacherAttendance) => (
+                                    <div key={record.id} className="border rounded-lg p-4 space-y-2">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-medium">
+                                                    {format(new Date(record.date), 'EEEE, dd MMMM yyyy', { locale: id })}
+                                                </p>
+                                                <div className="text-sm text-muted-foreground mt-1">
+                                                    <p>Masuk: {record.checkIn || '-'}</p>
+                                                    <p>Pulang: {record.checkOut || '-'}</p>
+                                                </div>
+                                            </div>
+                                            <Badge 
+                                                variant="outline" 
+                                                className={cn("font-semibold text-xs", getStatusBadge(record.status || 'Belum Absen'))}
+                                            >
+                                                {record.status || 'Belum Absen'}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            {/* Desktop view */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Tanggal</TableHead>
+                                            <TableHead className="text-center">Jam Masuk</TableHead>
+                                            <TableHead className="text-center">Jam Pulang</TableHead>
+                                            <TableHead className="text-center">Status</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {attendanceHistory.map((record: TeacherAttendance) => (
+                                            <TableRow key={record.id}>
+                                                <TableCell className="font-medium">
+                                                    {format(new Date(record.date), 'EEEE, dd MMM yyyy', { locale: id })}
+                                                </TableCell>
+                                                <TableCell className="text-center font-mono">
+                                                    {record.checkIn || '-'}
+                                                </TableCell>
+                                                <TableCell className="text-center font-mono">
+                                                    {record.checkOut || '-'}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <Badge 
+                                                        variant="outline" 
+                                                        className={cn("font-semibold", getStatusBadge(record.status || 'Belum Absen'))}
+                                                    >
+                                                        {record.status || 'Belum Absen'}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-12">
+                            <Clock className="mx-auto h-12 w-12 text-muted-foreground" />
+                            <h3 className="mt-4 text-lg font-medium">Belum Ada Riwayat Absensi</h3>
+                            <p className="mt-2 text-muted-foreground">
+                                Riwayat absensi Anda akan muncul di sini setelah Anda melakukan absen masuk.
+                            </p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

@@ -72,8 +72,15 @@ export default function ScheduleManagementClient({
     const { toast } = useToast();
 
     React.useEffect(() => {
+        console.log('Schedule Management - Initial data:', {
+            teachers: teachers.length,
+            classes: classes.length,
+            subjects: subjects.length,
+            initialSchedule: initialSchedule.length,
+            schedule: initialSchedule
+        });
         setSchedule(initialSchedule);
-    }, [initialSchedule]);
+    }, [initialSchedule, teachers, classes, subjects]);
 
     const openAddDialog = () => {
         if (!selectedTeacherId) {
@@ -141,8 +148,15 @@ export default function ScheduleManagementClient({
     }
 
     const filteredSchedule = React.useMemo(() => {
-        return schedule.filter(item => item.teacher_id === selectedTeacherId);
-    }, [schedule, selectedTeacherId]);
+        console.log('Filtering schedule:', {
+            totalSchedule: schedule.length,
+            selectedTeacherId,
+            selectedTeacher: teachers.find(t => t.id === selectedTeacherId)?.full_name
+        });
+        const filtered = schedule.filter(item => item.teacher_id === selectedTeacherId);
+        console.log('Filtered result:', filtered.length, 'items');
+        return filtered;
+    }, [schedule, selectedTeacherId, teachers]);
 
     const groupedSchedule = filteredSchedule.reduce((acc, item) => {
         const classInfo = classes.find(c => c.id === item.class_id);
@@ -180,6 +194,11 @@ export default function ScheduleManagementClient({
         <CardHeader>
             <CardTitle>Pilih Guru</CardTitle>
             <CardDescription>Pilih guru untuk melihat atau mengubah jadwal mengajarnya.</CardDescription>
+            {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded">
+                    Debug: {schedule.length} total schedules loaded, {filteredSchedule.length} filtered for selected teacher
+                </div>
+            )}
         </CardHeader>
         <CardContent>
             <div className="flex flex-col md:flex-row gap-4 md:items-center">
@@ -314,6 +333,11 @@ export default function ScheduleManagementClient({
       {filteredSchedule.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
             <p>Belum ada jadwal untuk guru ini.</p>
+            {schedule.length === 0 ? (
+                <p className="mt-2 text-sm">Tidak ada jadwal sama sekali di sistem. Mulai dengan menambah jadwal menggunakan tombol di atas.</p>
+            ) : (
+                <p className="mt-2 text-sm">Pilih guru lain atau tambah jadwal baru untuk guru ini menggunakan tombol "Tambah Jadwal untuk Guru Ini".</p>
+            )}
         </div>
       )}
     </div>

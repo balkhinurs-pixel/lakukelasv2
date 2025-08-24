@@ -202,6 +202,34 @@ export async function getSchedule(): Promise<ScheduleItem[]> {
     }));
 }
 
+export async function getAllSchedules(): Promise<ScheduleItem[]> {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('schedule')
+        .select(`
+            *,
+            class:class_id ( name ),
+            subject:subject_id ( name )
+        `)
+        .order('day', { ascending: true })
+        .order('start_time', { ascending: true });
+    
+    if (error) {
+        console.error("Error fetching all schedules:", error);
+        return [];
+    }
+    // Transform the data to match the ScheduleItem type
+    return data.map(item => ({
+        ...item,
+        class: item.class.name,
+        subject: item.subject.name
+    }));
+}
+
 export async function getJournalEntries(): Promise<JournalEntry[]> {
     noStore();
     const user = await getAuthenticatedUser();
@@ -642,15 +670,35 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
     const supabase = createClient();
     const { data, error } = await supabase
-        .from('teacher_attendance_history')
-        .select('*')
+        .from('teacher_attendance')
+        .select(`
+            id,
+            teacher_id,
+            date,
+            check_in,
+            check_out,
+            status,
+            profiles!teacher_id (
+                full_name
+            )
+        `)
         .order('date', { ascending: false });
 
     if (error) {
         console.error("Error fetching teacher attendance history:", error);
         return [];
     }
-    return data;
+
+    // Transform data to match TeacherAttendance interface
+    return data.map((item: any) => ({
+        id: item.id,
+        teacherId: item.teacher_id,
+        teacherName: item.profiles?.full_name || 'Unknown',
+        date: item.date,
+        checkIn: item.check_in,
+        checkOut: item.check_out,
+        status: item.status
+    }));
 }
 
 

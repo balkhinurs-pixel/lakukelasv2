@@ -17,6 +17,7 @@ import {
   User as UserIcon,
   Filter,
   Download,
+  Loader2,
 } from "lucide-react";
 import {
   Table,
@@ -42,6 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getAllUsers, getTeacherAttendanceHistory, getUserProfile } from "@/lib/data";
+import { createClient } from "@/lib/supabase/client";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -64,15 +66,59 @@ export default function TeacherAttendanceRecapPage() {
   const [selectedTeacher, setSelectedTeacher] = React.useState<string>("all");
   const [selectedMonth, setSelectedMonth] = React.useState<string>("all");
   const [loading, setLoading] = React.useState(true);
+  const [testLoading, setTestLoading] = React.useState(false);
+
+  // Test function to create sample data
+  const createTestData = async () => {
+    setTestLoading(true);
+    try {
+      const supabase = createClient();
+      
+      // Get a random teacher
+      const randomTeacher = users[Math.floor(Math.random() * users.length)];
+      if (!randomTeacher) {
+        alert('No teachers found to create test data');
+        return;
+      }
+      
+      // Create a test attendance record
+      const { error } = await supabase
+        .from('teacher_attendance')
+        .insert({
+          teacher_id: randomTeacher.id,
+          date: new Date().toISOString().split('T')[0], // Today's date
+          check_in: '07:30:00',
+          check_out: '15:30:00',
+          status: 'Tepat Waktu'
+        });
+      
+      if (error) {
+        console.error('Error creating test data:', error);
+        alert('Error creating test data: ' + error.message);
+      } else {
+        alert('Test attendance data created successfully!');
+        // Refresh data
+        const attendanceData = await getTeacherAttendanceHistory();
+        setHistory(attendanceData);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error: ' + (error as Error).message);
+    }
+    setTestLoading(false);
+  };
 
   React.useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      console.log('Fetching teacher attendance data...');
       const [attendanceData, userData, profileData] = await Promise.all([
         getTeacherAttendanceHistory(),
         getAllUsers(),
         getUserProfile(), // Assuming this fetches the current admin's profile with school data
       ]);
+      console.log('Attendance data received:', attendanceData);
+      console.log('Users data received:', userData.filter((u) => u.role === "teacher"));
       setHistory(attendanceData);
       setUsers(userData.filter((u) => u.role === "teacher"));
       setProfile(profileData as Profile);
@@ -82,7 +128,10 @@ export default function TeacherAttendanceRecapPage() {
   }, []);
 
   const filteredHistory = React.useMemo(() => {
-    return history.filter((item) => {
+    console.log('Filtering history. Total records:', history.length);
+    console.log('Filter criteria - Teacher:', selectedTeacher, 'Month:', selectedMonth, 'Date:', selectedDate);
+    
+    const filtered = history.filter((item) => {
       const itemDate = new Date(item.date);
       const teacherMatch = selectedTeacher === "all" || item.teacherId === selectedTeacher;
 
@@ -96,6 +145,9 @@ export default function TeacherAttendanceRecapPage() {
       const monthMatch = selectedMonth === 'all' || format(itemDate, 'M') === selectedMonth;
       return monthMatch && teacherMatch;
     });
+    
+    console.log('Filtered results:', filtered.length, 'records');
+    return filtered;
   }, [history, selectedDate, selectedTeacher, selectedMonth]);
 
   const handleDownloadPdf = async () => {
@@ -221,10 +273,22 @@ export default function TeacherAttendanceRecapPage() {
             </p>
           </div>
         </div>
-        <Button onClick={handleDownloadPdf} disabled={filteredHistory.length === 0}>
-            <Download className="mr-2 h-4 w-4"/>
-            Cetak PDF
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleDownloadPdf} disabled={filteredHistory.length === 0}>
+              <Download className="mr-2 h-4 w-4"/>
+              Cetak PDF
+          </Button>
+          {process.env.NODE_ENV === 'development' && (
+            <Button 
+              variant="outline" 
+              onClick={createTestData} 
+              disabled={testLoading || users.length === 0}
+            >
+              {testLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Test Data
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -351,8 +415,16 @@ export default function TeacherAttendanceRecapPage() {
                     <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-medium">Belum Ada Data</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      Tidak ada data kehadiran yang cocok dengan filter Anda.
+                      {history.length === 0 
+                        ? "Belum ada guru yang melakukan absensi. Pastikan guru sudah melakukan absen masuk melalui menu absensi guru."
+                        : "Tidak ada data kehadiran yang cocok dengan filter Anda. Coba ubah filter atau pilih 'Semua' untuk melihat semua data."
+                      }
                     </p>
+                    {history.length === 0 && (
+                      <p className="mt-2 text-xs text-gray-400">
+                        Total records: {history.length} | Teachers: {users.length}
+                      </p>
+                    )}
                   </TableCell>
                 </TableRow>
               )}

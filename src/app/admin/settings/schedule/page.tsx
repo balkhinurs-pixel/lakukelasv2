@@ -1,5 +1,5 @@
 
-import { getAllUsers, getClasses, getSubjects, getSchedule } from "@/lib/data";
+import { getAllUsers, getClasses, getSubjects, getAllSchedules } from "@/lib/data";
 import ScheduleManagementClient from "./schedule-management-client";
 
 export default async function ScheduleManagementPage() {
@@ -7,7 +7,7 @@ export default async function ScheduleManagementPage() {
         getAllUsers(),
         getClasses(),
         getSubjects(),
-        getSchedule(),
+        getAllSchedules(), // Use getAllSchedules for admin panel
     ]);
 
     const teachers = users.filter(u => u.role === 'teacher');
