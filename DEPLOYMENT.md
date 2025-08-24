@@ -59,7 +59,7 @@ Kita perlu membuat semua tabel yang dibutuhkan oleh aplikasi di database Supabas
     -   Tempelkan skrip tersebut ke dalam editor SQL di Supabase.
     -   Klik tombol **"RUN"**.
 
-Ini akan secara otomatis membuat semua tabel yang diperlukan (`profiles`, `classes`, `students`, `activation_codes`, dll.) beserta relasi dan kebijakan keamanan (RLS) yang benar.
+Ini akan secara otomatis membuat semua tabel yang diperlukan (`profiles`, `classes`, `students`, dll.) beserta relasi dan kebijakan keamanan (RLS) yang benar.
 
 ---
 
