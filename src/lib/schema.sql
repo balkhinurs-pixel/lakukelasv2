@@ -514,9 +514,10 @@ BEGIN
         s.kkm
     FROM public.grades g
     JOIN public.subjects s ON g.subject_id = s.id,
-    jsonb_to_recordset(g.records) as r(student_id uuid, score text)
-    WHERE r.student_id = p_student_id
-    ORDER BY g.date, s.name;
+    jsonb_array_elements(g.records) r
+    WHERE 
+        (r.value->>'student_id')::uuid = p_student_id
+    ORDER BY g.date DESC, s.name;
 END;
 $$;
 
@@ -534,8 +535,9 @@ BEGIN
         r.value->>'status' as status
     FROM public.attendance a
     JOIN public.subjects s ON a.subject_id = s.id,
-    jsonb_to_recordset(a.records) as r(student_id uuid, status text)
-    WHERE r.student_id = p_student_id
-    ORDER BY a.date, s.name;
+    jsonb_array_elements(a.records) r
+    WHERE 
+        (r.value->>'student_id')::uuid = p_student_id
+    ORDER BY a.date DESC, s.name;
 END;
 $$;
