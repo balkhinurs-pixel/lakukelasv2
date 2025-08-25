@@ -466,20 +466,10 @@ export async function recordTeacherAttendance(formData: FormData) {
     const userLatitude = parseFloat(formData.get('latitude') as string);
     const userLongitude = parseFloat(formData.get('longitude') as string);
     
-    // DEBUGGING: Log input data
-    console.log('=== ATTENDANCE DEBUG START ===');
-    console.log('User ID:', user.id);
-    console.log('Attendance Type:', attendanceType);
-    console.log('User Location:', { latitude: userLatitude, longitude: userLongitude });
-    
     // Get current time in Indonesian timezone (GMT+7)
     const indonesianTime = getIndonesianTime();
     const currentTime = format(indonesianTime, 'HH:mm:ss');
     const today = format(indonesianTime, 'yyyy-MM-dd');
-    
-    console.log('Indonesian Time:', indonesianTime.toISOString());
-    console.log('Current Time:', currentTime);
-    console.log('Today Date:', today);
 
     // Get attendance settings from database
     const { data: settings, error: settingsError } = await supabase
@@ -493,10 +483,7 @@ export async function recordTeacherAttendance(formData: FormData) {
             'attendance_check_in_deadline'
         ]);
 
-    console.log('Settings Query Result:', { settings, settingsError });
-
     if (settingsError || !settings || settings.length === 0) {
-        console.log('❌ Settings error or empty:', settingsError);
         return { success: false, error: "Pengaturan absensi belum dikonfigurasi oleh admin." };
     }
 
@@ -505,15 +492,8 @@ export async function recordTeacherAttendance(formData: FormData) {
         acc[key] = item.value;
         return acc;
     }, {} as Record<string, string>);
-    
-    console.log('Processed Attendance Settings:', attendanceSettings);
 
     if (!attendanceSettings.latitude || !attendanceSettings.longitude || !attendanceSettings.radius) {
-        console.log('❌ Missing critical settings:', {
-            latitude: attendanceSettings.latitude,
-            longitude: attendanceSettings.longitude,
-            radius: attendanceSettings.radius
-        });
         return { success: false, error: "Koordinat atau radius belum dikonfigurasi oleh admin." };
     }
 
@@ -521,20 +501,9 @@ export async function recordTeacherAttendance(formData: FormData) {
     const schoolLng = parseFloat(attendanceSettings.longitude);
     const maxRadius = parseInt(attendanceSettings.radius);
 
-    console.log('School Location:', { latitude: schoolLat, longitude: schoolLng, maxRadius });
-
     const distance = calculateDistance(userLatitude, userLongitude, schoolLat, schoolLng);
     
-    console.log('Distance Calculation:', {
-        userLocation: { latitude: userLatitude, longitude: userLongitude },
-        schoolLocation: { latitude: schoolLat, longitude: schoolLng },
-        calculatedDistance: distance,
-        maxAllowedRadius: maxRadius,
-        withinRange: distance <= maxRadius
-    });
-    
     if (distance > maxRadius) {
-        console.log('❌ Distance check failed:', distance, '>', maxRadius);
         return { 
             success: false, 
             error: `Anda berada ${Math.round(distance)}m dari sekolah. Maksimal jarak ${maxRadius}m.` 
@@ -548,30 +517,17 @@ export async function recordTeacherAttendance(formData: FormData) {
         
         const currentTimeOnly = format(indonesianTime, 'HH:mm');
         
-        console.log('Time Validation:', {
-            currentTime: currentTimeOnly,
-            checkInStart,
-            checkInDeadline,
-            canCheckIn: currentTimeOnly >= checkInStart,
-            isLate: currentTimeOnly > checkInDeadline
-        });
-        
         if (currentTimeOnly < checkInStart) {
-            console.log('❌ Check-in too early:', currentTimeOnly, '<', checkInStart);
             return { success: false, error: `Absen masuk belum dibuka. Mulai jam ${checkInStart}.` };
         }
         
         if (currentTimeOnly > checkInDeadline) {
             status = 'Terlambat';
-            console.log('⚠️ Late check-in detected:', currentTimeOnly, '>', checkInDeadline);
         }
     }
-    
-    console.log('Final status:', status);
 
     try {
         if (attendanceType === 'in') {
-            console.log('Checking for existing attendance...');
             const { data: existingAttendance } = await supabase
                 .from('teacher_attendance')
                 .select('id')
@@ -579,33 +535,23 @@ export async function recordTeacherAttendance(formData: FormData) {
                 .eq('date', today)
                 .single();
 
-            console.log('Existing attendance check:', existingAttendance);
-
             if (existingAttendance) {
-                console.log('❌ Already checked in today');
                 return { success: false, error: "Anda sudah melakukan absen masuk hari ini." };
             }
 
-            console.log('Inserting new attendance record...');
-            const attendanceRecord = {
-                teacher_id: user.id,
-                date: today,
-                check_in: currentTime,
-                status: status
-            };
-            
-            console.log('Attendance record to insert:', attendanceRecord);
-
             const { error: insertError } = await supabase
                 .from('teacher_attendance')
-                .insert(attendanceRecord);
+                .insert({
+                    teacher_id: user.id,
+                    date: today,
+                    check_in: currentTime,
+                    status: status
+                });
 
             if (insertError) {
-                console.error('❌ Database insert error:', insertError);
+                console.error('Error recording check-in:', insertError);
                 return { success: false, error: "Gagal menyimpan absen masuk." };
             }
-            
-            console.log('✅ Successfully inserted attendance record');
         } else {
             const { data: existingAttendance } = await supabase
                 .from('teacher_attendance')
