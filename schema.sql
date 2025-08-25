@@ -78,7 +78,9 @@ BEGIN
     
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'teacher_attendance') THEN
         DROP POLICY IF EXISTS "Admin dapat melihat semua absensi guru." ON public.teacher_attendance;
+        DROP POLICY IF EXISTS "Admin dapat mengelola semua absensi guru." ON public.teacher_attendance;
         DROP POLICY IF EXISTS "Guru dapat melihat absensi mereka sendiri." ON public.teacher_attendance;
+        DROP POLICY IF EXISTS "Guru dapat mengelola absensi mereka sendiri." ON public.teacher_attendance;
     END IF;
     
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'agendas') THEN
@@ -562,8 +564,8 @@ CREATE POLICY "Pengguna terautentikasi dapat melihat pengaturan." ON public.sett
 
 -- Teacher Attendance Table
 ALTER TABLE public.teacher_attendance ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admin dapat melihat semua absensi guru." ON public.teacher_attendance FOR SELECT USING (public.is_admin());
-CREATE POLICY "Guru dapat melihat absensi mereka sendiri." ON public.teacher_attendance FOR SELECT USING (auth.uid() = teacher_id);
+CREATE POLICY "Admin dapat mengelola semua absensi guru." ON public.teacher_attendance FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Guru dapat mengelola absensi mereka sendiri." ON public.teacher_attendance FOR ALL USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
 
 -- Agendas Table
 ALTER TABLE public.agendas ENABLE ROW LEVEL SECURITY;
