@@ -433,10 +433,22 @@ export default function StudentLedgerClientPage({
                                         </Card>
                                     ))}
                                     {ledgerData.grades.length === 0 && (
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            <Award className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                                            <p className="text-sm">Belum ada data nilai</p>
-                                        </div>
+                                        <Card className="p-6 text-center bg-gradient-to-br from-blue-50 to-indigo-50 border-dashed border-2 border-blue-200">
+                                            <Award className="mx-auto h-16 w-16 mb-4 text-blue-300" />
+                                            <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                                                Belum Ada Data Nilai
+                                            </h3>
+                                            <p className="text-sm text-blue-700 mb-4 max-w-md mx-auto">
+                                                Nilai siswa akan muncul di sini setelah guru mata pelajaran menginput nilai melalui menu <strong>Nilai</strong>.
+                                            </p>
+                                            <div className="bg-white/50 rounded-lg p-3 text-xs text-blue-600">
+                                                <p className="font-medium mb-1">ℹ️ Panduan untuk Guru:</p>
+                                                <p>1. Buka menu <strong>Nilai</strong> di dashboard</p>
+                                                <p>2. Pilih kelas dan mata pelajaran</p>
+                                                <p>3. Input nilai siswa untuk berbagai jenis penilaian</p>
+                                                <p>4. Data akan otomatis sinkron ke leger siswa</p>
+                                            </div>
+                                        </Card>
                                     )}
                                 </div>
                             ) : (
@@ -513,10 +525,22 @@ export default function StudentLedgerClientPage({
                                         );
                                     })}
                                     {ledgerData.attendance.length === 0 && (
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            <ClipboardList className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                                            <p className="text-sm">Belum ada data absensi</p>
-                                        </div>
+                                        <Card className="p-6 text-center bg-gradient-to-br from-green-50 to-emerald-50 border-dashed border-2 border-green-200">
+                                            <ClipboardList className="mx-auto h-16 w-16 mb-4 text-green-300" />
+                                            <h3 className="text-lg font-semibold text-green-900 mb-2">
+                                                Belum Ada Data Absensi
+                                            </h3>
+                                            <p className="text-sm text-green-700 mb-4 max-w-md mx-auto">
+                                                Data kehadiran siswa akan muncul di sini setelah guru mata pelajaran mencatat presensi melalui menu <strong>Presensi</strong>.
+                                            </p>
+                                            <div className="bg-white/50 rounded-lg p-3 text-xs text-green-600">
+                                                <p className="font-medium mb-1">ℹ️ Panduan untuk Guru:</p>
+                                                <p>1. Buka menu <strong>Presensi</strong> di dashboard</p>
+                                                <p>2. Pilih kelas dan mata pelajaran</p>
+                                                <p>3. Catat kehadiran siswa setiap pertemuan</p>
+                                                <p>4. Data akan otomatis sinkron ke leger siswa</p>
+                                            </div>
+                                        </Card>
                                     )}
                                 </div>
                             ) : (
@@ -615,18 +639,28 @@ export default function StudentLedgerClientPage({
                                         )
                                     })}
                                     {ledgerData.notes.length === 0 && (
-                                        <div className={cn(
-                                          "text-center py-8 text-muted-foreground",
-                                          isMobile && "py-6"
-                                        )}>
+                                        <Card className="p-6 text-center bg-gradient-to-br from-orange-50 to-amber-50 border-dashed border-2 border-orange-200">
                                             <MessageSquarePlus className={cn(
-                                              "mx-auto h-12 w-12 mb-2 opacity-50",
-                                              isMobile && "h-10 w-10"
+                                              "mx-auto h-16 w-16 mb-4 text-orange-300",
+                                              isMobile && "h-14 w-14"
                                             )} />
-                                            <p className={cn("text-sm", isMobile && "text-xs")}>
-                                                Belum ada catatan perkembangan
+                                            <h3 className={cn(
+                                              "text-lg font-semibold text-orange-900 mb-2",
+                                              isMobile && "text-base"
+                                            )}>
+                                                Belum Ada Catatan Perkembangan
+                                            </h3>
+                                            <p className={cn(
+                                              "text-sm text-orange-700 mb-4 max-w-md mx-auto",
+                                              isMobile && "text-xs"
+                                            )}>
+                                                Catatan perkembangan siswa dari wali kelas dan guru mata pelajaran akan muncul di sini.
                                             </p>
-                                        </div>
+                                            <div className="bg-white/50 rounded-lg p-3 text-xs text-orange-600">
+                                                <p className="font-medium mb-1">ℹ️ Tips:</p>
+                                                <p>Gunakan tombol "Tambah Catatan" di atas untuk menambahkan catatan baru tentang perkembangan siswa ini.</p>
+                                            </div>
+                                        </Card>
                                     )}
                                 </div>
                             </ScrollArea>
