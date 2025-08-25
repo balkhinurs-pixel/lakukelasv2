@@ -22,7 +22,7 @@ import { Users, Clock, UserX, Activity, UserCheck, TrendingUp, Calendar, BookOpe
 import { getAdminDashboardData, getAllUsers, getTeacherAttendanceHistory } from "@/lib/data";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import WeeklyAttendanceChart from "./weekly-attendance-chart";
 import { Suspense } from "react";
 
@@ -243,7 +243,7 @@ export default async function AdminDashboardPage() {
                              <div key={index} className="border rounded-lg p-4 flex justify-between items-center bg-muted/20">
                                 <div>
                                     <p className="font-semibold">{teacher.name}</p>
-                                    <p className="text-sm text-muted-foreground">Masuk: {teacher.checkIn || '-'}</p>
+                                    <p className="text-sm text-muted-foreground">Masuk: {teacher.checkIn ? formatTime(teacher.checkIn) : '-'}</p>
                                 </div>
                                 <Badge variant="outline" className={cn("font-semibold text-xs", getStatusBadge(teacher.status))}>{teacher.status}</Badge>
                             </div>
@@ -262,7 +262,7 @@ export default async function AdminDashboardPage() {
                                 {teacherAttendanceStatus.map((teacher, index) => (
                                     <TableRow key={index}>
                                         <TableCell className="font-medium">{teacher.name}</TableCell>
-                                        <TableCell className="text-center font-mono">{teacher.checkIn || '-'}</TableCell>
+                                        <TableCell className="text-center font-mono">{teacher.checkIn ? formatTime(teacher.checkIn) : '-'}</TableCell>
                                         <TableCell className="text-center">
                                             <Badge variant="outline" className={cn("font-semibold", getStatusBadge(teacher.status))}>{teacher.status}</Badge>
                                         </TableCell>

@@ -30,7 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import type { TeacherAttendance, Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -193,8 +193,8 @@ export default function TeacherAttendanceRecapPage() {
         const tableBody = filteredHistory.map((item) => [
             item.teacherName,
             format(new Date(item.date), 'EEEE, dd MMM yyyy', { locale: id }),
-            item.checkIn || '-',
-            item.checkOut || '-',
+            item.checkIn ? formatTime(item.checkIn) : '-',
+            item.checkOut ? formatTime(item.checkOut) : '-',
             item.status,
         ]);
 
@@ -397,8 +397,8 @@ export default function TeacherAttendanceRecapPage() {
                         locale: id,
                       })}
                     </TableCell>
-                    <TableCell>{item.checkIn || "-"}</TableCell>
-                    <TableCell>{item.checkOut || "-"}</TableCell>
+                    <TableCell>{item.checkIn ? formatTime(item.checkIn) : '-'}</TableCell>
+                    <TableCell>{item.checkOut ? formatTime(item.checkOut) : '-'}</TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
