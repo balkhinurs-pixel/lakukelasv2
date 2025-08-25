@@ -16,4 +16,4 @@ CREATE POLICY "Admin can manage all teacher attendance" ON public.teacher_attend
     FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- Verify the policies are applied correctly
-\d+ public.teacher_attendance
+-- Note: Run "\d+ public.teacher_attendance" in psql to verify policies if needed

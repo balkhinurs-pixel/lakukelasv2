@@ -865,7 +865,10 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
     const supabase = createClient();
     const { data, error } = await supabase
         .from('teacher_attendance')
-        .select('*')
+        .select(`
+            *,
+            teacherName:profiles(full_name)
+        `)
         .order('date', { ascending: false });
 
     if (error) {
@@ -874,8 +877,13 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
     }
 
     return data.map((item: any) => ({
-        ...item,
+        id: item.id,
         teacherId: item.teacher_id,
+        teacherName: item.teacherName?.full_name || 'Unknown Teacher',
+        date: item.date,
+        checkIn: item.check_in || null,
+        checkOut: item.check_out || null,
+        status: item.status
     }));
 }
 
