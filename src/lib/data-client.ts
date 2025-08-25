@@ -3,7 +3,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import type { Student, StudentLedgerGradeEntry, StudentLedgerAttendanceEntry, StudentNote } from './types';
+import type { Student, StudentLedgerGradeEntry, StudentLedgerAttendanceEntry, StudentNote, TeacherAttendance } from './types';
 
 // This file contains data fetching functions that are meant to be used on the client side.
 
@@ -52,4 +52,38 @@ export async function getStudentLedgerData(studentId: string): Promise<{
         attendance: attendance.data || [],
         notes: (notes.data as StudentNote[]) || [],
     };
+}
+
+
+export async function getTeacherAttendanceHistoryClient(): Promise<TeacherAttendance[]> {
+    const supabase = createClient();
+    if (!supabase) return [];
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+        .from('teacher_attendance')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .order('date', { ascending: false })
+        .limit(30);
+
+    if (error) {
+        console.error('Error loading attendance history:', error);
+        return [];
+    }
+
+    // Transform data to match TeacherAttendance interface
+    const transformedData: TeacherAttendance[] = data.map((item: any) => ({
+        id: item.id,
+        teacherId: item.teacher_id,
+        teacherName: '', // Not needed on client side for personal view
+        date: item.date,
+        checkIn: item.check_in,
+        checkOut: item.check_out,
+        status: item.status
+    }));
+
+    return transformedData;
 }

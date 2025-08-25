@@ -10,11 +10,11 @@ import { MapPin, LogIn, LogOut, Loader2, CheckCircle, XCircle, Clock } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { recordTeacherAttendance } from "@/lib/actions";
-import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { TeacherAttendance } from "@/lib/types";
+import { getTeacherAttendanceHistoryClient } from "@/lib/data-client";
 
 export default function TeacherAttendancePage() {
     const [loading, setLoading] = React.useState(false);
@@ -25,6 +25,13 @@ export default function TeacherAttendancePage() {
     const [historyLoading, setHistoryLoading] = React.useState(true);
 
     const { toast } = useToast();
+
+    const loadAttendanceHistory = async () => {
+        setHistoryLoading(true);
+        const data = await getTeacherAttendanceHistoryClient();
+        setAttendanceHistory(data);
+        setHistoryLoading(false);
+    };
 
     React.useEffect(() => {
         // Check if geolocation is supported
@@ -37,52 +44,6 @@ export default function TeacherAttendancePage() {
         // Load attendance history
         loadAttendanceHistory();
     }, []);
-
-    const loadAttendanceHistory = async () => {
-        try {
-            setHistoryLoading(true);
-            const supabase = createClient();
-            
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                setAttendanceHistory([]);
-                return;
-            }
-            
-            // Fetch attendance history for current user
-            const { data, error } = await supabase
-                .from('teacher_attendance')
-                .select('*')
-                .eq('teacher_id', user.id)
-                .order('date', { ascending: false })
-                .limit(30);
-            
-            if (error) {
-                console.error('Error loading attendance history:', error);
-                setAttendanceHistory([]);
-                return;
-            }
-            
-            // Transform data to match TeacherAttendance interface
-            const transformedData: TeacherAttendance[] = data.map((item: any) => ({
-                id: item.id,
-                teacherId: item.teacher_id,
-                teacherName: '',
-                date: item.date,
-                checkIn: item.check_in,
-                checkOut: item.check_out,
-                status: item.status
-            }));
-            
-            setAttendanceHistory(transformedData);
-        } catch (error) {
-            console.error('Error loading attendance history:', error);
-            setAttendanceHistory([]);
-        } finally {
-            setHistoryLoading(false);
-        }
-    };
 
     const getCurrentLocation = (): Promise<{ latitude: number; longitude: number }> => {
         return new Promise((resolve, reject) => {
