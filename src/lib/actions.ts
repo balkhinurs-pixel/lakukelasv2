@@ -7,6 +7,7 @@ import type { StudentNote } from './types';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { getIndonesianTime, createIndonesianTimestamp } from './timezone';
 
 export async function saveJournal(formData: FormData) {
     const supabase = createClient();
@@ -29,7 +30,7 @@ export async function saveJournal(formData: FormData) {
         reflection: formData.get('reflection') as string || null,
         teacher_id: user.id,
         school_year_id: profile.active_school_year_id,
-        date: new Date().toISOString(),
+        date: createIndonesianTimestamp(),
     };
 
     let error;
@@ -454,14 +455,6 @@ export async function setActiveSchoolYear(schoolYearId: string) {
     revalidatePath('/admin/roster/school-year');
     revalidatePath('/dashboard');
     return { success: true };
-}
-
-// Helper function to get current time in Indonesian timezone
-function getIndonesianTime() {
-    const now = new Date();
-    // Convert to Indonesian timezone (GMT+7)
-    const indonesianTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-    return indonesianTime;
 }
 
 export async function recordTeacherAttendance(formData: FormData) {

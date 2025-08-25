@@ -7,6 +7,7 @@ import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, Atte
 import { unstable_noStore as noStore } from 'next/cache';
 import { format, startOfMonth, endOfMonth, parseISO, subDays } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { getIndonesianDayName, getTimezoneDebugInfo, toIndonesianTime } from './timezone';
 
 // This file now contains functions to fetch live data from Supabase.
 // All dummy data has been removed.
@@ -501,12 +502,17 @@ export async function getDashboardData(todayDay: string) {
         return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
     }
 
-    // Debug logging
-    console.log('getDashboardData - Debug Info:', {
+    // Use Indonesian timezone for consistent day calculation
+    const indonesianDayName = getIndonesianDayName();
+    const timezoneInfo = getTimezoneDebugInfo();
+    
+    // Debug logging with proper timezone info
+    console.log('getDashboardData - Enhanced Debug Info:', {
         userId: user.id,
         requestedDay: todayDay,
-        currentDate: new Date().toISOString(),
-        userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        indonesianDayCalculated: indonesianDayName,
+        timezoneInfo,
+        schoolYearId: profile.active_school_year_id
     });
 
     // First, let's get ALL schedules for this teacher to see what's available
@@ -515,20 +521,85 @@ export async function getDashboardData(todayDay: string) {
         .select('*, class:class_id(name), subject:subject_id(name)')
         .eq('teacher_id', user.id);
     
-    console.log('All schedules for teacher:', allSchedules);
-
-    // Now get today's schedule
-    const { data: schedule, error: scheduleError } = await supabase
-        .from('schedule')
-        .select('*, class:class_id(name), subject:subject_id(name)')
-        .eq('teacher_id', user.id)
-        .eq('day', todayDay);
-    
-    console.log('Today schedule query result:', {
-        requestedDay: todayDay,
-        foundSchedules: schedule?.length || 0,
-        schedules: schedule
+    console.log('All schedules for teacher:', {
+        total: allSchedules?.length || 0,
+        schedules: allSchedules,
+        uniqueDays: allSchedules ? [...new Set(allSchedules.map(s => s.day))] : []
     });
+
+    // Query for today's schedule using multiple day name strategies
+    const dayQueries = [
+        todayDay,           // Original requested day
+        indonesianDayName,  // Indonesian timezone calculated day
+    ];
+    
+    // Remove duplicates
+    const uniqueDayQueries = [...new Set(dayQueries)];
+    
+    let schedule = null;
+    let matchedDay = null;
+    
+    // Try each day query until we find matches
+    for (const dayQuery of uniqueDayQueries) {
+        console.log(`Trying schedule query with day: '${dayQuery}'`);
+        
+        const { data: tempSchedule, error: scheduleError } = await supabase
+            .from('schedule')
+            .select('*, class:class_id(name), subject:subject_id(name)')
+            .eq('teacher_id', user.id)
+            .eq('day', dayQuery);
+        
+        if (scheduleError) {
+            console.error(`Schedule query error for day '${dayQuery}':`, scheduleError);
+            continue;
+        }
+        
+        if (tempSchedule && tempSchedule.length > 0) {
+            schedule = tempSchedule;
+            matchedDay = dayQuery;
+            console.log(`✅ Found ${schedule.length} schedules using day: '${dayQuery}'`);
+            break;
+        } else {
+            console.log(`❌ No schedules found for day: '${dayQuery}'`);
+        }
+    }
+    
+    // If still no schedule found, try fallback method
+    if (!schedule || schedule.length === 0) {
+        console.warn('No schedule found with primary methods, trying fallback...');
+        
+        const alternativeDayNames = {
+            'Senin': ['Monday', 'senin', 'SENIN'],
+            'Selasa': ['Tuesday', 'selasa', 'SELASA'],
+            'Rabu': ['Wednesday', 'rabu', 'RABU'],
+            'Kamis': ['Thursday', 'kamis', 'KAMIS'],
+            'Jumat': ['Friday', 'jumat', 'JUMAT'],
+            'Sabtu': ['Saturday', 'sabtu', 'SABTU'],
+            'Minggu': ['Sunday', 'minggu', 'MINGGU']
+        };
+        
+        // Try to find schedule with alternative day name formats
+        for (const [standardDay, alternatives] of Object.entries(alternativeDayNames)) {
+            const allVariants = [standardDay, ...alternatives];
+            
+            // Check if any of our queries match this day's variants
+            const hasMatch = uniqueDayQueries.some(query => 
+                allVariants.includes(query) || 
+                allVariants.includes(query.toLowerCase()) ||
+                allVariants.includes(query.toUpperCase())
+            );
+            
+            if (hasMatch) {
+                const alternativeSchedule = allSchedules?.filter(s => s.day === standardDay) || [];
+                if (alternativeSchedule.length > 0) {
+                    schedule = alternativeSchedule;
+                    matchedDay = standardDay;
+                    console.log(`✅ Found ${schedule.length} schedules using fallback day: '${standardDay}'`);
+                    break;
+                }
+            }
+        }
+    }
     
     const { data: journals, error: journalError } = await supabase
         .from('journal_entries')
@@ -546,42 +617,33 @@ export async function getDashboardData(todayDay: string) {
         .eq('school_year_id', profile.active_school_year_id)
         .limit(10);
     
-    if (scheduleError || journalError || attendanceError) {
-        console.error({ scheduleError, journalError, attendanceError });
+    if (allScheduleError || journalError || attendanceError) {
+        console.error({ allScheduleError, journalError, attendanceError });
     }
 
-    let todayScheduleData = schedule?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
+    // Process schedule data
+    let todayScheduleData: any[] = [];
     
-    // Fallback: if no schedule found for today, show a helpful message
-    if (todayScheduleData.length === 0 && allSchedules && allSchedules.length > 0) {
-        console.warn(`No schedule found for '${todayDay}'. Available days:`, 
-            [...new Set(allSchedules.map(s => s.day))]
+    if (schedule && schedule.length > 0) {
+        // Transform the schedule data
+        todayScheduleData = schedule.map(item => ({
+            ...item,
+            class: item.class?.name || 'Unknown Class',
+            subject: item.subject?.name || 'Unknown Subject'
+        }));
+        
+        console.log(`✅ Successfully processed ${todayScheduleData.length} schedules for day: '${matchedDay}'`);
+    } else {
+        console.warn(`❌ No schedule found for any day variation. Available days in DB:`, 
+            allSchedules ? [...new Set(allSchedules.map(s => s.day))] : []
         );
-        
-        // Optionally, we could try alternative day name formats here
-        const alternativeDayNames = {
-            'Senin': ['Monday', 'senin'],
-            'Selasa': ['Tuesday', 'selasa'],
-            'Rabu': ['Wednesday', 'rabu'],
-            'Kamis': ['Thursday', 'kamis'],
-            'Jumat': ['Friday', 'jumat'],
-            'Sabtu': ['Saturday', 'sabtu'],
-            'Minggu': ['Sunday', 'minggu']
-        };
-        
-        // Try to find schedule with alternative day name formats
-        for (const [standardDay, alternatives] of Object.entries(alternativeDayNames)) {
-            if (alternatives.includes(todayDay.toLowerCase()) || todayDay === standardDay) {
-                const alternativeSchedule = allSchedules.filter(s => s.day === standardDay);
-                if (alternativeSchedule.length > 0) {
-                    console.log(`Found schedule using alternative day name: ${standardDay}`);
-                    todayScheduleData = alternativeSchedule.map(item => ({ ...item, class: item.class.name, subject: item.subject.name }));
-                    break;
-                }
-            }
-        }
     }
-    const journalEntriesData = journals?.map(item => ({ ...item, className: item.className.name, subjectName: item.subjectName.name })) || [];
+    
+    const journalEntriesData = journals?.map(item => ({ 
+        ...item, 
+        className: item.className?.name || 'Unknown Class', 
+        subjectName: item.subjectName?.name || 'Unknown Subject' 
+    })) || [];
 
     const totalRecords = attendance?.flatMap(a => a.records).length || 0;
     const hadirRecords = attendance?.flatMap(a => a.records).filter(r => (r as any).status === 'Hadir').length || 0;
@@ -590,6 +652,12 @@ export async function getDashboardData(todayDay: string) {
     const filledJournalScheduleIds = new Set(journals?.map(j => `${format(parseISO(j.date), 'yyyy-MM-dd')}-${j.class_id}-${j.subject_id}`));
     const unfilledJournalsCount = todayScheduleData.filter(s => !filledJournalScheduleIds.has(`${format(new Date(), 'yyyy-MM-dd')}-${s.class_id}-${s.subject_id}`)).length;
 
+    console.log('Final dashboard data:', {
+        scheduleCount: todayScheduleData.length,
+        journalCount: journalEntriesData.length,
+        attendancePercentage,
+        unfilledJournalsCount
+    });
 
     return {
         todaySchedule: todayScheduleData,

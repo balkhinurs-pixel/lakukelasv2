@@ -8,6 +8,7 @@ import * as React from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getIndonesianDayName, getTimezoneDebugInfo } from '@/lib/timezone';
 
 type DashboardData = {
     todaySchedule: ScheduleItem[];
@@ -61,23 +62,31 @@ export default function DashboardPage() {
     React.useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // Get the user's current day in their timezone
-                const userToday = new Date();
+                // Use Indonesian timezone for consistent day calculation
+                const indonesianDayName = getIndonesianDayName();
+                const timezoneInfo = getTimezoneDebugInfo();
                 
-                // Try multiple methods to get the day name
+                // Also get user's local day for comparison
+                const userToday = new Date();
                 const dayViaDateFns = format(userToday, 'eeee', { locale: id });
                 const dayViaIntl = userToday.toLocaleDateString('id-ID', { weekday: 'long' });
                 
-                console.log('Dashboard Day Detection:', {
-                    currentDate: userToday.toISOString(),
-                    userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    dayViaDateFns,
-                    dayViaIntl,
-                    dayNumber: userToday.getDay()
+                console.log('Dashboard Day Detection (Enhanced):', {
+                    indonesianTimezone: {
+                        dayName: indonesianDayName,
+                        time: timezoneInfo.indonesianTime.time,
+                        timezone: timezoneInfo.indonesianTime.timezone
+                    },
+                    userLocal: {
+                        dayViaDateFns,
+                        dayViaIntl,
+                        ...timezoneInfo.userLocalTime
+                    },
+                    timezoneComparison: timezoneInfo.comparison
                 });
                 
-                // Use the more reliable Intl method, but fallback to date-fns
-                let userTodayDay = dayViaIntl;
+                // Use Indonesian timezone day as primary, with user local as fallback
+                let finalDayForQuery = indonesianDayName;
                 
                 // Map common variations to ensure consistency
                 const dayMapping: Record<string, string> = {
@@ -97,11 +106,11 @@ export default function DashboardPage() {
                     'Sunday': 'Minggu'
                 };
                 
-                userTodayDay = dayMapping[userTodayDay] || dayViaDateFns;
+                finalDayForQuery = dayMapping[finalDayForQuery] || finalDayForQuery;
                 
-                console.log('Final day for query:', userTodayDay);
+                console.log('Final day for query (Indonesian timezone):', finalDayForQuery);
                 
-                const dashboardData = await getDashboardData(userTodayDay);
+                const dashboardData = await getDashboardData(finalDayForQuery);
                 setData(dashboardData);
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);

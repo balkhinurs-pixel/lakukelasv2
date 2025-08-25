@@ -23,6 +23,7 @@ import { getAdminDashboardData, getAllUsers, getTeacherAttendanceHistory } from 
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { cn, formatTime } from "@/lib/utils";
+import { formatIndonesianDate, formatIndonesianDateTime, getIndonesianTime } from '@/lib/timezone';
 import WeeklyAttendanceChart from "./weekly-attendance-chart";
 import { Suspense } from "react";
 
@@ -114,8 +115,8 @@ export default async function AdminDashboardPage() {
       getTeacherAttendanceHistory()
     ]);
 
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const yesterday = format(new Date(Date.now() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+    const today = format(getIndonesianTime(), 'yyyy-MM-dd');
+    const yesterday = format(new Date(getIndonesianTime().getTime() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
     
     const teachers = allUsers.filter(u => u.role === 'teacher');
     const admins = allUsers.filter(u => u.role === 'admin');
@@ -165,7 +166,7 @@ export default async function AdminDashboardPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                   <h1 className="text-3xl font-bold font-headline text-gray-900">Dasbor Admin</h1>
-                  <p className="text-muted-foreground">Ringkasan umum dan pemantauan aktivitas guru - {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <p className="text-muted-foreground">Ringkasan umum dan pemantauan aktivitas guru - {formatIndonesianDate(getIndonesianTime(), 'EEEE, dd MMMM yyyy')}</p>
               </div>
               <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" className="gap-2">
