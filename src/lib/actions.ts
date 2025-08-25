@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from './supabase/server';
 import type { StudentNote } from './types';
 import { z } from 'zod';
-import { format } from 'date-fns';
+import { format, zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 import { id } from 'date-fns/locale';
 
 export async function saveJournal(formData: FormData) {
@@ -466,10 +466,13 @@ export async function recordTeacherAttendance(formData: FormData) {
     const userLatitude = parseFloat(formData.get('latitude') as string);
     const userLongitude = parseFloat(formData.get('longitude') as string);
     
-    // Server generates the timestamp to ensure correct timezone
+    // Convert current server time (likely UTC) to Indonesian time
+    const timeZone = 'Asia/Jakarta';
     const now = new Date();
-    const currentTime = format(now, 'HH:mm:ss');
-    const today = format(now, 'yyyy-MM-dd');
+    const zonedNow = utcToZonedTime(now, timeZone);
+    
+    const currentTime = format(zonedNow, 'HH:mm:ss', { timeZone });
+    const today = format(zonedNow, 'yyyy-MM-dd', { timeZone });
 
     // Get attendance settings from database
     const { data: settings, error: settingsError } = await supabase
@@ -515,7 +518,7 @@ export async function recordTeacherAttendance(formData: FormData) {
         const checkInStart = attendanceSettings.check_in_start || '06:30';
         const checkInDeadline = attendanceSettings.check_in_deadline || '07:15';
         
-        const currentTimeOnly = format(now, 'HH:mm');
+        const currentTimeOnly = format(zonedNow, 'HH:mm', { timeZone });
         
         if (currentTimeOnly < checkInStart) {
             return { success: false, error: `Absen masuk belum dibuka. Mulai jam ${checkInStart}.` };
@@ -615,3 +618,4 @@ function calculateDistance(
 function toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
 }
+
