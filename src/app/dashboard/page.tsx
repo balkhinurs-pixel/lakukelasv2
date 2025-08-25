@@ -70,6 +70,12 @@ export default function DashboardPage() {
                 const dayViaDateFns = format(userToday, 'eeee', { locale: id });
                 const dayViaIntl = userToday.toLocaleDateString('id-ID', { weekday: 'long' });
                 
+                // TEMPORARY DEBUG
+                console.log('=== DASHBOARD DAY CALCULATION ===');
+                console.log('Indonesian timezone day:', indonesianDayName);
+                console.log('User local via date-fns:', dayViaDateFns);
+                console.log('User local via Intl:', dayViaIntl);
+                
                 // Use Indonesian timezone day as primary, with user local as fallback
                 let finalDayForQuery = indonesianDayName;
                 
@@ -92,6 +98,9 @@ export default function DashboardPage() {
                 };
                 
                 finalDayForQuery = dayMapping[finalDayForQuery] || finalDayForQuery;
+                
+                console.log('Final day for query:', finalDayForQuery);
+                console.log('=== END DASHBOARD DAY CALCULATION ===');
                 
                 const dashboardData = await getDashboardData(finalDayForQuery);
                 setData(dashboardData);
