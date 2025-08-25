@@ -93,7 +93,7 @@ const attendanceOptions: { value: AttendanceRecord['status'], label: string, ico
 // Isolated component to prevent re-rendering the entire list on a single change
 const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: AttendanceRecord['status'], onChange: (studentId: string, status: AttendanceRecord['status']) => void }) => {
     return (
-        <div className="flex flex-wrap gap-2 justify-end">
+        <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
         {attendanceOptions.map(opt => (
             <Button
                 key={opt.value}
@@ -102,7 +102,7 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
                 size="sm"
                 onClick={() => onChange(studentId, opt.value)}
                 className={cn(
-                    "h-9 px-3 rounded-lg border text-sm font-medium transition-all duration-200 ease-in-out",
+                    "h-9 px-3 rounded-lg border text-sm font-medium transition-all duration-200 ease-in-out flex-shrink-0",
                     "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-current/20",
                     "active:scale-95 transform",
                     value === opt.value
@@ -469,7 +469,7 @@ export default function AttendancePageComponent({
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-0 overflow-hidden">
             {loading ? (
                 <div className="text-center text-muted-foreground py-12">
                     <div className="flex flex-col items-center gap-4">
@@ -490,26 +490,26 @@ export default function AttendancePageComponent({
                     <div className="md:hidden space-y-3">
                         {students.map((student, index) => (
                             <div key={student.id} className="group relative border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-all duration-200 hover:border-slate-300">
-                                <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-3">
+                                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-semibold">
+                                    {index + 1}
+                                  </div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-semibold">
-                                        {index + 1}
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <p className="font-semibold text-slate-900 truncate">{student.name}</p>
+                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-slate-900 break-words leading-tight">{student.name}</p>
                                         <p className="text-xs text-slate-500 mt-0.5">Status kehadiran</p>
                                       </div>
+                                      <AddNoteDialog student={student} onNoteSaved={() => router.refresh()} />
+                                    </div>
+                                    <div className="pt-2 border-t border-slate-100">
+                                       <AttendanceInput 
+                                            studentId={student.id} 
+                                            value={attendance.get(student.id) || 'Hadir'}
+                                            onChange={handleAttendanceChange}
+                                       />
                                     </div>
                                   </div>
-                                   <AddNoteDialog student={student} onNoteSaved={() => router.refresh()} />
-                                </div>
-                                <div className="mt-4 pt-3 border-t border-slate-100">
-                                   <AttendanceInput 
-                                        studentId={student.id} 
-                                        value={attendance.get(student.id) || 'Hadir'}
-                                        onChange={handleAttendanceChange}
-                                   />
                                 </div>
                             </div>
                         ))}
