@@ -409,25 +409,6 @@ export default function StudentLedgerClientPage({
                             </CardDescription>
                         </CardHeader>
                         <CardContent className={isMobile ? "p-3" : ""}>
-                            {/* TEMPORARY DEBUGGING DISPLAY */}
-                            {selectedStudent && (
-                                <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
-                                    <p><strong>Debug Info:</strong></p>
-                                    <p>Student ID: {selectedStudent.id}</p>
-                                    <p>Grades Count: {ledgerData.grades.length}</p>
-                                    <p>Attendance Count: {ledgerData.attendance.length}</p>
-                                    <p>Notes Count: {ledgerData.notes.length}</p>
-                                    {ledgerData.grades.length > 0 && (
-                                        <details className="mt-2">
-                                            <summary>Raw Grades Data</summary>
-                                            <pre className="text-xs mt-1 whitespace-pre-wrap">
-                                                {JSON.stringify(ledgerData.grades, null, 2)}
-                                            </pre>
-                                        </details>
-                                    )}
-                                </div>
-                            )}
-                            
                             {isMobile ? (
                                 <div className="space-y-3">
                                     {ledgerData.grades.map(grade => (
