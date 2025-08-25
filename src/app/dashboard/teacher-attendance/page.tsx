@@ -1,9 +1,14 @@
-import { getTeacherAttendanceHistory } from "@/lib/data";
+import { getTeacherAttendanceHistory, getAllUsers } from "@/lib/data";
 import TeacherAttendanceClient from "./attendance-client";
-import type { TeacherAttendance } from "@/lib/types";
+import type { TeacherAttendance, Profile } from "@/lib/types";
 
 export default async function TeacherAttendancePage() {
-    const initialAttendanceHistory: TeacherAttendance[] = await getTeacherAttendanceHistory();
+    const [initialAttendanceHistory, users] = await Promise.all([
+        getTeacherAttendanceHistory(),
+        getAllUsers(),
+    ]);
 
-    return <TeacherAttendanceClient initialHistory={initialAttendanceHistory} />;
+    const teachers = users.filter(u => u.role === 'teacher');
+
+    return <TeacherAttendanceClient initialHistory={initialAttendanceHistory} users={teachers} />;
 }

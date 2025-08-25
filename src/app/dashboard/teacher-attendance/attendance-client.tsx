@@ -12,9 +12,15 @@ import { recordTeacherAttendance } from "@/lib/actions";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import type { TeacherAttendance } from "@/lib/types";
+import type { TeacherAttendance, Profile } from "@/lib/types";
 
-export default function TeacherAttendanceClient({ initialHistory }: { initialHistory: TeacherAttendance[] }) {
+export default function TeacherAttendanceClient({ 
+    initialHistory,
+    users
+}: { 
+    initialHistory: TeacherAttendance[],
+    users: Profile[] 
+}) {
     const [loading, setLoading] = React.useState(false);
     const [status, setStatus] = React.useState<'idle' | 'checking' | 'success' | 'error'>('idle');
     const [message, setMessage] = React.useState('');
@@ -148,6 +154,11 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
                 return 'text-gray-700 bg-gray-50 border-gray-200';
         }
     };
+    
+    const getTeacherName = (teacherId: string) => {
+        const user = users.find(u => u.id === teacherId);
+        return user?.full_name || teacherId;
+    }
 
     return (
         <div className="space-y-6">

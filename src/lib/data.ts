@@ -83,8 +83,9 @@ export async function getAdminDashboardData() {
                 return 'Hari ini';
             })();
             
+            const teacherName = getAllUsers().find(u => u.id === attendance.teacherId)?.full_name || 'Seorang guru';
             recentActivities.push({
-                text: `${attendance.teacherName} ${attendance.status.toLowerCase()} pada ${format(new Date(attendance.date), 'dd MMM yyyy', { locale: id })}`,
+                text: `${teacherName} ${attendance.status.toLowerCase()} pada ${format(new Date(attendance.date), 'dd MMM yyyy', { locale: id })}`,
                 time: timeAgo
             });
         });
@@ -761,17 +762,7 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
     const supabase = createClient();
     const { data, error } = await supabase
         .from('teacher_attendance')
-        .select(`
-            id,
-            teacher_id,
-            date,
-            check_in,
-            check_out,
-            status,
-            profiles!teacher_id (
-                full_name
-            )
-        `)
+        .select('*')
         .order('date', { ascending: false });
 
     if (error) {
@@ -779,15 +770,9 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
         return [];
     }
 
-    // Transform data to match TeacherAttendance interface
     return data.map((item: any) => ({
-        id: item.id,
+        ...item,
         teacherId: item.teacher_id,
-        teacherName: item.profiles?.full_name || 'Unknown',
-        date: item.date,
-        checkIn: item.check_in,
-        checkOut: item.check_out,
-        status: item.status
     }));
 }
 
