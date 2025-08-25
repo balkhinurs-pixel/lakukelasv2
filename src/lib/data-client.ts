@@ -80,8 +80,8 @@ export async function getTeacherAttendanceHistoryClient(): Promise<TeacherAttend
         teacherId: item.teacher_id,
         teacherName: '', // Not needed on client side for personal view
         date: item.date,
-        checkIn: item.check_in,
-        checkOut: item.check_out,
+        checkIn: item.checkIn,
+        checkOut: item.checkOut,
         status: item.status
     }));
 
