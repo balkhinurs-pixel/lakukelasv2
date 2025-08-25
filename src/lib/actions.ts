@@ -9,13 +9,24 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianTime, createIndonesianTimestamp } from './timezone';
 
+// Helper function to get active school year from global settings
+export async function getActiveSchoolYearId(): Promise<string | null> {
+    const supabase = createClient();
+    const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'active_school_year_id')
+        .single();
+    return data?.value || null;
+}
+
 export async function saveJournal(formData: FormData) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-    if (!profile?.active_school_year_id) {
+    const activeSchoolYearId = await getActiveSchoolYearId();
+    if (!activeSchoolYearId) {
         return { success: false, error: "Tahun ajaran aktif belum diatur. Mohon atur di pengaturan." };
     }
 
@@ -29,7 +40,7 @@ export async function saveJournal(formData: FormData) {
         assessment: formData.get('assessment') as string || null,
         reflection: formData.get('reflection') as string || null,
         teacher_id: user.id,
-        school_year_id: profile.active_school_year_id,
+        school_year_id: activeSchoolYearId,
         date: createIndonesianTimestamp(),
     };
 
@@ -121,8 +132,8 @@ export async function saveAttendance(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
     
-    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-    if (!profile?.active_school_year_id) {
+    const activeSchoolYearId = await getActiveSchoolYearId();
+    if (!activeSchoolYearId) {
         return { success: false, error: "Tahun ajaran aktif belum diatur. Mohon atur di pengaturan." };
     }
 
@@ -134,7 +145,7 @@ export async function saveAttendance(formData: FormData) {
         meeting_number: Number(formData.get('meeting_number')),
         records: JSON.parse(formData.get('records') as string),
         teacher_id: user.id,
-        school_year_id: profile.active_school_year_id
+        school_year_id: activeSchoolYearId
     };
 
     if (!attendanceData.date || !attendanceData.class_id || !attendanceData.subject_id || !attendanceData.meeting_number) {
@@ -169,8 +180,8 @@ export async function saveGrades(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-    if (!profile?.active_school_year_id) {
+    const activeSchoolYearId = await getActiveSchoolYearId();
+    if (!activeSchoolYearId) {
         return { success: false, error: "Tahun ajaran aktif belum diatur. Mohon atur di pengaturan." };
     }
 
@@ -182,7 +193,7 @@ export async function saveGrades(formData: FormData) {
         assessment_type: formData.get('assessment_type') as string,
         records: JSON.parse(formData.get('records') as string),
         teacher_id: user.id,
-        school_year_id: profile.active_school_year_id,
+        school_year_id: activeSchoolYearId,
     };
     
     if (!gradeData.date || !gradeData.class_id || !gradeData.subject_id || !gradeData.assessment_type) {

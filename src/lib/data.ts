@@ -353,8 +353,15 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
     if (!user) return [];
 
     const supabase = createClient();
-     const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-    if (!profile?.active_school_year_id) return [];
+    
+    // Get the active school year from global settings
+    const { data: settingsData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'active_school_year_id')
+        .single();
+        
+    if (!settingsData?.value) return [];
 
     const { data, error } = await supabase
         .from('journal_entries')
@@ -364,7 +371,7 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
             subjectName:subjects ( name )
         `)
         .eq('teacher_id', user.id)
-        .eq('school_year_id', profile.active_school_year_id)
+        .eq('school_year_id', settingsData.value)
         .order('date', { ascending: false });
 
     if (error) {
@@ -404,8 +411,15 @@ export async function getAttendanceHistory(): Promise<AttendanceHistoryEntry[]> 
     if (!user) return [];
     
     const supabase = createClient();
-    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-    if (!profile?.active_school_year_id) return [];
+    
+    // Get the active school year from global settings
+    const { data: settingsData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'active_school_year_id')
+        .single();
+        
+    if (!settingsData?.value) return [];
 
     const { data, error } = await supabase
         .from('attendance')
@@ -415,7 +429,7 @@ export async function getAttendanceHistory(): Promise<AttendanceHistoryEntry[]> 
             subjectName:subjects ( name )
         `)
         .eq('teacher_id', user.id)
-        .eq('school_year_id', profile.active_school_year_id)
+        .eq('school_year_id', settingsData.value)
         .order('date', { ascending: false });
 
     if (error) {
@@ -440,8 +454,15 @@ export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
     if (!user) return [];
     
     const supabase = createClient();
-    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-    if (!profile?.active_school_year_id) return [];
+    
+    // Get the active school year from global settings
+    const { data: settingsData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'active_school_year_id')
+        .single();
+        
+    if (!settingsData?.value) return [];
     
     const { data, error } = await supabase
         .from('grades')
@@ -451,7 +472,7 @@ export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
             subject:subjects ( name, kkm )
         `)
         .eq('teacher_id', user.id)
-        .eq('school_year_id', profile.active_school_year_id)
+        .eq('school_year_id', settingsData.value)
         .order('date', { ascending: false });
 
     if (error) {
