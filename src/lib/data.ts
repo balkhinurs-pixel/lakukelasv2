@@ -501,11 +501,34 @@ export async function getDashboardData(todayDay: string) {
         return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
     }
 
+    // Debug logging
+    console.log('getDashboardData - Debug Info:', {
+        userId: user.id,
+        requestedDay: todayDay,
+        currentDate: new Date().toISOString(),
+        userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+
+    // First, let's get ALL schedules for this teacher to see what's available
+    const { data: allSchedules, error: allScheduleError } = await supabase
+        .from('schedule')
+        .select('*, class:class_id(name), subject:subject_id(name)')
+        .eq('teacher_id', user.id);
+    
+    console.log('All schedules for teacher:', allSchedules);
+
+    // Now get today's schedule
     const { data: schedule, error: scheduleError } = await supabase
         .from('schedule')
         .select('*, class:class_id(name), subject:subject_id(name)')
         .eq('teacher_id', user.id)
         .eq('day', todayDay);
+    
+    console.log('Today schedule query result:', {
+        requestedDay: todayDay,
+        foundSchedules: schedule?.length || 0,
+        schedules: schedule
+    });
     
     const { data: journals, error: journalError } = await supabase
         .from('journal_entries')
@@ -527,7 +550,37 @@ export async function getDashboardData(todayDay: string) {
         console.error({ scheduleError, journalError, attendanceError });
     }
 
-    const todayScheduleData = schedule?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
+    let todayScheduleData = schedule?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
+    
+    // Fallback: if no schedule found for today, show a helpful message
+    if (todayScheduleData.length === 0 && allSchedules && allSchedules.length > 0) {
+        console.warn(`No schedule found for '${todayDay}'. Available days:`, 
+            [...new Set(allSchedules.map(s => s.day))]
+        );
+        
+        // Optionally, we could try alternative day name formats here
+        const alternativeDayNames = {
+            'Senin': ['Monday', 'senin'],
+            'Selasa': ['Tuesday', 'selasa'],
+            'Rabu': ['Wednesday', 'rabu'],
+            'Kamis': ['Thursday', 'kamis'],
+            'Jumat': ['Friday', 'jumat'],
+            'Sabtu': ['Saturday', 'sabtu'],
+            'Minggu': ['Sunday', 'minggu']
+        };
+        
+        // Try to find schedule with alternative day name formats
+        for (const [standardDay, alternatives] of Object.entries(alternativeDayNames)) {
+            if (alternatives.includes(todayDay.toLowerCase()) || todayDay === standardDay) {
+                const alternativeSchedule = allSchedules.filter(s => s.day === standardDay);
+                if (alternativeSchedule.length > 0) {
+                    console.log(`Found schedule using alternative day name: ${standardDay}`);
+                    todayScheduleData = alternativeSchedule.map(item => ({ ...item, class: item.class.name, subject: item.subject.name }));
+                    break;
+                }
+            }
+        }
+    }
     const journalEntriesData = journals?.map(item => ({ ...item, className: item.className.name, subjectName: item.subjectName.name })) || [];
 
     const totalRecords = attendance?.flatMap(a => a.records).length || 0;

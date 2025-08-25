@@ -61,8 +61,46 @@ export default function DashboardPage() {
     React.useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // The most reliable way to get the user's current day is from their own browser.
-                const userTodayDay = format(new Date(), 'eeee', { locale: id });
+                // Get the user's current day in their timezone
+                const userToday = new Date();
+                
+                // Try multiple methods to get the day name
+                const dayViaDateFns = format(userToday, 'eeee', { locale: id });
+                const dayViaIntl = userToday.toLocaleDateString('id-ID', { weekday: 'long' });
+                
+                console.log('Dashboard Day Detection:', {
+                    currentDate: userToday.toISOString(),
+                    userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    dayViaDateFns,
+                    dayViaIntl,
+                    dayNumber: userToday.getDay()
+                });
+                
+                // Use the more reliable Intl method, but fallback to date-fns
+                let userTodayDay = dayViaIntl;
+                
+                // Map common variations to ensure consistency
+                const dayMapping: Record<string, string> = {
+                    'Senin': 'Senin',
+                    'Selasa': 'Selasa', 
+                    'Rabu': 'Rabu',
+                    'Kamis': 'Kamis',
+                    'Jumat': 'Jumat',
+                    'Sabtu': 'Sabtu',
+                    'Minggu': 'Minggu',
+                    'Monday': 'Senin',
+                    'Tuesday': 'Selasa',
+                    'Wednesday': 'Rabu', 
+                    'Thursday': 'Kamis',
+                    'Friday': 'Jumat',
+                    'Saturday': 'Sabtu',
+                    'Sunday': 'Minggu'
+                };
+                
+                userTodayDay = dayMapping[userTodayDay] || dayViaDateFns;
+                
+                console.log('Final day for query:', userTodayDay);
+                
                 const dashboardData = await getDashboardData(userTodayDay);
                 setData(dashboardData);
             } catch (error) {

@@ -25,6 +25,7 @@ import { id } from "date-fns/locale";
 import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import ScheduleDiagnostic from "@/components/schedule-diagnostic";
 
 
 type DashboardPageProps = {
@@ -400,8 +401,11 @@ export default function DashboardClientPage({
                     `}</style>
                 </div>
             ) : (
-                <div className="text-center text-muted-foreground py-8">
-                    <p>Tidak ada jadwal mengajar hari ini.</p>
+                <div className="space-y-4">
+                    <div className="text-center text-muted-foreground py-8">
+                        <p>Tidak ada jadwal mengajar hari ini.</p>
+                    </div>
+                    <ScheduleDiagnostic />
                 </div>
             )}
           </CardContent>
