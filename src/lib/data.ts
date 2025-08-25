@@ -83,7 +83,7 @@ export async function getAdminDashboardData() {
                 return 'Hari ini';
             })();
             
-            const teacherName = getAllUsers().find(u => u.id === attendance.teacherId)?.full_name || 'Seorang guru';
+            const teacherName = allUsers.find((u: Profile) => u.id === attendance.teacherId)?.full_name || 'Seorang guru';
             recentActivities.push({
                 text: `${teacherName} ${attendance.status.toLowerCase()} pada ${format(new Date(attendance.date), 'dd MMM yyyy', { locale: id })}`,
                 time: timeAgo

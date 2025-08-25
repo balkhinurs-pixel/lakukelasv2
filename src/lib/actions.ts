@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from './supabase/server';
 import type { StudentNote } from './types';
 import { z } from 'zod';
-import { format, zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export async function saveJournal(formData: FormData) {
@@ -456,6 +456,14 @@ export async function setActiveSchoolYear(schoolYearId: string) {
     return { success: true };
 }
 
+// Helper function to get current time in Indonesian timezone
+function getIndonesianTime() {
+    const now = new Date();
+    // Convert to Indonesian timezone (GMT+7)
+    const indonesianTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    return indonesianTime;
+}
+
 export async function recordTeacherAttendance(formData: FormData) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -465,13 +473,10 @@ export async function recordTeacherAttendance(formData: FormData) {
     const userLatitude = parseFloat(formData.get('latitude') as string);
     const userLongitude = parseFloat(formData.get('longitude') as string);
     
-    // Convert current server time (likely UTC) to Indonesian time
-    const timeZone = 'Asia/Jakarta';
-    const now = new Date();
-    const zonedNow = utcToZonedTime(now, timeZone);
-    
-    const currentTime = format(zonedNow, 'HH:mm:ss', { timeZone });
-    const today = format(zonedNow, 'yyyy-MM-dd', { timeZone });
+    // Get current time in Indonesian timezone (GMT+7)
+    const indonesianTime = getIndonesianTime();
+    const currentTime = format(indonesianTime, 'HH:mm:ss');
+    const today = format(indonesianTime, 'yyyy-MM-dd');
 
     // Get attendance settings from database
     const { data: settings, error: settingsError } = await supabase
@@ -517,7 +522,7 @@ export async function recordTeacherAttendance(formData: FormData) {
         const checkInStart = attendanceSettings.check_in_start || '06:30';
         const checkInDeadline = attendanceSettings.check_in_deadline || '07:15';
         
-        const currentTimeOnly = format(zonedNow, 'HH:mm', { timeZone });
+        const currentTimeOnly = format(indonesianTime, 'HH:mm');
         
         if (currentTimeOnly < checkInStart) {
             return { success: false, error: `Absen masuk belum dibuka. Mulai jam ${checkInStart}.` };

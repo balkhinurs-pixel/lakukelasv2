@@ -254,7 +254,7 @@ export default function TeacherAttendanceClient({
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <p className="font-medium">
-                                                    {format(new Date(record.date), 'EEEE, dd MMMM yyyy', { locale: id })}
+                                                    {new Date(record.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                                 </p>
                                                 <div className="text-sm text-muted-foreground mt-1">
                                                     <p>Masuk: {record.checkIn || '-'}</p>
@@ -287,7 +287,7 @@ export default function TeacherAttendanceClient({
                                         {attendanceHistory.map((record: TeacherAttendance) => (
                                             <TableRow key={record.id}>
                                                 <TableCell className="font-medium">
-                                                    {format(new Date(record.date), 'EEEE, dd MMM yyyy', { locale: id })}
+                                                    {new Date(record.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
                                                 </TableCell>
                                                 <TableCell className="text-center font-mono">
                                                     {record.checkIn || '-'}

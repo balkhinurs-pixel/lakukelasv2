@@ -165,7 +165,7 @@ export default async function AdminDashboardPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                   <h1 className="text-3xl font-bold font-headline text-gray-900">Dasbor Admin</h1>
-                  <p className="text-muted-foreground">Ringkasan umum dan pemantauan aktivitas guru - {format(new Date(), 'eeee, dd MMMM yyyy', { locale: id })}</p>
+                  <p className="text-muted-foreground">Ringkasan umum dan pemantauan aktivitas guru - {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </div>
               <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" className="gap-2">
