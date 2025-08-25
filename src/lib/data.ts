@@ -503,7 +503,7 @@ export async function getDashboardData(todayDay: string) {
     const { data: schedule, error: scheduleError } = await supabase
         .from('schedule')
         .select('*, class:class_id(name), subject:subject_id(name)')
-        .eq('teacher_id', user.id)
+        .eq('teacher_id', user.id) // Filter by the currently logged-in teacher
         .eq('day', todayDay);
     
     const { data: journals, error: journalError } = await supabase
