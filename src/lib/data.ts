@@ -503,7 +503,7 @@ export async function getDashboardData(todayDay: string) {
     const { data: schedule, error: scheduleError } = await supabase
         .from('schedule')
         .select('*, class:class_id(name), subject:subject_id(name)')
-        .eq('teacher_id', user.id) // Filter by the currently logged-in teacher
+        .eq('teacher_id', user.id)
         .eq('day', todayDay);
     
     const { data: journals, error: journalError } = await supabase
@@ -624,7 +624,7 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
         
         let status = "Stabil";
         if (average_grade >= 85 && attendance >= 95) status = "Sangat Baik";
-        else if (average_grade < 70 || attendance < 85) status = "Berisiko";
+        else if (average_grade < 70 && attendance < 85) status = "Berisiko";
         else if (average_grade < 78 || attendance < 92) status = "Butuh Perhatian";
 
         return { id: student.id, name: student.name, class: studentsRes.data.find(s => s.id === student.id)?.class_name || 'N/A', average_grade, attendance, status };
