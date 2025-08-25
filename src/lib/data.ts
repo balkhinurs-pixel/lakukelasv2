@@ -225,6 +225,31 @@ export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], act
     return { schoolYears, activeSchoolYearId };
 }
 
+export async function getActiveSchoolYearName(): Promise<string> {
+    noStore();
+    const supabase = createClient();
+    
+    // First get the active school year ID from settings
+    const { data: settingsData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'active_school_year_id')
+        .single();
+        
+    if (!settingsData?.value) {
+        return 'Belum Diatur';
+    }
+    
+    // Then get the school year name
+    const { data: schoolYearData } = await supabase
+        .from('school_years')
+        .select('name')
+        .eq('id', settingsData.value)
+        .single();
+        
+    return schoolYearData?.name || 'Belum Diatur';
+}
+
 export async function getAttendanceSettings() {
     noStore();
     const supabase = createClient();
@@ -497,10 +522,19 @@ export async function getDashboardData(todayDay: string) {
     if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
     
     const supabase = createClient();
-    const { data: profile } = await supabase.from('profiles').select('active_school_year_id').eq('id', user.id).single();
-    if (!profile?.active_school_year_id) {
+    
+    // Get the active school year from global settings instead of individual profile
+    const { data: settingsData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'active_school_year_id')
+        .single();
+        
+    if (!settingsData?.value) {
         return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
     }
+    
+    const activeSchoolYearId = settingsData.value;
 
     // Use Indonesian timezone for consistent day calculation
     const indonesianDayName = getIndonesianDayName();
@@ -596,7 +630,7 @@ export async function getDashboardData(todayDay: string) {
         .from('journal_entries')
         .select('*, className:classes(name), subjectName:subjects(name)')
         .eq('teacher_id', user.id)
-        .eq('school_year_id', profile.active_school_year_id)
+        .eq('school_year_id', activeSchoolYearId)
         .order('date', { ascending: false })
         .limit(5);
 
@@ -605,7 +639,7 @@ export async function getDashboardData(todayDay: string) {
         .from('attendance')
         .select('records')
         .eq('teacher_id', user.id)
-        .eq('school_year_id', profile.active_school_year_id)
+        .eq('school_year_id', activeSchoolYearId)
         .limit(10);
     
     if (allScheduleError || journalError || attendanceError) {
@@ -679,16 +713,16 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
         journalQuery.eq('subject_id', subjectId);
     }
 
-    const [attendanceRes, gradesRes, journalRes, studentsRes, profileRes] = await Promise.all([
+    const [attendanceRes, gradesRes, journalRes, studentsRes, activeSchoolYearName] = await Promise.all([
         attendanceQuery,
         gradesQuery,
         journalQuery,
         studentsQuery,
-        supabase.from('profiles').select('active_school_year_name').eq('id', user.id).single(),
+        getActiveSchoolYearName(),
     ]);
 
-    if (attendanceRes.error || gradesRes.error || journalRes.error || studentsRes.error || profileRes.error) {
-        console.error({ attendance: attendanceRes.error, grades: gradesRes.error, journals: journalRes.error, students: studentsRes.error, profile: profileRes.error });
+    if (attendanceRes.error || gradesRes.error || journalRes.error || studentsRes.error) {
+        console.error({ attendance: attendanceRes.error, grades: gradesRes.error, journals: journalRes.error, students: studentsRes.error });
         return null;
     }
     
@@ -713,7 +747,7 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
         overallAttendanceRate: String(overallAttendanceRate),
         overallAverageGrade: String(overallAverageGrade),
         totalJournals: journalEntries.length,
-        activeSchoolYearName: profileRes.data?.active_school_year_name || 'Tidak diatur'
+        activeSchoolYearName: activeSchoolYearName
     };
 
     const studentPerformance = allStudents
