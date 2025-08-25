@@ -839,64 +839,25 @@ export async function getHomeroomStudentProgress() {
         return { studentData: [], className: null };
     }
 
-    // TEMPORARY FIX: Bypass RPC and use direct queries
-    try {
-        // First, get all students in the class
-        const { data: students, error: studentsError } = await supabase
-            .from('students')
-            .select('*')
-            .eq('class_id', homeroomClass.id)
-            .eq('status', 'active');
-
-        if (studentsError) {
-            console.error("Error fetching students:", studentsError);
-            return { studentData: [], className: homeroomClass.name };
-        }
-
-        if (!students || students.length === 0) {
-            console.log("No students found for class:", homeroomClass.id);
-            return { studentData: [], className: homeroomClass.name };
-        }
-
-        // Calculate simple stats for each student
-        const studentData = students.map(student => {
-            // For now, return basic data without grade/attendance calculations
-            // This ensures students appear while we debug the RPC functions
-            return {
-                id: student.id,
-                name: student.name,
-                nis: student.nis,
-                average_grade: 0, // Will be calculated once RPC is fixed
-                attendance_percentage: 0, // Will be calculated once RPC is fixed
-                status: "Stabil" // Default status
-            };
-        });
-
-        console.log("Students found:", studentData.length);
-        return { studentData, className: homeroomClass.name };
-        
-    } catch (error) {
-        console.error("Error in getHomeroomStudentProgress:", error);
+    // Use the corrected RPC function
+    const { data: studentStats, error: statsError } = await supabase.rpc('get_student_performance_for_class', { p_class_id: homeroomClass.id });
+    if (statsError) {
+        console.error("Error fetching student performance:", statsError);
         return { studentData: [], className: homeroomClass.name };
     }
-
-    // ORIGINAL CODE (commented out for debugging):
-    // const { data: studentStats, error: statsError } = await supabase.rpc('get_student_performance_for_class', { p_class_id: homeroomClass.id });
-    // if (statsError) {
-    //     console.error("Error fetching student performance:", statsError);
-    //     return { studentData: [], className: homeroomClass.name };
-    // }
-    // const studentData = (studentStats || []).map(student => {
-    //     let status = "Stabil";
-    //     if (student.average_grade >= 85 && student.attendance_percentage >= 95) status = "Sangat Baik";
-    //     else if (student.average_grade < 70 && student.attendance_percentage < 85) status = "Berisiko";
-    //     else if (student.average_grade < 78 || student.attendance_percentage < 92) status = "Butuh Perhatian";
-    //     return { ...student, status };
-    // }).sort((a,b) => {
-    //     const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
-    //     return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
-    // });
-    // return { studentData, className: homeroomClass.name };
+    
+    const studentData = (studentStats || []).map(student => {
+        let status = "Stabil";
+        if (student.average_grade >= 85 && student.attendance_percentage >= 95) status = "Sangat Baik";
+        else if (student.average_grade < 70 && student.attendance_percentage < 85) status = "Berisiko";
+        else if (student.average_grade < 78 || student.attendance_percentage < 92) status = "Butuh Perhatian";
+        return { ...student, status };
+    }).sort((a,b) => {
+        const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
+        return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
+    });
+    
+    return { studentData, className: homeroomClass.name };
 }
 
 
