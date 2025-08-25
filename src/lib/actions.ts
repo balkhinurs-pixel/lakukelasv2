@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -618,4 +617,3 @@ function calculateDistance(
 function toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
 }
-
