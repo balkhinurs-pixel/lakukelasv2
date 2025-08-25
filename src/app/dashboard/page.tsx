@@ -8,7 +8,7 @@ import * as React from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getIndonesianDayName, getTimezoneDebugInfo } from '@/lib/timezone';
+import { getIndonesianDayName } from '@/lib/timezone';
 
 type DashboardData = {
     todaySchedule: ScheduleItem[];
@@ -64,26 +64,11 @@ export default function DashboardPage() {
             try {
                 // Use Indonesian timezone for consistent day calculation
                 const indonesianDayName = getIndonesianDayName();
-                const timezoneInfo = getTimezoneDebugInfo();
                 
                 // Also get user's local day for comparison
                 const userToday = new Date();
                 const dayViaDateFns = format(userToday, 'eeee', { locale: id });
                 const dayViaIntl = userToday.toLocaleDateString('id-ID', { weekday: 'long' });
-                
-                console.log('Dashboard Day Detection (Enhanced):', {
-                    indonesianTimezone: {
-                        dayName: indonesianDayName,
-                        time: timezoneInfo.indonesianTime.time,
-                        timezone: timezoneInfo.indonesianTime.timezone
-                    },
-                    userLocal: {
-                        dayViaDateFns,
-                        dayViaIntl,
-                        ...timezoneInfo.userLocalTime
-                    },
-                    timezoneComparison: timezoneInfo.comparison
-                });
                 
                 // Use Indonesian timezone day as primary, with user local as fallback
                 let finalDayForQuery = indonesianDayName;
@@ -107,8 +92,6 @@ export default function DashboardPage() {
                 };
                 
                 finalDayForQuery = dayMapping[finalDayForQuery] || finalDayForQuery;
-                
-                console.log('Final day for query (Indonesian timezone):', finalDayForQuery);
                 
                 const dashboardData = await getDashboardData(finalDayForQuery);
                 setData(dashboardData);

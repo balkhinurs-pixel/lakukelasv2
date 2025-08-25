@@ -7,7 +7,7 @@ import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, Atte
 import { unstable_noStore as noStore } from 'next/cache';
 import { format, startOfMonth, endOfMonth, parseISO, subDays } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { getIndonesianDayName, getTimezoneDebugInfo, toIndonesianTime } from './timezone';
+import { getIndonesianDayName, toIndonesianTime } from './timezone';
 
 // This file now contains functions to fetch live data from Supabase.
 // All dummy data has been removed.
@@ -504,28 +504,12 @@ export async function getDashboardData(todayDay: string) {
 
     // Use Indonesian timezone for consistent day calculation
     const indonesianDayName = getIndonesianDayName();
-    const timezoneInfo = getTimezoneDebugInfo();
-    
-    // Debug logging with proper timezone info
-    console.log('getDashboardData - Enhanced Debug Info:', {
-        userId: user.id,
-        requestedDay: todayDay,
-        indonesianDayCalculated: indonesianDayName,
-        timezoneInfo,
-        schoolYearId: profile.active_school_year_id
-    });
 
     // First, let's get ALL schedules for this teacher to see what's available
     const { data: allSchedules, error: allScheduleError } = await supabase
         .from('schedule')
         .select('*, class:class_id(name), subject:subject_id(name)')
         .eq('teacher_id', user.id);
-    
-    console.log('All schedules for teacher:', {
-        total: allSchedules?.length || 0,
-        schedules: allSchedules,
-        uniqueDays: allSchedules ? [...new Set(allSchedules.map(s => s.day))] : []
-    });
 
     // Query for today's schedule using multiple day name strategies
     const dayQueries = [
@@ -541,7 +525,6 @@ export async function getDashboardData(todayDay: string) {
     
     // Try each day query until we find matches
     for (const dayQuery of uniqueDayQueries) {
-        console.log(`Trying schedule query with day: '${dayQuery}'`);
         
         const { data: tempSchedule, error: scheduleError } = await supabase
             .from('schedule')
@@ -557,10 +540,7 @@ export async function getDashboardData(todayDay: string) {
         if (tempSchedule && tempSchedule.length > 0) {
             schedule = tempSchedule;
             matchedDay = dayQuery;
-            console.log(`✅ Found ${schedule.length} schedules using day: '${dayQuery}'`);
             break;
-        } else {
-            console.log(`❌ No schedules found for day: '${dayQuery}'`);
         }
     }
     
@@ -594,7 +574,6 @@ export async function getDashboardData(todayDay: string) {
                 if (alternativeSchedule.length > 0) {
                     schedule = alternativeSchedule;
                     matchedDay = standardDay;
-                    console.log(`✅ Found ${schedule.length} schedules using fallback day: '${standardDay}'`);
                     break;
                 }
             }
@@ -631,12 +610,6 @@ export async function getDashboardData(todayDay: string) {
             class: item.class?.name || 'Unknown Class',
             subject: item.subject?.name || 'Unknown Subject'
         }));
-        
-        console.log(`✅ Successfully processed ${todayScheduleData.length} schedules for day: '${matchedDay}'`);
-    } else {
-        console.warn(`❌ No schedule found for any day variation. Available days in DB:`, 
-            allSchedules ? [...new Set(allSchedules.map(s => s.day))] : []
-        );
     }
     
     const journalEntriesData = journals?.map(item => ({ 
@@ -651,13 +624,6 @@ export async function getDashboardData(todayDay: string) {
     
     const filledJournalScheduleIds = new Set(journals?.map(j => `${format(parseISO(j.date), 'yyyy-MM-dd')}-${j.class_id}-${j.subject_id}`));
     const unfilledJournalsCount = todayScheduleData.filter(s => !filledJournalScheduleIds.has(`${format(new Date(), 'yyyy-MM-dd')}-${s.class_id}-${s.subject_id}`)).length;
-
-    console.log('Final dashboard data:', {
-        scheduleCount: todayScheduleData.length,
-        journalCount: journalEntriesData.length,
-        attendancePercentage,
-        unfilledJournalsCount
-    });
 
     return {
         todaySchedule: todayScheduleData,
