@@ -13,11 +13,28 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createClient();
     
+    console.log('🔍 API: Fetching ledger data for student ID:', studentId);
+    
     const [grades, attendance, notes] = await Promise.all([
         supabase.rpc('get_student_grades_ledger', { p_student_id: studentId }),
         supabase.rpc('get_student_attendance_ledger', { p_student_id: studentId }),
         supabase.from('student_notes_with_teacher').select('*').eq('student_id', studentId).order('date', {ascending: false})
     ]);
+
+    console.log('📊 API: RPC Results:', {
+      gradesCount: grades.data?.length || 0,
+      attendanceCount: attendance.data?.length || 0,
+      notesCount: notes.data?.length || 0,
+      gradesError: grades.error,
+      attendanceError: attendance.error,
+      notesError: notes.error
+    });
+    
+    if (grades.data?.length > 0) {
+      console.log('✅ API: Sample grade data:', grades.data[0]);
+    } else {
+      console.log('❌ API: No grades data returned');
+    }
 
     if (grades.error || attendance.error || notes.error) {
         console.error('Database query errors:', {
@@ -33,6 +50,12 @@ export async function GET(request: NextRequest) {
         attendance: attendance.data || [],
         notes: notes.data || [],
     };
+    
+    console.log('📤 API: Returning ledger data:', {
+      gradesCount: ledgerData.grades.length,
+      attendanceCount: ledgerData.attendance.length,
+      notesCount: ledgerData.notes.length
+    });
 
     return NextResponse.json(ledgerData);
   } catch (error) {

@@ -245,14 +245,28 @@ export default function StudentLedgerClientPage({
     setSelectedStudentId(studentId);
     setLoading(true);
     try {
+      console.log('🔍 Frontend: Fetching data for student ID:', studentId);
       const response = await fetch(`/api/student-ledger?studentId=${studentId}`);
       if (!response.ok) {
         throw new Error('Gagal memuat data ledger');
       }
       const data = await response.json();
+      console.log('📊 Frontend: Received data:', {
+        gradesCount: data.grades?.length || 0,
+        attendanceCount: data.attendance?.length || 0,
+        notesCount: data.notes?.length || 0
+      });
+      
+      if (data.grades?.length > 0) {
+        console.log('✅ Frontend: Sample grade received:', data.grades[0]);
+      } else {
+        console.log('❌ Frontend: No grades in response');
+      }
+      
       setLedgerData(data);
+      console.log('📦 Frontend: Updated ledgerData state');
     } catch (error) {
-      console.error(error);
+      console.error('❌ Frontend: Error fetching ledger data:', error);
       // Handle error display
     } finally {
       setLoading(false);
@@ -395,6 +409,25 @@ export default function StudentLedgerClientPage({
                             </CardDescription>
                         </CardHeader>
                         <CardContent className={isMobile ? "p-3" : ""}>
+                            {/* TEMPORARY DEBUGGING DISPLAY */}
+                            {selectedStudent && (
+                                <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+                                    <p><strong>Debug Info:</strong></p>
+                                    <p>Student ID: {selectedStudent.id}</p>
+                                    <p>Grades Count: {ledgerData.grades.length}</p>
+                                    <p>Attendance Count: {ledgerData.attendance.length}</p>
+                                    <p>Notes Count: {ledgerData.notes.length}</p>
+                                    {ledgerData.grades.length > 0 && (
+                                        <details className="mt-2">
+                                            <summary>Raw Grades Data</summary>
+                                            <pre className="text-xs mt-1 whitespace-pre-wrap">
+                                                {JSON.stringify(ledgerData.grades, null, 2)}
+                                            </pre>
+                                        </details>
+                                    )}
+                                </div>
+                            )}
+                            
                             {isMobile ? (
                                 <div className="space-y-3">
                                     {ledgerData.grades.map(grade => (

@@ -6,7 +6,7 @@ ALTER TABLE public.school_years ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAU
 
 -- Set the first school year as active if none exists
 UPDATE public.school_years SET is_active = TRUE 
-WHERE id = (SELECT id FROM public.school_years ORDER BY created_at ASC LIMIT 1)
+WHERE id = (SELECT id FROM public.school_years LIMIT 1)
 AND NOT EXISTS (SELECT 1 FROM public.school_years WHERE is_active = TRUE);
 
 -- STEP 2: Drop existing functions to recreate them
