@@ -531,14 +531,65 @@ export async function getDashboardData(todayDay: string) {
     let schedule = null;
     let matchedDay = null;
     
-    // TEMPORARY: Skip day filtering to see if we have ANY schedules for this teacher
-    if (allSchedules && allSchedules.length > 0) {
-        // For now, just take the first schedule to test
-        schedule = allSchedules;
-        matchedDay = 'DEBUG_ALL_DAYS';
-        console.log(`⚠️ TEMP DEBUG: Using all ${allSchedules.length} schedules regardless of day`);
-    } else {
-        console.log(`❌ NO SCHEDULES FOUND for teacher ID: ${user.id}`);
+    // Try each day query until we find matches
+    for (const dayQuery of uniqueDayQueries) {
+        console.log(`Trying query with day: '${dayQuery}'`);
+        
+        const { data: tempSchedule, error: scheduleError } = await supabase
+            .from('schedule')
+            .select('*, class:class_id(name), subject:subject_id(name)')
+            .eq('teacher_id', user.id)
+            .eq('day', dayQuery);
+        
+        if (scheduleError) {
+            console.error(`Schedule query error for day '${dayQuery}':`, scheduleError);
+            continue;
+        }
+        
+        console.log(`Query result for '${dayQuery}':`, tempSchedule?.length || 0, 'schedules found');
+        
+        if (tempSchedule && tempSchedule.length > 0) {
+            schedule = tempSchedule;
+            matchedDay = dayQuery;
+            console.log(`✅ SUCCESS: Found ${schedule.length} schedules using day: '${dayQuery}'`);
+            break;
+        }
+    }
+    
+    // If still no schedule found, try fallback method
+    if (!schedule || schedule.length === 0) {
+        console.warn('No schedule found with primary methods, trying fallback...');
+        
+        const alternativeDayNames = {
+            'Senin': ['Monday', 'senin', 'SENIN'],
+            'Selasa': ['Tuesday', 'selasa', 'SELASA'],
+            'Rabu': ['Wednesday', 'rabu', 'RABU'],
+            'Kamis': ['Thursday', 'kamis', 'KAMIS'],
+            'Jumat': ['Friday', 'jumat', 'JUMAT'],
+            'Sabtu': ['Saturday', 'sabtu', 'SABTU'],
+            'Minggu': ['Sunday', 'minggu', 'MINGGU']
+        };
+        
+        // Try to find schedule with alternative day name formats
+        for (const [standardDay, alternatives] of Object.entries(alternativeDayNames)) {
+            const allVariants = [standardDay, ...alternatives];
+            
+            // Check if any of our queries match this day's variants
+            const hasMatch = uniqueDayQueries.some(query => 
+                allVariants.includes(query) || 
+                allVariants.includes(query.toLowerCase()) ||
+                allVariants.includes(query.toUpperCase())
+            );
+            
+            if (hasMatch) {
+                const alternativeSchedule = allSchedules?.filter(s => s.day === standardDay) || [];
+                if (alternativeSchedule.length > 0) {
+                    schedule = alternativeSchedule;
+                    matchedDay = standardDay;
+                    break;
+                }
+            }
+        }
     }
     
     const { data: journals, error: journalError } = await supabase
