@@ -52,7 +52,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { getStudentLedgerData } from "@/lib/data-client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { addStudentNote } from "@/lib/actions";
@@ -213,17 +212,29 @@ export default function StudentLedgerClientPage({
   const fetchLedger = React.useCallback(async (studentId: string) => {
     if (!studentId) return;
     setLoading(true);
-    const data = await getStudentLedgerData(studentId);
-    setLedgerData(data);
+    // This server action needs to be called carefully. A client-specific function is better.
+    // For now, we will navigate to reload the page with new props.
+    router.push(`/dashboard/homeroom/student-ledger?student_id=${studentId}`);
     setLoading(false);
-  }, []);
+  }, [router]);
 
-  React.useEffect(() => {
-    // Don't refetch for the initial student
-    if (selectedStudentId !== initialStudentId) {
-        fetchLedger(selectedStudentId);
+  const handleStudentChange = async (studentId: string) => {
+    setSelectedStudentId(studentId);
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/student-ledger?studentId=${studentId}`);
+      if (!response.ok) {
+        throw new Error('Gagal memuat data ledger');
+      }
+      const data = await response.json();
+      setLedgerData(data);
+    } catch (error) {
+      console.error(error);
+      // Handle error display
+    } finally {
+      setLoading(false);
     }
-  }, [selectedStudentId, initialStudentId, fetchLedger]);
+  };
 
   return (
     <div className="space-y-6">
@@ -244,7 +255,7 @@ export default function StudentLedgerClientPage({
       <Card>
         <CardHeader>
           <Label htmlFor="student-select">Pilih Siswa</Label>
-          <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+          <Select value={selectedStudentId} onValueChange={handleStudentChange}>
             <SelectTrigger id="student-select" className="w-full md:w-[350px]">
               <SelectValue placeholder="Pilih siswa untuk melihat detail..." />
             </SelectTrigger>
@@ -371,7 +382,7 @@ export default function StudentLedgerClientPage({
                                 <CardTitle>Catatan Perkembangan Siswa</CardTitle>
                                 <CardDescription>Catatan dari wali kelas dan guru mapel.</CardDescription>
                             </div>
-                            <AddNoteDialog student={selectedStudent} onNoteSaved={() => fetchLedger(selectedStudentId)} />
+                            <AddNoteDialog student={selectedStudent} onNoteSaved={() => handleStudentChange(selectedStudentId)} />
                         </CardHeader>
                         <CardContent>
                             <ScrollArea className="h-96 pr-4">

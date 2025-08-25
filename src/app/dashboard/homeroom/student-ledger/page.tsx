@@ -6,8 +6,28 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import StudentLedgerClientPage from "./student-ledger-client";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function StudentLedgerPage() {
+async function getLedgerDataForStudent(studentId: string) {
+  const supabase = createClient();
+  const [grades, attendance, notes] = await Promise.all([
+    supabase.rpc('get_student_grades_ledger', { p_student_id: studentId }),
+    supabase.rpc('get_student_attendance_ledger', { p_student_id: studentId }),
+    supabase.from('student_notes_with_teacher').select('*').eq('student_id', studentId).order('date', {ascending: false})
+  ]);
+  
+  if (grades.error) console.error("Error fetching grades ledger:", grades.error);
+  if (attendance.error) console.error("Error fetching attendance ledger:", attendance.error);
+  if (notes.error) console.error("Error fetching notes:", notes.error);
+  
+  return {
+    grades: grades.data || [],
+    attendance: attendance.data || [],
+    notes: notes.data || [],
+  };
+}
+
+export default async function StudentLedgerPage({ searchParams }: { searchParams: { student_id?: string }}) {
   const homeroomData = await getHomeroomClassDetails();
 
   if (!homeroomData) {
@@ -42,17 +62,18 @@ export default async function StudentLedgerPage() {
         </div>
     )
   }
-
-  // Fetch ledger data for the first student by default
-  const initialLedgerData = await getStudentLedgerData(studentsInClass[0].id);
+  
+  const studentIdToShow = searchParams.student_id || studentsInClass[0].id;
+  const initialLedgerData = await getStudentLedgerData(studentIdToShow);
 
   return (
     <StudentLedgerClientPage
+      key={studentIdToShow} // Use key to force re-mount on student change
       homeroomClass={homeroomClass}
       studentsInClass={studentsInClass}
       subjects={subjects}
       initialLedgerData={initialLedgerData}
-      initialStudentId={studentsInClass[0].id}
+      initialStudentId={studentIdToShow}
     />
   );
 }

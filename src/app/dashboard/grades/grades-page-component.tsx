@@ -50,7 +50,6 @@ import { cn } from "@/lib/utils";
 import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { saveGrades } from "@/lib/actions";
-import { getStudentsByClass } from "@/lib/data-client";
 
 function FormattedDate({ date, formatString }: { date: Date | null, formatString: string }) {
     const [formattedDate, setFormattedDate] = React.useState<string>('');
@@ -109,20 +108,19 @@ export default function GradesPageComponent({
   }, [preselectedSubjectId, subjects]);
 
   React.useEffect(() => {
-      const fetchStudents = async () => {
-          if (!selectedClassId) {
-              setStudents([]);
-              return;
-          }
-          setLoading(true);
-          const fetchedStudents = await getStudentsByClass(selectedClassId);
-          setStudents(fetchedStudents);
-          resetForm(fetchedStudents);
-          setLoading(false);
-      };
-      fetchStudents();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClassId]);
+    if (selectedClassId) {
+      setLoading(true);
+      const filteredStudents = allStudents.filter(s => s.class_id === selectedClassId);
+      setStudents(filteredStudents);
+      if (!editingId) {
+        resetForm(filteredStudents);
+      }
+      setLoading(false);
+    } else {
+      setStudents([]);
+    }
+  }, [selectedClassId, allStudents, editingId]);
+
 
   const resetForm = (studentList: Student[]) => {
     setEditingId(null);
@@ -182,20 +180,20 @@ export default function GradesPageComponent({
     setLoading(false);
   };
   
-  const handleEdit = async (entry: GradeHistoryEntry) => {
+  const handleEdit = (entry: GradeHistoryEntry) => {
       setLoading(true);
       setSelectedClassId(entry.class_id);
       setSelectedSubjectId(entry.subject_id);
       
-      const fetchedStudents = await getStudentsByClass(entry.class_id);
-      setStudents(fetchedStudents);
+      const studentsForClass = allStudents.filter(s => s.class_id === entry.class_id);
+      setStudents(studentsForClass);
 
       setEditingId(entry.id);
       setDate(parseISO(entry.date));
       setAssessmentType(entry.assessment_type);
       
       const loadedGrades = new Map<string, GradeRecord['score']>();
-      fetchedStudents.forEach(student => {
+      studentsForClass.forEach(student => {
           const record = entry.records.find(r => r.studentId === student.id);
           loadedGrades.set(student.id, record ? record.score : "");
       });
@@ -346,7 +344,7 @@ export default function GradesPageComponent({
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            {loading && students.length === 0 ? (
+            {loading ? (
                 <div className="text-center text-muted-foreground py-12">
                     <div className="flex flex-col items-center gap-4">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-500" />

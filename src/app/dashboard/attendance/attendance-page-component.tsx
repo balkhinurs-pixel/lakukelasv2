@@ -54,7 +54,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject, StudentNote } from "@/lib/types";
 import { saveAttendance, addStudentNote } from "@/lib/actions";
-import { getStudentsByClass } from "@/lib/data-client";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -199,11 +198,13 @@ export default function AttendancePageComponent({
     classes,
     subjects,
     initialHistory,
+    allStudents,
     activeSchoolYearName
 }: {
     classes: Class[];
     subjects: Subject[];
     initialHistory: AttendanceHistoryEntry[];
+    allStudents: Student[];
     activeSchoolYearName: string;
 }) {
   const searchParams = useSearchParams();
@@ -224,25 +225,21 @@ export default function AttendancePageComponent({
   const { toast } = useToast();
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
-
+  
   React.useEffect(() => {
-      const fetchStudents = async () => {
-          if (!selectedClassId) {
-              setStudents([]);
-              return;
-          }
-          setLoading(true);
-          const fetchedStudents = await getStudentsByClass(selectedClassId);
-          setStudents(fetchedStudents);
-          // Only reset form if not editing
-          if (!editingId) {
-            resetForm(fetchedStudents);
-          }
-          setLoading(false);
-      };
-      fetchStudents();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClassId]);
+    if (selectedClassId) {
+      setLoading(true);
+      const filteredStudents = allStudents.filter(s => s.class_id === selectedClassId);
+      setStudents(filteredStudents);
+      if (!editingId) {
+        resetForm(filteredStudents);
+      }
+      setLoading(false);
+    } else {
+      setStudents([]);
+    }
+  }, [selectedClassId, allStudents, editingId]);
+
 
   const resetForm = (studentList: Student[]) => {
     setEditingId(null);
@@ -295,23 +292,22 @@ export default function AttendancePageComponent({
     setLoading(false);
   };
 
-  const handleEdit = async (entry: AttendanceHistoryEntry) => {
-      // Ensure the correct class students are loaded before setting state
+  const handleEdit = (entry: AttendanceHistoryEntry) => {
+      setLoading(true);
       if (selectedClassId !== entry.class_id) {
         setSelectedClassId(entry.class_id);
       }
       setSelectedSubjectId(entry.subject_id);
       
-      setLoading(true);
-      const fetchedStudents = await getStudentsByClass(entry.class_id);
-      setStudents(fetchedStudents);
+      const studentsForClass = allStudents.filter(s => s.class_id === entry.class_id);
+      setStudents(studentsForClass);
       
       setEditingId(entry.id);
       setDate(parseISO(entry.date));
       setMeetingNumber(entry.meeting_number);
 
       const loadedAttendance = new Map<string, AttendanceRecord['status']>();
-      fetchedStudents.forEach(student => {
+      studentsForClass.forEach(student => {
         const record = entry.records.find(r => r.studentId === student.id);
         loadedAttendance.set(student.id, record ? record.status : 'Hadir');
       });
@@ -333,7 +329,7 @@ export default function AttendancePageComponent({
   }, [initialHistory, selectedClassId, selectedSubjectId]);
   
   const getStudentName = (studentId: string) => {
-    return students.find(s => s.id === studentId)?.name || "Siswa tidak ditemukan";
+    return allStudents.find(s => s.id === studentId)?.name || "Siswa tidak ditemukan";
   }
 
   const getStatusBadgeVariant = (status: AttendanceRecord['status']) => {
@@ -473,7 +469,7 @@ export default function AttendancePageComponent({
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            {loading && students.length === 0 ? (
+            {loading ? (
                 <div className="text-center text-muted-foreground py-12">
                     <div className="flex flex-col items-center gap-4">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
