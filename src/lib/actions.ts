@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from './supabase/server';
 import type { StudentNote } from './types';
 import { z } from 'zod';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 export async function saveJournal(formData: FormData) {
     const supabase = createClient();
@@ -463,7 +465,11 @@ export async function recordTeacherAttendance(formData: FormData) {
     const attendanceType = formData.get('type') as 'in' | 'out';
     const userLatitude = parseFloat(formData.get('latitude') as string);
     const userLongitude = parseFloat(formData.get('longitude') as string);
-    const currentTime = formData.get('time') as string;
+    
+    // Server generates the timestamp to ensure correct timezone
+    const now = new Date();
+    const currentTime = format(now, 'HH:mm:ss');
+    const today = format(now, 'yyyy-MM-dd');
 
     // Get attendance settings from database
     const { data: settings, error: settingsError } = await supabase
@@ -481,26 +487,22 @@ export async function recordTeacherAttendance(formData: FormData) {
         return { success: false, error: "Pengaturan absensi belum dikonfigurasi oleh admin." };
     }
 
-    // Convert settings array to object
     const attendanceSettings = settings.reduce((acc, item) => {
         const key = item.key.replace('attendance_', '');
         acc[key] = item.value;
         return acc;
     }, {} as Record<string, string>);
 
-    // Validate that all required settings exist
     if (!attendanceSettings.latitude || !attendanceSettings.longitude || !attendanceSettings.radius) {
         return { success: false, error: "Koordinat atau radius belum dikonfigurasi oleh admin." };
     }
 
-    // Calculate distance between user location and school location using Haversine formula
     const schoolLat = parseFloat(attendanceSettings.latitude);
     const schoolLng = parseFloat(attendanceSettings.longitude);
     const maxRadius = parseInt(attendanceSettings.radius);
 
     const distance = calculateDistance(userLatitude, userLongitude, schoolLat, schoolLng);
     
-    // Check if user is within radius
     if (distance > maxRadius) {
         return { 
             success: false, 
@@ -508,13 +510,12 @@ export async function recordTeacherAttendance(formData: FormData) {
         };
     }
 
-    // For check-in, validate time constraints
     let status = 'Tepat Waktu';
     if (attendanceType === 'in') {
         const checkInStart = attendanceSettings.check_in_start || '06:30';
         const checkInDeadline = attendanceSettings.check_in_deadline || '07:15';
         
-        const currentTimeOnly = currentTime.substring(11, 16); // Extract HH:MM from datetime
+        const currentTimeOnly = format(now, 'HH:mm');
         
         if (currentTimeOnly < checkInStart) {
             return { success: false, error: `Absen masuk belum dibuka. Mulai jam ${checkInStart}.` };
@@ -525,12 +526,8 @@ export async function recordTeacherAttendance(formData: FormData) {
         }
     }
 
-    // Get today's date
-    const today = new Date().toISOString().split('T')[0];
-
     try {
         if (attendanceType === 'in') {
-            // Check if already checked in today
             const { data: existingAttendance } = await supabase
                 .from('teacher_attendance')
                 .select('id')
@@ -542,13 +539,12 @@ export async function recordTeacherAttendance(formData: FormData) {
                 return { success: false, error: "Anda sudah melakukan absen masuk hari ini." };
             }
 
-            // Create new attendance record
             const { error: insertError } = await supabase
                 .from('teacher_attendance')
                 .insert({
                     teacher_id: user.id,
                     date: today,
-                    check_in: currentTime.substring(11, 19), // Extract HH:MM:SS
+                    check_in: currentTime,
                     status: status
                 });
 
@@ -557,7 +553,6 @@ export async function recordTeacherAttendance(formData: FormData) {
                 return { success: false, error: "Gagal menyimpan absen masuk." };
             }
         } else {
-            // Check out - update existing record
             const { data: existingAttendance } = await supabase
                 .from('teacher_attendance')
                 .select('id, check_in')
@@ -569,15 +564,13 @@ export async function recordTeacherAttendance(formData: FormData) {
                 return { success: false, error: "Anda belum melakukan absen masuk hari ini." };
             }
 
-            if (existingAttendance.check_in && currentTime.substring(11, 19) <= existingAttendance.check_in) {
+            if (existingAttendance.check_in && currentTime <= existingAttendance.check_in) {
                 return { success: false, error: "Waktu absen pulang tidak boleh lebih awal dari absen masuk." };
             }
 
             const { error: updateError } = await supabase
                 .from('teacher_attendance')
-                .update({
-                    check_out: currentTime.substring(11, 19) // Extract HH:MM:SS
-                })
+                .update({ check_out: currentTime })
                 .eq('id', existingAttendance.id);
 
             if (updateError) {
@@ -602,7 +595,6 @@ export async function recordTeacherAttendance(formData: FormData) {
     }
 }
 
-// Helper function to calculate distance between two coordinates using Haversine formula
 function calculateDistance(
     lat1: number, 
     lon1: number, 

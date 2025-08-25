@@ -140,12 +140,11 @@ export default function TeacherAttendancePage() {
             // Get user's current location
             const location = await getCurrentLocation();
             
-            // Prepare form data
+            // Prepare form data. The server will handle the timestamp.
             const formData = new FormData();
             formData.append('type', type);
             formData.append('latitude', location.latitude.toString());
             formData.append('longitude', location.longitude.toString());
-            formData.append('time', new Date().toISOString());
 
             // Call server action
             const result = await recordTeacherAttendance(formData);
