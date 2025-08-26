@@ -788,6 +788,7 @@ export async function getHomeroomStudentProgress() {
 
     const supabase = createClient();
     
+    // 1. Find the homeroom class for the current teacher
     const { data: homeroomClass, error: homeroomError } = await supabase
         .from('classes')
         .select('*')
@@ -798,48 +799,45 @@ export async function getHomeroomStudentProgress() {
     if (homeroomError || !homeroomClass) {
         return { studentData: [], className: null }; // Not a homeroom teacher
     }
-    
-    const activeSchoolYearId = await getActiveSchoolYearId();
 
+    // 2. Get the active school year
+    const activeSchoolYearId = await getActiveSchoolYearId();
+    if (!activeSchoolYearId) {
+        // Return students with default values if no active year is set
+        const { data: students } = await supabase.from('students').select('id, name, nis').eq('class_id', homeroomClass.id).eq('status', 'active');
+        const studentData = (students || []).map(s => ({ ...s, average_grade: 0, attendance_percentage: 0, status: 'Stabil' }));
+        return { studentData, className: homeroomClass.name };
+    }
+
+    // 3. Get all students in that homeroom class
     const { data: students, error: studentsError } = await supabase
         .from('students')
         .select('id, name, nis')
         .eq('class_id', homeroomClass.id)
         .eq('status', 'active');
     
-    if (studentsError || !students) {
-        console.error("Error fetching students for homeroom:", studentsError);
+    if (studentsError || !students || students.length === 0) {
+        console.error("Error fetching students for homeroom or class is empty:", studentsError);
         return { studentData: [], className: homeroomClass.name };
     }
     
-    if (!activeSchoolYearId) {
-        // Return students with default values if no active year is set
-        const studentData = students.map(s => ({
-            ...s,
-            average_grade: 0,
-            attendance_percentage: 0,
-            status: 'Stabil'
-        }));
-        return { studentData, className: homeroomClass.name };
-    }
+    const studentIds = students.map(s => s.id);
 
-    // Fetch all attendance and grade data for the entire school year
+    // 4. Fetch all relevant attendance and grade data for ALL students in the class
     const [attendanceRes, gradesRes] = await Promise.all([
         supabase.from('attendance').select('records').eq('school_year_id', activeSchoolYearId),
         supabase.from('grades').select('records').eq('school_year_id', activeSchoolYearId)
     ]);
-    
-    if (attendanceRes.error || gradesRes.error) {
-        console.error({ attendanceError: attendanceRes.error, gradesError: gradesRes.error });
-        // Fallback to default data on error
-        const studentData = students.map(s => ({ ...s, average_grade: 0, attendance_percentage: 0, status: 'Stabil' }));
-        return { studentData, className: homeroomClass.name };
-    }
+
+    if (attendanceRes.error) console.error("Error fetching attendance data for homeroom progress", attendanceRes.error);
+    if (gradesRes.error) console.error("Error fetching grade data for homeroom progress", gradesRes.error);
 
     const allAttendanceRecords = (attendanceRes.data || []).flatMap(entry => entry.records as any[]);
     const allGradeRecords = (gradesRes.data || []).flatMap(entry => entry.records as any[]);
 
+    // 5. Process the data for each student
     const studentAggregates = students.map(student => {
+        // Filter records for the current student
         const studentGrades = allGradeRecords
             .filter(r => r.student_id === student.id)
             .map(r => Number(r.score));
@@ -847,6 +845,7 @@ export async function getHomeroomStudentProgress() {
         const studentAttendance = allAttendanceRecords.filter(r => r.student_id === student.id);
         const studentHadir = studentAttendance.filter(r => r.status === 'Hadir').length;
         
+        // Calculate aggregates
         const average_grade = studentGrades.length > 0 
             ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length) 
             : 0;
@@ -855,6 +854,7 @@ export async function getHomeroomStudentProgress() {
             ? Math.round((studentHadir / studentAttendance.length) * 100) 
             : 0;
 
+        // Determine status
         let status = "Stabil";
         if (average_grade >= 85 && attendance_percentage >= 95) status = "Sangat Baik";
         else if (average_grade < 70 && attendance_percentage < 85) status = "Berisiko";
@@ -868,7 +868,7 @@ export async function getHomeroomStudentProgress() {
             attendance_percentage,
             status
         };
-    }).sort((a,b) => {
+    }).sort((a, b) => { // Sort by status
         const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
         return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
     });
@@ -1012,4 +1012,5 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 
     
+
 
