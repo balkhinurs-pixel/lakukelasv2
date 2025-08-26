@@ -721,13 +721,11 @@ export async function getHomeroomStudentProgress() {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) {
-      console.log('No user authenticated.');
       return { studentData: [], className: null };
     }
   
     const supabase = createClient();
   
-    // 1. Get the homeroom class for the logged-in teacher
     const { data: homeroomClass, error: homeroomError } = await supabase
       .from('classes')
       .select('id, name')
@@ -736,35 +734,28 @@ export async function getHomeroomStudentProgress() {
       .single();
   
     if (homeroomError || !homeroomClass) {
-      console.log('User is not a homeroom teacher or error fetching class:', homeroomError?.message);
       return { studentData: [], className: null };
     }
-  
-    // 2. Call the RPC function to get performance data for that class
-    const { data: performanceData, error: rpcError } = await supabase
-      .rpc('get_student_performance_for_class', { p_class_id: homeroomClass.id });
-  
-    if (rpcError) {
-      console.error('Error calling RPC function get_student_performance_for_class:', rpcError);
-      // Fallback to fetching just students if RPC fails
-      const { data: students } = await supabase.from('students').select('id, name, nis').eq('class_id', homeroomClass.id);
-      const fallbackData = (students || []).map(s => ({
-          id: s.id,
-          name: s.name,
-          nis: s.nis,
-          average_grade: 0,
-          attendance_percentage: 0,
-          status: 'Berisiko'
-      }));
-      return { studentData: fallbackData, className: homeroomClass.name };
+    
+    const { data: students, error: studentsError } = await supabase
+        .from('students')
+        .select('id, name, nis')
+        .eq('class_id', homeroomClass.id)
+        .eq('status', 'active');
+
+    if (studentsError) {
+        console.error("Error fetching students:", studentsError);
+        return { studentData: [], className: homeroomClass.name };
     }
-  
-    // 3. The RPC function returns data in the desired format, so we can use it directly.
-    // The status calculation is now handled by the database function.
-    const studentData = (performanceData || []).sort((a,b) => {
-      const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
-      return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
-    });
+
+    const studentData = (students || []).map(s => ({
+        id: s.id,
+        name: s.name,
+        nis: s.nis,
+        average_grade: 0,
+        attendance_percentage: 0,
+        status: 'Stabil'
+    }));
   
     return { studentData, className: homeroomClass.name };
 }
@@ -860,3 +851,4 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 
     
+
