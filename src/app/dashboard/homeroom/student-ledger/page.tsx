@@ -7,7 +7,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import StudentLedgerClientPage from "./student-ledger-client";
-import { createClient } from "@/lib/supabase/server";
 
 export default async function StudentLedgerPage({ searchParams }: { searchParams: { student_id?: string }}) {
   const homeroomData = await getHomeroomClassDetails();
@@ -59,4 +58,5 @@ export default async function StudentLedgerPage({ searchParams }: { searchParams
     />
   );
 }
+
 

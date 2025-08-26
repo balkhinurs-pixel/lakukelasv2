@@ -734,24 +734,27 @@ export async function getHomeroomStudentProgress() {
         return { studentData: [], className: null };
     }
 
-    // Use the corrected RPC function
-    const { data: studentStats, error: statsError } = await supabase.rpc('get_student_performance_for_class', { p_class_id: homeroomClass.id });
-    if (statsError) {
-        console.error("Error fetching student performance:", statsError);
+    // This is a temporary fix to query directly instead of using RPC
+    const { data: students, error: studentsError } = await supabase
+        .from('students')
+        .select('id, name, nis')
+        .eq('class_id', homeroomClass.id)
+        .eq('status', 'active');
+    
+    if (studentsError) {
+        console.error("Error fetching students for homeroom:", studentsError);
         return { studentData: [], className: homeroomClass.name };
     }
     
-    const studentData = (studentStats || []).map(student => {
-        let status = "Stabil";
-        if (student.average_grade >= 85 && student.attendance_percentage >= 95) status = "Sangat Baik";
-        else if (student.average_grade < 70 && student.attendance_percentage < 85) status = "Berisiko";
-        else if (student.average_grade < 78 || student.attendance_percentage < 92) status = "Butuh Perhatian";
-        return { ...student, status };
-    }).sort((a,b) => {
-        const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
-        return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
-    });
-    
+    // In this temporary state, we don't have aggregated data.
+    // We will return a default state for each student.
+    const studentData = students.map(s => ({
+        ...s,
+        average_grade: 0,
+        attendance_percentage: 0,
+        status: 'Stabil'
+    }));
+
     return { studentData, className: homeroomClass.name };
 }
 
@@ -787,22 +790,66 @@ export async function getHomeroomClassDetails() {
 
 export async function getStudentLedgerData(studentId: string) {
     noStore();
+    if (!studentId) {
+        return { grades: [], attendance: [], notes: [] };
+    }
     const supabase = createClient();
+
+    const { data: activeSchoolYearId } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'active_school_year_id')
+        .single();
+
+    let gradesQuery = supabase.from('grades_history').select('*');
+    let attendanceQuery = supabase.from('attendance_history').select('*');
+
+    if (activeSchoolYearId?.value) {
+        gradesQuery = gradesQuery.eq('school_year_id', activeSchoolYearId.value);
+        attendanceQuery = attendanceQuery.eq('school_year_id', activeSchoolYearId.value);
+    }
     
-    const [grades, attendance, notes] = await Promise.all([
-        supabase.rpc('get_student_grades_ledger', { p_student_id: studentId }),
-        supabase.rpc('get_student_attendance_ledger', { p_student_id: studentId }),
+    const [gradesRes, attendanceRes, notesRes] = await Promise.all([
+        gradesQuery,
+        attendanceQuery,
         supabase.from('student_notes_with_teacher').select('*').eq('student_id', studentId).order('date', {ascending: false})
     ]);
-    
-    if (grades.error) console.error("Error fetching grades ledger:", grades.error);
-    if (attendance.error) console.error("Error fetching attendance ledger:", attendance.error);
-    if (notes.error) console.error("Error fetching notes:", notes.error);
+
+    if (gradesRes.error) console.error("Error fetching grades ledger:", gradesRes.error);
+    if (attendanceRes.error) console.error("Error fetching attendance ledger:", attendanceRes.error);
+    if (notesRes.error) console.error("Error fetching notes:", notesRes.error);
+
+    const studentGrades = (gradesRes.data || [])
+        .flatMap(entry => (entry.records as any[])
+            .filter(record => record.student_id === studentId)
+            .map(record => ({
+                id: entry.id,
+                subjectName: entry.subjectName,
+                assessment_type: entry.assessment_type,
+                date: entry.date,
+                score: record.score,
+                kkm: entry.subjectKkm,
+            }))
+        )
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const studentAttendance = (attendanceRes.data || [])
+        .flatMap(entry => (entry.records as any[])
+            .filter(record => record.student_id === studentId)
+            .map(record => ({
+                id: entry.id,
+                subjectName: entry.subjectName,
+                date: entry.date,
+                meeting_number: entry.meeting_number,
+                status: record.status
+            }))
+        )
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     return {
-        grades: grades.data || [],
-        attendance: attendance.data || [],
-        notes: notes.data || [],
+        grades: studentGrades,
+        attendance: studentAttendance,
+        notes: notesRes.data || [],
     };
 }
 
@@ -840,4 +887,5 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 
     
+
 

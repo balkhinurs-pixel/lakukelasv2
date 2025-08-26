@@ -227,30 +227,13 @@ export default function StudentLedgerClientPage({
 }) {
   const router = useRouter();
   const [selectedStudentId, setSelectedStudentId] = React.useState(initialStudentId);
-  const [ledgerData, setLedgerData] = React.useState(initialLedgerData);
-  const [loading, setLoading] = React.useState(false);
   const isMobile = useIsMobile();
 
   const selectedStudent = studentsInClass.find(s => s.id === selectedStudentId);
 
-  const handleStudentChange = async (studentId: string) => {
+  const handleStudentChange = (studentId: string) => {
     if (studentId === selectedStudentId) return;
-
-    setSelectedStudentId(studentId);
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/student-ledger?studentId=${studentId}`);
-      if (!response.ok) {
-        throw new Error('Gagal memuat data ledger');
-      }
-      const data = await response.json();
-      setLedgerData(data);
-    } catch (error) {
-      console.error('Error fetching ledger data:', error);
-      // You can add a toast notification here to inform the user
-    } finally {
-      setLoading(false);
-    }
+    router.push(`/dashboard/homeroom/student-ledger?student_id=${studentId}`);
   };
 
   return (
@@ -306,12 +289,7 @@ export default function StudentLedgerClientPage({
         </CardHeader>
       </Card>
 
-      {loading ? (
-         <div className={cn("text-center py-16 text-muted-foreground", isMobile && "py-12")}>
-            <Loader2 className={cn("mx-auto h-12 w-12 animate-spin text-primary", isMobile && "h-10 w-10")} />
-            <p className={cn("mt-4", isMobile && "mt-3 text-sm")}>Memuat data siswa...</p>
-        </div>
-      ) : selectedStudent ? (
+      {selectedStudent ? (
         <>
             <Card className={cn(
               "bg-gradient-to-br from-blue-50 to-indigo-50 transition-all duration-200",
@@ -389,7 +367,7 @@ export default function StudentLedgerClientPage({
                             </CardDescription>
                         </CardHeader>
                         <CardContent className={isMobile ? "p-3" : ""}>
-                            {ledgerData.grades.length === 0 ? (
+                            {initialLedgerData.grades.length === 0 ? (
                                 <Card className="p-6 text-center bg-gradient-to-br from-blue-50 to-indigo-50 border-dashed border-2 border-blue-200">
                                     <Award className="mx-auto h-16 w-16 mb-4 text-blue-300" />
                                     <h3 className="text-lg font-semibold text-blue-900 mb-2">
@@ -408,7 +386,7 @@ export default function StudentLedgerClientPage({
                                 </Card>
                             ) : isMobile ? (
                                 <div className="space-y-3">
-                                    {ledgerData.grades.map(grade => (
+                                    {initialLedgerData.grades.map(grade => (
                                         <Card key={grade.id} className="p-4 bg-gradient-to-r from-white to-gray-50">
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-start gap-2">
@@ -458,7 +436,7 @@ export default function StudentLedgerClientPage({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {ledgerData.grades.map(grade => (
+                                            {initialLedgerData.grades.map(grade => (
                                                 <TableRow key={grade.id}>
                                                     <TableCell className="font-medium">{grade.subjectName}</TableCell>
                                                     <TableCell>{grade.assessment_type}</TableCell>
@@ -493,7 +471,7 @@ export default function StudentLedgerClientPage({
                             </CardDescription>
                         </CardHeader>
                         <CardContent className={isMobile ? "p-3" : ""}>
-                            {ledgerData.attendance.length === 0 ? (
+                            {initialLedgerData.attendance.length === 0 ? (
                                 <Card className="p-6 text-center bg-gradient-to-br from-green-50 to-emerald-50 border-dashed border-2 border-green-200">
                                     <ClipboardList className="mx-auto h-16 w-16 mb-4 text-green-300" />
                                     <h3 className="text-lg font-semibold text-green-900 mb-2">
@@ -512,7 +490,7 @@ export default function StudentLedgerClientPage({
                                 </Card>
                             ) : isMobile ? (
                                 <div className="space-y-3">
-                                    {ledgerData.attendance.map(att => {
+                                    {initialLedgerData.attendance.map(att => {
                                         const { icon: Icon, className } = getAttendanceInfo(att.status);
                                         return (
                                             <Card key={att.id} className="p-4 bg-gradient-to-r from-white to-gray-50">
@@ -546,7 +524,7 @@ export default function StudentLedgerClientPage({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {ledgerData.attendance.map(att => {
+                                            {initialLedgerData.attendance.map(att => {
                                                 const { icon: Icon, className } = getAttendanceInfo(att.status);
                                                 return (
                                                     <TableRow key={att.id}>
@@ -583,12 +561,12 @@ export default function StudentLedgerClientPage({
                                     Catatan dari wali kelas dan guru mapel.
                                 </CardDescription>
                             </div>
-                            <AddNoteDialog student={selectedStudent} onNoteSaved={() => handleStudentChange(selectedStudentId)} />
+                            <AddNoteDialog student={selectedStudent} onNoteSaved={() => router.refresh()} />
                         </CardHeader>
                         <CardContent className={isMobile ? "p-3" : ""}>
                             <ScrollArea className={cn("h-96 pr-4", isMobile && "h-80 pr-2")}>
                                 <div className={cn("space-y-4", isMobile && "space-y-3")}>
-                                    {ledgerData.notes.length === 0 ? (
+                                    {initialLedgerData.notes.length === 0 ? (
                                         <Card className="p-6 text-center bg-gradient-to-br from-orange-50 to-amber-50 border-dashed border-2 border-orange-200">
                                             <MessageSquarePlus className={cn(
                                               "mx-auto h-16 w-16 mb-4 text-orange-300",
@@ -612,7 +590,7 @@ export default function StudentLedgerClientPage({
                                             </div>
                                         </Card>
                                     ) : (
-                                        ledgerData.notes.map(note => {
+                                        initialLedgerData.notes.map(note => {
                                              const { icon: Icon, className } = getNoteInfo(note.type);
                                             return (
                                                 <div key={note.id} className={cn(
