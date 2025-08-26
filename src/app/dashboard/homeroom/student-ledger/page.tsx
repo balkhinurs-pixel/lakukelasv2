@@ -1,4 +1,5 @@
 
+
 import {
   getHomeroomClassDetails,
   getStudentLedgerData,
@@ -7,50 +8,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import StudentLedgerClientPage from "./student-ledger-client";
 import { createClient } from "@/lib/supabase/server";
-
-async function getLedgerDataForStudent(studentId: string) {
-  const supabase = createClient();
-  console.log('🔍 Server: Fetching initial ledger data for student ID:', studentId);
-  
-  const [grades, attendance, notes] = await Promise.all([
-    supabase.rpc('get_student_grades_ledger', { p_student_id: studentId }),
-    supabase.rpc('get_student_attendance_ledger', { p_student_id: studentId }),
-    supabase.from('student_notes_with_teacher').select('*').eq('student_id', studentId).order('date', {ascending: false})
-  ]);
-  
-  console.log('📊 Server: Initial RPC Results:', {
-    gradesCount: grades.data?.length || 0,
-    attendanceCount: attendance.data?.length || 0,
-    notesCount: notes.data?.length || 0,
-    gradesError: grades.error,
-    attendanceError: attendance.error,
-    notesError: notes.error
-  });
-  
-  if (grades.data?.length > 0) {
-    console.log('✅ Server: Sample initial grade data:', grades.data[0]);
-  } else {
-    console.log('❌ Server: No initial grades data');
-  }
-  
-  if (grades.error) console.error("Error fetching grades ledger:", grades.error);
-  if (attendance.error) console.error("Error fetching attendance ledger:", attendance.error);
-  if (notes.error) console.error("Error fetching notes:", notes.error);
-  
-  const result = {
-    grades: grades.data || [],
-    attendance: attendance.data || [],
-    notes: notes.data || [],
-  };
-  
-  console.log('📤 Server: Returning initial ledger data:', {
-    gradesCount: result.grades.length,
-    attendanceCount: result.attendance.length,
-    notesCount: result.notes.length
-  });
-  
-  return result;
-}
 
 export default async function StudentLedgerPage({ searchParams }: { searchParams: { student_id?: string }}) {
   const homeroomData = await getHomeroomClassDetails();
@@ -102,3 +59,4 @@ export default async function StudentLedgerPage({ searchParams }: { searchParams
     />
   );
 }
+

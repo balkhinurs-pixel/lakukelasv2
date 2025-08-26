@@ -544,7 +544,6 @@ export async function getDashboardData(todayDay: string) {
     
     const supabase = createClient();
     
-    // Get the active school year from global settings instead of individual profile
     const { data: settingsData } = await supabase
         .from('settings')
         .select('value')
@@ -557,95 +556,11 @@ export async function getDashboardData(todayDay: string) {
     
     const activeSchoolYearId = settingsData.value;
 
-    // Use Indonesian timezone for consistent day calculation
-    const indonesianDayName = getIndonesianDayName();
-
-    // First, let's get ALL schedules for this teacher to see what's available
-    const { data: allSchedules, error: allScheduleError } = await supabase
+    const { data: schedule, error: scheduleError } = await supabase
         .from('schedule')
         .select('*, class:class_id(name), subject:subject_id(name)')
-        .eq('teacher_id', user.id);
-    
-    // TEMPORARY DEBUG: Log what we're working with
-    console.log('=== SCHEDULE DEBUG INFO ===');
-    console.log('User ID:', user.id);
-    console.log('Requested day:', todayDay);
-    console.log('Indonesian day calculated:', indonesianDayName);
-    console.log('All schedules for this teacher:', allSchedules?.map(s => ({ day: s.day, subject: s.subject?.name, class: s.class?.name })));
-    console.log('Unique days in DB:', allSchedules ? [...new Set(allSchedules.map(s => s.day))] : []);
-
-    // Query for today's schedule using multiple day name strategies
-    const dayQueries = [
-        todayDay,           // Original requested day
-        indonesianDayName,  // Indonesian timezone calculated day
-    ];
-    
-    // Remove duplicates
-    const uniqueDayQueries = [...new Set(dayQueries)];
-    
-    let schedule = null;
-    let matchedDay = null;
-    
-    // Try each day query until we find matches
-    for (const dayQuery of uniqueDayQueries) {
-        console.log(`Trying query with day: '${dayQuery}'`);
-        
-        const { data: tempSchedule, error: scheduleError } = await supabase
-            .from('schedule')
-            .select('*, class:class_id(name), subject:subject_id(name)')
-            .eq('teacher_id', user.id)
-            .eq('day', dayQuery);
-        
-        if (scheduleError) {
-            console.error(`Schedule query error for day '${dayQuery}':`, scheduleError);
-            continue;
-        }
-        
-        console.log(`Query result for '${dayQuery}':`, tempSchedule?.length || 0, 'schedules found');
-        
-        if (tempSchedule && tempSchedule.length > 0) {
-            schedule = tempSchedule;
-            matchedDay = dayQuery;
-            console.log(`✅ SUCCESS: Found ${schedule.length} schedules using day: '${dayQuery}'`);
-            break;
-        }
-    }
-    
-    // If still no schedule found, try fallback method
-    if (!schedule || schedule.length === 0) {
-        console.warn('No schedule found with primary methods, trying fallback...');
-        
-        const alternativeDayNames = {
-            'Senin': ['Monday', 'senin', 'SENIN'],
-            'Selasa': ['Tuesday', 'selasa', 'SELASA'],
-            'Rabu': ['Wednesday', 'rabu', 'RABU'],
-            'Kamis': ['Thursday', 'kamis', 'KAMIS'],
-            'Jumat': ['Friday', 'jumat', 'JUMAT'],
-            'Sabtu': ['Saturday', 'sabtu', 'SABTU'],
-            'Minggu': ['Sunday', 'minggu', 'MINGGU']
-        };
-        
-        // Try to find schedule with alternative day name formats
-        for (const [standardDay, alternatives] of Object.entries(alternativeDayNames)) {
-            const allVariants = [standardDay, ...alternatives];
-            
-            // Check if any of our queries match this day's variants
-            const hasMatch = uniqueDayQueries.some(query => 
-                allVariants.includes(query) || 
-                allVariants.includes(query.toLowerCase()) ||
-                allVariants.includes(query.toUpperCase())
-            );
-            
-            if (hasMatch) {
-                const alternativeSchedule = allSchedules?.filter(s => s.day === standardDay) || [];
-                if (alternativeSchedule.length > 0) {
-                    schedule = alternativeSchedule;
-                    matchedDay = standardDay;
-                    break;
-                }
-            }
-        }
-    }
+        .eq('teacher_id', user.id)
+        .eq('day', todayDay);
     
     const { data: journals, error: journalError } = await supabase
         .from('journal_entries')
@@ -655,7 +570,6 @@ export async function getDashboardData(todayDay: string) {
         .order('date', { ascending: false })
         .limit(5);
 
-    // This is a simplification. A real implementation would require a more complex query.
     const { data: attendance, error: attendanceError } = await supabase
         .from('attendance')
         .select('records')
@@ -663,31 +577,12 @@ export async function getDashboardData(todayDay: string) {
         .eq('school_year_id', activeSchoolYearId)
         .limit(10);
     
-    if (allScheduleError || journalError || attendanceError) {
-        console.error({ allScheduleError, journalError, attendanceError });
+    if (scheduleError || journalError || attendanceError) {
+        console.error({ scheduleError, journalError, attendanceError });
     }
 
-    // Process schedule data
-    let todayScheduleData: any[] = [];
-    
-    if (schedule && schedule.length > 0) {
-        // Transform the schedule data
-        todayScheduleData = schedule.map(item => ({
-            ...item,
-            class: item.class?.name || 'Unknown Class',
-            subject: item.subject?.name || 'Unknown Subject'
-        }));
-        console.log(`✅ FINAL: Successfully processed ${todayScheduleData.length} schedules for day: '${matchedDay}'`);
-    } else {
-        console.log(`❌ FINAL: No schedule found for any day variation`);
-    }
-    console.log('=== END SCHEDULE DEBUG ===');
-    
-    const journalEntriesData = journals?.map(item => ({ 
-        ...item, 
-        className: item.className?.name || 'Unknown Class', 
-        subjectName: item.subjectName?.name || 'Unknown Subject' 
-    })) || [];
+    const todayScheduleData = schedule?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
+    const journalEntriesData = journals?.map(item => ({ ...item, className: item.className.name, subjectName: item.subjectName.name })) || [];
 
     const totalRecords = attendance?.flatMap(a => a.records).length || 0;
     const hadirRecords = attendance?.flatMap(a => a.records).filter(r => (r as any).status === 'Hadir').length || 0;
@@ -945,3 +840,4 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 
     
+

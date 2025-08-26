@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -232,42 +233,21 @@ export default function StudentLedgerClientPage({
 
   const selectedStudent = studentsInClass.find(s => s.id === selectedStudentId);
 
-  const fetchLedger = React.useCallback(async (studentId: string) => {
-    if (!studentId) return;
-    setLoading(true);
-    // This server action needs to be called carefully. A client-specific function is better.
-    // For now, we will navigate to reload the page with new props.
-    router.push(`/dashboard/homeroom/student-ledger?student_id=${studentId}`);
-    setLoading(false);
-  }, [router]);
-
   const handleStudentChange = async (studentId: string) => {
+    if (studentId === selectedStudentId) return;
+
     setSelectedStudentId(studentId);
     setLoading(true);
     try {
-      console.log('🔍 Frontend: Fetching data for student ID:', studentId);
       const response = await fetch(`/api/student-ledger?studentId=${studentId}`);
       if (!response.ok) {
         throw new Error('Gagal memuat data ledger');
       }
       const data = await response.json();
-      console.log('📊 Frontend: Received data:', {
-        gradesCount: data.grades?.length || 0,
-        attendanceCount: data.attendance?.length || 0,
-        notesCount: data.notes?.length || 0
-      });
-      
-      if (data.grades?.length > 0) {
-        console.log('✅ Frontend: Sample grade received:', data.grades[0]);
-      } else {
-        console.log('❌ Frontend: No grades in response');
-      }
-      
       setLedgerData(data);
-      console.log('📦 Frontend: Updated ledgerData state');
     } catch (error) {
-      console.error('❌ Frontend: Error fetching ledger data:', error);
-      // Handle error display
+      console.error('Error fetching ledger data:', error);
+      // You can add a toast notification here to inform the user
     } finally {
       setLoading(false);
     }
@@ -409,7 +389,24 @@ export default function StudentLedgerClientPage({
                             </CardDescription>
                         </CardHeader>
                         <CardContent className={isMobile ? "p-3" : ""}>
-                            {isMobile ? (
+                            {ledgerData.grades.length === 0 ? (
+                                <Card className="p-6 text-center bg-gradient-to-br from-blue-50 to-indigo-50 border-dashed border-2 border-blue-200">
+                                    <Award className="mx-auto h-16 w-16 mb-4 text-blue-300" />
+                                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                                        Belum Ada Data Nilai
+                                    </h3>
+                                    <p className="text-sm text-blue-700 mb-4 max-w-md mx-auto">
+                                        Nilai siswa akan muncul di sini setelah guru mata pelajaran menginput nilai melalui menu <strong>Nilai</strong>.
+                                    </p>
+                                    <div className="bg-white/50 rounded-lg p-3 text-xs text-blue-600">
+                                        <p className="font-medium mb-1">ℹ️ Panduan untuk Guru:</p>
+                                        <p>1. Buka menu <strong>Nilai</strong> di dashboard</p>
+                                        <p>2. Pilih kelas dan mata pelajaran</p>
+                                        <p>3. Input nilai siswa untuk berbagai jenis penilaian</p>
+                                        <p>4. Data akan otomatis sinkron ke leger siswa</p>
+                                    </div>
+                                </Card>
+                            ) : isMobile ? (
                                 <div className="space-y-3">
                                     {ledgerData.grades.map(grade => (
                                         <Card key={grade.id} className="p-4 bg-gradient-to-r from-white to-gray-50">
@@ -446,24 +443,6 @@ export default function StudentLedgerClientPage({
                                             </div>
                                         </Card>
                                     ))}
-                                    {ledgerData.grades.length === 0 && (
-                                        <Card className="p-6 text-center bg-gradient-to-br from-blue-50 to-indigo-50 border-dashed border-2 border-blue-200">
-                                            <Award className="mx-auto h-16 w-16 mb-4 text-blue-300" />
-                                            <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                                                Belum Ada Data Nilai
-                                            </h3>
-                                            <p className="text-sm text-blue-700 mb-4 max-w-md mx-auto">
-                                                Nilai siswa akan muncul di sini setelah guru mata pelajaran menginput nilai melalui menu <strong>Nilai</strong>.
-                                            </p>
-                                            <div className="bg-white/50 rounded-lg p-3 text-xs text-blue-600">
-                                                <p className="font-medium mb-1">ℹ️ Panduan untuk Guru:</p>
-                                                <p>1. Buka menu <strong>Nilai</strong> di dashboard</p>
-                                                <p>2. Pilih kelas dan mata pelajaran</p>
-                                                <p>3. Input nilai siswa untuk berbagai jenis penilaian</p>
-                                                <p>4. Data akan otomatis sinkron ke leger siswa</p>
-                                            </div>
-                                        </Card>
-                                    )}
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
@@ -514,7 +493,24 @@ export default function StudentLedgerClientPage({
                             </CardDescription>
                         </CardHeader>
                         <CardContent className={isMobile ? "p-3" : ""}>
-                            {isMobile ? (
+                            {ledgerData.attendance.length === 0 ? (
+                                <Card className="p-6 text-center bg-gradient-to-br from-green-50 to-emerald-50 border-dashed border-2 border-green-200">
+                                    <ClipboardList className="mx-auto h-16 w-16 mb-4 text-green-300" />
+                                    <h3 className="text-lg font-semibold text-green-900 mb-2">
+                                        Belum Ada Data Absensi
+                                    </h3>
+                                    <p className="text-sm text-green-700 mb-4 max-w-md mx-auto">
+                                        Data kehadiran siswa akan muncul di sini setelah guru mata pelajaran mencatat presensi melalui menu <strong>Presensi</strong>.
+                                    </p>
+                                    <div className="bg-white/50 rounded-lg p-3 text-xs text-green-600">
+                                        <p className="font-medium mb-1">ℹ️ Panduan untuk Guru:</p>
+                                        <p>1. Buka menu <strong>Presensi</strong> di dashboard</p>
+                                        <p>2. Pilih kelas dan mata pelajaran</p>
+                                        <p>3. Catat kehadiran siswa setiap pertemuan</p>
+                                        <p>4. Data akan otomatis sinkron ke leger siswa</p>
+                                    </div>
+                                </Card>
+                            ) : isMobile ? (
                                 <div className="space-y-3">
                                     {ledgerData.attendance.map(att => {
                                         const { icon: Icon, className } = getAttendanceInfo(att.status);
@@ -538,24 +534,6 @@ export default function StudentLedgerClientPage({
                                             </Card>
                                         );
                                     })}
-                                    {ledgerData.attendance.length === 0 && (
-                                        <Card className="p-6 text-center bg-gradient-to-br from-green-50 to-emerald-50 border-dashed border-2 border-green-200">
-                                            <ClipboardList className="mx-auto h-16 w-16 mb-4 text-green-300" />
-                                            <h3 className="text-lg font-semibold text-green-900 mb-2">
-                                                Belum Ada Data Absensi
-                                            </h3>
-                                            <p className="text-sm text-green-700 mb-4 max-w-md mx-auto">
-                                                Data kehadiran siswa akan muncul di sini setelah guru mata pelajaran mencatat presensi melalui menu <strong>Presensi</strong>.
-                                            </p>
-                                            <div className="bg-white/50 rounded-lg p-3 text-xs text-green-600">
-                                                <p className="font-medium mb-1">ℹ️ Panduan untuk Guru:</p>
-                                                <p>1. Buka menu <strong>Presensi</strong> di dashboard</p>
-                                                <p>2. Pilih kelas dan mata pelajaran</p>
-                                                <p>3. Catat kehadiran siswa setiap pertemuan</p>
-                                                <p>4. Data akan otomatis sinkron ke leger siswa</p>
-                                            </div>
-                                        </Card>
-                                    )}
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
@@ -610,49 +588,7 @@ export default function StudentLedgerClientPage({
                         <CardContent className={isMobile ? "p-3" : ""}>
                             <ScrollArea className={cn("h-96 pr-4", isMobile && "h-80 pr-2")}>
                                 <div className={cn("space-y-4", isMobile && "space-y-3")}>
-                                    {ledgerData.notes.map(note => {
-                                         const { icon: Icon, className } = getNoteInfo(note.type);
-                                        return (
-                                            <div key={note.id} className={cn(
-                                              "p-4 rounded-lg border-l-4 transition-all duration-200", 
-                                              className,
-                                              isMobile && "p-3"
-                                            )}>
-                                                <div className="flex items-start gap-3">
-                                                    <Icon className={cn(
-                                                      "h-5 w-5 mt-1 shrink-0",
-                                                      isMobile && "h-4 w-4"
-                                                    )}/>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className={cn(
-                                                          "flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2",
-                                                          isMobile && "flex-col gap-1"
-                                                        )}>
-                                                            <p className={cn(
-                                                              "font-semibold text-sm break-words",
-                                                              isMobile && "text-xs"
-                                                            )}>
-                                                                {note.teacher_name}
-                                                            </p>
-                                                            <p className={cn(
-                                                              "text-xs text-muted-foreground",
-                                                              isMobile && "text-xs"
-                                                            )}>
-                                                                {format(new Date(note.date), "dd MMM yyyy, HH:mm")}
-                                                            </p>
-                                                        </div>
-                                                        <p className={cn(
-                                                          "mt-2 text-sm break-words",
-                                                          isMobile && "text-xs mt-1 leading-relaxed"
-                                                        )}>
-                                                            {note.note}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                    {ledgerData.notes.length === 0 && (
+                                    {ledgerData.notes.length === 0 ? (
                                         <Card className="p-6 text-center bg-gradient-to-br from-orange-50 to-amber-50 border-dashed border-2 border-orange-200">
                                             <MessageSquarePlus className={cn(
                                               "mx-auto h-16 w-16 mb-4 text-orange-300",
@@ -675,6 +611,49 @@ export default function StudentLedgerClientPage({
                                                 <p>Gunakan tombol "Tambah Catatan" di atas untuk menambahkan catatan baru tentang perkembangan siswa ini.</p>
                                             </div>
                                         </Card>
+                                    ) : (
+                                        ledgerData.notes.map(note => {
+                                             const { icon: Icon, className } = getNoteInfo(note.type);
+                                            return (
+                                                <div key={note.id} className={cn(
+                                                  "p-4 rounded-lg border-l-4 transition-all duration-200", 
+                                                  className,
+                                                  isMobile && "p-3"
+                                                )}>
+                                                    <div className="flex items-start gap-3">
+                                                        <Icon className={cn(
+                                                          "h-5 w-5 mt-1 shrink-0",
+                                                          isMobile && "h-4 w-4"
+                                                        )}/>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className={cn(
+                                                              "flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2",
+                                                              isMobile && "flex-col gap-1"
+                                                            )}>
+                                                                <p className={cn(
+                                                                  "font-semibold text-sm break-words",
+                                                                  isMobile && "text-xs"
+                                                                )}>
+                                                                    {note.teacher_name}
+                                                                </p>
+                                                                <p className={cn(
+                                                                  "text-xs text-muted-foreground",
+                                                                  isMobile && "text-xs"
+                                                                )}>
+                                                                    {format(new Date(note.date), "dd MMM yyyy, HH:mm")}
+                                                                </p>
+                                                            </div>
+                                                            <p className={cn(
+                                                              "mt-2 text-sm break-words",
+                                                              isMobile && "text-xs mt-1 leading-relaxed"
+                                                            )}>
+                                                                {note.note}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })
                                     )}
                                 </div>
                             </ScrollArea>
@@ -687,3 +666,4 @@ export default function StudentLedgerClientPage({
     </div>
   );
 }
+
