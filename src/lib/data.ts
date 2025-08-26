@@ -729,31 +729,68 @@ export async function getHomeroomStudentProgress() {
         .eq('teacher_id', user.id)
         .limit(1)
         .single();
-    
+
     if (homeroomError || !homeroomClass) {
         return { studentData: [], className: null };
     }
 
-    // This is a temporary fix to query directly instead of using RPC
     const { data: students, error: studentsError } = await supabase
         .from('students')
         .select('id, name, nis')
         .eq('class_id', homeroomClass.id)
         .eq('status', 'active');
-    
+
     if (studentsError) {
         console.error("Error fetching students for homeroom:", studentsError);
         return { studentData: [], className: homeroomClass.name };
     }
+
+    // Now, fetch all attendance and grade data for this class
+    const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('records')
+        .eq('class_id', homeroomClass.id);
+
+    const { data: gradeData } = await supabase
+        .from('grades')
+        .select('records')
+        .eq('class_id', homeroomClass.id);
+
+    const allAttendanceRecords = attendanceData?.flatMap(a => a.records as any[]) || [];
+    const allGradeRecords = gradeData?.flatMap(g => g.records as any[]) || [];
     
-    // In this temporary state, we don't have aggregated data.
-    // We will return a default state for each student.
-    const studentData = students.map(s => ({
-        ...s,
-        average_grade: 0,
-        attendance_percentage: 0,
-        status: 'Stabil'
-    }));
+    const studentData = students.map(student => {
+        // Calculate attendance
+        const studentAttendance = allAttendanceRecords.filter(r => r.student_id === student.id);
+        const hadirCount = studentAttendance.filter(r => r.status === 'Hadir').length;
+        const attendance_percentage = studentAttendance.length > 0 ? Math.round((hadirCount / studentAttendance.length) * 100) : 0;
+
+        // Calculate average grade
+        const studentGrades = allGradeRecords.filter(r => r.student_id === student.id).map(r => Number(r.score));
+        const average_grade = studentGrades.length > 0 ? Math.round(studentGrades.reduce((sum, score) => sum + score, 0) / studentGrades.length) : 0;
+
+        // Determine status
+        let status = 'Stabil';
+        if (average_grade >= 85 && attendance_percentage >= 95) {
+            status = 'Sangat Baik';
+        } else if (average_grade < 70 || attendance_percentage < 85) {
+            if (average_grade < 60 || attendance_percentage < 75) {
+                status = 'Berisiko';
+            } else {
+                status = 'Butuh Perhatian';
+            }
+        }
+
+        return {
+            ...student,
+            average_grade,
+            attendance_percentage,
+            status,
+        };
+    }).sort((a,b) => {
+        const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
+        return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
+    });
 
     return { studentData, className: homeroomClass.name };
 }
@@ -801,6 +838,9 @@ export async function getStudentLedgerData(studentId: string) {
         .eq('key', 'active_school_year_id')
         .single();
 
+    // Fetch all grades and attendance for the entire school, then filter.
+    // This is because a student's data is entered by many different teachers.
+    
     let gradesQuery = supabase.from('grades_history').select('*');
     let attendanceQuery = supabase.from('attendance_history').select('*');
 
@@ -823,7 +863,7 @@ export async function getStudentLedgerData(studentId: string) {
         .flatMap(entry => (entry.records as any[])
             .filter(record => record.student_id === studentId)
             .map(record => ({
-                id: entry.id,
+                id: `${entry.id}-${record.student_id}`,
                 subjectName: entry.subjectName,
                 assessment_type: entry.assessment_type,
                 date: entry.date,
@@ -837,7 +877,7 @@ export async function getStudentLedgerData(studentId: string) {
         .flatMap(entry => (entry.records as any[])
             .filter(record => record.student_id === studentId)
             .map(record => ({
-                id: entry.id,
+                id: `${entry.id}-${record.student_id}`,
                 subjectName: entry.subjectName,
                 date: entry.date,
                 meeting_number: entry.meeting_number,
@@ -889,3 +929,6 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
     
 
 
+
+
+    
