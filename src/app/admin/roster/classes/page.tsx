@@ -1,10 +1,10 @@
 
 import { ClassSettingsPageComponent } from "./class-settings-page";
-import { getClasses, getAllUsers, getActiveStudents } from "@/lib/data";
+import { getAllClasses, getAllUsers, getActiveStudents } from "@/lib/data";
 
 export default async function ClassSettingsPage() {
     const [classes, users, students] = await Promise.all([
-        getClasses(),
+        getAllClasses(),
         getAllUsers(),
         getActiveStudents()
     ]);

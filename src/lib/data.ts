@@ -154,6 +154,29 @@ export async function getAllUsers(): Promise<Profile[]> {
     return data;
 }
 
+// --- Data functions for Admin Panel ---
+export async function getAllClasses(): Promise<Class[]> {
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase.from('classes').select('*').order('name');
+    if (error) {
+        console.error("Error fetching all classes for admin:", error);
+        return [];
+    }
+    return data;
+}
+
+export async function getAllSubjects(): Promise<Subject[]> {
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase.from('subjects').select('*').order('name');
+    if (error) {
+        console.error("Error fetching all subjects for admin:", error);
+        return [];
+    }
+    return data;
+}
+
 // --- User (Teacher) Data ---
 
 export async function getUserProfile(): Promise<Profile | null> {
@@ -674,7 +697,7 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
             else if (average_grade < 78 || attendance < 92) status = "Butuh Perhatian";
             
             const studentClass = teacherClassesRes.find(c => c.id === student.class_id);
-            return { id: student.id, name: student.name, class: studentClass?.name || 'N/A', average_grade, attendance, status };
+            return { id: student.id, name: student.name, nis: student.nis, class: studentClass?.name || 'N/A', average_grade, attendance, status };
         }).sort((a,b) => {
             const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
             return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
