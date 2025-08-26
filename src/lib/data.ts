@@ -186,10 +186,28 @@ export async function getUserProfile(): Promise<Profile | null> {
 
 export async function getClasses(): Promise<Class[]> {
     noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+
     const supabase = createClient();
-    const { data, error } = await supabase.from('classes').select('*').order('name');
+    // Get schedule to find out what classes the teacher teaches
+    const { data: scheduleData, error: scheduleError } = await supabase
+        .from('schedule')
+        .select('class_id')
+        .eq('teacher_id', user.id);
+
+    if (scheduleError || !scheduleData) {
+        console.error("Error fetching teacher's schedule for classes:", scheduleError);
+        return [];
+    }
+
+    const classIds = [...new Set(scheduleData.map(item => item.class_id))];
+
+    if (classIds.length === 0) return [];
+
+    const { data, error } = await supabase.from('classes').select('*').in('id', classIds).order('name');
     if (error) {
-        console.error("Error fetching classes:", error);
+        console.error("Error fetching classes based on schedule:", error);
         return [];
     }
     return data;
@@ -197,10 +215,28 @@ export async function getClasses(): Promise<Class[]> {
 
 export async function getSubjects(): Promise<Subject[]> {
     noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+
     const supabase = createClient();
-    const { data, error } = await supabase.from('subjects').select('*').order('name');
+    // Get schedule to find out what subjects the teacher teaches
+    const { data: scheduleData, error: scheduleError } = await supabase
+        .from('schedule')
+        .select('subject_id')
+        .eq('teacher_id', user.id);
+
+    if (scheduleError || !scheduleData) {
+        console.error("Error fetching teacher's schedule for subjects:", scheduleError);
+        return [];
+    }
+    
+    const subjectIds = [...new Set(scheduleData.map(item => item.subject_id))];
+
+    if (subjectIds.length === 0) return [];
+
+    const { data, error } = await supabase.from('subjects').select('*').in('id', subjectIds).order('name');
     if (error) {
-        console.error("Error fetching subjects:", error);
+        console.error("Error fetching subjects based on schedule:", error);
         return [];
     }
     return data;
@@ -734,28 +770,87 @@ export async function getHomeroomStudentProgress() {
         return { studentData: [], className: null };
     }
 
-    // This is a temporary fix to query directly instead of using RPC
     const { data: students, error: studentsError } = await supabase
         .from('students')
         .select('id, name, nis')
         .eq('class_id', homeroomClass.id)
         .eq('status', 'active');
     
-    if (studentsError) {
+    if (studentsError || !students) {
         console.error("Error fetching students for homeroom:", studentsError);
         return { studentData: [], className: homeroomClass.name };
     }
-    
-    // In this temporary state, we don't have aggregated data.
-    // We will return a default state for each student.
-    const studentData = students.map(s => ({
-        ...s,
-        average_grade: 0,
-        attendance_percentage: 0,
-        status: 'Stabil'
-    }));
 
-    return { studentData, className: homeroomClass.name };
+    // Get active school year
+    const activeSchoolYearId = await getActiveSchoolYearId();
+    if (!activeSchoolYearId) {
+        // Return default data if no active school year
+        const studentData = students.map(s => ({
+            ...s,
+            average_grade: 0,
+            attendance_percentage: 0,
+            status: 'Stabil'
+        }));
+        return { studentData, className: homeroomClass.name };
+    }
+
+    // Fetch all attendance and grades for the entire school year for all students in this class
+    const studentIds = students.map(s => s.id);
+    
+    const { data: attendanceData, error: attendanceError } = await supabase
+        .from('attendance')
+        .select('records')
+        .eq('school_year_id', activeSchoolYearId)
+        .filter('records', 'cs', `[${studentIds.map(id => `{"student_id":"${id}"}`).join(',')}]`);
+
+    const { data: gradesData, error: gradesError } = await supabase
+        .from('grades')
+        .select('records')
+        .eq('school_year_id', activeSchoolYearId)
+        .filter('records', 'cs', `[${studentIds.map(id => `{"student_id":"${id}"}`).join(',')}]`);
+
+    if (attendanceError || gradesError) {
+        console.error({ attendanceError, gradesError });
+    }
+
+    const allAttendanceRecords = (attendanceData || []).flatMap(entry => entry.records as any[]);
+    const allGradeRecords = (gradesData || []).flatMap(entry => entry.records as any[]);
+    
+    const studentAggregates = students.map(student => {
+        const studentGrades = allGradeRecords
+            .filter(r => r.student_id === student.id)
+            .map(r => Number(r.score));
+        
+        const studentAttendance = allAttendanceRecords.filter(r => r.student_id === student.id);
+        const studentHadir = studentAttendance.filter(r => r.status === 'Hadir').length;
+        
+        const average_grade = studentGrades.length > 0 
+            ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length) 
+            : 0;
+            
+        const attendance_percentage = studentAttendance.length > 0 
+            ? Math.round((studentHadir / studentAttendance.length) * 100) 
+            : 0;
+
+        let status = "Stabil";
+        if (average_grade >= 85 && attendance_percentage >= 95) status = "Sangat Baik";
+        else if (average_grade < 70 && attendance_percentage < 85) status = "Berisiko";
+        else if (average_grade < 78 || attendance_percentage < 92) status = "Butuh Perhatian";
+
+        return {
+            id: student.id,
+            name: student.name,
+            nis: student.nis,
+            average_grade,
+            attendance_percentage,
+            status
+        };
+    }).sort((a,b) => {
+        const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
+        return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
+    });
+
+    return { studentData: studentAggregates, className: homeroomClass.name };
 }
 
 
@@ -887,5 +982,6 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 
     
+
 
 
