@@ -1,65 +1,49 @@
--- =================================================================
--- MIGRATION SCRIPT: NORMALIZE GRADES AND ATTENDANCE DATA
--- TUJUAN: Mengubah struktur penyimpanan nilai dan absensi dari
---         kolom JSON menjadi baris individual untuk performa
---         dan skalabilitas yang jauh lebih baik.
---
--- CARA PENGGUNAAN:
--- 1. Copy SELURUH isi file ini.
--- 2. Paste ke SQL Editor di Supabase Dashboard Anda.
--- 3. Klik "RUN".
---
--- PERINGATAN: SCRIPT INI AKAN MENGHAPUS TABEL 'grades' dan 'attendance'
--- YANG LAMA. PASTIKAN ANDA SUDAH SIAP UNTUK MIGRASI.
--- =================================================================
+-- ⚠️ PERHATIAN: JALANKAN SCRIPT INI DI SUPABASE SQL EDITOR
+-- Script ini akan mengubah struktur database Anda untuk meningkatkan performa dan efisiensi.
+-- PASTIKAN ANDA MEMILIKI BACKUP JIKA DIPERLUKAN.
+
+-- Menonaktifkan notice untuk mengurangi noise output
+SET client_min_messages TO WARNING;
 
 BEGIN;
 
--- 1. HAPUS TABEL LAMA YANG TIDAK EFISIEN
--- Menggunakan DROP TABLE yang benar, bukan DROP VIEW.
-DROP TABLE IF EXISTS public.grades;
-DROP TABLE IF EXISTS public.attendance;
+-- 1. Menghapus tabel lama yang tidak efisien beserta view yang bergantung padanya
+DROP TABLE IF EXISTS public.grades CASCADE;
+DROP TABLE IF EXISTS public.attendance CASCADE;
 
--- 2. BUAT TABEL BARU YANG SUDAH DINORMALISASI
--- Tabel untuk menyimpan setiap entri nilai secara individual.
+-- 2. Membuat tabel baru yang sudah dinormalisasi untuk menyimpan nilai
 CREATE TABLE IF NOT EXISTS public.grade_records (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
-    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
-    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
-    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES public.students(id) ON DELETE CASCADE NOT NULL,
+    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE NOT NULL,
+    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE NOT NULL,
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL,
     date DATE NOT NULL,
     assessment_type TEXT NOT NULL,
-    score INTEGER NOT NULL CHECK (score >= 0 AND score <= 100),
-    created_at TIMESTAMPTZ DEFAULT now()
+    score NUMERIC(5, 2) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
-COMMENT ON TABLE public.grade_records IS 'Stores individual grade entries for each student.';
+COMMENT ON TABLE public.grade_records IS 'Tabel individual untuk setiap entri nilai siswa.';
 
--- Tabel untuk menyimpan setiap entri absensi secara individual.
+-- 3. Membuat tabel baru yang sudah dinormalisasi untuk menyimpan absensi
 CREATE TABLE IF NOT EXISTS public.attendance_records (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
-    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
-    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
-    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES public.students(id) ON DELETE CASCADE NOT NULL,
+    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE NOT NULL,
+    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE NOT NULL,
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL,
     date DATE NOT NULL,
     meeting_number INTEGER NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('Hadir', 'Sakit', 'Izin', 'Alpha')),
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
-COMMENT ON TABLE public.attendance_records IS 'Stores individual attendance entries for each student.';
+COMMENT ON TABLE public.attendance_records IS 'Tabel individual untuk setiap entri absensi siswa.';
 
--- 3. BUAT ATAU GANTI VIEW UNTUK MEMPERMUDAH PENGAMBILAN DATA
--- View ini menggabungkan data nilai dengan nama mapel, kelas, dll.
--- Ini akan membuat query dari aplikasi menjadi lebih sederhana.
-
--- Hapus view lama jika ada untuk memastikan definisi baru yang diterapkan.
-DROP VIEW IF EXISTS public.grades_history;
-
+-- 4. Membuat ulang view (view) untuk riwayat nilai dengan struktur baru
 CREATE OR REPLACE VIEW public.grades_history AS
-SELECT 
+SELECT
     gr.id,
     gr.date,
     gr.assessment_type,
@@ -69,25 +53,22 @@ SELECT
     gr.school_year_id,
     gr.score,
     gr.student_id,
-    c.name as class_name,
-    s.name as subject_name,
-    s.kkm as subject_kkm,
-    p.full_name as teacher_name,
-    EXTRACT(MONTH FROM gr.date) as month
-FROM 
+    c.name AS class_name,
+    s.name AS subject_name,
+    s.kkm AS subject_kkm,
+    p.full_name AS teacher_name
+FROM
     public.grade_records gr
-JOIN 
+JOIN
     public.classes c ON gr.class_id = c.id
-JOIN 
+JOIN
     public.subjects s ON gr.subject_id = s.id
-JOIN 
+LEFT JOIN
     public.profiles p ON gr.teacher_id = p.id;
 
--- Hapus view lama jika ada.
-DROP VIEW IF EXISTS public.attendance_history;
-
+-- 5. Membuat ulang view (view) untuk riwayat absensi dengan struktur baru
 CREATE OR REPLACE VIEW public.attendance_history AS
-SELECT 
+SELECT
     ar.id,
     ar.date,
     ar.meeting_number,
@@ -97,74 +78,41 @@ SELECT
     ar.school_year_id,
     ar.status,
     ar.student_id,
-    c.name as class_name,
-    s.name as subject_name,
-    p.full_name as teacher_name,
-    EXTRACT(MONTH FROM ar.date) as month
-FROM 
+    c.name AS class_name,
+    s.name AS subject_name,
+    p.full_name AS teacher_name
+FROM
     public.attendance_records ar
-JOIN 
+JOIN
     public.classes c ON ar.class_id = c.id
-JOIN 
+JOIN
     public.subjects s ON ar.subject_id = s.id
-JOIN 
+LEFT JOIN
     public.profiles p ON ar.teacher_id = p.id;
 
--- Hapus view lama jika ada.
-DROP VIEW IF EXISTS public.student_notes_with_teacher;
-CREATE OR REPLACE VIEW public.student_notes_with_teacher AS
-SELECT 
-    sn.id,
-    sn.student_id,
-    sn.teacher_id,
-    sn.date,
-    sn.note,
-    sn.type,
-    p.full_name as teacher_name
-FROM
-    public.student_notes sn
-JOIN
-    public.profiles p ON sn.teacher_id = p.id;
+-- 6. Memberikan hak akses pada tabel dan view baru
+GRANT SELECT ON public.grade_records TO authenticated;
+GRANT INSERT ON public.grade_records TO authenticated;
+GRANT UPDATE ON public.grade_records TO authenticated;
+GRANT DELETE ON public.grade_records TO authenticated;
 
+GRANT SELECT ON public.attendance_records TO authenticated;
+GRANT INSERT ON public.attendance_records TO authenticated;
+GRANT UPDATE ON public.attendance_records TO authenticated;
+GRANT DELETE ON public.attendance_records TO authenticated;
 
--- 4. TAMBAHKAN INDEX UNTUK MEMPERCEPAT QUERY
--- Index ini krusial untuk performa saat data semakin banyak.
+GRANT SELECT ON public.grades_history TO authenticated;
+GRANT SELECT ON public.attendance_history TO authenticated;
+
+-- 7. Menambahkan index untuk mempercepat query
 CREATE INDEX IF NOT EXISTS idx_grade_records_student_id ON public.grade_records(student_id);
-CREATE INDEX IF NOT EXISTS idx_grade_records_teacher_id ON public.grade_records(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_grade_records_school_year_id ON public.grade_records(school_year_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_records_student_id ON public.attendance_records(student_id);
-CREATE INDEX IF NOT EXISTS idx_attendance_records_teacher_id ON public.attendance_records(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_records_school_year_id ON public.attendance_records(school_year_id);
 
--- 5. AKTIFKAN RLS (ROW LEVEL SECURITY) PADA TABEL BARU
--- Ini penting untuk keamanan data.
-ALTER TABLE public.grade_records ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.attendance_records ENABLE ROW LEVEL SECURITY;
-
--- 6. BUAT KEBIJAKAN (POLICY) UNTUK RLS
--- Policy ini mengatur siapa bisa melakukan apa terhadap data.
-
--- Hapus policy lama jika ada untuk menghindari konflik
-DROP POLICY IF EXISTS "Enable all access for authenticated users" ON public.grade_records;
-DROP POLICY IF EXISTS "Enable all access for authenticated users" ON public.attendance_records;
-
--- Policy baru: Semua pengguna yang sudah login (terautentikasi) bisa melakukan semua operasi.
--- Ini adalah pengaturan default yang aman untuk aplikasi internal seperti ini.
-CREATE POLICY "Enable all access for authenticated users"
-ON public.grade_records
-FOR ALL
-TO authenticated
-USING (true)
-WITH CHECK (true);
-
-CREATE POLICY "Enable all access for authenticated users"
-ON public.attendance_records
-FOR ALL
-TO authenticated
-USING (true)
-WITH CHECK (true);
+-- Mengembalikan pengaturan pesan ke default
+RESET client_min_messages;
 
 COMMIT;
 
--- Pesan sukses untuk user
-SELECT 'Migrasi ke struktur data baru yang dinormalisasi berhasil diselesaikan.' as status;
+SELECT 'Migrasi struktur data nilai dan presensi berhasil diselesaikan.' as status;
