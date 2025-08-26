@@ -650,3 +650,8 @@ function calculateDistance(
 function toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
 }
+
+// Keep the `saveStudent` and other `admin.ts` functions for now,
+// but they might need to be moved or adjusted later if they're used by non-admins.
+// For now, keeping them here is fine as long as they're called from admin pages.
+export * from './actions/admin';

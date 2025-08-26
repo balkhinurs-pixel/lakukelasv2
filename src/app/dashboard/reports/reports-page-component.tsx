@@ -46,7 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, CheckCircle, Award, Download, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Users2, Filter, Calendar, GraduationCap, BarChart3, FileText, Loader2 } from "lucide-react";
-import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear } from "@/lib/types";
+import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear, GradeHistoryEntry, AttendanceHistoryEntry } from "@/lib/types";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -208,11 +208,10 @@ export default function ReportsPageComponent({
         const filteredHistory = attendanceHistory.filter(h => h.class_id === selectedClass && h.subject_id === selectedSubject);
 
         const tableBody = filteredStudents.map((student, index) => {
-            const studentRecords = filteredHistory.flatMap(h => h.records).filter(r => r.studentId === student.id);
-            const hadir = studentRecords.filter(r => r.status === 'Hadir').length;
-            const sakit = studentRecords.filter(r => r.status === 'Sakit').length;
-            const izin = studentRecords.filter(r => r.status === 'Izin').length;
-            const alpha = studentRecords.filter(r => r.status === 'Alpha').length;
+            const hadir = filteredHistory.filter(r => r.student_id === student.id && r.status === 'Hadir').length;
+            const sakit = filteredHistory.filter(r => r.student_id === student.id && r.status === 'Sakit').length;
+            const izin = filteredHistory.filter(r => r.student_id === student.id && r.status === 'Izin').length;
+            const alpha = filteredHistory.filter(r => r.student_id === student.id && r.status === 'Alpha').length;
             const total = hadir + sakit + izin + alpha;
             return [index + 1, student.name, hadir, sakit, izin, alpha, total];
         });
@@ -249,14 +248,13 @@ export default function ReportsPageComponent({
         const head = [['No', 'Nama Siswa', ...assessments, 'Rata-rata', 'Predikat']];
 
         const tableBody = filteredStudents.map((student, index) => {
-            const row = [index + 1, student.name];
+            const row: (string|number)[] = [index + 1, student.name];
             let totalScore = 0;
             let scoreCount = 0;
 
             assessments.forEach(assessment => {
-                const gradeEntry = filteredGradeHistory.find(h => h.assessment_type === assessment);
-                const studentRecord = gradeEntry?.records.find(r => r.studentId === student.id);
-                const score = studentRecord ? Number(studentRecord.score) : '-';
+                const studentGradeRecords = filteredGradeHistory.filter(r => r.student_id === student.id && r.assessment_type === assessment);
+                const score = studentGradeRecords.length > 0 ? studentGradeRecords[0].score : '-';
                 if (typeof score === 'number') {
                     totalScore += score;
                     scoreCount++;
@@ -325,9 +323,8 @@ export default function ReportsPageComponent({
             let scoreCount = 0;
 
             assessments.forEach(assessment => {
-                const gradeEntry = filteredGradeHistory.find(h => h.assessment_type === assessment);
-                const studentRecord = gradeEntry?.records.find(r => r.studentId === student.id);
-                const score = studentRecord ? Number(studentRecord.score) : '';
+                const studentGradeRecords = filteredGradeHistory.filter(r => r.student_id === student.id && r.assessment_type === assessment);
+                const score = studentGradeRecords.length > 0 ? Number(studentGradeRecords[0].score) : '';
                 if (typeof score === 'number') {
                     totalScore += score;
                     scoreCount++;
@@ -368,7 +365,7 @@ export default function ReportsPageComponent({
         }
 
         // --- Conditional Formatting & Cell Styles ---
-        const dataRange = { s: { r: 8, c: 2 }, e: { r: 7 + filteredStudents.length, c: 2 + assessments.length - 1 } };
+        const dataRange = { s: { r: 8, c: 2 }, e: { r: 7 + filteredStudents.length, c: 1 + assessments.length } };
         for (let R = dataRange.s.r; R <= dataRange.e.r; ++R) {
              // Center 'No' column
             const noCellRef = XLSX.utils.encode_cell({c: 0, r: R});
@@ -1123,3 +1120,4 @@ export default function ReportsPageComponent({
     </div>
   );
 }
+

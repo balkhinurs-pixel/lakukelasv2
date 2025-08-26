@@ -2,6 +2,7 @@
 
 
 
+
 export interface Profile {
   id: string;
   created_at: string;
@@ -131,33 +132,36 @@ export interface TeacherAttendance {
 }
 
 // --- History Types ---
-// These are now aggregates of the new record types
-
+// These types now represent the structure of the views we created
 export interface AttendanceHistoryEntry {
-  id: string; // This can be a composite key for uniqueness, e.g., `${date}-${class_id}-${subject_id}-${meeting_number}`
+  id: string;
   date: string;
+  meeting_number: number;
   class_id: string;
   subject_id: string;
-  school_year_id?: string | null;
-  meeting_number: number;
-  records: { studentId: string; status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha' }[];
-  // Joined data
-  className?: string;
-  subjectName?: string;
+  teacher_id: string;
+  school_year_id: string | null;
+  status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha';
+  student_id: string;
+  class_name: string;
+  subject_name: string;
+  teacher_name: string;
 }
 
 export interface GradeHistoryEntry {
-    id: string; // This can be a composite key, e.g., `${date}-${class_id}-${subject_id}-${assessment_type}`
+    id: string;
     date: string;
+    assessment_type: string;
     class_id: string;
     subject_id: string;
-    school_year_id?: string | null;
-    assessment_type: string;
-    records: { studentId: string; score: number }[];
-    // Joined data
-    className?: string;
-    subjectName?: string;
-    subjectKkm?: number;
+    teacher_id: string;
+    school_year_id: string | null;
+    score: number;
+    student_id: string;
+    class_name: string;
+    subject_name: string;
+    subject_kkm: number;
+    teacher_name: string;
 }
 
 

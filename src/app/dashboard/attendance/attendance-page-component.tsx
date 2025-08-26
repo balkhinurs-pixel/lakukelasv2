@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -53,12 +52,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import type { Student, AttendanceRecord, Class, AttendanceHistoryEntry, Subject, StudentNote } from "@/lib/types";
+import type { Student, Class, AttendanceHistoryEntry, Subject, StudentNote } from "@/lib/types";
 import { saveAttendance, addStudentNote } from "@/lib/actions";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const attendanceOptions: { value: AttendanceRecord['status'], label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
+const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
         value: 'Hadir', 
         label: 'Hadir', 
@@ -91,7 +90,7 @@ const attendanceOptions: { value: AttendanceRecord['status'], label: string, ico
 
 
 // Isolated component to prevent re-rendering the entire list on a single change
-const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: AttendanceRecord['status'], onChange: (studentId: string, status: AttendanceRecord['status']) => void }) => {
+const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', onChange: (studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => void }) => {
     return (
         <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
         {attendanceOptions.map(opt => (
@@ -218,7 +217,7 @@ export default function AttendancePageComponent({
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<string | undefined>(preselectedSubjectId || undefined);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
-  const [attendance, setAttendance] = React.useState<Map<string, AttendanceRecord['status']>>(new Map());
+  const [attendance, setAttendance] = React.useState<Map<string, 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'>>(new Map());
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = React.useState(false);
@@ -253,7 +252,7 @@ export default function AttendancePageComponent({
     setAttendance(newAttendance);
   }
 
-  const handleAttendanceChange = React.useCallback((studentId: string, status: AttendanceRecord['status']) => {
+  const handleAttendanceChange = React.useCallback((studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
     setAttendance(prev => new Map(prev.set(studentId, status)));
   }, []);
 
@@ -307,10 +306,19 @@ export default function AttendancePageComponent({
       setDate(parseISO(entry.date));
       setMeetingNumber(entry.meeting_number);
 
-      const loadedAttendance = new Map<string, AttendanceRecord['status']>();
+      const loadedAttendance = new Map<string, 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'>();
+      // This is the fix. We need to handle the fact that entry.status is a single value, not an array.
+      // The logic should populate the attendance map for all students in the class.
       studentsForClass.forEach(student => {
-        const record = entry.records.find(r => r.studentId === student.id);
-        loadedAttendance.set(student.id, record ? record.status : 'Hadir');
+        // Find the record for this student. It will be in the history of all records for that day.
+        const studentRecord = initialHistory.find(h => 
+            h.date === entry.date && 
+            h.class_id === entry.class_id && 
+            h.subject_id === entry.subject_id && 
+            h.meeting_number === entry.meeting_number &&
+            h.student_id === student.id
+        );
+        loadedAttendance.set(student.id, studentRecord ? studentRecord.status : 'Hadir');
       });
       setAttendance(loadedAttendance);
       setLoading(false);
@@ -322,18 +330,34 @@ export default function AttendancePageComponent({
     setIsDetailDialogOpen(true);
   }
 
+  // Group history by session
+  const groupedHistory = React.useMemo(() => {
+    const groups: { [key: string]: { entry: AttendanceHistoryEntry, records: { student_id: string, status: string }[] } } = {};
+    initialHistory.forEach(item => {
+      const key = `${item.date}-${item.class_id}-${item.subject_id}-${item.meeting_number}`;
+      if (!groups[key]) {
+        groups[key] = {
+          entry: { ...item },
+          records: []
+        };
+      }
+      groups[key].records.push({ student_id: item.student_id, status: item.status });
+    });
+    return Object.values(groups);
+  }, [initialHistory]);
+
   const filteredHistory = React.useMemo(() => {
-      return initialHistory.filter(h => 
-        (!selectedClassId || h.class_id === selectedClassId) && 
-        (!selectedSubjectId || h.subject_id === selectedSubjectId)
+      return groupedHistory.filter(h => 
+        (!selectedClassId || h.entry.class_id === selectedClassId) && 
+        (!selectedSubjectId || h.entry.subject_id === selectedSubjectId)
       );
-  }, [initialHistory, selectedClassId, selectedSubjectId]);
+  }, [groupedHistory, selectedClassId, selectedSubjectId]);
   
   const getStudentName = (studentId: string) => {
     return allStudents.find(s => s.id === studentId)?.name || "Siswa tidak ditemukan";
   }
 
-  const getStatusBadgeVariant = (status: AttendanceRecord['status']) => {
+  const getStatusBadgeVariant = (status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
     switch (status) {
         case 'Hadir': return "default";
         case 'Sakit': return "secondary";
@@ -341,7 +365,7 @@ export default function AttendancePageComponent({
         case 'Alpha': return "destructive";
     }
   }
-   const getStatusBadgeClass = (status: AttendanceRecord['status']) => {
+   const getStatusBadgeClass = (status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
     switch (status) {
         case 'Hadir': return "bg-green-600 hover:bg-green-700";
         case 'Sakit': return "bg-yellow-500 hover:bg-yellow-600 text-black";
@@ -618,17 +642,17 @@ export default function AttendancePageComponent({
             <>
               {/* Mobile View */}
               <div className="md:hidden space-y-3">
-                {filteredHistory.map(entry => {
-                  const summary = entry.records.reduce((acc, record) => {
-                      acc[record.status] = (acc[record.status] || 0) + 1;
+                {filteredHistory.map(({entry, records}) => {
+                  const summary = records.reduce((acc, record) => {
+                      acc[record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'] = (acc[record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'] || 0) + 1;
                       return acc;
-                  }, {} as Record<AttendanceRecord['status'], number>);
+                  }, {} as Record<'Hadir' | 'Sakit' | 'Izin' | 'Alpha', number>);
                   return (
                     <div key={entry.id} className="group border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-all duration-200 hover:border-slate-300">
                       <div className="space-y-3">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-slate-900 truncate">{entry.className} - {entry.subjectName}</p>
+                              <p className="font-semibold text-slate-900 truncate">{entry.class_name} - {entry.subject_name}</p>
                               <p className="text-sm text-slate-500 mt-1">
                                 {format(parseISO(entry.date), 'EEEE, dd MMMM yyyy', { locale: id })}
                               </p>
@@ -698,19 +722,19 @@ export default function AttendancePageComponent({
                           </TableRow>
                       </TableHeader>
                       <TableBody>
-                          {filteredHistory.map(entry => {
-                              const summary = entry.records.reduce((acc, record) => {
-                                  acc[record.status] = (acc[record.status] || 0) + 1;
+                          {filteredHistory.map(({entry, records}) => {
+                              const summary = records.reduce((acc, record) => {
+                                  acc[record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'] = (acc[record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'] || 0) + 1;
                                   return acc;
-                              }, {} as Record<AttendanceRecord['status'], number>);
+                              }, {} as Record<'Hadir' | 'Sakit' | 'Izin' | 'Alpha', number>);
                               return (
                                    <TableRow key={entry.id} className="hover:bg-slate-50/50 transition-colors duration-150">
                                       <TableCell className="font-medium text-slate-900">
                                         {format(parseISO(entry.date), 'EEEE, dd MMM yyyy', { locale: id })}
                                       </TableCell>
                                       <TableCell>
-                                          <div className="font-medium text-slate-900">{entry.className}</div>
-                                          <div className="text-sm text-slate-500">{entry.subjectName}</div>
+                                          <div className="font-medium text-slate-900">{entry.class_name}</div>
+                                          <div className="text-sm text-slate-500">{entry.subject_name}</div>
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-700">
@@ -792,9 +816,9 @@ export default function AttendancePageComponent({
                   <Eye className="h-5 w-5" />
                 </div>
                 <div>
-                  <DialogTitle className="text-xl">Detail Presensi: {viewingEntry?.className}</DialogTitle>
+                  <DialogTitle className="text-xl">Detail Presensi: {viewingEntry?.class_name}</DialogTitle>
                   <DialogDescription className="mt-1">
-                      {viewingEntry?.subjectName} - {viewingEntry ? format(parseISO(viewingEntry.date), "EEEE, dd MMMM yyyy", { locale: id }) : ''}
+                      {viewingEntry?.subject_name} - {viewingEntry ? format(parseISO(viewingEntry.date), "EEEE, dd MMMM yyyy", { locale: id }) : ''}
                   </DialogDescription>
                 </div>
               </div>
@@ -810,14 +834,14 @@ export default function AttendancePageComponent({
                               </TableRow>
                           </TableHeader>
                           <TableBody>
-                              {viewingEntry.records.map(record => (
-                                  <TableRow key={record.studentId} className="hover:bg-slate-50/50 transition-colors duration-150">
-                                      <TableCell className="font-medium text-slate-900">{getStudentName(record.studentId)}</TableCell>
+                              {groupedHistory.find(g => g.entry.id === viewingEntry.id)?.records.map(record => (
+                                  <TableRow key={record.student_id} className="hover:bg-slate-50/50 transition-colors duration-150">
+                                      <TableCell className="font-medium text-slate-900">{getStudentName(record.student_id)}</TableCell>
                                       <TableCell className="text-right">
                                           <Badge 
-                                            variant={getStatusBadgeVariant(record.status)} 
+                                            variant={getStatusBadgeVariant(record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha')} 
                                             className={cn(
-                                              getStatusBadgeClass(record.status),
+                                              getStatusBadgeClass(record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'),
                                               "px-3 py-1 text-sm font-medium"
                                             )}
                                           >

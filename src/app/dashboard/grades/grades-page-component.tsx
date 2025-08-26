@@ -47,7 +47,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { Student, Class, GradeHistoryEntry, GradeRecord, Subject } from "@/lib/types";
+import type { Student, Class, GradeHistoryEntry, Subject } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { saveGrades } from "@/lib/actions";
 
@@ -192,27 +192,55 @@ export default function GradesPageComponent({
       setDate(parseISO(entry.date));
       setAssessmentType(entry.assessment_type);
       
-      const loadedGrades = new Map<string, GradeRecord['score']>();
+      const loadedGrades = new Map<string, number | string>();
       studentsForClass.forEach(student => {
-          const record = entry.records.find(r => r.studentId === student.id);
+          const record = initialHistory.find(h => h.id === entry.id && h.student_id === student.id);
           loadedGrades.set(student.id, record ? record.score : "");
       });
       setGrades(loadedGrades);
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-
+  
   const handleViewDetails = (entry: GradeHistoryEntry) => {
     setViewingEntry(entry);
     setIsDetailDialogOpen(true);
   }
 
+  // Group history by assessment
+  const groupedHistory = React.useMemo(() => {
+    const groups: { [key: string]: { entry: Omit<GradeHistoryEntry, 'student_id'|'score'>, records: { studentId: string, score: number }[] } } = {};
+    initialHistory.forEach(item => {
+      const key = `${item.date}-${item.class_id}-${item.subject_id}-${item.assessment_type}`;
+      if (!groups[key]) {
+        groups[key] = {
+          entry: {
+              id: item.id,
+              date: item.date,
+              class_id: item.class_id,
+              subject_id: item.subject_id,
+              assessment_type: item.assessment_type,
+              teacher_id: item.teacher_id,
+              school_year_id: item.school_year_id,
+              class_name: item.class_name,
+              subject_name: item.subject_name,
+              subject_kkm: item.subject_kkm,
+              teacher_name: item.teacher_name,
+          },
+          records: []
+        };
+      }
+      groups[key].records.push({ studentId: item.student_id, score: item.score });
+    });
+    return Object.values(groups);
+  }, [initialHistory]);
+
   const filteredHistory = React.useMemo(() => {
-    return initialHistory.filter(entry => 
-        (!selectedClassId || entry.class_id === selectedClassId) &&
-        (!selectedSubjectId || entry.subject_id === selectedSubjectId)
+    return groupedHistory.filter(entry => 
+        (!selectedClassId || entry.entry.class_id === selectedClassId) &&
+        (!selectedSubjectId || entry.entry.subject_id === selectedSubjectId)
     );
-  }, [initialHistory, selectedClassId, selectedSubjectId]);
+  }, [groupedHistory, selectedClassId, selectedSubjectId]);
   
   const filteredStudents = React.useMemo(() => {
       return students.filter(student => student.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -519,8 +547,8 @@ export default function GradesPageComponent({
         <CardContent className="pt-0">
             {/* Mobile View - Cards */}
             <div className="md:hidden space-y-3">
-              {filteredHistory.map(entry => {
-                const scores = entry.records.map(r => Number(r.score)).filter(s => !isNaN(s));
+              {filteredHistory.map(({entry, records}) => {
+                const scores = records.map(r => Number(r.score)).filter(s => !isNaN(s));
                 const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
                 const kkm = getSubjectKkm(entry.subject_id);
                 const passingCount = scores.filter(score => score >= kkm).length;
@@ -533,7 +561,7 @@ export default function GradesPageComponent({
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-slate-900 truncate">{entry.assessment_type}</p>
                                 <p className="text-sm text-slate-500 mt-1">
-                                  {entry.className} - {entry.subjectName}
+                                  {entry.class_name} - {entry.subject_name}
                                 </p>
                                 <p className="text-xs text-slate-400 mt-0.5">
                                   <FormattedDate date={parseISO(entry.date)} formatString="dd MMM yyyy" />
@@ -553,7 +581,7 @@ export default function GradesPageComponent({
                                 <Users className="h-4 w-4 text-blue-600" />
                                 <div className="text-sm">
                                   <span className="font-medium text-blue-800">Dinilai</span>
-                                  <span className="ml-1 text-blue-600 font-semibold">{entry.records.length}</span>
+                                  <span className="ml-1 text-blue-600 font-semibold">{records.length}</span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50">
@@ -604,8 +632,8 @@ export default function GradesPageComponent({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredHistory.map(entry => {
-                           const scores = entry.records.map(r => Number(r.score)).filter(s => !isNaN(s));
+                        {filteredHistory.map(({entry, records}) => {
+                           const scores = records.map(r => Number(r.score)).filter(s => !isNaN(s));
                            const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
                            const kkm = getSubjectKkm(entry.subject_id);
                            const passingCount = scores.filter(score => score >= kkm).length;
@@ -617,12 +645,12 @@ export default function GradesPageComponent({
                                     </TableCell>
                                     <TableCell className="font-medium text-slate-900">{entry.assessment_type}</TableCell>
                                     <TableCell>
-                                        <div className="font-medium text-slate-900">{entry.className}</div>
-                                        <div className="text-sm text-slate-500">{entry.subjectName}</div>
+                                        <div className="font-medium text-slate-900">{entry.class_name}</div>
+                                        <div className="text-sm text-slate-500">{entry.subject_name}</div>
                                     </TableCell>
                                     <TableCell className="text-center">
                                       <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                        {entry.records.length}
+                                        {records.length}
                                       </span>
                                     </TableCell>
                                     <TableCell className="text-center">
@@ -700,7 +728,7 @@ export default function GradesPageComponent({
                 <div>
                   <DialogTitle className="text-xl">Detail Nilai: {viewingEntry?.assessment_type}</DialogTitle>
                   <DialogDescription className="mt-1">
-                      Daftar nilai untuk kelas {viewingEntry?.className} ({viewingEntry?.subjectName}). KKM: <span className="font-bold text-amber-600">{getSubjectKkm(viewingEntry?.subject_id)}</span>
+                      Daftar nilai untuk kelas {viewingEntry?.class_name} ({viewingEntry?.subject_name}). KKM: <span className="font-bold text-amber-600">{getSubjectKkm(viewingEntry?.subject_id)}</span>
                   </DialogDescription>
                 </div>
               </div>
@@ -716,9 +744,9 @@ export default function GradesPageComponent({
                           </TableRow>
                       </TableHeader>
                       <TableBody>
-                          {viewingEntry?.records.map(record => {
+                          {groupedHistory.find(g => g.entry.id === viewingEntry?.id)?.records.map(record => {
                               const score = Number(record.score);
-                              const kkm = getSubjectKkm(viewingEntry.subject_id);
+                              const kkm = getSubjectKkm(viewingEntry!.subject_id);
                               const isPassing = score >= kkm;
                               return (
                                   <TableRow key={record.studentId} className="hover:bg-slate-50/50 transition-colors duration-150">
