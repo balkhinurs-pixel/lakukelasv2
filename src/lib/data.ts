@@ -725,7 +725,7 @@ export async function getHomeroomStudentProgress() {
     const supabase = createClient();
     const { data: homeroomClass, error: homeroomError } = await supabase
         .from('classes')
-        .select('id, name')
+        .select('*')
         .eq('teacher_id', user.id)
         .limit(1)
         .single();
@@ -734,105 +734,28 @@ export async function getHomeroomStudentProgress() {
         return { studentData: [], className: null };
     }
 
-    const { data: settingsData } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'active_school_year_id')
-        .single();
-        
-    const activeSchoolYearId = settingsData?.value;
-    if (!activeSchoolYearId) {
-        // If no active school year, return students with 0 data to avoid breaking the page
-        const { data: students } = await supabase
-            .from('students')
-            .select('id, name, nis')
-            .eq('class_id', homeroomClass.id)
-            .eq('status', 'active');
-        const studentData = (students || []).map(s => ({ ...s, average_grade: 0, attendance_percentage: 0, status: 'Stabil' }));
-        return { studentData, className: homeroomClass.name };
-    }
-
+    // This is a temporary fix to query directly instead of using RPC
     const { data: students, error: studentsError } = await supabase
         .from('students')
         .select('id, name, nis')
         .eq('class_id', homeroomClass.id)
         .eq('status', 'active');
     
-    if (studentsError || !students) {
+    if (studentsError) {
         console.error("Error fetching students for homeroom:", studentsError);
         return { studentData: [], className: homeroomClass.name };
     }
+    
+    // In this temporary state, we don't have aggregated data.
+    // We will return a default state for each student.
+    const studentData = students.map(s => ({
+        ...s,
+        average_grade: 0,
+        attendance_percentage: 0,
+        status: 'Stabil'
+    }));
 
-    const studentIds = students.map(s => s.id);
-    if (studentIds.length === 0) {
-        return { studentData: [], className: homeroomClass.name };
-    }
-
-    // Fetch all grades and attendance for the entire class in the active school year
-    const { data: gradesData, error: gradesError } = await supabase
-        .from('grades')
-        .select('records')
-        .eq('school_year_id', activeSchoolYearId);
-
-    const { data: attendanceData, error: attendanceError } = await supabase
-        .from('attendance')
-        .select('records')
-        .eq('school_year_id', activeSchoolYearId);
-        
-    if (gradesError || attendanceError) {
-        console.error({gradesError, attendanceError});
-        // Return students with 0 data if fetching aggregates fails
-        const studentData = students.map(s => ({
-            ...s,
-            average_grade: 0,
-            attendance_percentage: 0,
-            status: 'Stabil'
-        }));
-        return { studentData, className: homeroomClass.name };
-    }
-
-    // Process the data in application code
-    const allGradeRecords = (gradesData || []).flatMap(g => g.records as any[]);
-    const allAttendanceRecords = (attendanceData || []).flatMap(a => a.records as any[]);
-
-    const studentAggregates = students.map(student => {
-        const studentGrades = allGradeRecords
-            .filter(r => r.student_id === student.id)
-            .map(r => Number(r.score));
-
-        const studentAttendance = allAttendanceRecords
-            .filter(r => r.student_id === student.id);
-        
-        const studentHadir = studentAttendance.filter(r => r.status === 'Hadir').length;
-
-        const average_grade = studentGrades.length > 0 
-            ? Math.round(studentGrades.reduce((acc, score) => acc + score, 0) / studentGrades.length) 
-            : 0;
-            
-        const attendance_percentage = studentAttendance.length > 0 
-            ? Math.round((studentHadir / studentAttendance.length) * 100) 
-            : 0;
-
-        let status = "Stabil";
-        if (average_grade >= 85 && attendance_percentage >= 95) status = "Sangat Baik";
-        else if (average_grade < 70 || attendance_percentage < 85) status = "Butuh Perhatian";
-        if (average_grade < 60 && attendance_percentage < 75) status = "Berisiko";
-
-
-        return {
-            ...student,
-            average_grade,
-            attendance_percentage,
-            status
-        };
-    });
-
-    studentAggregates.sort((a,b) => {
-        const statusOrder = { "Berisiko": 0, "Butuh Perhatian": 1, "Stabil": 2, "Sangat Baik": 3 };
-        return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
-    });
-
-    return { studentData: studentAggregates, className: homeroomClass.name };
+    return { studentData, className: homeroomClass.name };
 }
 
 
@@ -871,20 +794,61 @@ export async function getStudentLedgerData(studentId: string) {
         return { grades: [], attendance: [], notes: [] };
     }
     const supabase = createClient();
+
+    const { data: activeSchoolYearId } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'active_school_year_id')
+        .single();
+
+    let gradesQuery = supabase.from('grades_history').select('*');
+    let attendanceQuery = supabase.from('attendance_history').select('*');
+
+    if (activeSchoolYearId?.value) {
+        gradesQuery = gradesQuery.eq('school_year_id', activeSchoolYearId.value);
+        attendanceQuery = attendanceQuery.eq('school_year_id', activeSchoolYearId.value);
+    }
     
     const [gradesRes, attendanceRes, notesRes] = await Promise.all([
-      supabase.rpc('get_student_grades_ledger', { p_student_id: studentId }),
-      supabase.rpc('get_student_attendance_ledger', { p_student_id: studentId }),
-      supabase.from('student_notes_with_teacher').select('*').eq('student_id', studentId).order('date', {ascending: false})
+        gradesQuery,
+        attendanceQuery,
+        supabase.from('student_notes_with_teacher').select('*').eq('student_id', studentId).order('date', {ascending: false})
     ]);
 
     if (gradesRes.error) console.error("Error fetching grades ledger:", gradesRes.error);
     if (attendanceRes.error) console.error("Error fetching attendance ledger:", attendanceRes.error);
     if (notesRes.error) console.error("Error fetching notes:", notesRes.error);
+
+    const studentGrades = (gradesRes.data || [])
+        .flatMap(entry => (entry.records as any[])
+            .filter(record => record.student_id === studentId)
+            .map(record => ({
+                id: entry.id,
+                subjectName: entry.subjectName,
+                assessment_type: entry.assessment_type,
+                date: entry.date,
+                score: record.score,
+                kkm: entry.subjectKkm,
+            }))
+        )
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const studentAttendance = (attendanceRes.data || [])
+        .flatMap(entry => (entry.records as any[])
+            .filter(record => record.student_id === studentId)
+            .map(record => ({
+                id: entry.id,
+                subjectName: entry.subjectName,
+                date: entry.date,
+                meeting_number: entry.meeting_number,
+                status: record.status
+            }))
+        )
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     return {
-        grades: gradesRes.data || [],
-        attendance: attendanceRes.data || [],
+        grades: studentGrades,
+        attendance: studentAttendance,
         notes: notesRes.data || [],
     };
 }
@@ -892,6 +856,8 @@ export async function getStudentLedgerData(studentId: string) {
 
 export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]> {
     noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
 
     const supabase = createClient();
     const { data, error } = await supabase
@@ -923,6 +889,3 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
     
 
 
-
-
-    
