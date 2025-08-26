@@ -21,7 +21,6 @@ import { TrendingUp, UserCheck, TrendingDown, UserX, Users2, Info, Percent, Awar
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getActiveSchoolYearId } from "@/lib/actions";
 
 export default async function StudentProgressPage() {
     const { studentData, className } = await getHomeroomStudentProgress();

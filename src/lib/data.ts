@@ -7,6 +7,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { format, startOfMonth, endOfMonth, parseISO, subDays } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, toIndonesianTime } from './timezone';
+import { getActiveSchoolYearId } from './actions';
 
 // This file now contains functions to fetch live data from Supabase.
 // All dummy data has been removed.
@@ -794,7 +795,9 @@ export async function getHomeroomStudentProgress() {
         return { studentData: [], className: null };
     }
 
+    // This must be called inside the function to avoid ReferenceError
     const activeSchoolYearId = await getActiveSchoolYearId();
+
     if (!activeSchoolYearId) {
         const { data: students } = await supabase
             .from('students')
