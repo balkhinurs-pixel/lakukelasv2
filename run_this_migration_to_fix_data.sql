@@ -1,109 +1,170 @@
--- Langkah 1: Buat tabel baru yang sudah dinormalisasi untuk nilai.
--- Tabel ini akan menyimpan setiap nilai siswa sebagai satu baris terpisah.
-CREATE TABLE
-  public.grade_records (
-    id UUID DEFAULT gen_random_uuid () NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    student_id UUID NOT NULL,
-    subject_id UUID NOT NULL,
-    class_id UUID NOT NULL,
-    date DATE NOT NULL,
-    assessment_type TEXT NOT NULL,
-    score REAL NOT NULL,
-    teacher_id UUID NOT NULL,
-    school_year_id UUID,
-    CONSTRAINT grade_records_pkey PRIMARY KEY (id),
-    CONSTRAINT grade_records_class_id_fkey FOREIGN KEY (class_id) REFERENCES classes (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT grade_records_school_year_id_fkey FOREIGN KEY (school_year_id) REFERENCES school_years (id) ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT grade_records_student_id_fkey FOREIGN KEY (student_id) REFERENCES students (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT grade_records_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES subjects (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT grade_records_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES profiles (id) ON UPDATE CASCADE ON DELETE CASCADE
-  ) TABLESPACE pg_default;
+-- =================================================================
+-- MIGRATION SCRIPT: NORMALIZE GRADES AND ATTENDANCE DATA
+-- TUJUAN: Mengubah struktur penyimpanan nilai dan absensi dari
+--         kolom JSON menjadi baris individual untuk performa
+--         dan skalabilitas yang jauh lebih baik.
+--
+-- CARA PENGGUNAAN:
+-- 1. Copy SELURUH isi file ini.
+-- 2. Paste ke SQL Editor di Supabase Dashboard Anda.
+-- 3. Klik "RUN".
+--
+-- PERINGATAN: SCRIPT INI AKAN MENGHAPUS TABEL 'grades' dan 'attendance'
+-- YANG LAMA. PASTIKAN ANDA SUDAH SIAP UNTUK MIGRASI.
+-- =================================================================
 
--- Langkah 2: Buat tabel baru yang sudah dinormalisasi untuk absensi.
--- Tabel ini akan menyimpan setiap absensi siswa sebagai satu baris terpisah.
-CREATE TABLE
-  public.attendance_records (
-    id UUID DEFAULT gen_random_uuid () NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    student_id UUID NOT NULL,
-    subject_id UUID NOT NULL,
-    class_id UUID NOT NULL,
-    date DATE NOT NULL,
-    meeting_number INTEGER NOT NULL,
-    status TEXT NOT NULL,
-    teacher_id UUID NOT NULL,
-    school_year_id UUID,
-    CONSTRAINT attendance_records_pkey PRIMARY KEY (id),
-    CONSTRAINT attendance_records_class_id_fkey FOREIGN KEY (class_id) REFERENCES classes (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT attendance_records_school_year_id_fkey FOREIGN KEY (school_year_id) REFERENCES school_years (id) ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT attendance_records_student_id_fkey FOREIGN KEY (student_id) REFERENCES students (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT attendance_records_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES subjects (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT attendance_records_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES profiles (id) ON UPDATE CASCADE ON DELETE CASCADE
-  ) TABLESPACE pg_default;
+BEGIN;
 
--- Langkah 3: Tambahkan Indeks untuk mempercepat pencarian data
-CREATE INDEX idx_grade_records_student_id ON public.grade_records USING btree (student_id);
-CREATE INDEX idx_grade_records_school_year_id ON public.grade_records USING btree (school_year_id);
-CREATE INDEX idx_attendance_records_student_id ON public.attendance_records USING btree (student_id);
-CREATE INDEX idx_attendance_records_school_year_id ON public.attendance_records USING btree (school_year_id);
-CREATE INDEX idx_attendance_date ON public.attendance_records USING btree (date);
-CREATE INDEX idx_grades_date ON public.grade_records USING btree (date);
-
-
--- Langkah 4: Hapus view lama yang tidak efisien
-DROP VIEW IF EXISTS public.grades;
-DROP VIEW IF EXISTS public.attendance;
-DROP VIEW IF EXISTS public.attendance_history;
-DROP VIEW IF EXISTS public.grades_history;
-
--- Langkah 5: Hapus tabel lama yang menggunakan kolom JSON
--- PENTING: Lakukan backup jika Anda memiliki data penting di tabel ini.
--- Script ini mengasumsikan data lama boleh dihapus untuk memulai dengan struktur baru.
+-- 1. HAPUS TABEL LAMA YANG TIDAK EFISIEN
+-- Menggunakan DROP TABLE yang benar, bukan DROP VIEW.
 DROP TABLE IF EXISTS public.grades;
 DROP TABLE IF EXISTS public.attendance;
 
--- Langkah 6: Buat Ulang View dengan Struktur yang Benar (opsional, tapi bagus untuk konsistensi)
--- View ini akan membantu menyederhanakan query di aplikasi jika diperlukan.
-CREATE VIEW public.grades_history AS
-SELECT
-  g.id,
-  g.date,
-  g.assessment_type,
-  g.class_id,
-  g.subject_id,
-  g.teacher_id,
-  g.school_year_id,
-  g.score,
-  g.student_id,
-  c.name AS class_name,
-  s.name AS subject_name,
-  s.kkm AS subject_kkm,
-  p.full_name AS teacher_name
-FROM
-  grade_records g
-  LEFT JOIN classes c ON g.class_id = c.id
-  LEFT JOIN subjects s ON g.subject_id = s.id
-  LEFT JOIN profiles p ON g.teacher_id = p.id;
-  
-CREATE VIEW public.attendance_history AS
-SELECT
-  g.id,
-  g.date,
-  g.meeting_number,
-  g.class_id,
-  g.subject_id,
-  g.teacher_id,
-  g.school_year_id,
-  g.status,
-  g.student_id,
-  c.name AS class_name,
-  s.name AS subject_name,
-  p.full_name AS teacher_name
-FROM
-  attendance_records g
-  LEFT JOIN classes c ON g.class_id = c.id
-  LEFT JOIN subjects s ON g.subject_id = s.id
-  LEFT JOIN profiles p ON g.teacher_id = p.id;
+-- 2. BUAT TABEL BARU YANG SUDAH DINORMALISASI
+-- Tabel untuk menyimpan setiap entri nilai secara individual.
+CREATE TABLE IF NOT EXISTS public.grade_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL,
+    date DATE NOT NULL,
+    assessment_type TEXT NOT NULL,
+    score INTEGER NOT NULL CHECK (score >= 0 AND score <= 100),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+COMMENT ON TABLE public.grade_records IS 'Stores individual grade entries for each student.';
 
--- Selesai! Struktur database Anda sekarang sudah jauh lebih baik.
+-- Tabel untuk menyimpan setiap entri absensi secara individual.
+CREATE TABLE IF NOT EXISTS public.attendance_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL,
+    date DATE NOT NULL,
+    meeting_number INTEGER NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('Hadir', 'Sakit', 'Izin', 'Alpha')),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+COMMENT ON TABLE public.attendance_records IS 'Stores individual attendance entries for each student.';
+
+-- 3. BUAT ATAU GANTI VIEW UNTUK MEMPERMUDAH PENGAMBILAN DATA
+-- View ini menggabungkan data nilai dengan nama mapel, kelas, dll.
+-- Ini akan membuat query dari aplikasi menjadi lebih sederhana.
+
+-- Hapus view lama jika ada untuk memastikan definisi baru yang diterapkan.
+DROP VIEW IF EXISTS public.grades_history;
+
+CREATE OR REPLACE VIEW public.grades_history AS
+SELECT 
+    gr.id,
+    gr.date,
+    gr.assessment_type,
+    gr.class_id,
+    gr.subject_id,
+    gr.teacher_id,
+    gr.school_year_id,
+    gr.score,
+    gr.student_id,
+    c.name as class_name,
+    s.name as subject_name,
+    s.kkm as subject_kkm,
+    p.full_name as teacher_name,
+    EXTRACT(MONTH FROM gr.date) as month
+FROM 
+    public.grade_records gr
+JOIN 
+    public.classes c ON gr.class_id = c.id
+JOIN 
+    public.subjects s ON gr.subject_id = s.id
+JOIN 
+    public.profiles p ON gr.teacher_id = p.id;
+
+-- Hapus view lama jika ada.
+DROP VIEW IF EXISTS public.attendance_history;
+
+CREATE OR REPLACE VIEW public.attendance_history AS
+SELECT 
+    ar.id,
+    ar.date,
+    ar.meeting_number,
+    ar.class_id,
+    ar.subject_id,
+    ar.teacher_id,
+    ar.school_year_id,
+    ar.status,
+    ar.student_id,
+    c.name as class_name,
+    s.name as subject_name,
+    p.full_name as teacher_name,
+    EXTRACT(MONTH FROM ar.date) as month
+FROM 
+    public.attendance_records ar
+JOIN 
+    public.classes c ON ar.class_id = c.id
+JOIN 
+    public.subjects s ON ar.subject_id = s.id
+JOIN 
+    public.profiles p ON ar.teacher_id = p.id;
+
+-- Hapus view lama jika ada.
+DROP VIEW IF EXISTS public.student_notes_with_teacher;
+CREATE OR REPLACE VIEW public.student_notes_with_teacher AS
+SELECT 
+    sn.id,
+    sn.student_id,
+    sn.teacher_id,
+    sn.date,
+    sn.note,
+    sn.type,
+    p.full_name as teacher_name
+FROM
+    public.student_notes sn
+JOIN
+    public.profiles p ON sn.teacher_id = p.id;
+
+
+-- 4. TAMBAHKAN INDEX UNTUK MEMPERCEPAT QUERY
+-- Index ini krusial untuk performa saat data semakin banyak.
+CREATE INDEX IF NOT EXISTS idx_grade_records_student_id ON public.grade_records(student_id);
+CREATE INDEX IF NOT EXISTS idx_grade_records_teacher_id ON public.grade_records(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_grade_records_school_year_id ON public.grade_records(school_year_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_student_id ON public.attendance_records(student_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_teacher_id ON public.attendance_records(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_school_year_id ON public.attendance_records(school_year_id);
+
+-- 5. AKTIFKAN RLS (ROW LEVEL SECURITY) PADA TABEL BARU
+-- Ini penting untuk keamanan data.
+ALTER TABLE public.grade_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance_records ENABLE ROW LEVEL SECURITY;
+
+-- 6. BUAT KEBIJAKAN (POLICY) UNTUK RLS
+-- Policy ini mengatur siapa bisa melakukan apa terhadap data.
+
+-- Hapus policy lama jika ada untuk menghindari konflik
+DROP POLICY IF EXISTS "Enable all access for authenticated users" ON public.grade_records;
+DROP POLICY IF EXISTS "Enable all access for authenticated users" ON public.attendance_records;
+
+-- Policy baru: Semua pengguna yang sudah login (terautentikasi) bisa melakukan semua operasi.
+-- Ini adalah pengaturan default yang aman untuk aplikasi internal seperti ini.
+CREATE POLICY "Enable all access for authenticated users"
+ON public.grade_records
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Enable all access for authenticated users"
+ON public.attendance_records
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+COMMIT;
+
+-- Pesan sukses untuk user
+SELECT 'Migrasi ke struktur data baru yang dinormalisasi berhasil diselesaikan.' as status;
