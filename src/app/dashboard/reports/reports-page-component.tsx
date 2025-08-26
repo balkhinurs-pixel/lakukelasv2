@@ -528,7 +528,7 @@ export default function ReportsPageComponent({
                     finalY = data.cursor?.y || margin;
                 }
             });
-            finalY = (doc.lastAutoTable as any).finalY;
+            finalY = (doc as any).lastAutoTable.finalY;
         } else if (content.journals) {
             finalY += 5;
             doc.setFontSize(10);
@@ -714,7 +714,14 @@ export default function ReportsPageComponent({
                 "transition-all duration-1000 ease-out delay-300",
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             )}>
-                <Tabs defaultValue="summary">
+                <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="text-sm font-medium text-muted-foreground">Filter Laporan</h3>
+                    </div>
+                    <CommonFilters />
+                </Card>
+                <Tabs defaultValue="summary" className="mt-6">
                     <div className="overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
                         <TabsList className="w-full sm:w-auto justify-start bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg min-w-max">
                             <TabsTrigger value="summary" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3">
@@ -751,7 +758,7 @@ export default function ReportsPageComponent({
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <div className="text-2xl sm:text-3xl font-bold text-green-700 dark:text-green-300">{summaryCards.overallAttendanceRate}%</div>
-                                    <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 mt-1">Rata-rata semua kelas</p>
+                                    <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 mt-1">Berdasarkan filter</p>
                                 </CardContent>
                             </Card>
                             
@@ -765,7 +772,7 @@ export default function ReportsPageComponent({
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <div className="text-2xl sm:text-3xl font-bold text-blue-700 dark:text-blue-300">{summaryCards.overallAverageGrade}</div>
-                                    <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 mt-1">Skor rata-rata semua penilaian</p>
+                                    <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 mt-1">Berdasarkan filter</p>
                                 </CardContent>
                             </Card>
                             
@@ -779,7 +786,7 @@ export default function ReportsPageComponent({
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <div className="text-2xl sm:text-3xl font-bold text-purple-700 dark:text-purple-300">{summaryCards.totalJournals}</div>
-                                    <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 mt-1">Total jurnal yang telah dibuat</p>
+                                    <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 mt-1">Berdasarkan filter</p>
                                 </CardContent>
                             </Card>
                         </div>
@@ -792,7 +799,7 @@ export default function ReportsPageComponent({
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <CardTitle className="text-base sm:text-xl leading-tight">Analisis Performa Siswa</CardTitle>
-                                        <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Siswa dikelompokkan berdasarkan rata-rata nilai dan tingkat kehadiran</CardDescription>
+                                        <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Siswa dikelompokkan berdasarkan data dari filter yang dipilih.</CardDescription>
                                     </div>
                                 </div>
                             </CardHeader>
@@ -865,7 +872,7 @@ export default function ReportsPageComponent({
                                 </div>
                             </>
                         ) : (
-                             <EmptyStatePlaceholder icon={Users2} title="Belum Ada Data Performa" description="Catat presensi dan nilai untuk melihat analisis performa siswa." />
+                             <EmptyStatePlaceholder icon={Users2} title="Belum Ada Data Performa" description="Tidak ada data siswa yang cocok dengan filter. Coba ubah filter di atas." />
                         )}
                     </CardContent>
                 </Card>
@@ -879,7 +886,7 @@ export default function ReportsPageComponent({
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <CardTitle className="text-base sm:text-xl leading-tight">Perbandingan Kehadiran Antar Kelas</CardTitle>
-                                            <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Visualisasi persentase kehadiran untuk setiap status</CardDescription>
+                                            <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Visualisasi jumlah kehadiran untuk setiap status</CardDescription>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -973,13 +980,6 @@ export default function ReportsPageComponent({
                                             Unduh PDF
                                         </Button>
                                     </div>
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                                            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Filter Laporan</span>
-                                        </div>
-                                        <CommonFilters />
-                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-0">
@@ -1024,13 +1024,6 @@ export default function ReportsPageComponent({
                                             </Button>
                                         </div>
                                     </div>
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                                            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Filter Laporan</span>
-                                        </div>
-                                        <CommonFilters />
-                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-0">
@@ -1063,13 +1056,6 @@ export default function ReportsPageComponent({
                                             {downloading ? <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin"/> : <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />}
                                             Unduh PDF
                                         </Button>
-                                    </div>
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                                            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Filter Laporan</span>
-                                        </div>
-                                        <CommonFilters />
                                     </div>
                                 </div>
                             </CardHeader>
