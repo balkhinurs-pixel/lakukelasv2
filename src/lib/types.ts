@@ -1,6 +1,7 @@
 
 
 
+
 export interface Profile {
   id: string;
   created_at: string;
@@ -52,14 +53,29 @@ export interface SchoolYear {
 }
 
 export interface AttendanceRecord {
-  studentId: string;
+  id: string;
+  student_id: string;
+  subject_id: string;
+  class_id: string;
+  date: string;
+  meeting_number: number;
   status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha';
+  teacher_id: string;
+  school_year_id: string;
 }
 
 export interface GradeRecord {
-  studentId: string;
-  score: number | string; // Allow string for empty input
+  id: string;
+  student_id: string;
+  subject_id: string;
+  class_id: string;
+  date: string;
+  assessment_type: string;
+  score: number;
+  teacher_id: string;
+  school_year_id: string;
 }
+
 
 export interface JournalEntry {
   id: string;
@@ -115,28 +131,29 @@ export interface TeacherAttendance {
 }
 
 // --- History Types ---
+// These are now aggregates of the new record types
 
 export interface AttendanceHistoryEntry {
-  id: string;
+  id: string; // This can be a composite key for uniqueness, e.g., `${date}-${class_id}-${subject_id}-${meeting_number}`
   date: string;
   class_id: string;
   subject_id: string;
   school_year_id?: string | null;
   meeting_number: number;
-  records: AttendanceRecord[];
+  records: { studentId: string; status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha' }[];
   // Joined data
   className?: string;
   subjectName?: string;
 }
 
 export interface GradeHistoryEntry {
-    id: string;
+    id: string; // This can be a composite key, e.g., `${date}-${class_id}-${subject_id}-${assessment_type}`
     date: string;
     class_id: string;
     subject_id: string;
     school_year_id?: string | null;
     assessment_type: string;
-    records: GradeRecord[];
+    records: { studentId: string; score: number }[];
     // Joined data
     className?: string;
     subjectName?: string;

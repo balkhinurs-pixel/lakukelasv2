@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from './supabase/server';
-import type { StudentNote } from './types';
+import type { StudentNote, GradeRecord, AttendanceRecord } from './types';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -137,36 +137,46 @@ export async function saveAttendance(formData: FormData) {
         return { success: false, error: "Tahun ajaran aktif belum diatur. Mohon atur di pengaturan." };
     }
 
-    const attendanceData = {
-        id: formData.get('id') as string || undefined,
+    const commonData = {
         date: formData.get('date') as string,
         class_id: formData.get('class_id') as string,
         subject_id: formData.get('subject_id') as string,
         meeting_number: Number(formData.get('meeting_number')),
-        records: JSON.parse(formData.get('records') as string),
-        teacher_id: user.id,
-        school_year_id: activeSchoolYearId
     };
 
-    if (!attendanceData.date || !attendanceData.class_id || !attendanceData.subject_id || !attendanceData.meeting_number) {
+    if (!commonData.date || !commonData.class_id || !commonData.subject_id || !commonData.meeting_number) {
         return { success: false, error: "Data tidak lengkap." };
     }
-
-    let error;
-    if (attendanceData.id) {
-        const { error: updateError } = await supabase.from('attendance').update({ 
-            records: attendanceData.records, 
-            meeting_number: attendanceData.meeting_number,
-            date: attendanceData.date,
-        }).eq('id', attendanceData.id);
-        error = updateError;
-    } else {
-        const { error: insertError } = await supabase.from('attendance').insert(attendanceData);
-        error = insertError;
+    
+    const records: { student_id: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha' }[] = JSON.parse(formData.get('records') as string);
+    const recordsToInsert: Omit<AttendanceRecord, 'id'>[] = records.map(record => ({
+        ...commonData,
+        student_id: record.student_id,
+        status: record.status,
+        teacher_id: user.id,
+        school_year_id: activeSchoolYearId
+    }));
+    
+    // For editing, we delete existing records and insert new ones
+    // This is simpler than upserting for this structure
+    if (formData.get('id')) {
+        const { error: deleteError } = await supabase.from('attendance_records')
+            .delete()
+            .eq('date', commonData.date)
+            .eq('class_id', commonData.class_id)
+            .eq('subject_id', commonData.subject_id)
+            .eq('meeting_number', commonData.meeting_number);
+            
+        if (deleteError) {
+             console.error("Error deleting old attendance records for update:", deleteError);
+             return { success: false, error: "Gagal memperbarui presensi (langkah 1)." };
+        }
     }
 
-    if (error) {
-        console.error("Error saving attendance:", error);
+    const { error: insertError } = await supabase.from('attendance_records').insert(recordsToInsert);
+
+    if (insertError) {
+        console.error("Error saving attendance:", insertError);
         return { success: false, error: "Gagal menyimpan presensi." };
     }
     
@@ -185,36 +195,44 @@ export async function saveGrades(formData: FormData) {
         return { success: false, error: "Tahun ajaran aktif belum diatur. Mohon atur di pengaturan." };
     }
 
-    const gradeData = {
-        id: formData.get('id') as string || undefined,
+    const commonData = {
         date: formData.get('date') as string,
         class_id: formData.get('class_id') as string,
         subject_id: formData.get('subject_id') as string,
         assessment_type: formData.get('assessment_type') as string,
-        records: JSON.parse(formData.get('records') as string),
-        teacher_id: user.id,
-        school_year_id: activeSchoolYearId,
     };
     
-    if (!gradeData.date || !gradeData.class_id || !gradeData.subject_id || !gradeData.assessment_type) {
+    if (!commonData.date || !commonData.class_id || !commonData.subject_id || !commonData.assessment_type) {
         return { success: false, error: "Data tidak lengkap." };
     }
 
-    let error;
-    if (gradeData.id) {
-        const { error: updateError } = await supabase.from('grades').update({
-            records: gradeData.records,
-            assessment_type: gradeData.assessment_type,
-            date: gradeData.date,
-        }).eq('id', gradeData.id);
-        error = updateError;
-    } else {
-        const { error: insertError } = await supabase.from('grades').insert(gradeData);
-        error = insertError;
+    const records: { student_id: string, score: number }[] = JSON.parse(formData.get('records') as string);
+    const recordsToInsert: Omit<GradeRecord, 'id'>[] = records.map(record => ({
+        ...commonData,
+        student_id: record.student_id,
+        score: record.score,
+        teacher_id: user.id,
+        school_year_id: activeSchoolYearId,
+    }));
+
+    if (formData.get('id')) {
+        const { error: deleteError } = await supabase.from('grade_records')
+            .delete()
+            .eq('date', commonData.date)
+            .eq('class_id', commonData.class_id)
+            .eq('subject_id', commonData.subject_id)
+            .eq('assessment_type', commonData.assessment_type);
+        
+        if (deleteError) {
+             console.error("Error deleting old grade records for update:", deleteError);
+             return { success: false, error: "Gagal memperbarui nilai (langkah 1)." };
+        }
     }
 
-    if (error) {
-        console.error("Error saving grades:", error);
+    const { error: insertError } = await supabase.from('grade_records').insert(recordsToInsert);
+
+    if (insertError) {
+        console.error("Error saving grades:", insertError);
         return { success: false, error: "Gagal menyimpan nilai." };
     }
 
