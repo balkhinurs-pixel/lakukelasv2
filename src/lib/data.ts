@@ -720,7 +720,6 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
 export async function getHomeroomStudentProgress() {
     noStore();
     const user = await getAuthenticatedUser();
-<<<<<<< HEAD
     if (!user) return { studentData: [], className: null };
 
     const supabase = createClient();
@@ -743,34 +742,21 @@ export async function getHomeroomStudentProgress() {
         
     const activeSchoolYearId = settingsData?.value;
     if (!activeSchoolYearId) {
-        return { studentData: [], className: homeroomClass.name };
+        // If no active school year, return students with 0 data to avoid breaking the page
+        const { data: students } = await supabase
+            .from('students')
+            .select('id, name, nis')
+            .eq('class_id', homeroomClass.id)
+            .eq('status', 'active');
+        const studentData = (students || []).map(s => ({ ...s, average_grade: 0, attendance_percentage: 0, status: 'Stabil' }));
+        return { studentData, className: homeroomClass.name };
     }
 
-=======
-    if (!user) {
-      return { studentData: [], className: null };
-    }
-  
-    const supabase = createClient();
-  
-    const { data: homeroomClass, error: homeroomError } = await supabase
-      .from('classes')
-      .select('id, name')
-      .eq('teacher_id', user.id)
-      .limit(1)
-      .single();
-  
-    if (homeroomError || !homeroomClass) {
-      return { studentData: [], className: null };
-    }
-    
->>>>>>> b1a44a6ba8788cbaf87652a93d67225b0df6bd7b
     const { data: students, error: studentsError } = await supabase
         .from('students')
         .select('id, name, nis')
         .eq('class_id', homeroomClass.id)
         .eq('status', 'active');
-<<<<<<< HEAD
     
     if (studentsError || !students) {
         console.error("Error fetching students for homeroom:", studentsError);
@@ -778,17 +764,19 @@ export async function getHomeroomStudentProgress() {
     }
 
     const studentIds = students.map(s => s.id);
+    if (studentIds.length === 0) {
+        return { studentData: [], className: homeroomClass.name };
+    }
 
+    // Fetch all grades and attendance for the entire class in the active school year
     const { data: gradesData, error: gradesError } = await supabase
         .from('grades')
         .select('records')
-        .in('records', `(${studentIds.map(id => `'[{"student_id":"${id}"}]'`).join(',')})`)
         .eq('school_year_id', activeSchoolYearId);
 
     const { data: attendanceData, error: attendanceError } = await supabase
         .from('attendance')
         .select('records')
-        .in('records', `(${studentIds.map(id => `'[{"student_id":"${id}"}]'`).join(',')})`)
         .eq('school_year_id', activeSchoolYearId);
         
     if (gradesError || attendanceError) {
@@ -803,14 +791,16 @@ export async function getHomeroomStudentProgress() {
         return { studentData, className: homeroomClass.name };
     }
 
+    // Process the data in application code
+    const allGradeRecords = (gradesData || []).flatMap(g => g.records as any[]);
+    const allAttendanceRecords = (attendanceData || []).flatMap(a => a.records as any[]);
+
     const studentAggregates = students.map(student => {
-        const studentGrades = (gradesData || [])
-            .flatMap(g => g.records as any[])
+        const studentGrades = allGradeRecords
             .filter(r => r.student_id === student.id)
             .map(r => Number(r.score));
 
-        const studentAttendance = (attendanceData || [])
-            .flatMap(a => a.records as any[])
+        const studentAttendance = allAttendanceRecords
             .filter(r => r.student_id === student.id);
         
         const studentHadir = studentAttendance.filter(r => r.status === 'Hadir').length;
@@ -843,24 +833,6 @@ export async function getHomeroomStudentProgress() {
     });
 
     return { studentData: studentAggregates, className: homeroomClass.name };
-=======
-
-    if (studentsError) {
-        console.error("Error fetching students:", studentsError);
-        return { studentData: [], className: homeroomClass.name };
-    }
-
-    const studentData = (students || []).map(s => ({
-        id: s.id,
-        name: s.name,
-        nis: s.nis,
-        average_grade: 0,
-        attendance_percentage: 0,
-        status: 'Stabil'
-    }));
-  
-    return { studentData, className: homeroomClass.name };
->>>>>>> b1a44a6ba8788cbaf87652a93d67225b0df6bd7b
 }
 
 
@@ -953,9 +925,4 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 
 
-<<<<<<< HEAD
     
-=======
-    
-
->>>>>>> b1a44a6ba8788cbaf87652a93d67225b0df6bd7b
