@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { createClient } from './supabase/server';
@@ -795,6 +794,23 @@ export async function getHomeroomStudentProgress() {
         return { studentData: [], className: null };
     }
 
+    const activeSchoolYearId = await getActiveSchoolYearId();
+    if (!activeSchoolYearId) {
+        const { data: students } = await supabase
+            .from('students')
+            .select('id, name, nis')
+            .eq('class_id', homeroomClass.id)
+            .eq('status', 'active');
+        
+        const studentData = (students || []).map(s => ({
+            ...s,
+            average_grade: 0,
+            attendance_percentage: 0,
+            status: 'Stabil'
+        }));
+        return { studentData, className: homeroomClass.name };
+    }
+
     const { data: students, error: studentsError } = await supabase
         .from('students')
         .select('id, name, nis')
@@ -806,10 +822,14 @@ export async function getHomeroomStudentProgress() {
         return { studentData: [], className: homeroomClass.name };
     }
 
-    // Get active school year
-    const activeSchoolYearId = await getActiveSchoolYearId();
-    if (!activeSchoolYearId) {
-        // Return default data if no active school year
+    const [attendanceRes, gradesRes] = await Promise.all([
+        supabase.from('attendance').select('records').eq('school_year_id', activeSchoolYearId),
+        supabase.from('grades').select('records').eq('school_year_id', activeSchoolYearId)
+    ]);
+
+    if (attendanceRes.error || gradesRes.error) {
+        console.error({ attendanceError: attendanceRes.error, gradesError: gradesRes.error });
+        // Fallback to default data on error
         const studentData = students.map(s => ({
             ...s,
             average_grade: 0,
@@ -818,28 +838,9 @@ export async function getHomeroomStudentProgress() {
         }));
         return { studentData, className: homeroomClass.name };
     }
-
-    // Fetch all attendance and grades for the entire school year for all students in this class
-    const studentIds = students.map(s => s.id);
     
-    const { data: attendanceData, error: attendanceError } = await supabase
-        .from('attendance')
-        .select('records')
-        .eq('school_year_id', activeSchoolYearId)
-        .filter('records', 'cs', `[${studentIds.map(id => `{"student_id":"${id}"}`).join(',')}]`);
-
-    const { data: gradesData, error: gradesError } = await supabase
-        .from('grades')
-        .select('records')
-        .eq('school_year_id', activeSchoolYearId)
-        .filter('records', 'cs', `[${studentIds.map(id => `{"student_id":"${id}"}`).join(',')}]`);
-
-    if (attendanceError || gradesError) {
-        console.error({ attendanceError, gradesError });
-    }
-
-    const allAttendanceRecords = (attendanceData || []).flatMap(entry => entry.records as any[]);
-    const allGradeRecords = (gradesData || []).flatMap(entry => entry.records as any[]);
+    const allAttendanceRecords = (attendanceRes.data || []).flatMap(entry => entry.records as any[]);
+    const allGradeRecords = (gradesRes.data || []).flatMap(entry => entry.records as any[]);
     
     const studentAggregates = students.map(student => {
         const studentGrades = allGradeRecords
@@ -1011,3 +1012,6 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 
 
+
+
+    
