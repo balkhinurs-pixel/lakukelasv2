@@ -1,10 +1,11 @@
 
+
 'use server';
 
 import { createClient } from './supabase/server';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
-import { format, startOfMonth, endOfMonth, parseISO, subDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, toIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
@@ -781,9 +782,12 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
 export async function getHomeroomStudentProgress() {
     noStore();
     const user = await getAuthenticatedUser();
-    if (!user) return { studentData: [], className: null };
+    if (!user) {
+        return { studentData: [], className: null };
+    }
 
     const supabase = createClient();
+    
     const { data: homeroomClass, error: homeroomError } = await supabase
         .from('classes')
         .select('*')
@@ -792,27 +796,10 @@ export async function getHomeroomStudentProgress() {
         .single();
     
     if (homeroomError || !homeroomClass) {
-        return { studentData: [], className: null };
+        return { studentData: [], className: null }; // Not a homeroom teacher
     }
-
-    // This must be called inside the function to avoid ReferenceError
+    
     const activeSchoolYearId = await getActiveSchoolYearId();
-
-    if (!activeSchoolYearId) {
-        const { data: students } = await supabase
-            .from('students')
-            .select('id, name, nis')
-            .eq('class_id', homeroomClass.id)
-            .eq('status', 'active');
-        
-        const studentData = (students || []).map(s => ({
-            ...s,
-            average_grade: 0,
-            attendance_percentage: 0,
-            status: 'Stabil'
-        }));
-        return { studentData, className: homeroomClass.name };
-    }
 
     const { data: students, error: studentsError } = await supabase
         .from('students')
@@ -824,15 +811,9 @@ export async function getHomeroomStudentProgress() {
         console.error("Error fetching students for homeroom:", studentsError);
         return { studentData: [], className: homeroomClass.name };
     }
-
-    const [attendanceRes, gradesRes] = await Promise.all([
-        supabase.from('attendance').select('records').eq('school_year_id', activeSchoolYearId),
-        supabase.from('grades').select('records').eq('school_year_id', activeSchoolYearId)
-    ]);
-
-    if (attendanceRes.error || gradesRes.error) {
-        console.error({ attendanceError: attendanceRes.error, gradesError: gradesRes.error });
-        // Fallback to default data on error
+    
+    if (!activeSchoolYearId) {
+        // Return students with default values if no active year is set
         const studentData = students.map(s => ({
             ...s,
             average_grade: 0,
@@ -841,10 +822,23 @@ export async function getHomeroomStudentProgress() {
         }));
         return { studentData, className: homeroomClass.name };
     }
+
+    // Fetch all attendance and grade data for the entire school year
+    const [attendanceRes, gradesRes] = await Promise.all([
+        supabase.from('attendance').select('records').eq('school_year_id', activeSchoolYearId),
+        supabase.from('grades').select('records').eq('school_year_id', activeSchoolYearId)
+    ]);
     
+    if (attendanceRes.error || gradesRes.error) {
+        console.error({ attendanceError: attendanceRes.error, gradesError: gradesRes.error });
+        // Fallback to default data on error
+        const studentData = students.map(s => ({ ...s, average_grade: 0, attendance_percentage: 0, status: 'Stabil' }));
+        return { studentData, className: homeroomClass.name };
+    }
+
     const allAttendanceRecords = (attendanceRes.data || []).flatMap(entry => entry.records as any[]);
     const allGradeRecords = (gradesRes.data || []).flatMap(entry => entry.records as any[]);
-    
+
     const studentAggregates = students.map(student => {
         const studentGrades = allGradeRecords
             .filter(r => r.student_id === student.id)
@@ -1018,3 +1012,4 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 
     
+
