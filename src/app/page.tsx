@@ -41,12 +41,12 @@ export default function WelcomePage() {
             <main className="flex flex-col items-center justify-center text-center w-full max-w-md flex-1">
                 <div className="w-full max-w-xs">
                     <Image
-                        src="https://picsum.photos/800/600"
-                        alt="Ilustrasi manajemen kelas yang efisien"
+                        src="/ilustration.png"
+                        alt="Ilustrasi guru dan siswa menggunakan aplikasi Lakukelas"
                         width={400}
                         height={300}
                         className="rounded-2xl shadow-2xl shadow-slate-200 aspect-[4/3] object-cover"
-                        data-ai-hint="dashboard chart"
+                        data-ai-hint="teacher students application"
                         priority
                     />
                 </div>
