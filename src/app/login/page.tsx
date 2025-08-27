@@ -172,7 +172,7 @@ export default function LoginPage() {
     return (
         <div 
             className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen bg-cover bg-center"
-            style={{ backgroundImage: `url('/bg-mobile.png')` }}
+            style={{ backgroundImage: `url('/bg-login.png')` }}
         >
             <div className="flex items-center justify-center py-12 bg-background/80 backdrop-blur-sm lg:bg-background lg:backdrop-blur-none">
                 <div className="mx-auto grid w-[350px] gap-6">
