@@ -1,12 +1,12 @@
 
 import { ClassSettingsPageComponent } from "./class-settings-page";
-import { getAllClasses, getAllUsers, getActiveStudents } from "@/lib/data";
+import { getAllClasses, getAllUsers, getAllStudents } from "@/lib/data";
 
 export default async function ClassSettingsPage() {
     const [classes, users, students] = await Promise.all([
         getAllClasses(),
         getAllUsers(),
-        getActiveStudents()
+        getAllStudents()
     ]);
 
     const teachers = users.filter(u => u.role === 'teacher');
