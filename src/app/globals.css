@@ -37,6 +37,28 @@
     --sidebar-accent-foreground: 262 84% 48%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 262 84% 58%;
+
+    /* Supabase Auth UI Theme Overrides */
+    --colors-brand: hsl(var(--primary));
+    --colors-brandAccent: hsl(var(--primary) / 0.8);
+    --colors-brandButtonText: hsl(var(--primary-foreground));
+    --colors-defaultButtonBackground: hsl(var(--card));
+    --colors-defaultButtonBackgroundHover: hsl(var(--accent));
+    --colors-defaultButtonBorder: hsl(var(--border));
+    --colors-defaultButtonText: hsl(var(--foreground));
+    --colors-dividerBackground: hsl(var(--border));
+    --colors-inputBackground: hsl(var(--muted));
+    --colors-inputBorder: transparent;
+    --colors-inputBorderHover: hsl(var(--border));
+    --colors-inputBorderFocus: hsl(var(--primary));
+    --colors-inputText: hsl(var(--foreground));
+    --colors-inputLabelText: hsl(var(--muted-foreground));
+    --colors-inputPlaceholder: hsl(var(--muted-foreground));
+    --fonts-bodyFontFamily: "var(--font-geist-sans)";
+    --fonts-buttonFontFamily: "var(--font-geist-sans)";
+    --fonts-linkFontFamily: "var(--font-geist-sans)";
+    --fonts-labelFontFamily: "var(--font-geist-sans)";
+    --border-radius: var(--radius);
   }
 
   .dark {
