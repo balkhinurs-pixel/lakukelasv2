@@ -3,7 +3,6 @@
 
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/client';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -61,91 +60,89 @@ function AuthForm() {
     };
 
     return (
-        <div className="w-full max-w-sm">
+        <div className="w-full">
             <Tabs defaultValue="sign_in" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="sign_in">Masuk</TabsTrigger>
-                    <TabsTrigger value="sign_up">Daftar</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 bg-primary/10 p-1 rounded-xl">
+                    <TabsTrigger value="sign_in" className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg">Masuk</TabsTrigger>
+                    <TabsTrigger value="sign_up" className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg">Daftar</TabsTrigger>
                 </TabsList>
                 <TabsContent value="sign_in">
-                    <form onSubmit={(e) => handleAuthAction(e, 'sign_in')} className="space-y-4 mt-4">
+                    <form onSubmit={(e) => handleAuthAction(e, 'sign_in')} className="space-y-6 mt-6">
                         <div className="space-y-2">
-                            <Label htmlFor="email-in">Email</Label>
+                            <Label htmlFor="email-in" className="text-gray-600">Email</Label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input id="email-in" name="email" type="email" placeholder="email@anda.com" required className="pl-10"/>
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <Input id="email-in" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white rounded-xl text-base"/>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password-in">Kata Sandi</Label>
+                            <Label htmlFor="password-in" className="text-gray-600">Kata Sandi</Label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input id="password-in" name="password" type={showPassword ? 'text' : 'password'} required className="pl-10 pr-10"/>
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <Input id="password-in" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white rounded-xl text-base"/>
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
                                 >
-                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-xl" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Masuk
                         </Button>
                     </form>
                 </TabsContent>
                 <TabsContent value="sign_up">
-                    <form onSubmit={(e) => handleAuthAction(e, 'sign_up')} className="space-y-4 mt-4">
+                    <form onSubmit={(e) => handleAuthAction(e, 'sign_up')} className="space-y-6 mt-6">
                          <div className="space-y-2">
-                            <Label htmlFor="email-up">Email</Label>
+                            <Label htmlFor="email-up" className="text-gray-600">Email</Label>
                              <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input id="email-up" name="email" type="email" placeholder="email@anda.com" required className="pl-10"/>
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <Input id="email-up" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white rounded-xl text-base"/>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password-up">Kata Sandi</Label>
+                            <Label htmlFor="password-up" className="text-gray-600">Kata Sandi</Label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input id="password-up" name="password" type={showPassword ? 'text' : 'password'} required className="pl-10 pr-10"/>
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <Input id="password-up" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white rounded-xl text-base"/>
                                  <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
                                 >
-                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-xl" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Daftar
                         </Button>
                     </form>
                 </TabsContent>
-                 <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                            Atau lanjutkan dengan
-                        </span>
-                    </div>
-                </div>
-                 <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
-                    {loading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                            <path fill="#4285F4" d="M488 261.8C488 403.3 381.5 512 244 512 110.3 512 0 398.8 0 256S110.3 0 244 0c69.8 0 129.8 28.2 174.2 73.4l-64.5 64.5C325.5 110.3 288.5 96 244 96c-85.3 0-154.1 68.8-154.1 154.1s68.8 154.1 154.1 154.1c98.2 0 135-70.4 140.8-106.9H244v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
-                        </svg>
-                    )}
-                    Google
-                </Button>
             </Tabs>
+            <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                        Atau lanjutkan dengan
+                    </span>
+                </div>
+            </div>
+            <Button variant="outline" className="w-full h-14 text-base bg-white rounded-xl" onClick={handleGoogleSignIn} disabled={loading}>
+                {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <svg className="mr-2 h-5 w-5" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="#4285F4" d="M488 261.8C488 403.3 381.5 512 244 512 110.3 512 0 398.8 0 256S110.3 0 244 0c69.8 0 129.8 28.2 174.2 73.4l-64.5 64.5C325.5 110.3 288.5 96 244 96c-85.3 0-154.1 68.8-154.1 154.1s68.8 154.1 154.1 154.1c98.2 0 135-70.4 140.8-106.9H244v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>
+                )}
+                Google
+            </Button>
         </div>
     )
 }
@@ -170,33 +167,20 @@ export default function LoginPage() {
     }, [supabase, router]);
     
     return (
-        <div 
-            className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen bg-cover bg-center"
-            style={{ backgroundImage: `url('/bg-login.png')` }}
-        >
-            <div className="flex items-center justify-center py-12 bg-background/80 backdrop-blur-sm lg:bg-background lg:backdrop-blur-none">
-                <div className="mx-auto grid w-[350px] gap-6">
-                    <div className="grid gap-2 text-center">
-                        <h1 className="text-3xl font-bold">Masuk Akun</h1>
-                        <p className="text-balance text-muted-foreground">
-                            Masukkan detail Anda untuk mengakses dasbor guru.
-                        </p>
-                    </div>
-                    <AuthForm />
-                    <div className="mt-4 text-center text-sm">
-                        Kembali ke <Link href="/" className="underline">Halaman Utama</Link>
-                    </div>
+        <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="mx-auto grid w-full max-w-sm gap-6">
+                <div className="grid gap-2 text-center">
+                    <h1 className="text-3xl font-bold">Masuk Akun</h1>
+                    <p className="text-balance text-muted-foreground">
+                        Masukkan detail Anda untuk mengakses dasbor guru.
+                    </p>
                 </div>
-            </div>
-            <div className="hidden bg-muted lg:block">
-                <Image
-                    src="https://picsum.photos/1200/1800"
-                    alt="Image"
-                    width="1200"
-                    height="1800"
-                    data-ai-hint="teacher classroom"
-                    className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-                />
+                <AuthForm />
+                <div className="mt-4 text-center text-sm">
+                    <Link href="/" className="underline text-gray-600 hover:text-primary">
+                        Kembali ke Halaman Utama
+                    </Link>
+                </div>
             </div>
         </div>
     )
