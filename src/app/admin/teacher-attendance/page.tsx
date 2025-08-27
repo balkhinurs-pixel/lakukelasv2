@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/select";
 import { getAllUsers, getTeacherAttendanceHistory, getUserProfile } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
-import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
