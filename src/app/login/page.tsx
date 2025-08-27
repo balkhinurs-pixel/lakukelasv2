@@ -54,7 +54,6 @@ function AuthForm() {
                 title: action === 'sign_in' ? 'Login Berhasil' : 'Pendaftaran Berhasil',
                 description: action === 'sign_in' ? 'Anda akan diarahkan ke dasbor.' : 'Silakan cek email Anda untuk verifikasi.',
             });
-            // FIX: Explicitly redirect to dashboard on successful sign in
             if (action === 'sign_in') {
                 router.push('/dashboard');
             } else {
@@ -94,7 +93,7 @@ function AuthForm() {
                                 </button>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-xl shadow-lg" disabled={loading}>
+                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-[#FFD93D] hover:bg-[#FFD93D]/90 text-black rounded-xl shadow-lg" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Masuk
                         </Button>
@@ -123,7 +122,7 @@ function AuthForm() {
                                 </button>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-xl shadow-lg" disabled={loading}>
+                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-[#FFD93D] hover:bg-[#FFD93D]/90 text-black rounded-xl shadow-lg" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Daftar
                         </Button>
@@ -175,7 +174,7 @@ export default function LoginPage() {
             className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center"
             style={{ backgroundImage: `url('/bg-login.png')` }}
         >
-            <div className="absolute inset-0 bg-black/30"></div>
+            <div className="absolute inset-0 bg-black/50"></div>
             <div className="relative mx-auto grid w-full max-w-sm gap-6">
                 <div className="grid gap-2 text-center">
                     <h1 className="text-3xl font-bold text-white drop-shadow-md">Masuk Akun</h1>
