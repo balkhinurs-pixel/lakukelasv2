@@ -139,11 +139,8 @@ function AuthForm() {
                     {loading ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                        <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4">
-                            <path
-                            fill="currentColor"
-                            d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.6 1.98-4.66 1.98-5.6 0-9.98-4.9-9.98-10.9s4.38-10.9 9.98-10.9c3.03 0 5.39 1.25 6.63 2.44l2.13-2.13C18.53 1.11 15.82 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c7.04 0 12.12-4.92 12.12-12.48 0-.83-.07-1.64-.2-2.44h-12z"
-                            ></path>
+                        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                            <path fill="#4285F4" d="M488 261.8C488 403.3 381.5 512 244 512 110.3 512 0 398.8 0 256S110.3 0 244 0c69.8 0 129.8 28.2 174.2 73.4l-64.5 64.5C325.5 110.3 288.5 96 244 96c-85.3 0-154.1 68.8-154.1 154.1s68.8 154.1 154.1 154.1c98.2 0 135-70.4 140.8-106.9H244v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
                         </svg>
                     )}
                     Google
@@ -175,7 +172,7 @@ export default function LoginPage() {
     return (
         <div 
             className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen bg-cover bg-center"
-            style={{ backgroundImage: `url('https://picsum.photos/800/1200')` }}
+            style={{ backgroundImage: `url('/bg-mobile.png')` }}
         >
             <div className="flex items-center justify-center py-12 bg-background/80 backdrop-blur-sm lg:bg-background lg:backdrop-blur-none">
                 <div className="mx-auto grid w-[350px] gap-6">
