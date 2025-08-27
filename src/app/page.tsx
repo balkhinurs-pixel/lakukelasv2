@@ -45,7 +45,7 @@ export default function WelcomePage() {
                         alt="Ilustrasi guru dan siswa menggunakan aplikasi Lakukelas"
                         width={1024}
                         height={1536}
-                        className="rounded-2xl shadow-2xl shadow-slate-200 h-auto w-full"
+                        className="h-auto w-full"
                         data-ai-hint="teacher students application"
                         priority
                     />
