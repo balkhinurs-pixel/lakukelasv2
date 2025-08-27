@@ -43,24 +43,24 @@ export default function WelcomePage() {
                     <Image
                         src="/ilustration.png"
                         alt="Ilustrasi guru dan siswa menggunakan aplikasi Lakukelas"
-                        width={400}
-                        height={300}
-                        className="rounded-2xl shadow-2xl shadow-slate-200 aspect-[4/3] object-cover"
+                        width={1024}
+                        height={1536}
+                        className="rounded-2xl shadow-2xl shadow-slate-200 h-auto w-full"
                         data-ai-hint="teacher students application"
                         priority
                     />
                 </div>
 
-                <div className="mt-8 space-y-4">
-                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tighter text-slate-900">
+                <div className="mt-8 space-y-2">
+                    <h1 className="text-3xl font-bold tracking-tighter text-slate-900">
                         Selamat Datang di <span className="text-primary">LakuKelas</span>
                     </h1>
-                    <p className="text-sm sm:text-base text-slate-600 max-w-prose">
+                    <p className="text-sm text-slate-600 max-w-prose">
                         Manajemen administrasi kelas menjadi lebih mudah dan intuitif. Fokus pada mengajar, biar kami yang urus sisanya.
                     </p>
                 </div>
                 
-                <Button size="lg" className="mt-8 w-full max-w-xs shadow-lg" asChild>
+                <Button size="lg" className="mt-6 w-full max-w-xs shadow-lg" asChild>
                     <a href="/login">Masuk atau Daftar Sekarang</a>
                 </Button>
             </main>
