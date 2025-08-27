@@ -143,7 +143,9 @@ function AuthForm() {
                 {loading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                    <svg className="mr-2 h-5 w-5" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="#4285F4" d="M488 261.8C488 403.3 381.5 512 244 512 110.3 512 0 398.8 0 256S110.3 0 244 0c69.8 0 129.8 28.2 174.2 73.4l-64.5 64.5C325.5 110.3 288.5 96 244 96c-85.3 0-154.1 68.8-154.1 154.1s68.8 154.1 154.1 154.1c98.2 0 135-70.4 140.8-106.9H244v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>
+                    <svg className="mr-2 h-5 w-5" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                        <path fill="#4285F4" d="M488 261.8C488 403.3 381.5 512 244 512 110.3 512 0 398.8 0 256S110.3 0 244 0c69.8 0 129.8 28.2 174.2 73.4l-64.5 64.5C325.5 110.3 288.5 96 244 96c-85.3 0-154.1 68.8-154.1 154.1s68.8 154.1 154.1 154.1c98.2 0 135-70.4 140.8-106.9H244v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                    </svg>
                 )}
                 Google
             </Button>
@@ -174,7 +176,6 @@ export default function LoginPage() {
             className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center"
             style={{ backgroundImage: `url('/bg-login.png')` }}
         >
-            <div className="absolute inset-0 bg-black/50"></div>
             <div className="relative mx-auto grid w-full max-w-sm gap-6">
                 <div className="grid gap-2 text-center">
                     <h1 className="text-3xl font-bold text-white drop-shadow-md">Masuk Akun</h1>
