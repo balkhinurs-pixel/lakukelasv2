@@ -165,7 +165,7 @@ export function ClassSettingsPageComponent({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                  <div className="flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg">
                         <School className="h-6 w-6" />
@@ -175,14 +175,14 @@ export function ClassSettingsPageComponent({
                         <p className="text-muted-foreground">Kelola semua rombongan belajar dan wali kelasnya.</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <Button variant="outline" onClick={handleSyncHomeroomStatus} disabled={syncing}>
                         {syncing ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
                             <RefreshCw className="mr-2 h-4 w-4" />
                         )}
-                        Sinkronisasi Status Walikelas
+                        Sinkronisasi Status
                     </Button>
                     <Button onClick={() => handleOpenDialog(null)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
