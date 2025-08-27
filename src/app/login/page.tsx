@@ -62,34 +62,34 @@ function AuthForm() {
     return (
         <div className="w-full">
             <Tabs defaultValue="sign_in" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-primary/10 p-1 rounded-xl">
-                    <TabsTrigger value="sign_in" className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg">Masuk</TabsTrigger>
-                    <TabsTrigger value="sign_up" className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg">Daftar</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 bg-white/30 dark:bg-black/30 p-1 rounded-xl backdrop-blur-sm">
+                    <TabsTrigger value="sign_in" className="data-[state=active]:bg-white/80 dark:data-[state=active]:bg-black/80 data-[state=active]:shadow-md rounded-lg">Masuk</TabsTrigger>
+                    <TabsTrigger value="sign_up" className="data-[state=active]:bg-white/80 dark:data-[state=active]:bg-black/80 data-[state=active]:shadow-md rounded-lg">Daftar</TabsTrigger>
                 </TabsList>
                 <TabsContent value="sign_in">
                     <form onSubmit={(e) => handleAuthAction(e, 'sign_in')} className="space-y-6 mt-6">
                         <div className="space-y-2">
-                            <Label htmlFor="email-in" className="text-gray-600">Email</Label>
+                            <Label htmlFor="email-in" className="text-white drop-shadow-sm">Email</Label>
                             <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <Input id="email-in" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white rounded-xl text-base"/>
+                                <Input id="email-in" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white/90 dark:bg-black/80 rounded-xl text-base"/>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password-in" className="text-gray-600">Kata Sandi</Label>
+                            <Label htmlFor="password-in" className="text-white drop-shadow-sm">Kata Sandi</Label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <Input id="password-in" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white rounded-xl text-base"/>
+                                <Input id="password-in" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white/90 dark:bg-black/80 rounded-xl text-base"/>
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                 >
                                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-xl" disabled={loading}>
+                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-xl shadow-lg" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Masuk
                         </Button>
@@ -98,27 +98,27 @@ function AuthForm() {
                 <TabsContent value="sign_up">
                     <form onSubmit={(e) => handleAuthAction(e, 'sign_up')} className="space-y-6 mt-6">
                          <div className="space-y-2">
-                            <Label htmlFor="email-up" className="text-gray-600">Email</Label>
+                            <Label htmlFor="email-up" className="text-white drop-shadow-sm">Email</Label>
                              <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <Input id="email-up" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white rounded-xl text-base"/>
+                                <Input id="email-up" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white/90 dark:bg-black/80 rounded-xl text-base"/>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password-up" className="text-gray-600">Kata Sandi</Label>
+                            <Label htmlFor="password-up" className="text-white drop-shadow-sm">Kata Sandi</Label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <Input id="password-up" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white rounded-xl text-base"/>
+                                <Input id="password-up" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white/90 dark:bg-black/80 rounded-xl text-base"/>
                                  <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                 >
                                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-xl" disabled={loading}>
+                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-xl shadow-lg" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Daftar
                         </Button>
@@ -127,15 +127,15 @@ function AuthForm() {
             </Tabs>
             <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-gray-200" />
+                    <span className="w-full border-t border-white/30" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                    <span className="bg-background/30 backdrop-blur-sm px-2 text-white">
                         Atau lanjutkan dengan
                     </span>
                 </div>
             </div>
-            <Button variant="outline" className="w-full h-14 text-base bg-white rounded-xl" onClick={handleGoogleSignIn} disabled={loading}>
+            <Button variant="outline" className="w-full h-14 text-base bg-white/90 dark:bg-black/80 rounded-xl text-foreground hover:bg-white dark:hover:bg-black/90" onClick={handleGoogleSignIn} disabled={loading}>
                 {loading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -146,7 +146,6 @@ function AuthForm() {
         </div>
     )
 }
-
 
 export default function LoginPage() {
     const supabase = createClient();
@@ -167,17 +166,21 @@ export default function LoginPage() {
     }, [supabase, router]);
     
     return (
-        <div className="flex min-h-screen items-center justify-center p-4">
-            <div className="mx-auto grid w-full max-w-sm gap-6">
+        <div 
+            className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center"
+            style={{ backgroundImage: `url('https://picsum.photos/1080/1920')` }}
+        >
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+            <div className="relative mx-auto grid w-full max-w-sm gap-6">
                 <div className="grid gap-2 text-center">
-                    <h1 className="text-3xl font-bold">Masuk Akun</h1>
-                    <p className="text-balance text-muted-foreground">
+                    <h1 className="text-3xl font-bold text-white drop-shadow-md">Masuk Akun</h1>
+                    <p className="text-balance text-white/90 drop-shadow-sm">
                         Masukkan detail Anda untuk mengakses dasbor guru.
                     </p>
                 </div>
                 <AuthForm />
                 <div className="mt-4 text-center text-sm">
-                    <Link href="/" className="underline text-gray-600 hover:text-primary">
+                    <Link href="/" className="underline text-white/80 hover:text-white">
                         Kembali ke Halaman Utama
                     </Link>
                 </div>
