@@ -3,13 +3,154 @@
 
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+function AuthForm() {
+    const supabase = createClient();
+    const router = useRouter();
+    const { toast } = useToast();
+    const [loading, setLoading] = React.useState(false);
+    const [showPassword, setShowPassword] = React.useState(false);
+
+    const handleGoogleSignIn = async () => {
+        if (!supabase) return;
+        setLoading(true);
+        await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+        setLoading(false);
+    };
+
+    const handleAuthAction = async (event: React.FormEvent<HTMLFormElement>, action: 'sign_in' | 'sign_up') => {
+        event.preventDefault();
+        if (!supabase) return;
+        setLoading(true);
+        const formData = new FormData(event.currentTarget);
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+
+        const { error } = action === 'sign_in'
+            ? await supabase.auth.signInWithPassword({ email, password })
+            : await supabase.auth.signUp({ email, password });
+
+        if (error) {
+            toast({
+                title: 'Autentikasi Gagal',
+                description: error.message,
+                variant: 'destructive',
+            });
+        } else {
+            toast({
+                title: action === 'sign_in' ? 'Login Berhasil' : 'Pendaftaran Berhasil',
+                description: action === 'sign_in' ? 'Anda akan diarahkan ke dasbor.' : 'Silakan cek email Anda untuk verifikasi.',
+            });
+            router.refresh();
+        }
+        setLoading(false);
+    };
+
+    return (
+        <Tabs defaultValue="sign_in" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="sign_in">Masuk</TabsTrigger>
+                <TabsTrigger value="sign_up">Daftar</TabsTrigger>
+            </TabsList>
+            <TabsContent value="sign_in">
+                <form onSubmit={(e) => handleAuthAction(e, 'sign_in')} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="email-in">Email</Label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="email-in" name="email" type="email" placeholder="email@anda.com" required className="pl-10"/>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="password-in">Kata Sandi</Label>
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="password-in" name="password" type={showPassword ? 'text' : 'password'} required className="pl-10 pr-10"/>
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Masuk
+                    </Button>
+                </form>
+            </TabsContent>
+            <TabsContent value="sign_up">
+                <form onSubmit={(e) => handleAuthAction(e, 'sign_up')} className="space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="email-up">Email</Label>
+                         <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="email-up" name="email" type="email" placeholder="email@anda.com" required className="pl-10"/>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="password-up">Kata Sandi</Label>
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="password-up" name="password" type={showPassword ? 'text' : 'password'} required className="pl-10 pr-10"/>
+                             <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Daftar
+                    </Button>
+                </form>
+            </TabsContent>
+             <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                        Atau lanjutkan dengan
+                    </span>
+                </div>
+            </div>
+             <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+                {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4">
+                        <path
+                        fill="currentColor"
+                        d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.6 1.98-4.66 1.98-5.6 0-9.98-4.9-9.98-10.9s4.38-10.9 9.98-10.9c3.03 0 5.39 1.25 6.63 2.44l2.13-2.13C18.53 1.11 15.82 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c7.04 0 12.12-4.92 12.12-12.48 0-.83-.07-1.64-.2-2.44h-12z"
+                        ></path>
+                    </svg>
+                )}
+                Google
+            </Button>
+        </Tabs>
+    );
+}
+
 
 export default function WelcomePage() {
     const supabase = createClient();
@@ -39,13 +180,6 @@ export default function WelcomePage() {
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
             </div>
         );
-    }
-    
-    const getBaseUrl = () => {
-        if (typeof window !== 'undefined') {
-            return `${window.location.protocol}//${window.location.host}`;
-        }
-        return 'http://localhost:9002'; // Fallback for server-side
     }
 
     return (
@@ -88,96 +222,7 @@ export default function WelcomePage() {
                             </DialogHeader>
                         </div>
                         <div className="p-6">
-                            <Auth
-                                supabaseClient={supabase}
-                                appearance={{ 
-                                    theme: ThemeSupa,
-                                    variables: {
-                                        default: {
-                                            colors: {
-                                                brand: 'hsl(var(--primary))',
-                                                brandAccent: 'hsl(var(--primary) / 0.8)',
-                                                brandButtonText: 'hsl(var(--primary-foreground))',
-                                                defaultButtonBackground: 'white',
-                                                defaultButtonBackgroundHover: '#eaeaea',
-                                                defaultButtonBorder: 'lightgray',
-                                                defaultButtonText: 'gray',
-                                                dividerBackground: '#eaeaea',
-                                                inputBackground: 'hsl(var(--muted))',
-                                                inputBorder: 'transparent',
-                                                inputBorderHover: 'lightgray',
-                                                inputBorderFocus: 'hsl(var(--primary))',
-                                                inputText: 'black',
-                                                inputLabelText: '#888888',
-                                                inputPlaceholder: '#aaaaaa',
-                                                messageText: '#2b2b2b',
-                                                messageTextDanger: 'red',
-                                            },
-                                            space: {
-                                                spaceSmall: '4px',
-                                                spaceMedium: '8px',
-                                                spaceLarge: '16px',
-                                                labelBottomMargin: '8px',
-                                                anchorBottomMargin: '8px',
-                                                emailInputSpacing: '8px',
-                                                socialAuthSpacing: '8px',
-                                                buttonPadding: '12px 15px',
-                                                inputPadding: '12px 15px',
-                                            },
-                                            fontSizes: {
-                                                baseBodySize: '14px',
-                                                baseInputSize: '14px',
-                                                baseLabelSize: '14px',
-                                                baseButtonSize: '14px',
-                                            },
-                                            fonts: {
-                                                bodyFontFamily: `var(--font-geist-sans)`,
-                                                buttonFontFamily: `var(--font-geist-sans)`,
-                                                linkFontFamily: `var(--font-geist-sans)`,
-                                                labelFontFamily: `var(--font-geist-sans)`,
-                                            },
-                                            radii: {
-                                                borderRadiusButton: 'var(--radius)',
-                                                buttonBorderRadius: 'var(--radius)',
-                                                inputBorderRadius: 'var(--radius)',
-                                            },
-                                        },
-                                    },
-                                }}
-                                providers={['google']}
-                                redirectTo={`${getBaseUrl()}/auth/callback`}
-                                socialLayout="horizontal"
-                                localization={{
-                                    variables: {
-                                        sign_in: {
-                                            email_label: 'Alamat Email',
-                                            password_label: 'Kata Sandi',
-                                            button_label: 'Masuk',
-                                            social_provider_text: 'Masuk dengan {{provider}}',
-                                            link_text: 'Sudah punya akun? Masuk',
-                                            forgotten_password_label: 'Lupa kata sandi?'
-                                        },
-                                        sign_up: {
-                                            email_label: 'Alamat Email',
-                                            password_label: 'Kata Sandi',
-                                            button_label: 'Daftar',
-                                            social_provider_text: 'Daftar dengan {{provider}}',
-                                            link_text: 'Belum punya akun? Daftar'
-                                        },
-                                        forgotten_password: {
-                                            email_label: 'Alamat Email',
-                                            email_input_placeholder: 'email@anda.com',
-                                            button_label: 'Kirim Instruksi Reset',
-                                            link_text: 'Lupa kata sandi Anda?',
-                                            confirmation_text: 'Email konfirmasi telah dikirim'
-                                        },
-                                        update_password: {
-                                            password_label: 'Kata Sandi Baru',
-                                            button_label: 'Perbarui Kata Sandi'
-                                        }
-                                    }
-                                }}
-                            />
+                            <AuthForm />
                         </div>
                     </DialogContent>
                 </Dialog>
