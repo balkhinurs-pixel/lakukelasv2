@@ -168,7 +168,7 @@ export default function LoginPage() {
     return (
         <div 
             className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center"
-            style={{ backgroundImage: `url('https://picsum.photos/1080/1920')` }}
+            style={{ backgroundImage: `url('/bg-login.png')` }}
         >
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
             <div className="relative mx-auto grid w-full max-w-sm gap-6">
