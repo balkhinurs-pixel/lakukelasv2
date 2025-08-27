@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -53,7 +54,12 @@ function AuthForm() {
                 title: action === 'sign_in' ? 'Login Berhasil' : 'Pendaftaran Berhasil',
                 description: action === 'sign_in' ? 'Anda akan diarahkan ke dasbor.' : 'Silakan cek email Anda untuk verifikasi.',
             });
-            router.refresh();
+            // FIX: Explicitly redirect to dashboard on successful sign in
+            if (action === 'sign_in') {
+                router.push('/dashboard');
+            } else {
+                router.refresh();
+            }
         }
         setLoading(false);
     };
@@ -129,7 +135,7 @@ function AuthForm() {
                     <span className="w-full border-t border-white/30" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background/30 backdrop-blur-sm px-2 text-white">
+                    <span className="bg-[#6853C3] px-2 text-white">
                         Atau lanjutkan dengan
                     </span>
                 </div>
@@ -169,6 +175,7 @@ export default function LoginPage() {
             className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center"
             style={{ backgroundImage: `url('/bg-login.png')` }}
         >
+            <div className="absolute inset-0 bg-black/30"></div>
             <div className="relative mx-auto grid w-full max-w-sm gap-6">
                 <div className="grid gap-2 text-center">
                     <h1 className="text-3xl font-bold text-white drop-shadow-md">Masuk Akun</h1>
