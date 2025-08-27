@@ -1,12 +1,12 @@
 
-import { getAllUsers, getClasses, getSubjects, getAllSchedules } from "@/lib/data";
+import { getAllUsers, getClasses, getAllSubjects, getAllSchedules } from "@/lib/data";
 import ScheduleManagementClient from "./schedule-management-client";
 
 export default async function ScheduleManagementPage() {
     const [users, classes, subjects, schedule] = await Promise.all([
         getAllUsers(),
         getClasses(),
-        getSubjects(),
+        getAllSubjects(), // Corrected: Use getAllSubjects to fetch all subjects for admin
         getAllSchedules(), // Use getAllSchedules for admin panel
     ]);
 
