@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/select";
 import { getAllUsers, getTeacherAttendanceHistory, getUserProfile } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-is-mobile";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -163,7 +163,6 @@ export default function TeacherAttendanceRecapPage() {
     if (!profile) return;
 
     const doc = new jsPDF() as jsPDFWithAutoTable;
-    const title = "REKAPITULASI KEHADIRAN GURU";
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 14;
 
@@ -187,7 +186,7 @@ export default function TeacherAttendanceRecapPage() {
     const generatePdf = () => {
         addHeader(doc);
         doc.setFontSize(12).setFont('helvetica', 'bold');
-        doc.text(title, pageWidth / 2, margin + 35, { align: 'center' });
+        doc.text("REKAPITULASI KEHADIRAN GURU", pageWidth / 2, margin + 35, { align: 'center' });
         
         doc.setFontSize(10).setFont('helvetica', 'normal');
         const teacherName = users.find(u => u.id === selectedTeacher)?.full_name || 'Semua Guru';
@@ -199,7 +198,45 @@ export default function TeacherAttendanceRecapPage() {
         doc.text(`Guru: ${teacherName}`, margin, margin + 45);
         doc.text(`Periode: ${dateLabel}`, margin, margin + 50);
 
-        const tableBody = filteredHistory.map((item) => [
+        // --- Summary Table ---
+        const summaryData: { [teacherId: string]: { name: string; tepatWaktu: number; terlambat: number; tidakHadir: number } } = {};
+
+        filteredHistory.forEach(item => {
+            if (!summaryData[item.teacherId]) {
+                summaryData[item.teacherId] = {
+                    name: item.teacherName,
+                    tepatWaktu: 0,
+                    terlambat: 0,
+                    tidakHadir: 0,
+                };
+            }
+            if (item.status === 'Tepat Waktu') summaryData[item.teacherId].tepatWaktu++;
+            else if (item.status === 'Terlambat') summaryData[item.teacherId].terlambat++;
+            else if (item.status === 'Tidak Hadir') summaryData[item.teacherId].tidakHadir++;
+        });
+
+        const summaryBody = Object.values(summaryData).map(item => [
+            item.name,
+            item.tepatWaktu,
+            item.terlambat,
+            item.tepatWaktu + item.terlambat,
+            item.tidakHadir
+        ]);
+
+        doc.autoTable({
+            head: [['Nama Guru', 'Tepat Waktu', 'Terlambat', 'Total Hadir', 'Tidak Hadir']],
+            body: summaryBody,
+            startY: margin + 55,
+            theme: 'grid',
+            headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
+        });
+
+        let lastY = (doc as any).lastAutoTable.finalY || margin + 70;
+        
+        doc.setFontSize(12).setFont('helvetica', 'bold');
+        doc.text("Rincian Kehadiran Harian", margin, lastY + 10);
+
+        const detailBody = filteredHistory.map((item) => [
             item.teacherName,
             format(new Date(item.date), 'EEEE, dd MMM yyyy', { locale: id }),
             item.checkIn ? formatTime(item.checkIn) : '-',
@@ -209,13 +246,13 @@ export default function TeacherAttendanceRecapPage() {
 
         doc.autoTable({
             head: [['Nama Guru', 'Tanggal', 'Absen Masuk', 'Absen Pulang', 'Status']],
-            body: tableBody,
-            startY: margin + 55,
+            body: detailBody,
+            startY: lastY + 15,
             theme: 'grid',
             headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
         });
 
-        const finalY = (doc as any).lastAutoTable.finalY || margin + 70;
+        const finalY = (doc as any).lastAutoTable.finalY || lastY + 20;
         
         const signatureY = finalY + 20;
         doc.text(`Mengetahui,`, margin, signatureY);
@@ -232,7 +269,6 @@ export default function TeacherAttendanceRecapPage() {
         if (profile.nip) {
             doc.text(`NIP. ${profile.nip}`, pageWidth - margin, signatureY + 35, { align: 'right' });
         }
-
 
         doc.save(`laporan_kehadiran_guru_${format(new Date(), "yyyyMMdd")}.pdf`);
     };
