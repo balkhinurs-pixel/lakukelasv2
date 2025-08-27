@@ -54,7 +54,7 @@ function AuthForm() {
                 title: action === 'sign_in' ? 'Login Berhasil' : 'Pendaftaran Berhasil',
                 description: action === 'sign_in' ? 'Anda akan diarahkan ke dasbor.' : 'Silakan cek email Anda untuk verifikasi.',
             });
-            if (action === 'sign_in') {
+             if (action === 'sign_in') {
                 router.push('/dashboard');
             } else {
                 router.push('/auth/check-email');
@@ -143,13 +143,25 @@ function AuthForm() {
                 {loading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5">
-                        <title>Google</title>
-                        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.98-4.32 1.98-5.4 0-9.8-4.4-9.8-9.8s4.4-9.8 9.8-9.8c2.98 0 5.05 1.25 6.42 2.57l2.17-2.17C18.97 1.21 16.25 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.94 0 12.13-4.86 12.13-12.36 0-.8-.08-1.55-.25-2.29z" fill="#4285F4"/>
-                        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.98-4.32 1.98-5.4 0-9.8-4.4-9.8-9.8s4.4-9.8 9.8-9.8c2.98 0 5.05 1.25 6.42 2.57l2.17-2.17C18.97 1.21 16.25 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.94 0 12.13-4.86 12.13-12.36 0-.8-.08-1.55-.25-2.29z" fill="url(#color-gradient)"/>
-                        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.98-4.32 1.98-5.4 0-9.8-4.4-9.8-9.8s4.4-9.8 9.8-9.8c2.98 0 5.05 1.25 6.42 2.57l2.17-2.17C18.97 1.21 16.25 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.94 0 12.13-4.86 12.13-12.36 0-.8-.08-1.55-.25-2.29z" fill="#34A853"/>
-                        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.98-4.32 1.98-5.4 0-9.8-4.4-9.8-9.8s4.4-9.8 9.8-9.8c2.98 0 5.05 1.25 6.42 2.57l2.17-2.17C18.97 1.21 16.25 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.94 0 12.13-4.86 12.13-12.36 0-.8-.08-1.55-.25-2.29z" fill="#FBBC05"/>
-                        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.98-4.32 1.98-5.4 0-9.8-4.4-9.8-9.8s4.4-9.8 9.8-9.8c2.98 0 5.05 1.25 6.42 2.57l2.17-2.17C18.97 1.21 16.25 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.94 0 12.13-4.86 12.13-12.36 0-.8-.08-1.55-.25-2.29z" fill="#EA4335"/>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 48 48"
+                        className="mr-2 h-5 w-5"
+                        >
+                        <path
+                            fill="#FFC107"
+                            d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+                        />
+                        <path
+                            fill="#FF3D00"
+                            d="M6.306 14.691c-1.355 2.823-2.16 5.891-2.16 9.149c0 3.258.805 6.326 2.16 9.149l-5.657 5.657C1.053 34.046 0 29.268 0 24c0-5.268 1.053-10.046 2.929-14.191L8.586 14.5z"
+                        />
+                        <path
+                            fill="#4CAF50"
+                            d="M24 48c5.268 0 10.046-1.053 14.191-2.929l-5.657-5.657C30.156 41.056 27.268 42 24 42c-6.627 0-12-5.373-12-12h-8c0 6.627 5.373 12 12 12z"
+                        />
+
+                        <path fill="#1976D2" d="M43.611 20.083H24v8h19.611c.17-2.625.04-5.334-1.468-7.917z" />
                     </svg>
                 )}
                 Google
@@ -181,6 +193,7 @@ export default function LoginPage() {
             className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center"
             style={{ backgroundImage: `url('/bg-login.png')` }}
         >
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
             <div className="relative mx-auto grid w-full max-w-sm gap-6">
                 <div className="grid gap-2 text-center">
                     <h1 className="text-3xl font-bold text-white drop-shadow-md">Masuk Akun</h1>
@@ -198,4 +211,3 @@ export default function LoginPage() {
         </div>
     )
 }
-
