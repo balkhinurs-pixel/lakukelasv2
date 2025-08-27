@@ -134,7 +134,7 @@ function AuthForm() {
                     <span className="w-full border-t border-white/30" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-transparent px-2 text-white/90 backdrop-blur-sm">
+                    <span className="px-2 text-white/90 backdrop-blur-sm">
                         Atau lanjutkan dengan
                     </span>
                 </div>
@@ -143,25 +143,12 @@ function AuthForm() {
                 {loading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 48 48"
-                        className="mr-2 h-5 w-5"
-                        >
-                        <path
-                            fill="#FFC107"
-                            d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
-                        />
-                        <path
-                            fill="#FF3D00"
-                            d="M6.306 14.691c-1.355 2.823-2.16 5.891-2.16 9.149c0 3.258.805 6.326 2.16 9.149l-5.657 5.657C1.053 34.046 0 29.268 0 24c0-5.268 1.053-10.046 2.929-14.191L8.586 14.5z"
-                        />
-                        <path
-                            fill="#4CAF50"
-                            d="M24 48c5.268 0 10.046-1.053 14.191-2.929l-5.657-5.657C30.156 41.056 27.268 42 24 42c-6.627 0-12-5.373-12-12h-8c0 6.627 5.373 12 12 12z"
-                        />
-
-                        <path fill="#1976D2" d="M43.611 20.083H24v8h19.611c.17-2.625.04-5.334-1.468-7.917z" />
+                    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5">
+                        <title>Google</title>
+                        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.08-2.58 2.4-5.75 2.4-4.87 0-8.8-3.92-8.8-8.72s3.93-8.72 8.8-8.72c2.6 0 4.5.92 5.8 2.15l2.8-2.78C19.1 1.96 16.2.72 12.48.72c-6.9 0-12.48 5.6-12.48 12.4s5.58 12.4 12.48 12.4c6.8 0 12.12-4.72 12.12-12.24 0-1.12-.12-2.12-.36-3.18H12.48z" fill="#4285F4"/>
+                        <path d="m12.48.72 5.8 5.8 2.8-2.78-5.6-5.6C16.2.72 19.1 1.96 21.8 4.66l-2.8 2.78-5.8-5.8h.68z" fill="#34A853"/>
+                        <path d="M21.8 4.66c3.24 3.2 4.68 7.36 4.68 12.24 0-1.12-.12-2.12-.36-3.18h-7.84v3.28h4.56c-1.32 3.6-4.24 5.92-8.32 5.92-1.92 0-3.76-.6-5.32-1.68l-2.8 2.78C6.12 23.4 9.16 24 12.48 24c6.8 0 12.12-4.72 12.12-12.24 0-4.88-1.44-9.04-4.68-12.24l.6-.6z" fill="#FBBC05"/>
+                        <path d="M12.48 10.92V7.64H4.64c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.08-2.58 2.4-5.75 2.4s-5.8-1.16-7.36-3.08l-2.8 2.78c1.56 2.08 3.4 3.28 5.76 3.92.24.04.52.04.76.04 6.9 0 12.48-5.6 12.48-12.4V10.92z" fill="#EA4335"/>
                     </svg>
                 )}
                 Google
@@ -193,7 +180,7 @@ export default function LoginPage() {
             className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center"
             style={{ backgroundImage: `url('/bg-login.png')` }}
         >
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+            <div className="absolute inset-0 bg-black/30"></div>
             <div className="relative mx-auto grid w-full max-w-sm gap-6">
                 <div className="grid gap-2 text-center">
                     <h1 className="text-3xl font-bold text-white drop-shadow-md">Masuk Akun</h1>
