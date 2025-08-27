@@ -52,10 +52,10 @@ export default function WelcomePage() {
                 </div>
 
                 <div className="mt-8 space-y-4">
-                    <h1 className="text-4xl sm:text-5xl font-bold tracking-tighter text-slate-900">
+                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tighter text-slate-900">
                         Selamat Datang di <span className="text-primary">LakuKelas</span>
                     </h1>
-                    <p className="text-base sm:text-lg text-slate-600 max-w-prose">
+                    <p className="text-sm sm:text-base text-slate-600 max-w-prose">
                         Manajemen administrasi kelas menjadi lebih mudah dan intuitif. Fokus pada mengajar, biar kami yang urus sisanya.
                     </p>
                 </div>
