@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import GradientText from '@/components/ui/gradient-text';
 
 export default function WelcomePage() {
     const supabase = createClient();
@@ -53,7 +54,13 @@ export default function WelcomePage() {
 
                 <div className="mt-8 space-y-2">
                     <h1 className="text-3xl font-bold tracking-tighter text-slate-900">
-                        Selamat Datang di <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">LakuKelas</span>
+                        Selamat Datang di{' '}
+                        <GradientText
+                            colors={['#5DADE2', '#A9DFBF', '#5DADE2']}
+                            className="font-extrabold"
+                        >
+                            LakuKelas
+                        </GradientText>
                     </h1>
                     <p className="text-sm text-slate-600 max-w-prose">
                         Manajemen administrasi kelas menjadi lebih mudah dan intuitif. Fokus pada mengajar, biar kami yang urus sisanya.

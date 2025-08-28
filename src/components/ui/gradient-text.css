@@ -1,0 +1,38 @@
+/* Inspired by https://reactbits.dev/animated-gradient-text */
+.animated-gradient-text {
+  position: relative;
+  display: inline-block;
+}
+
+.animated-gradient-text .text-content {
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-size: 200% 200%;
+  animation: gradient-animation linear infinite;
+}
+
+.animated-gradient-text .gradient-overlay {
+  position: absolute;
+  inset: -3px;
+  padding: 3px;
+  border-radius: inherit;
+  background-size: 200% 200%;
+  animation: gradient-animation linear infinite;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  z-index: -1;
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
