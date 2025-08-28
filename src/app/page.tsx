@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import GradientText from '@/components/ui/gradient-text';
+import SplitText from '@/components/ui/split-text';
 
 export default function WelcomePage() {
     const supabase = createClient();
@@ -53,11 +54,18 @@ export default function WelcomePage() {
                 </div>
 
                 <div className="mt-8 space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tighter text-slate-900">
-                        Selamat Datang di{' '}
+                     <h1 className="text-3xl font-bold tracking-tighter text-slate-900">
+                        <SplitText
+                            text="Selamat Datang di"
+                            className="inline-block"
+                            from={{ opacity: 0, y: 20 }}
+                            to={{ opacity: 1, y: 0 }}
+                            delay={80}
+                            splitType="chars"
+                        />
                         <GradientText
                             colors={['#5DADE2', '#A9DFBF', '#5DADE2']}
-                            className="font-extrabold"
+                            className="font-extrabold ml-2"
                         >
                             LakuKelas
                         </GradientText>
