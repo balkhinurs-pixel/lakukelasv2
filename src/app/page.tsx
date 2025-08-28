@@ -53,7 +53,7 @@ export default function WelcomePage() {
 
                 <div className="mt-8 space-y-2">
                     <h1 className="text-3xl font-bold tracking-tighter text-slate-900">
-                        Selamat Datang di <span className="text-primary">LakuKelas</span>
+                        Selamat Datang di <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">LakuKelas</span>
                     </h1>
                     <p className="text-sm text-slate-600 max-w-prose">
                         Manajemen administrasi kelas menjadi lebih mudah dan intuitif. Fokus pada mengajar, biar kami yang urus sisanya.
