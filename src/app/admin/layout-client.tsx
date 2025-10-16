@@ -431,5 +431,5 @@ export default function AdminLayoutClient({
       </SidebarInset>
       {isMobile && <BottomNavbar />}
     </>
-
-    
+  );
+}
