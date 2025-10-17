@@ -1,4 +1,3 @@
-
 "use client"
 import * as React from "react";
 import {
@@ -17,9 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
-import { updateProfile, updateSchoolData, uploadProfileImage } from "@/lib/actions";
+import { updateProfile, uploadProfileImage } from "@/lib/actions";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
     const { toast } = useToast();
@@ -28,10 +29,9 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
     const [uploading, setUploading] = React.useState<false | 'avatar' | 'logo'>(false);
 
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
-    const logoInputRef = React.useRef<HTMLInputElement>(null);
-
+    
     const [avatarUrl, setAvatarUrl] = React.useState(profile.avatar_url);
-    const [logoUrl, setLogoUrl] = React.useState(profile.school_logo_url);
+    const [logoUrl] = React.useState(profile.school_logo_url);
     
     const [profileData, setProfileData] = React.useState({
         fullName: profile.full_name || '',
@@ -40,7 +40,7 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         jabatan: profile.jabatan || '',
     });
 
-    const [schoolData, setSchoolData] = React.useState({
+    const [schoolData] = React.useState({
         schoolName: profile.school_name || '',
         schoolAddress: profile.school_address || '',
         headmasterName: profile.headmaster_name || '',
@@ -49,10 +49,6 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setProfileData({ ...profileData, [e.target.name]: e.target.value });
-    }
-
-    const handleSchoolDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSchoolData({ ...schoolData, [e.target.name]: e.target.value });
     }
 
     const handleProfileSave = async (e: React.FormEvent) => {
@@ -68,36 +64,18 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         setLoading(false);
     }
     
-    const handleSchoolDataSave = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        const result = await updateSchoolData(schoolData);
-        if (result.success) {
-            toast({ title: "Data Sekolah Disimpan", description: "Perubahan data sekolah Anda telah berhasil disimpan." });
-            router.refresh();
-        } else {
-            toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
-        }
-        setLoading(false);
-    }
-
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'logo') => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         // --- Client-side validation ---
         const MAX_AVATAR_SIZE = 1 * 1024 * 1024; // 1MB
-        const MAX_LOGO_SIZE = 500 * 1024; // 500KB
         const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-        const max_size = type === 'avatar' ? MAX_AVATAR_SIZE : MAX_LOGO_SIZE;
-        const size_in_mb = max_size / (1024*1024);
-        const size_in_kb = max_size / 1024;
-
-        if (file.size > max_size) {
+        if (file.size > MAX_AVATAR_SIZE) {
             toast({
                 title: "Ukuran File Terlalu Besar",
-                description: `Ukuran file maksimal adalah ${type === 'avatar' ? size_in_mb + 'MB' : size_in_kb + 'KB'}.`,
+                description: `Ukuran file maksimal adalah 1MB.`,
                 variant: "destructive",
             });
             e.target.value = ''; // Reset the input
@@ -125,8 +103,6 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
             toast({ title: "Sukses", description: "Gambar berhasil diunggah." });
             if (type === 'avatar') {
                 setAvatarUrl(result.url);
-            } else {
-                setLogoUrl(result.url);
             }
             router.refresh();
         } else {
@@ -157,7 +133,6 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
     return (
     <div className="space-y-6">
         <input type="file" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, 'avatar')} accept="image/png, image/jpeg, image/webp" className="hidden" />
-        <input type="file" ref={logoInputRef} onChange={(e) => handleImageUpload(e, 'logo')} accept="image/png, image/jpeg, image/webp" className="hidden" />
         <div>
             <h1 className="text-2xl font-bold font-headline">Pengaturan</h1>
             <p className="text-muted-foreground">Kelola profil, akun, dan data sekolah Anda.</p>
@@ -254,57 +229,50 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
             </TabsContent>
             <TabsContent value="school" className="mt-6">
                 <Card>
-                    <form onSubmit={handleSchoolDataSave}>
-                        <CardHeader>
-                            <CardTitle>Data Sekolah</CardTitle>
-                            <CardDescription>Informasi ini akan digunakan pada kop laporan.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
+                    <CardHeader>
+                        <CardTitle>Data Sekolah</CardTitle>
+                        <CardDescription>Informasi ini akan digunakan pada kop laporan.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <Alert>
+                            <Info className="h-4 w-4" />
+                            <AlertTitle>Hanya Lihat</AlertTitle>
+                            <AlertDescription>
+                                Data sekolah hanya dapat diubah oleh Administrator.
+                            </AlertDescription>
+                        </Alert>
+
+                        <div className="space-y-2">
+                            <Label>Logo Sekolah</Label>
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-20 w-20 rounded-md">
+                                    <AvatarImage src={logoUrl || "https://placehold.co/100x100.png"} alt="Logo Sekolah" data-ai-hint="school building" />
+                                    <AvatarFallback>LOGO</AvatarFallback>
+                                </Avatar>
+                            </div>
+                        </div>
+                       <div className="space-y-2">
+                            <Label htmlFor="schoolName">Nama Sekolah</Label>
+                            <Input id="schoolName" name="schoolName" value={schoolData.schoolName} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="schoolAddress">Alamat Sekolah</Label>
+                            <Input id="schoolAddress" name="schoolAddress" value={schoolData.schoolAddress} disabled />
+                        </div>
+                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Logo Sekolah</Label>
-                                <div className="flex items-center gap-4">
-                                    <Avatar className="h-20 w-20 rounded-md">
-                                        <AvatarImage src={logoUrl || "https://placehold.co/100x100.png"} alt="Logo Sekolah" data-ai-hint="school building" />
-                                        <AvatarFallback>LOGO</AvatarFallback>
-                                    </Avatar>
-                                    <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploading === 'logo'}>
-                                        {uploading === 'logo' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Ganti Logo
-                                    </Button>
-                                </div>
-                                <p className="text-xs text-muted-foreground">JPG, PNG, atau WEBP. Ukuran maksimal 500KB.</p>
+                                <Label htmlFor="headmasterName">Nama Kepala Sekolah</Label>
+                                <Input id="headmasterName" name="headmasterName" value={schoolData.headmasterName} disabled />
                             </div>
-                           <div className="space-y-2">
-                                <Label htmlFor="schoolName">Nama Sekolah</Label>
-                                <Input id="schoolName" name="schoolName" value={schoolData.schoolName} onChange={handleSchoolDataChange} />
+                             <div className="space-y-2">
+                                <Label htmlFor="headmasterNip">NIP Kepala Sekolah</Label>
+                                <Input id="headmasterNip" name="headmasterNip" value={schoolData.headmasterNip} disabled />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="schoolAddress">Alamat Sekolah</Label>
-                                <Input id="schoolAddress" name="schoolAddress" value={schoolData.schoolAddress} onChange={handleSchoolDataChange} />
-                            </div>
-                             <div className="grid md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="headmasterName">Nama Kepala Sekolah</Label>
-                                    <Input id="headmasterName" name="headmasterName" value={schoolData.headmasterName} onChange={handleSchoolDataChange} />
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="headmasterNip">NIP Kepala Sekolah</Label>
-                                    <Input id="headmasterNip" name="headmasterNip" value={schoolData.headmasterNip} onChange={handleSchoolDataChange} />
-                                </div>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="border-t px-6 py-4">
-                           <Button type="submit" disabled={loading}>
-                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Simpan Data Sekolah
-                           </Button>
-                        </CardFooter>
-                    </form>
+                        </div>
+                    </CardContent>
                 </Card>
             </TabsContent>
         </Tabs>
     </div>
     )
 }
-
-    

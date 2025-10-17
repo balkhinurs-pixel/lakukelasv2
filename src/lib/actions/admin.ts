@@ -356,3 +356,70 @@ export async function saveAttendanceSettings(formData: FormData) {
         return { success: false, error: 'Gagal menyimpan pengaturan absensi.' };
     }
 }
+
+export async function updateSchoolData(schoolData: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
+     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const { error } = await supabase.from('profiles').update({
+        school_name: schoolData.schoolName,
+        school_address: schoolData.schoolAddress,
+        headmaster_name: schoolData.headmasterName,
+        headmaster_nip: schoolData.headmasterNip,
+    }).eq('id', user.id);
+
+    if (error) {
+        console.error("Error updating school data:", error);
+        return { success: false, error: "Gagal memperbarui data sekolah." };
+    }
+
+    revalidatePath('/admin/settings/school');
+    return { success: true };
+}
+
+export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'logo') {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const file = formData.get('file') as File;
+    if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
+    
+    const bucket = 'avatars'; // Use one bucket for both
+    // For the logo, we want it to be predictable so it's not tied to a user session. 
+    // We can use a fixed name or a name derived from the school. Let's use a fixed one.
+    const fileName = type === 'logo' ? 'school_logo' : `${user.id}/avatar_${Date.now()}`;
+    
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true,
+    });
+    
+    if (uploadError) {
+        console.error("Upload error:", uploadError);
+        return { success: false, error: "Gagal mengunggah gambar." };
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
+
+    const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
+
+    // If it's a logo, we update ALL profiles, as school data is shared.
+    // This is a simplification; a better model would have a separate 'schools' table.
+    const query = type === 'logo'
+        ? supabase.from('profiles').update({ [columnToUpdate]: publicUrl }).neq('id', '0') // Update all rows
+        : supabase.from('profiles').update({ [columnToUpdate]: publicUrl }).eq('id', user.id);
+
+
+    const { error: dbError } = await query;
+
+    if (dbError) {
+        console.error("DB update error:", dbError);
+        return { success: false, error: "Gagal memperbarui URL gambar di profil." };
+    }
+    
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/admin/settings/school');
+    return { success: true, url: publicUrl };
+}
