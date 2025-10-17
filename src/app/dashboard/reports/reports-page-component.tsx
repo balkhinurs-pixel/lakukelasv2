@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import * as React from "react";
@@ -787,93 +786,6 @@ export default function ReportsPageComponent({
                                 </CardContent>
                             </Card>
                         </div>
-
-                        <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
-                            <CardHeader className="space-y-3 pb-4 sm:pb-6">
-                                <div className="flex items-start gap-3">
-                                    <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-lg shrink-0">
-                                        <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <CardTitle className="text-base sm:text-xl leading-tight">Analisis Performa Siswa</CardTitle>
-                                        <CardDescription className="text-sm sm:text-base mt-1 leading-relaxed">Siswa dikelompokkan berdasarkan data dari filter yang dipilih.</CardDescription>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                        {studentPerformance.length > 0 ? (
-                            <>
-                                {/* Mobile View */}
-                                <div className="md:hidden space-y-4">
-                                    {studentPerformance.map((student) => (
-                                        <div key={student.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-semibold">{student.name}</p>
-                                                    <p className="text-sm text-muted-foreground">{student.class}</p>
-                                                </div>
-                                                <Badge variant="outline" className={cn("font-semibold text-xs", getStatusBadge(student.status))}>
-                                                    {student.status === 'Sangat Baik' && <TrendingUp className="mr-1 h-3 w-3" />}
-                                                    {student.status === 'Stabil' && <UserCheck className="mr-1 h-3 w-3" />}
-                                                    {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-1 h-3 w-3" />}
-                                                    {student.status === 'Berisiko' && <UserX className="mr-1 h-3 w-3" />}
-                                                    {student.status}
-                                                </Badge>
-                                            </div>
-                                            <div className="flex justify-around text-center text-sm pt-2">
-                                                <div>
-                                                    <p className="font-bold text-base">{student.average_grade}</p>
-                                                    <p className="text-xs text-muted-foreground">Rata-rata Nilai</p>
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-base">{student.attendance}%</p>
-                                                    <p className="text-xs text-muted-foreground">Kehadiran</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                
-                                {/* Desktop View */}
-                                <div className="hidden md:block overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                            <TableHead>Nama Siswa</TableHead>
-                                            <TableHead>Kelas</TableHead>
-                                            <TableHead className="text-center">Rata-rata Nilai</TableHead>
-                                            <TableHead className="text-center">Kehadiran</TableHead>
-                                            <TableHead className="text-center">Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {studentPerformance.map((student) => (
-                                            <TableRow key={student.id}>
-                                                <TableCell className="font-medium">{student.name}</TableCell>
-                                                <TableCell>{student.class}</TableCell>
-                                                <TableCell className="text-center font-mono">{student.average_grade}</TableCell>
-                                                <TableCell className="text-center font-mono">{student.attendance}%</TableCell>
-                                                <TableCell className="text-center">
-                                                    <Badge variant="outline" className={cn("font-semibold", getStatusBadge(student.status))}>
-                                                        {student.status === 'Sangat Baik' && <TrendingUp className="mr-2 h-3 w-3" />}
-                                                        {student.status === 'Stabil' && <UserCheck className="mr-2 h-3 w-3" />}
-                                                        {student.status === 'Butuh Perhatian' && <TrendingDown className="mr-2 h-3 w-3" />}
-                                                        {student.status === 'Berisiko' && <UserX className="mr-2 h-3 w-3" />}
-                                                        {student.status}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </>
-                        ) : (
-                             <EmptyStatePlaceholder icon={Users2} title="Belum Ada Data Performa" description="Tidak ada data siswa yang cocok dengan filter. Coba ubah filter di atas." />
-                        )}
-                    </CardContent>
-                </Card>
-
                         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
                             <Card className="lg:col-span-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-lg">
                                 <CardHeader className="space-y-3 pb-4 sm:pb-6">
@@ -1120,4 +1032,3 @@ export default function ReportsPageComponent({
     </div>
   );
 }
-
