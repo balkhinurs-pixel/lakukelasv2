@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { TeacherAttendance, Profile } from "@/lib/types";
+import DigitalClock from "./DigitalClock";
 
 export default function TeacherAttendanceClient({ 
     initialHistory,
@@ -171,6 +172,8 @@ export default function TeacherAttendanceClient({
                     <p className="text-slate-600 mt-1">Catat kehadiran Anda berdasarkan lokasi sekolah.</p>
                 </div>
             </div>
+
+            <DigitalClock />
 
             <Card>
                 <CardHeader>
