@@ -1,4 +1,5 @@
 
+
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import SettingsClientPage from './settings-client-page';
@@ -14,16 +15,16 @@ export default async function SettingsPage() {
         redirect('/');
     }
 
-    let { data: profile, error } = await supabase
+    // Fetch the teacher's own profile
+    const { data: userProfile, error: userProfileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
     
-    // If profile doesn't exist, create a default one
-    if (error || !profile) {
-        console.log("Profile not found, creating default profile for user:", user.id);
-        
+    if (userProfileError) {
+         console.error("Error fetching user profile:", userProfileError);
+        // If profile doesn't exist, create a default one
         const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert({
@@ -54,9 +55,23 @@ export default async function SettingsPage() {
                 </div>
             )
         }
-        
-        profile = newProfile;
+        return <SettingsClientPage user={user} profile={newProfile as Profile} schoolProfile={newProfile as Profile} />;
     }
 
-    return <SettingsClientPage user={user} profile={profile as Profile} />;
+    // Fetch the admin's profile to get the school data
+    const { data: schoolProfile, error: adminProfileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'admin')
+        .limit(1)
+        .single();
+
+    if (adminProfileError) {
+        console.error("Error fetching admin profile for school data:", adminProfileError);
+        // If admin profile isn't found, we can pass the user's own profile as a fallback
+        // so the page doesn't crash, but the school data will be empty.
+        return <SettingsClientPage user={user} profile={userProfile as Profile} schoolProfile={userProfile as Profile} />;
+    }
+
+    return <SettingsClientPage user={user} profile={userProfile as Profile} schoolProfile={schoolProfile as Profile} />;
 }

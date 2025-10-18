@@ -1,3 +1,4 @@
+
 "use client"
 import * as React from "react";
 import {
@@ -22,7 +23,7 @@ import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
-export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
+export default function SettingsClientPage({ user, profile, schoolProfile }: { user: User, profile: Profile, schoolProfile: Profile }) {
     const { toast } = useToast();
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
@@ -31,7 +32,7 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
     
     const [avatarUrl, setAvatarUrl] = React.useState(profile.avatar_url);
-    const [logoUrl] = React.useState(profile.school_logo_url);
+    const [logoUrl] = React.useState(schoolProfile.school_logo_url);
     
     const [profileData, setProfileData] = React.useState({
         fullName: profile.full_name || '',
@@ -41,10 +42,10 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
     });
 
     const [schoolData] = React.useState({
-        schoolName: profile.school_name || '',
-        schoolAddress: profile.school_address || '',
-        headmasterName: profile.headmaster_name || '',
-        headmasterNip: profile.headmaster_nip || '',
+        schoolName: schoolProfile.school_name || '',
+        schoolAddress: schoolProfile.school_address || '',
+        headmasterName: schoolProfile.headmaster_name || '',
+        headmasterNip: schoolProfile.headmaster_nip || '',
     })
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

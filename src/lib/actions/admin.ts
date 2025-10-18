@@ -364,18 +364,17 @@ export async function updateSchoolData(schoolData: { schoolName: string, schoolA
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    // In this SaaS model, school data is denormalized across all profiles.
-    // The admin updates the data for everyone.
+    // The admin updates their own profile, which acts as the source of truth
     const { error } = await supabase.from('profiles').update({
         school_name: schoolData.schoolName,
         school_address: schoolData.schoolAddress,
         headmaster_name: schoolData.headmasterName,
         headmaster_nip: schoolData.headmasterNip,
-    }).neq('id', '0'); // Update all rows, a simple trick to apply to all.
+    }).eq('id', user.id); // Only update the admin's profile
 
     if (error) {
-        console.error("Error updating school data for all users:", error);
-        return { success: false, error: "Gagal memperbarui data sekolah untuk semua pengguna." };
+        console.error("Error updating school data for admin:", error);
+        return { success: false, error: "Gagal memperbarui data sekolah." };
     }
 
     revalidatePath('/admin/settings/school');
@@ -415,8 +414,8 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
         // Update only the current user's avatar
         query = supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
     } else {
-        // Update the school logo for ALL users
-        query = supabase.from('profiles').update({ school_logo_url: publicUrl }).neq('id', '0');
+        // Update the school logo only on the admin's profile
+        query = supabase.from('profiles').update({ school_logo_url: publicUrl }).eq('id', user.id);
     }
 
     const { error: dbError } = await query;
