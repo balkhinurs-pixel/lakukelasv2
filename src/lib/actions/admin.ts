@@ -29,6 +29,8 @@ export async function inviteTeacher(fullName: string, email: string) {
 
 export async function deleteUser(userId: string) {
     const supabase = createClient();
+    // In a real-world scenario, you might want to check if the user is the last admin
+    // before allowing deletion. For now, we will proceed.
     const { data, error } = await supabase.auth.admin.deleteUser(userId);
 
     if (error) {
@@ -358,23 +360,27 @@ export async function saveAttendanceSettings(formData: FormData) {
 }
 
 export async function updateSchoolData(schoolData: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
-     const supabase = createClient();
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
+    // In this SaaS model, school data is denormalized across all profiles.
+    // The admin updates the data for everyone.
     const { error } = await supabase.from('profiles').update({
         school_name: schoolData.schoolName,
         school_address: schoolData.schoolAddress,
         headmaster_name: schoolData.headmasterName,
         headmaster_nip: schoolData.headmasterNip,
-    }).eq('id', user.id);
+    }).neq('id', '0'); // Update all rows, a simple trick to apply to all.
 
     if (error) {
-        console.error("Error updating school data:", error);
-        return { success: false, error: "Gagal memperbarui data sekolah." };
+        console.error("Error updating school data for all users:", error);
+        return { success: false, error: "Gagal memperbarui data sekolah untuk semua pengguna." };
     }
 
     revalidatePath('/admin/settings/school');
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/dashboard/reports'); // For report headers
     return { success: true };
 }
 
@@ -386,14 +392,15 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     const file = formData.get('file') as File;
     if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
     
-    const bucket = 'avatars'; // Use one bucket for both
-    // For the logo, we want it to be predictable so it's not tied to a user session. 
-    // We can use a fixed name or a name derived from the school. Let's use a fixed one.
-    const fileName = type === 'logo' ? 'school_logo' : `${user.id}/avatar_${Date.now()}`;
+    const bucket = 'avatars';
+    // For the logo, we use a predictable name. For avatar, unique per user.
+    const fileName = type === 'logo' 
+        ? `school_logo_${Date.now()}` // Add timestamp to break cache
+        : `${user.id}/avatar_${Date.now()}`;
     
     const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
         cacheControl: '3600',
-        upsert: true,
+        upsert: true, 
     });
     
     if (uploadError) {
@@ -403,14 +410,14 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
 
-    const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
-
-    // If it's a logo, we update ALL profiles, as school data is shared.
-    // This is a simplification; a better model would have a separate 'schools' table.
-    const query = type === 'logo'
-        ? supabase.from('profiles').update({ [columnToUpdate]: publicUrl }).neq('id', '0') // Update all rows
-        : supabase.from('profiles').update({ [columnToUpdate]: publicUrl }).eq('id', user.id);
-
+    let query;
+    if (type === 'avatar') {
+        // Update only the current user's avatar
+        query = supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+    } else {
+        // Update the school logo for ALL users
+        query = supabase.from('profiles').update({ school_logo_url: publicUrl }).neq('id', '0');
+    }
 
     const { error: dbError } = await query;
 
@@ -421,5 +428,6 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     
     revalidatePath('/dashboard/settings');
     revalidatePath('/admin/settings/school');
+    revalidatePath('/dashboard/reports');
     return { success: true, url: publicUrl };
 }
