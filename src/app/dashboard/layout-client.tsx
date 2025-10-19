@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -92,8 +91,8 @@ const homeroomNavItems = [
 ];
 
 const monitoringNavItems = [
-  { href: '/dashboard/reports/teacher-attendance', icon: UserCheckIcon, label: 'Laporan Kehadiran' },
-  { href: '/dashboard/teacher-activity', icon: Activity, label: 'Aktivitas Guru' },
+  { href: '/admin/teacher-attendance', icon: UserCheckIcon, label: 'Laporan Kehadiran' },
+  { href: '/admin/teacher-activity', icon: Activity, label: 'Aktivitas Guru' },
 ];
 
 const mainMobileNavItems = [
