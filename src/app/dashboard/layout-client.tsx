@@ -76,7 +76,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Dasbor' },
-  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Presensi Guru' },
+  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absensi Guru' },
   { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
@@ -92,7 +92,7 @@ const homeroomNavItems = [
 ];
 
 const monitoringNavItems = [
-  { href: '/dashboard/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
+  { href: '/dashboard/reports/teacher-attendance', icon: UserCheckIcon, label: 'Laporan Kehadiran' },
   { href: '/dashboard/teacher-activity', icon: Activity, label: 'Aktivitas Guru' },
 ];
 
