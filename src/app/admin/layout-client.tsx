@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -19,7 +20,8 @@ import {
   UserCheck as UserCheckIcon,
   CalendarClock,
   Bell,
-  Building
+  Building,
+  CalendarOff,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -74,6 +76,7 @@ const settingsNavItems = [
     { href: '/admin/settings/school', icon: Building, label: 'Data Sekolah' },
     { href: '/admin/settings/location', icon: MapPin, label: 'Pengaturan Lokasi' },
     { href: '/admin/settings/schedule', icon: CalendarClock, label: 'Kelola Jadwal Guru' },
+    { href: '/admin/settings/holidays', icon: CalendarOff, label: 'Hari Libur' },
 ]
 
 export default function AdminLayoutClient({ 

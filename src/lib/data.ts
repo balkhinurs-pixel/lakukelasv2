@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { createClient } from './supabase/server';
@@ -34,12 +33,16 @@ export async function getAdminDashboardData() {
     
     try {
         // Fetch all necessary data in parallel
-        const [allUsers, attendanceHistory, journalEntries] = await Promise.all([
+        const [allUsers, attendanceHistory, journalEntries, holidays] = await Promise.all([
             getAllUsers(),
             getTeacherAttendanceHistory(),
-            getJournalEntries() // For recent activities
+            getJournalEntries(), // For recent activities
+            getHolidays()
         ]);
         
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        const isTodayHoliday = holidays.some(h => h.date === todayStr);
+
         const teachers = allUsers.filter(u => u.role === 'teacher');
         
         // Calculate weekly attendance data (last 7 days)
@@ -127,7 +130,8 @@ export async function getAdminDashboardData() {
         return {
             totalUsers: teachers.length,
             weeklyAttendance,
-            recentActivities: recentActivities.slice(0, 5) // Limit to 5 activities
+            recentActivities: recentActivities.slice(0, 5), // Limit to 5 activities
+            isTodayHoliday,
         };
         
     } catch (error) {
@@ -138,7 +142,8 @@ export async function getAdminDashboardData() {
             recentActivities: [{
                 text: 'Error memuat data aktivitas',
                 time: 'Baru saja'
-            }]
+            }],
+            isTodayHoliday: false,
         };
     }
 }
@@ -176,6 +181,18 @@ export async function getAllSubjects(): Promise<Subject[]> {
     }
     return data;
 }
+
+export async function getHolidays(): Promise<{ id: string; date: string; description: string }[]> {
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase.from('holidays').select('*').order('date', { ascending: true });
+    if (error) {
+        console.error("Error fetching holidays:", error);
+        return [];
+    }
+    return data;
+}
+
 
 // --- User (Teacher) Data ---
 
