@@ -44,7 +44,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getAllUsers, getTeacherAttendanceHistory, getUserProfile } from "@/lib/data";
-import { createClient } from "@/lib/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface jsPDFWithAutoTable extends jsPDF {
@@ -64,7 +63,7 @@ export default function TeacherAttendanceRecapPage() {
   const [history, setHistory] = React.useState<TeacherAttendance[]>([]);
   const [users, setUsers] = React.useState<Profile[]>([]);
   const [profile, setProfile] = React.useState<Profile | null>(null);
-  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date()); // Default to today
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [selectedTeacher, setSelectedTeacher] = React.useState<string>("all");
   const [selectedMonth, setSelectedMonth] = React.useState<string>("all");
   const [loading, setLoading] = React.useState(true);
@@ -79,8 +78,8 @@ export default function TeacherAttendanceRecapPage() {
         getUserProfile(),
       ]);
       setHistory(attendanceData);
-      // This is the fix: include all teachers for the dropdown
-      setUsers(userData.filter((u) => u.role === "teacher" || u.role === 'headmaster'));
+      // This is the fix: include all teachers and headmaster for the dropdown
+      setUsers(userData.filter((u) => u.role === "teacher" || u.role === 'headmaster' || u.role === 'admin'));
       setProfile(profileData as Profile);
       setLoading(false);
     };
@@ -91,10 +90,14 @@ export default function TeacherAttendanceRecapPage() {
     return history.filter((item) => {
       const itemDate = new Date(item.date);
       const teacherMatch = selectedTeacher === "all" || item.teacherId === selectedTeacher;
+
+      // If a specific date is selected, it takes precedence over the month filter.
       if (selectedDate) {
           const dateMatch = format(itemDate, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
           return dateMatch && teacherMatch;
       }
+
+      // If no specific date is selected, use the month filter.
       const monthMatch = selectedMonth === 'all' || format(itemDate, 'M') === selectedMonth;
       return monthMatch && teacherMatch;
     });
@@ -480,6 +483,11 @@ export default function TeacherAttendanceRecapPage() {
                           : "Tidak ada data kehadiran yang cocok dengan filter Anda."
                         }
                       </p>
+                      {history.length === 0 && (
+                        <p className="mt-2 text-xs text-gray-400">
+                          Total records: {history.length} | Teachers: {users.length}
+                        </p>
+                      )}
                     </TableCell>
                   </TableRow>
                 )}
