@@ -221,11 +221,12 @@ export async function getUserProfile(): Promise<Profile | null> {
     const profile: Profile = {
         ...data,
         active_school_year_name: data.school_year?.name,
-        school_name: schoolProfile?.school_name,
-        school_address: schoolProfile?.school_address,
-        headmaster_name: schoolProfile?.headmaster_name,
-        headmaster_nip: schoolProfile?.headmaster_nip,
-        school_logo_url: schoolProfile?.school_logo_url,
+        // CORRECT WAY: Explicitly override with admin data to ensure it's not overwritten by null values from user's profile
+        school_name: schoolProfile?.school_name || data.school_name,
+        school_address: schoolProfile?.school_address || data.school_address,
+        headmaster_name: schoolProfile?.headmaster_name || data.headmaster_name,
+        headmaster_nip: schoolProfile?.headmaster_nip || data.headmaster_nip,
+        school_logo_url: schoolProfile?.school_logo_url || data.school_logo_url,
     };
 
     return profile;
@@ -657,7 +658,8 @@ export async function getDashboardData(todayDay: string) {
 export async function getReportsData(filters: { schoolYearId: string, month?: number, classId?: string, subjectId?: string }) {
     noStore();
     const user = await getAuthenticatedUser();
-    if (!user) return {
+    const profile = await getUserProfile(); // Use the corrected getUserProfile
+    if (!user || !profile) return {
         summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearName: "" },
         studentPerformance: [], attendanceByClass: [], overallAttendanceDistribution: {},
         journalEntries: [], attendanceHistory: [], gradeHistory: [], allStudents: []
