@@ -22,6 +22,7 @@ import {
   Bell,
   Building,
   CalendarOff,
+  Activity,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -61,6 +62,7 @@ const adminNavItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
   { href: '/admin/users', icon: Users, label: 'Daftar Guru' },
   { href: '/admin/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
+  { href: '/admin/teacher-activity', icon: Activity, label: 'Aktivitas Guru' },
 ];
 
 const rosterNavItems = [

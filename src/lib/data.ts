@@ -215,13 +215,37 @@ export async function getUserProfile(): Promise<Profile | null> {
         console.error("Error fetching user profile:", error);
         return null;
     }
+    
+    const schoolProfile = await getAdminProfile();
 
     const profile: Profile = {
         ...data,
-        active_school_year_name: data.school_year?.name
+        active_school_year_name: data.school_year?.name,
+        school_name: schoolProfile?.school_name,
+        school_address: schoolProfile?.school_address,
+        headmaster_name: schoolProfile?.headmaster_name,
+        headmaster_nip: schoolProfile?.headmaster_nip,
+        school_logo_url: schoolProfile?.school_logo_url,
     };
 
     return profile;
+}
+
+export async function getAdminProfile(): Promise<Profile | null> {
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'admin')
+        .limit(1)
+        .single();
+
+    if (error) {
+        console.error("Error fetching admin profile:", error);
+        return null;
+    }
+    return data;
 }
 
 
@@ -658,13 +682,13 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
     }
     if (classId) {
         attendanceQuery.eq('class_id', classId);
-        gradesQuery.eq('class_id', classId);
-        journalQuery.eq('class_id', classId);
+        gradesQuery = gradesQuery.eq('class_id', classId);
+        journalQuery = journalQuery.eq('class_id', classId);
     }
     if (subjectId) {
         attendanceQuery.eq('subject_id', subjectId);
-        gradesQuery.eq('subject_id', subjectId);
-        journalQuery.eq('subject_id', subjectId);
+        gradesQuery = gradesQuery.eq('subject_id', subjectId);
+        journalQuery = journalQuery.eq('subject_id', subjectId);
     }
 
     const [attendanceRes, gradesRes, journalRes, studentsRes, activeSchoolYearName, teacherClassesRes] = await Promise.all([
@@ -910,9 +934,6 @@ export async function getStudentLedgerData(studentId: string) {
 
 export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]> {
     noStore();
-    const user = await getAuthenticatedUser();
-    if (!user) return [];
-
     const supabase = createClient();
     const { data, error } = await supabase
         .from('teacher_attendance')
@@ -936,4 +957,44 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
         checkOut: item.check_out || null,
         status: item.status
     }));
+}
+
+export async function getTeacherActivityStats() {
+    noStore();
+    const supabase = createClient();
+
+    const { data: teachers, error: teachersError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('role', 'teacher');
+    
+    if (teachersError) {
+        console.error("Error fetching teachers for activity stats:", teachersError);
+        return [];
+    }
+
+    const { data: activityData, error: rpcError } = await supabase
+        .rpc('get_teacher_activity_counts');
+
+    if (rpcError) {
+        console.error("Error fetching teacher activity stats from RPC:", rpcError);
+        return [];
+    }
+
+    const statsMap = new Map(activityData.map(item => [item.teacher_id, item]));
+
+    const result = teachers.map(teacher => {
+        const stats = statsMap.get(teacher.id) || {
+            attendance_count: 0,
+            grades_count: 0,
+            journal_count: 0
+        };
+        return {
+            id: teacher.id,
+            name: teacher.full_name,
+            ...stats
+        };
+    });
+
+    return result;
 }
