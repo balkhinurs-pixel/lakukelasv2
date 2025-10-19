@@ -3,6 +3,7 @@
 
 
 
+
 export interface Profile {
   id: string;
   created_at: string;
@@ -16,7 +17,7 @@ export interface Profile {
   headmaster_name?: string;
   headmaster_nip?: string;
   school_logo_url?: string;
-  role: 'admin' | 'teacher';
+  role: 'admin' | 'teacher' | 'headmaster';
   email?: string;
   active_school_year_id?: string | null;
   active_school_year_name?: string | null;

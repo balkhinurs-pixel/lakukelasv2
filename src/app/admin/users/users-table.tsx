@@ -40,14 +40,15 @@ import {
   } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus, GraduationCap } from "lucide-react";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
-import { deleteUser, inviteTeacher } from "@/lib/actions/admin";
+import { deleteUser, inviteTeacher, updateUserRole } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 
 function FormattedDate({ dateString }: { dateString: string }) {
@@ -136,7 +137,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
     const router = useRouter();
     const [users, setUsers] = React.useState<Profile[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [loading, setLoading] = React.useState(false);
+    const [loading, setLoading] = React.useState<string | boolean>(false); // Can be userId or boolean
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -149,7 +150,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
     });
 
     const handleDeleteUser = async (userId: string) => {
-        setLoading(true);
+        setLoading(userId);
         const userToDelete = users.find(u => u.id === userId);
         if (!userToDelete) return;
 
@@ -164,6 +165,29 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         } else {
             toast({
                 title: "Gagal Menghapus",
+                description: result.error,
+                variant: "destructive"
+            });
+        }
+        setLoading(false);
+    }
+
+    const handleRoleChange = async (userId: string, newRole: 'teacher' | 'headmaster') => {
+        setLoading(userId);
+        const userToUpdate = users.find(u => u.id === userId);
+        if (!userToUpdate) return;
+        
+        const result = await updateUserRole(userId, newRole);
+
+        if (result.success) {
+            toast({
+                title: "Peran Diperbarui",
+                description: `${userToUpdate.full_name} sekarang adalah seorang ${newRole === 'headmaster' ? 'Kepala Sekolah' : 'Guru'}.`
+            });
+            router.refresh(); // Refresh the page to show the new role
+        } else {
+            toast({
+                title: "Gagal Memperbarui Peran",
                 description: result.error,
                 variant: "destructive"
             });
@@ -191,17 +215,31 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
             {filteredUsers.map((user) => (
                  <div key={user.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
                      <div className="flex justify-between items-start">
-                        <p className="font-semibold">{user.full_name || 'N/A'}</p>
+                        <div>
+                            <p className="font-semibold">{user.full_name || 'N/A'}</p>
+                            {user.role === 'headmaster' && (
+                                <Badge variant="secondary" className="mt-1 bg-amber-200 text-amber-800">Kepala Sekolah</Badge>
+                            )}
+                        </div>
                          <AlertDialog>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" disabled={loading} className="h-8 w-8 -mt-2 -mr-2">
-                                        <MoreHorizontal className="h-4 w-4" />
+                                    <Button variant="ghost" size="icon" disabled={loading === user.id} className="h-8 w-8 -mt-2 -mr-2">
+                                        {loading === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
+                                     {user.role === 'teacher' ? (
+                                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>
+                                            <GraduationCap className="mr-2 h-4 w-4" /> Jadikan Kepala Sekolah
+                                        </DropdownMenuItem>
+                                     ) : (
+                                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'teacher')}>
+                                            <User className="mr-2 h-4 w-4" /> Jadikan Guru Biasa
+                                        </DropdownMenuItem>
+                                     )}
                                     <AlertDialogTrigger asChild>
                                         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                             <Trash2 className="mr-2 h-4 w-4" />
@@ -219,8 +257,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading}>
-                                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading === user.id}>
+                                        {loading === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Ya, Hapus Guru
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -248,6 +286,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                     <TableRow>
                         <TableHead>Nama Guru</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Peran</TableHead>
                         <TableHead>Tanggal Bergabung</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
@@ -257,6 +296,13 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                         <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
                             <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                             <TableCell>
+                                {user.role === 'headmaster' ? (
+                                    <Badge variant="secondary" className="bg-amber-100 text-amber-800">Kepala Sekolah</Badge>
+                                ) : (
+                                    <Badge variant="outline">Guru</Badge>
+                                )}
+                            </TableCell>
                             <TableCell>
                               <FormattedDate dateString={user.created_at} />
                             </TableCell>
@@ -264,13 +310,22 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                 <AlertDialog>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" disabled={loading}>
-                                                <MoreHorizontal className="h-4 w-4" />
+                                            <Button variant="ghost" size="icon" disabled={loading === user.id}>
+                                                {loading === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
+                                            {user.role === 'teacher' ? (
+                                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>
+                                                    <GraduationCap className="mr-2 h-4 w-4" /> Jadikan Kepala Sekolah
+                                                </DropdownMenuItem>
+                                             ) : (
+                                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'teacher')}>
+                                                    <User className="mr-2 h-4 w-4" /> Jadikan Guru Biasa
+                                                </DropdownMenuItem>
+                                             )}
                                             <AlertDialogTrigger asChild>
                                                 <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                                     <Trash2 className="mr-2 h-4 w-4" />
@@ -288,8 +343,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Batal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading}>
-                                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading === user.id}>
+                                                {loading === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                 Ya, Hapus Guru
                                             </AlertDialogAction>
                                         </AlertDialogFooter>

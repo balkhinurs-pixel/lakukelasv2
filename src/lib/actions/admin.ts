@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -36,6 +35,22 @@ export async function deleteUser(userId: string) {
     if (error) {
         console.error("Error deleting user:", error.message);
         return { success: false, error: "Gagal menghapus pengguna." };
+    }
+    
+    revalidatePath('/admin/users');
+    return { success: true, data };
+}
+
+export async function updateUserRole(userId: string, newRole: 'teacher' | 'headmaster') {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+    if (error) {
+        console.error("Error updating user role:", error.message);
+        return { success: false, error: "Gagal memperbarui peran pengguna." };
     }
     
     revalidatePath('/admin/users');
@@ -442,5 +457,3 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     revalidatePath('/dashboard/reports');
     return { success: true, url: publicUrl };
 }
-
-    

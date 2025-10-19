@@ -36,7 +36,9 @@ import {
   MapPin,
   Contact,
   TrendingUp,
-  ClipboardList
+  ClipboardList,
+  UserCheck as UserCheckIcon,
+  Activity,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -89,6 +91,11 @@ const homeroomNavItems = [
     { href: '/dashboard/homeroom/reports', icon: BarChart3, label: 'Laporan Kelas' },
 ];
 
+const monitoringNavItems = [
+  { href: '/dashboard/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
+  { href: '/dashboard/teacher-activity', icon: Activity, label: 'Aktivitas Guru' },
+];
+
 const mainMobileNavItems = [
     { href: '/dashboard', icon: Zap, label: 'Dasbor' },
     { href: '/dashboard/attendance', icon: ScanLine, label: 'Presensi' },
@@ -107,12 +114,15 @@ export default function DashboardLayoutClient({
 }: { 
   children: React.ReactNode;
   user: User | null;
-  profile: Pick<Profile, 'full_name' | 'avatar_url' | 'is_homeroom_teacher'> | null
+  profile: Pick<Profile, 'full_name' | 'avatar_url' | 'is_homeroom_teacher' | 'role'> | null
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
+  
+  const isHeadmaster = profile?.role === 'headmaster';
+  const isAdmin = profile?.role === 'admin';
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -156,7 +166,7 @@ export default function DashboardLayoutClient({
     </SidebarHeader>
   );
 
-  const MainNavContent = ({ items }: { items: (typeof navItems | typeof homeroomNavItems) }) => (
+  const MainNavContent = ({ items }: { items: (typeof navItems | typeof homeroomNavItems | typeof monitoringNavItems) }) => (
     <SidebarMenu className="gap-2">
       {items.map((item, index) => {
         const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard';
@@ -412,6 +422,17 @@ export default function DashboardLayoutClient({
                     <MainNavContent items={homeroomNavItems} />
                 </SidebarGroup>
             )}
+            {(isHeadmaster || isAdmin) && (
+              <>
+                <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+                <SidebarGroup className="p-4">
+                  <SidebarGroupLabel className="text-teal-600 font-semibold text-sm tracking-wider uppercase bg-teal-500/10 px-3 py-2 rounded-lg border border-teal-500/20 mb-4">
+                    Pemantauan
+                  </SidebarGroupLabel>
+                  <MainNavContent items={monitoringNavItems} />
+                </SidebarGroup>
+              </>
+            )}
             <SidebarGroup className="p-4">
                 <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4">
                   <Grid3X3 className="w-4 h-4 mr-2 inline" />
@@ -446,6 +467,17 @@ export default function DashboardLayoutClient({
                         <MainNavContent items={homeroomNavItems} />
                     </SidebarGroup>
                 </>
+            )}
+            {(isHeadmaster || isAdmin) && (
+              <>
+                <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+                <SidebarGroup className="p-4">
+                  <SidebarGroupLabel className="text-teal-600 font-semibold text-sm tracking-wider uppercase bg-teal-500/10 px-3 py-2 rounded-lg border border-teal-500/20 mb-4">
+                    Pemantauan
+                  </SidebarGroupLabel>
+                  <MainNavContent items={monitoringNavItems} />
+                </SidebarGroup>
+              </>
             )}
         </ScrollArea>
       </SidebarContent>
