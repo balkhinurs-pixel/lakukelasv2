@@ -13,21 +13,22 @@ import { UsersTable } from './users-table';
 
 export default async function AdminUsersPage() {
     const users = await getAllUsers();
-    const teachers = users.filter(u => u.role === 'teacher');
+    // Show both teachers and headmasters in the management table
+    const staff = users.filter(u => u.role === 'teacher' || u.role === 'headmaster');
 
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold font-headline">Daftar Guru</h1>
-                <p className="text-muted-foreground">Kelola semua akun guru yang terdaftar di sistem.</p>
+                <h1 className="text-2xl font-bold font-headline">Daftar Staf Pengajar</h1>
+                <p className="text-muted-foreground">Kelola semua akun guru dan kepala sekolah yang terdaftar di sistem.</p>
             </div>
             <Card className="shadow-sm">
                 <CardHeader>
-                    <CardTitle>Semua Guru</CardTitle>
-                    <CardDescription>Total guru terdaftar: {teachers.length}</CardDescription>
+                    <CardTitle>Semua Staf Pengajar</CardTitle>
+                    <CardDescription>Total staf terdaftar: {staff.length}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <UsersTable initialUsers={teachers} />
+                    <UsersTable initialUsers={staff} />
                 </CardContent>
             </Card>
         </div>

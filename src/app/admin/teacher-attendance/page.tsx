@@ -79,7 +79,8 @@ export default function TeacherAttendanceRecapPage() {
         getUserProfile(),
       ]);
       setHistory(attendanceData);
-      setUsers(userData.filter(u => u.role === 'teacher' || u.role === 'headmaster' || u.role === 'admin'));
+      // Ensure the filter list includes teachers and headmasters
+      setUsers(userData.filter(u => u.role === 'teacher' || u.role === 'headmaster'));
       setProfile(profileData as Profile);
       setLoading(false);
     };
