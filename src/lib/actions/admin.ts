@@ -362,7 +362,12 @@ export async function saveAttendanceSettings(formData: FormData) {
 export async function updateSchoolData(schoolData: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Tidak terautentikasi" };
+    if (!user || user.id.length === 0) {
+        // Find admin user if current user is not available or not correct
+        const {data: adminUser, error: adminError} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
+        if(adminError || !adminUser) return { success: false, error: "Tidak terautentikasi atau admin tidak ditemukan" };
+        user.id = adminUser.id;
+    }
 
     // The admin updates their own profile, which acts as the source of truth
     const { error } = await supabase.from('profiles').update({
@@ -387,14 +392,26 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
+    
+    let targetUserId = user.id;
+
+    // If uploading a logo, we need to ensure we're updating the admin's profile
+    if (type === 'logo') {
+         const {data: adminUser, error: adminError} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
+         if(adminError || !adminUser) {
+             console.error("Admin user not found for logo upload");
+             return { success: false, error: "Admin tidak ditemukan untuk unggah logo." };
+         }
+         targetUserId = adminUser.id;
+    }
+
 
     const file = formData.get('file') as File;
     if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
     
     const bucket = 'avatars';
-    // For the logo, we use a predictable name. For avatar, unique per user.
     const fileName = type === 'logo' 
-        ? `school_logo_${Date.now()}` // Add timestamp to break cache
+        ? `school_logo_${Date.now()}`
         : `${user.id}/avatar_${Date.now()}`;
     
     const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
@@ -409,16 +426,11 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
 
-    let query;
-    if (type === 'avatar') {
-        // Update only the current user's avatar
-        query = supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
-    } else {
-        // Update the school logo only on the admin's profile
-        query = supabase.from('profiles').update({ school_logo_url: publicUrl }).eq('id', user.id);
-    }
+    const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
 
-    const { error: dbError } = await query;
+    const { error: dbError } = await supabase.from('profiles').update({
+        [columnToUpdate]: publicUrl
+    }).eq('id', targetUserId);
 
     if (dbError) {
         console.error("DB update error:", dbError);
@@ -430,3 +442,5 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     revalidatePath('/dashboard/reports');
     return { success: true, url: publicUrl };
 }
+
+    

@@ -202,7 +202,7 @@ export async function getUserProfile(): Promise<Profile | null> {
     if (!user) return null;
 
     const supabase = createClient();
-    const { data, error } = await supabase
+    const { data: userProfileData, error } = await supabase
         .from('profiles')
         .select(`
             *,
@@ -218,15 +218,15 @@ export async function getUserProfile(): Promise<Profile | null> {
     
     const schoolProfile = await getAdminProfile();
 
+    // Correct way to merge: start with teacher profile, then explicitly overwrite with admin school data
     const profile: Profile = {
-        ...data,
-        active_school_year_name: data.school_year?.name,
-        // CORRECT WAY: Explicitly override with admin data to ensure it's not overwritten by null values from user's profile
-        school_name: schoolProfile?.school_name || data.school_name,
-        school_address: schoolProfile?.school_address || data.school_address,
-        headmaster_name: schoolProfile?.headmaster_name || data.headmaster_name,
-        headmaster_nip: schoolProfile?.headmaster_nip || data.headmaster_nip,
-        school_logo_url: schoolProfile?.school_logo_url || data.school_logo_url,
+        ...userProfileData,
+        active_school_year_name: userProfileData.school_year?.name,
+        school_name: schoolProfile?.school_name || userProfileData.school_name,
+        school_address: schoolProfile?.school_address || userProfileData.school_address,
+        headmaster_name: schoolProfile?.headmaster_name || userProfileData.headmaster_name,
+        headmaster_nip: schoolProfile?.headmaster_nip || userProfileData.headmaster_nip,
+        school_logo_url: schoolProfile?.school_logo_url || userProfileData.school_logo_url,
     };
 
     return profile;
@@ -658,7 +658,7 @@ export async function getDashboardData(todayDay: string) {
 export async function getReportsData(filters: { schoolYearId: string, month?: number, classId?: string, subjectId?: string }) {
     noStore();
     const user = await getAuthenticatedUser();
-    const profile = await getUserProfile(); // Use the corrected getUserProfile
+    const profile = await getUserProfile();
     if (!user || !profile) return {
         summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearName: "" },
         studentPerformance: [], attendanceByClass: [], overallAttendanceDistribution: {},
@@ -1000,3 +1000,5 @@ export async function getTeacherActivityStats() {
 
     return result;
 }
+
+    

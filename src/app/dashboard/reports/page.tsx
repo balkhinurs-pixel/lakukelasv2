@@ -48,7 +48,7 @@ export default async function ReportsPage({
                     <AlertDescription>
                         Anda harus mengatur tahun ajaran aktif terlebih dahulu untuk dapat melihat laporan.
                         <Button asChild variant="link" className="p-0 h-auto ml-1 font-semibold">
-                            <Link href="/dashboard/roster/school-year">Buka Pengaturan Tahun Ajaran</Link>
+                            <Link href="/admin/roster/school-year">Buka Pengaturan Tahun Ajaran (Admin)</Link>
                         </Button>
                     </AlertDescription>
                 </Alert>
@@ -93,3 +93,5 @@ export default async function ReportsPage({
         profile={profile}
     />;
 }
+
+    
