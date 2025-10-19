@@ -55,7 +55,9 @@ export default async function SettingsPage() {
                 </div>
             )
         }
-        return <SettingsClientPage user={user} profile={newProfile as Profile} schoolProfile={newProfile as Profile} />;
+        // If profile was just created, we still need to fetch the admin/school profile
+        const { data: schoolProfileForNewUser } = await supabase.from('profiles').select('*').eq('role', 'admin').limit(1).single();
+        return <SettingsClientPage user={user} profile={newProfile as Profile} schoolProfile={schoolProfileForNewUser as Profile || newProfile as Profile} />;
     }
 
     // Fetch the admin's profile to get the school data
