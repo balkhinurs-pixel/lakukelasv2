@@ -54,6 +54,7 @@ export async function middleware(request: NextRequest) {
         .single();
     
     const isAdmin = profile?.role === 'admin';
+    const isHeadmaster = profile?.role === 'headmaster';
 
     // If a logged-in user is on the login page, redirect them to their respective dashboard
     if (pathname === '/') {
@@ -64,9 +65,25 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // If a non-admin tries to access admin routes, redirect to teacher dashboard
-    if (pathname.startsWith('/admin') && !isAdmin) {
+    // --- Role-based access control ---
+
+    // Define routes accessible only by admins
+    const adminOnlyRoutes = [
+      '/admin/users',
+      '/admin/roster',
+      '/admin/settings',
+    ];
+
+    if (pathname.startsWith('/admin')) {
+      // If user is NOT an admin
+      if (!isAdmin) {
+        // If user is a headmaster, allow them to access specific monitoring pages
+        if (isHeadmaster && (pathname.startsWith('/admin/teacher-attendance') || pathname.startsWith('/admin/teacher-activity'))) {
+          return response; // Allow access
+        }
+        // For any other /admin path, or if user is just a teacher, redirect
         return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
     }
     
     // If an admin tries to access teacher dashboard routes, redirect to admin dashboard
