@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -80,6 +79,7 @@ export default function TeacherAttendanceRecapPage() {
         getUserProfile(),
       ]);
       setHistory(attendanceData);
+      // This is the fix: include all teachers for the dropdown
       setUsers(userData.filter((u) => u.role === "teacher" || u.role === 'headmaster'));
       setProfile(profileData as Profile);
       setLoading(false);
