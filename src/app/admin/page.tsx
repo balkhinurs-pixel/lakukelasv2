@@ -19,11 +19,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Users, Clock, UserX, Activity, UserCheck, TrendingUp, Calendar, BookOpen, AlertTriangle, RefreshCw } from "lucide-react";
-import { getAdminDashboardData, getAllUsers, getTeacherAttendanceHistory } from "@/lib/data";
+import { getAdminDashboardData, getAllUsers, getTeacherAttendanceHistory, getHolidays } from "@/lib/data";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { cn, formatTime } from "@/lib/utils";
-import { formatIndonesianDate, formatIndonesianDateTime, getIndonesianTime } from '@/lib/timezone';
+import { getIndonesianTime } from '@/lib/timezone';
 import WeeklyAttendanceChart from "./weekly-attendance-chart";
 import { Suspense } from "react";
 
@@ -92,7 +92,7 @@ const StatCard = ({
     );
 };
 
-const getStatusBadge = (status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir' | 'Belum Absen') => {
+const getStatusBadge = (status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir' | 'Belum Absen' | 'Libur') => {
     switch (status) {
         case 'Tepat Waktu':
             return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100';
@@ -101,6 +101,8 @@ const getStatusBadge = (status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir' | 'B
         case 'Tidak Hadir':
         case 'Belum Absen':
             return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100';
+        case 'Libur':
+            return 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100';
         default:
             return 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100';
     }
@@ -109,14 +111,20 @@ const getStatusBadge = (status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir' | 'B
 
 export default async function AdminDashboardPage() {
   try {
-    const [dashboardData, allUsers, attendanceHistory] = await Promise.all([
+    const [dashboardData, allUsers, attendanceHistory, holidays] = await Promise.all([
       getAdminDashboardData(),
       getAllUsers(),
-      getTeacherAttendanceHistory()
+      getTeacherAttendanceHistory(),
+      getHolidays(),
     ]);
 
-    const today = format(getIndonesianTime(), 'yyyy-MM-dd');
-    const yesterday = format(new Date(getIndonesianTime().getTime() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+    const now = getIndonesianTime();
+    const today = format(now, 'yyyy-MM-dd');
+    const yesterday = format(new Date(now.getTime() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+
+    const dayOfWeek = now.getDay(); // 0 for Sunday, 6 for Saturday
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isHoliday = holidays.some(h => h.date === today) || isWeekend;
     
     const teachers = allUsers.filter(u => u.role === 'teacher');
     const admins = allUsers.filter(u => u.role === 'admin');
@@ -133,10 +141,11 @@ export default async function AdminDashboardPage() {
               status: attendance.status
           }
       }
+      // If it's a holiday, mark as 'Libur' instead of 'Belum Absen'
       return {
           name: teacher.full_name,
           checkIn: null,
-          status: 'Belum Absen' as const
+          status: isHoliday ? 'Libur' : 'Belum Absen' as const
       }
     });
 
@@ -145,7 +154,8 @@ export default async function AdminDashboardPage() {
         late: teacherAttendanceStatus.filter(t => t.status === 'Terlambat').length,
         notCheckedIn: teacherAttendanceStatus.filter(t => t.status === 'Belum Absen').length,
         absent: teacherAttendanceStatus.filter(t => t.status === 'Tidak Hadir').length,
-        attendanceRate: teachers.length > 0 ? Math.round(((teacherAttendanceStatus.filter(t => t.status !== 'Belum Absen' && t.status !== 'Tidak Hadir').length) / teachers.length) * 100) : 0,
+        onLeave: teacherAttendanceStatus.filter(t => t.status === 'Libur').length,
+        attendanceRate: teachers.length > 0 ? Math.round(((teacherAttendanceStatus.filter(t => t.status !== 'Belum Absen' && t.status !== 'Tidak Hadir' && t.status !== 'Libur').length) / (teachers.length - (isHoliday ? teachers.length : 0))) * 100) : 0,
     }
     
     // Calculate trends
@@ -166,7 +176,7 @@ export default async function AdminDashboardPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                   <h1 className="text-3xl font-bold font-headline text-gray-900">Dasbor Admin</h1>
-                  <p className="text-muted-foreground">Ringkasan umum dan pemantauan aktivitas guru - {formatIndonesianDate(getIndonesianTime(), 'EEEE, dd MMMM yyyy')}</p>
+                  <p className="text-muted-foreground">Ringkasan umum dan pemantauan aktivitas guru - {format(now, 'EEEE, dd MMMM yyyy', { locale: id })}</p>
               </div>
               <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" className="gap-2">
@@ -176,8 +186,15 @@ export default async function AdminDashboardPage() {
               </div>
           </div>
           
-          {/* Alert for low attendance */}
-          {summary.attendanceRate < 80 && (
+          {/* Alert for holidays or low attendance */}
+          {isHoliday ? (
+              <Alert className="border-blue-200 bg-blue-50">
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                      <strong>Hari Ini Libur.</strong> Sistem tidak menandai guru sebagai "Belum Absen".
+                  </AlertDescription>
+              </Alert>
+          ) : summary.attendanceRate < 80 && (
               <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800">
@@ -216,17 +233,17 @@ export default async function AdminDashboardPage() {
                   subtitle="Absen masuk melewati batas"
                   color="text-yellow-600" 
                   bgColor="bg-yellow-50"
-                  trend={`${Math.round((summary.late / teachers.length) * 100)}% dari total`}
+                  trend={`${Math.round((summary.late / (teachers.length - summary.onLeave)) * 100)}% dari total hadir`}
                   trendDirection={summary.late > 0 ? 'up' : 'neutral'}
               />
               <StatCard 
                   icon={UserX} 
                   title="Belum/Tidak Hadir" 
                   value={summary.notCheckedIn + summary.absent} 
-                  subtitle="Perlu tindak lanjut"
+                  subtitle={isHoliday ? 'Hari ini libur' : 'Perlu tindak lanjut'}
                   color="text-red-600" 
                   bgColor="bg-red-50"
-                  trend={`${summary.attendanceRate}% tingkat kehadiran`}
+                  trend={`${summary.attendanceRate > 0 ? `${summary.attendanceRate}%` : 'N/A'} tingkat kehadiran`}
                   trendDirection={summary.attendanceRate >= 90 ? 'up' : summary.attendanceRate >= 75 ? 'neutral' : 'down'}
               />
           </div>
@@ -381,3 +398,5 @@ export default async function AdminDashboardPage() {
     );
   }
 }
+
+    
