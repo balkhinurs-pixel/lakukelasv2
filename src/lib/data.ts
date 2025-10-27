@@ -44,7 +44,7 @@ export async function getAdminDashboardData() {
         const todayStr = format(new Date(), 'yyyy-MM-dd');
         const isTodayHoliday = holidays.some(h => h.date === todayStr);
 
-        const teachers = allUsers.filter(u => u.role === 'teacher');
+        const teachers = allUsers.filter(u => u.role === 'teacher' || u.role === 'headmaster');
         
         // Calculate weekly attendance data (last 7 days)
         const weeklyAttendance = [];
@@ -58,7 +58,7 @@ export async function getAdminDashboardData() {
             
             const dayAttendance = attendanceHistory.filter(a => a.date === dateStr);
             const hadirCount = dayAttendance.filter(a => a.status === 'Tepat Waktu' || a.status === 'Terlambat').length;
-            const tidakHadirCount = dayAttendance.filter(a => a.status === 'Tidak Hadir').length;
+            const tidakHadirCount = dayAttendance.filter(a => a.status === 'Tidak Hadir' || a.status === 'Sakit' || a.status === 'Izin').length;
             
             weeklyAttendance.push({
                 day: dayName,
@@ -961,7 +961,8 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
         date: item.date,
         checkIn: item.check_in || null,
         checkOut: item.check_out || null,
-        status: item.status
+        status: item.status,
+        reason: item.reason || null,
     }));
 }
 
@@ -972,7 +973,7 @@ export async function getTeacherActivityStats() {
     const { data: teachers, error: teachersError } = await supabase
         .from('profiles')
         .select('id, full_name')
-        .eq('role', 'teacher');
+        .in('role', ['teacher', 'headmaster']);
     
     if (teachersError) {
         console.error("Error fetching teachers for activity stats:", teachersError);

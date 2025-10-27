@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, LogIn, LogOut, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
+import { MapPin, LogIn, LogOut, Loader2, CheckCircle, XCircle, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { recordTeacherAttendance } from "@/lib/actions";
@@ -14,6 +15,88 @@ import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { TeacherAttendance, Profile } from "@/lib/types";
 import DigitalClock from "./DigitalClock";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
+
+function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void }) {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [leaveType, setLeaveType] = React.useState<'Sakit' | 'Izin'>('Sakit');
+    const [reason, setReason] = React.useState('');
+    const [loading, setLoading] = React.useState(false);
+    const { toast } = useToast();
+
+    const handleLeaveRequest = async () => {
+        setLoading(true);
+        const formData = new FormData();
+        formData.append('type', 'leave');
+        formData.append('leave_type', leaveType);
+        formData.append('reason', reason);
+
+        const result = await recordTeacherAttendance(formData);
+
+        if (result.success) {
+            toast({
+                title: "Pengajuan Izin Berhasil",
+                description: `Anda telah tercatat ${leaveType} hari ini.`,
+            });
+            onLeaveSubmitted();
+            setIsOpen(false);
+        } else {
+            toast({
+                title: "Gagal Mengajukan Izin",
+                description: result.error,
+                variant: "destructive",
+            });
+        }
+        setLoading(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="secondary" className="w-full max-w-xs h-14 text-lg">
+                    <FileText className="mr-2 h-5 w-5" />
+                    Ajukan Izin Hari Ini
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Formulir Izin Tidak Masuk</DialogTitle>
+                    <DialogDescription>
+                        Pilih jenis izin dan berikan keterangan jika diperlukan.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-3">
+                        <Label>Jenis Izin</Label>
+                        <RadioGroup value={leaveType} onValueChange={(value: 'Sakit' | 'Izin') => setLeaveType(value)} className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Sakit" id="r-sakit" />
+                                <Label htmlFor="r-sakit">Sakit</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Izin" id="r-izin" />
+                                <Label htmlFor="r-izin">Izin (Kegiatan, dll)</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="reason">Keterangan (Opsional)</Label>
+                        <Textarea id="reason" value={reason} onChange={e => setReason(e.target.value)} placeholder="Contoh: Ada kegiatan dinas di kantor cabang..." />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleLeaveRequest} disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Kirim Pengajuan
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function TeacherAttendanceClient({ 
     initialHistory,
@@ -31,12 +114,8 @@ export default function TeacherAttendanceClient({
 
     const { toast } = useToast();
 
-    // The history is now passed as a prop, but we can have a function to refresh it.
     const loadAttendanceHistory = async () => {
         setHistoryLoading(true);
-        // We'll call a server action to re-fetch the data. This is safer.
-        // For now, we will just rely on the server rendering for refresh.
-        // A dedicated server action could be created for this if needed.
         window.location.reload(); // Simple refresh for now
         setHistoryLoading(false);
     };
@@ -120,8 +199,7 @@ export default function TeacherAttendanceClient({
                     title: "Absensi Berhasil",
                     description: detailMessage,
                 });
-                // Simple refresh to get the latest history
-                window.location.reload();
+                loadAttendanceHistory();
             } else {
                 setStatus('error');
                 setMessage(result.error || 'Terjadi kesalahan saat melakukan absensi.');
@@ -145,14 +223,18 @@ export default function TeacherAttendanceClient({
         setLoading(false);
     };
 
-    const getStatusBadge = (status: string) => {
+    const getStatusBadge = (status: TeacherAttendance["status"]) => {
         switch (status) {
-            case 'Tepat Waktu':
-                return 'text-green-700 bg-green-50 border-green-200';
-            case 'Terlambat':
-                return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+            case "Tepat Waktu":
+                return "text-green-700 bg-green-50 border-green-200";
+            case "Terlambat":
+                return "text-yellow-700 bg-yellow-50 border-yellow-200";
+            case "Sakit":
+                return "text-amber-700 bg-amber-50 border-amber-200";
+            case "Izin":
+                return "text-blue-700 bg-blue-50 border-blue-200";
             default:
-                return 'text-gray-700 bg-gray-50 border-gray-200';
+                return "text-red-700 bg-red-50 border-red-200";
         }
     };
     
@@ -203,6 +285,9 @@ export default function TeacherAttendanceClient({
                             {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogOut className="mr-2 h-5 w-5" />}
                             Absen Pulang
                         </Button>
+                    </div>
+                     <div className="space-y-2">
+                        <LeaveRequestDialog onLeaveSubmitted={loadAttendanceHistory} />
                     </div>
 
                     {!locationSupported && (
@@ -266,9 +351,9 @@ export default function TeacherAttendanceClient({
                                             </div>
                                             <Badge 
                                                 variant="outline" 
-                                                className={cn("font-semibold text-xs", getStatusBadge(record.status || 'Belum Absen'))}
+                                                className={cn("font-semibold text-xs", getStatusBadge(record.status || 'Tidak Hadir'))}
                                             >
-                                                {record.status || 'Belum Absen'}
+                                                {record.status || 'Tidak Hadir'}
                                             </Badge>
                                         </div>
                                     </div>
@@ -301,9 +386,9 @@ export default function TeacherAttendanceClient({
                                                 <TableCell className="text-center">
                                                     <Badge 
                                                         variant="outline" 
-                                                        className={cn("font-semibold", getStatusBadge(record.status || 'Belum Absen'))}
+                                                        className={cn("font-semibold", getStatusBadge(record.status || 'Tidak Hadir'))}
                                                     >
-                                                        {record.status || 'Belum Absen'}
+                                                        {record.status || 'Tidak Hadir'}
                                                     </Badge>
                                                 </TableCell>
                                             </TableRow>

@@ -18,7 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, Clock, UserX, Activity, UserCheck, TrendingUp, Calendar, BookOpen, AlertTriangle, RefreshCw } from "lucide-react";
+import { Users, Clock, UserX, Activity, UserCheck, TrendingUp, Calendar, BookOpen, AlertTriangle, RefreshCw, FileText } from "lucide-react";
 import { getAdminDashboardData, getAllUsers, getTeacherAttendanceHistory, getHolidays } from "@/lib/data";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -26,6 +26,7 @@ import { cn, formatTime } from "@/lib/utils";
 import { getIndonesianTime } from '@/lib/timezone';
 import WeeklyAttendanceChart from "./weekly-attendance-chart";
 import { Suspense } from "react";
+import type { TeacherAttendance } from "@/lib/types";
 
 // Loading skeleton component
 const StatCardSkeleton = () => (
@@ -92,12 +93,16 @@ const StatCard = ({
     );
 };
 
-const getStatusBadge = (status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir' | 'Belum Absen' | 'Libur') => {
+const getStatusBadge = (status: TeacherAttendance['status'] | 'Belum Absen' | 'Libur') => {
     switch (status) {
         case 'Tepat Waktu':
             return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100';
         case 'Terlambat':
             return 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100';
+        case 'Sakit':
+             return "bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100";
+        case 'Izin':
+             return "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100";
         case 'Tidak Hadir':
         case 'Belum Absen':
             return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100';
@@ -126,7 +131,7 @@ export default async function AdminDashboardPage() {
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const isHoliday = holidays.some(h => h.date === today) || isWeekend;
     
-    const teachers = allUsers.filter(u => u.role === 'teacher');
+    const teachers = allUsers.filter(u => u.role === 'teacher' || u.role === 'headmaster');
     const admins = allUsers.filter(u => u.role === 'admin');
     
     const todayAttendance = attendanceHistory.filter(a => a.date === today);
@@ -154,9 +159,9 @@ export default async function AdminDashboardPage() {
         late: teacherAttendanceStatus.filter(t => t.status === 'Terlambat').length,
         notCheckedIn: teacherAttendanceStatus.filter(t => t.status === 'Belum Absen').length,
         absent: teacherAttendanceStatus.filter(t => t.status === 'Tidak Hadir').length,
-        onLeave: teacherAttendanceStatus.filter(t => t.status === 'Libur').length,
-        attendanceRate: teachers.length > 0 ? Math.round(((teacherAttendanceStatus.filter(t => t.status !== 'Belum Absen' && t.status !== 'Tidak Hadir' && t.status !== 'Libur').length) / (teachers.length - (isHoliday ? teachers.length : 0))) * 100) : 0,
-    }
+        onLeave: teacherAttendanceStatus.filter(t => t.status === 'Libur' || t.status === 'Sakit' || t.status === 'Izin').length,
+        attendanceRate: teachers.length > 0 ? Math.round(((teacherAttendanceStatus.filter(t => t.status === 'Tepat Waktu' || t.status === 'Terlambat').length) / (teachers.length - teacherAttendanceStatus.filter(t => t.status === 'Libur').length)) * 100) : 0,
+    };
     
     // Calculate trends
     const yesterdayPresent = yesterdayAttendance.filter(a => a.status === 'Tepat Waktu' || a.status === 'Terlambat').length;
@@ -220,7 +225,7 @@ export default async function AdminDashboardPage() {
                   icon={UserCheck} 
                   title="Hadir Hari Ini" 
                   value={summary.present + summary.late} 
-                  subtitle="Absen masuk terkonfirmasi"
+                  subtitle={`${summary.onLeave} guru izin/sakit`}
                   color="text-green-600" 
                   bgColor="bg-green-50"
                   trend={attendanceTrend > 0 ? `+${attendanceTrend}` : attendanceTrend < 0 ? `${attendanceTrend}` : '±0'}
@@ -398,5 +403,3 @@ export default async function AdminDashboardPage() {
     );
   }
 }
-
-    

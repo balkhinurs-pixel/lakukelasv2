@@ -19,6 +19,8 @@ import {
   Loader2,
   Clock,
   LogOut,
+  AlertCircle,
+  FileText
 } from "lucide-react";
 import {
   Table,
@@ -126,7 +128,7 @@ export default function TeacherAttendanceRecapPageClient({
         doc.text(`Guru: ${teacherName}`, margin, margin + 45);
         doc.text(`Periode: ${dateLabel}`, margin, margin + 50);
 
-        const summaryData: { [teacherId: string]: { name: string; tepatWaktu: number; terlambat: number; tidakHadir: number } } = {};
+        const summaryData: { [teacherId: string]: { name: string; tepatWaktu: number; terlambat: number; tidakHadir: number, sakit: number, izin: number } } = {};
 
         filteredHistory.forEach(item => {
             if (!summaryData[item.teacherId]) {
@@ -135,23 +137,29 @@ export default function TeacherAttendanceRecapPageClient({
                     tepatWaktu: 0,
                     terlambat: 0,
                     tidakHadir: 0,
+                    sakit: 0,
+                    izin: 0,
                 };
             }
             if (item.status === 'Tepat Waktu') summaryData[item.teacherId].tepatWaktu++;
             else if (item.status === 'Terlambat') summaryData[item.teacherId].terlambat++;
             else if (item.status === 'Tidak Hadir') summaryData[item.teacherId].tidakHadir++;
+            else if (item.status === 'Sakit') summaryData[item.teacherId].sakit++;
+            else if (item.status === 'Izin') summaryData[item.teacherId].izin++;
         });
 
         const summaryBody = Object.values(summaryData).map(item => [
             item.name,
             item.tepatWaktu,
             item.terlambat,
+            item.sakit,
+            item.izin,
             item.tepatWaktu + item.terlambat,
             item.tidakHadir
         ]);
 
         doc.autoTable({
-            head: [['Nama Guru', 'Tepat Waktu', 'Terlambat', 'Total Hadir', 'Tidak Hadir']],
+            head: [['Nama Guru', 'Tepat Waktu', 'Terlambat', 'Sakit', 'Izin', 'Total Hadir', 'Tidak Hadir']],
             body: summaryBody,
             startY: margin + 55,
             theme: 'grid',
@@ -169,10 +177,11 @@ export default function TeacherAttendanceRecapPageClient({
             item.checkIn ? formatTime(item.checkIn) : '-',
             item.checkOut ? formatTime(item.checkOut) : '-',
             item.status,
+            item.reason || '-',
         ]);
 
         doc.autoTable({
-            head: [['Nama Guru', 'Tanggal', 'Absen Masuk', 'Absen Pulang', 'Status']],
+            head: [['Nama Guru', 'Tanggal', 'Absen Masuk', 'Absen Pulang', 'Status', 'Keterangan']],
             body: detailBody,
             startY: lastY + 15,
             theme: 'grid',
@@ -224,6 +233,10 @@ export default function TeacherAttendanceRecapPageClient({
         return "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100";
       case "Tidak Hadir":
         return "bg-red-100 text-red-800 border-red-200 hover:bg-red-100";
+      case "Sakit":
+        return "bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100";
+      case "Izin":
+        return "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100";
     }
@@ -418,6 +431,7 @@ export default function TeacherAttendanceRecapPageClient({
                   <TableHead>Absen Masuk</TableHead>
                   <TableHead>Absen Pulang</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Keterangan</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -442,11 +456,12 @@ export default function TeacherAttendanceRecapPageClient({
                           {item.status}
                         </Badge>
                       </TableCell>
+                       <TableCell className="text-muted-foreground text-xs">{item.reason}</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-16">
+                    <TableCell colSpan={6} className="text-center py-16">
                       <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
                       <h3 className="mt-2 text-sm font-medium">Belum Ada Data</h3>
                       <p className="mt-1 text-sm text-gray-500">

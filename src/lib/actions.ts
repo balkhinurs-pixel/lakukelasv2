@@ -491,14 +491,60 @@ export async function recordTeacherAttendance(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const attendanceType = formData.get('type') as 'in' | 'out';
-    const userLatitude = parseFloat(formData.get('latitude') as string);
-    const userLongitude = parseFloat(formData.get('longitude') as string);
+    const attendanceType = formData.get('type') as 'in' | 'out' | 'leave';
     
     // Get current time in Indonesian timezone (GMT+7)
     const indonesianTime = getIndonesianTime();
     const currentTime = format(indonesianTime, 'HH:mm:ss');
     const today = format(indonesianTime, 'yyyy-MM-dd');
+
+    const { data: existingAttendance } = await supabase
+        .from('teacher_attendance')
+        .select('id, check_in')
+        .eq('teacher_id', user.id)
+        .eq('date', today)
+        .single();
+    
+    if (attendanceType === 'leave') {
+        const leaveType = formData.get('leave_type') as 'Sakit' | 'Izin';
+        const reason = formData.get('reason') as string;
+        
+        if (existingAttendance) {
+             const { error: updateError } = await supabase
+                .from('teacher_attendance')
+                .update({
+                    status: leaveType,
+                    reason: reason,
+                    check_in: null,
+                    check_out: null,
+                })
+                .eq('id', existingAttendance.id);
+            
+            if (updateError) {
+                console.error('Error updating leave status:', updateError);
+                return { success: false, error: "Gagal memperbarui status izin." };
+            }
+        } else {
+             const { error: insertError } = await supabase
+                .from('teacher_attendance')
+                .insert({
+                    teacher_id: user.id,
+                    date: today,
+                    status: leaveType,
+                    reason: reason
+                });
+
+            if (insertError) {
+                console.error('Error recording leave:', insertError);
+                return { success: false, error: "Gagal menyimpan pengajuan izin." };
+            }
+        }
+        revalidatePath('/dashboard/teacher-attendance');
+        return { success: true };
+    }
+    
+    const userLatitude = parseFloat(formData.get('latitude') as string);
+    const userLongitude = parseFloat(formData.get('longitude') as string);
 
     // Get attendance settings from database
     const { data: settings, error: settingsError } = await supabase
@@ -557,13 +603,6 @@ export async function recordTeacherAttendance(formData: FormData) {
 
     try {
         if (attendanceType === 'in') {
-            const { data: existingAttendance } = await supabase
-                .from('teacher_attendance')
-                .select('id')
-                .eq('teacher_id', user.id)
-                .eq('date', today)
-                .single();
-
             if (existingAttendance) {
                 return { success: false, error: "Anda sudah melakukan absen masuk hari ini." };
             }
@@ -582,13 +621,6 @@ export async function recordTeacherAttendance(formData: FormData) {
                 return { success: false, error: "Gagal menyimpan absen masuk." };
             }
         } else {
-            const { data: existingAttendance } = await supabase
-                .from('teacher_attendance')
-                .select('id, check_in')
-                .eq('teacher_id', user.id)
-                .eq('date', today)
-                .single();
-
             if (!existingAttendance) {
                 return { success: false, error: "Anda belum melakukan absen masuk hari ini." };
             }

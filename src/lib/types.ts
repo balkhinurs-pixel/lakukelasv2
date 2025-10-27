@@ -129,7 +129,8 @@ export interface TeacherAttendance {
   date: string; // ISO 8601 string
   checkIn: string | null; // HH:mm
   checkOut: string | null; // HH:mm
-  status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir';
+  status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir' | 'Sakit' | 'Izin';
+  reason?: string | null;
 }
 
 // --- History Types ---
