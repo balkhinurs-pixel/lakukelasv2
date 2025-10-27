@@ -1,10 +1,11 @@
 
+
 'use server';
 
 import { createClient } from './supabase/server';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, toIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
@@ -678,17 +679,20 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
         journalQuery = journalQuery.eq('school_year_id', schoolYearId);
     }
     if (month) {
-        attendanceQuery.eq('month', month);
-        gradesQuery.eq('month', month);
-        journalQuery.eq('month', month);
+        const year = new Date().getFullYear(); // Or get from schoolYearId if it contains year info
+        const startDate = format(startOfMonth(new Date(year, month - 1, 1)), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(new Date(year, month - 1, 1)), 'yyyy-MM-dd');
+        attendanceQuery = attendanceQuery.gte('date', startDate).lte('date', endDate);
+        gradesQuery = gradesQuery.gte('date', startDate).lte('date', endDate);
+        journalQuery = journalQuery.gte('date', startDate).lte('date', endDate);
     }
     if (classId) {
-        attendanceQuery.eq('class_id', classId);
+        attendanceQuery = attendanceQuery.eq('class_id', classId);
         gradesQuery = gradesQuery.eq('class_id', classId);
         journalQuery = journalQuery.eq('class_id', classId);
     }
     if (subjectId) {
-        attendanceQuery.eq('subject_id', subjectId);
+        attendanceQuery = attendanceQuery.eq('subject_id', subjectId);
         gradesQuery = gradesQuery.eq('subject_id', subjectId);
         journalQuery = journalQuery.eq('subject_id', subjectId);
     }
