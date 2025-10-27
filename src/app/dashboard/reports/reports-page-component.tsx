@@ -47,7 +47,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, CheckCircle, Award, Download, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Users2, Filter, Calendar, GraduationCap, BarChart3, FileText, Loader2 } from "lucide-react";
 import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear, GradeHistoryEntry, AttendanceHistoryEntry } from "@/lib/types";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -205,7 +205,12 @@ export default function ReportsPageComponent({
         const title = 'REKAPITULASI KEHADIRAN SISWA';
 
         const filteredStudents = allStudents.filter(s => s.class_id === selectedClass);
-        const filteredHistory = attendanceHistory.filter(h => h.class_id === selectedClass && h.subject_id === selectedSubject);
+        
+        const filteredHistory = attendanceHistory.filter(h => 
+            h.class_id === selectedClass && 
+            h.subject_id === selectedSubject &&
+            (currentMonth === 'all' || format(parseISO(h.date), 'M') === currentMonth)
+        );
 
         const tableBody = filteredStudents.map((student, index) => {
             const hadir = filteredHistory.filter(r => r.student_id === student.id && r.status === 'Hadir').length;
@@ -221,7 +226,7 @@ export default function ReportsPageComponent({
         // --- Generate Filename ---
         const className = classes.find(c => c.id === selectedClass)?.name.replace(/\s/g, '_') || 'Kelas';
         const subjectName = subjects.find(s => s.id === selectedSubject)?.name.replace(/\s/g, '_') || 'Mapel';
-        const schoolYearInfo = selectedSchoolYear?.name.split('-').map(s => s.trim()) || ["Ganjil", "2024_2025"];
+        const schoolYearInfo = selectedSchoolYear?.name.split('-').map(s => s.trim()) || ["Semester", "Tahun"];
         const semester = schoolYearInfo[1] || 'Ganjil';
         const year = schoolYearInfo[0] || 'Tahun';
         const fileName = `Presensi-${className}-${subjectName}-${semester}-${year}.pdf`;
@@ -251,7 +256,11 @@ export default function ReportsPageComponent({
         const kkm = subject?.kkm || 75;
 
         const filteredStudents = allStudents.filter(s => s.class_id === selectedClass);
-        const filteredGradeHistory = gradeHistory.filter(h => h.class_id === selectedClass && h.subject_id === selectedSubject);
+        const filteredGradeHistory = gradeHistory.filter(h => 
+            h.class_id === selectedClass && 
+            h.subject_id === selectedSubject &&
+            (currentMonth === 'all' || format(parseISO(h.date), 'M') === currentMonth)
+        );
         
         const assessments = [...new Set(filteredGradeHistory.map(h => h.assessment_type))];
         const head = [['No', 'Nama Siswa', ...assessments, 'Rata-rata', 'Predikat']];
@@ -307,7 +316,11 @@ export default function ReportsPageComponent({
 
         // --- Data Preparation ---
         const filteredStudents = allStudents.filter(s => s.class_id === selectedClass);
-        const filteredGradeHistory = gradeHistory.filter(h => h.class_id === selectedClass && h.subject_id === selectedSubject);
+        const filteredGradeHistory = gradeHistory.filter(h => 
+            h.class_id === selectedClass && 
+            h.subject_id === selectedSubject &&
+            (currentMonth === 'all' || format(parseISO(h.date), 'M') === currentMonth)
+        );
         const assessments = [...new Set(filteredGradeHistory.map(h => h.assessment_type))];
 
         const data: (string | number)[][] = [];
