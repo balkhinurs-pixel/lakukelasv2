@@ -218,6 +218,14 @@ export default function ReportsPageComponent({
         
         const monthLabel = availableMonths.find(m => m.value === currentMonth)?.label;
 
+        // --- Generate Filename ---
+        const className = classes.find(c => c.id === selectedClass)?.name.replace(/\s/g, '_') || 'Kelas';
+        const subjectName = subjects.find(s => s.id === selectedSubject)?.name.replace(/\s/g, '_') || 'Mapel';
+        const schoolYearInfo = selectedSchoolYear?.name.split('-').map(s => s.trim()) || ["Ganjil", "2024_2025"];
+        const semester = schoolYearInfo[1] || 'Ganjil';
+        const year = schoolYearInfo[0] || 'Tahun';
+        const fileName = `Presensi-${className}-${subjectName}-${semester}-${year}.pdf`;
+
         await downloadPdf(doc, { 
             title: title, 
             head: [['No', 'Nama Siswa', 'Hadir (H)', 'Sakit (S)', 'Izin (I)', 'Alpha (A)', 'Total']],
@@ -225,7 +233,8 @@ export default function ReportsPageComponent({
         }, {
             tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
             periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
-        });
+        }, fileName);
+
         setDownloading(false);
     }
 
@@ -427,7 +436,7 @@ export default function ReportsPageComponent({
   }
 
 
-  const downloadPdf = async (doc: jsPDFWithAutoTable, content: {title: string, head?: any[][], body?: any[][], journals?: any[]}, meta?: Record<string, string | undefined>) => {
+  const downloadPdf = async (doc: jsPDFWithAutoTable, content: {title: string, head?: any[][], body?: any[][], journals?: any[]}, meta?: Record<string, string | undefined>, customFileName?: string) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
@@ -612,7 +621,7 @@ export default function ReportsPageComponent({
         // Add footer to all pages after content is generated
         addFooter(doc);
 
-        doc.save(`${content.title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
+        doc.save(customFileName || `${content.title.toLowerCase().replace(/ /g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
     }
   }
 
