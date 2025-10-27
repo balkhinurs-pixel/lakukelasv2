@@ -148,6 +148,28 @@ export async function saveAttendance(formData: FormData) {
         return { success: false, error: "Data tidak lengkap." };
     }
     
+    // For editing, we delete existing records and insert new ones
+    const original_date = formData.get('original_date');
+    if (original_date) {
+        const originalData = {
+            date: formData.get('original_date') as string,
+            class_id: formData.get('original_class_id') as string,
+            subject_id: formData.get('original_subject_id') as string,
+            meeting_number: Number(formData.get('original_meeting_number')),
+        };
+        const { error: deleteError } = await supabase.from('attendance_records')
+            .delete()
+            .eq('date', originalData.date)
+            .eq('class_id', originalData.class_id)
+            .eq('subject_id', originalData.subject_id)
+            .eq('meeting_number', originalData.meeting_number);
+            
+        if (deleteError) {
+             console.error("Error deleting old attendance records for update:", deleteError);
+             return { success: false, error: "Gagal memperbarui presensi (langkah 1)." };
+        }
+    }
+
     const records: { student_id: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha' }[] = JSON.parse(formData.get('records') as string);
     const recordsToInsert: Omit<AttendanceRecord, 'id'>[] = records.map(record => ({
         ...commonData,
@@ -157,22 +179,6 @@ export async function saveAttendance(formData: FormData) {
         school_year_id: activeSchoolYearId
     }));
     
-    // For editing, we delete existing records and insert new ones
-    // This is simpler than upserting for this structure
-    if (formData.get('id')) {
-        const { error: deleteError } = await supabase.from('attendance_records')
-            .delete()
-            .eq('date', commonData.date)
-            .eq('class_id', commonData.class_id)
-            .eq('subject_id', commonData.subject_id)
-            .eq('meeting_number', commonData.meeting_number);
-            
-        if (deleteError) {
-             console.error("Error deleting old attendance records for update:", deleteError);
-             return { success: false, error: "Gagal memperbarui presensi (langkah 1)." };
-        }
-    }
-
     const { error: insertError } = await supabase.from('attendance_records').insert(recordsToInsert);
 
     if (insertError) {
@@ -205,7 +211,28 @@ export async function saveGrades(formData: FormData) {
     if (!commonData.date || !commonData.class_id || !commonData.subject_id || !commonData.assessment_type) {
         return { success: false, error: "Data tidak lengkap." };
     }
-
+    
+    const original_date = formData.get('original_date');
+    if (original_date) {
+        const originalData = {
+            date: formData.get('original_date') as string,
+            class_id: formData.get('original_class_id') as string,
+            subject_id: formData.get('original_subject_id') as string,
+            assessment_type: formData.get('original_assessment_type') as string,
+        };
+        const { error: deleteError } = await supabase.from('grade_records')
+            .delete()
+            .eq('date', originalData.date)
+            .eq('class_id', originalData.class_id)
+            .eq('subject_id', originalData.subject_id)
+            .eq('assessment_type', originalData.assessment_type);
+        
+        if (deleteError) {
+             console.error("Error deleting old grade records for update:", deleteError);
+             return { success: false, error: "Gagal memperbarui nilai (langkah 1)." };
+        }
+    }
+    
     const records: { student_id: string, score: number }[] = JSON.parse(formData.get('records') as string);
     const recordsToInsert: Omit<GradeRecord, 'id'>[] = records.map(record => ({
         ...commonData,
@@ -214,20 +241,6 @@ export async function saveGrades(formData: FormData) {
         teacher_id: user.id,
         school_year_id: activeSchoolYearId,
     }));
-
-    if (formData.get('id')) {
-        const { error: deleteError } = await supabase.from('grade_records')
-            .delete()
-            .eq('date', commonData.date)
-            .eq('class_id', commonData.class_id)
-            .eq('subject_id', commonData.subject_id)
-            .eq('assessment_type', commonData.assessment_type);
-        
-        if (deleteError) {
-             console.error("Error deleting old grade records for update:", deleteError);
-             return { success: false, error: "Gagal memperbarui nilai (langkah 1)." };
-        }
-    }
 
     const { error: insertError } = await supabase.from('grade_records').insert(recordsToInsert);
 

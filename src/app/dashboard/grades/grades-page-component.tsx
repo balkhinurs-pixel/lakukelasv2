@@ -161,7 +161,15 @@ export default function GradesPageComponent({
     setLoading(true);
 
     const formData = new FormData();
-    if(editingId) formData.append('id', editingId);
+    if(editingId) {
+      const originalEntry = initialHistory.find(h => h.id === editingId);
+      if (originalEntry) {
+          formData.append('original_date', originalEntry.date);
+          formData.append('original_class_id', originalEntry.class_id);
+          formData.append('original_subject_id', originalEntry.subject_id);
+          formData.append('original_assessment_type', originalEntry.assessment_type);
+      }
+    }
     formData.append('date', format(date, 'yyyy-MM-dd'));
     formData.append('class_id', selectedClassId);
     formData.append('subject_id', selectedSubjectId);
@@ -193,10 +201,18 @@ export default function GradesPageComponent({
       setAssessmentType(entry.assessment_type);
       
       const loadedGrades = new Map<string, number | string>();
+      const sessionRecords = initialHistory.filter(h => 
+        h.date === entry.date && 
+        h.class_id === entry.class_id &&
+        h.subject_id === entry.subject_id &&
+        h.assessment_type === entry.assessment_type
+      );
+
       studentsForClass.forEach(student => {
-          const record = initialHistory.find(h => h.id === entry.id && h.student_id === student.id);
+          const record = sessionRecords.find(h => h.student_id === student.id);
           loadedGrades.set(student.id, record ? record.score : "");
       });
+
       setGrades(loadedGrades);
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });

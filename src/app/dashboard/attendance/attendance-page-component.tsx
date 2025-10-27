@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -269,7 +270,14 @@ export default function AttendancePageComponent({
 
     const formData = new FormData();
     if (editingId) {
-      formData.append('id', editingId);
+      // Pass the original session details for deletion lookup
+      const originalEntry = initialHistory.find(h => h.id === editingId);
+      if (originalEntry) {
+          formData.append('original_date', originalEntry.date);
+          formData.append('original_class_id', originalEntry.class_id);
+          formData.append('original_subject_id', originalEntry.subject_id);
+          formData.append('original_meeting_number', String(originalEntry.meeting_number));
+      }
     }
     formData.append('date', format(date, 'yyyy-MM-dd'));
     formData.append('class_id', selectedClassId);
@@ -302,24 +310,25 @@ export default function AttendancePageComponent({
       const studentsForClass = allStudents.filter(s => s.class_id === entry.class_id);
       setStudents(studentsForClass);
       
-      setEditingId(entry.id);
+      // Use one of the history entry's ID to signify we are editing.
+      // The server action will use the other details to delete the whole session.
+      setEditingId(entry.id); 
       setDate(parseISO(entry.date));
       setMeetingNumber(entry.meeting_number);
 
       const loadedAttendance = new Map<string, 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'>();
-      // This is the fix. We need to handle the fact that entry.status is a single value, not an array.
-      // The logic should populate the attendance map for all students in the class.
+      const sessionRecords = initialHistory.filter(h => 
+          h.date === entry.date && 
+          h.class_id === entry.class_id && 
+          h.subject_id === entry.subject_id && 
+          h.meeting_number === entry.meeting_number
+      );
+      
       studentsForClass.forEach(student => {
-        // Find the record for this student. It will be in the history of all records for that day.
-        const studentRecord = initialHistory.find(h => 
-            h.date === entry.date && 
-            h.class_id === entry.class_id && 
-            h.subject_id === entry.subject_id && 
-            h.meeting_number === entry.meeting_number &&
-            h.student_id === student.id
-        );
+        const studentRecord = sessionRecords.find(h => h.student_id === student.id);
         loadedAttendance.set(student.id, studentRecord ? studentRecord.status : 'Hadir');
       });
+
       setAttendance(loadedAttendance);
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
