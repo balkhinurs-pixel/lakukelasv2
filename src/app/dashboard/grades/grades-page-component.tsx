@@ -5,7 +5,7 @@ import * as React from "react";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Minus } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -40,6 +40,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -90,6 +91,8 @@ export default function GradesPageComponent({
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [viewingEntry, setViewingEntry] = React.useState<GradeHistoryEntry | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = React.useState(false);
+  const [isKatrolDialogOpen, setIsKatrolDialogOpen] = React.useState(false);
+  const [katrolPoints, setKatrolPoints] = React.useState<number | string>(0);
   const [loading, setLoading] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
@@ -97,6 +100,9 @@ export default function GradesPageComponent({
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
+  const hasEnteredGrades = React.useMemo(() => {
+      return Array.from(grades.values()).some(score => score !== "" && score !== null && score !== undefined);
+  }, [grades]);
 
   React.useEffect(() => {
     if (preselectedSubjectId) {
@@ -138,6 +144,28 @@ export default function GradesPageComponent({
     const score = value === "" ? "" : Math.max(0, Math.min(100, Number(value)));
     setGrades(new Map(grades.set(studentId, score)));
   };
+
+  const handleKatrol = () => {
+    const pointsToAdd = Number(katrolPoints);
+    if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
+        toast({ title: "Gagal", description: "Masukkan jumlah poin yang valid untuk ditambahkan.", variant: "destructive" });
+        return;
+    }
+
+    const newGrades = new Map(grades);
+    newGrades.forEach((score, studentId) => {
+        if (score !== "" && score !== null && score !== undefined) {
+            const newScore = Math.min(100, Number(score) + pointsToAdd);
+            newGrades.set(studentId, newScore);
+        }
+    });
+
+    setGrades(newGrades);
+    toast({ title: "Sukses", description: `${pointsToAdd} poin telah ditambahkan ke semua nilai yang terisi.` });
+    setIsKatrolDialogOpen(false);
+    setKatrolPoints(0);
+  };
+
 
   const handleSubmit = async () => {
     if (!selectedClassId || !selectedSubjectId || !date || !assessmentType) {
@@ -526,6 +554,16 @@ export default function GradesPageComponent({
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}
                   </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsKatrolDialogOpen(true)}
+                    disabled={loading || !hasEnteredGrades}
+                    className="border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Katrol Nilai
+                  </Button>
                   {editingId && (
                     <Button 
                       variant="outline" 
@@ -733,6 +771,34 @@ export default function GradesPageComponent({
             )}
         </CardContent>
       </Card>
+      
+      <Dialog open={isKatrolDialogOpen} onOpenChange={setIsKatrolDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Katrol Nilai Siswa</DialogTitle>
+                <DialogDescription>Tambahkan sejumlah poin ke semua nilai yang sudah terisi. Nilai tidak akan melebihi 100.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="katrol-points">Poin yang Ditambahkan</Label>
+                    <Input 
+                        id="katrol-points" 
+                        type="number"
+                        min="1"
+                        value={katrolPoints} 
+                        onChange={e => setKatrolPoints(e.target.value)} 
+                        placeholder="e.g., 5"
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsKatrolDialogOpen(false)}>Batal</Button>
+                <Button onClick={handleKatrol}>
+                    <Plus className="mr-2 h-4 w-4" /> Terapkan
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="dialog-content-mobile mobile-safe-area max-w-2xl">
