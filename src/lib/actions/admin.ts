@@ -376,12 +376,12 @@ export async function saveAttendanceSettings(formData: FormData) {
 
 export async function updateSchoolData(schoolData: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || user.id.length === 0) {
-        // Find admin user if current user is not available or not correct
-        const {data: adminUser, error: adminError} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
-        if(adminError || !adminUser) return { success: false, error: "Tidak terautentikasi atau admin tidak ditemukan" };
-        user.id = adminUser.id;
+    
+    // Find admin user ID, as only they should store school data
+    const { data: adminUser, error: adminError } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
+    
+    if (adminError || !adminUser) {
+        return { success: false, error: "Admin tidak ditemukan. Data sekolah hanya bisa disimpan di profil admin." };
     }
 
     // The admin updates their own profile, which acts as the source of truth
@@ -390,7 +390,7 @@ export async function updateSchoolData(schoolData: { schoolName: string, schoolA
         school_address: schoolData.schoolAddress,
         headmaster_name: schoolData.headmasterName,
         headmaster_nip: schoolData.headmasterNip,
-    }).eq('id', user.id); // Only update the admin's profile
+    }).eq('id', adminUser.id); // Only update the admin's profile
 
     if (error) {
         console.error("Error updating school data for admin:", error);
@@ -409,6 +409,8 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     if (!user) return { success: false, error: "Tidak terautentikasi" };
     
     let targetUserId = user.id;
+    let bucket = 'avatars';
+    let fileName = `${user.id}/avatar_${Date.now()}`;
 
     // If uploading a logo, we need to ensure we're updating the admin's profile
     if (type === 'logo') {
@@ -418,16 +420,13 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
              return { success: false, error: "Admin tidak ditemukan untuk unggah logo." };
          }
          targetUserId = adminUser.id;
+         fileName = `school_logo_${Date.now()}`;
     }
 
 
     const file = formData.get('file') as File;
     if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
     
-    const bucket = 'avatars';
-    const fileName = type === 'logo' 
-        ? `school_logo_${Date.now()}`
-        : `${user.id}/avatar_${Date.now()}`;
     
     const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
         cacheControl: '3600',
@@ -456,4 +455,30 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     revalidatePath('/admin/settings/school');
     revalidatePath('/dashboard/reports');
     return { success: true, url: publicUrl };
+}
+
+export async function saveHoliday(holiday: { date: string, description: string }) {
+    const supabase = createClient();
+    const { error } = await supabase.from('holidays').insert(holiday);
+
+    if (error) {
+        console.error('Error saving holiday:', error);
+        return { success: false, error: 'Gagal menyimpan hari libur.' };
+    }
+
+    revalidatePath('/admin/settings/holidays');
+    return { success: true };
+}
+
+export async function deleteHoliday(holidayId: string) {
+    const supabase = createClient();
+    const { error } = await supabase.from('holidays').delete().eq('id', holidayId);
+
+    if (error) {
+        console.error('Error deleting holiday:', error);
+        return { success: false, error: 'Gagal menghapus hari libur.' };
+    }
+
+    revalidatePath('/admin/settings/holidays');
+    return { success: true };
 }

@@ -162,7 +162,8 @@ export async function saveAttendance(formData: FormData) {
             .eq('date', originalData.date)
             .eq('class_id', originalData.class_id)
             .eq('subject_id', originalData.subject_id)
-            .eq('meeting_number', originalData.meeting_number);
+            .eq('meeting_number', originalData.meeting_number)
+            .eq('teacher_id', user.id); // Ensure user only deletes their own records
             
         if (deleteError) {
              console.error("Error deleting old attendance records for update:", deleteError);
@@ -225,7 +226,8 @@ export async function saveGrades(formData: FormData) {
             .eq('date', originalData.date)
             .eq('class_id', originalData.class_id)
             .eq('subject_id', originalData.subject_id)
-            .eq('assessment_type', originalData.assessment_type);
+            .eq('assessment_type', originalData.assessment_type)
+            .eq('teacher_id', user.id); // Ensure user only deletes their own records
         
         if (deleteError) {
              console.error("Error deleting old grade records for update:", deleteError);
@@ -276,28 +278,7 @@ export async function updateProfile(profileData: { fullName: string, nip: string
     return { success: true };
 }
 
-export async function updateSchoolData(schoolData: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
-     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Tidak terautentikasi" };
-
-    const { error } = await supabase.from('profiles').update({
-        school_name: schoolData.schoolName,
-        school_address: schoolData.schoolAddress,
-        headmaster_name: schoolData.headmasterName,
-        headmaster_nip: schoolData.headmasterNip,
-    }).eq('id', user.id);
-
-    if (error) {
-        console.error("Error updating school data:", error);
-        return { success: false, error: "Gagal memperbarui data sekolah." };
-    }
-
-    revalidatePath('/dashboard/settings');
-    return { success: true };
-}
-
-export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'logo') {
+export async function uploadProfileImage(formData: FormData, type: 'avatar') {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
@@ -305,8 +286,8 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     const file = formData.get('file') as File;
     if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
     
-    const bucket = 'avatars'; // Use one bucket for both
-    const fileName = `${user.id}/${type === 'avatar' ? 'avatar' : 'logo'}_${Date.now()}`;
+    const bucket = 'avatars';
+    const fileName = `${user.id}/avatar_${Date.now()}`;
     
     const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
         cacheControl: '3600',
@@ -320,10 +301,8 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
 
-    const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
-
     const { error: dbError } = await supabase.from('profiles').update({
-        [columnToUpdate]: publicUrl
+        avatar_url: publicUrl
     }).eq('id', user.id);
 
     if (dbError) {

@@ -6,7 +6,7 @@ import SettingsClientPage from './settings-client-page';
 import type { Profile } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { getAdminProfile, getUserProfile } from '@/lib/data';
+import { getUserProfile, getAdminProfile } from '@/lib/data';
 
 export default async function SettingsPage() {
     const supabase = createClient();

@@ -217,18 +217,16 @@ export async function getUserProfile(): Promise<Profile | null> {
         return null;
     }
     
-    // Always fetch the admin profile to get the school data.
     const schoolProfile = await getAdminProfile();
 
-    // Merge the data. User profile data is primary, but school data is overwritten by admin's.
     const profile: Profile = {
         ...userProfileData,
-        active_school_year_name: userProfileData.school_year?.name,
-        school_name: schoolProfile?.school_name || userProfileData.school_name,
-        school_address: schoolProfile?.school_address || userProfileData.school_address,
-        headmaster_name: schoolProfile?.headmaster_name || userProfileData.headmaster_name,
-        headmaster_nip: schoolProfile?.headmaster_nip || userProfileData.headmaster_nip,
-        school_logo_url: schoolProfile?.school_logo_url || userProfileData.school_logo_url,
+        active_school_year_name: userProfileData.school_year?.name || 'Belum Diatur',
+        school_name: schoolProfile?.school_name || '',
+        school_address: schoolProfile?.school_address || '',
+        headmaster_name: schoolProfile?.headmaster_name || '',
+        headmaster_nip: schoolProfile?.headmaster_nip || '',
+        school_logo_url: schoolProfile?.school_logo_url || '',
     };
 
     return profile;

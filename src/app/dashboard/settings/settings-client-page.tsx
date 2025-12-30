@@ -98,6 +98,7 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
         const formData = new FormData();
         formData.append('file', file);
 
+        // This action is now correctly in lib/actions.ts and only affects the user's own avatar
         const result = await uploadProfileImage(formData, type);
 
         if (result.success && result.url) {
@@ -239,7 +240,7 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
                             <Info className="h-4 w-4" />
                             <AlertTitle>Hanya Lihat</AlertTitle>
                             <AlertDescription>
-                                Data sekolah hanya dapat diubah oleh Administrator.
+                                Data sekolah hanya dapat diubah oleh Administrator melalui Panel Admin.
                             </AlertDescription>
                         </Alert>
 
@@ -254,20 +255,20 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
                         </div>
                        <div className="space-y-2">
                             <Label htmlFor="schoolName">Nama Sekolah</Label>
-                            <Input id="schoolName" name="schoolName" value={schoolData.schoolName} disabled />
+                            <Input id="schoolName" name="schoolName" value={schoolData.schoolName || 'Belum Diatur'} disabled />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="schoolAddress">Alamat Sekolah</Label>
-                            <Input id="schoolAddress" name="schoolAddress" value={schoolData.schoolAddress} disabled />
+                            <Input id="schoolAddress" name="schoolAddress" value={schoolData.schoolAddress || 'Belum Diatur'} disabled />
                         </div>
                          <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="headmasterName">Nama Kepala Sekolah</Label>
-                                <Input id="headmasterName" name="headmasterName" value={schoolData.headmasterName} disabled />
+                                <Input id="headmasterName" name="headmasterName" value={schoolData.headmasterName || 'Belum Diatur'} disabled />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="headmasterNip">NIP Kepala Sekolah</Label>
-                                <Input id="headmasterNip" name="headmasterNip" value={schoolData.headmasterNip} disabled />
+                                <Input id="headmasterNip" name="headmasterNip" value={schoolData.headmasterNip || 'Belum Diatur'} disabled />
                             </div>
                         </div>
                     </CardContent>
