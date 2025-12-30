@@ -217,9 +217,10 @@ export async function getUserProfile(): Promise<Profile | null> {
         return null;
     }
     
+    // Always fetch the admin profile to get the school data.
     const schoolProfile = await getAdminProfile();
 
-    // Correct way to merge: start with teacher profile, then explicitly overwrite with admin school data
+    // Merge the data. User profile data is primary, but school data is overwritten by admin's.
     const profile: Profile = {
         ...userProfileData,
         active_school_year_name: userProfileData.school_year?.name,
