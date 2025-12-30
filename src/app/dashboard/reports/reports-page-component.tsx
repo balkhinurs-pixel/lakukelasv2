@@ -114,12 +114,14 @@ export default function ReportsPageComponent({
     schoolYears,
     reportsData,
     profile,
+    schoolProfile,
 }: {
     classes: Class[];
     subjects: Subject[];
     schoolYears: SchoolYear[];
     reportsData: ReportsData;
     profile: Profile;
+    schoolProfile: Profile | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -457,11 +459,11 @@ export default function ReportsPageComponent({
     const pageBottomMargin = 25;
 
     const schoolData = {
-        logo: profile.school_logo_url || "https://placehold.co/100x100.png",
-        name: profile.school_name || "Nama Sekolah Belum Diatur",
-        address: profile.school_address || "Alamat Sekolah Belum Diatur",
-        headmasterName: profile.headmaster_name || "Nama Kepsek Belum Diatur",
-        headmasterNip: profile.headmaster_nip || "-",
+        logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
+        name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
+        address: schoolProfile?.school_address || "Alamat Sekolah Belum Diatur",
+        headmasterName: schoolProfile?.headmaster_name || "Nama Kepsek Belum Diatur",
+        headmasterNip: schoolProfile?.headmaster_nip || "-",
     };
 
     const teacherData = {

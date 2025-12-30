@@ -1,6 +1,6 @@
 
 
-import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears } from "@/lib/data";
+import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears, getAdminProfile } from "@/lib/data";
 import ReportsPageComponent from "./reports-page-component";
 import type { Profile } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,11 +18,13 @@ export default async function ReportsPage({
     const month = searchParams.month ? Number(searchParams.month) : undefined;
     const schoolYearIdFromParams = searchParams.schoolYear as string | undefined;
 
-    const [classes, subjects, profile, { schoolYears, activeSchoolYearId: defaultActiveSchoolYearId }] = await Promise.all([
+    // Fetch all data in parallel, including the admin profile for school data
+    const [classes, subjects, profile, { schoolYears, activeSchoolYearId: defaultActiveSchoolYearId }, adminProfile] = await Promise.all([
         getClasses(),
         getSubjects(),
         getUserProfile(),
-        getSchoolYears()
+        getSchoolYears(),
+        getAdminProfile() // Explicitly fetch admin profile
     ]);
     
     if (!profile) {
@@ -56,7 +58,6 @@ export default async function ReportsPage({
         )
     }
 
-    // Pass the filters to the data fetching function
     const reportsData = await getReportsData({
         schoolYearId: schoolYearToFetch,
         month,
@@ -64,9 +65,6 @@ export default async function ReportsPage({
         subjectId,
     });
     
-    // The data fetching function is now robust and will not return null
-    // It will return an object with empty arrays if no data is found.
-    // So the null check below is good practice but might not be strictly necessary anymore.
     if (!reportsData) {
         return (
             <div className="space-y-6 max-w-xl mx-auto">
@@ -91,7 +89,6 @@ export default async function ReportsPage({
         schoolYears={schoolYears}
         reportsData={reportsData}
         profile={profile}
+        schoolProfile={adminProfile} // Pass admin profile to the client component
     />;
 }
-
-    
