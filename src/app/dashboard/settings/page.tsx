@@ -16,14 +16,14 @@ export default async function SettingsPage() {
         redirect('/');
     }
 
-    const [userProfile, schoolProfile] = await Promise.all([
+    // Fetch both profiles in parallel
+    const [userProfile, adminProfile] = await Promise.all([
         getUserProfile(),
         getAdminProfile()
     ]);
     
     if (!userProfile) {
-        // This case should be rare, but as a fallback, we can try to create a profile.
-        // For simplicity, we'll show an error.
+        // This case should be rare, but as a fallback, we can show an error.
         return (
              <div className="space-y-6">
                  <div>
@@ -41,11 +41,15 @@ export default async function SettingsPage() {
         )
     }
     
-    // If admin profile (schoolProfile) doesn't exist, we can use the user's own profile as a fallback,
-    // which will result in empty school data fields, which is the correct behavior.
-    const finalSchoolProfile = schoolProfile || userProfile;
+    // The admin profile is the single source of truth for school data.
+    // If it doesn't exist, we pass an empty object to the client, which will show "Belum Diatur".
+    const schoolProfileForDisplay = adminProfile || {
+        school_name: '',
+        school_address: '',
+        headmaster_name: '',
+        headmaster_nip: '',
+        school_logo_url: ''
+    };
 
-    return <SettingsClientPage user={user} profile={userProfile} schoolProfile={finalSchoolProfile} />;
+    return <SettingsClientPage user={user} profile={userProfile} schoolProfile={schoolProfileForDisplay as Profile} />;
 }
-
-    

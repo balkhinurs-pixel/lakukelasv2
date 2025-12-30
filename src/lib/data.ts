@@ -660,7 +660,7 @@ export async function getDashboardData(todayDay: string) {
 export async function getReportsData(filters: { schoolYearId: string, month?: number, classId?: string, subjectId?: string }) {
     noStore();
     const user = await getAuthenticatedUser();
-    const profile = await getUserProfile();
+    const profile = await getUserProfile(); // This profile now contains merged school data
     if (!user || !profile) return {
         summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearName: "" },
         studentPerformance: [], attendanceByClass: [], overallAttendanceDistribution: {},
