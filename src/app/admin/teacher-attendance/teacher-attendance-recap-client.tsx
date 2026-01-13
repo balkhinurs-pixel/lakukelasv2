@@ -94,9 +94,9 @@ export default function TeacherAttendanceRecapPageClient({
   const handleDownloadPdf = async () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
 
-    // **FIX**: Use schoolProfile for school data, and profile for the person generating the report.
     const schoolData = {
       logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
       name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
@@ -190,21 +190,35 @@ export default function TeacherAttendanceRecapPageClient({
         });
 
         const finalY = (doc as any).lastAutoTable.finalY || lastY + 20;
-        
-        const signatureY = finalY + 20;
-        doc.text(`Mengetahui,`, margin, signatureY);
-        doc.text(`Administrator,`, pageWidth - margin, signatureY, { align: 'right' });
-        doc.text(`Kepala Sekolah`, margin, signatureY + 5);
+        let signatureY = finalY + 20;
 
-        doc.text(schoolData.headmasterName, margin, signatureY + 30);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`NIP. ${schoolData.headmasterNip}`, margin, signatureY + 35);
+        if (signatureY > pageHeight - 50) {
+            doc.addPage();
+            signatureY = margin;
+        }
+
+        const todayDate = format(new Date(), "dd MMMM yyyy", { locale: id });
+        const city = schoolData.address?.split(',')[1]?.trim() || "Kota";
+
+        doc.text(`${city}, ${todayDate}`, pageWidth - margin, signatureY, { align: 'right' });
         
-        doc.setFont('helvetica', 'bold');
-        doc.text(profile.full_name || 'Admin', pageWidth - margin, signatureY + 30, { align: 'right' });
-        doc.setFont('helvetica', 'normal');
+        const signatureXLeft = margin;
+        const signatureXRight = pageWidth - margin;
+        const signatureYBase = signatureY + 8;
+        
+        doc.text("Mengetahui,", signatureXLeft, signatureYBase, { align: 'left'});
+        doc.text("Administrator,", signatureXRight, signatureYBase, { align: 'right'});
+        doc.text("Kepala Sekolah", signatureXLeft, signatureYBase + 5, { align: 'left'});
+
+        const signatureYName = signatureYBase + 30;
+
+        doc.setFont(undefined, 'bold').text(schoolData.headmasterName, signatureXLeft, signatureYName, { align: 'left'});
+        doc.setFont(undefined, 'normal').text(`NIP. ${schoolData.headmasterNip}`, signatureXLeft, signatureYName + 5, { align: 'left'});
+        
+        doc.setFont(undefined, 'bold').text(profile.full_name || 'Admin', signatureXRight, signatureYName, { align: 'right' });
+        doc.setFont(undefined, 'normal');
         if (profile.nip) {
-            doc.text(`NIP. ${profile.nip}`, pageWidth - margin, signatureY + 35, { align: 'right' });
+            doc.text(`NIP. ${profile.nip}`, signatureXRight, signatureYName + 5, { align: 'right' });
         }
 
         doc.save(`laporan_kehadiran_guru_${format(new Date(), "yyyyMMdd")}.pdf`);
@@ -212,27 +226,30 @@ export default function TeacherAttendanceRecapPageClient({
 
     try {
       if(schoolData.logo && (schoolData.logo.includes('http') || schoolData.logo.startsWith('data:image'))) {
-          // If it's a data URI, use it directly
           if (schoolData.logo.startsWith('data:image')) {
               doc.addImage(schoolData.logo, 'PNG', margin, margin, 20, 20);
               generatePdf();
               return;
           }
-          // If it's a URL, fetch it
           const response = await fetch(schoolData.logo);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          reader.readAsDataURL(blob);
-          reader.onloadend = () => {
-              const base64data = reader.result as string;
-              doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
+          if (response.ok) {
+              const blob = await response.blob();
+              const reader = new FileReader();
+              reader.readAsDataURL(blob);
+              reader.onloadend = () => {
+                  const base64data = reader.result as string;
+                  doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
+                  generatePdf();
+              };
+          } else {
+              console.error("Failed to fetch logo, proceeding without it.");
               generatePdf();
-          };
+          }
       } else {
           generatePdf();
       }
     } catch (error) {
-        console.error("Error fetching logo, proceeding without it.", error);
+        console.error("Error processing logo, proceeding without it.", error);
         generatePdf();
     }
   };
