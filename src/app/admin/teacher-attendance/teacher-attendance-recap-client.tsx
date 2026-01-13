@@ -97,24 +97,24 @@ export default function TeacherAttendanceRecapPageClient({
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
 
-    const schoolData = {
-      logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
-      name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
-      address: schoolProfile?.school_address || "Alamat Sekolah Belum Diatur",
-      headmasterName: schoolProfile?.headmaster_name || "Nama Kepsek Belum Diatur",
-      headmasterNip: schoolProfile?.headmaster_nip || "-",
-    };
-
-    const addHeader = (docInstance: jsPDF) => {
-        docInstance.setFontSize(14).setFont('helvetica', 'bold');
-        docInstance.text((schoolData.name || '').toUpperCase(), margin + 25, margin + 8);
-        docInstance.setFontSize(10).setFont('helvetica', 'normal');
-        docInstance.text(schoolData.address, margin + 25, margin + 14);
-        docInstance.setLineWidth(0.5);
-        docInstance.line(margin, margin + 25, pageWidth - margin, margin + 25);
-    };
-
     const generatePdf = () => {
+        const schoolData = {
+            logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
+            name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
+            address: schoolProfile?.school_address || "Alamat Sekolah Belum Diatur",
+            headmasterName: schoolProfile?.headmaster_name || "Nama Kepsek Belum Diatur",
+            headmasterNip: schoolProfile?.headmaster_nip || "-",
+        };
+
+        const addHeader = (docInstance: jsPDF) => {
+            docInstance.setFontSize(14).setFont('helvetica', 'bold');
+            docInstance.text((schoolData.name || '').toUpperCase(), margin + 25, margin + 8);
+            docInstance.setFontSize(10).setFont('helvetica', 'normal');
+            docInstance.text(schoolData.address, margin + 25, margin + 14);
+            docInstance.setLineWidth(0.5);
+            docInstance.line(margin, margin + 25, pageWidth - margin, margin + 25);
+        };
+        
         addHeader(doc);
         doc.setFontSize(12).setFont('helvetica', 'bold');
         doc.text("REKAPITULASI KEHADIRAN GURU", pageWidth / 2, margin + 35, { align: 'center' });
@@ -216,22 +216,22 @@ export default function TeacherAttendanceRecapPageClient({
         doc.setFont(undefined, 'normal').text(`NIP. ${schoolData.headmasterNip}`, signatureXLeft, signatureYName + 5, { align: 'left'});
         
         doc.setFont(undefined, 'bold').text(profile.full_name || 'Admin', signatureXRight, signatureYName, { align: 'right' });
-        doc.setFont(undefined, 'normal');
         if (profile.nip) {
-            doc.text(`NIP. ${profile.nip}`, signatureXRight, signatureYName + 5, { align: 'right' });
+            doc.setFont(undefined, 'normal').text(`NIP. ${profile.nip}`, signatureXRight, signatureYName + 5, { align: 'right' });
         }
 
         doc.save(`laporan_kehadiran_guru_${format(new Date(), "yyyyMMdd")}.pdf`);
     };
 
     try {
-      if(schoolData.logo && (schoolData.logo.includes('http') || schoolData.logo.startsWith('data:image'))) {
-          if (schoolData.logo.startsWith('data:image')) {
-              doc.addImage(schoolData.logo, 'PNG', margin, margin, 20, 20);
+      const logoUrl = schoolProfile?.school_logo_url || "https://placehold.co/100x100.png";
+      if(logoUrl && (logoUrl.includes('http') || logoUrl.startsWith('data:image'))) {
+          if (logoUrl.startsWith('data:image')) {
+              doc.addImage(logoUrl, 'PNG', margin, margin, 20, 20);
               generatePdf();
               return;
           }
-          const response = await fetch(schoolData.logo);
+          const response = await fetch(logoUrl);
           if (response.ok) {
               const blob = await response.blob();
               const reader = new FileReader();
@@ -510,3 +510,5 @@ export default function TeacherAttendanceRecapPageClient({
     </div>
   );
 }
+
+    
