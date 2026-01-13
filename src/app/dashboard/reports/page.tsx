@@ -94,3 +94,4 @@ export default async function ReportsPage({
         schoolProfile={adminProfile} // Pass admin profile to the client component
     />;
 }
+

@@ -203,9 +203,7 @@ export async function getUserProfile(): Promise<Profile | null> {
     if (!user) return null;
 
     const supabase = createClient();
-    // This function now ONLY fetches the user's own data.
-    // School data is handled by getAdminProfile.
-    const { data: userProfileData, error } = await supabase
+    const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -215,24 +213,22 @@ export async function getUserProfile(): Promise<Profile | null> {
         console.error("Error fetching user profile:", error);
         return null;
     }
-
-    return userProfileData;
+    return data;
 }
 
 export async function getAdminProfile(): Promise<Profile | null> {
     noStore();
     const supabase = createClient();
-    // This function specifically fetches the admin profile to get school-wide data.
     const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('school_name, school_address, headmaster_name, headmaster_nip, school_logo_url')
         .eq('role', 'admin')
         .limit(1)
         .single();
 
     if (error) {
         console.error("Error fetching admin profile:", error);
-        return null; // Return null if admin not found
+        return null;
     }
     return data;
 }
