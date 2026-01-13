@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, eachDayOfInterval, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn, formatTime } from "@/lib/utils";
 import type { TeacherAttendance, Profile } from "@/lib/types";
@@ -60,16 +60,24 @@ const months = [
     { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
 ];
 
+interface Holiday {
+  id: string;
+  date: string;
+  description: string;
+}
+
 export default function TeacherAttendanceRecapPageClient({
     initialHistory,
     users,
     profile,
-    schoolProfile
+    schoolProfile,
+    holidays
 }: {
     initialHistory: TeacherAttendance[],
     users: Profile[],
     profile: Profile,
     schoolProfile: Profile | null,
+    holidays: Holiday[]
 }) {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [selectedTeacher, setSelectedTeacher] = React.useState<string>("all");
@@ -128,17 +136,20 @@ export default function TeacherAttendanceRecapPageClient({
         doc.text(`Periode: ${dateLabel}`, margin, margin + 50);
 
         const summaryData: { [teacherId: string]: { name: string; tepatWaktu: number; terlambat: number; tidakHadir: number, sakit: number, izin: number } } = {};
+        
+        const teacherListToProcess = selectedTeacher === "all" ? users : users.filter(u => u.id === selectedTeacher);
+        
+        teacherListToProcess.forEach(teacher => {
+          summaryData[teacher.id] = { name: teacher.full_name, tepatWaktu: 0, terlambat: 0, tidakHadir: 0, sakit: 0, izin: 0 };
+        });
 
-        filteredHistory.forEach(item => {
+        // Use filteredHistory for calculations
+        const historyToUse = filteredHistory;
+
+        // Populate summary from existing records
+        historyToUse.forEach(item => {
             if (!summaryData[item.teacherId]) {
-                summaryData[item.teacherId] = {
-                    name: item.teacherName,
-                    tepatWaktu: 0,
-                    terlambat: 0,
-                    tidakHadir: 0,
-                    sakit: 0,
-                    izin: 0,
-                };
+                 summaryData[item.teacherId] = { name: item.teacherName, tepatWaktu: 0, terlambat: 0, tidakHadir: 0, sakit: 0, izin: 0 };
             }
             if (item.status === 'Tepat Waktu') summaryData[item.teacherId].tepatWaktu++;
             else if (item.status === 'Terlambat') summaryData[item.teacherId].terlambat++;
@@ -146,6 +157,35 @@ export default function TeacherAttendanceRecapPageClient({
             else if (item.status === 'Sakit') summaryData[item.teacherId].sakit++;
             else if (item.status === 'Izin') summaryData[item.teacherId].izin++;
         });
+
+        // Now, calculate "Belum Absen" as "Tidak Hadir" (Alpha)
+        if (selectedMonth !== 'all') {
+            const year = new Date().getFullYear(); // This might need to be smarter based on school year
+            const monthIndex = parseInt(selectedMonth) - 1;
+            const startDate = startOfMonth(new Date(year, monthIndex));
+            const endDate = endOfMonth(new Date(year, monthIndex));
+            const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
+            const holidayDates = new Set(holidays.map(h => h.date));
+            
+            teacherListToProcess.forEach(teacher => {
+                daysInMonth.forEach(day => {
+                    const dayStr = format(day, 'yyyy-MM-dd');
+                    const dayOfWeek = day.getDay(); // 0 for Sunday, 6 for Saturday
+                    
+                    // Skip weekends and holidays
+                    if (dayOfWeek === 0 || dayOfWeek === 6 || holidayDates.has(dayStr)) {
+                        return;
+                    }
+                    
+                    const hasRecord = historyToUse.some(record => record.teacherId === teacher.id && record.date === dayStr);
+                    
+                    if (!hasRecord) {
+                        summaryData[teacher.id].tidakHadir++;
+                    }
+                });
+            });
+        }
+
 
         const summaryBody = Object.values(summaryData).map(item => [
             item.name,
@@ -158,7 +198,7 @@ export default function TeacherAttendanceRecapPageClient({
         ]);
 
         doc.autoTable({
-            head: [['Nama Guru', 'Tepat Waktu', 'Terlambat', 'Sakit', 'Izin', 'Total Hadir', 'Tidak Hadir']],
+            head: [['Nama Guru', 'Tepat Waktu', 'Terlambat', 'Sakit', 'Izin', 'Total Hadir', 'Tidak Hadir (Alpha)']],
             body: summaryBody,
             startY: margin + 55,
             theme: 'grid',
@@ -170,7 +210,7 @@ export default function TeacherAttendanceRecapPageClient({
         doc.setFontSize(12).setFont('helvetica', 'bold');
         doc.text("Rincian Kehadiran Harian", margin, lastY + 10);
 
-        const detailBody = filteredHistory.map((item) => [
+        const detailBody = historyToUse.map((item) => [
             item.teacherName,
             format(new Date(item.date), 'EEEE, dd MMM yyyy', { locale: id }),
             item.checkIn ? formatTime(item.checkIn) : '-',
@@ -397,7 +437,7 @@ export default function TeacherAttendanceRecapPageClient({
                               {item.teacherName}
                             </h4>
                             <p className="text-sm text-slate-500 mt-1">
-                              {format(new Date(item.date), "EEEE, dd MMM yyyy", {
+                              {format(parseISO(item.date), "EEEE, dd MMM yyyy", {
                                 locale: id,
                               })}
                             </p>
@@ -469,7 +509,7 @@ export default function TeacherAttendanceRecapPageClient({
                         {item.teacherName}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(item.date), "EEEE, dd MMM yyyy", {
+                        {format(parseISO(item.date), "EEEE, dd MMM yyyy", {
                           locale: id,
                         })}
                       </TableCell>
@@ -508,7 +548,3 @@ export default function TeacherAttendanceRecapPageClient({
     </div>
   );
 }
-
-    
-
-    
