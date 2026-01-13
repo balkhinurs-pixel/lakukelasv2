@@ -76,7 +76,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, fill }:
       dominantBaseline="central"
       className="text-xs font-bold"
     >
-      {`${(percent * 100).toFixed(0)}%`}
+      {`(${(percent * 100).toFixed(0)}%)`}
     </text>
   );
 };
@@ -608,6 +608,8 @@ export default function ReportsPageComponent({
         doc.text("Guru Mata Pelajaran,", signatureXRight, signatureYBase, { align: 'right'});
         doc.text("Kepala Sekolah", signatureXLeft, signatureYBase + 5, { align: 'left'});
 
+        const signatureYName = signatureYBase + 30;
+
         doc.setFont(undefined, 'bold').text(schoolData.headmasterName, signatureXLeft, signatureYName, { align: 'left'});
         doc.setFont(undefined, 'normal').text(`NIP. ${schoolData.headmasterNip}`, signatureXLeft, signatureYName + 5, { align: 'left'});
 
@@ -1067,3 +1069,5 @@ export default function ReportsPageComponent({
     </div>
   );
 }
+
+    
