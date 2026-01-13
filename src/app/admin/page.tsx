@@ -155,7 +155,7 @@ export default async function AdminDashboardPage() {
     });
 
     const summary = {
-        present: teacherAttendanceStatus.filter(t => t.status === 'Tepat Waktu').length,
+        present: teacherAttendanceStatus.filter(t => t.status === 'Tepat Waktu' || t.status === 'Terlambat').length,
         late: teacherAttendanceStatus.filter(t => t.status === 'Terlambat').length,
         notCheckedIn: teacherAttendanceStatus.filter(t => t.status === 'Belum Absen').length,
         absent: teacherAttendanceStatus.filter(t => t.status === 'Tidak Hadir').length,
@@ -165,7 +165,7 @@ export default async function AdminDashboardPage() {
     
     // Calculate trends
     const yesterdayPresent = yesterdayAttendance.filter(a => a.status === 'Tepat Waktu' || a.status === 'Terlambat').length;
-    const todayPresent = summary.present + summary.late;
+    const todayPresent = summary.present;
     const attendanceTrend = todayPresent - yesterdayPresent;
     
     // Calculate weekly statistics
@@ -224,7 +224,7 @@ export default async function AdminDashboardPage() {
               <StatCard 
                   icon={UserCheck} 
                   title="Hadir Hari Ini" 
-                  value={summary.present + summary.late} 
+                  value={summary.present} 
                   subtitle={`${summary.onLeave} guru izin/sakit`}
                   color="text-green-600" 
                   bgColor="bg-green-50"

@@ -81,7 +81,7 @@ export default function TeacherAttendanceRecapPageClient({
 }) {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [selectedTeacher, setSelectedTeacher] = React.useState<string>("all");
-  const [selectedMonth, setSelectedMonth] = React.useState<string>("all");
+  const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
   const isMobile = useIsMobile();
 
   const filteredHistory = React.useMemo(() => {
@@ -112,6 +112,8 @@ export default function TeacherAttendanceRecapPageClient({
                 logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
                 name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
                 address: schoolProfile?.school_address || "Alamat Sekolah Belum Diatur",
+                headmasterName: schoolProfile?.headmaster_name || "Nama Kepsek Belum Diatur",
+                headmasterNip: schoolProfile?.headmaster_nip || "-",
             };
             docInstance.setFontSize(14).setFont('helvetica', 'bold');
             docInstance.text((schoolData.name || '').toUpperCase(), margin + 25, margin + 8);
@@ -153,39 +155,11 @@ export default function TeacherAttendanceRecapPageClient({
             }
             if (item.status === 'Tepat Waktu') summaryData[item.teacherId].tepatWaktu++;
             else if (item.status === 'Terlambat') summaryData[item.teacherId].terlambat++;
-            else if (item.status === 'Tidak Hadir') summaryData[item.teacherId].tidakHadir++;
             else if (item.status === 'Sakit') summaryData[item.teacherId].sakit++;
             else if (item.status === 'Izin') summaryData[item.teacherId].izin++;
+            // "Tidak Hadir" from the database is an explicit status, count it.
+            else if (item.status === 'Tidak Hadir') summaryData[item.teacherId].tidakHadir++;
         });
-
-        // Now, calculate "Belum Absen" as "Tidak Hadir" (Alpha)
-        if (selectedMonth !== 'all') {
-            const year = new Date().getFullYear(); // This might need to be smarter based on school year
-            const monthIndex = parseInt(selectedMonth) - 1;
-            const startDate = startOfMonth(new Date(year, monthIndex));
-            const endDate = endOfMonth(new Date(year, monthIndex));
-            const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
-            const holidayDates = new Set(holidays.map(h => h.date));
-            
-            teacherListToProcess.forEach(teacher => {
-                daysInMonth.forEach(day => {
-                    const dayStr = format(day, 'yyyy-MM-dd');
-                    const dayOfWeek = day.getDay(); // 0 for Sunday, 6 for Saturday
-                    
-                    // Skip weekends and holidays
-                    if (dayOfWeek === 0 || dayOfWeek === 6 || holidayDates.has(dayStr)) {
-                        return;
-                    }
-                    
-                    const hasRecord = historyToUse.some(record => record.teacherId === teacher.id && record.date === dayStr);
-                    
-                    if (!hasRecord) {
-                        summaryData[teacher.id].tidakHadir++;
-                    }
-                });
-            });
-        }
-
 
         const summaryBody = Object.values(summaryData).map(item => [
             item.name,
