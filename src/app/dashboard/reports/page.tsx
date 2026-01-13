@@ -1,4 +1,5 @@
 
+'use server';
 
 import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears, getAdminProfile } from "@/lib/data";
 import ReportsPageComponent from "./reports-page-component";

@@ -1,4 +1,6 @@
 
+'use server';
+
 import { getAllUsers, getTeacherAttendanceHistory, getUserProfile, getAdminProfile } from "@/lib/data";
 import TeacherAttendanceRecapPageClient from "./teacher-attendance-recap-client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
