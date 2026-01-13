@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react";
@@ -44,7 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, CheckCircle, Award, Download, BookCheck, TrendingDown, UserX, UserCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Users2, Filter, Calendar, GraduationCap, BarChart3, FileText, Loader2 } from "lucide-react";
-import type { Class, Student, Subject, JournalEntry, Profile, SchoolYear, GradeHistoryEntry, AttendanceHistoryEntry } from "@/lib/types";
+import type { Class, Subject, Profile, SchoolYear, GradeHistoryEntry, AttendanceHistoryEntry, JournalEntry } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -449,7 +450,7 @@ export default function ReportsPageComponent({
   }
 
 
-  const downloadPdf = async (doc: jsPDFWithAutoTable, content: {title: string, head?: any[][], body?: any[][], journals?: any[]}, meta?: Record<string, string | undefined>, customFileName?: string) => {
+  const downloadPdf = async (doc: jsPDFWithAutoTable, content: {title: string, head?: any[][], body?: any[][], journals?: JournalEntry[]}, meta?: Record<string, string | undefined>, customFileName?: string) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;

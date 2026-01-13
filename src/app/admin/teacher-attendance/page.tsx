@@ -1,5 +1,5 @@
 
-import { getAllUsers, getTeacherAttendanceHistory, getUserProfile } from "@/lib/data";
+import { getAllUsers, getTeacherAttendanceHistory, getUserProfile, getAdminProfile } from "@/lib/data";
 import TeacherAttendanceRecapPageClient from "./teacher-attendance-recap-client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -7,10 +7,11 @@ import type { Profile } from "@/lib/types";
 
 export default async function TeacherAttendanceRecapPage() {
     // Fetch all necessary data on the server
-    const [attendanceData, allUsers, profile] = await Promise.all([
+    const [attendanceData, allUsers, profile, adminProfile] = await Promise.all([
         getTeacherAttendanceHistory(),
         getAllUsers(),
         getUserProfile(),
+        getAdminProfile(),
     ]);
 
     if (!profile) {
@@ -34,6 +35,7 @@ export default async function TeacherAttendanceRecapPage() {
             initialHistory={attendanceData}
             users={usersForFilter}
             profile={profile as Profile}
+            schoolProfile={adminProfile}
         />
     );
 }

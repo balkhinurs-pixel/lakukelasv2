@@ -64,11 +64,13 @@ const months = [
 export default function TeacherAttendanceRecapPageClient({
     initialHistory,
     users,
-    profile
+    profile,
+    schoolProfile
 }: {
     initialHistory: TeacherAttendance[],
     users: Profile[],
-    profile: Profile
+    profile: Profile,
+    schoolProfile: Profile | null,
 }) {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [selectedTeacher, setSelectedTeacher] = React.useState<string>("all");
@@ -98,11 +100,11 @@ export default function TeacherAttendanceRecapPageClient({
     const margin = 14;
 
     const schoolData = {
-      logo: profile.school_logo_url || "https://placehold.co/100x100.png",
-      name: profile.school_name || "Nama Sekolah Belum Diatur",
-      address: profile.school_address || "Alamat Sekolah Belum Diatur",
-      headmasterName: profile.headmaster_name || "Nama Kepsek Belum Diatur",
-      headmasterNip: profile.headmaster_nip || "-",
+      logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
+      name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
+      address: schoolProfile?.school_address || "Alamat Sekolah Belum Diatur",
+      headmasterName: schoolProfile?.headmaster_name || "Nama Kepsek Belum Diatur",
+      headmasterNip: schoolProfile?.headmaster_nip || "-",
     };
 
     const addHeader = (docInstance: jsPDF) => {
