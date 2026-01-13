@@ -1,4 +1,3 @@
-
 "use client"
 import * as React from "react";
 import {
@@ -23,7 +22,7 @@ import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
-export default function SettingsClientPage({ user, profile, schoolProfile }: { user: User, profile: Profile, schoolProfile: Profile }) {
+export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
     const { toast } = useToast();
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
@@ -32,7 +31,6 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
     
     const [avatarUrl, setAvatarUrl] = React.useState(profile.avatar_url);
-    const [logoUrl] = React.useState(schoolProfile.school_logo_url);
     
     const [profileData, setProfileData] = React.useState({
         fullName: profile.full_name || '',
@@ -40,13 +38,6 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
         pangkat: profile.pangkat || '',
         jabatan: profile.jabatan || '',
     });
-
-    const [schoolData] = React.useState({
-        schoolName: schoolProfile.school_name || '',
-        schoolAddress: schoolProfile.school_address || '',
-        headmasterName: schoolProfile.headmaster_name || '',
-        headmasterNip: schoolProfile.headmaster_nip || '',
-    })
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setProfileData({ ...profileData, [e.target.name]: e.target.value });
@@ -69,7 +60,6 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // --- Client-side validation ---
         const MAX_AVATAR_SIZE = 1 * 1024 * 1024; // 1MB
         const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -79,7 +69,7 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
                 description: `Ukuran file maksimal adalah 1MB.`,
                 variant: "destructive",
             });
-            e.target.value = ''; // Reset the input
+            e.target.value = '';
             return;
         }
 
@@ -89,10 +79,9 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
                 description: "Mohon gunakan file dengan format JPEG, PNG, atau WEBP.",
                 variant: "destructive",
             });
-            e.target.value = ''; // Reset the input
+            e.target.value = '';
             return;
         }
-        // --- End validation ---
 
         setUploading('avatar');
         const formData = new FormData();
@@ -108,7 +97,7 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
             toast({ title: "Gagal Mengunggah", description: result.error, variant: "destructive" });
         }
         setUploading(false);
-        e.target.value = ''; // Reset the input after upload
+        e.target.value = '';
     }
 
     const handleAccountSave = async (e: React.FormEvent) => {
@@ -134,14 +123,13 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
         <input type="file" ref={avatarInputRef} onChange={(e) => handleImageUpload(e)} accept="image/png, image/jpeg, image/webp" className="hidden" />
         <div>
             <h1 className="text-2xl font-bold font-headline">Pengaturan</h1>
-            <p className="text-muted-foreground">Kelola profil, akun, dan data sekolah Anda.</p>
+            <p className="text-muted-foreground">Kelola profil dan akun Anda.</p>
         </div>
 
         <Tabs defaultValue="profile">
             <TabsList>
                 <TabsTrigger value="profile">Profil</TabsTrigger>
                 <TabsTrigger value="account">Akun</TabsTrigger>
-                <TabsTrigger value="school">Data Sekolah</TabsTrigger>
             </TabsList>
             <TabsContent value="profile" className="mt-6">
                 <Card>
@@ -224,51 +212,6 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
                            <Button type="submit" disabled>Perbarui Akun</Button>
                         </CardFooter>
                     </form>
-                </Card>
-            </TabsContent>
-            <TabsContent value="school" className="mt-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Data Sekolah</CardTitle>
-                        <CardDescription>Informasi ini akan digunakan pada kop laporan.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <Alert>
-                            <Info className="h-4 w-4" />
-                            <AlertTitle>Hanya Lihat</AlertTitle>
-                            <AlertDescription>
-                                Data sekolah hanya dapat diubah oleh Administrator melalui Panel Admin.
-                            </AlertDescription>
-                        </Alert>
-
-                        <div className="space-y-2">
-                            <Label>Logo Sekolah</Label>
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-20 w-20 rounded-md">
-                                    <AvatarImage src={logoUrl || "https://placehold.co/100x100.png"} alt="Logo Sekolah" data-ai-hint="school building" />
-                                    <AvatarFallback>LOGO</AvatarFallback>
-                                </Avatar>
-                            </div>
-                        </div>
-                       <div className="space-y-2">
-                            <Label htmlFor="schoolName">Nama Sekolah</Label>
-                            <Input id="schoolName" name="schoolName" value={schoolData.schoolName || 'Belum Diatur'} disabled />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="schoolAddress">Alamat Sekolah</Label>
-                            <Input id="schoolAddress" name="schoolAddress" value={schoolData.schoolAddress || 'Belum Diatur'} disabled />
-                        </div>
-                         <div className="grid md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="headmasterName">Nama Kepala Sekolah</Label>
-                                <Input id="headmasterName" name="headmasterName" value={schoolData.headmasterName || 'Belum Diatur'} disabled />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="headmasterNip">NIP Kepala Sekolah</Label>
-                                <Input id="headmasterNip" name="headmasterNip" value={schoolData.headmasterNip || 'Belum Diatur'} disabled />
-                            </div>
-                        </div>
-                    </CardContent>
                 </Card>
             </TabsContent>
         </Tabs>

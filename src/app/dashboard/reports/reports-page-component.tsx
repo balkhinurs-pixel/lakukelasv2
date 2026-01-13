@@ -1,5 +1,3 @@
-
-
 "use client"
 
 import * as React from "react";
@@ -132,7 +130,7 @@ export default function ReportsPageComponent({
   const [isVisible, setIsVisible] = React.useState(false);
   const [downloading, setDownloading] = React.useState(false);
   
-  const currentSchoolYearId = searchParams.get('schoolYear') || profile?.active_school_year_id || "all";
+  const currentSchoolYearId = searchParams.get('schoolYear') || reportsData.summaryCards.activeSchoolYearId || "all";
   const currentMonth = searchParams.get('month') || "all";
 
   const { toast } = useToast();
@@ -544,8 +542,6 @@ export default function ReportsPageComponent({
                 headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
                 styles: { fontSize: 8, cellPadding: 2, lineWidth: 0.1, cellWidth: 'auto' },
                 didDrawPage: (data) => {
-                    // This function is called for every page the table creates, but NOT for the first one.
-                    // We DON'T add a header here to subsequent pages.
                     finalY = data.cursor?.y || margin;
                 }
             });
@@ -613,7 +609,7 @@ export default function ReportsPageComponent({
         }
 
         const todayDate = format(new Date(), "eeee, dd MMMM yyyy", { locale: id });
-        const city = schoolData.address.split(',')[1]?.trim() || "Kota";
+        const city = schoolData.address?.split(',')[1]?.trim() || "Kota";
 
         doc.setFontSize(10);
         doc.text(`${city}, ${todayDate}`, pageWidth - margin, signatureY, { align: 'right' });
