@@ -245,7 +245,7 @@ export default async function AdminDashboardPage() {
                   icon={UserX} 
                   title="Belum/Tidak Hadir" 
                   value={summary.notCheckedIn + summary.absent} 
-                  subtitle={isHoliday ? 'Hari ini libur' : 'Perlu tindak lanjut'}
+                  subtitle={isHoliday ? 'Hari ini libur' : `${summary.absent} tidak hadir, ${summary.notCheckedIn} belum absen`}
                   color="text-red-600" 
                   bgColor="bg-red-50"
                   trend={`${summary.attendanceRate > 0 ? `${summary.attendanceRate}%` : 'N/A'} tingkat kehadiran`}
