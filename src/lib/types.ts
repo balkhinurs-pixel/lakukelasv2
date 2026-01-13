@@ -1,4 +1,5 @@
 
+
 export interface Profile {
   id: string;
   created_at: string;
@@ -15,7 +16,6 @@ export interface Profile {
   role: 'admin' | 'teacher' | 'headmaster';
   email?: string;
   active_school_year_id?: string | null;
-  active_school_year_name?: string | null;
   is_homeroom_teacher?: boolean;
 }
 

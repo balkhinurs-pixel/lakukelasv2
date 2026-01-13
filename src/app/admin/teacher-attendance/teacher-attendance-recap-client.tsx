@@ -228,7 +228,7 @@ export default function TeacherAttendanceRecapPageClient({
       if(logoUrl && (logoUrl.includes('http') || logoUrl.startsWith('data:image'))) {
           if (logoUrl.startsWith('data:image')) {
               doc.addImage(logoUrl, 'PNG', margin, margin, 20, 20);
-              generatePdf();
+              generateContent();
               return;
           }
           const response = await fetch(logoUrl);
@@ -239,18 +239,18 @@ export default function TeacherAttendanceRecapPageClient({
               reader.onloadend = () => {
                   const base64data = reader.result as string;
                   doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
-                  generatePdf();
+                  generateContent();
               };
           } else {
               console.error("Failed to fetch logo, proceeding without it.");
-              generatePdf();
+              generateContent();
           }
       } else {
-          generatePdf();
+          generateContent();
       }
     } catch (error) {
         console.error("Error processing logo, proceeding without it.", error);
-        generatePdf();
+        generateContent();
     }
   };
 

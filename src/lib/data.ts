@@ -203,22 +203,11 @@ export async function getUserProfile(): Promise<Profile | null> {
     if (!user) return null;
 
     const supabase = createClient();
+    // This function now ONLY fetches the user's own data.
+    // School data is handled by getAdminProfile.
     const { data: userProfileData, error } = await supabase
         .from('profiles')
-        .select(`
-            id,
-            created_at,
-            full_name,
-            avatar_url,
-            nip,
-            pangkat,
-            jabatan,
-            role,
-            email,
-            active_school_year_id,
-            is_homeroom_teacher,
-            school_year:active_school_year_id ( name )
-        `)
+        .select('*')
         .eq('id', user.id)
         .single();
     
@@ -226,18 +215,14 @@ export async function getUserProfile(): Promise<Profile | null> {
         console.error("Error fetching user profile:", error);
         return null;
     }
-    
-    const profile: Profile = {
-        ...userProfileData,
-        active_school_year_name: userProfileData.school_year?.name || 'Belum Diatur',
-    };
 
-    return profile;
+    return userProfileData;
 }
 
 export async function getAdminProfile(): Promise<Profile | null> {
     noStore();
     const supabase = createClient();
+    // This function specifically fetches the admin profile to get school-wide data.
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -247,7 +232,7 @@ export async function getAdminProfile(): Promise<Profile | null> {
 
     if (error) {
         console.error("Error fetching admin profile:", error);
-        return null;
+        return null; // Return null if admin not found
     }
     return data;
 }
@@ -664,7 +649,7 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
     if (!user) {
         // Return a default structure if user is not found
         return {
-            summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearName: "" },
+            summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearId: "", activeSchoolYearName: "" },
             studentPerformance: [], attendanceByClass: [], overallAttendanceDistribution: {},
             journalEntries: [], attendanceHistory: [], gradeHistory: [], allStudents: []
         };
@@ -701,17 +686,13 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
         journalQuery = journalQuery.eq('subject_id', subjectId);
     }
 
-    const [attendanceRes, gradesRes, journalRes, studentsRes, activeSchoolYearName, teacherClassesRes] = await Promise.all([
+    const [attendanceRes, gradesRes, journalRes, studentsRes, activeSchoolYear, teacherClassesRes] = await Promise.all([
         attendanceQuery, gradesQuery, journalQuery, getActiveStudents(), getActiveSchoolYearName(), getClasses(),
     ]);
 
     if (attendanceRes.error || gradesRes.error || journalRes.error) {
         console.error({ attendance: attendanceRes.error, grades: gradesRes.error, journals: journalRes.error });
-        return {
-            summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearName: "" },
-            studentPerformance: [], attendanceByClass: [], overallAttendanceDistribution: {},
-            journalEntries: [], attendanceHistory: [], gradeHistory: [], allStudents: []
-        };
+        return null;
     }
     
     const allStudents = studentsRes || [];
@@ -729,7 +710,8 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
         overallAttendanceRate: String(overallAttendanceRate),
         overallAverageGrade: String(overallAverageGrade),
         totalJournals: journalEntries.length,
-        activeSchoolYearName: activeSchoolYearName
+        activeSchoolYearId: schoolYearId,
+        activeSchoolYearName: activeSchoolYear
     };
 
     const studentPerformance = allStudents

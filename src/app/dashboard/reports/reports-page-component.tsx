@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react";
@@ -457,7 +458,7 @@ export default function ReportsPageComponent({
     let finalY = margin;
     const pageBottomMargin = 25;
 
-    // **FIX**: Always use schoolProfile for school data.
+    // Use schoolProfile for school data, and profile for teacher data.
     const schoolData = {
         logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
         name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",

@@ -1,3 +1,4 @@
+
 "use client"
 import * as React from "react";
 import {
@@ -19,8 +20,6 @@ import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info } from "lucide-react";
 
 export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
     const { toast } = useToast();
