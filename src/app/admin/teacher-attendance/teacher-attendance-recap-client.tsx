@@ -97,16 +97,14 @@ export default function TeacherAttendanceRecapPageClient({
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
 
-    const generatePdf = () => {
-        const schoolData = {
-            logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
-            name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
-            address: schoolProfile?.school_address || "Alamat Sekolah Belum Diatur",
-            headmasterName: schoolProfile?.headmaster_name || "Nama Kepsek Belum Diatur",
-            headmasterNip: schoolProfile?.headmaster_nip || "-",
-        };
-
+    const generateContent = () => {
         const addHeader = (docInstance: jsPDF) => {
+            if (!schoolProfile) return;
+            const schoolData = {
+                logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
+                name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
+                address: schoolProfile?.school_address || "Alamat Sekolah Belum Diatur",
+            };
             docInstance.setFontSize(14).setFont('helvetica', 'bold');
             docInstance.text((schoolData.name || '').toUpperCase(), margin + 25, margin + 8);
             docInstance.setFontSize(10).setFont('helvetica', 'normal');
@@ -198,7 +196,7 @@ export default function TeacherAttendanceRecapPageClient({
         }
 
         const todayDate = format(new Date(), "dd MMMM yyyy", { locale: id });
-        const city = schoolData.address?.split(',')[1]?.trim() || "Kota";
+        const city = schoolProfile?.school_address?.split(',')[1]?.trim() || "Kota";
 
         doc.text(`${city}, ${todayDate}`, pageWidth - margin, signatureY, { align: 'right' });
         
@@ -212,8 +210,8 @@ export default function TeacherAttendanceRecapPageClient({
 
         const signatureYName = signatureYBase + 30;
 
-        doc.setFont(undefined, 'bold').text(schoolData.headmasterName, signatureXLeft, signatureYName, { align: 'left'});
-        doc.setFont(undefined, 'normal').text(`NIP. ${schoolData.headmasterNip}`, signatureXLeft, signatureYName + 5, { align: 'left'});
+        doc.setFont(undefined, 'bold').text(schoolProfile?.headmaster_name || "Nama Kepsek Belum Diatur", signatureXLeft, signatureYName, { align: 'left'});
+        doc.setFont(undefined, 'normal').text(`NIP. ${schoolProfile?.headmaster_nip || "-"}`, signatureXLeft, signatureYName + 5, { align: 'left'});
         
         doc.setFont(undefined, 'bold').text(profile.full_name || 'Admin', signatureXRight, signatureYName, { align: 'right' });
         if (profile.nip) {
@@ -308,7 +306,7 @@ export default function TeacherAttendanceRecapPageClient({
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className={isMobile ? "p-4" : ""}>
           <CardTitle className={isMobile ? "text-lg" : ""}>Filter Laporan</CardTitle>
           <CardDescription className={isMobile ? "text-sm" : ""}>
             Saring data absensi berdasarkan guru, bulan, atau tanggal tertentu.
