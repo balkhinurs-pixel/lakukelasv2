@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -93,12 +92,11 @@ export default function TeacherAttendanceRecapPageClient({
   }, [initialHistory, selectedDate, selectedTeacher, selectedMonth]);
 
   const handleDownloadPdf = async () => {
-    if (!profile) return;
-
     const doc = new jsPDF() as jsPDFWithAutoTable;
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 14;
 
+    // **FIX**: Use schoolProfile for school data, and profile for the person generating the report.
     const schoolData = {
       logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
       name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
@@ -213,19 +211,26 @@ export default function TeacherAttendanceRecapPageClient({
     };
 
     try {
-        if(schoolData.logo && schoolData.logo.includes('http')) {
-            const response = await fetch(schoolData.logo);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => {
-                const base64data = reader.result as string;
-                doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
-                generatePdf();
-            };
-        } else {
-            generatePdf();
-        }
+      if(schoolData.logo && (schoolData.logo.includes('http') || schoolData.logo.startsWith('data:image'))) {
+          // If it's a data URI, use it directly
+          if (schoolData.logo.startsWith('data:image')) {
+              doc.addImage(schoolData.logo, 'PNG', margin, margin, 20, 20);
+              generatePdf();
+              return;
+          }
+          // If it's a URL, fetch it
+          const response = await fetch(schoolData.logo);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+              const base64data = reader.result as string;
+              doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
+              generatePdf();
+          };
+      } else {
+          generatePdf();
+      }
     } catch (error) {
         console.error("Error fetching logo, proceeding without it.", error);
         generatePdf();
@@ -488,4 +493,3 @@ export default function TeacherAttendanceRecapPageClient({
     </div>
   );
 }
-

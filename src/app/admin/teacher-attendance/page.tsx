@@ -37,7 +37,7 @@ export default async function TeacherAttendanceRecapPage() {
             initialHistory={attendanceData}
             users={usersForFilter}
             profile={profile as Profile}
-            schoolProfile={adminProfile}
+            schoolProfile={adminProfile} // Use schoolProfile to be consistent with other reports
         />
     );
 }

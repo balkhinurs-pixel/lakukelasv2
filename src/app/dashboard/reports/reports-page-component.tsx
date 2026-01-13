@@ -457,6 +457,7 @@ export default function ReportsPageComponent({
     let finalY = margin;
     const pageBottomMargin = 25;
 
+    // **FIX**: Always use schoolProfile for school data.
     const schoolData = {
         logo: schoolProfile?.school_logo_url || "https://placehold.co/100x100.png",
         name: schoolProfile?.school_name || "Nama Sekolah Belum Diatur",
@@ -607,7 +608,6 @@ export default function ReportsPageComponent({
         doc.text("Guru Mata Pelajaran,", signatureXRight, signatureYBase, { align: 'right'});
         doc.text("Kepala Sekolah", signatureXLeft, signatureYBase + 5, { align: 'left'});
 
-        const signatureYName = signatureYBase + 30;
         doc.setFont(undefined, 'bold').text(schoolData.headmasterName, signatureXLeft, signatureYName, { align: 'left'});
         doc.setFont(undefined, 'normal').text(`NIP. ${schoolData.headmasterNip}`, signatureXLeft, signatureYName + 5, { align: 'left'});
 
@@ -621,22 +621,29 @@ export default function ReportsPageComponent({
     }
 
     try {
-        if (schoolData.logo && schoolData.logo.includes('http')) {
-            const response = await fetch(schoolData.logo);
-            if (response.ok) {
-                const blob = await response.blob();
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = () => {
-                    const base64data = reader.result as string;
-                    doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
-                    generateContent();
-                };
-                return;
-            }
-        }
-        // Fallback if logo fetch fails or no logo
-        generateContent();
+      if (schoolData.logo && (schoolData.logo.includes('http') || schoolData.logo.startsWith('data:image'))) {
+          // If it's a data URI, use it directly
+          if (schoolData.logo.startsWith('data:image')) {
+              doc.addImage(schoolData.logo, 'PNG', margin, margin, 20, 20);
+              generateContent();
+              return;
+          }
+          // If it's a URL, fetch it
+          const response = await fetch(schoolData.logo);
+          if (response.ok) {
+              const blob = await response.blob();
+              const reader = new FileReader();
+              reader.readAsDataURL(blob);
+              reader.onloadend = () => {
+                  const base64data = reader.result as string;
+                  doc.addImage(base64data, 'PNG', margin, margin, 20, 20);
+                  generateContent();
+              };
+              return;
+          }
+      }
+      // Fallback if logo fetch fails or no logo
+      generateContent();
     } catch (error) {
         console.error("Error fetching logo, proceeding without it.", error);
         generateContent();
@@ -1060,4 +1067,3 @@ export default function ReportsPageComponent({
     </div>
   );
 }
-
