@@ -50,14 +50,17 @@ export default function PromotionPageClient({
     }, [allStudents]);
 
     const studentsInSourceClass = React.useMemo(() => {
+        if (!sourceClassId) return [];
         return activeStudents.filter(s => s.class_id === sourceClassId);
     }, [activeStudents, sourceClassId]);
 
     const studentsInDestinationClass = React.useMemo(() => {
+        if (!destinationClassId) return [];
         return activeStudents.filter(s => s.class_id === destinationClassId);
     }, [activeStudents, destinationClassId]);
     
     const studentsInGraduationClass = React.useMemo(() => {
+        if (!graduationClassId) return [];
         return activeStudents.filter(s => s.class_id === graduationClassId);
     }, [activeStudents, graduationClassId]);
 
