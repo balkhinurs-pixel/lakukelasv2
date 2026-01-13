@@ -27,7 +27,7 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
     const { toast } = useToast();
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
-    const [uploading, setUploading] = React.useState<false | 'avatar' | 'logo'>(false);
+    const [uploading, setUploading] = React.useState<false | 'avatar'>(false);
 
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
     
@@ -65,7 +65,7 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
         setLoading(false);
     }
     
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'logo') => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -94,18 +94,15 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
         }
         // --- End validation ---
 
-        setUploading(type);
+        setUploading('avatar');
         const formData = new FormData();
         formData.append('file', file);
 
-        // This action is now correctly in lib/actions.ts and only affects the user's own avatar
-        const result = await uploadProfileImage(formData, type);
+        const result = await uploadProfileImage(formData, 'avatar');
 
         if (result.success && result.url) {
             toast({ title: "Sukses", description: "Gambar berhasil diunggah." });
-            if (type === 'avatar') {
-                setAvatarUrl(result.url);
-            }
+            setAvatarUrl(result.url);
             router.refresh();
         } else {
             toast({ title: "Gagal Mengunggah", description: result.error, variant: "destructive" });
@@ -134,7 +131,7 @@ export default function SettingsClientPage({ user, profile, schoolProfile }: { u
 
     return (
     <div className="space-y-6">
-        <input type="file" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, 'avatar')} accept="image/png, image/jpeg, image/webp" className="hidden" />
+        <input type="file" ref={avatarInputRef} onChange={(e) => handleImageUpload(e)} accept="image/png, image/jpeg, image/webp" className="hidden" />
         <div>
             <h1 className="text-2xl font-bold font-headline">Pengaturan</h1>
             <p className="text-muted-foreground">Kelola profil, akun, dan data sekolah Anda.</p>

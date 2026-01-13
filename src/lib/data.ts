@@ -206,7 +206,17 @@ export async function getUserProfile(): Promise<Profile | null> {
     const { data: userProfileData, error } = await supabase
         .from('profiles')
         .select(`
-            *,
+            id,
+            created_at,
+            full_name,
+            avatar_url,
+            nip,
+            pangkat,
+            jabatan,
+            role,
+            email,
+            active_school_year_id,
+            is_homeroom_teacher,
             school_year:active_school_year_id ( name )
         `)
         .eq('id', user.id)
@@ -217,16 +227,9 @@ export async function getUserProfile(): Promise<Profile | null> {
         return null;
     }
     
-    const schoolProfile = await getAdminProfile();
-
     const profile: Profile = {
         ...userProfileData,
         active_school_year_name: userProfileData.school_year?.name || 'Belum Diatur',
-        school_name: schoolProfile?.school_name || '',
-        school_address: schoolProfile?.school_address || '',
-        headmaster_name: schoolProfile?.headmaster_name || '',
-        headmaster_nip: schoolProfile?.headmaster_nip || '',
-        school_logo_url: schoolProfile?.school_logo_url || '',
     };
 
     return profile;
@@ -658,12 +661,14 @@ export async function getDashboardData(todayDay: string) {
 export async function getReportsData(filters: { schoolYearId: string, month?: number, classId?: string, subjectId?: string }) {
     noStore();
     const user = await getAuthenticatedUser();
-    const profile = await getUserProfile(); // This profile now contains merged school data
-    if (!user || !profile) return {
-        summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearName: "" },
-        studentPerformance: [], attendanceByClass: [], overallAttendanceDistribution: {},
-        journalEntries: [], attendanceHistory: [], gradeHistory: [], allStudents: []
-    };
+    if (!user) {
+        // Return a default structure if user is not found
+        return {
+            summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearName: "" },
+            studentPerformance: [], attendanceByClass: [], overallAttendanceDistribution: {},
+            journalEntries: [], attendanceHistory: [], gradeHistory: [], allStudents: []
+        };
+    }
 
     const supabase = createClient();
     const { schoolYearId, month, classId, subjectId } = filters;

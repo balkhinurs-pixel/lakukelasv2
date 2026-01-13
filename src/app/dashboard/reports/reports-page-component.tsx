@@ -238,7 +238,7 @@ export default function ReportsPageComponent({
             head: [['No', 'Nama Siswa', 'Hadir (H)', 'Sakit (S)', 'Izin (I)', 'Alpha (A)', 'Total']],
             body: tableBody,
         }, {
-            tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
+            tahunAjaran: selectedSchoolYear?.name || summaryCards.activeSchoolYearName || "-",
             periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
         }, fileName);
 
@@ -297,7 +297,7 @@ export default function ReportsPageComponent({
             head: head,
             body: tableBody,
         }, {
-            tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
+            tahunAjaran: selectedSchoolYear?.name || summaryCards.activeSchoolYearName || "-",
             periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
         });
         setDownloading(false);
@@ -331,7 +331,7 @@ export default function ReportsPageComponent({
         data.push(['DAFTAR NILAI SISWA']);
         data.push([`Mata Pelajaran: ${activeSubject?.name || 'Semua Mapel'}`]);
         data.push([`Kelas: ${activeClass?.name || 'Semua Kelas'}`]);
-        data.push([`Tahun Ajaran: ${activeSchoolYear?.name || profile.active_school_year_name || "-"}`]);
+        data.push([`Tahun Ajaran: ${activeSchoolYear?.name || summaryCards.activeSchoolYearName || "-"}`]);
         data.push([`Periode: ${monthLabel ? `Bulan ${monthLabel}` : 'Satu Semester'}`]);
         data.push([`KKM: ${kkm}`]);
         data.push([]); // Spacer row
@@ -444,7 +444,7 @@ export default function ReportsPageComponent({
     const monthLabel = availableMonths.find(m => m.value === currentMonth)?.label;
 
     await downloadPdf(doc, { title: title, journals: filteredJournals }, {
-        tahunAjaran: selectedSchoolYear?.name || profile.active_school_year_name || "-",
+        tahunAjaran: selectedSchoolYear?.name || summaryCards.activeSchoolYearName || "-",
         periode: monthLabel ? `Bulan: ${monthLabel}` : "Periode: Satu Semester"
     });
     setDownloading(false);
