@@ -443,6 +443,29 @@ export async function graduateStudents(studentIds: string[]) {
     return { success: true };
 }
 
+export async function updateStudentsStatus(studentIds: string[], status: 'dropout' | 'inactive') {
+    const supabase = createClient();
+
+    if (!['dropout', 'inactive'].includes(status)) {
+        return { success: false, error: "Status tidak valid." };
+    }
+
+    const { error } = await supabase
+        .from('students')
+        .update({ status: status })
+        .in('id', studentIds);
+
+    if (error) {
+        console.error(`Error updating students status to ${status}:`, error);
+        return { success: false, error: `Gagal memperbarui status siswa.` };
+    }
+    
+    revalidatePath('/admin/roster/promotion');
+    revalidatePath('/admin/roster/students');
+    revalidatePath('/admin/roster/alumni');
+    return { success: true };
+}
+
 export async function createSchoolYear(startYear: number) {
     const supabase = createClient();
     const ganjilName = `${startYear}/${startYear + 1} - Ganjil`;

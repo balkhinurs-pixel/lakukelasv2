@@ -20,10 +20,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ArrowRight, Loader2, Users, GraduationCap } from "lucide-react";
+import { ArrowRight, Loader2, Users, GraduationCap, ArrowRightLeft } from "lucide-react";
 import type { Class, Student } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { moveStudents, graduateStudents } from "@/lib/actions";
+import { moveStudents, graduateStudents, updateStudentsStatus } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 
 
@@ -37,6 +37,8 @@ export default function PromotionPageClient({
     const router = useRouter();
     const { toast } = useToast();
     const [loading, setLoading] = React.useState(false);
+    
+    // --- State for Promotion ---
     const [sourceClassId, setSourceClassId] = React.useState<string>("");
     const [destinationClassId, setDestinationClassId] = React.useState<string>("");
     const [selectedStudentIds, setSelectedStudentIds] = React.useState<Set<string>>(new Set());
@@ -44,6 +46,11 @@ export default function PromotionPageClient({
     // --- State for Graduation ---
     const [graduationClassId, setGraduationClassId] = React.useState<string>("");
     const [selectedGraduationIds, setSelectedGraduationIds] = React.useState<Set<string>>(new Set());
+
+    // --- State for Mutation ---
+    const [mutationClassId, setMutationClassId] = React.useState<string>("");
+    const [selectedMutationIds, setSelectedMutationIds] = React.useState<Set<string>>(new Set());
+    const [targetStatus, setTargetStatus] = React.useState<'dropout' | 'inactive'>('dropout');
     
     const activeStudents = React.useMemo(() => {
         return allStudents.filter(s => s.status === 'active');
@@ -63,6 +70,11 @@ export default function PromotionPageClient({
         if (!graduationClassId) return [];
         return activeStudents.filter(s => s.class_id === graduationClassId);
     }, [activeStudents, graduationClassId]);
+
+    const studentsInMutationClass = React.useMemo(() => {
+        if (!mutationClassId) return [];
+        return activeStudents.filter(s => s.class_id === mutationClassId);
+    }, [activeStudents, mutationClassId]);
 
     const handleSelectStudent = (studentId: string) => {
         setSelectedStudentIds(prev => {
@@ -111,6 +123,23 @@ export default function PromotionPageClient({
         if (result.success) {
             toast({ title: "Sukses!", description: `${selectedGraduationIds.size} siswa berhasil diluluskan dan diarsipkan.` });
             setSelectedGraduationIds(new Set());
+            router.refresh();
+        } else {
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        }
+        setLoading(false);
+    }
+
+    const handleStatusMutation = async () => {
+        if (selectedMutationIds.size === 0) {
+            toast({ title: "Gagal", description: "Pilih setidaknya satu siswa.", variant: "destructive"});
+            return;
+        }
+        setLoading(true);
+        const result = await updateStudentsStatus(Array.from(selectedMutationIds), targetStatus);
+        if (result.success) {
+            toast({ title: "Sukses!", description: `${selectedMutationIds.size} siswa berhasil diubah statusnya menjadi '${targetStatus === 'dropout' ? 'Pindah/Keluar' : 'Tidak Aktif'}'` });
+            setSelectedMutationIds(new Set());
             router.refresh();
         } else {
             toast({ title: "Gagal", description: result.error, variant: "destructive" });
@@ -260,6 +289,59 @@ export default function PromotionPageClient({
                         >
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
                             Pindahkan {selectedStudentIds.size > 0 ? `(${selectedStudentIds.size})` : ''} Siswa
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Mutasi Siswa (Pindah/Keluar)</CardTitle>
+                    <CardDescription>Ubah status siswa menjadi 'Pindah/Keluar' atau 'Tidak Aktif' lainnya.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid md:grid-cols-2 gap-6 items-start">
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Pilih Kelas</Label>
+                            <Select value={mutationClassId} onValueChange={setMutationClassId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih kelas..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {mutationClassId && (
+                            <SelectableStudentList
+                                students={studentsInMutationClass}
+                                selectedIds={selectedMutationIds}
+                                onSelect={(id) => setSelectedMutationIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; })}
+                                onSelectAll={() => handleSelectAll(studentsInMutationClass, selectedMutationIds, setSelectedMutationIds)}
+                            />
+                        )}
+                    </div>
+                    <div className="flex flex-col justify-between h-full">
+                        <div className="space-y-2">
+                            <Label>Ubah Status Menjadi</Label>
+                            <Select value={targetStatus} onValueChange={(value: 'dropout' | 'inactive') => setTargetStatus(value)}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="dropout">Pindah/Keluar</SelectItem>
+                                    <SelectItem value="inactive">Tidak Aktif Lainnya</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button 
+                            variant="secondary"
+                            className="w-full mt-4"
+                            disabled={loading || selectedMutationIds.size === 0}
+                            onClick={handleStatusMutation}
+                        >
+                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRightLeft className="mr-2 h-4 w-4" />}
+                            Ubah Status {selectedMutationIds.size > 0 ? `(${selectedMutationIds.size})` : ''} Siswa
                         </Button>
                     </div>
                 </CardContent>
