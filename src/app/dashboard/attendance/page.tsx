@@ -1,4 +1,3 @@
-
 import { getClasses, getSubjects, getAttendanceHistory, getUserProfile, getActiveStudents, getActiveSchoolYearName } from "@/lib/data";
 import AttendancePageComponent from "./attendance-page-component";
 
@@ -18,5 +17,6 @@ export default async function AttendancePage() {
         initialHistory={history} 
         allStudents={allStudents}
         activeSchoolYearName={activeSchoolYearName} 
+        teacherName={profile?.full_name || "Guru"}
     />;
 }

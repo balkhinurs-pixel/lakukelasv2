@@ -197,13 +197,15 @@ export default function AttendancePageComponent({
     subjects,
     initialHistory,
     allStudents,
-    activeSchoolYearName
+    activeSchoolYearName,
+    teacherName
 }: {
     classes: Class[];
     subjects: Subject[];
     initialHistory: AttendanceHistoryEntry[];
     allStudents: Student[];
     activeSchoolYearName: string;
+    teacherName: string;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -274,6 +276,7 @@ export default function AttendancePageComponent({
 
     const message = `*LAPORAN PRESENSI SISWA*
 *---------------------------*
+👤 *Guru:* ${teacherName}
 🏫 *Kelas:* ${selectedClass.name}
 📚 *Mapel:* ${selectedSubject.name}
 🗓️ *Hari/Tgl:* ${format(date, 'EEEE, dd MMMM yyyy', { locale: id })}
