@@ -1,12 +1,11 @@
-
 "use client";
 
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, MessageSquare } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from "next/navigation";
+import { useRouter } from "navigation";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -90,7 +89,6 @@ const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: s
 ];
 
 
-// Isolated component to prevent re-rendering the entire list on a single change
 const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', onChange: (studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => void }) => {
     return (
         <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
@@ -226,6 +224,7 @@ export default function AttendancePageComponent({
   const { toast } = useToast();
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
+  const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   
   React.useEffect(() => {
     if (selectedClassId) {
@@ -257,6 +256,45 @@ export default function AttendancePageComponent({
     setAttendance(prev => new Map(prev.set(studentId, status)));
   }, []);
 
+  const getStudentName = (studentId: string) => {
+    return allStudents.find(s => s.id === studentId)?.name || "Siswa tidak ditemukan";
+  }
+
+  const handleSendWhatsApp = () => {
+    if (!selectedClass || !selectedSubject || !date || !meetingNumber) {
+        toast({ title: "Data Tidak Lengkap", description: "Mohon isi semua data di formulir sebelum mengirim ke WhatsApp.", variant: "destructive" });
+        return;
+    }
+
+    const hadirCount = Array.from(attendance.values()).filter(s => s === 'Hadir').length;
+    const sakitList = Array.from(attendance.entries()).filter(([, s]) => s === 'Sakit').map(([id]) => getStudentName(id));
+    const izinList = Array.from(attendance.entries()).filter(([, s]) => s === 'Izin').map(([id]) => getStudentName(id));
+    const alphaList = Array.from(attendance.entries()).filter(([, s]) => s === 'Alpha').map(([id]) => getStudentName(id));
+
+    const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    const message = `*LAPORAN PRESENSI SISWA*
+*---------------------------*
+🏫 *Kelas:* ${selectedClass.name}
+📚 *Mapel:* ${selectedSubject.name}
+🗓️ *Hari/Tgl:* ${format(date, 'EEEE, dd MMMM yyyy', { locale: id })}
+⏰ *Jam:* ${currentTime} WIB
+🔢 *Pertemuan Ke:* ${meetingNumber}
+
+*RINGKASAN KEHADIRAN:*
+✅ Hadir: ${hadirCount} Siswa
+🤒 Sakit: ${sakitList.length}${sakitList.length > 0 ? ` (${sakitList.join(', ')})` : ''}
+📩 Izin: ${izinList.length}${izinList.length > 0 ? ` (${izinList.join(', ')})` : ''}
+❌ Alpha: ${alphaList.length}${alphaList.length > 0 ? ` (${alphaList.join(', ')})` : ''}
+
+*Total Siswa:* ${students.length}
+
+_Laporan ini dibuat otomatis melalui LakuKelas_`;
+
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+  };
+
   const handleSubmit = async () => {
     if (!selectedClassId || !selectedSubjectId || !date || !meetingNumber) {
         toast({
@@ -270,7 +308,6 @@ export default function AttendancePageComponent({
 
     const formData = new FormData();
     if (editingId) {
-      // Pass the original session details for deletion lookup
       const originalEntry = initialHistory.find(h => h.id === editingId);
       if (originalEntry) {
           formData.append('original_date', originalEntry.date);
@@ -310,8 +347,6 @@ export default function AttendancePageComponent({
       const studentsForClass = allStudents.filter(s => s.class_id === entry.class_id);
       setStudents(studentsForClass);
       
-      // Use one of the history entry's ID to signify we are editing.
-      // The server action will use the other details to delete the whole session.
       setEditingId(entry.id); 
       setDate(parseISO(entry.date));
       setMeetingNumber(entry.meeting_number);
@@ -339,7 +374,6 @@ export default function AttendancePageComponent({
     setIsDetailDialogOpen(true);
   }
 
-  // Group history by session
   const groupedHistory = React.useMemo(() => {
     const groups: { [key: string]: { entry: AttendanceHistoryEntry, records: { student_id: string, status: string }[] } } = {};
     initialHistory.forEach(item => {
@@ -362,10 +396,6 @@ export default function AttendancePageComponent({
       );
   }, [groupedHistory, selectedClassId, selectedSubjectId]);
   
-  const getStudentName = (studentId: string) => {
-    return allStudents.find(s => s.id === studentId)?.name || "Siswa tidak ditemukan";
-  }
-
   const getStatusBadgeVariant = (status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
     switch (status) {
         case 'Hadir': return "default";
@@ -611,6 +641,14 @@ export default function AttendancePageComponent({
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}
                   </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={handleSendWhatsApp}
+                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Kirim ke WhatsApp
+                  </Button>
                   {editingId && (
                     <Button 
                       variant="outline" 
@@ -739,7 +777,7 @@ export default function AttendancePageComponent({
                               return (
                                    <TableRow key={entry.id} className="hover:bg-slate-50/50 transition-colors duration-150">
                                       <TableCell className="font-medium text-slate-900">
-                                        {format(parseISO(entry.date), 'EEEE, dd MMM yyyy', { locale: id })}
+                                        {format(parseISO(entry.date), 'EEEE, dd MMMM yyyy', { locale: id })}
                                       </TableCell>
                                       <TableCell>
                                           <div className="font-medium text-slate-900">{entry.class_name}</div>
