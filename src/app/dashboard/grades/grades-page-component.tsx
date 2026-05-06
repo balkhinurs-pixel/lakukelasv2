@@ -4,7 +4,7 @@ import * as React from "react";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Minus } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Wand2, ArrowUpCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import type { Student, Class, GradeHistoryEntry, Subject } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { saveGrades } from "@/lib/actions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function FormattedDate({ date, formatString }: { date: Date | null, formatString: string }) {
     const [formattedDate, setFormattedDate] = React.useState<string>('');
@@ -90,8 +91,14 @@ export default function GradesPageComponent({
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [viewingEntry, setViewingEntry] = React.useState<GradeHistoryEntry | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = React.useState(false);
+  
+  // Katrol States
   const [isKatrolDialogOpen, setIsKatrolDialogOpen] = React.useState(false);
+  const [katrolMode, setKatrolMode] = React.useState<"fixed" | "linear">("linear");
   const [katrolPoints, setKatrolPoints] = React.useState<number | string>(0);
+  const [targetMin, setTargetMin] = React.useState<number | string>(75);
+  const [targetMax, setTargetMax] = React.useState<number | string>(95);
+
   const [loading, setLoading] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
@@ -99,6 +106,8 @@ export default function GradesPageComponent({
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
+  const currentKKM = selectedSubject?.kkm || 75;
+
   const hasEnteredGrades = React.useMemo(() => {
       return Array.from(grades.values()).some(score => score !== "" && score !== null && score !== undefined);
   }, [grades]);
@@ -108,6 +117,7 @@ export default function GradesPageComponent({
         const subject = subjects.find(s => s.id === preselectedSubjectId);
         if (subject) {
             setAssessmentType(`Tugas Harian - ${subject.name}`);
+            setTargetMin(subject.kkm);
         }
     }
   }, [preselectedSubjectId, subjects]);
@@ -125,7 +135,6 @@ export default function GradesPageComponent({
       setStudents([]);
     }
   }, [selectedClassId, allStudents, editingId]);
-
 
   const resetForm = (studentList: Student[]) => {
     setEditingId(null);
@@ -145,24 +154,54 @@ export default function GradesPageComponent({
   };
 
   const handleKatrol = () => {
-    const pointsToAdd = Number(katrolPoints);
-    if (isNaN(pointsToAdd) || pointsToAdd === 0) {
-        toast({ title: "Gagal", description: "Masukkan jumlah poin yang valid untuk ditambahkan atau dikurangi.", variant: "destructive" });
-        return;
-    }
+    const filledGrades = Array.from(grades.entries())
+        .filter(([, score]) => score !== "" && score !== null && score !== undefined)
+        .map(([id, score]) => ({ id, score: Number(score) }));
+
+    if (filledGrades.length === 0) return;
 
     const newGrades = new Map(grades);
-    newGrades.forEach((score, studentId) => {
-        if (score !== "" && score !== null && score !== undefined) {
-            const newScore = Math.max(0, Math.min(100, Number(score) + pointsToAdd));
-            newGrades.set(studentId, newScore);
+
+    if (katrolMode === "fixed") {
+        const pointsToAdd = Number(katrolPoints);
+        if (isNaN(pointsToAdd) || pointsToAdd === 0) return;
+        
+        filledGrades.forEach(({ id, score }) => {
+            const newScore = Math.max(0, Math.min(100, score + pointsToAdd));
+            newGrades.set(id, Math.round(newScore));
+        });
+        toast({ title: "Katrol Berhasil", description: `Ditambahkan ${pointsToAdd} poin ke semua nilai.` });
+    } else {
+        // Linear Scaling
+        const minT = Number(targetMin);
+        const maxT = Number(targetMax);
+        
+        if (isNaN(minT) || isNaN(maxT) || minT >= maxT) {
+            toast({ title: "Gagal", description: "Batas minimal harus lebih kecil dari batas maksimal.", variant: "destructive" });
+            return;
         }
-    });
+
+        const scoresOnly = filledGrades.map(g => g.score);
+        const actualMin = Math.min(...scoresOnly);
+        const actualMax = Math.max(...scoresOnly);
+
+        filledGrades.forEach(({ id, score }) => {
+            let newScore: number;
+            if (actualMax === actualMin) {
+                // If all scores are the same, lift them all to targetMin
+                newScore = minT;
+            } else {
+                // Linear Transformation Formula: 
+                // NewValue = TargetMin + ((Value - ActualMin) / (ActualMax - ActualMin)) * (TargetMax - TargetMin)
+                newScore = minT + ((score - actualMin) / (actualMax - actualMin)) * (maxT - minT);
+            }
+            newGrades.set(id, Math.round(Math.max(0, Math.min(100, newScore))));
+        });
+        toast({ title: "Katrol Berhasil", description: `Nilai telah disesuaikan ke rentang ${minT} - ${maxT}.` });
+    }
 
     setGrades(newGrades);
-    toast({ title: "Sukses", description: `${pointsToAdd > 0 ? '+' : ''}${pointsToAdd} poin telah diterapkan ke semua nilai yang terisi.` });
     setIsKatrolDialogOpen(false);
-    setKatrolPoints(0);
   };
 
 
@@ -558,9 +597,9 @@ export default function GradesPageComponent({
                     variant="outline"
                     onClick={() => setIsKatrolDialogOpen(true)}
                     disabled={loading || !hasEnteredGrades}
-                    className="border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    className="border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-sm"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Wand2 className="mr-2 h-4 w-4" />
                     Katrol Nilai
                   </Button>
                   {editingId && (
@@ -772,30 +811,77 @@ export default function GradesPageComponent({
       </Card>
       
       <Dialog open={isKatrolDialogOpen} onOpenChange={setIsKatrolDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
             <DialogHeader>
-                <DialogTitle>Katrol Nilai Siswa</DialogTitle>
-                <DialogDescription>Tambahkan sejumlah poin ke semua nilai yang sudah terisi. Nilai tidak akan melebihi 100.</DialogDescription>
+                <DialogTitle className="flex items-center gap-2">
+                    <Wand2 className="h-5 w-5 text-blue-600" />
+                    Katrol Nilai Pintar
+                </DialogTitle>
+                <DialogDescription>
+                    Pilih metode yang paling sesuai untuk meningkatkan nilai siswa secara kolektif.
+                </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="katrol-points">Poin yang Ditambahkan</Label>
-                    <Input 
-                        id="katrol-points" 
-                        type="number"
-                        value={katrolPoints} 
-                        onChange={e => setKatrolPoints(e.target.value)} 
-                        placeholder="e.g., 5"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                        Masukkan angka positif untuk menambah, atau negatif untuk mengurangi nilai.
-                    </p>
-                </div>
-            </div>
-            <DialogFooter>
+            
+            <Tabs value={katrolMode} onValueChange={(v) => setKatrolMode(v as any)} className="mt-2">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="linear" className="flex items-center gap-1.5">
+                        <ArrowUpCircle className="h-3.5 w-3.5" /> Skala Linear
+                    </TabsTrigger>
+                    <TabsTrigger value="fixed" className="flex items-center gap-1.5">
+                        <Plus className="h-3.5 w-3.5" /> Tambah Poin
+                    </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="linear" className="space-y-4 pt-4">
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700 leading-relaxed">
+                        <p className="font-semibold mb-1">💡 Tips Skala Linear:</p>
+                        Metode ini akan menarik nilai terendah menjadi <strong>Batas Minimal</strong> dan nilai tertinggi menjadi <strong>Batas Maksimal</strong>. Nilai lainnya akan menyesuaikan secara proporsional.
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="target-min">Batas Minimal (KKM)</Label>
+                            <Input 
+                                id="target-min" 
+                                type="number"
+                                value={targetMin} 
+                                onChange={e => setTargetMin(e.target.value)} 
+                                placeholder={String(currentKKM)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="target-max">Batas Maksimal</Label>
+                            <Input 
+                                id="target-max" 
+                                type="number"
+                                value={targetMax} 
+                                onChange={e => setTargetMax(e.target.value)} 
+                                placeholder="95"
+                            />
+                        </div>
+                    </div>
+                </TabsContent>
+                
+                <TabsContent value="fixed" className="space-y-4 pt-4">
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 leading-relaxed">
+                        Menambahkan jumlah poin yang sama untuk setiap siswa yang sudah memiliki nilai.
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="katrol-points">Poin yang Ditambahkan</Label>
+                        <Input 
+                            id="katrol-points" 
+                            type="number"
+                            value={katrolPoints} 
+                            onChange={e => setKatrolPoints(e.target.value)} 
+                            placeholder="e.g. 5"
+                        />
+                    </div>
+                </TabsContent>
+            </Tabs>
+
+            <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => setIsKatrolDialogOpen(false)}>Batal</Button>
-                <Button onClick={handleKatrol}>
-                    <Plus className="mr-2 h-4 w-4" /> Terapkan
+                <Button onClick={handleKatrol} className="bg-blue-600 hover:bg-blue-700">
+                    Terapkan Katrol
                 </Button>
             </DialogFooter>
         </DialogContent>
