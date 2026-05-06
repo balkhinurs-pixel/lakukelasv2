@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -147,21 +146,21 @@ export default function GradesPageComponent({
 
   const handleKatrol = () => {
     const pointsToAdd = Number(katrolPoints);
-    if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
-        toast({ title: "Gagal", description: "Masukkan jumlah poin yang valid untuk ditambahkan.", variant: "destructive" });
+    if (isNaN(pointsToAdd) || pointsToAdd === 0) {
+        toast({ title: "Gagal", description: "Masukkan jumlah poin yang valid untuk ditambahkan atau dikurangi.", variant: "destructive" });
         return;
     }
 
     const newGrades = new Map(grades);
     newGrades.forEach((score, studentId) => {
         if (score !== "" && score !== null && score !== undefined) {
-            const newScore = Math.min(100, Number(score) + pointsToAdd);
+            const newScore = Math.max(0, Math.min(100, Number(score) + pointsToAdd));
             newGrades.set(studentId, newScore);
         }
     });
 
     setGrades(newGrades);
-    toast({ title: "Sukses", description: `${pointsToAdd} poin telah ditambahkan ke semua nilai yang terisi.` });
+    toast({ title: "Sukses", description: `${pointsToAdd > 0 ? '+' : ''}${pointsToAdd} poin telah diterapkan ke semua nilai yang terisi.` });
     setIsKatrolDialogOpen(false);
     setKatrolPoints(0);
   };
@@ -784,11 +783,13 @@ export default function GradesPageComponent({
                     <Input 
                         id="katrol-points" 
                         type="number"
-                        min="1"
                         value={katrolPoints} 
                         onChange={e => setKatrolPoints(e.target.value)} 
                         placeholder="e.g., 5"
                     />
+                    <p className="text-xs text-muted-foreground">
+                        Masukkan angka positif untuk menambah, atau negatif untuk mengurangi nilai.
+                    </p>
                 </div>
             </div>
             <DialogFooter>
