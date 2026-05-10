@@ -1,9 +1,7 @@
-
-
 'use server';
 
 import { createClient } from './supabase/server';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -988,4 +986,30 @@ export async function getTeacherActivityStats() {
     return result;
 }
 
+export async function getMaterials(): Promise<Material[]> {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('materials')
+        .select(`
+            *,
+            className:classes ( name ),
+            subjectName:subjects ( name )
+        `)
+        .eq('teacher_id', user.id)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching materials:", error);
+        return [];
+    }
     
+    return data.map(item => ({
+        ...item,
+        className: item.className?.name,
+        subjectName: item.subjectName?.name,
+    }));
+}

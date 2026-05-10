@@ -1,9 +1,8 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from './supabase/server';
-import type { StudentNote, GradeRecord, AttendanceRecord } from './types';
+import type { StudentNote, GradeRecord, AttendanceRecord, Material } from './types';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -473,7 +472,7 @@ export async function createSchoolYear(startYear: number) {
 
     const { error } = await supabase.from('school_years').insert([
         { name: ganjilName },
-        { name: genapName }
+        { name: ganjilName }
     ]);
     
     if (error) {
@@ -696,4 +695,56 @@ function calculateDistance(
 
 function toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
+}
+
+export async function saveMaterial(formData: FormData) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const materialData = {
+        id: formData.get('id') as string || undefined,
+        class_id: formData.get('class_id') as string,
+        subject_id: formData.get('subject_id') as string,
+        title: formData.get('title') as string,
+        description: formData.get('description') as string || null,
+        link_url: formData.get('link_url') as string,
+        teacher_id: user.id,
+    };
+
+    if (!materialData.class_id || !materialData.subject_id || !materialData.title || !materialData.link_url) {
+        return { success: false, error: "Data tidak lengkap. Harap isi semua kolom wajib." };
+    }
+
+    let error;
+    if (materialData.id) {
+        const { error: updateError } = await supabase.from('materials').update(materialData).eq('id', materialData.id);
+        error = updateError;
+    } else {
+        const { error: insertError } = await supabase.from('materials').insert(materialData);
+        error = insertError;
+    }
+
+    if (error) {
+        console.error("Error saving material:", error);
+        return { success: false, error: "Gagal menyimpan materi." };
+    }
+
+    revalidatePath('/dashboard/materials');
+    return { success: true };
+}
+
+export async function deleteMaterial(materialId: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const { error } = await supabase.from('materials').delete().match({ id: materialId, teacher_id: user.id });
+
+    if (error) {
+        console.error("Error deleting material:", error);
+        return { success: false, error: "Gagal menghapus materi." };
+    }
+    revalidatePath('/dashboard/materials');
+    return { success: true };
 }

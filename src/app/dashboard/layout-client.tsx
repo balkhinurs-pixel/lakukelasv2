@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -38,6 +37,7 @@ import {
   ClipboardList,
   UserCheck as UserCheckIcon,
   Activity,
+  Link2,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -80,6 +80,7 @@ const navItems = [
   { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
   { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
   { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
+  { href: '/dashboard/materials', icon: Link2, label: 'Materi' },
   { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
   { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
 ];
@@ -376,7 +377,7 @@ export default function DashboardLayoutClient({
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={(profile?.avatar_url || "https://placehold.co/32x32.png")} alt={profile?.full_name || 'Guru'} data-ai-hint="teacher portrait"/>
+                                <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Guru'} data-ai-hint="teacher portrait"/>
                                 <AvatarFallback className="text-foreground text-xs">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
                              </Avatar>
                         </Button>

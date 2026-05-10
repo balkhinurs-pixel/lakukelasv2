@@ -1,5 +1,3 @@
-
-
 export interface Profile {
   id: string;
   created_at: string;
@@ -126,6 +124,20 @@ export interface TeacherAttendance {
   checkOut: string | null; // HH:mm
   status: 'Tepat Waktu' | 'Terlambat' | 'Tidak Hadir' | 'Sakit' | 'Izin';
   reason?: string | null;
+}
+
+export interface Material {
+    id: string;
+    teacher_id: string;
+    class_id: string;
+    subject_id: string;
+    title: string;
+    description?: string | null;
+    link_url: string;
+    created_at: string;
+    // Joined data
+    className?: string;
+    subjectName?: string;
 }
 
 // --- History Types ---
