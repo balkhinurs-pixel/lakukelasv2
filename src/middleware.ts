@@ -53,10 +53,11 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .single();
     
-    const isAdmin = profile?.role === 'admin';
-    const isHeadmaster = profile?.role === 'headmaster';
+    const role = profile?.role;
+    const isAdmin = role === 'admin';
+    const isHeadmaster = role === 'headmaster';
 
-    // If a logged-in user is on the login page, redirect them to their respective dashboard
+    // If a logged-in user is on the root login page, redirect them to their respective dashboard
     if (pathname === '/') {
         if (isAdmin) {
             return NextResponse.redirect(new URL('/admin', request.url));
@@ -65,46 +66,32 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // --- Role-based access control ---
-
-    // Define routes accessible only by admins
-    const adminOnlyRoutes = [
-      '/admin/users',
-      '/admin/roster',
-      '/admin/settings',
-    ];
-
+    // Role-based access control for /admin
     if (pathname.startsWith('/admin')) {
-      // If user is NOT an admin
       if (!isAdmin) {
-        // If user is a headmaster, allow them to access specific monitoring pages
-        if (isHeadmaster && (pathname.startsWith('/admin/teacher-attendance') || pathname.startsWith('/admin/teacher-activity'))) {
-          return response; // Allow access
+        // Special case for headmasters who can access monitoring reports in admin area
+        const allowedForHeadmaster = pathname.startsWith('/admin/teacher-attendance') || pathname.startsWith('/admin/teacher-activity');
+        
+        if (isHeadmaster && allowedForHeadmaster) {
+          return response;
         }
-        // For any other /admin path, or if user is just a teacher, redirect
+        
+        // Everyone else (Teachers or Headmasters on other admin pages) gets sent to teacher dashboard
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     }
     
-    // If an admin tries to access teacher dashboard routes, redirect to admin dashboard
+    // Admins should not be in /dashboard (they have their own /admin)
     if (pathname.startsWith('/dashboard') && isAdmin) {
         return NextResponse.redirect(new URL('/admin', request.url));
     }
   }
-
 
   return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

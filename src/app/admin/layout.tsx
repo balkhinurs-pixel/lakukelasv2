@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import * as React from 'react';
@@ -22,9 +20,14 @@ export default async function AdminLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, avatar_url')
+    .select('full_name, avatar_url, role')
     .eq('id', user.id)
     .single();
+
+  // Secondary security check: Ensure the user actually has the admin role
+  if (!profile || profile.role !== 'admin') {
+    redirect('/dashboard');
+  }
 
   return (
     <SidebarProvider>
