@@ -55,6 +55,15 @@ import type { Student, Class, AttendanceHistoryEntry, Subject, StudentNote } fro
 import { saveAttendance, addStudentNote } from "@/lib/actions";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -86,7 +95,6 @@ const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: s
         selectedClassName: 'bg-red-500 text-white hover:bg-red-600 border-red-500 shadow-md shadow-red-200' 
     },
 ];
-
 
 const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', onChange: (studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => void }) => {
     return (
@@ -191,7 +199,6 @@ const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNo
     )
 }
 
-
 export default function AttendancePageComponent({
     classes,
     subjects,
@@ -224,6 +231,10 @@ export default function AttendancePageComponent({
   const [viewingEntry, setViewingEntry] = React.useState<AttendanceHistoryEntry | null>(null);
   const { toast } = useToast();
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const ITEMS_PER_PAGE = 3;
+
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   
@@ -241,6 +252,10 @@ export default function AttendancePageComponent({
     }
   }, [selectedClassId, allStudents, editingId]);
 
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClassId, selectedSubjectId]);
 
   const resetForm = (studentList: Student[]) => {
     setEditingId(null);
@@ -398,6 +413,83 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
       );
   }, [groupedHistory, selectedClassId, selectedSubjectId]);
   
+  // Pagination logic
+  const pageCount = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE);
+  const paginatedHistory = filteredHistory.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (page: number) => {
+      setCurrentPage(page);
+  };
+
+  const renderPagination = () => {
+    if (pageCount <= 1) return null;
+    const pageNumbers = [];
+    const ellipsis = <PaginationItem key="ellipsis"><PaginationEllipsis /></PaginationItem>;
+
+    if (pageCount <= 7) {
+        for (let i = 1; i <= pageCount; i++) {
+            pageNumbers.push(
+                <PaginationItem key={i}>
+                    <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(i); }}>{i}</PaginationLink>
+                </PaginationItem>
+            );
+        }
+    } else {
+        pageNumbers.push(
+            <PaginationItem key={1}>
+                <PaginationLink href="#" isActive={1 === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(1); }}>1</PaginationLink>
+            </PaginationItem>
+        );
+
+        if (currentPage > 3) pageNumbers.push(React.cloneElement(ellipsis, {key: "start-ellipsis"}));
+
+        let startPage = Math.max(2, currentPage - 1);
+        let endPage = Math.min(pageCount - 1, currentPage + 1);
+        
+        if (currentPage <= 3) {
+           startPage = 2;
+           endPage = 4;
+        }
+        if (currentPage >= pageCount - 2) {
+            startPage = pageCount - 3;
+            endPage = pageCount -1;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(
+                <PaginationItem key={i}>
+                    <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(i); }}>{i}</PaginationLink>
+                </PaginationItem>
+            );
+        }
+        
+        if (currentPage < pageCount - 2) pageNumbers.push(React.cloneElement(ellipsis, {key: "end-ellipsis"}));
+
+        pageNumbers.push(
+            <PaginationItem key={pageCount}>
+                <PaginationLink href="#" isActive={pageCount === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(pageCount); }}>{pageCount}</PaginationLink>
+            </PaginationItem>
+        );
+    }
+
+    return (
+        <Pagination>
+            <PaginationContent>
+                <PaginationItem>
+                    <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); handlePageChange(Math.max(1, currentPage - 1)); }} />
+                </PaginationItem>
+                {pageNumbers}
+                <PaginationItem>
+                    <PaginationNext href="#" onClick={(e) => { e.preventDefault(); handlePageChange(Math.min(pageCount, currentPage + 1)); }} />
+                </PaginationItem>
+            </PaginationContent>
+        </Pagination>
+    );
+  };
+
   const getStatusBadgeVariant = (status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
     switch (status) {
         case 'Hadir': return "default";
@@ -691,7 +783,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
             <>
               {/* Mobile View */}
               <div className="md:hidden space-y-3">
-                {filteredHistory.map(({entry, records}) => {
+                {paginatedHistory.map(({entry, records}) => {
                   const summary = records.reduce((acc, record) => {
                       acc[record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'] = (acc[record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'] || 0) + 1;
                       return acc;
@@ -771,7 +863,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                           </TableRow>
                       </TableHeader>
                       <TableBody>
-                          {filteredHistory.map(({entry, records}) => {
+                          {paginatedHistory.map(({entry, records}) => {
                               const summary = records.reduce((acc, record) => {
                                   acc[record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'] = (acc[record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'] || 0) + 1;
                                   return acc;
@@ -854,6 +946,11 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   </div>
               )}
           </CardContent>
+          {pageCount > 1 && (
+            <CardFooter className="flex justify-center border-t pt-4">
+                {renderPagination()}
+            </CardFooter>
+          )}
         </Card>
       )}
 
