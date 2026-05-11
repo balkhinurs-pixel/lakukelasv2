@@ -391,7 +391,7 @@ export default function DashboardLayoutClient({
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                           <Link href="/dashboard/settings" onClick={() => {if (isMobile) toggleSidebar()}}>
+                           <Link href="/dashboard/settings">
                                 <UserIcon className="mr-2 h-4 w-4" />
                                 Profil Saya
                            </Link>
