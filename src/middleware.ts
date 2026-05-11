@@ -37,16 +37,17 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Ambil user dari session
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
 
-  // If user is not logged in, and tries to access a protected route, redirect to login
+  // Proteksi rute: Jika belum login, tendang ke login page
   if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
       return NextResponse.redirect(new URL('/', request.url));
   }
   
-  // If user is logged in, handle role-based routing
   if (user) {
+    // Ambil profile langsung dari database setiap request untuk memastikan role terbaru
     const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -57,7 +58,7 @@ export async function middleware(request: NextRequest) {
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
 
-    // If a logged-in user is on the root login page, redirect them to their respective dashboard
+    // Rute akar: Redirect berdasarkan role
     if (pathname === '/') {
         if (isAdmin) {
             return NextResponse.redirect(new URL('/admin', request.url));
@@ -66,22 +67,20 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Role-based access control for /admin
+    // Proteksi Admin: Hanya Admin (dan Headmaster untuk laporan tertentu) yang boleh masuk /admin
     if (pathname.startsWith('/admin')) {
       if (!isAdmin) {
-        // Special case for headmasters who can access monitoring reports in admin area
         const allowedForHeadmaster = pathname.startsWith('/admin/teacher-attendance') || pathname.startsWith('/admin/teacher-activity');
         
         if (isHeadmaster && allowedForHeadmaster) {
           return response;
         }
         
-        // Everyone else (Teachers or Headmasters on other admin pages) gets sent to teacher dashboard
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     }
     
-    // Admins should not be in /dashboard (they have their own /admin)
+    // Redirect Admin agar tidak masuk ke dashboard Guru (opsional)
     if (pathname.startsWith('/dashboard') && isAdmin) {
         return NextResponse.redirect(new URL('/admin', request.url));
     }
