@@ -31,6 +31,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PlusCircle, MoreHorizontal, Edit, Trash2, ExternalLink, Link2, BookOpen, Filter, Search, Loader2, FileText, Globe } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
