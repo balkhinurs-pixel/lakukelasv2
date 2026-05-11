@@ -41,24 +41,26 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
 
-  // Proteksi rute: Jika belum login, tendang ke login page
+  // 1. Proteksi rute dasar: Jika belum login, tendang ke login page
   if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
       return NextResponse.redirect(new URL('/', request.url));
   }
   
   if (user) {
-    // Ambil profile langsung dari database setiap request untuk memastikan role terbaru
-    const { data: profile } = await supabase
+    // 2. Ambil profile langsung dari database setiap request untuk memastikan role terbaru
+    // Query ini harus ringan dan tidak boleh terhambat RLS loop
+    const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
     
-    const role = profile?.role;
+    // Jika profil tidak ditemukan, mungkin user baru. Biarkan masuk ke dashboard untuk trigger pembuatan profil
+    const role = profile?.role || 'teacher';
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
 
-    // Rute akar: Redirect berdasarkan role
+    // 3. Rute akar: Redirect berdasarkan role
     if (pathname === '/') {
         if (isAdmin) {
             return NextResponse.redirect(new URL('/admin', request.url));
@@ -67,21 +69,23 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Proteksi Admin: Hanya Admin (dan Headmaster untuk laporan tertentu) yang boleh masuk /admin
+    // 4. Proteksi rute Admin
     if (pathname.startsWith('/admin')) {
       if (!isAdmin) {
+        // Headmaster boleh akses laporan tertentu di admin
         const allowedForHeadmaster = pathname.startsWith('/admin/teacher-attendance') || pathname.startsWith('/admin/teacher-activity');
         
         if (isHeadmaster && allowedForHeadmaster) {
           return response;
         }
         
+        // Selain itu, guru biasa tidak boleh ke /admin
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     }
     
-    // Redirect Admin agar tidak masuk ke dashboard Guru (opsional)
-    if (pathname.startsWith('/dashboard') && isAdmin) {
+    // 5. Redirect Admin agar tidak masuk ke dashboard Guru secara default (opsional)
+    if (pathname.startsWith('/dashboard') && isAdmin && pathname === '/dashboard') {
         return NextResponse.redirect(new URL('/admin', request.url));
     }
   }
