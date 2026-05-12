@@ -28,8 +28,6 @@ export async function inviteTeacher(fullName: string, email: string) {
 
 export async function deleteUser(userId: string) {
     const supabase = createClient();
-    // In a real-world scenario, you might want to check if the user is the last admin
-    // before allowing deletion. For now, we will proceed.
     const { data, error } = await supabase.auth.admin.deleteUser(userId);
 
     if (error) {
@@ -89,6 +87,7 @@ export async function saveSchedule(formData: FormData) {
     }
 
     revalidatePath('/admin/settings/schedule');
+    revalidatePath('/admin');
     return { success: true };
 }
 
@@ -103,6 +102,7 @@ export async function deleteSchedule(scheduleId: string) {
     }
 
     revalidatePath('/admin/settings/schedule');
+    revalidatePath('/admin');
     return { success: true };
 }
 
@@ -111,7 +111,6 @@ export async function syncHomeroomTeacherStatus() {
     const supabase = createClient();
     
     try {
-        // Get all teachers who are assigned as homeroom teachers
         const { data: homeroomAssignments } = await supabase
             .from('classes')
             .select('teacher_id')
@@ -119,43 +118,24 @@ export async function syncHomeroomTeacherStatus() {
         
         if (!homeroomAssignments) return { success: false, error: 'Gagal mengambil data kelas.' };
         
-        // Get unique teacher IDs
         const homeroomTeacherIds = [...new Set(homeroomAssignments.map(c => c.teacher_id))];
         
-        // Set is_homeroom_teacher to true for all homeroom teachers
         if (homeroomTeacherIds.length > 0) {
-            const { error: updateError } = await supabase
+            await supabase
                 .from('profiles')
                 .update({ is_homeroom_teacher: true })
                 .in('id', homeroomTeacherIds);
-            
-            if (updateError) {
-                console.error('Error updating homeroom teacher status:', updateError);
-                return { success: false, error: 'Gagal memperbarui status wali kelas.' };
-            }
         }
         
-        // Set is_homeroom_teacher to false for teachers who are not homeroom teachers
         if (homeroomTeacherIds.length > 0) {
-            const { error: resetError } = await supabase
+            await supabase
                 .from('profiles')
                 .update({ is_homeroom_teacher: false })
                 .not('id', 'in', `(${homeroomTeacherIds.join(',')})`);
-            
-            if (resetError) {
-                console.error('Error resetting homeroom teacher status:', resetError);
-                return { success: false, error: 'Gagal mereset status wali kelas.' };
-            }
         } else {
-            // If no homeroom teachers, set all to false
-            const { error: resetError } = await supabase
+            await supabase
                 .from('profiles')
                 .update({ is_homeroom_teacher: false });
-            
-            if (resetError) {
-                console.error('Error resetting all homeroom teacher status:', resetError);
-                return { success: false, error: 'Gagal mereset semua status wali kelas.' };
-            }
         }
         
         return { success: true };
@@ -174,71 +154,19 @@ export async function saveClass(formData: FormData) {
         teacher_id: formData.get('teacher_id') as string || null,
     };
     
-    let previousTeacherId: string | null = null;
-    
-    // If updating an existing class, get the previous teacher_id
-    if (classData.id) {
-        const { data: existingClass } = await supabase
-            .from('classes')
-            .select('teacher_id')
-            .eq('id', classData.id)
-            .single();
-        
-        if (existingClass) {
-            previousTeacherId = existingClass.teacher_id;
-        }
-    }
-    
-    // Update or create the class
     if (classData.id) {
         const { error } = await supabase
             .from('classes')
             .update({ name: classData.name, teacher_id: classData.teacher_id })
             .eq('id', classData.id);
         
-        if (error) {
-            console.error("Error updating class:", error);
-            return { success: false, error: 'Gagal memperbarui kelas.' };
-        }
+        if (error) return { success: false, error: 'Gagal memperbarui kelas.' };
     } else {
         const { error } = await supabase.from('classes').insert({ name: classData.name, teacher_id: classData.teacher_id });
-        if (error) {
-            console.error("Error creating class:", error);
-            return { success: false, error: 'Gagal membuat kelas.' };
-        }
+        if (error) return { success: false, error: 'Gagal membuat kelas.' };
     }
     
-    // Update homeroom teacher status in profiles table
-    try {
-        // If the previous teacher was different and not null, remove their homeroom status
-        if (previousTeacherId && previousTeacherId !== classData.teacher_id) {
-            // Check if this teacher is still homeroom teacher for other classes
-            const { data: otherClasses } = await supabase
-                .from('classes')
-                .select('id')
-                .eq('teacher_id', previousTeacherId)
-                .neq('id', classData.id || '');
-            
-            // If they're not homeroom teacher for any other class, remove the status
-            if (!otherClasses || otherClasses.length === 0) {
-                await supabase
-                    .from('profiles')
-                    .update({ is_homeroom_teacher: false })
-                    .eq('id', previousTeacherId);
-            }
-        }
-        
-        // If a new teacher is assigned, set their homeroom status to true
-        if (classData.teacher_id) {
-            await supabase
-                .from('profiles')
-                .update({ is_homeroom_teacher: true })
-                .eq('id', classData.teacher_id);
-        }
-    } catch (error) {
-        console.error("Error updating homeroom teacher status:", error);
-        // Don't fail the whole operation if profile update fails
-    }
+    await syncHomeroomTeacherStatus();
     
     revalidatePath('/admin/roster/classes');
     return { success: true };
@@ -246,43 +174,10 @@ export async function saveClass(formData: FormData) {
 
 export async function deleteClass(classId: string) {
     const supabase = createClient();
-    
-    // Get the teacher_id before deleting the class
-    const { data: classToDelete } = await supabase
-        .from('classes')
-        .select('teacher_id')
-        .eq('id', classId)
-        .single();
-    
     const { error } = await supabase.from('classes').delete().eq('id', classId);
+    if (error) return { success: false, error: 'Gagal menghapus kelas.' };
     
-    if (error) {
-        console.error("Error deleting class:", error);
-        return { success: false, error: 'Gagal menghapus kelas. Pastikan tidak ada siswa atau jadwal yang terkait.' };
-    }
-    
-    // If the deleted class had a homeroom teacher, check if they should lose homeroom status
-    if (classToDelete?.teacher_id) {
-        try {
-            // Check if this teacher is still homeroom teacher for other classes
-            const { data: otherClasses } = await supabase
-                .from('classes')
-                .select('id')
-                .eq('teacher_id', classToDelete.teacher_id);
-            
-            // If they're not homeroom teacher for any other class, remove the status
-            if (!otherClasses || otherClasses.length === 0) {
-                await supabase
-                    .from('profiles')
-                    .update({ is_homeroom_teacher: false })
-                    .eq('id', classToDelete.teacher_id);
-            }
-        } catch (error) {
-            console.error("Error updating homeroom teacher status after class deletion:", error);
-            // Don't fail the whole operation if profile update fails
-        }
-    }
-    
+    await syncHomeroomTeacherStatus();
     revalidatePath('/admin/roster/classes');
     return { success: true };
 }
@@ -301,16 +196,10 @@ export async function saveSubject(formData: FormData) {
             .from('subjects')
             .update({ name: subjectData.name, kkm: subjectData.kkm })
             .eq('id', subjectData.id);
-        if (error) {
-            console.error("Error updating subject:", error);
-            return { success: false, error: "Gagal memperbarui mapel." };
-        }
+        if (error) return { success: false, error: "Gagal memperbarui mapel." };
     } else {
          const { error } = await supabase.from('subjects').insert({ name: subjectData.name, kkm: subjectData.kkm });
-        if (error) {
-            console.error("Error creating subject:", error);
-            return { success: false, error: "Gagal membuat mapel." };
-        }
+        if (error) return { success: false, error: "Gagal membuat mapel." };
     }
 
     revalidatePath('/admin/roster/subjects');
@@ -320,53 +209,26 @@ export async function saveSubject(formData: FormData) {
 export async function saveAttendanceSettings(formData: FormData) {
     const supabase = createClient();
     
-    const settingsData = {
-        latitude: formData.get('latitude') as string,
-        longitude: formData.get('longitude') as string,
-        radius: Number(formData.get('radius')),
-        check_in_start: formData.get('check_in_start') as string,
-        check_in_deadline: formData.get('check_in_deadline') as string,
-    };
-
-    // Validate required fields
-    if (!settingsData.latitude || !settingsData.longitude || !settingsData.radius || !settingsData.check_in_start || !settingsData.check_in_deadline) {
-        return { success: false, error: 'Semua field wajib diisi.' };
-    }
-
-    // Validate latitude and longitude format
-    const lat = parseFloat(settingsData.latitude);
-    const lng = parseFloat(settingsData.longitude);
-    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-        return { success: false, error: 'Format koordinat tidak valid.' };
-    }
-
-    // Validate radius
-    if (settingsData.radius <= 0 || settingsData.radius > 1000) {
-        return { success: false, error: 'Radius harus antara 1-1000 meter.' };
-    }
+    const settingsToSave = [
+        { key: 'attendance_latitude', value: formData.get('latitude') as string },
+        { key: 'attendance_longitude', value: formData.get('longitude') as string },
+        { key: 'attendance_radius', value: formData.get('radius') as string },
+        { key: 'attendance_check_in_start', value: formData.get('check_in_start') as string },
+        { key: 'attendance_check_in_deadline', value: formData.get('check_in_deadline') as string },
+        { key: 'attendance_policy', value: formData.get('attendance_policy') as string },
+    ];
 
     try {
-        // Save all settings to the settings table
-        const settingsToSave = [
-            { key: 'attendance_latitude', value: settingsData.latitude },
-            { key: 'attendance_longitude', value: settingsData.longitude },
-            { key: 'attendance_radius', value: settingsData.radius.toString() },
-            { key: 'attendance_check_in_start', value: settingsData.check_in_start },
-            { key: 'attendance_check_in_deadline', value: settingsData.check_in_deadline },
-        ];
-
         for (const setting of settingsToSave) {
             const { error } = await supabase
                 .from('settings')
                 .upsert(setting, { onConflict: 'key' });
             
-            if (error) {
-                console.error('Error saving setting:', setting.key, error);
-                return { success: false, error: `Gagal menyimpan pengaturan: ${setting.key}` };
-            }
+            if (error) throw error;
         }
 
         revalidatePath('/admin/settings/location');
+        revalidatePath('/admin');
         return { success: true };
     } catch (error) {
         console.error('Error saving attendance settings:', error);
@@ -376,30 +238,21 @@ export async function saveAttendanceSettings(formData: FormData) {
 
 export async function updateSchoolData(schoolData: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
     const supabase = createClient();
+    const { data: adminUser } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
     
-    // Find admin user ID, as only they should store school data
-    const { data: adminUser, error: adminError } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
-    
-    if (adminError || !adminUser) {
-        return { success: false, error: "Admin tidak ditemukan. Data sekolah hanya bisa disimpan di profil admin." };
-    }
+    if (!adminUser) return { success: false, error: "Admin tidak ditemukan." };
 
-    // The admin updates their own profile, which acts as the source of truth
     const { error } = await supabase.from('profiles').update({
         school_name: schoolData.schoolName,
         school_address: schoolData.schoolAddress,
         headmaster_name: schoolData.headmasterName,
         headmaster_nip: schoolData.headmasterNip,
-    }).eq('id', adminUser.id); // Only update the admin's profile
+    }).eq('id', adminUser.id);
 
-    if (error) {
-        console.error("Error updating school data for admin:", error);
-        return { success: false, error: "Gagal memperbarui data sekolah." };
-    }
+    if (error) return { success: false, error: "Gagal memperbarui data sekolah." };
 
     revalidatePath('/admin/settings/school');
-    revalidatePath('/dashboard/settings');
-    revalidatePath('/dashboard/reports'); // For report headers
+    revalidatePath('/dashboard/reports');
     return { success: true };
 }
 
@@ -412,73 +265,43 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     let bucket = 'avatars';
     let fileName = `${user.id}/avatar_${Date.now()}`;
 
-    // If uploading a logo, we need to ensure we're updating the admin's profile
     if (type === 'logo') {
-         const {data: adminUser, error: adminError} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
-         if(adminError || !adminUser) {
-             console.error("Admin user not found for logo upload");
-             return { success: false, error: "Admin tidak ditemukan untuk unggah logo." };
-         }
+         const {data: adminUser} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
+         if(!adminUser) return { success: false, error: "Admin tidak ditemukan." };
          targetUserId = adminUser.id;
          fileName = `school_logo_${Date.now()}`;
     }
 
-
     const file = formData.get('file') as File;
-    if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
+    if (!file) return { success: false, error: "Tidak ada file." };
     
-    
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true, 
-    });
-    
-    if (uploadError) {
-        console.error("Upload error:", uploadError);
-        return { success: false, error: "Gagal mengunggah gambar." };
-    }
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, { upsert: true });
+    if (uploadError) return { success: false, error: "Gagal mengunggah." };
 
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
-
     const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
 
-    const { error: dbError } = await supabase.from('profiles').update({
-        [columnToUpdate]: publicUrl
-    }).eq('id', targetUserId);
-
-    if (dbError) {
-        console.error("DB update error:", dbError);
-        return { success: false, error: "Gagal memperbarui URL gambar di profil." };
-    }
+    await supabase.from('profiles').update({ [columnToUpdate]: publicUrl }).eq('id', targetUserId);
     
     revalidatePath('/dashboard/settings');
     revalidatePath('/admin/settings/school');
-    revalidatePath('/dashboard/reports');
     return { success: true, url: publicUrl };
 }
 
 export async function saveHoliday(holiday: { date: string, description: string }) {
     const supabase = createClient();
     const { error } = await supabase.from('holidays').insert(holiday);
-
-    if (error) {
-        console.error('Error saving holiday:', error);
-        return { success: false, error: 'Gagal menyimpan hari libur.' };
-    }
-
+    if (error) return { success: false, error: 'Gagal menyimpan hari libur.' };
     revalidatePath('/admin/settings/holidays');
+    revalidatePath('/admin');
     return { success: true };
 }
 
 export async function deleteHoliday(holidayId: string) {
     const supabase = createClient();
     const { error } = await supabase.from('holidays').delete().eq('id', holidayId);
-
-    if (error) {
-        console.error('Error deleting holiday:', error);
-        return { success: false, error: 'Gagal menghapus hari libur.' };
-    }
-
+    if (error) return { success: false, error: 'Gagal menghapus hari libur.' };
     revalidatePath('/admin/settings/holidays');
+    revalidatePath('/admin');
     return { success: true };
 }

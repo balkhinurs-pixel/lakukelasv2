@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Clock, Loader2, CheckCircle } from "lucide-react";
+import { MapPin, Clock, Loader2, CheckCircle, ShieldCheck } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { saveAttendanceSettings } from "@/lib/actions/admin";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type AttendanceSettings = {
     latitude: string;
@@ -17,6 +18,7 @@ type AttendanceSettings = {
     radius: number;
     check_in_start: string;
     check_in_deadline: string;
+    attendance_policy: string;
 };
 
 export default function LocationSettingsClient({ initialSettings }: { initialSettings: AttendanceSettings }) {
@@ -33,11 +35,17 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
         }));
     };
 
+    const handlePolicyChange = (value: string) => {
+        setSettings(prev => ({
+            ...prev,
+            attendance_policy: value
+        }));
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
-        // Client-side validation
         if (!settings.latitude || !settings.longitude || !settings.radius || !settings.check_in_start || !settings.check_in_deadline) {
             toast({
                 title: "Gagal Menyimpan",
@@ -54,6 +62,7 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
         formData.append('radius', settings.radius.toString());
         formData.append('check_in_start', settings.check_in_start);
         formData.append('check_in_deadline', settings.check_in_deadline);
+        formData.append('attendance_policy', settings.attendance_policy);
 
         const result = await saveAttendanceSettings(formData);
 
@@ -83,7 +92,7 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold font-headline text-slate-900">Pengaturan Absensi Guru</h1>
-                    <p className="text-slate-600 mt-1">Atur titik koordinat, radius, dan jadwal waktu untuk absensi guru.</p>
+                    <p className="text-slate-600 mt-1">Atur kebijakan, koordinat, dan jadwal waktu untuk absensi guru.</p>
                 </div>
             </div>
             
@@ -92,11 +101,42 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                     <CardHeader>
                         <CardTitle>Konfigurasi Absensi</CardTitle>
                         <CardDescription>
-                            Pengaturan ini akan menjadi acuan untuk semua absensi guru. Gunakan situs seperti Google Maps untuk mendapatkan koordinat yang akurat.
+                            Tentukan kebijakan kehadiran dan batas lokasi untuk seluruh staf pengajar.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-8">
+                        {/* NEW: Policy Setting Section */}
                         <div className="space-y-4">
+                            <h3 className="font-semibold text-lg flex items-center gap-2 text-primary">
+                                <ShieldCheck className="h-5 w-5" /> Kebijakan Kehadiran
+                            </h3>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="attendance_policy">Mode Kewajiban Absen</Label>
+                                    <Select value={settings.attendance_policy} onValueChange={handlePolicyChange}>
+                                        <SelectTrigger id="attendance_policy" className="w-full md:w-[400px]">
+                                            <SelectValue placeholder="Pilih kebijakan" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="schedule_based">
+                                                <div className="flex flex-col items-start text-left">
+                                                    <span className="font-semibold">Berbasis Jadwal (Schedule-Based)</span>
+                                                    <span className="text-xs text-muted-foreground">Guru hanya wajib absen jika ada jam mengajar hari tersebut.</span>
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="daily_based">
+                                                <div className="flex flex-col items-start text-left">
+                                                    <span className="font-semibold">Absensi Harian (Daily-Based)</span>
+                                                    <span className="text-xs text-muted-foreground">Seluruh guru wajib absen setiap hari kerja efektif sekolah.</span>
+                                                </div>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-8 space-y-4">
                             <h3 className="font-semibold text-lg flex items-center gap-2">
                                 <MapPin className="h-5 w-5 text-blue-500" /> Pengaturan Lokasi
                             </h3>
@@ -137,9 +177,6 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                                     onChange={handleInputChange}
                                     required
                                 />
-                                <p className="text-xs text-muted-foreground">
-                                    Jarak maksimal dari titik pusat di mana guru masih dianggap berada di lokasi.
-                                </p>
                             </div>
                         </div>
 
@@ -158,9 +195,6 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                                         onChange={handleInputChange}
                                         required
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                        Waktu paling pagi guru bisa melakukan absen masuk.
-                                    </p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="check_in_deadline">Batas Waktu Absen Masuk</Label>
@@ -172,9 +206,6 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                                         onChange={handleInputChange}
                                         required
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                        Batas waktu untuk dianggap "Tepat Waktu". Lewat dari jam ini akan dianggap "Terlambat".
-                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -189,12 +220,12 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
             </form>
 
             {initialSettings.latitude && initialSettings.longitude ? (
-                <Alert>
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertTitle>Pengaturan Aktif</AlertTitle>
-                    <AlertDescription>
-                        Pengaturan absensi sudah dikonfigurasi dan aktif digunakan untuk validasi lokasi guru.
-                        Koordinat: {initialSettings.latitude}, {initialSettings.longitude} (Radius: {initialSettings.radius}m)
+                <Alert className="bg-emerald-50 border-emerald-200">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    <AlertTitle className="text-emerald-800">Sistem Aktif</AlertTitle>
+                    <AlertDescription className="text-emerald-700">
+                        Kebijakan yang berlaku: <strong>{settings.attendance_policy === 'schedule_based' ? 'Berbasis Jadwal' : 'Absensi Harian'}</strong>.
+                        Lokasi: {initialSettings.latitude}, {initialSettings.longitude} (Radius: {initialSettings.radius}m)
                     </AlertDescription>
                 </Alert>
             ) : (
