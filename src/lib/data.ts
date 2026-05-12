@@ -940,13 +940,12 @@ export async function getTeacherActivityStats() {
             return [];
         }
 
-        // Call our new RPC function
+        // Call our session-based RPC function
         const { data: activityData, error: rpcError } = await supabase
             .rpc('get_teacher_activity_counts');
 
         if (rpcError) {
             console.warn("RPC function get_teacher_activity_counts not found or failed. Falling back to 0 counts.");
-            // Returning 0 counts if RPC fails
             return teachers.map(teacher => ({
                 id: teacher.id,
                 name: teacher.full_name,

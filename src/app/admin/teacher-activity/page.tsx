@@ -41,8 +41,8 @@ export default async function TeacherActivityPage() {
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertTitle>Metode Perhitungan</AlertTitle>
                 <AlertDescription>
-                    Statistik dihitung berdasarkan <strong>jumlah sesi/pertemuan</strong> yang diinput, bukan jumlah baris siswa.
-                    Ini memberikan gambaran yang lebih adil tentang keaktifan guru.
+                    Statistik kini dihitung berdasarkan <strong>jumlah sesi/pertemuan</strong> yang diinput (DISTINCT), bukan jumlah baris siswa. 
+                    Satu kali simpan presensi per kelas dihitung sebagai 1 Sesi.
                 </AlertDescription>
             </Alert>
 
@@ -50,9 +50,9 @@ export default async function TeacherActivityPage() {
                 <CardHeader>
                     <div className="flex justify-between items-center">
                         <div>
-                            <CardTitle>Statistik Keaktifan Keseluruhan</CardTitle>
+                            <CardTitle>Statistik Keaktifan (Sesi)</CardTitle>
                             <CardDescription>
-                                Total sesi atau entri yang tercatat di sistem untuk setiap guru.
+                                Total pertemuan atau kegiatan yang tercatat di sistem.
                             </CardDescription>
                         </div>
                         <Badge variant="outline" className="hidden sm:flex gap-1.5 py-1.5 px-3 bg-slate-50">
@@ -64,10 +64,10 @@ export default async function TeacherActivityPage() {
                 <CardContent>
                     {/* Mobile View - Modern Cards */}
                     <div className="md:hidden space-y-4">
-                        {activityStats.map((teacher, index) => (
+                        {activityStats.map((teacher) => (
                              <div key={teacher.id} className="border border-slate-200 rounded-xl p-5 space-y-4 bg-white shadow-sm hover:shadow-md transition-all duration-200">
                                  <div className="flex items-center gap-3">
-                                     <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
+                                     <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold uppercase">
                                          {teacher.name.charAt(0)}
                                      </div>
                                      <p className="font-bold text-slate-900">{teacher.name}</p>
@@ -75,7 +75,7 @@ export default async function TeacherActivityPage() {
                                  <div className="grid grid-cols-3 gap-3 text-center pt-4 border-t border-slate-100">
                                      <div className="space-y-1">
                                         <p className="text-lg font-black text-emerald-600">{teacher.attendance_count}</p>
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sesi Presensi</p>
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sesi Absen</p>
                                      </div>
                                      <div className="space-y-1 border-x border-slate-100 px-2">
                                         <p className="text-lg font-black text-indigo-600">{teacher.journal_count}</p>
@@ -98,7 +98,7 @@ export default async function TeacherActivityPage() {
                                     <TableHead className="w-[300px] font-bold text-slate-700">Nama Guru</TableHead>
                                     <TableHead className="text-center font-bold text-slate-700">Sesi Presensi</TableHead>
                                     <TableHead className="text-center font-bold text-slate-700">Entri Jurnal</TableHead>
-                                    <TableHead className="text-center font-bold text-slate-700">Set Nilai</TableHead>
+                                    <TableHead className="text-center font-bold text-slate-700">Set Penilaian</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
