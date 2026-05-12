@@ -6,7 +6,7 @@ import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, Atte
 import { unstable_noStore as noStore } from 'next/cache';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { getIndonesianDayName, toIndonesianTime } from './timezone';
+import { getIndonesianDayName, toIndonesianTime, getIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
 
 // --- Helper Functions ---
@@ -29,8 +29,9 @@ export async function getAdminDashboardData() {
     if (!user) return null;
     
     const supabase = createClient();
-    // Gunakan ISO date format untuk konsistensi database
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    // Gunakan Waktu Indonesia untuk query database agar konsisten
+    const nowIndo = getIndonesianTime();
+    const todayStr = format(nowIndo, 'yyyy-MM-dd');
 
     try {
         const [summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
@@ -48,7 +49,7 @@ export async function getAdminDashboardData() {
         const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
         
         for (let i = 6; i >= 0; i--) {
-            const date = new Date();
+            const date = new Date(nowIndo);
             date.setDate(date.getDate() - i);
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayName = dayNames[date.getDay()];
@@ -345,7 +346,7 @@ export async function getHomeroomStudentProgress() {
     if (!students) return { studentData: [], className: homeroomClass.name };
     const studentIds = students.map(s => s.id);
     const { data: gradesData } = await supabase.from('grade_records').select('student_id, score').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId);
-    const { data: attendanceData } = await supabase.from('attendance_records').select('student_id, status').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId);
+    const { data: attendanceData = [] } = await supabase.from('attendance_records').select('student_id, status').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId);
     const studentAggregates = students.map(student => {
         const studentGrades = (gradesData || []).filter(r => r.student_id === student.id).map(r => Number(r.score));
         const studentAttendance = (attendanceData || []).filter(r => r.student_id === student.id);
