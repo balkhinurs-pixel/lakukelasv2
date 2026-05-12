@@ -940,7 +940,7 @@ export async function getTeacherActivityStats() {
             return [];
         }
 
-        // Call our session-based RPC function
+        // Call our session-based RPC function (Update #3: Now uses active semester internally)
         const { data: activityData, error: rpcError } = await supabase
             .rpc('get_teacher_activity_counts');
 
@@ -951,7 +951,8 @@ export async function getTeacherActivityStats() {
                 name: teacher.full_name,
                 attendance_count: 0,
                 grades_count: 0,
-                journal_count: 0
+                journal_count: 0,
+                classes_handled_count: 0
             }));
         }
 
@@ -961,14 +962,16 @@ export async function getTeacherActivityStats() {
             const stats = statsMap.get(teacher.id) || {
                 attendance_count: 0,
                 grades_count: 0,
-                journal_count: 0
+                journal_count: 0,
+                classes_handled_count: 0
             };
             return {
                 id: teacher.id,
                 name: teacher.full_name,
                 attendance_count: Number(stats.attendance_count),
                 grades_count: Number(stats.grades_count),
-                journal_count: Number(stats.journal_count)
+                journal_count: Number(stats.journal_count),
+                classes_handled_count: Number(stats.classes_handled_count)
             };
         });
 
