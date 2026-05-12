@@ -1,3 +1,4 @@
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -37,49 +38,60 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Ambil user dari session
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
 
-  // 1. Proteksi rute dasar: Jika belum login, tendang ke login page
+  console.log(`[Middleware] Path: ${pathname} | User ID: ${user?.id || 'Not Logged In'}`);
+
   if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
+      console.log(`[Middleware] Unauthorized access to ${pathname}, redirecting to /`);
       return NextResponse.redirect(new URL('/', request.url));
   }
   
   if (user) {
-    // 2. Ambil profile langsung dari database
-    // Menggunakan select minimal untuk performa
-    const { data: profile } = await supabase
+    // Ambil profile dengan error handling yang jelas
+    const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
     
-    // Default role jika profile belum terbuat (sedang proses trigger)
+    if (profileError) {
+        console.error(`[Middleware] Error fetching profile:`, profileError.message);
+    }
+
     const role = profile?.role || 'teacher';
+    console.log(`[Middleware] Role Detected: ${role}`);
+
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
 
-    // 3. Rute akar: Redirect berdasarkan role
+    // Rute akar: Redirect berdasarkan role
     if (pathname === '/') {
-        return NextResponse.redirect(new URL(isAdmin ? '/admin' : '/dashboard', request.url));
+        const dest = isAdmin ? '/admin' : '/dashboard';
+        console.log(`[Middleware] Redirecting from / to ${dest}`);
+        return NextResponse.redirect(new URL(dest, request.url));
     }
 
-    // 4. Proteksi rute Admin
+    // Proteksi rute Admin
     if (pathname.startsWith('/admin')) {
-      // Izinkan jika dia Admin sejati
-      if (isAdmin) return response;
+      if (isAdmin) {
+          console.log(`[Middleware] Admin access granted to ${pathname}`);
+          return response;
+      }
 
-      // Izinkan Headmaster untuk rute pemantauan saja
       const isAllowedMonitoring = pathname.startsWith('/admin/teacher-attendance') || pathname.startsWith('/admin/teacher-activity');
-      if (isHeadmaster && isAllowedMonitoring) return response;
+      if (isHeadmaster && isAllowedMonitoring) {
+          console.log(`[Middleware] Headmaster monitoring access granted to ${pathname}`);
+          return response;
+      }
 
-      // Selain itu, tendang balik ke dashboard
+      console.log(`[Middleware] Access DENIED to ${pathname} for role ${role}. Redirecting to /dashboard`);
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     
-    // 5. Redirect Admin agar tidak masuk ke dashboard Guru secara default
     if (pathname === '/dashboard' && isAdmin) {
+        console.log(`[Middleware] Admin trying to access /dashboard, redirecting to /admin`);
         return NextResponse.redirect(new URL('/admin', request.url));
     }
   }
