@@ -29,11 +29,11 @@ export async function getAdminDashboardData() {
     if (!user) return null;
     
     const supabase = createClient();
+    // Gunakan ISO date format untuk konsistensi database
     const todayStr = format(new Date(), 'yyyy-MM-dd');
 
     try {
-        const [allUsers, summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
-            getAllUsers(),
+        const [summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }).single(),
             getJournalEntries(),
             getHolidays(),
@@ -41,7 +41,6 @@ export async function getAdminDashboardData() {
         ]);
         
         const isTodayHoliday = holidays.some(h => h.date === todayStr);
-        const teachers = allUsers.filter(u => u.role === 'teacher' || u.role === 'headmaster');
         const activePolicy = settingsRes.data?.value || 'schedule_based';
         
         // Calculate weekly attendance (simple loop for 7 days)
@@ -69,7 +68,6 @@ export async function getAdminDashboardData() {
         }));
         
         return {
-            totalUsers: teachers.length,
             weeklyAttendance,
             recentActivities,
             isTodayHoliday,
