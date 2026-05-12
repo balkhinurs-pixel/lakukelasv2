@@ -342,7 +342,7 @@ export default function StudentsPageComponent({
             type="file"
             ref={fileInputRef}
             onChange={handleImportCSV}
-            accept=".csv"
+            accept=".csv, text/csv, application/vnd.ms-excel"
             className="hidden"
         />
         <div className="flex justify-between items-center flex-wrap gap-4">
