@@ -472,7 +472,7 @@ export async function createSchoolYear(startYear: number) {
 
     const { error } = await supabase.from('school_years').insert([
         { name: ganjilName },
-        { name: ganjilName }
+        { name: genapName }
     ]);
     
     if (error) {
