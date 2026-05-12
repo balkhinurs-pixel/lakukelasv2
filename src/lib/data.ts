@@ -33,7 +33,17 @@ export async function getAdminDashboardData() {
     const nowIndo = getIndonesianTime();
     const todayStr = format(nowIndo, 'yyyy-MM-dd');
 
+    console.log(`[DEBUG] Dashboard Fetch for date: ${todayStr}`);
+
     try {
+        // Jalankan diagnosa terlebih dahulu
+        const { data: diag, error: diagErr } = await supabase.rpc('diagnose_attendance_logic', { p_date: todayStr });
+        if (diagErr) {
+            console.error('[DEBUG-ERR] Diagnostic function failed:', diagErr.message);
+        } else {
+            console.log('[DEBUG-RESULT] Attendance Logic Diagnosis:', JSON.stringify(diag, null, 2));
+        }
+
         const [summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }).single(),
             getJournalEntries(),
@@ -194,7 +204,7 @@ export async function getAttendanceSettings() {
         radius: parseInt(settings.radius) || 30,
         check_in_start: settings.check_in_start || '06:30',
         check_in_deadline: settings.check_in_deadline || '07:15',
-        attendance_policy: settings.policy || 'schedule_based'
+        attendance_policy: settings.policy || settings.attendance_policy || 'schedule_based'
     };
 }
 
@@ -275,7 +285,7 @@ export async function getAlumni(): Promise<Student[]> {
 export async function getAllStudents(): Promise<Student[]> {
     noStore();
     const supabase = createClient();
-    const { data } = await supabase.from('students').select('id, name, class_id').eq('status', 'active').order('name');
+    const { data = [] } = await supabase.from('students').select('id, name, class_id').eq('status', 'active').order('name');
     return data || [];
 }
 
