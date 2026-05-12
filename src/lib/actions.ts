@@ -467,17 +467,20 @@ export async function updateStudentsStatus(studentIds: string[], status: 'dropou
 
 export async function createSchoolYear(startYear: number) {
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
     const ganjilName = `${startYear}/${startYear + 1} - Ganjil`;
     const genapName = `${startYear}/${startYear + 1} - Genap`;
 
     const { error } = await supabase.from('school_years').insert([
-        { name: ganjilName },
-        { name: genapName }
+        { name: ganjilName, teacher_id: user.id },
+        { name: genapName, teacher_id: user.id }
     ]);
     
     if (error) {
         console.error("Error creating school year:", error);
-        return { success: false, error: "Gagal membuat tahun ajaran. Mungkin sudah ada." };
+        return { success: false, error: "Gagal membuat tahun ajaran. Pastikan tahun belum ada atau periksa izin akses." };
     }
     
     revalidatePath('/admin/roster/school-year');
@@ -665,13 +668,9 @@ export async function recordTeacherAttendance(formData: FormData) {
             distance: Math.round(distance)
         };
         
-        console.log('✅ Final success result:', result);
-        console.log('=== ATTENDANCE DEBUG END ===');
-        
         return result;
     } catch (error) {
         console.error('❌ Unexpected error in attendance recording:', error);
-        console.log('=== ATTENDANCE DEBUG END (ERROR) ===');
         return { success: false, error: "Terjadi kesalahan saat menyimpan absensi." };
     }
 }
