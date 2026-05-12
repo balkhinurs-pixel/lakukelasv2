@@ -17,7 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
     AlertDialog,
@@ -28,11 +27,10 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, MoreHorizontal, Edit, Trash2, ExternalLink, Link2, BookOpen, Filter, Search, Loader2, FileText, Globe } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, ExternalLink, Link2, BookOpen, Filter, Search, Loader2, Globe } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,7 +54,9 @@ export default function MaterialsPageClient({
     const { toast } = useToast();
     
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
     const [editingMaterial, setEditingMaterial] = React.useState<Material | null>(null);
+    const [materialToDelete, setMaterialToDelete] = React.useState<Material | null>(null);
     const [filterClass, setFilterClass] = React.useState<string>("all");
     const [filterSubject, setFilterSubject] = React.useState<string>("all");
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -90,6 +90,11 @@ export default function MaterialsPageClient({
         setIsDialogOpen(true);
     };
 
+    const handleOpenDeleteDialog = (material: Material) => {
+        setMaterialToDelete(material);
+        setIsDeleteDialogOpen(true);
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -114,11 +119,14 @@ export default function MaterialsPageClient({
         setLoading(false);
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async () => {
+        if (!materialToDelete) return;
         setLoading(true);
-        const result = await deleteMaterial(id);
+        const result = await deleteMaterial(materialToDelete.id);
         if (result.success) {
             toast({ title: "Berhasil", description: "Materi berhasil dihapus." });
+            setIsDeleteDialogOpen(false);
+            setMaterialToDelete(null);
             router.refresh();
         } else {
             toast({ title: "Gagal", description: result.error, variant: "destructive" });
@@ -219,27 +227,12 @@ export default function MaterialsPageClient({
                                                         <Edit className="mr-2 h-4 w-4" /> Ubah
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Hapus
-                                                            </DropdownMenuItem>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Hapus Materi?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    Materi "{material.title}" akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDelete(material.id)} className="bg-red-600 hover:bg-red-700">
-                                                                    Ya, Hapus
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
+                                                    <DropdownMenuItem 
+                                                        onClick={() => handleOpenDeleteDialog(material)}
+                                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -365,6 +358,31 @@ export default function MaterialsPageClient({
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Materi?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Materi "{materialToDelete?.title}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={loading}>Batal</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDelete();
+                            }} 
+                            disabled={loading}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Ya, Hapus
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

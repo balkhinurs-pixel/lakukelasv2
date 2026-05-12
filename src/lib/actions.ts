@@ -66,7 +66,8 @@ export async function deleteJournal(journalId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase.from('journal_entries').delete().match({ id: journalId, teacher_id: user.id });
+    // RLS handles the permission check (Owner or Admin)
+    const { error } = await supabase.from('journal_entries').delete().eq('id', journalId);
 
     if (error) {
         console.error("Error deleting journal:", error);
@@ -116,7 +117,8 @@ export async function deleteAgenda(agendaId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase.from('agendas').delete().match({ id: agendaId, teacher_id: user.id });
+    // RLS handles the permission check (Owner or Admin)
+    const { error } = await supabase.from('agendas').delete().eq('id', agendaId);
 
     if (error) {
         console.error("Error deleting agenda:", error);
@@ -156,13 +158,13 @@ export async function saveAttendance(formData: FormData) {
             subject_id: formData.get('original_subject_id') as string,
             meeting_number: Number(formData.get('original_meeting_number')),
         };
+        
         const { error: deleteError } = await supabase.from('attendance_records')
             .delete()
             .eq('date', originalData.date)
             .eq('class_id', originalData.class_id)
             .eq('subject_id', originalData.subject_id)
-            .eq('meeting_number', originalData.meeting_number)
-            .eq('teacher_id', user.id); // Ensure user only deletes their own records
+            .eq('meeting_number', originalData.meeting_number);
             
         if (deleteError) {
              console.error("Error deleting old attendance records for update:", deleteError);
@@ -220,13 +222,13 @@ export async function saveGrades(formData: FormData) {
             subject_id: formData.get('original_subject_id') as string,
             assessment_type: formData.get('original_assessment_type') as string,
         };
+        
         const { error: deleteError } = await supabase.from('grade_records')
             .delete()
             .eq('date', originalData.date)
             .eq('class_id', originalData.class_id)
             .eq('subject_id', originalData.subject_id)
-            .eq('assessment_type', originalData.assessment_type)
-            .eq('teacher_id', user.id); // Ensure user only deletes their own records
+            .eq('assessment_type', originalData.assessment_type);
         
         if (deleteError) {
              console.error("Error deleting old grade records for update:", deleteError);
@@ -738,7 +740,8 @@ export async function deleteMaterial(materialId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase.from('materials').delete().match({ id: materialId, teacher_id: user.id });
+    // RLS handles the permission check (Owner or Admin)
+    const { error } = await supabase.from('materials').delete().eq('id', materialId);
 
     if (error) {
         console.error("Error deleting material:", error);
