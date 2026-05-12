@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from './supabase/server';
@@ -940,7 +939,7 @@ export async function getTeacherActivityStats() {
             return [];
         }
 
-        // Call our session-based RPC function (Update #3: Now uses active semester internally)
+        // Call our professional RPC function (Update v3.9)
         const { data: activityData, error: rpcError } = await supabase
             .rpc('get_teacher_activity_counts');
 
