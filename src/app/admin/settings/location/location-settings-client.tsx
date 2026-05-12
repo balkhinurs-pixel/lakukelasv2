@@ -105,7 +105,6 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-8">
-                        {/* NEW: Policy Setting Section */}
                         <div className="space-y-4">
                             <h3 className="font-semibold text-lg flex items-center gap-2 text-primary">
                                 <ShieldCheck className="h-5 w-5" /> Kebijakan Kehadiran
