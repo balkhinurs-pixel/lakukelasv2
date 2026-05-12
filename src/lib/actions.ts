@@ -475,6 +475,7 @@ export async function createSchoolYear(startYear: number) {
     const ganjilName = `${startYear}/${startYear + 1} - Ganjil`;
     const genapName = `${startYear}/${startYear + 1} - Genap`;
 
+    // Pastikan memasukkan data ke tabel school_years dengan teacher_id yang valid
     const { error } = await supabase.from('school_years').insert([
         { name: ganjilName, teacher_id: user.id },
         { name: genapName, teacher_id: user.id }
@@ -482,7 +483,7 @@ export async function createSchoolYear(startYear: number) {
     
     if (error) {
         console.error("Error creating school year:", error);
-        return { success: false, error: "Gagal membuat tahun ajaran. Pastikan tahun belum ada atau periksa izin akses." };
+        return { success: false, error: `Gagal membuat tahun ajaran: ${error.message}` };
     }
     
     revalidatePath('/admin/roster/school-year');
