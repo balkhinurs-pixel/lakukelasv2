@@ -17,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, Clock, UserX, Activity, UserCheck, TrendingUp, Calendar, AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
+import { Users, Clock, UserX, Activity, UserCheck, TrendingUp, Calendar, AlertTriangle, RefreshCw, ShieldCheck, Info } from "lucide-react";
 import { getAdminDashboardData, getAllUsers, getTeacherAttendanceHistory, getHolidays } from "@/lib/data";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -67,7 +67,6 @@ const StatCard = ({
                     <div className="text-2xl font-bold">{value}</div>
                     {trend && (
                         <div className={cn("text-xs font-medium flex items-center gap-1", getTrendColor())}>
-                            <TrendingUp className={cn("h-3 w-3", trendDirection === 'down' && 'rotate-180')} />
                             {trend}
                         </div>
                     )}
@@ -100,7 +99,9 @@ export default async function AdminDashboardPage() {
       return <div className="p-8 text-center">Gagal memuat data dasbor admin.</div>;
   }
 
-  const { summary, isTodayHoliday } = dashboardData;
+  const { summary, isTodayHoliday, activePolicy } = dashboardData;
+
+  const policyLabel = activePolicy === 'schedule_based' ? 'Berbasis Jadwal' : 'Absensi Harian (Full-Time)';
 
   return (
     <div className="space-y-6">
@@ -134,8 +135,7 @@ export default async function AdminDashboardPage() {
                 subtitle="Guru sesuai kebijakan"
                 color="text-blue-600" 
                 bgColor="bg-blue-50"
-                trend="Target"
-                trendDirection="neutral"
+                trend={policyLabel}
             />
             <StatCard 
                 icon={UserCheck} 
@@ -187,17 +187,23 @@ export default async function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                   <div className="space-y-4">
-                      {dashboardData.recentActivities.map((activity, index) => (
-                          <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                              <div className="p-2 bg-slate-100 rounded-full">
-                                  <Activity className="h-4 w-4 text-slate-500" />
+                      {dashboardData.recentActivities.length > 0 ? (
+                          dashboardData.recentActivities.map((activity, index) => (
+                              <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                                  <div className="p-2 bg-slate-100 rounded-full">
+                                      <Activity className="h-4 w-4 text-slate-500" />
+                                  </div>
+                                  <div className="text-sm">
+                                      <p className="font-medium">{activity.text}</p>
+                                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                                  </div>
                               </div>
-                              <div className="text-sm">
-                                  <p className="font-medium">{activity.text}</p>
-                                  <p className="text-xs text-muted-foreground">{activity.time}</p>
-                              </div>
+                          ))
+                      ) : (
+                          <div className="text-center py-10 text-muted-foreground italic text-sm">
+                              Belum ada aktivitas jurnal hari ini.
                           </div>
-                      ))}
+                      )}
                   </div>
               </CardContent>
           </Card>

@@ -32,15 +32,17 @@ export async function getAdminDashboardData() {
     const todayStr = format(new Date(), 'yyyy-MM-dd');
 
     try {
-        const [allUsers, summaryRes, journalEntries, holidays] = await Promise.all([
+        const [allUsers, summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
             getAllUsers(),
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }).single(),
             getJournalEntries(),
-            getHolidays()
+            getHolidays(),
+            supabase.from('settings').select('value').eq('key', 'attendance_policy').single()
         ]);
         
         const isTodayHoliday = holidays.some(h => h.date === todayStr);
         const teachers = allUsers.filter(u => u.role === 'teacher' || u.role === 'headmaster');
+        const activePolicy = settingsRes.data?.value || 'schedule_based';
         
         // Calculate weekly attendance (simple loop for 7 days)
         const weeklyAttendance = [];
@@ -71,6 +73,7 @@ export async function getAdminDashboardData() {
             weeklyAttendance,
             recentActivities,
             isTodayHoliday,
+            activePolicy,
             summary: summaryRes.data || { total_expected: 0, total_present: 0, total_late: 0, total_absent: 0, attendance_rate: 0 }
         };
         
