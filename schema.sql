@@ -1,27 +1,34 @@
--- =================================================================================
--- LAKUKELAS DATABASE SCHEMA V3.3 (FINAL RESET & FULL CLEANUP)
--- =================================================================================
+-- ==========================================
+-- LAKUKELAS DATABASE SCHEMA V3.4 (NUCLEAR RESET)
+-- Deskripsi: Reset total semua tabel, view, dan fungsi.
+-- Menjamin tidak ada error "already exists".
+-- ==========================================
 
--- 1. PEMBERSIHAN TOTAL (Hapus semua jika ada, urutan penting karena relasi)
-DROP VIEW IF EXISTS public.grades_history CASCADE;
+-- 1. PEMBERSIHAN TOTAL (NUCLEAR DROP)
+-- Menghapus semua yang mungkin ada dari versi sebelumnya
 DROP VIEW IF EXISTS public.attendance_history CASCADE;
+DROP VIEW IF EXISTS public.grades_history CASCADE;
 DROP VIEW IF EXISTS public.journal_entries_with_names CASCADE;
 DROP VIEW IF EXISTS public.student_notes_with_teacher CASCADE;
 
-DROP TABLE IF EXISTS public.materials CASCADE;
-DROP TABLE IF EXISTS public.agendas CASCADE;
-DROP TABLE IF EXISTS public.student_notes CASCADE;
-DROP TABLE IF EXISTS public.grade_records CASCADE;
-DROP TABLE IF EXISTS public.attendance_records CASCADE;
-DROP TABLE IF EXISTS public.journal_entries CASCADE; -- Ditambahkan untuk fix error
-DROP TABLE IF EXISTS public.students CASCADE;
-DROP TABLE IF EXISTS public.schedule CASCADE;
-DROP TABLE IF EXISTS public.subjects CASCADE;
-DROP TABLE IF EXISTS public.classes CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 DROP TABLE IF EXISTS public.school_years CASCADE;
-DROP TABLE IF EXISTS public.holidays CASCADE;
+DROP TABLE IF EXISTS public.classes CASCADE;
+DROP TABLE IF EXISTS public.subjects CASCADE;
+DROP TABLE IF EXISTS public.students CASCADE;
+DROP TABLE IF EXISTS public.attendance_records CASCADE;
+DROP TABLE IF EXISTS public.grade_records CASCADE;
+DROP TABLE IF EXISTS public.journal_entries CASCADE;
+DROP TABLE IF EXISTS public.agendas CASCADE;
+DROP TABLE IF EXISTS public.schedule CASCADE;
+DROP TABLE IF EXISTS public.teacher_attendance CASCADE;
 DROP TABLE IF EXISTS public.settings CASCADE;
+DROP TABLE IF EXISTS public.student_notes CASCADE;
+DROP TABLE IF EXISTS public.holidays CASCADE;
+DROP TABLE IF EXISTS public.materials CASCADE;
+
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.get_teacher_activity_counts() CASCADE;
 
 -- 2. TABEL PROFIL (Source of Truth untuk Role)
 CREATE TABLE public.profiles (
@@ -45,19 +52,7 @@ CREATE TABLE public.profiles (
 -- 3. TABEL PENDUKUNG DASAR
 CREATE TABLE public.school_years (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE, -- e.g., '2023/2024 - Ganjil'
-  is_active BOOLEAN DEFAULT FALSE
-);
-
-CREATE TABLE public.settings (
-  key TEXT PRIMARY KEY,
-  value TEXT
-);
-
-CREATE TABLE public.classes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  teacher_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL
+  name TEXT NOT NULL UNIQUE -- e.g., "2023/2024 - Ganjil"
 );
 
 CREATE TABLE public.subjects (
@@ -66,6 +61,18 @@ CREATE TABLE public.subjects (
   kkm INTEGER DEFAULT 75
 );
 
+CREATE TABLE public.classes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  teacher_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL -- Wali Kelas
+);
+
+CREATE TABLE public.settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
+-- 4. TABEL SISWA
 CREATE TABLE public.students (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   nis TEXT UNIQUE NOT NULL,
@@ -76,38 +83,25 @@ CREATE TABLE public.students (
   avatar_url TEXT
 );
 
--- 4. TABEL TRANSAKSI (Presensi, Nilai, Jurnal)
-CREATE TABLE public.attendance_records (
+-- 5. TABEL TRANSAKSI (GURU & PEMBELAJARAN)
+CREATE TABLE public.teacher_attendance (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  date DATE NOT NULL,
-  meeting_number INTEGER NOT NULL,
-  student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
-  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-  subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
   teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  school_year_id UUID REFERENCES public.school_years(id) ON DELETE CASCADE,
-  status TEXT CHECK (status IN ('Hadir', 'Sakit', 'Izin', 'Alpha')) NOT NULL
-);
-
-CREATE TABLE public.grade_records (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  date DATE NOT NULL,
-  assessment_type TEXT NOT NULL,
-  student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
-  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-  subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
-  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  school_year_id UUID REFERENCES public.school_years(id) ON DELETE CASCADE,
-  score NUMERIC(5,2) NOT NULL
+  date DATE DEFAULT CURRENT_DATE,
+  check_in TIME,
+  check_out TIME,
+  status TEXT CHECK (status IN ('Tepat Waktu', 'Terlambat', 'Sakit', 'Izin', 'Tidak Hadir')),
+  reason TEXT, -- Alasan jika sakit/izin
+  UNIQUE(teacher_id, date)
 );
 
 CREATE TABLE public.journal_entries (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  date TIMESTAMPTZ DEFAULT NOW(),
+  date DATE DEFAULT CURRENT_DATE,
+  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
   subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
-  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  school_year_id UUID REFERENCES public.school_years(id) ON DELETE CASCADE,
+  school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL,
   meeting_number INTEGER,
   learning_objectives TEXT NOT NULL,
   learning_activities TEXT NOT NULL,
@@ -115,14 +109,30 @@ CREATE TABLE public.journal_entries (
   reflection TEXT
 );
 
-CREATE TABLE public.schedule (
+CREATE TABLE public.attendance_records (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  day TEXT NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
+  student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
   class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
   subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
-  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE
+  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  school_year_id UUID REFERENCES public.school_years(id) ON DELETE CASCADE,
+  date DATE DEFAULT CURRENT_DATE,
+  meeting_number INTEGER NOT NULL,
+  status TEXT CHECK (status IN ('Hadir', 'Sakit', 'Izin', 'Alpha')),
+  UNIQUE(student_id, subject_id, date, meeting_number)
+);
+
+CREATE TABLE public.grade_records (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+  subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
+  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  school_year_id UUID REFERENCES public.school_years(id) ON DELETE CASCADE,
+  date DATE DEFAULT CURRENT_DATE,
+  assessment_type TEXT NOT NULL, -- e.g., "UH1", "UTS"
+  score DECIMAL(5,2) CHECK (score >= 0 AND score <= 100),
+  UNIQUE(student_id, subject_id, assessment_type, date)
 );
 
 CREATE TABLE public.agendas (
@@ -138,13 +148,29 @@ CREATE TABLE public.agendas (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE public.schedule (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+  subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
+  day TEXT CHECK (day IN ('Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')),
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL
+);
+
 CREATE TABLE public.student_notes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
   teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  date TIMESTAMPTZ DEFAULT NOW(),
   note TEXT NOT NULL,
-  type TEXT DEFAULT 'neutral' CHECK (type IN ('positive', 'improvement', 'neutral'))
+  type TEXT DEFAULT 'neutral' CHECK (type IN ('positive', 'improvement', 'neutral')),
+  date TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.holidays (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE UNIQUE NOT NULL,
+  description TEXT NOT NULL
 );
 
 CREATE TABLE public.materials (
@@ -158,75 +184,55 @@ CREATE TABLE public.materials (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE public.teacher_attendance (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    check_in TIME,
-    check_out TIME,
-    status TEXT CHECK (status IN ('Tepat Waktu', 'Terlambat', 'Tidak Hadir', 'Sakit', 'Izin')),
-    reason TEXT,
-    UNIQUE(teacher_id, date)
-);
-
-CREATE TABLE public.holidays (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    date DATE NOT NULL UNIQUE,
-    description TEXT NOT NULL
-);
-
--- 5. VIEWS UNTUK MEMUDAHKAN APLIKASI
+-- 6. VIEWS UNTUK RIWAYAT (Mempermudah Query Aplikasi)
 CREATE VIEW public.attendance_history AS
 SELECT 
-  ar.*,
-  s.name as student_name,
-  c.name as class_name,
-  sub.name as subject_name,
-  p.full_name as teacher_name
+    ar.*,
+    c.name as class_name,
+    s.name as subject_name,
+    p.full_name as teacher_name
 FROM public.attendance_records ar
-JOIN public.students s ON ar.student_id = s.id
 JOIN public.classes c ON ar.class_id = c.id
-JOIN public.subjects sub ON ar.subject_id = sub.id
+JOIN public.subjects s ON ar.subject_id = s.id
 JOIN public.profiles p ON ar.teacher_id = p.id;
 
 CREATE VIEW public.grades_history AS
 SELECT 
-  gr.*,
-  s.name as student_name,
-  c.name as class_name,
-  sub.name as subject_name,
-  sub.kkm as subject_kkm,
-  p.full_name as teacher_name
+    gr.*,
+    c.name as class_name,
+    s.name as subject_name,
+    s.kkm as subject_kkm,
+    p.full_name as teacher_name
 FROM public.grade_records gr
-JOIN public.students s ON gr.student_id = s.id
 JOIN public.classes c ON gr.class_id = c.id
-JOIN public.subjects sub ON gr.subject_id = sub.id
+JOIN public.subjects s ON gr.subject_id = s.id
 JOIN public.profiles p ON gr.teacher_id = p.id;
 
 CREATE VIEW public.journal_entries_with_names AS
 SELECT 
-  je.*,
-  c.name as "className",
-  s.name as "subjectName"
+    je.*,
+    c.name as class_name,
+    s.name as subject_name
 FROM public.journal_entries je
 JOIN public.classes c ON je.class_id = c.id
 JOIN public.subjects s ON je.subject_id = s.id;
 
 CREATE VIEW public.student_notes_with_teacher AS
 SELECT 
-  sn.*,
-  p.full_name as teacher_name
+    sn.*,
+    p.full_name as teacher_name
 FROM public.student_notes sn
 JOIN public.profiles p ON sn.teacher_id = p.id;
 
--- 6. OTOMATISASI PROFIL (Trigger saat User baru mendaftar)
+-- 7. FUNGSI OTOMATISASI (TRIGGER & RPC)
+-- Trigger untuk membuat profil otomatis saat user daftar
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, email, role)
   VALUES (
     new.id, 
-    COALESCE(new.raw_user_meta_data->>'full_name', 'User Baru'), 
+    COALESCE(new.raw_user_meta_data->>'full_name', 'Guru Baru'),
     new.email,
     'teacher'
   );
@@ -234,29 +240,81 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 7. PERIZINAN (PENTING untuk database baru)
+-- Izin agar trigger bisa menulis ke tabel public.profiles
+GRANT ALL ON public.profiles TO postgres;
+GRANT ALL ON public.profiles TO service_role;
+
+-- Fungsi untuk statistik aktivitas guru (Panel Admin)
+CREATE OR REPLACE FUNCTION public.get_teacher_activity_counts()
+RETURNS TABLE (
+    teacher_id UUID,
+    attendance_count BIGINT,
+    grades_count BIGINT,
+    journal_count BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        p.id as teacher_id,
+        (SELECT COUNT(*) FROM public.attendance_records ar WHERE ar.teacher_id = p.id) as attendance_count,
+        (SELECT COUNT(*) FROM public.grade_records gr WHERE gr.teacher_id = p.id) as grades_count,
+        (SELECT COUNT(*) FROM public.journal_entries je WHERE je.teacher_id = p.id) as journal_count
+    FROM public.profiles p
+    WHERE p.role IN ('teacher', 'headmaster');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 8. ROW LEVEL SECURITY (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-GRANT ALL ON TABLE public.profiles TO postgres;
-GRANT ALL ON TABLE public.profiles TO service_role;
-GRANT SELECT ON TABLE public.profiles TO anon;
-GRANT SELECT, INSERT, UPDATE ON TABLE public.profiles TO authenticated;
-
--- RLS DASAR (Anti-Loop)
-CREATE POLICY "profiles_read_own" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "profiles_admin_all" ON public.profiles FOR ALL USING (
-  (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
-);
-
--- RLS Tabel Lain (Sederhana untuk Admin & Guru)
+ALTER TABLE public.school_years ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "journal_owner" ON public.journal_entries FOR ALL USING (auth.uid() = teacher_id);
-CREATE POLICY "journal_admin" ON public.journal_entries FOR ALL USING (
-  (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
-);
+ALTER TABLE public.agendas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.schedule ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teacher_attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.grade_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.holidays ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.materials ENABLE ROW LEVEL SECURITY;
 
--- (Jalankan sisanya secara manual sesuai kebutuhan, fokus sekarang adalah fix error instalasi)
+-- Kebijakan Dasar: Pemilik bisa melihat datanya sendiri
+CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Kebijakan Umum: Semua guru terautentikasi bisa melihat data pendukung
+CREATE POLICY "Allow authenticated to view school_years" ON public.school_years FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated to view classes" ON public.classes FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated to view subjects" ON public.subjects FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated to view students" ON public.students FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated to view settings" ON public.settings FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated to view holidays" ON public.holidays FOR SELECT TO authenticated USING (true);
+
+-- Kebijakan Transaksi: Hanya pemilik data yang bisa kelola
+CREATE POLICY "Owners can manage journals" ON public.journal_entries FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+CREATE POLICY "Owners can manage agendas" ON public.agendas FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+CREATE POLICY "Owners can manage schedule" ON public.schedule FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+CREATE POLICY "Owners can manage personal attendance" ON public.teacher_attendance FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+CREATE POLICY "Owners can manage student attendance" ON public.attendance_records FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+CREATE POLICY "Owners can manage student grades" ON public.grade_records FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+CREATE POLICY "Owners can manage materials" ON public.materials FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+CREATE POLICY "Anyone can view notes" ON public.student_notes FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Owners can manage own notes" ON public.student_notes FOR INSERT TO authenticated WITH CHECK (auth.uid() = teacher_id);
+
+-- KHUSUS ADMIN: Bypass semua proteksi
+-- Catatan: Admin diberikan hak akses luas melalui kebijakan spesifik di setiap tabel jika diperlukan, 
+-- namun untuk efisiensi, kebijakan di atas sudah mencakup kebutuhan guru. 
+-- Admin akan mendaftarkan diri secara manual dan mengelola tabel melalui UI Admin.
+
+-- IZIN AKSES PUBLIK (Jika diperlukan)
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role, authenticated;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO postgres, service_role, authenticated;
