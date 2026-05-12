@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -32,7 +31,7 @@ export default async function TeacherActivityPage() {
                     <div>
                         <h1 className="text-2xl font-bold font-headline text-slate-900">Aktivitas Guru</h1>
                         <p className="text-muted-foreground">
-                            Pantau jumlah entri yang dibuat oleh setiap guru.
+                            Pantau tingkat kedisiplinan pengisian data oleh staf pengajar.
                         </p>
                     </div>
                 </div>
@@ -40,9 +39,10 @@ export default async function TeacherActivityPage() {
 
             <Alert className="bg-blue-50 border-blue-200 text-blue-800">
                 <Info className="h-4 w-4 text-blue-600" />
-                <AlertTitle>Informasi Pemantauan</AlertTitle>
+                <AlertTitle>Metode Perhitungan</AlertTitle>
                 <AlertDescription>
-                    Statistik di bawah ini menunjukkan total akumulasi data yang pernah diinput oleh masing-masing guru di sistem ini.
+                    Statistik dihitung berdasarkan <strong>jumlah sesi/pertemuan</strong> yang diinput, bukan jumlah baris siswa.
+                    Ini memberikan gambaran yang lebih adil tentang keaktifan guru.
                 </AlertDescription>
             </Alert>
 
@@ -50,14 +50,14 @@ export default async function TeacherActivityPage() {
                 <CardHeader>
                     <div className="flex justify-between items-center">
                         <div>
-                            <CardTitle>Statistik Aktivitas Keseluruhan</CardTitle>
+                            <CardTitle>Statistik Keaktifan Keseluruhan</CardTitle>
                             <CardDescription>
-                                Total entri yang tercatat di sistem untuk setiap guru.
+                                Total sesi atau entri yang tercatat di sistem untuk setiap guru.
                             </CardDescription>
                         </div>
                         <Badge variant="outline" className="hidden sm:flex gap-1.5 py-1.5 px-3 bg-slate-50">
                             <RefreshCw className="h-3 w-3 text-slate-400" />
-                            <span className="text-slate-600">Terupdate Otomatis</span>
+                            <span className="text-slate-600">Real-time</span>
                         </Badge>
                     </div>
                 </CardHeader>
@@ -75,15 +75,15 @@ export default async function TeacherActivityPage() {
                                  <div className="grid grid-cols-3 gap-3 text-center pt-4 border-t border-slate-100">
                                      <div className="space-y-1">
                                         <p className="text-lg font-black text-emerald-600">{teacher.attendance_count}</p>
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Presensi</p>
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sesi Presensi</p>
                                      </div>
                                      <div className="space-y-1 border-x border-slate-100 px-2">
                                         <p className="text-lg font-black text-indigo-600">{teacher.journal_count}</p>
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Jurnal</p>
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Entri Jurnal</p>
                                      </div>
                                      <div className="space-y-1">
                                         <p className="text-lg font-black text-amber-600">{teacher.grades_count}</p>
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Nilai</p>
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Set Nilai</p>
                                      </div>
                                  </div>
                              </div>
@@ -96,9 +96,9 @@ export default async function TeacherActivityPage() {
                             <TableHeader className="bg-slate-50/50">
                                 <TableRow>
                                     <TableHead className="w-[300px] font-bold text-slate-700">Nama Guru</TableHead>
-                                    <TableHead className="text-center font-bold text-slate-700">Total Presensi</TableHead>
-                                    <TableHead className="text-center font-bold text-slate-700">Total Jurnal</TableHead>
-                                    <TableHead className="text-center font-bold text-slate-700">Total Input Nilai</TableHead>
+                                    <TableHead className="text-center font-bold text-slate-700">Sesi Presensi</TableHead>
+                                    <TableHead className="text-center font-bold text-slate-700">Entri Jurnal</TableHead>
+                                    <TableHead className="text-center font-bold text-slate-700">Set Nilai</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
