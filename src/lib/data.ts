@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from './supabase/server';
@@ -7,9 +8,6 @@ import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, toIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
-
-// This file now contains functions to fetch live data from Supabase.
-// All dummy data has been removed.
 
 // --- Helper Functions ---
 
@@ -31,11 +29,10 @@ export async function getAdminDashboardData() {
     if (!user) return { totalUsers: 0, weeklyAttendance: [], recentActivities: [] };
     
     try {
-        // Fetch all necessary data in parallel
         const [allUsers, attendanceHistory, journalEntries, holidays] = await Promise.all([
             getAllUsers(),
             getTeacherAttendanceHistory(),
-            getJournalEntries(), // For recent activities
+            getJournalEntries(),
             getHolidays()
         ]);
         
@@ -44,7 +41,6 @@ export async function getAdminDashboardData() {
 
         const teachers = allUsers.filter(u => u.role === 'teacher' || u.role === 'headmaster');
         
-        // Calculate weekly attendance data (last 7 days)
         const weeklyAttendance = [];
         const dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
         
@@ -52,7 +48,7 @@ export async function getAdminDashboardData() {
             const date = new Date();
             date.setDate(date.getDate() - i);
             const dateStr = format(date, 'yyyy-MM-dd');
-            const dayName = dayNames[date.getDay() === 0 ? 6 : date.getDay() - 1]; // Adjust for Monday start
+            const dayName = dayNames[date.getDay() === 0 ? 6 : date.getDay() - 1];
             
             const dayAttendance = attendanceHistory.filter(a => a.date === dateStr);
             const hadirCount = dayAttendance.filter(a => a.status === 'Tepat Waktu' || a.status === 'Terlambat').length;
@@ -65,15 +61,13 @@ export async function getAdminDashboardData() {
             });
         }
         
-        // Generate recent activities based on actual data
         const recentActivities = [];
         
-        // Add recent teacher attendance activities
         const recentAttendance = attendanceHistory
             .filter(a => {
                 const diffTime = new Date().getTime() - new Date(a.date).getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 3; // Last 3 days
+                return diffDays <= 3;
             })
             .slice(0, 3);
             
@@ -94,12 +88,11 @@ export async function getAdminDashboardData() {
             });
         });
         
-        // Add recent journal entries
         const recentJournals = journalEntries
             .filter(j => {
                 const diffTime = new Date().getTime() - new Date(j.date).getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 2; // Last 2 days
+                return diffDays <= 2;
             })
             .slice(0, 2);
             
@@ -118,7 +111,6 @@ export async function getAdminDashboardData() {
             });
         });
         
-        // If no activities, show a default message
         if (recentActivities.length === 0) {
             recentActivities.push({
                 text: 'Belum ada aktivitas terbaru',
@@ -129,7 +121,7 @@ export async function getAdminDashboardData() {
         return {
             totalUsers: teachers.length,
             weeklyAttendance,
-            recentActivities: recentActivities.slice(0, 5), // Limit to 5 activities
+            recentActivities: recentActivities.slice(0, 5),
             isTodayHoliday,
         };
         
@@ -158,7 +150,6 @@ export async function getAllUsers(): Promise<Profile[]> {
     return data;
 }
 
-// --- Data functions for Admin Panel ---
 export async function getAllClasses(): Promise<Class[]> {
     noStore();
     const supabase = createClient();
@@ -191,9 +182,6 @@ export async function getHolidays(): Promise<{ id: string; date: string; descrip
     }
     return data;
 }
-
-
-// --- User (Teacher) Data ---
 
 export async function getUserProfile(): Promise<Profile | null> {
     noStore();
@@ -231,14 +219,12 @@ export async function getAdminProfile(): Promise<Profile | null> {
     return data;
 }
 
-
 export async function getClasses(): Promise<Class[]> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
 
     const supabase = createClient();
-    // Get schedule to find out what classes the teacher teaches
     const { data: scheduleData, error: scheduleError } = await supabase
         .from('schedule')
         .select('class_id')
@@ -267,7 +253,6 @@ export async function getSubjects(): Promise<Subject[]> {
     if (!user) return [];
 
     const supabase = createClient();
-    // Get schedule to find out what subjects the teacher teaches
     const { data: scheduleData, error: scheduleError } = await supabase
         .from('schedule')
         .select('subject_id')
@@ -313,7 +298,6 @@ export async function getActiveSchoolYearName(): Promise<string> {
     noStore();
     const supabase = createClient();
     
-    // First get the active school year ID from settings
     const { data: settingsData } = await supabase
         .from('settings')
         .select('value')
@@ -324,7 +308,6 @@ export async function getActiveSchoolYearName(): Promise<string> {
         return 'Belum Diatur';
     }
     
-    // Then get the school year name
     const { data: schoolYearData } = await supabase
         .from('school_years')
         .select('name')
@@ -360,7 +343,6 @@ export async function getAttendanceSettings() {
         };
     }
     
-    // Convert array to object
     const settings = data.reduce((acc, item) => {
         const key = item.key.replace('attendance_', '');
         acc[key] = item.value;
@@ -395,7 +377,6 @@ export async function getSchedule(): Promise<ScheduleItem[]> {
         console.error("Error fetching schedule:", error);
         return [];
     }
-    // Transform the data to match the ScheduleItem type
     return data.map(item => ({
         ...item,
         class: item.class.name,
@@ -423,7 +404,6 @@ export async function getAllSchedules(): Promise<ScheduleItem[]> {
         console.error("Error fetching all schedules:", error);
         return [];
     }
-    // Transform the data to match the ScheduleItem type
     return data.map(item => ({
         ...item,
         class: item.class.name,
@@ -438,7 +418,6 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
 
     const supabase = createClient();
     
-    // Get the active school year from global settings
     const { data: settingsData } = await supabase
         .from('settings')
         .select('value')
@@ -641,7 +620,6 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) {
-        // Return a default structure if user is not found
         return {
             summaryCards: { overallAttendanceRate: "0", overallAverageGrade: "0", totalJournals: 0, activeSchoolYearId: "", activeSchoolYearName: "" },
             studentPerformance: [], attendanceByClass: [], overallAttendanceDistribution: {},
@@ -662,7 +640,7 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
         journalQuery = journalQuery.eq('school_year_id', schoolYearId);
     }
     if (month) {
-        const year = new Date().getFullYear(); // Or get from schoolYearId if it contains year info
+        const year = new Date().getFullYear();
         const startDate = format(startOfMonth(new Date(year, month - 1, 1)), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(new Date(year, month - 1, 1)), 'yyyy-MM-dd');
         attendanceQuery = attendanceQuery.gte('date', startDate).lte('date', endDate);
@@ -851,7 +829,7 @@ export async function getHomeroomClassDetails() {
         .single();
     
     if (homeroomError || !homeroomClass) {
-        return null; // Not a homeroom teacher
+        return null;
     }
     
     const [studentsInClass, subjects] = await Promise.all([
@@ -950,40 +928,56 @@ export async function getTeacherActivityStats() {
     noStore();
     const supabase = createClient();
 
-    const { data: teachers, error: teachersError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('role', ['teacher', 'headmaster']);
-    
-    if (teachersError) {
-        console.error("Error fetching teachers for activity stats:", teachersError);
+    try {
+        const { data: teachers, error: teachersError } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('role', ['teacher', 'headmaster'])
+            .order('full_name');
+        
+        if (teachersError) {
+            console.error("Error fetching teachers for activity stats:", teachersError);
+            return [];
+        }
+
+        // Call our new RPC function
+        const { data: activityData, error: rpcError } = await supabase
+            .rpc('get_teacher_activity_counts');
+
+        if (rpcError) {
+            console.warn("RPC function get_teacher_activity_counts not found or failed. Falling back to 0 counts.");
+            // Returning 0 counts if RPC fails
+            return teachers.map(teacher => ({
+                id: teacher.id,
+                name: teacher.full_name,
+                attendance_count: 0,
+                grades_count: 0,
+                journal_count: 0
+            }));
+        }
+
+        const statsMap = new Map(activityData.map((item: any) => [item.teacher_id, item]));
+
+        const result = teachers.map(teacher => {
+            const stats = statsMap.get(teacher.id) || {
+                attendance_count: 0,
+                grades_count: 0,
+                journal_count: 0
+            };
+            return {
+                id: teacher.id,
+                name: teacher.full_name,
+                attendance_count: Number(stats.attendance_count),
+                grades_count: Number(stats.grades_count),
+                journal_count: Number(stats.journal_count)
+            };
+        });
+
+        return result;
+    } catch (error) {
+        console.error("Unexpected error in getTeacherActivityStats:", error);
         return [];
     }
-
-    const { data: activityData, error: rpcError } = await supabase
-        .rpc('get_teacher_activity_counts');
-
-    if (rpcError) {
-        console.error("Error fetching teacher activity stats from RPC:", rpcError);
-        return [];
-    }
-
-    const statsMap = new Map(activityData.map(item => [item.teacher_id, item]));
-
-    const result = teachers.map(teacher => {
-        const stats = statsMap.get(teacher.id) || {
-            attendance_count: 0,
-            grades_count: 0,
-            journal_count: 0
-        };
-        return {
-            id: teacher.id,
-            name: teacher.full_name,
-            ...stats
-        };
-    });
-
-    return result;
 }
 
 export async function getMaterials(): Promise<Material[]> {
