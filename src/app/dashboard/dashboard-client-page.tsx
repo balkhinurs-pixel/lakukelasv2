@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -26,8 +25,6 @@ import type { ScheduleItem, JournalEntry } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-
-
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
   journalEntries: JournalEntry[];
@@ -54,17 +51,19 @@ const StatCard = ({
         <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 opacity-50 transition-opacity duration-300 group-hover:opacity-30" />
         <div className="absolute top-0 right-0 h-full w-1 bg-gradient-to-b from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
-        <CardContent className="relative z-10 flex flex-col justify-between p-6 h-full">
-            <div className="flex items-center justify-between mb-4">
+        <CardContent className="relative z-10 flex flex-col justify-between p-4 sm:p-6 h-full">
+            {/* Icon Row - Hidden on Mobile to save space */}
+            <div className="hidden sm:flex items-center justify-between mb-4">
                 <div className="rounded-2xl bg-white/20 backdrop-blur-sm p-3 transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
                     <Icon className="h-6 w-6 drop-shadow-sm" />
                 </div>
                 <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" />
             </div>
+            
             <div className="space-y-1">
-                <p className="text-sm font-medium text-white/90 tracking-wide">{title}</p>
-                <p className="text-3xl font-bold drop-shadow-sm tracking-tight">{value}</p>
-                <p className="text-xs text-white/80 leading-relaxed">{subtitle}</p>
+                <p className="text-[10px] sm:text-sm font-medium text-white/90 tracking-wide uppercase sm:normal-case">{title}</p>
+                <p className="text-2xl sm:text-3xl font-bold drop-shadow-sm tracking-tight">{value}</p>
+                <p className="text-[10px] sm:text-xs text-white/80 leading-tight sm:leading-relaxed line-clamp-1">{subtitle}</p>
             </div>
         </CardContent>
         
@@ -72,7 +71,6 @@ const StatCard = ({
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
     </Card>
 );
-
 
 export default function DashboardClientPage({ 
     todaySchedule, 
@@ -91,7 +89,7 @@ export default function DashboardClientPage({
     React.useEffect(() => {
         const updateScheduleStatus = () => {
             const currentTime = new Date();
-            setNow(currentTime); // Update current time for real-time check
+            setNow(currentTime); 
 
             const newActiveSchedules: Record<string, boolean> = {};
             const newEndedSchedules: Record<string, boolean> = {};
@@ -116,7 +114,7 @@ export default function DashboardClientPage({
         };
 
         updateScheduleStatus();
-        const interval = setInterval(updateScheduleStatus, 60000); // Check every minute
+        const interval = setInterval(updateScheduleStatus, 60000); 
         return () => clearInterval(interval);
 
     }, [sortedSchedule]);
@@ -127,7 +125,6 @@ export default function DashboardClientPage({
 
         const upcomingOrCurrentClass = sortedSchedule.find(item => {
              const [endHours, endMinutes] = item.end_time.split(':').map(Number);
-             // Return true if class has not ended yet
              return currentHour < endHours || (currentHour === endHours && currentMinute < endMinutes);
         });
 
@@ -194,13 +191,8 @@ export default function DashboardClientPage({
                             asChild
                         >
                             <Link href={href} className="relative z-10">
-                                {/* Background shine effect */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                                
-                                {/* Icon with glow effect */}
                                 <Icon className="h-5 w-5 drop-shadow-sm transition-all duration-300 group-hover:scale-110"/>
-                                
-                                {/* Ripple effect on hover */}
                                 <div className="absolute inset-0 rounded-md bg-white/10 scale-0 group-hover:scale-100 group-hover:opacity-0 opacity-100 transition-all duration-300" />
                             </Link>
                         </Button>
@@ -248,8 +240,7 @@ export default function DashboardClientPage({
   
   return (
     <div className="space-y-8 p-1">
-      {/* Enhanced stats grid with better spacing */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <StatCard
             icon={ClipboardCheck}
             title="Presensi Hari Ini"
@@ -261,14 +252,14 @@ export default function DashboardClientPage({
             icon={Users}
             title="Kelas Hari Ini"
             value={String(todaySchedule.length)}
-            subtitle="Total kelas dalam jadwal"
+            subtitle="Total kelas terjadwal"
             color="bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-600"
           />
           <StatCard
             icon={BookText}
             title="Jurnal Belum Diisi"
             value={String(initialUnfilledJournalsCount)}
-            subtitle={initialUnfilledJournalsCount > 0 ? "Jadwal perlu diisi" : "Semua jurnal terisi"}
+            subtitle={initialUnfilledJournalsCount > 0 ? "Perlu segera diisi" : "Semua jurnal terisi"}
             color="bg-gradient-to-br from-red-500 via-red-500 to-orange-500"
           />
           <StatCard
@@ -280,7 +271,6 @@ export default function DashboardClientPage({
           />
       </div>
 
-      {/* Enhanced main content grid */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-3 shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 backdrop-blur-sm">
           <CardHeader className="pb-4">
@@ -297,7 +287,6 @@ export default function DashboardClientPage({
           <CardContent className="space-y-2">
             {sortedSchedule.length > 0 ? (
                 <div className="relative">
-                    {/* Enhanced vertical line with gradient */}
                     <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gradient-to-b from-primary/60 via-primary/30 to-transparent -z-10" aria-hidden="true" />
                     
                     <div className="space-y-6">
@@ -321,7 +310,6 @@ export default function DashboardClientPage({
                                         animation: 'fadeInUp 0.6s ease-out forwards'
                                     }}
                                 >
-                                    {/* Enhanced time indicator */}
                                     <div className="relative">
                                         <div className={cn(
                                             "flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 shadow-lg transition-all duration-300",
@@ -334,14 +322,12 @@ export default function DashboardClientPage({
                                             <Clock className="h-6 w-6 drop-shadow-sm" />
                                         </div>
                                         
-                                        {/* Status indicator */}
                                         {isActionAvailable && !hasEnded && (
                                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-bounce shadow-sm">
                                                 <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75" />
                                             </div>
                                         )}
                                         
-                                        {/* Ended status indicator */}
                                         {hasEnded && (
                                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-sm">
                                                 <div className="w-full h-full bg-red-600 rounded-full" />
@@ -385,20 +371,6 @@ export default function DashboardClientPage({
                             )
                          })}
                     </div>
-                    
-                    {/* CSS Animation keyframes */}
-                    <style jsx>{`
-                        @keyframes fadeInUp {
-                            from {
-                                opacity: 0;
-                                transform: translateY(20px);
-                            }
-                            to {
-                                opacity: 1;
-                                transform: translateY(0);
-                            }
-                        }
-                    `}</style>
                 </div>
             ) : (
                 <div className="text-center text-muted-foreground py-12">
@@ -476,7 +448,6 @@ export default function DashboardClientPage({
              )}
           </CardContent>
           
-          {/* CSS Animation for journal entries */}
           <style jsx>{`
             @keyframes fadeInRight {
                 from {
@@ -488,10 +459,19 @@ export default function DashboardClientPage({
                     transform: translateX(0);
                 }
             }
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
           `}</style>
         </Card>
       </div>
     </div>
   );
 }
-
