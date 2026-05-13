@@ -95,7 +95,7 @@ export default function MonitoringLayoutClient({
         </SheetHeader>
         
         <div className="px-6 pb-10 space-y-6">
-          <div className="space-y-3">
+          <div className="space-y-3 pb-24"> {/* Added pb-24 to avoid items being hidden behind bottom bar */}
             <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Navigasi Monitoring</p>
             <div className="grid grid-cols-1 gap-2">
               {monitoringNavItems.map((item) => {
@@ -116,35 +116,35 @@ export default function MonitoringLayoutClient({
                 );
               })}
             </div>
-          </div>
 
-          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
-              <Link 
-                href="/dashboard" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold"
-              >
-                <Home className="w-5 h-5" />
-                <span>Mode Dasbor Guru</span>
-              </Link>
-              {profile?.role === 'admin' && (
+            <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
                 <Link 
-                  href="/admin" 
+                  href="/dashboard" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-4 rounded-2xl bg-purple-500/10 text-purple-700 dark:text-purple-400 font-bold"
+                  className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold"
                 >
-                  <Settings className="w-5 h-5" />
-                  <span>Panel Admin</span>
+                  <Home className="w-5 h-5" />
+                  <span>Mode Dasbor Guru</span>
                 </Link>
-              )}
-              <Button 
-                variant="ghost" 
-                className="justify-start h-14 rounded-2xl text-red-600 font-bold mt-2"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-5 h-5 mr-4" />
-                Keluar Aplikasi
-              </Button>
+                {profile?.role === 'admin' && (
+                  <Link 
+                    href="/admin" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-4 rounded-2xl bg-purple-500/10 text-purple-700 dark:text-purple-400 font-bold"
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span>Panel Admin</span>
+                  </Link>
+                )}
+                <Button 
+                  variant="ghost" 
+                  className="justify-start h-14 rounded-2xl text-red-600 font-bold mt-2"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="w-5 h-5 mr-4" />
+                  Keluar Aplikasi
+                </Button>
+            </div>
           </div>
         </div>
       </SheetContent>
@@ -258,7 +258,7 @@ export default function MonitoringLayoutClient({
       {isMobile && (
           <>
             <MobileMenuDrawer />
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
                 <Link href="/monitoring" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/monitoring" ? "text-teal-600 bg-teal-500/10" : "text-muted-foreground")}>
                     <LayoutDashboard className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">Dasbor</span>

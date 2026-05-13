@@ -123,7 +123,7 @@ export default function AdminLayoutClient({
         </SheetHeader>
         
         <ScrollArea className="px-6 pb-8 h-full overflow-y-auto">
-          <div className="space-y-8">
+          <div className="space-y-8 pb-24"> {/* Added pb-24 to avoid items being hidden behind bottom bar */}
             <div className="space-y-3">
               <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest pl-2">Sistem</p>
               <div className="grid grid-cols-1 gap-2">
@@ -351,7 +351,7 @@ export default function AdminLayoutClient({
       {isMobile && (
           <>
             <MobileMenuDrawer />
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
                 <Link href="/admin" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/admin" ? "text-purple-600 bg-purple-500/10" : "text-muted-foreground")}>
                     <LayoutDashboard className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">Dasbor</span>

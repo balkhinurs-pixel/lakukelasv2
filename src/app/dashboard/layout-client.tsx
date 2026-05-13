@@ -133,7 +133,7 @@ export default function DashboardLayoutClient({
         </SheetHeader>
         
         <ScrollArea className="px-6 pb-8 h-full overflow-y-auto">
-          <div className="space-y-6">
+          <div className="space-y-6 pb-24"> {/* Added pb-24 to avoid items being hidden behind bottom bar */}
             {(isHeadmaster || isAdmin) && (
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Monitoring</p>
@@ -368,7 +368,7 @@ export default function DashboardLayoutClient({
       {isMobile && (
           <>
             <MobileMenuDrawer />
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
                 {leftMobileNavItems.map((item) => (
                     <Link key={item.href} href={item.href} className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === item.href ? "text-primary bg-primary/10" : "text-muted-foreground")}>
                         <item.icon className="w-5 h-5" />
