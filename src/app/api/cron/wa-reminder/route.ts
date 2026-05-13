@@ -9,6 +9,8 @@ import { format } from 'date-fns';
  * Menghubungi guru yang memiliki jadwal mengajar hari ini.
  */
 export async function GET(request: Request) {
+  console.log('[CRON-WA] Starting reminder process...');
+  
   try {
     const supabase = createClient();
     
@@ -25,6 +27,7 @@ export async function GET(request: Request) {
     };
 
     if (!settings.enabled || !settings.token) {
+        console.warn('[CRON-WA] Reminder is disabled or token missing.');
         return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing.' });
     }
 
@@ -32,6 +35,7 @@ export async function GET(request: Request) {
     const dayName = getIndonesianDayName();
     const nowIndo = getIndonesianTime();
     const todayStr = format(nowIndo, 'dd MMMM yyyy');
+    console.log(`[CRON-WA] Day: ${dayName}, Date: ${todayStr}`);
 
     // 3. Ambil Guru yang memiliki jadwal hari ini
     const { data: schedules, error: scheduleError } = await supabase
@@ -46,7 +50,13 @@ export async function GET(request: Request) {
         `)
         .eq('day', dayName);
 
-    if (scheduleError || !schedules || schedules.length === 0) {
+    if (scheduleError) {
+        console.error('[CRON-WA] DB Error fetching schedules:', scheduleError.message);
+        throw scheduleError;
+    }
+
+    if (!schedules || schedules.length === 0) {
+        console.log(`[CRON-WA] No schedules found for ${dayName}. Exiting.`);
         return NextResponse.json({ message: `No schedules found for ${dayName}.` });
     }
 
@@ -56,7 +66,10 @@ export async function GET(request: Request) {
         const teacherName = item.profiles?.full_name;
         const phone = item.profiles?.phone_number;
 
-        if (!phone) return acc;
+        if (!phone) {
+            console.log(`[CRON-WA] Skipped ${teacherName}: No phone number provided.`);
+            return acc;
+        }
 
         if (!acc[teacherId]) {
             acc[teacherId] = {
@@ -74,6 +87,9 @@ export async function GET(request: Request) {
 
         return acc;
     }, {} as Record<string, any>);
+
+    const teacherCount = Object.keys(teacherMessages).length;
+    console.log(`[CRON-WA] Preparing messages for ${teacherCount} teachers.`);
 
     // 5. Kirim pesan via Fonnte
     const results = [];
@@ -97,6 +113,8 @@ https://app.lakukelas.my.id/dashboard/teacher-attendance
 Semangat mengajar!
 _LakuKelas Notifier_`;
 
+        console.log(`[CRON-WA] Sending message to ${teacher.name} (${teacher.phone})...`);
+
         try {
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
@@ -107,20 +125,22 @@ _LakuKelas Notifier_`;
                 })
             });
             const resData = await response.json();
+            console.log(`[CRON-WA] Fonnte API Result for ${teacher.name}:`, JSON.stringify(resData));
             results.push({ teacher: teacher.name, success: resData.status });
-        } catch (err) {
-            results.push({ teacher: teacher.name, success: false, error: err });
+        } catch (err: any) {
+            console.error(`[CRON-WA] Error sending to ${teacher.name}:`, err.message);
+            results.push({ teacher: teacher.name, success: false, error: err.message });
         }
     }
 
     return NextResponse.json({ 
       success: true, 
-      processed_teachers: Object.keys(teacherMessages).length,
+      processed_teachers: teacherCount,
       results: results
     });
 
   } catch (error: any) {
-    console.error('[WA-Reminder] Error:', error.message);
+    console.error('[CRON-WA] Fatal Process Error:', error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

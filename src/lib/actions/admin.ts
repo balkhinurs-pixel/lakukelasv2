@@ -329,8 +329,8 @@ export async function deleteHoliday(holidayId: string) {
 export async function saveWhatsAppSettings(token: string, enabled: boolean, time: string) {
     const supabase = createClient();
     
-    // Trim token to avoid accidental spaces
     const cleanToken = token.trim();
+    console.log('[WA-SETTINGS] Saving token:', cleanToken.substring(0, 5) + '...');
 
     const settingsToSave = [
         { key: 'fonnte_api_token', value: cleanToken },
@@ -349,8 +349,8 @@ export async function saveWhatsAppSettings(token: string, enabled: boolean, time
 
         revalidatePath('/admin/settings/whatsapp');
         return { success: true };
-    } catch (error) {
-        console.error('Error saving WA settings:', error);
+    } catch (error: any) {
+        console.error('[WA-SETTINGS] Error saving settings:', error.message);
         return { success: false, error: 'Gagal menyimpan pengaturan WhatsApp.' };
     }
 }
@@ -359,6 +359,7 @@ export async function testFonnteConnection(token: string) {
     if (!token) return { success: false, error: 'Token tidak boleh kosong.' };
 
     const cleanToken = token.trim();
+    console.log('[WA-TEST] Testing connection with token starting:', cleanToken.substring(0, 5));
 
     try {
         const response = await fetch('https://api.fonnte.com/get-devices', {
@@ -369,6 +370,7 @@ export async function testFonnteConnection(token: string) {
         });
 
         const result = await response.json();
+        console.log('[WA-TEST] Raw Response from Fonnte:', JSON.stringify(result));
 
         if (result.status === true) {
             return { 
@@ -376,18 +378,18 @@ export async function testFonnteConnection(token: string) {
                 message: `Berhasil terhubung ke Fonnte. Ditemukan ${result.data?.length || 0} perangkat.` 
             };
         } else {
-            // Handle specific Fonnte error reasons
             let errorMsg = result.reason || 'Token tidak valid.';
             if (errorMsg === 'unknown user') {
-                errorMsg = 'Token tidak dikenali oleh Fonnte. Mohon periksa kembali token Anda di dashboard fonnte.com.';
+                errorMsg = 'Fonnte: Pengguna tidak dikenal (Token Salah). Pastikan menyalin token yang benar dari Fonnte.';
             }
+            console.warn('[WA-TEST] Connection failed reason:', errorMsg);
             return { 
                 success: false, 
                 error: errorMsg
             };
         }
-    } catch (error) {
-        console.error('Error testing Fonnte connection:', error);
-        return { success: false, error: 'Terjadi kesalahan saat menghubungi API Fonnte.' };
+    } catch (error: any) {
+        console.error('[WA-TEST] Fatal error connecting to Fonnte:', error.message);
+        return { success: false, error: 'Terjadi kesalahan sistem saat menghubungi Fonnte.' };
     }
 }
