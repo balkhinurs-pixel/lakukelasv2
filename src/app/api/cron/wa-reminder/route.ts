@@ -119,10 +119,10 @@ _LakuKelas Notifier_`;
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
                 headers: { 
-                    'Authorization': settings.token 
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 },
                 body: new URLSearchParams({
-                    'token': settings.token,
+                    'token': settings.token as string,
                     'target': teacher.phone,
                     'message': message
                 })
