@@ -27,7 +27,8 @@ Menambahkan fitur pengingat otomatis kepada guru untuk melakukan absensi dan mem
 
 ## 2. Komponen Teknis
 - **Database**: Penambahan kolom `phone_number` pada tabel `profiles`.
-- **Admin Settings**: Menu baru untuk menyimpan `Fonnte API Token` di tabel `settings`.
+- **Admin Settings**: Menu baru **"Pengaturan WhatsApp"** untuk menyimpan `Fonnte API Token` di tabel `settings`.
+- **Fitur Test Koneksi**: Tombol untuk memvalidasi token Fonnte secara langsung dari dashboard admin.
 - **Automation**: Implementasi `Vercel Cron Jobs` yang berjalan setiap pagi (Pukul 06:00 WIB).
 - **Logika Pesan**: 
     1. Cari guru yang memiliki jadwal mengajar pada hari tersebut (berdasarkan hari di GMT+7).
@@ -37,7 +38,7 @@ Menambahkan fitur pengingat otomatis kepada guru untuk melakukan absensi dan mem
 
 ## 3. Fitur Tambahan
 - Log pengiriman pesan (untuk memantau apakah pesan berhasil terkirim).
-- Tombol "Test Koneksi" di dashboard admin untuk memastikan token WA valid.
+- Input nomor telepon guru di menu "Daftar Guru".
 
 ---
-*Update V4.6 telah selesai diimplementasikan. Perencanaan V4.7 sedang didiskusikan.*
+*Update V4.6 telah selesai diimplementasikan. Perencanaan V4.7 sedang dalam tahap persiapan UI dan pengaturan.*

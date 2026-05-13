@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -304,4 +303,50 @@ export async function deleteHoliday(holidayId: string) {
     revalidatePath('/admin/settings/holidays');
     revalidatePath('/admin');
     return { success: true };
+}
+
+export async function saveWhatsAppSettings(token: string) {
+    const supabase = createClient();
+    
+    const { error } = await supabase
+        .from('settings')
+        .upsert({ key: 'fonnte_api_token', value: token }, { onConflict: 'key' });
+
+    if (error) {
+        console.error('Error saving WA settings:', error);
+        return { success: false, error: 'Gagal menyimpan token WhatsApp.' };
+    }
+
+    revalidatePath('/admin/settings/whatsapp');
+    return { success: true };
+}
+
+export async function testFonnteConnection(token: string) {
+    if (!token) return { success: false, error: 'Token tidak boleh kosong.' };
+
+    try {
+        const response = await fetch('https://api.fonnte.com/get-devices', {
+            method: 'POST',
+            headers: {
+                'Authorization': token
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.status === true) {
+            return { 
+                success: true, 
+                message: `Berhasil terhubung ke Fonnte. Ditemukan ${result.data?.length || 0} perangkat.` 
+            };
+        } else {
+            return { 
+                success: false, 
+                error: result.reason || 'Token tidak valid atau tidak memiliki akses.' 
+            };
+        }
+    } catch (error) {
+        console.error('Error testing Fonnte connection:', error);
+        return { success: false, error: 'Terjadi kesalahan saat menghubungi API Fonnte.' };
+    }
 }

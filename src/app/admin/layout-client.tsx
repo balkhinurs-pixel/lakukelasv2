@@ -25,6 +25,7 @@ import {
   Home,
   ChevronLeft,
   Zap,
+  MessageSquare,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -85,6 +86,7 @@ const rosterNavItems = [
 const settingsNavItems = [
     { href: '/admin/settings/school', icon: Building, label: 'Data Sekolah' },
     { href: '/admin/settings/location', icon: MapPin, label: 'Pengaturan Absensi' },
+    { href: '/admin/settings/whatsapp', icon: MessageSquare, label: 'Pengaturan WhatsApp' },
     { href: '/admin/settings/schedule', icon: CalendarClock, label: 'Kelola Jadwal Guru' },
     { href: '/admin/settings/holidays', icon: CalendarOff, label: 'Hari Libur' },
 ]
