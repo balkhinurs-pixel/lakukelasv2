@@ -408,26 +408,34 @@ export async function sendTestWhatsApp(token: string, target: string) {
     console.log(`[WA-TEST-SEND] Sending test message to: ${cleanTarget}`);
 
     try {
+        // Berdasarkan dokumentasi Fonnte, pengiriman pesan paling stabil menggunakan body parameter 'token'
         const response = await fetch('https://api.fonnte.com/send', {
             method: 'POST',
-            headers: { 'Authorization': cleanToken },
+            headers: {
+                'Authorization': cleanToken // Tetap kirim di header
+            },
             body: new URLSearchParams({
-                'token': cleanToken,
+                'token': cleanToken, // HARUS ada di body untuk menghindari 'unknown token'
                 'target': cleanTarget,
                 'message': message
             })
         });
 
         const result = await response.json();
-        console.log('[WA-TEST-SEND] Result:', JSON.stringify(result));
+        console.log('[WA-TEST-SEND] Fonnte API Result:', JSON.stringify(result));
 
         if (result.status === true) {
             return { success: true, message: 'Pesan tes berhasil dikirim. Silakan cek WhatsApp tujuan.' };
         } else {
-            return { success: false, error: result.reason || 'Gagal mengirim pesan. Pastikan nomor benar dan perangkat aktif.' };
+            // Jika gagal, berikan pesan error yang lebih jelas dari Fonnte
+            let errorDetail = result.reason || 'unknown error';
+            if (errorDetail === 'unknown token') {
+                errorDetail = 'Fonnte: Token tidak dikenali untuk pengiriman pesan. Gunakan Account Token.';
+            }
+            return { success: false, error: `Gagal: ${errorDetail}` };
         }
     } catch (error: any) {
-        console.error('[WA-TEST-SEND] Fatal error:', error.message);
-        return { success: false, error: 'Terjadi kesalahan sistem saat mengirim pesan.' };
+        console.error('[WA-TEST-SEND] Connection error:', error.message);
+        return { success: false, error: 'Gagal menghubungi server Fonnte.' };
     }
 }

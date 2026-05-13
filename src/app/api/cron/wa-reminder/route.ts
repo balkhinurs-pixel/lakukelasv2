@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'wa_reminder_time']);
 
     const settings = {
-        token: settingsData?.find(s => s.key === 'fonnte_api_token')?.value,
+        token: settingsData?.find(s => s.key === 'fonnte_api_token')?.value?.trim(),
         enabled: settingsData?.find(s => s.key === 'wa_reminder_enabled')?.value === 'true',
         time: settingsData?.find(s => s.key === 'wa_reminder_time')?.value
     };
@@ -118,7 +118,9 @@ _LakuKelas Notifier_`;
         try {
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
-                headers: { 'Authorization': settings.token },
+                headers: { 
+                    'Authorization': settings.token 
+                },
                 body: new URLSearchParams({
                     'token': settings.token,
                     'target': teacher.phone,
