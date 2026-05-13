@@ -1,4 +1,3 @@
-
 "use client"
 import * as React from "react";
 import {
@@ -18,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
-import { Loader2 } from "lucide-react";
+import { Loader2, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
@@ -36,6 +35,7 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         nip: profile.nip || '',
         pangkat: profile.pangkat || '',
         jabatan: profile.jabatan || '',
+        phoneNumber: profile.phone_number || '',
     });
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,6 +171,21 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                                     <Label htmlFor="jabatan">Jabatan</Label>
                                     <Input id="jabatan" name="jabatan" value={profileData.jabatan} onChange={handleProfileChange}/>
                                 </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phoneNumber">Nomor WhatsApp (Aktif)</Label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                    <Input 
+                                        id="phoneNumber" 
+                                        name="phoneNumber" 
+                                        placeholder="Contoh: 628123456789" 
+                                        className="pl-10"
+                                        value={profileData.phoneNumber} 
+                                        onChange={handleProfileChange}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground italic">Gunakan format kode negara tanpa tanda +, contoh: 62812...</p>
                             </div>
                         </CardContent>
                         <CardFooter className="border-t px-6 py-4">

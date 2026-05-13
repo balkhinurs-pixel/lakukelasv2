@@ -6,6 +6,7 @@ export interface Profile {
   nip?: string;
   pangkat?: string;
   jabatan?: string;
+  phone_number?: string;
   school_name?: string;
   school_address?: string;
   headmaster_name?: string;

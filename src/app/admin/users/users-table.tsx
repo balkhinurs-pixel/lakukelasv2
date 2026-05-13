@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -40,12 +39,12 @@ import {
   } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus, GraduationCap } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus, GraduationCap, Edit, Phone } from "lucide-react";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
-import { deleteUser, inviteTeacher, updateUserRole } from "@/lib/actions/admin";
+import { deleteUser, inviteTeacher, updateUserRole, updateStaffProfile } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -132,12 +131,74 @@ const InviteTeacherDialog = ({ onInviteSuccess }: { onInviteSuccess: () => void 
     )
 }
 
+const EditStaffDialog = ({ user, open, onOpenChange }: { user: Profile, open: boolean, onOpenChange: (open: boolean) => void }) => {
+    const [loading, setLoading] = React.useState(false);
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setLoading(true);
+        const formData = new FormData(event.currentTarget);
+        
+        const result = await updateStaffProfile(user.id, {
+            fullName: formData.get('fullName') as string,
+            nip: formData.get('nip') as string,
+            phoneNumber: formData.get('phoneNumber') as string,
+        });
+
+        if (result.success) {
+            toast({ title: "Berhasil", description: "Data staf telah diperbarui." });
+            onOpenChange(false);
+            router.refresh();
+        } else {
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        }
+        setLoading(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <form onSubmit={handleSubmit}>
+                    <DialogHeader>
+                        <DialogTitle>Ubah Data Staf</DialogTitle>
+                        <DialogDescription>Perbarui informasi profil dan nomor WhatsApp staf.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="fullName">Nama Lengkap</Label>
+                            <Input id="fullName" name="fullName" defaultValue={user.full_name} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="nip">NIP / ID Guru</Label>
+                            <Input id="nip" name="nip" defaultValue={user.nip} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="phoneNumber">Nomor WhatsApp (628...)</Label>
+                            <Input id="phoneNumber" name="phoneNumber" defaultValue={user.phone_number} placeholder="628123456789" />
+                            <p className="text-[10px] text-muted-foreground">Penting: Gunakan format internasional tanpa tanda + untuk fitur notifikasi.</p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="submit" disabled={loading}>
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Simpan Perubahan
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
     const router = useRouter();
     const [users, setUsers] = React.useState<Profile[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [loading, setLoading] = React.useState<string | boolean>(false); // Can be userId or boolean
+    const [editingUser, setEditingUser] = React.useState<Profile | null>(null);
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -231,6 +292,9 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                                        <Edit className="mr-2 h-4 w-4" /> Ubah Data
+                                    </DropdownMenuItem>
                                      {user.role === 'teacher' ? (
                                         <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>
                                             <GraduationCap className="mr-2 h-4 w-4" /> Jadikan Kepala Sekolah
@@ -240,6 +304,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                             <User className="mr-2 h-4 w-4" /> Jadikan Guru Biasa
                                         </DropdownMenuItem>
                                      )}
+                                    <DropdownMenuSeparator />
                                     <AlertDialogTrigger asChild>
                                         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                             <Trash2 className="mr-2 h-4 w-4" />
@@ -270,6 +335,12 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                             <Mail className="w-4 h-4 text-primary"/>
                             <span>{user.email}</span>
                         </div>
+                        {user.phone_number && (
+                            <div className="flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-green-600"/>
+                                <span>{user.phone_number}</span>
+                            </div>
+                        )}
                          <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-primary"/>
                             <span>Bergabung: <FormattedDate dateString={user.created_at} /></span>
@@ -286,8 +357,8 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                     <TableRow>
                         <TableHead>Nama Guru</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>WhatsApp</TableHead>
                         <TableHead>Peran</TableHead>
-                        <TableHead>Tanggal Bergabung</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -296,15 +367,15 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                         <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
                             <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs font-mono">
+                                {user.phone_number || '-'}
+                            </TableCell>
                              <TableCell>
                                 {user.role === 'headmaster' ? (
                                     <Badge variant="secondary" className="bg-amber-100 text-amber-800">Kepala Sekolah</Badge>
                                 ) : (
                                     <Badge variant="outline">Guru</Badge>
                                 )}
-                            </TableCell>
-                            <TableCell>
-                              <FormattedDate dateString={user.created_at} />
                             </TableCell>
                             <TableCell className="text-right">
                                 <AlertDialog>
@@ -317,6 +388,9 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Ubah Data
+                                            </DropdownMenuItem>
                                             {user.role === 'teacher' ? (
                                                 <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>
                                                     <GraduationCap className="mr-2 h-4 w-4" /> Jadikan Kepala Sekolah
@@ -326,6 +400,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                                                     <User className="mr-2 h-4 w-4" /> Jadikan Guru Biasa
                                                 </DropdownMenuItem>
                                              )}
+                                            <DropdownMenuSeparator />
                                             <AlertDialogTrigger asChild>
                                                 <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                                     <Trash2 className="mr-2 h-4 w-4" />
@@ -363,6 +438,14 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                 <h3 className="mt-2 text-sm font-medium">Guru Tidak Ditemukan</h3>
                 <p className="mt-1 text-sm text-gray-500">Coba ubah filter atau kata kunci pencarian Anda.</p>
             </div>
+        )}
+
+        {editingUser && (
+            <EditStaffDialog 
+                user={editingUser} 
+                open={!!editingUser} 
+                onOpenChange={(open) => !open && setEditingUser(null)} 
+            />
         )}
     </>
   );

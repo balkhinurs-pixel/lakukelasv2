@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -53,6 +52,26 @@ export async function updateUserRole(userId: string, newRole: 'teacher' | 'headm
     
     revalidatePath('/admin/users');
     return { success: true, data };
+}
+
+export async function updateStaffProfile(userId: string, data: { fullName: string, nip: string, phoneNumber: string }) {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            full_name: data.fullName,
+            nip: data.nip,
+            phone_number: data.phoneNumber
+        })
+        .eq('id', userId);
+
+    if (error) {
+        console.error("Error updating staff profile:", error.message);
+        return { success: false, error: "Gagal memperbarui data staf." };
+    }
+    
+    revalidatePath('/admin/users');
+    return { success: true };
 }
 
 export async function saveSchedule(formData: FormData) {
@@ -162,7 +181,7 @@ export async function saveClass(formData: FormData) {
         
         if (error) return { success: false, error: 'Gagal memperbarui kelas.' };
     } else {
-        const { error } = await supabase.from('classes').insert({ name: classData.name, teacher_id: classData.teacher_id });
+        const { error = null } = await supabase.from('classes').insert({ name: classData.name, teacher_id: classData.teacher_id });
         if (error) return { success: false, error: 'Gagal membuat kelas.' };
     }
     
@@ -198,7 +217,7 @@ export async function saveSubject(formData: FormData) {
             .eq('id', subjectData.id);
         if (error) return { success: false, error: "Gagal memperbarui mapel." };
     } else {
-         const { error } = await supabase.from('subjects').insert({ name: subjectData.name, kkm: subjectData.kkm });
+         const { error = null } = await supabase.from('subjects').insert({ name: subjectData.name, kkm: subjectData.kkm });
         if (error) return { success: false, error: "Gagal membuat mapel." };
     }
 

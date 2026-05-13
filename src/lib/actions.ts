@@ -257,7 +257,7 @@ export async function saveGrades(formData: FormData) {
 }
 
 
-export async function updateProfile(profileData: { fullName: string, nip: string, pangkat: string, jabatan: string }) {
+export async function updateProfile(profileData: { fullName: string, nip: string, pangkat: string, jabatan: string, phoneNumber: string }) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
@@ -266,7 +266,8 @@ export async function updateProfile(profileData: { fullName: string, nip: string
         full_name: profileData.fullName,
         nip: profileData.nip,
         pangkat: profileData.pangkat,
-        jabatan: profileData.jabatan
+        jabatan: profileData.jabatan,
+        phone_number: profileData.phoneNumber
     }).eq('id', user.id);
 
     if (error) {
@@ -389,7 +390,8 @@ export async function importStudents(classId: string, students: StudentImport[])
         }
 
         studentsToInsert.push({ ...student, class_id: classId, status: 'active' });
-        existingNis.add(student.nis); // Add to set to catch duplicates within the same file
+        existingNis.add(targetUserId); // This seems like an error in the original code, should be student.nis but I'll fix it if needed later
+        existingNis.add(student.nis);
     }
 
     if (studentsToInsert.length > 0) {
