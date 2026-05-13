@@ -64,6 +64,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { AnimatedText } from "@/components/ui/animated-underline-text-one";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -609,21 +610,18 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
       {selectedClassId && (
         <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
           <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="text-xl">
-                  Daftar Siswa - {selectedClass?.name}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    ({students.length > 0 ? `${students.length} siswa` : '...'})
-                  </span>
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.
-                </CardDescription>
-              </div>
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <AnimatedText 
+                text={`Daftar Siswa - ${selectedClass?.name}`}
+                textClassName="text-2xl sm:text-3xl text-slate-900"
+                underlineClassName="text-blue-500/40"
+              />
+              <CardDescription className="text-center">
+                Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.
+                <span className="ml-2 text-sm font-semibold text-blue-600 block sm:inline mt-1">
+                  ({students.length > 0 ? `${students.length} siswa terdaftar` : 'Memuat siswa...'})
+                </span>
+              </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="pt-0 overflow-hidden">
@@ -815,21 +813,21 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                               <AlertCircle className="h-4 w-4 text-amber-600" />
                               <div className="text-sm">
                                 <span className="font-medium text-amber-800">Sakit</span>
-                                <span className="ml-1 text-amber-600">{summary.Sakit || 0}</span>
+                                <span className="ml-1 text-emerald-600">{summary.Sakit || 0}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50">
                               <Clock className="h-4 w-4 text-blue-600" />
                               <div className="text-sm">
                                 <span className="font-medium text-blue-800">Izin</span>
-                                <span className="ml-1 text-blue-600">{summary.Izin || 0}</span>
+                                <span className="ml-1 text-emerald-600">{summary.Izin || 0}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50">
                               <XCircle className="h-4 w-4 text-red-600" />
                               <div className="text-sm">
                                 <span className="font-medium text-red-800">Alpha</span>
-                                <span className="ml-1 text-red-600">{summary.Alpha || 0}</span>
+                                <span className="ml-1 text-emerald-600">{summary.Alpha || 0}</span>
                               </div>
                             </div>
                           </div>
