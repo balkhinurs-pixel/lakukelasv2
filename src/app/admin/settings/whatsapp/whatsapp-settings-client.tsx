@@ -6,11 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Loader2, CheckCircle, ExternalLink, Zap, ShieldCheck, BellRing, Clock, Send, Info } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MessageSquare, Loader2, ExternalLink, ShieldCheck, BellRing, Clock, Send, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { saveWhatsAppSettings, testFonnteConnection, sendTestWhatsApp } from "@/lib/actions/admin";
+import { saveWhatsAppSettings, sendTestWhatsApp } from "@/lib/actions/admin";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 
@@ -24,11 +23,9 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
     const { toast } = useToast();
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
-    const [testing, setTesting] = React.useState(false);
     const [sendingTest, setSendingTest] = React.useState(false);
     const [settings, setSettings] = React.useState<WASettings>(initialSettings);
     const [testPhone, setTestPhone] = React.useState('');
-    const [testResult, setTestResult] = React.useState<{ success: boolean; message: string } | null>(null);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,29 +47,6 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
             });
         }
         setLoading(false);
-    };
-
-    const handleTestConnection = async () => {
-        setTesting(true);
-        setTestResult(null);
-
-        const result = await testFonnteConnection(settings.token);
-
-        if (result.success) {
-            setTestResult({ success: true, message: result.message || 'Koneksi berhasil.' });
-            toast({
-                title: "Koneksi Berhasil",
-                description: result.message,
-            });
-        } else {
-            setTestResult({ success: false, message: result.error || 'Koneksi gagal.' });
-            toast({
-                title: "Koneksi Gagal",
-                description: result.error,
-                variant: "destructive"
-            });
-        }
-        setTesting(false);
     };
 
     const handleSendTestMessage = async () => {
@@ -124,33 +98,20 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                             <CardContent className="space-y-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="token">Fonnte API Token</Label>
-                                    <div className="flex gap-2">
-                                        <Input 
-                                            id="token" 
-                                            type="password"
-                                            placeholder="Masukkan Account Token dari fonnte.com" 
-                                            value={settings.token}
-                                            onChange={(e) => setSettings({...settings, token: e.target.value})}
-                                            required
-                                        />
-                                        <Button 
-                                            type="button" 
-                                            variant="secondary" 
-                                            onClick={handleTestConnection}
-                                            disabled={testing || !settings.token}
-                                            className="shrink-0"
-                                        >
-                                            {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
-                                            Test Token
-                                        </Button>
-                                    </div>
+                                    <Input 
+                                        id="token" 
+                                        type="password"
+                                        placeholder="Masukkan Token dari fonnte.com" 
+                                        value={settings.token}
+                                        onChange={(e) => setSettings({...settings, token: e.target.value})}
+                                        required
+                                    />
                                     <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mt-2">
                                         <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                                         <div className="text-xs text-amber-800 leading-relaxed">
-                                            <p className="font-bold mb-1">PENTING:</p>
+                                            <p className="font-bold mb-1">TIPS TOKEN:</p>
                                             <ul className="list-disc pl-4 space-y-1">
-                                                <li>Gunakan <strong>Account Token</strong> (dari menu Profile Fonnte) untuk fitur lengkap.</li>
-                                                <li>Jika Account Token masih 'invalid' saat kirim, coba gunakan <strong>Device Token</strong> (dari menu Device Fonnte).</li>
+                                                <li>Disarankan menggunakan <strong>Device Token</strong> (dari menu Device di Fonnte) untuk kestabilan pengiriman.</li>
                                                 <li>Pastikan nomor WhatsApp Anda sudah discan (Connected) di dashboard Fonnte.</li>
                                             </ul>
                                         </div>
@@ -191,18 +152,6 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                         Saran: Atur antara pukul 06:00 s/d 07:00 WIB.
                                     </p>
                                 </div>
-
-                                {testResult && (
-                                    <Alert className={testResult.success ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}>
-                                        {testResult.success ? <CheckCircle className="h-4 w-4 text-emerald-600" /> : <Zap className="h-4 w-4 text-red-600" />}
-                                        <AlertTitle className={testResult.success ? "text-emerald-800" : "text-red-800"}>
-                                            Status Koneksi: {testResult.success ? 'Berhasil' : 'Gagal'}
-                                        </AlertTitle>
-                                        <AlertDescription className={testResult.success ? "text-emerald-700" : "text-red-700"}>
-                                            {testResult.message}
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
                             </CardContent>
                             <CardFooter className="border-t pt-6">
                                 <Button type="submit" disabled={loading}>
@@ -219,7 +168,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                 <Send className="h-5 w-5 text-blue-600" /> Uji Kirim Pesan
                             </CardTitle>
                             <CardDescription>
-                                Uji apakah pesan benar-benar sampai ke nomor tujuan menggunakan token di atas.
+                                Gunakan ini untuk memastikan token yang Anda simpan di atas benar-benar bisa mengirim pesan.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -265,7 +214,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                             </div>
                             <div className="pt-4 border-t">
                                 <p className="text-xs text-muted-foreground leading-relaxed">
-                                    Cron Job akan memanggil endpoint <code>/api/cron/wa-reminder</code> setiap hari pada pukul 06:00 WIB untuk memproses antrean pesan.
+                                    Cron Job akan memanggil endpoint <code>/api/cron/wa-reminder</code> setiap hari pada pukul 06:00 WIB untuk memproses antrean pesan ke seluruh guru yang mengajar.
                                 </p>
                             </div>
                         </CardContent>
@@ -274,15 +223,15 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <ShieldCheck className="h-5 w-5 text-blue-500" /> Keamanan & Syarat
+                                <ShieldCheck className="h-5 w-5 text-blue-500" /> Syarat Notifikasi
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="text-sm text-muted-foreground space-y-2">
                             <p>Agar pengingat otomatis berfungsi, pastikan:</p>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>Nomor telepon guru sudah diawali kode negara (contoh: 62812xxx).</li>
-                                <li>Device di dashboard Fonnte dalam status <strong>Connected</strong>.</li>
-                                <li>Admin telah mengatur Tahun Ajaran Aktif.</li>
+                                <li>Isi nomor telepon di menu <strong>Daftar Guru</strong> atau biarkan guru mengisi sendiri di Profil mereka.</li>
+                                <li>Token WhatsApp di atas sudah divalidasi dengan tombol <strong>Kirim Tes</strong>.</li>
                             </ul>
                         </CardContent>
                     </Card>

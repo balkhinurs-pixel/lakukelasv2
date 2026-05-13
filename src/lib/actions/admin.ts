@@ -354,43 +354,6 @@ export async function saveWhatsAppSettings(token: string, enabled: boolean, time
     }
 }
 
-export async function testFonnteConnection(token: string) {
-    if (!token) return { success: false, error: 'Token tidak boleh kosong.' };
-
-    const cleanToken = token.trim();
-
-    try {
-        const response = await fetch('https://api.fonnte.com/get-devices', {
-            method: 'POST',
-            headers: {
-                'Authorization': cleanToken
-            },
-            cache: 'no-store'
-        });
-
-        const result = await response.json();
-
-        if (result.status === true) {
-            return { 
-                success: true, 
-                message: `Berhasil terhubung ke Fonnte. Ditemukan ${result.data?.length || 0} perangkat.` 
-            };
-        } else {
-            let errorMsg = result.reason || 'Token tidak valid.';
-            if (errorMsg === 'unknown user') {
-                errorMsg = 'Fonnte: Pengguna tidak dikenal (Gunakan Account Token).';
-            }
-            return { 
-                success: false, 
-                error: errorMsg
-            };
-        }
-    } catch (error: any) {
-        console.error('[WA-TEST] Fatal error connecting to Fonnte:', error.message);
-        return { success: false, error: 'Terjadi kesalahan sistem saat menghubungi Fonnte.' };
-    }
-}
-
 export async function sendTestWhatsApp(token: string, target: string) {
     if (!token || !target) return { success: false, error: 'Token dan nomor tujuan wajib diisi.' };
     
@@ -404,10 +367,10 @@ export async function sendTestWhatsApp(token: string, target: string) {
         const response = await fetch('https://api.fonnte.com/send', {
             method: 'POST',
             headers: {
-                'Authorization': cleanToken // Fonnte requires token in header
+                'Authorization': cleanToken
             },
             body: new URLSearchParams({
-                'token': cleanToken, // ALSO include in body to prevent "invalid token" errors
+                'token': cleanToken,
                 'target': cleanTarget,
                 'message': message
             })
