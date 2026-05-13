@@ -9,6 +9,10 @@
     {
       "path": "/api/cron/wa-reminder",
       "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/wa-attendance-reminder",
+      "schedule": "0 1 * * *"
     }
   ]
 }

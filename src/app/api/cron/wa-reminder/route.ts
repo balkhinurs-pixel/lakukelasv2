@@ -5,51 +5,33 @@ import { getIndonesianDayName, getIndonesianTime } from '@/lib/timezone';
 import { format } from 'date-fns';
 
 /**
- * API Route untuk mengirimkan pengingat WhatsApp otomatis (Cron Job).
- * Menghubungi guru yang memiliki jadwal mengajar hari ini dengan format profesional.
+ * API Route untuk mengirimkan pengingat jadwal harian (06:00 WIB).
  */
 export async function GET(request: Request) {
-  console.log('[CRON-WA] Starting reminder process...');
+  console.log('[CRON-WA] Starting daily schedule reminder...');
   
   try {
     const supabase = createClient();
     
-    // 1. Ambil Pengaturan WhatsApp, Waktu, & URL Aplikasi
     const { data: settingsData } = await supabase
       .from('settings')
       .select('key, value')
-      .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'wa_reminder_time', 'app_url']);
+      .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'app_url']);
 
     const settings = {
         token: settingsData?.find(s => s.key === 'fonnte_api_token')?.value?.trim(),
         enabled: settingsData?.find(s => s.key === 'wa_reminder_enabled')?.value === 'true',
-        targetTime: settingsData?.find(s => s.key === 'wa_reminder_time')?.value || '06:00',
         appUrl: settingsData?.find(s => s.key === 'app_url')?.value || 'https://app.lakukelas.my.id'
     };
 
     if (!settings.enabled || !settings.token) {
-        console.warn('[CRON-WA] Reminder is disabled or token missing.');
         return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing.' });
     }
 
-    // 2. Tentukan hari dan jam sekarang di Indonesia
     const nowIndo = getIndonesianTime();
     const dayName = getIndonesianDayName();
     const todayStr = format(nowIndo, 'dd MMMM yyyy');
-    const currentHourMin = format(nowIndo, 'HH:mm');
-    
-    console.log(`[CRON-WA] Execution - Day: ${dayName}, Time: ${currentHourMin}, Target: ${settings.targetTime}`);
 
-    // LOGIC: Pada Vercel Free, kita biasanya hanya punya 1 kesempatan eksekusi.
-    // Kita tetap memproses jika trigger Vercel menyala. 
-    // Jika suatu saat upgrade ke Pro dan Cron di-set tiap jam, uncomment baris di bawah:
-    /*
-    if (currentHourMin.substring(0, 2) !== settings.targetTime.substring(0, 2)) {
-        return NextResponse.json({ message: 'Not the configured time yet. Skipping.' });
-    }
-    */
-
-    // 3. Ambil Guru yang memiliki jadwal hari ini
     const { data: schedules, error: scheduleError } = await supabase
         .from('schedule')
         .select(`
@@ -62,55 +44,29 @@ export async function GET(request: Request) {
         `)
         .eq('day', dayName);
 
-    if (scheduleError) {
-        console.error('[CRON-WA] DB Error fetching schedules:', scheduleError.message);
-        throw scheduleError;
-    }
+    if (scheduleError) throw scheduleError;
+    if (!schedules || schedules.length === 0) return NextResponse.json({ message: `No schedules for ${dayName}.` });
 
-    if (!schedules || schedules.length === 0) {
-        console.log(`[CRON-WA] No schedules found for ${dayName}. No messages sent.`);
-        return NextResponse.json({ message: `No schedules found for ${dayName}.` });
-    }
-
-    // 4. Kelompokkan jadwal per guru
     const teacherMessages = schedules.reduce((acc, item: any) => {
         const teacherId = item.teacher_id;
-        const teacherName = item.profiles?.full_name;
         const phone = item.profiles?.phone_number;
-
-        if (!phone) {
-            console.log(`[CRON-WA] Skipped ${teacherName}: No phone number provided.`);
-            return acc;
-        }
+        if (!phone) return acc;
 
         if (!acc[teacherId]) {
-            acc[teacherId] = {
-                phone: phone,
-                name: teacherName,
-                schedules: []
-            };
+            acc[teacherId] = { phone: phone, name: item.profiles?.full_name, schedules: [] };
         }
-
         acc[teacherId].schedules.push({
             subject: item.subjects?.name,
             class: item.classes?.name,
             time: `${item.start_time.substring(0, 5)} - ${item.end_time.substring(0, 5)}`
         });
-
         return acc;
     }, {} as Record<string, any>);
 
-    const teacherCount = Object.keys(teacherMessages).length;
-    console.log(`[CRON-WA] Preparing messages for ${teacherCount} teachers.`);
-
-    // 5. Kirim pesan via Fonnte menggunakan format Modern & Profesional
     const results = [];
     for (const teacherId in teacherMessages) {
         const teacher = teacherMessages[teacherId];
-        
-        let scheduleText = teacher.schedules.map((s: any, i: number) => 
-            `🔹 *${s.subject}* (${s.class}) jam ${s.time}`
-        ).join('\n');
+        let scheduleText = teacher.schedules.map((s: any) => `🔹 *${s.subject}* (${s.class}) jam ${s.time}`).join('\n');
 
         const message = `🌟 *LAKUKELAS: JADWAL MENGAJAR HARI INI* 🌟
 
@@ -124,7 +80,7 @@ ${scheduleText}
 ---
 
 💡 *Info Penting:*
-Mohon pastikan Bapak/Ibu telah melakukan absensi di aplikasi sebelum memulai kelas dan mengisi jurnal setelah selesai.
+Mohon pastikan Bapak/Ibu telah melakukan absensi di aplikasi sebelum memulai kelas.
 
 🔗 *Akses Aplikasi:*
 ${settings.appUrl}/dashboard
@@ -133,14 +89,11 @@ Selamat beraktivitas dan semoga harinya menyenangkan!
 _Sistem Notifikasi LakuKelas_`;
 
         try {
-            // Fonnte requires token in both header and body for maximum compatibility
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
-                headers: { 
-                    'Authorization': settings.token as string 
-                },
+                headers: { 'Authorization': settings.token },
                 body: new URLSearchParams({
-                    'token': settings.token as string,
+                    'token': settings.token,
                     'target': teacher.phone,
                     'message': message
                 })
@@ -148,20 +101,12 @@ _Sistem Notifikasi LakuKelas_`;
             const resData = await response.json();
             results.push({ teacher: teacher.name, success: resData.status });
         } catch (err: any) {
-            console.error(`[CRON-WA] Error sending to ${teacher.name}:`, err.message);
             results.push({ teacher: teacher.name, success: false, error: err.message });
         }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      day: dayName,
-      processed_teachers: teacherCount,
-      results: results
-    });
-
+    return NextResponse.json({ success: true, processed: results.length, results });
   } catch (error: any) {
-    console.error('[CRON-WA] Fatal Process Error:', error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
