@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -328,8 +329,11 @@ export async function deleteHoliday(holidayId: string) {
 export async function saveWhatsAppSettings(token: string, enabled: boolean, time: string) {
     const supabase = createClient();
     
+    // Trim token to avoid accidental spaces
+    const cleanToken = token.trim();
+
     const settingsToSave = [
-        { key: 'fonnte_api_token', value: token },
+        { key: 'fonnte_api_token', value: cleanToken },
         { key: 'wa_reminder_enabled', value: String(enabled) },
         { key: 'wa_reminder_time', value: time },
     ];
@@ -354,11 +358,13 @@ export async function saveWhatsAppSettings(token: string, enabled: boolean, time
 export async function testFonnteConnection(token: string) {
     if (!token) return { success: false, error: 'Token tidak boleh kosong.' };
 
+    const cleanToken = token.trim();
+
     try {
         const response = await fetch('https://api.fonnte.com/get-devices', {
             method: 'POST',
             headers: {
-                'Authorization': token
+                'Authorization': cleanToken
             }
         });
 
@@ -370,9 +376,14 @@ export async function testFonnteConnection(token: string) {
                 message: `Berhasil terhubung ke Fonnte. Ditemukan ${result.data?.length || 0} perangkat.` 
             };
         } else {
+            // Handle specific Fonnte error reasons
+            let errorMsg = result.reason || 'Token tidak valid.';
+            if (errorMsg === 'unknown user') {
+                errorMsg = 'Token tidak dikenali oleh Fonnte. Mohon periksa kembali token Anda di dashboard fonnte.com.';
+            }
             return { 
                 success: false, 
-                error: result.reason || 'Token tidak valid atau tidak memiliki akses.' 
+                error: errorMsg
             };
         }
     } catch (error) {
