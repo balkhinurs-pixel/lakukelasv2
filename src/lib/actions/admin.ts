@@ -397,3 +397,37 @@ export async function testFonnteConnection(token: string) {
         return { success: false, error: 'Terjadi kesalahan sistem saat menghubungi Fonnte.' };
     }
 }
+
+export async function sendTestWhatsApp(token: string, target: string) {
+    if (!token || !target) return { success: false, error: 'Token dan nomor tujuan wajib diisi.' };
+    
+    const cleanToken = token.trim();
+    const cleanTarget = target.trim().replace(/[^0-9]/g, ''); // Ambil hanya angka
+    const message = "Halo! Ini adalah pesan tes dari sistem LakuKelas. Jika Anda menerima ini, berarti integrasi WhatsApp sudah berfungsi dengan benar.";
+
+    console.log(`[WA-TEST-SEND] Sending test message to: ${cleanTarget}`);
+
+    try {
+        const response = await fetch('https://api.fonnte.com/send', {
+            method: 'POST',
+            headers: { 'Authorization': cleanToken },
+            body: new URLSearchParams({
+                'token': cleanToken,
+                'target': cleanTarget,
+                'message': message
+            })
+        });
+
+        const result = await response.json();
+        console.log('[WA-TEST-SEND] Result:', JSON.stringify(result));
+
+        if (result.status === true) {
+            return { success: true, message: 'Pesan tes berhasil dikirim. Silakan cek WhatsApp tujuan.' };
+        } else {
+            return { success: false, error: result.reason || 'Gagal mengirim pesan. Pastikan nomor benar dan perangkat aktif.' };
+        }
+    } catch (error: any) {
+        console.error('[WA-TEST-SEND] Fatal error:', error.message);
+        return { success: false, error: 'Terjadi kesalahan sistem saat mengirim pesan.' };
+    }
+}

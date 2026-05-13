@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Loader2, CheckCircle, ExternalLink, Zap, ShieldCheck, BellRing, Clock } from "lucide-react";
+import { MessageSquare, Loader2, CheckCircle, ExternalLink, Zap, ShieldCheck, BellRing, Clock, Send } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { saveWhatsAppSettings, testFonnteConnection } from "@/lib/actions/admin";
+import { saveWhatsAppSettings, testFonnteConnection, sendTestWhatsApp } from "@/lib/actions/admin";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 
@@ -25,7 +25,9 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
     const [testing, setTesting] = React.useState(false);
+    const [sendingTest, setSendingTest] = React.useState(false);
     const [settings, setSettings] = React.useState<WASettings>(initialSettings);
+    const [testPhone, setTestPhone] = React.useState('');
     const [testResult, setTestResult] = React.useState<{ success: boolean; message: string } | null>(null);
 
     const handleSave = async (e: React.FormEvent) => {
@@ -71,6 +73,30 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
             });
         }
         setTesting(false);
+    };
+
+    const handleSendTestMessage = async () => {
+        if (!testPhone) {
+            toast({ title: "Input Dibutuhkan", description: "Masukkan nomor WhatsApp tujuan untuk tes.", variant: "destructive" });
+            return;
+        }
+
+        setSendingTest(true);
+        const result = await sendTestWhatsApp(settings.token, testPhone);
+
+        if (result.success) {
+            toast({
+                title: "Pesan Terkirim",
+                description: result.message,
+            });
+        } else {
+            toast({
+                title: "Gagal Mengirim",
+                description: result.error,
+                variant: "destructive"
+            });
+        }
+        setSendingTest(false);
     };
 
     return (
@@ -176,19 +202,36 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                         </Card>
                     </form>
 
-                    <Card>
+                    <Card className="border-blue-100 bg-blue-50/30">
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <ShieldCheck className="h-5 w-5 text-blue-500" /> Keamanan & Syarat
+                                <Send className="h-5 w-5 text-blue-600" /> Uji Kirim Pesan
                             </CardTitle>
+                            <CardDescription>
+                                Uji apakah pesan benar-benar sampai ke nomor tujuan.
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-2">
-                            <p>Agar pengingat otomatis berfungsi, pastikan:</p>
-                            <ul className="list-disc pl-5 space-y-1">
-                                <li>Nomor telepon guru sudah diawali kode negara (contoh: 62812xxx).</li>
-                                <li>Device di dashboard Fonnte dalam status <strong>Connected</strong>.</li>
-                                <li>Admin telah mengatur Tahun Ajaran Aktif.</li>
-                            </ul>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="test_phone">Nomor WhatsApp Tujuan</Label>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        id="test_phone" 
+                                        placeholder="Contoh: 628123456789" 
+                                        value={testPhone}
+                                        onChange={(e) => setTestPhone(e.target.value)}
+                                    />
+                                    <Button 
+                                        type="button" 
+                                        onClick={handleSendTestMessage}
+                                        disabled={sendingTest || !settings.token || !testPhone}
+                                        className="shrink-0 bg-blue-600 hover:bg-blue-700"
+                                    >
+                                        {sendingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                                        Kirim Tes
+                                    </Button>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -214,6 +257,22 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                     Cron Job akan memanggil endpoint <code>/api/cron/wa-reminder</code> setiap hari pada pukul 06:00 WIB untuk memproses antrean pesan.
                                 </p>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <ShieldCheck className="h-5 w-5 text-blue-500" /> Keamanan & Syarat
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground space-y-2">
+                            <p>Agar pengingat otomatis berfungsi, pastikan:</p>
+                            <ul className="list-disc pl-5 space-y-1">
+                                <li>Nomor telepon guru sudah diawali kode negara (contoh: 62812xxx).</li>
+                                <li>Device di dashboard Fonnte dalam status <strong>Connected</strong>.</li>
+                                <li>Admin telah mengatur Tahun Ajaran Aktif.</li>
+                            </ul>
                         </CardContent>
                     </Card>
                 </div>
