@@ -378,7 +378,7 @@ export async function testFonnteConnection(token: string) {
         } else {
             let errorMsg = result.reason || 'Token tidak valid.';
             if (errorMsg === 'unknown user') {
-                errorMsg = 'Fonnte: Pengguna tidak dikenal (Token Salah).';
+                errorMsg = 'Fonnte: Pengguna tidak dikenal (Gunakan Account Token).';
             }
             return { 
                 success: false, 
@@ -401,8 +401,6 @@ export async function sendTestWhatsApp(token: string, target: string) {
     console.log(`[WA-TEST-SEND] Sending test message to: ${cleanTarget}`);
 
     try {
-        // PENTING: Untuk endpoint /send, Fonnte seringkali hanya menerima token melalui BODY 
-        // dengan Content-Type: application/x-www-form-urlencoded
         const response = await fetch('https://api.fonnte.com/send', {
             method: 'POST',
             headers: {
@@ -422,7 +420,7 @@ export async function sendTestWhatsApp(token: string, target: string) {
             return { success: true, message: 'Pesan tes berhasil dikirim. Silakan cek WhatsApp tujuan.' };
         } else {
             const errorDetail = result.reason || 'Token tidak valid untuk pengiriman.';
-            return { success: false, error: `Fonnte Error: ${errorDetail}` };
+            return { success: false, error: `Fonnte Error: ${errorDetail}. Gunakan Account Token jika Device Token gagal.` };
         }
     } catch (error: any) {
         console.error('[WA-TEST-SEND] Connection error:', error.message);

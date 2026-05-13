@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Loader2, CheckCircle, ExternalLink, Zap, ShieldCheck, BellRing, Clock, Send } from "lucide-react";
+import { MessageSquare, Loader2, CheckCircle, ExternalLink, Zap, ShieldCheck, BellRing, Clock, Send, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -128,7 +128,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                         <Input 
                                             id="token" 
                                             type="password"
-                                            placeholder="Masukkan token dari fonnte.com" 
+                                            placeholder="Masukkan Account Token dari fonnte.com" 
                                             value={settings.token}
                                             onChange={(e) => setSettings({...settings, token: e.target.value})}
                                             required
@@ -143,6 +143,12 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                             {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
                                             Test
                                         </Button>
+                                    </div>
+                                    <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mt-2">
+                                        <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                                        <p className="text-xs text-amber-800 leading-relaxed">
+                                            Saran: Gunakan <strong>Account Token</strong> (dari menu Profile) agar sistem dapat mendeteksi semua perangkat. Device Token seringkali gagal untuk pengecekan status perangkat.
+                                        </p>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
                                         Dapatkan token di <a href="https://fonnte.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center">fonnte.com <ExternalLink className="h-3 w-3 ml-1" /></a>
