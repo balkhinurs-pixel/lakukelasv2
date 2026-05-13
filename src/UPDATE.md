@@ -40,8 +40,21 @@ Pemisahan antarmuka Kepala Sekolah dari direktori `/admin` ke direktori khusus `
 
 ## 2. Peningkatan Pengalaman Pengguna (UX)
 - **Layout Sidebar Berbeda**: Kepala Sekolah memiliki sidebar yang bersih dengan warna tema Teal-Cyan yang segar, tanpa menu manajemen yang membingungkan.
-- **Middleware Role-Based**: Pengaturan pengalihan (redirect) otomatis saat login: Kepala Sekolah langsung ke `/monitoring`, Admin ke `/admin`, dan Guru ke `/dashboard`.
 - **Integrasi Pengajaran**: Jika Kepala Sekolah juga mengajar, mereka dapat dengan mudah berpindah ke "Mode Guru" melalui tombol navigasi cepat di sidebar atau dropdown profil.
+
+---
+
+# Update V4.9: Optimasi Upload & Konfigurasi Storage (DALAM PROSES)
+
+Peningkatan sistem unggah foto profil dan logo sekolah agar lebih stabil dan mudah dikonfigurasi.
+
+## 1. Perbaikan Bug
+- **Permission Error**: Menangani error `42501` saat konfigurasi RLS storage via SQL Editor.
+- **Upload Resilience**: Menambahkan validasi tipe file dan ukuran di sisi klien serta server.
+
+## 2. Rencana Selanjutnya
+- Memastikan sinkronisasi antara bucket storage dan kebijakan akses user.
+- Memperbarui skema SQL utama setelah pengujian potongan script berhasil.
 
 ---
 *Update ini bertujuan untuk menciptakan alur kerja yang lebih profesional bagi pimpinan sekolah.*
