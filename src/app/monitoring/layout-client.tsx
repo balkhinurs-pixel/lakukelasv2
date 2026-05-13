@@ -82,20 +82,20 @@ export default function MonitoringLayoutClient({
       >
         <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
         <SheetHeader className="px-6 pb-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 text-left">
             <Avatar className="h-12 w-12 border-2 border-teal-200">
               <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} />
               <AvatarFallback>{profile?.full_name?.charAt(0) || 'K'}</AvatarFallback>
             </Avatar>
-            <div className="text-left">
-              <SheetTitle className="text-lg font-bold">{profile?.full_name || 'User'}</SheetTitle>
-              <SheetDescription className="text-xs">🎓 Kepala Sekolah • {user?.email}</SheetDescription>
+            <div className="min-w-0">
+              <SheetTitle className="text-lg font-bold truncate">{profile?.full_name || 'User'}</SheetTitle>
+              <SheetDescription className="text-xs truncate">🎓 Kepala Sekolah • {user?.email}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         
-        <div className="px-6 pb-10 space-y-6">
-          <div className="space-y-3 pb-24">
+        <ScrollArea className="h-full max-h-[calc(85vh-120px)] px-6 pb-24">
+          <div className="space-y-6 pb-12">
             <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Navigasi Monitoring</p>
             <div className="grid grid-cols-1 gap-2">
               {monitoringNavItems.map((item) => {
@@ -146,7 +146,7 @@ export default function MonitoringLayoutClient({
                 </Button>
             </div>
           </div>
-        </div>
+        </ScrollArea>
       </SheetContent>
     </Sheet>
   );

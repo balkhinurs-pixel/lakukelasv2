@@ -110,20 +110,20 @@ export default function AdminLayoutClient({
       >
         <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
         <SheetHeader className="px-6 pb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 text-left">
             <Avatar className="h-12 w-12 border-2 border-purple-200">
               <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} />
               <AvatarFallback>{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
             </Avatar>
-            <div className="text-left">
-              <SheetTitle className="text-lg font-bold">{profile?.full_name || 'Admin'}</SheetTitle>
-              <SheetDescription className="text-xs">🛡️ Administrator • {user?.email}</SheetDescription>
+            <div className="min-w-0">
+              <SheetTitle className="text-lg font-bold truncate">{profile?.full_name || 'Admin'}</SheetTitle>
+              <SheetDescription className="text-xs truncate">🛡️ Administrator • {user?.email}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         
-        <ScrollArea className="px-6 pb-8 h-full overflow-y-auto">
-          <div className="space-y-8 pb-24">
+        <ScrollArea className="h-full max-h-[calc(90vh-120px)] px-6 pb-24">
+          <div className="space-y-8 pb-12">
             <div className="space-y-3">
               <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest pl-2">Sistem</p>
               <div className="grid grid-cols-1 gap-2">
