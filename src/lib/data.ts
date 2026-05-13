@@ -43,7 +43,7 @@ export async function getAdminDashboardData() {
             console.log('[DEBUG-RESULT] Attendance Logic Diagnosis:', JSON.stringify(diag, null, 2));
         }
 
-        // Call main summary function - Removed .single() to handle array result more reliably
+        // Call main summary function
         const [summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
             getJournalEntries(),
@@ -55,8 +55,9 @@ export async function getAdminDashboardData() {
             console.error('[DEBUG-ERR] Summary RPC failed:', summaryRes.error.message);
         }
         
-        // Take the first row of the returned table
-        const summaryData = summaryRes.data?.[0] || { 
+        // Take the first row of the returned table with safe defaults
+        const rawData = summaryRes.data;
+        const summaryData = (Array.isArray(rawData) && rawData.length > 0) ? rawData[0] : { 
             total_expected: 0, 
             total_present: 0, 
             total_late: 0, 
@@ -64,31 +65,33 @@ export async function getAdminDashboardData() {
             attendance_rate: 0 
         };
 
+        console.log('[DEBUG-RESULT] Final Summary Data used in UI:', JSON.stringify(summaryData));
+
         const isTodayHoliday = holidays.some(h => h.date === todayStr);
         const activePolicy = settingsRes.data?.value || 'schedule_based';
         
         // Calculate weekly attendance
         const weeklyAttendance = [];
-        const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+        const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
         
         for (let i = 6; i >= 0; i--) {
             const date = new Date(nowIndo);
             date.setDate(date.getDate() - i);
             const dateStr = format(date, 'yyyy-MM-dd');
-            const dayName = dayNames[date.getDay()];
+            const dayIdx = date.getDay();
             
             const { data: daySummaryArr } = await supabase.rpc('get_teacher_attendance_summary', { p_date: dateStr });
-            const daySummary = daySummaryArr?.[0];
+            const daySummary = (Array.isArray(daySummaryArr) && daySummaryArr.length > 0) ? daySummaryArr[0] : null;
             
             weeklyAttendance.push({
-                day: dayName,
+                day: dayNamesShort[dayIdx],
                 hadir: Number(daySummary?.total_present || 0),
                 tidak_hadir: Number(daySummary?.total_absent || 0)
             });
         }
         
         const recentActivities = journalEntries.slice(0, 5).map(j => ({
-            text: `Guru ${j.teacher_id.substring(0,5)}... mengisi jurnal ${j.subjectName} di ${j.className}`,
+            text: `Guru mengisi jurnal ${j.subjectName} di ${j.className}`,
             time: format(parseISO(j.date), 'dd MMM', { locale: id })
         }));
         
@@ -97,7 +100,13 @@ export async function getAdminDashboardData() {
             recentActivities,
             isTodayHoliday,
             activePolicy,
-            summary: summaryData
+            summary: {
+                total_expected: Number(summaryData.total_expected || 0),
+                total_present: Number(summaryData.total_present || 0),
+                total_late: Number(summaryData.total_late || 0),
+                total_absent: Number(summaryData.total_absent || 0),
+                attendance_rate: Number(summaryData.attendance_rate || 0)
+            }
         };
         
     } catch (error) {
@@ -218,7 +227,7 @@ export async function getAttendanceSettings() {
         radius: parseInt(settings.radius) || 30,
         check_in_start: settings.check_in_start || '06:30',
         check_in_deadline: settings.check_in_deadline || '07:15',
-        attendance_policy: settings.policy || settings.attendance_policy || 'schedule_based'
+        attendance_policy: settings.attendance_policy || 'schedule_based'
     };
 }
 
@@ -292,7 +301,7 @@ export async function getActiveStudents(): Promise<Student[]> {
 export async function getAlumni(): Promise<Student[]> {
     noStore();
     const supabase = createClient();
-    const { data } = await supabase.from('students').select('*').neq('status', 'active').order('name');
+    const { data, error } = await supabase.from('students').select('*').neq('status', 'active').order('name');
     return data || [];
 }
 
