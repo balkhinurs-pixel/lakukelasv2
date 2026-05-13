@@ -93,15 +93,21 @@ const homeroomNavItems = [
     { href: '/dashboard/homeroom/reports', icon: BarChart3, label: 'Laporan Kelas' },
 ];
 
-const mainMobileNavItems = [
-    { href: '/dashboard', icon: Zap, label: 'Dasbor' },
+// Items for the left side of the mobile bottom bar
+const leftMobileNavItems = [
+    { href: '/dashboard', icon: Home, label: 'Dasbor' },
     { href: '/dashboard/attendance', icon: ScanLine, label: 'Presensi' },
+];
+
+// Items for the right side of the mobile bottom bar
+const rightMobileNavItems = [
     { href: '/dashboard/grades', icon: Award, label: 'Nilai' },
     { href: '/dashboard/journal', icon: PenTool, label: 'Jurnal' },
 ];
 
+// Sidebar items that are not in the bottom bar
 const mobileSidebarNavItems = navItems.filter(
-    (item) => !mainMobileNavItems.some((mobileItem) => mobileItem.href === item.href)
+    (item) => ![...leftMobileNavItems, ...rightMobileNavItems].some((mobileItem) => mobileItem.href === item.href)
 );
 
 export default function DashboardLayoutClient({ 
@@ -265,18 +271,29 @@ export default function DashboardLayoutClient({
             {children}
         </div>
       </SidebarInset>
+      
       {isMobile && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t p-2 flex justify-around items-center">
-              {mainMobileNavItems.map((item) => (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16">
+              {leftMobileNavItems.map((item) => (
                   <Link key={item.href} href={item.href} className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === item.href ? "text-primary bg-primary/10" : "text-muted-foreground")}>
                       <item.icon className="w-5 h-5" />
                       <span className="text-[10px] mt-1 font-medium">{item.label}</span>
                   </Link>
               ))}
-              <button onClick={() => toggleSidebar()} className="flex flex-col items-center p-2 text-muted-foreground">
-                  <Menu className="w-5 h-5" />
-                  <span className="text-[10px] mt-1 font-medium">Lainnya</span>
+              
+              <button 
+                onClick={() => toggleSidebar()} 
+                className="flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg border-4 border-background"
+              >
+                  <Menu className="w-6 h-6" />
               </button>
+
+              {rightMobileNavItems.map((item) => (
+                  <Link key={item.href} href={item.href} className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === item.href ? "text-primary bg-primary/10" : "text-muted-foreground")}>
+                      <item.icon className="w-5 h-5" />
+                      <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                  </Link>
+              ))}
           </div>
       )}
     </>
