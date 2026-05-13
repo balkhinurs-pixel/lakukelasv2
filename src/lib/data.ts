@@ -29,14 +29,13 @@ export async function getAdminDashboardData() {
     if (!user) return null;
     
     const supabase = createClient();
-    // Gunakan Waktu Indonesia untuk query database agar konsisten
     const nowIndo = getIndonesianTime();
     const todayStr = format(nowIndo, 'yyyy-MM-dd');
 
-    console.log(`[DEBUG] Dashboard Fetch for date: ${todayStr}`);
+    console.log(`[DEBUG] Dashboard Fetch Started - Date: ${todayStr}`);
 
     try {
-        // Jalankan diagnosa terlebih dahulu
+        // Run diagnosis for logging
         const { data: diag, error: diagErr } = await supabase.rpc('diagnose_attendance_logic', { p_date: todayStr });
         if (diagErr) {
             console.error('[DEBUG-ERR] Diagnostic function failed:', diagErr.message);
@@ -44,17 +43,31 @@ export async function getAdminDashboardData() {
             console.log('[DEBUG-RESULT] Attendance Logic Diagnosis:', JSON.stringify(diag, null, 2));
         }
 
+        // Call main summary function - Removed .single() to handle array result more reliably
         const [summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
-            supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }).single(),
+            supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
             getJournalEntries(),
             getHolidays(),
             supabase.from('settings').select('value').eq('key', 'attendance_policy').single()
         ]);
+
+        if (summaryRes.error) {
+            console.error('[DEBUG-ERR] Summary RPC failed:', summaryRes.error.message);
+        }
         
+        // Take the first row of the returned table
+        const summaryData = summaryRes.data?.[0] || { 
+            total_expected: 0, 
+            total_present: 0, 
+            total_late: 0, 
+            total_absent: 0, 
+            attendance_rate: 0 
+        };
+
         const isTodayHoliday = holidays.some(h => h.date === todayStr);
         const activePolicy = settingsRes.data?.value || 'schedule_based';
         
-        // Calculate weekly attendance (simple loop for 7 days)
+        // Calculate weekly attendance
         const weeklyAttendance = [];
         const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
         
@@ -64,12 +77,13 @@ export async function getAdminDashboardData() {
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayName = dayNames[date.getDay()];
             
-            const { data: daySummary } = await supabase.rpc('get_teacher_attendance_summary', { p_date: dateStr }).single();
+            const { data: daySummaryArr } = await supabase.rpc('get_teacher_attendance_summary', { p_date: dateStr });
+            const daySummary = daySummaryArr?.[0];
             
             weeklyAttendance.push({
                 day: dayName,
-                hadir: daySummary?.total_present || 0,
-                tidak_hadir: daySummary?.total_absent || 0
+                hadir: Number(daySummary?.total_present || 0),
+                tidak_hadir: Number(daySummary?.total_absent || 0)
             });
         }
         
@@ -83,7 +97,7 @@ export async function getAdminDashboardData() {
             recentActivities,
             isTodayHoliday,
             activePolicy,
-            summary: summaryRes.data || { total_expected: 0, total_present: 0, total_late: 0, total_absent: 0, attendance_rate: 0 }
+            summary: summaryData
         };
         
     } catch (error) {
@@ -242,7 +256,7 @@ export async function getAgendas(): Promise<Agenda[]> {
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { data } = await supabase.from('agendas').select('*').eq('teacher_id', user.id).order('date', { ascending: false });
+    const { data = [] } = await supabase.from('agendas').select('*').eq('teacher_id', user.id).order('date', { ascending: false });
     return data || [];
 }
 
