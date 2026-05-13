@@ -22,6 +22,8 @@ import {
   Building,
   CalendarOff,
   Activity,
+  Home,
+  ChevronLeft,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -170,7 +172,15 @@ export default function AdminLayoutClient({
                     <span className="text-red-300">{isHeadmaster ? 'Monitoring' : 'Admin'}</span>
                 </h1>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
+                {isHeadmaster && (
+                  <Button variant="ghost" asChild className="hidden sm:flex text-white hover:bg-white/20">
+                    <Link href="/dashboard">
+                      <ChevronLeft className="mr-2 h-4 w-4" />
+                      Mode Guru
+                    </Link>
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white rounded-full">
                     <Bell className="h-5 w-5" />
                 </Button>
@@ -191,14 +201,12 @@ export default function AdminLayoutClient({
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {isHeadmaster && (
-                             <DropdownMenuItem asChild>
-                                <Link href="/dashboard">
-                                     <UserIcon className="mr-2 h-4 w-4"/>
-                                     Kembali ke Dasbor Guru
-                                </Link>
-                             </DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem asChild>
+                           <Link href="/dashboard">
+                                <Home className="mr-2 h-4 w-4"/>
+                                Kembali ke Dasbor Guru
+                           </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleLogout}>
                             <LogOut className="mr-2 h-4 w-4"/>
                             Keluar
@@ -279,20 +287,16 @@ export default function AdminLayoutClient({
         </SidebarContent>
 
         <SidebarFooter className="p-4 border-t border-border/50">
-             {isHeadmaster && (
-                <SidebarMenu className="mb-2">
-                    <SidebarMenuItem>
-                         <SidebarMenuButton asChild tooltip={{ children: "Kembali ke Guru" }}>
-                            <Link href="/dashboard" className="flex items-center gap-3 w-full">
-                                <Home className="w-4 h-4" />
-                                <span className="group-data-[collapsible=icon]:hidden font-medium">Dasbor Guru</span>
-                            </Link>
-                         </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            )}
-            <SidebarSeparator className="my-2 bg-gradient-to-r from-transparent via-border to-transparent" />
             <SidebarMenu className="gap-2">
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip={{ children: "Kembali ke Guru" }}>
+                        <Link href="/dashboard" className="flex items-center gap-3 w-full text-blue-600 font-bold">
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="group-data-[collapsible=icon]:hidden">Mode Dasbor Guru</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarSeparator className="my-2" />
                 <SidebarMenuItem>
                     <SidebarMenuButton
                         onClick={handleLogout}
@@ -300,15 +304,11 @@ export default function AdminLayoutClient({
                         className={cn(
                           "group-data-[collapsible=icon]:justify-center relative transition-all duration-300 ease-out rounded-xl mx-2",
                           "hover:bg-gradient-to-r hover:from-red-500/10 hover:to-red-500/5 hover:shadow-lg hover:shadow-red-500/10 hover:text-red-500",
-                          "hover:scale-[1.02] hover:-translate-y-0.5",
-                          "after:absolute after:inset-0 after:rounded-xl after:bg-gradient-to-r after:from-transparent after:via-white/[0.02] after:to-transparent after:opacity-0 hover:after:opacity-100 after:transition-opacity after:duration-300"
                         )}
                     >
                         <div className="flex items-center gap-3 w-full">
-                            <div className="relative transition-all duration-300">
-                              <LogOut className="w-4 h-4 transition-all duration-300" />
-                            </div>
-                            <span className="group-data-[collapsible=icon]:hidden transition-all duration-300 font-medium text-muted-foreground">
+                            <LogOut className="w-4 h-4" />
+                            <span className="group-data-[collapsible=icon]:hidden font-medium text-muted-foreground">
                               Keluar
                             </span>
                         </div>
@@ -323,28 +323,19 @@ export default function AdminLayoutClient({
         <div className="p-4 sm:p-6 lg:p-8">
             {children}
         </div>
+        
+        {/* Simple Mobile Back Button for Headmaster */}
+        {isHeadmaster && isMobile && (
+          <div className="fixed bottom-6 right-6 z-50">
+              <Button asChild className="rounded-full h-14 w-14 shadow-2xl bg-blue-600 hover:bg-blue-700">
+                <Link href="/dashboard">
+                  <Home className="h-6 w-6" />
+                </Link>
+              </Button>
+          </div>
+        )}
       </SidebarInset>
     </>
   );
 }
 
-// Simple Home icon for the footer link
-function Home(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  )
-}
