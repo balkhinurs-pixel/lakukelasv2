@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from './supabase/server';
@@ -31,6 +30,7 @@ export async function getAdminDashboardData() {
     const supabase = createClient();
     const nowIndo = getIndonesianTime();
     const todayStr = format(nowIndo, 'yyyy-MM-dd');
+    const dayNameIndo = getIndonesianDayName();
 
     try {
         // Run diagnosis for logging
@@ -39,19 +39,20 @@ export async function getAdminDashboardData() {
             console.log('[DEBUG-RESULT] Attendance Logic Diagnosis:', JSON.stringify(diag, null, 2));
         }
 
-        // Call main summary function
-        const [summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
+        // Call main summary and other data
+        const [summaryRes, settingsRes, holidaysRes, allStaffRes, todayAttendanceRes, todaySchedulesRes] = await Promise.all([
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
-            getJournalEntries(),
-            getHolidays(),
-            supabase.from('settings').select('value').eq('key', 'attendance_policy').single()
+            supabase.from('settings').select('value').eq('key', 'attendance_policy').single(),
+            supabase.from('holidays').select('date').eq('date', todayStr),
+            supabase.from('profiles').select('id, full_name, avatar_url').in('role', ['teacher', 'headmaster']).order('full_name'),
+            supabase.from('teacher_attendance').select('*').eq('date', todayStr),
+            supabase.from('schedule').select('teacher_id').eq('day', dayNameIndo)
         ]);
 
         if (summaryRes.error) {
             console.error('[DEBUG-ERR] Summary RPC failed:', summaryRes.error.message);
         }
         
-        // Robust data extraction from RPC result (which comes as an array of objects)
         const rawData = summaryRes.data;
         let summaryData = { 
             total_expected: 0, 
@@ -72,12 +73,30 @@ export async function getAdminDashboardData() {
             };
         }
 
-        console.log('[DEBUG-RESULT] Final Summary Data used in UI:', JSON.stringify(summaryData));
-
-        const isTodayHoliday = holidays.some(h => h.date === todayStr);
         const activePolicy = settingsRes.data?.value || 'schedule_based';
+        const isTodayHoliday = (holidaysRes.data || []).length > 0;
+
+        // Build the Today Attendance List for the Dashboard
+        const expectedTeacherIds = new Set(
+            activePolicy === 'daily_based' 
+            ? allStaffRes.data?.map(s => s.id) 
+            : todaySchedulesRes.data?.map(s => s.teacher_id)
+        );
+
+        const todayAttendanceList = (allStaffRes.data || [])
+            .filter(staff => expectedTeacherIds.has(staff.id))
+            .map(staff => {
+                const record = todayAttendanceRes.data?.find(a => a.teacher_id === staff.id);
+                return {
+                    id: staff.id,
+                    name: staff.full_name,
+                    avatar_url: staff.avatar_url,
+                    status: record ? record.status : 'Belum Absen',
+                    time: record?.check_in ? record.check_in.substring(0, 5) : '--:--',
+                };
+            });
         
-        // Calculate weekly attendance
+        // Calculate weekly attendance (for the chart)
         const weeklyAttendance = [];
         const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
         
@@ -97,17 +116,12 @@ export async function getAdminDashboardData() {
             });
         }
         
-        const recentActivities = journalEntries.slice(0, 5).map(j => ({
-            text: `Guru mengisi jurnal ${j.subjectName} di ${j.className}`,
-            time: format(parseISO(j.date), 'dd MMM', { locale: id })
-        }));
-        
         return {
+            summary: summaryData,
             weeklyAttendance,
-            recentActivities,
+            todayAttendanceList,
             isTodayHoliday,
-            activePolicy,
-            summary: summaryData
+            activePolicy
         };
         
     } catch (error) {

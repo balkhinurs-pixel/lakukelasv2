@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -17,15 +16,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, Clock, UserX, Activity, UserCheck, TrendingUp, Calendar, AlertTriangle, RefreshCw, ShieldCheck, Info } from "lucide-react";
-import { getAdminDashboardData, getAllUsers, getTeacherAttendanceHistory, getHolidays } from "@/lib/data";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Users, Clock, UserX, Activity, UserCheck, TrendingUp, Calendar, AlertTriangle, RefreshCw, ShieldCheck, Info, User as UserIcon } from "lucide-react";
+import { getAdminDashboardData } from "@/lib/data";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { cn, formatTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { getIndonesianTime } from '@/lib/timezone';
 import WeeklyAttendanceChart from "./weekly-attendance-chart";
-import { Suspense } from "react";
-import type { TeacherAttendance } from "@/lib/types";
 
 const StatCard = ({ 
     icon: Icon, 
@@ -83,9 +82,7 @@ const getStatusBadge = (status: string) => {
         case 'Terlambat': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
         case 'Sakit': return "bg-amber-100 text-amber-800 border-amber-200";
         case 'Izin': return "bg-blue-100 text-blue-800 border-blue-200";
-        case 'Tidak Hadir':
         case 'Belum Absen': return 'bg-red-100 text-red-800 border-red-200';
-        case 'Libur': return 'bg-slate-100 text-slate-800 border-slate-200';
         default: return 'bg-gray-100 text-gray-800';
     }
 }
@@ -93,14 +90,12 @@ const getStatusBadge = (status: string) => {
 export default async function AdminDashboardPage() {
   const dashboardData = await getAdminDashboardData();
   const now = getIndonesianTime();
-  const today = format(now, 'yyyy-MM-dd');
 
   if (!dashboardData) {
-      return <div className="p-8 text-center">Gagal memuat data dasbor admin.</div>;
+      return <div className="p-8 text-center text-muted-foreground">Gagal memuat data dasbor admin. Silakan segarkan halaman.</div>;
   }
 
-  const { summary, isTodayHoliday, activePolicy } = dashboardData;
-
+  const { summary, isTodayHoliday, activePolicy, todayAttendanceList } = dashboardData;
   const policyLabel = activePolicy === 'schedule_based' ? 'Berbasis Jadwal' : 'Absensi Harian (Full-Time)';
 
   return (
@@ -170,41 +165,58 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-6 lg:grid-cols-5">
           <Card className="lg:col-span-3">
               <CardHeader>
-                  <CardTitle>Kehadiran Guru Hari Ini</CardTitle>
-                  <CardDescription>Visualisasi harian berdasarkan rekaman absensi terbaru.</CardDescription>
+                  <CardTitle>Statistik Kehadiran Seminggu Terakhir</CardTitle>
+                  <CardDescription>Visualisasi jumlah kehadiran harian guru.</CardDescription>
               </CardHeader>
               <CardContent>
-                  <div className="space-y-4">
-                      <WeeklyAttendanceChart data={dashboardData.weeklyAttendance} />
-                  </div>
+                  <WeeklyAttendanceChart data={dashboardData.weeklyAttendance} />
               </CardContent>
           </Card>
 
           <Card className="lg:col-span-2">
               <CardHeader>
-                  <CardTitle>Aktivitas Jurnal Terbaru</CardTitle>
-                  <CardDescription>Aktivitas administrasi guru terakhir.</CardDescription>
+                  <CardTitle>Status Kehadiran Guru Hari Ini</CardTitle>
+                  <CardDescription>Detail absensi guru yang wajib hadir hari ini.</CardDescription>
               </CardHeader>
-              <CardContent>
-                  <div className="space-y-4">
-                      {dashboardData.recentActivities.length > 0 ? (
-                          dashboardData.recentActivities.map((activity, index) => (
-                              <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                                  <div className="p-2 bg-slate-100 rounded-full">
-                                      <Activity className="h-4 w-4 text-slate-500" />
-                                  </div>
-                                  <div className="text-sm">
-                                      <p className="font-medium">{activity.text}</p>
-                                      <p className="text-xs text-muted-foreground">{activity.time}</p>
-                                  </div>
-                              </div>
-                          ))
-                      ) : (
-                          <div className="text-center py-10 text-muted-foreground italic text-sm">
-                              Belum ada aktivitas jurnal hari ini.
-                          </div>
-                      )}
-                  </div>
+              <CardContent className="p-0">
+                  <ScrollArea className="h-[400px]">
+                      <div className="px-6 pb-6">
+                        {todayAttendanceList.length > 0 ? (
+                            <div className="space-y-4">
+                                {todayAttendanceList.map((item) => (
+                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all duration-200">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                                                <AvatarImage src={item.avatar_url || ""} />
+                                                <AvatarFallback className="bg-slate-100 text-slate-600 text-xs">
+                                                    {item.name.charAt(0)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold text-slate-900 truncate max-w-[140px]">{item.name}</p>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <Clock className="h-3 w-3 text-slate-400" />
+                                                    <span className="text-[11px] font-mono text-slate-500">{item.time} WIB</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <Badge 
+                                            variant="outline" 
+                                            className={cn("text-[10px] uppercase tracking-wider font-bold py-1 px-2.5", getStatusBadge(item.status))}
+                                        >
+                                            {item.status}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-20">
+                                <UserIcon className="mx-auto h-12 w-12 text-slate-200 mb-4" />
+                                <p className="text-sm text-slate-500 font-medium italic">Tidak ada guru yang wajib hadir hari ini.</p>
+                            </div>
+                        )}
+                      </div>
+                  </ScrollArea>
               </CardContent>
           </Card>
       </div>
