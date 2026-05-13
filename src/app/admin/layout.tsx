@@ -1,4 +1,3 @@
-
 'use server';
 
 import * as React from 'react';
@@ -16,7 +15,6 @@ export default async function AdminLayout({
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    console.log('[AdminLayout] No user found, redirecting to login');
     redirect('/');
   }
 
@@ -26,15 +24,12 @@ export default async function AdminLayout({
     .eq('id', user.id)
     .single();
 
-  console.log(`[AdminLayout] Server-side check - User: ${user.email}, Role: ${profile?.role}`);
-
-  if (profileError) {
-      console.error('[AdminLayout] Profile fetch error:', profileError.message);
+  if (profileError || !profile) {
+      redirect('/dashboard');
   }
 
-  // Secondary security check: Ensure the user actually has the admin role
-  if (!profile || profile.role !== 'admin') {
-    console.log(`[AdminLayout] Access forbidden for role: ${profile?.role}. Redirecting to dashboard`);
+  // Izinkan Admin DAN Kepala Sekolah untuk masuk ke layout admin
+  if (profile.role !== 'admin' && profile.role !== 'headmaster') {
     redirect('/dashboard');
   }
 

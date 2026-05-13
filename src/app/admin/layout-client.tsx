@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -76,7 +75,7 @@ const rosterNavItems = [
 
 const settingsNavItems = [
     { href: '/admin/settings/school', icon: Building, label: 'Data Sekolah' },
-    { href: '/admin/settings/location', icon: MapPin, label: 'Pengaturan Lokasi' },
+    { href: '/admin/settings/location', icon: MapPin, label: 'Pengaturan Absensi' },
     { href: '/admin/settings/schedule', icon: CalendarClock, label: 'Kelola Jadwal Guru' },
     { href: '/admin/settings/holidays', icon: CalendarOff, label: 'Hari Libur' },
 ]
@@ -88,12 +87,15 @@ export default function AdminLayoutClient({
 }: { 
   children: React.ReactNode;
   user: User | null;
-  profile: Pick<Profile, 'full_name' | 'avatar_url'> | null;
+  profile: Pick<Profile, 'full_name' | 'avatar_url' | 'role'> | null;
 }) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
+
+  const isAdmin = profile?.role === 'admin';
+  const isHeadmaster = profile?.role === 'headmaster';
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -106,6 +108,9 @@ export default function AdminLayoutClient({
   const NavContent = ({ items }: { items: typeof adminNavItems | typeof rosterNavItems | typeof settingsNavItems }) => (
      <SidebarMenu className="gap-2">
         {items.map((item, index) => {
+          // Filter out User Management for Headmaster
+          if (isHeadmaster && item.href === '/admin/users') return null;
+
           const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/admin';
           return (
             <SidebarMenuItem key={item.href}>
@@ -162,7 +167,7 @@ export default function AdminLayoutClient({
                  <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" />
                  <h1 className="text-lg font-bold tracking-tight">
                     <span className="text-white">Panel</span>
-                    <span className="text-red-300">Admin</span>
+                    <span className="text-red-300">{isHeadmaster ? 'Monitoring' : 'Admin'}</span>
                 </h1>
             </div>
             <div className="flex items-center gap-1">
@@ -186,6 +191,14 @@ export default function AdminLayoutClient({
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        {isHeadmaster && (
+                             <DropdownMenuItem asChild>
+                                <Link href="/dashboard">
+                                     <UserIcon className="mr-2 h-4 w-4"/>
+                                     Kembali ke Dasbor Guru
+                                </Link>
+                             </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={handleLogout}>
                             <LogOut className="mr-2 h-4 w-4"/>
                             Keluar
@@ -197,174 +210,34 @@ export default function AdminLayoutClient({
     </header>
   );
 
-  const BottomNavbar = () => {
-    const [rippleEffect, setRippleEffect] = React.useState<{x: number, y: number, show: boolean}>({
-      x: 0,
-      y: 0,
-      show: false
-    });
-
-    const handleRippleEffect = (event: React.MouseEvent<HTMLElement>) => {
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      
-      setRippleEffect({ x, y, show: true });
-      setTimeout(() => setRippleEffect(prev => ({ ...prev, show: false })), 600);
-    };
-
-    return (
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-        {/* Modern glassmorphism container */}
-        <div className="relative bg-background/80 backdrop-blur-xl border-t border-white/20 rounded-t-3xl shadow-2xl shadow-black/20 p-2 pb-safe">
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-green-500/10 rounded-t-3xl" />
-          
-          {/* Navigation items container */}
-          <div className="relative flex justify-around items-center">
-            {adminNavItems.map((item, index) => {
-              const isActive = pathname === item.href;
-
-              return (
-                <Link 
-                  key={item.href} 
-                  href={item.href}
-                  onClick={handleRippleEffect}
-                  className={cn(
-                    "relative flex flex-col items-center justify-center gap-1 p-3 rounded-2xl w-16 h-16 transition-all duration-500 ease-out transform group overflow-hidden",
-                    "hover:scale-110 active:scale-95",
-                    isActive 
-                      ? "text-primary shadow-lg shadow-primary/25 bg-primary/10 backdrop-blur-sm -translate-y-2" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
-                  )}
-                  style={{
-                    animationDelay: `${index * 100}ms`
-                  }}
-                >
-                  {/* Ripple effect */}
-                  {rippleEffect.show && (
-                    <span 
-                      className="absolute inset-0 bg-primary/20 rounded-full animate-ping"
-                      style={{
-                        left: rippleEffect.x - 10,
-                        top: rippleEffect.y - 10,
-                        width: '20px',
-                        height: '20px'
-                      }}
-                    />
-                  )}
-                  
-                  {/* Active glow effect */}
-                  {isActive && (
-                    <div className="absolute inset-0 bg-primary/20 rounded-2xl animate-pulse" />
-                  )}
-                  
-                  {/* Icon with animation */}
-                  <div className={cn(
-                    "relative z-10 transition-all duration-300",
-                    isActive && "animate-bounce"
-                  )}>
-                    <item.icon className={cn(
-                      "transition-all duration-300",
-                      isActive ? "w-6 h-6" : "w-5 h-5"
-                    )} />
-                  </div>
-                  
-                  {/* Label with fade animation */}
-                  <span className={cn(
-                    "text-xs font-medium transition-all duration-300 relative z-10",
-                    isActive ? "opacity-100 font-semibold" : "opacity-70 group-hover:opacity-100"
-                  )}>
-                    {item.label}
-                  </span>
-
-                  {/* Active indicator dot */}
-                  {isActive && (
-                    <div className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full animate-pulse" />
-                  )}
-                </Link>
-              )
-            })}
-            
-            {/* Menu button with enhanced styling */}
-            <button 
-              onClick={(e) => {
-                handleRippleEffect(e);
-                toggleSidebar();
-              }}
-              className={cn(
-                "relative flex flex-col items-center justify-center gap-1 p-3 rounded-2xl w-16 h-16",
-                "text-muted-foreground hover:text-foreground transition-all duration-500 ease-out transform group overflow-hidden",
-                "hover:scale-110 active:scale-95 hover:bg-foreground/5"
-              )}
-            >
-              {/* Ripple effect for menu button */}
-              {rippleEffect.show && (
-                <span 
-                  className="absolute inset-0 bg-foreground/10 rounded-full animate-ping"
-                  style={{
-                    left: rippleEffect.x - 10,
-                    top: rippleEffect.y - 10,
-                    width: '20px',
-                    height: '20px'
-                  }}
-                />
-              )}
-              
-              <div className="relative z-10 transition-transform duration-300 group-hover:rotate-180">
-                <Menu className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-medium transition-all duration-300 relative z-10 opacity-70 group-hover:opacity-100">
-                Lainnya
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Floating animation keyframes */}
-        <style jsx>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
-          }
-          .animate-float {
-            animation: float 3s ease-in-out infinite;
-          }
-        `}</style>
-      </div>
-    )
-  }
-
   return (
     <>
       <Sidebar collapsible="icon">
         <SidebarHeader className="p-0 text-background">
           <div className="relative flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 via-purple-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden overflow-hidden">
-              {/* Background pattern overlay */}
               <div className="absolute inset-0 bg-white/[0.05] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
               
-              {/* Animated floating elements */}
-              <div className="absolute top-4 right-4 w-2 h-2 bg-white/20 rounded-full animate-pulse" />
-              <div className="absolute bottom-6 left-6 w-1 h-1 bg-white/30 rounded-full animate-ping" style={{animationDelay: '1s'}} />
-              
               <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 transition-transform duration-300 hover:scale-105 hover:border-white/50 relative z-10">
-                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="Admin" data-ai-hint="admin portrait" />
-                <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
+                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="User" data-ai-hint="admin portrait" />
+                <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="text-center relative z-10">
-                <p className="text-lg font-bold text-white drop-shadow-sm">{profile?.full_name || 'Admin User'}</p>
+                <p className="text-lg font-bold text-white drop-shadow-sm">{profile?.full_name || 'User'}</p>
                 <p className="text-sm text-white/80 drop-shadow-sm">{user?.email}</p>
                 <div className="mt-2">
-                  <div className="text-xs font-semibold bg-red-500/20 text-red-100 border border-red-300/30 backdrop-blur-sm px-3 py-1 rounded-lg">
-                    🛡️ Administrator
+                  <div className={cn(
+                      "text-xs font-semibold px-3 py-1 rounded-lg border backdrop-blur-sm",
+                      isAdmin ? "bg-red-500/20 text-red-100 border-red-300/30" : "bg-teal-500/20 text-teal-100 border-teal-300/30"
+                  )}>
+                    {isAdmin ? '🛡️ Administrator' : '🎓 Kepala Sekolah'}
                   </div>
                 </div>
               </div>
           </div>
           <div className="hidden justify-center p-2 group-data-[collapsible=icon]:flex group-data-[state=expanded]:hidden">
               <Avatar className="h-12 w-12 border-2 border-primary shadow-lg transition-transform duration-300 hover:scale-105">
-                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="Admin" data-ai-hint="admin portrait" />
-                <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
+                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="User" data-ai-hint="admin portrait" />
+                <AvatarFallback className="text-foreground">{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
           </div>
         </SidebarHeader>
@@ -374,34 +247,50 @@ export default function AdminLayoutClient({
             <SidebarGroup className="p-4">
               <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
                 <LayoutDashboard className="w-4 h-4 mr-2" />
-                Admin Panel
+                Monitoring Panel
               </SidebarGroupLabel>
               <NavContent items={adminNavItems} />
             </SidebarGroup>
             
-            <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
-            
-            <SidebarGroup className="p-4">
-              <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
-                <Users2 className="w-4 h-4 mr-2" />
-                Manajemen Data
-              </SidebarGroupLabel>
-              <NavContent items={rosterNavItems} />
-            </SidebarGroup>
+            {isAdmin && (
+                <>
+                    <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+                    
+                    <SidebarGroup className="p-4">
+                    <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
+                        <Users2 className="w-4 h-4 mr-2" />
+                        Manajemen Data
+                    </SidebarGroupLabel>
+                    <NavContent items={rosterNavItems} />
+                    </SidebarGroup>
 
-            <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
-            
-            <SidebarGroup className="p-4">
-              <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
-                <Users2 className="w-4 h-4 mr-2" />
-                Pengaturan
-              </SidebarGroupLabel>
-              <NavContent items={settingsNavItems} />
-            </SidebarGroup>
+                    <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+                    
+                    <SidebarGroup className="p-4">
+                    <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
+                        <Users2 className="w-4 h-4 mr-2" />
+                        Pengaturan
+                    </SidebarGroupLabel>
+                    <NavContent items={settingsNavItems} />
+                    </SidebarGroup>
+                </>
+            )}
           </ScrollArea>
         </SidebarContent>
 
         <SidebarFooter className="p-4 border-t border-border/50">
+             {isHeadmaster && (
+                <SidebarMenu className="mb-2">
+                    <SidebarMenuItem>
+                         <SidebarMenuButton asChild tooltip={{ children: "Kembali ke Guru" }}>
+                            <Link href="/dashboard" className="flex items-center gap-3 w-full">
+                                <Home className="w-4 h-4" />
+                                <span className="group-data-[collapsible=icon]:hidden font-medium">Dasbor Guru</span>
+                            </Link>
+                         </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            )}
             <SidebarSeparator className="my-2 bg-gradient-to-r from-transparent via-border to-transparent" />
             <SidebarMenu className="gap-2">
                 <SidebarMenuItem>
@@ -438,4 +327,25 @@ export default function AdminLayoutClient({
       {isMobile && <BottomNavbar />}
     </>
   );
+}
+
+// Simple Home icon for the footer link
+function Home(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  )
 }

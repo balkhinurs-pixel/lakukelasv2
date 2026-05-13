@@ -45,7 +45,6 @@ export async function middleware(request: NextRequest) {
   }
   
   if (user) {
-    // DIAGNOSTIC LOGGING: Cek data mentah dari database
     const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, email')
@@ -56,14 +55,11 @@ export async function middleware(request: NextRequest) {
         console.error(`[Middleware DEBUG] Fetch Error for ${user.email}:`, profileError.message);
     }
 
-    // Jika profile tidak ditemukan (data === null), ini masalah pendaftaran
     if (!profile) {
-      console.warn(`[Middleware DEBUG] Profile MISSING for ${user.email}. User exists in Auth but not in Profiles table.`);
+      console.warn(`[Middleware DEBUG] Profile MISSING for ${user.email}.`);
     }
 
     const role = profile?.role || 'teacher';
-    console.log(`[Middleware DEBUG] User: ${user.email} | DB Role: ${profile?.role || 'NULL'} | Final Role: ${role}`);
-
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
 
@@ -75,19 +71,24 @@ export async function middleware(request: NextRequest) {
 
     // Proteksi rute Admin
     if (pathname.startsWith('/admin')) {
+      // Admin punya akses penuh
       if (isAdmin) return response;
 
       // Izinkan headmaster melihat menu tertentu di /admin
-      const isAllowedMonitoring = pathname.startsWith('/admin/teacher-attendance') || pathname.startsWith('/admin/teacher-activity');
-      if (isHeadmaster && isAllowedMonitoring) return response;
+      const isAllowedMonitoring = pathname === '/admin' || pathname.startsWith('/admin/teacher-attendance') || pathname.startsWith('/admin/teacher-activity');
+      
+      // Jika Headmaster mencoba akses rute admin lain (users, settings, roster), tolak
+      if (isHeadmaster) {
+          if (isAllowedMonitoring) return response;
+          return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
 
       console.warn(`[Middleware DEBUG] Access DENIED for ${user.email}. Role '${role}' unauthorized for ${pathname}`);
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     
-    // Redirect Admin agar tidak masuk ke dashboard guru
+    // Redirect Admin agar tidak masuk ke dashboard guru (karena admin tidak mengajar)
     if (pathname === '/dashboard' && isAdmin) {
-        console.log(`[Middleware DEBUG] Redirecting Admin ${user.email} from /dashboard to /admin`);
         return NextResponse.redirect(new URL('/admin', request.url));
     }
   }

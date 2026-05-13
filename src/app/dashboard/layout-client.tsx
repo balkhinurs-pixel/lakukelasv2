@@ -38,6 +38,7 @@ import {
   UserCheck as UserCheckIcon,
   Activity,
   Link2,
+  LayoutDashboard,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -92,7 +93,8 @@ const homeroomNavItems = [
 ];
 
 const monitoringNavItems = [
-  { href: '/admin/teacher-attendance', icon: UserCheckIcon, label: 'Laporan Kehadiran' },
+  { href: '/admin', icon: LayoutDashboard, label: 'Dasbor Monitoring' },
+  { href: '/admin/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
   { href: '/admin/teacher-activity', icon: Activity, label: 'Aktivitas Guru' },
 ];
 
@@ -152,7 +154,7 @@ export default function DashboardLayoutClient({
             <div className="mt-2">
               <Badge variant={'outline'} className="text-xs font-semibold backdrop-blur-sm border-white/30 bg-green-500/20 text-green-100 border-green-300/30 shadow-green-500/20">
                 <CheckCircle2 className="w-3 h-3 mr-1.5" />
-                Akun Pro
+                {isHeadmaster ? 'Kepala Sekolah' : 'Akun Pro'}
               </Badge>
             </div>
           </div>
@@ -396,6 +398,14 @@ export default function DashboardLayoutClient({
                                 Profil Saya
                            </Link>
                         </DropdownMenuItem>
+                         {isHeadmaster && (
+                            <DropdownMenuItem asChild>
+                                <Link href="/admin">
+                                     <LayoutDashboard className="mr-2 h-4 w-4"/>
+                                     Panel Monitoring
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleLogout}>
                             <LogOut className="mr-2 h-4 w-4"/>
@@ -427,7 +437,8 @@ export default function DashboardLayoutClient({
                 <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
                 <SidebarGroup className="p-4">
                   <SidebarGroupLabel className="text-teal-600 font-semibold text-sm tracking-wider uppercase bg-teal-500/10 px-3 py-2 rounded-lg border border-teal-500/20 mb-4">
-                    Pemantauan
+                    <UserCheckIcon className="w-4 h-4 mr-2 inline" />
+                    Menu Pemantauan
                   </SidebarGroupLabel>
                   <MainNavContent items={monitoringNavItems} />
                 </SidebarGroup>
@@ -473,6 +484,7 @@ export default function DashboardLayoutClient({
                 <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
                 <SidebarGroup className="p-4">
                   <SidebarGroupLabel className="text-teal-600 font-semibold text-sm tracking-wider uppercase bg-teal-500/10 px-3 py-2 rounded-lg border border-teal-500/20 mb-4">
+                    <UserCheckIcon className="w-4 h-4 mr-2 inline" />
                     Pemantauan
                   </SidebarGroupLabel>
                   <MainNavContent items={monitoringNavItems} />
