@@ -44,17 +44,14 @@ Pemisahan antarmuka Kepala Sekolah dari direktori `/admin` ke direktori khusus `
 
 ---
 
-# Update V4.9: Optimasi Upload & Konfigurasi Storage (DALAM PROSES)
+# Update V4.9: Optimasi Upload & Konfigurasi Storage (SELESAI)
 
-Peningkatan sistem unggah foto profil dan logo sekolah agar lebih stabil dan mudah dikonfigurasi.
+Peningkatan sistem unggah foto profil dan logo sekolah agar lebih stabil dan mudah dikonfigurasi melalui database.
 
-## 1. Perbaikan Bug
-- **Permission Error**: Menangani error `42501` saat konfigurasi RLS storage via SQL Editor.
-- **Upload Resilience**: Menambahkan validasi tipe file dan ukuran di sisi klien serta server.
-
-## 2. Rencana Selanjutnya
-- Memastikan sinkronisasi antara bucket storage dan kebijakan akses user.
-- Memperbarui skema SQL utama setelah pengujian potongan script berhasil.
+## 1. Perbaikan & Fitur
+- **Penanganan Error 42501**: Mengoptimalkan script SQL untuk menghindari masalah hak akses `must be owner of table objects` di Supabase.
+- **Skema SQL Terpadu**: Menyertakan konfigurasi bucket `avatars` dan kebijakan RLS (Row Level Security) langsung ke dalam skrip inisialisasi database.
+- **Validasi Ganda**: Memastikan file gambar divalidasi di sisi klien (ukuran < 2MB) dan diproses dengan benar oleh server action.
 
 ---
-*Update ini bertujuan untuk menciptakan alur kerja yang lebih profesional bagi pimpinan sekolah.*
+*Update ini memastikan aplikasi Lakukelas siap digunakan pada proyek baru dengan konfigurasi storage yang otomatis dan aman.*
