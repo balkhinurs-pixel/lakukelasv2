@@ -1,9 +1,14 @@
+
 {
   "regions": ["sin1"],
   "crons": [
     {
       "path": "/api/keep-alive",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/wa-reminder",
+      "schedule": "0 23 * * *"
     }
   ]
 }

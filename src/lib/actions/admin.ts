@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -305,20 +306,30 @@ export async function deleteHoliday(holidayId: string) {
     return { success: true };
 }
 
-export async function saveWhatsAppSettings(token: string) {
+export async function saveWhatsAppSettings(token: string, enabled: boolean, time: string) {
     const supabase = createClient();
     
-    const { error } = await supabase
-        .from('settings')
-        .upsert({ key: 'fonnte_api_token', value: token }, { onConflict: 'key' });
+    const settingsToSave = [
+        { key: 'fonnte_api_token', value: token },
+        { key: 'wa_reminder_enabled', value: String(enabled) },
+        { key: 'wa_reminder_time', value: time },
+    ];
 
-    if (error) {
+    try {
+        for (const setting of settingsToSave) {
+            const { error } = await supabase
+                .from('settings')
+                .upsert(setting, { onConflict: 'key' });
+            
+            if (error) throw error;
+        }
+
+        revalidatePath('/admin/settings/whatsapp');
+        return { success: true };
+    } catch (error) {
         console.error('Error saving WA settings:', error);
-        return { success: false, error: 'Gagal menyimpan token WhatsApp.' };
+        return { success: false, error: 'Gagal menyimpan pengaturan WhatsApp.' };
     }
-
-    revalidatePath('/admin/settings/whatsapp');
-    return { success: true };
 }
 
 export async function testFonnteConnection(token: string) {

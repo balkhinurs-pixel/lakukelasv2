@@ -1,3 +1,4 @@
+
 # Rencana Pembaruan Sistem Absensi Guru (V4.6) - SELESAI
 
 Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan kehadiran guru yang lebih profesional dan fleksibel.
@@ -14,31 +15,23 @@ Kepala Sekolah kini memiliki akses khusus ke Panel Monitoring:
 - **Aktivitas Guru**: Memantau kedisiplinan pengisian data (jurnal/nilai) tiap guru.
 - **Keamanan**: Kepala Sekolah hanya bisa **Melihat (Read-Only)**, tidak bisa mengubah jadwal, menghapus guru, atau mengganti pengaturan sekolah.
 
-## 3. Perbaikan RLS & Navigasi (TERIMPLEMENTASI - V4.6)
-- **RLS Update**: Database kini mengizinkan peran `headmaster` untuk melakukan `SELECT` pada data global.
-- **UI Navigasi**: Penambahan tombol navigasi cepat untuk beralih antara "Mode Guru" dan "Mode Pemantauan" pada perangkat mobile dan desktop.
-
 ---
 
-# Rencana Pengembangan Selanjutnya (V4.7) - PERENCANAAN
+# Update V4.7: Integrasi WhatsApp Gateway (TERIMPLEMENTASI - INFRASTRUKTUR)
 
-## 1. Integrasi WhatsApp Gateway (Fonnte)
-Menambahkan fitur pengingat otomatis kepada guru untuk melakukan absensi dan memberikan informasi jadwal mengajar hari tersebut.
+Fitur pengingat otomatis kepada guru melalui WhatsApp untuk absensi dan informasi jadwal mengajar.
 
-## 2. Komponen Teknis
+## 1. Komponen yang Diperbarui
+- **vercel.json**: Penambahan Cron Job harian (06:00 WIB).
+- **Admin Settings**: Menu **"Pengaturan WhatsApp"** dengan fitur Test Koneksi, Toggle Aktif, dan Waktu Pengiriman.
+- **API Cron**: Implementasi endpoint `/api/cron/wa-reminder` untuk memproses antrean pesan.
 - **Database**: Penambahan kolom `phone_number` pada tabel `profiles`.
-- **Admin Settings**: Menu baru **"Pengaturan WhatsApp"** untuk menyimpan `Fonnte API Token` di tabel `settings`.
-- **Fitur Test Koneksi**: Tombol untuk memvalidasi token Fonnte secara langsung dari dashboard admin.
-- **Automation**: Implementasi `Vercel Cron Jobs` yang berjalan setiap pagi (Pukul 06:00 WIB).
-- **Logika Pesan**: 
-    1. Cari guru yang memiliki jadwal mengajar pada hari tersebut (berdasarkan hari di GMT+7).
-    2. Ambil detail jadwal (Mata Pelajaran, Kelas, Jam).
-    3. Format pesan: "Halo [Nama Guru], jangan lupa absensi hari ini. Jadwal Anda: 1. [Mapel] di [Kelas] jam [Jam]..."
-    4. Kirim melalui API Fonnte.
 
-## 3. Fitur Tambahan
-- Log pengiriman pesan (untuk memantau apakah pesan berhasil terkirim).
-- Input nomor telepon guru di menu "Daftar Guru".
+## 2. Cara Kerja
+1. Vercel Cron memicu endpoint setiap pagi.
+2. Sistem mengecek status `wa_reminder_enabled`.
+3. Mengambil daftar guru yang memiliki jadwal mengajar pada hari tersebut.
+4. Mengirimkan pesan format profesional via API Fonnte.
 
----
-*Update V4.6 telah selesai diimplementasikan. Perencanaan V4.7 sedang dalam tahap persiapan UI dan pengaturan.*
+## 3. Langkah Lanjutan
+Admin perlu memastikan data nomor telepon guru telah diisi pada menu "Daftar Guru" dengan format internasional (contoh: 62812xxx).
