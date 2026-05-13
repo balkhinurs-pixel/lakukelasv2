@@ -324,7 +324,6 @@ export default function AdminLayoutClient({
             {children}
         </div>
       </SidebarInset>
-      {isMobile && <BottomNavbar />}
     </>
   );
 }
