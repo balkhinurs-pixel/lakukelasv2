@@ -404,10 +404,10 @@ export async function sendTestWhatsApp(token: string, target: string) {
         const response = await fetch('https://api.fonnte.com/send', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Authorization': cleanToken // Fonnte requires token in header
             },
             body: new URLSearchParams({
-                'token': cleanToken,
+                'token': cleanToken, // ALSO include in body to prevent "invalid token" errors
                 'target': cleanTarget,
                 'message': message
             })
@@ -420,7 +420,7 @@ export async function sendTestWhatsApp(token: string, target: string) {
             return { success: true, message: 'Pesan tes berhasil dikirim. Silakan cek WhatsApp tujuan.' };
         } else {
             const errorDetail = result.reason || 'Token tidak valid untuk pengiriman.';
-            return { success: false, error: `Fonnte Error: ${errorDetail}. Gunakan Account Token jika Device Token gagal.` };
+            return { success: false, error: `Fonnte Error: ${errorDetail}.` };
         }
     } catch (error: any) {
         console.error('[WA-TEST-SEND] Connection error:', error.message);

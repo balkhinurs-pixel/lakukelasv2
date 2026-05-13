@@ -141,14 +141,19 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                             className="shrink-0"
                                         >
                                             {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
-                                            Test
+                                            Test Token
                                         </Button>
                                     </div>
                                     <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mt-2">
                                         <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                                        <p className="text-xs text-amber-800 leading-relaxed">
-                                            Saran: Gunakan <strong>Account Token</strong> (dari menu Profile) agar sistem dapat mendeteksi semua perangkat. Device Token seringkali gagal untuk pengecekan status perangkat.
-                                        </p>
+                                        <div className="text-xs text-amber-800 leading-relaxed">
+                                            <p className="font-bold mb-1">PENTING:</p>
+                                            <ul className="list-disc pl-4 space-y-1">
+                                                <li>Gunakan <strong>Account Token</strong> (dari menu Profile Fonnte) untuk fitur lengkap.</li>
+                                                <li>Jika Account Token masih 'invalid' saat kirim, coba gunakan <strong>Device Token</strong> (dari menu Device Fonnte).</li>
+                                                <li>Pastikan nomor WhatsApp Anda sudah discan (Connected) di dashboard Fonnte.</li>
+                                            </ul>
+                                        </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
                                         Dapatkan token di <a href="https://fonnte.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center">fonnte.com <ExternalLink className="h-3 w-3 ml-1" /></a>
@@ -214,7 +219,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                 <Send className="h-5 w-5 text-blue-600" /> Uji Kirim Pesan
                             </CardTitle>
                             <CardDescription>
-                                Uji apakah pesan benar-benar sampai ke nomor tujuan.
+                                Uji apakah pesan benar-benar sampai ke nomor tujuan menggunakan token di atas.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
