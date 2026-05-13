@@ -55,7 +55,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -192,13 +192,6 @@ export default function AdminLayoutClient({
         </div>
     </header>
   );
-
-  const mainMobileAdminNav = [
-    { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
-    { href: '/admin/users', icon: Users, label: 'Staf' },
-    { href: '/admin/roster/students', icon: Users2, label: 'Siswa' },
-    { href: '/admin/settings/location', icon: Settings, label: 'Setelan' },
-  ];
 
   return (
     <>
