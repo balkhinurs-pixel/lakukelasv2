@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, UserX, UserCheck, Calendar, RefreshCw, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Clock, UserX, UserCheck, Calendar, RefreshCw, ShieldCheck, User as UserIcon, ListFilter } from "lucide-react";
 import WeeklyAttendanceChart from "../admin/weekly-attendance-chart";
 import { cn } from "@/lib/utils";
 
@@ -82,45 +82,65 @@ export default async function MonitoringDashboardPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-5">
-            <Card className="lg:col-span-3">
-                <CardHeader>
-                    <CardTitle>Statistik Kehadiran Seminggu</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <WeeklyAttendanceChart data={dashboardData.weeklyAttendance} />
-                </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Kehadiran Guru Hari Ini</CardTitle>
+            {/* Today Attendance List - Moved to first position for mobile-first visibility */}
+            <Card className="lg:col-span-2 border-0 shadow-lg">
+                <CardHeader className="bg-slate-50/50 border-b rounded-t-xl">
+                    <div className="flex items-center gap-2">
+                        <ListFilter className="h-5 w-5 text-teal-600" />
+                        <div>
+                            <CardTitle className="text-lg">Kehadiran Guru Hari Ini</CardTitle>
+                            <CardDescription className="text-xs">Guru yang masuk dalam kewajiban absen</CardDescription>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <ScrollArea className="h-[400px]">
-                        <div className="px-6 pb-6">
+                    <ScrollArea className="h-[450px]">
+                        <div className="p-4 sm:p-6 space-y-4">
                             {todayAttendanceList.length > 0 ? (
-                                <div className="space-y-4">
-                                    {todayAttendanceList.map((item) => (
-                                        <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all">
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-10 w-10">
-                                                    <AvatarImage src={item.avatar_url || ""} />
-                                                    <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <p className="text-sm font-bold truncate max-w-[120px]">{item.name}</p>
+                                todayAttendanceList.map((item) => (
+                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all shadow-sm bg-white">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-10 w-10 border-2 border-slate-100 shadow-sm">
+                                                <AvatarImage src={item.avatar_url || ""} />
+                                                <AvatarFallback className="bg-teal-50 text-teal-600 font-bold">{item.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold truncate max-w-[120px] text-slate-900">{item.name}</p>
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                    <Clock className="h-3 w-3 text-slate-400" />
                                                     <p className="text-[11px] text-slate-500 font-mono">{item.time} WIB</p>
                                                 </div>
                                             </div>
-                                            <Badge variant="outline" className={cn("text-[10px] uppercase font-bold", getStatusBadge(item.status))}>
-                                                {item.status}
-                                            </Badge>
                                         </div>
-                                    ))}
+                                        <Badge variant="outline" className={cn("text-[10px] uppercase font-bold py-1 px-2.5", getStatusBadge(item.status))}>
+                                            {item.status}
+                                        </Badge>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-20">
+                                    <UserIcon className="mx-auto h-12 w-12 text-slate-200 mb-4" />
+                                    <p className="text-sm text-slate-400 italic">Tidak ada guru wajib hadir hari ini.</p>
                                 </div>
-                            ) : <p className="text-center py-20 text-slate-400 italic">Tidak ada guru wajib hadir.</p>}
+                            )}
                         </div>
                     </ScrollArea>
+                </CardContent>
+            </Card>
+
+            {/* Weekly Statistics Chart - Moved to bottom position */}
+            <Card className="lg:col-span-3 border-0 shadow-lg">
+                <CardHeader className="bg-slate-50/50 border-b rounded-t-xl">
+                    <div className="flex items-center gap-2">
+                        <RefreshCw className="h-5 w-5 text-blue-600" />
+                        <div>
+                            <CardTitle className="text-lg">Statistik Kehadiran Seminggu</CardTitle>
+                            <CardDescription className="text-xs">Perbandingan kehadiran 7 hari terakhir</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                    <WeeklyAttendanceChart data={dashboardData.weeklyAttendance} />
                 </CardContent>
             </Card>
         </div>

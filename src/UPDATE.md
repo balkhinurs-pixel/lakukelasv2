@@ -64,4 +64,15 @@ Fitur manajemen storage otomatis untuk mencegah penumpukan file sampah di server
 - **Efisiensi Storage**: Memastikan setiap guru hanya memiliki 1 file foto aktif dan sekolah hanya memiliki 1 file logo aktif di bucket Supabase.
 
 ---
-*Update ini memastikan penggunaan sumber daya storage tetap efisien dan tertata rapi.*
+
+# Update V5.1: Optimasi Layout Monitoring (SELESAI)
+
+Penyesuaian tata letak dasbor monitoring untuk meningkatkan kenyamanan akses Kepala Sekolah melalui perangkat mobile.
+
+## 1. Perubahan UI
+- **Prioritas Data**: Daftar kehadiran guru hari ini dipindahkan ke urutan pertama di bawah kartu statistik.
+- **Statistik di Bawah**: Grafik batang mingguan dipindahkan ke bawah agar tidak menghalangi pandangan utama saat pertama kali membuka dasbor.
+- **Scroll Area**: Menambah tinggi area scroll daftar guru menjadi 450px untuk visibilitas yang lebih baik.
+
+---
+*Update ini memastikan Kepala Sekolah mendapatkan informasi paling krusial secara instan.*
