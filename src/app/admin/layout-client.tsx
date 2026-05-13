@@ -27,6 +27,7 @@ import {
   Zap,
   MessageSquare,
   ShieldCheck,
+  Settings,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -54,7 +55,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -180,7 +181,8 @@ export default function AdminLayoutClient({
                                 Ke Panel Monitoring
                            </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleLogout}>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                             <LogOut className="mr-2 h-4 w-4"/>
                             Keluar
                         </DropdownMenuItem>
@@ -190,6 +192,13 @@ export default function AdminLayoutClient({
         </div>
     </header>
   );
+
+  const mainMobileAdminNav = [
+    { href: '/admin', icon: LayoutDashboard, label: 'Dasbor' },
+    { href: '/admin/users', icon: Users, label: 'Staf' },
+    { href: '/admin/roster/students', icon: Users2, label: 'Siswa' },
+    { href: '/admin/settings/location', icon: Settings, label: 'Setelan' },
+  ];
 
   return (
     <>
@@ -274,12 +283,41 @@ export default function AdminLayoutClient({
         </SidebarFooter>
       </Sidebar>
       
-      <SidebarInset>
+      <SidebarInset className={isMobile ? "pb-20" : ""}>
         <AppHeader />
         <div className="p-4 sm:p-6 lg:p-8">
             {children}
         </div>
       </SidebarInset>
+
+      {isMobile && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t p-2 flex justify-around items-center">
+              <Link href="/admin" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground")}>
+                  <LayoutDashboard className="w-5 h-5" />
+                  <span className="text-[10px] mt-1 font-medium">Dasbor</span>
+              </Link>
+              <Link href="/admin/users" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/admin/users" ? "text-primary bg-primary/10" : "text-muted-foreground")}>
+                  <Users className="w-5 h-5" />
+                  <span className="text-[10px] mt-1 font-medium">Staf</span>
+              </Link>
+              
+              <button 
+                onClick={() => toggleSidebar()} 
+                className="flex flex-col items-center justify-center -mt-8 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg border-4 border-background"
+              >
+                  <Menu className="w-6 h-6" />
+              </button>
+
+              <Link href="/admin/roster/students" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/roster") ? "text-primary bg-primary/10" : "text-muted-foreground")}>
+                  <Users2 className="w-5 h-5" />
+                  <span className="text-[10px] mt-1 font-medium">Siswa</span>
+              </Link>
+              <Link href="/admin/settings/school" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/settings") ? "text-primary bg-primary/10" : "text-muted-foreground")}>
+                  <Settings className="w-5 h-5" />
+                  <span className="text-[10px] mt-1 font-medium">Setelan</span>
+              </Link>
+          </div>
+      )}
     </>
   );
 }

@@ -14,6 +14,7 @@ import {
   Bell,
   Settings,
   ShieldCheck,
+  Search,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -41,7 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -119,7 +120,8 @@ export default function MonitoringLayoutClient({
                                 Kembali ke Dasbor Guru
                            </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleLogout}>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                             <LogOut className="mr-2 h-4 w-4"/>
                             Keluar
                         </DropdownMenuItem>
@@ -218,12 +220,41 @@ export default function MonitoringLayoutClient({
         </SidebarFooter>
       </Sidebar>
       
-      <SidebarInset>
+      <SidebarInset className={isMobile ? "pb-20" : ""}>
         <AppHeader />
         <div className="p-4 sm:p-6 lg:p-8">
             {children}
         </div>
       </SidebarInset>
+
+      {isMobile && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t p-2 flex justify-around items-center">
+              <Link href="/monitoring" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/monitoring" ? "text-teal-600 bg-teal-500/10" : "text-muted-foreground")}>
+                  <LayoutDashboard className="w-5 h-5" />
+                  <span className="text-[10px] mt-1 font-medium">Dasbor</span>
+              </Link>
+              <Link href="/monitoring/teacher-attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/monitoring/teacher-attendance" ? "text-teal-600 bg-teal-500/10" : "text-muted-foreground")}>
+                  <UserCheckIcon className="w-5 h-5" />
+                  <span className="text-[10px] mt-1 font-medium">Absensi</span>
+              </Link>
+              
+              <button 
+                onClick={() => toggleSidebar()} 
+                className="flex flex-col items-center justify-center -mt-8 h-14 w-14 rounded-full bg-gradient-to-br from-teal-600 to-cyan-600 text-white shadow-lg border-4 border-background"
+              >
+                  <Menu className="w-6 h-6" />
+              </button>
+
+              <Link href="/monitoring/teacher-activity" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/monitoring/teacher-activity" ? "text-teal-600 bg-teal-500/10" : "text-muted-foreground")}>
+                  <Activity className="w-5 h-5" />
+                  <span className="text-[10px] mt-1 font-medium">Aktivitas</span>
+              </Link>
+              <Link href="/dashboard" className={cn("flex flex-col items-center p-2 rounded-xl transition-all text-muted-foreground")}>
+                  <ChevronLeft className="w-5 h-5" />
+                  <span className="text-[10px] mt-1 font-medium">Guru</span>
+              </Link>
+          </div>
+      )}
     </>
   );
 }
