@@ -281,12 +281,31 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     if (!user) return { success: false, error: "Tidak terautentikasi" };
     
     let targetUserId = user.id;
-    const bucket = 'avatars'; // Pastikan bucket ini ada dan berstatus Public di dashboard Supabase
+    const bucket = 'avatars';
 
     if (type === 'logo') {
-         const {data: adminUser} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
+         const {data: adminUser} = await supabase.from('profiles').select('id, school_logo_url').eq('role', 'admin').limit(1).single();
          if(!adminUser) return { success: false, error: "Admin tidak ditemukan." };
          targetUserId = adminUser.id;
+
+         // --- Hapus logo lama jika ada ---
+         if (adminUser.school_logo_url) {
+            const urlParts = adminUser.school_logo_url.split('/avatars/');
+            if (urlParts.length > 1) {
+                const oldFilePath = urlParts[1];
+                await supabase.storage.from(bucket).remove([oldFilePath]);
+            }
+         }
+    } else {
+        // --- Hapus avatar lama jika ada ---
+        const { data: profile } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single();
+        if (profile?.avatar_url) {
+            const urlParts = profile.avatar_url.split('/avatars/');
+            if (urlParts.length > 1) {
+                const oldFilePath = urlParts[1];
+                await supabase.storage.from(bucket).remove([oldFilePath]);
+            }
+        }
     }
 
     const file = formData.get('file') as File;
@@ -305,9 +324,6 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
         
         if (uploadError) {
             console.error("Storage upload error:", uploadError);
-            if (uploadError.message.includes('bucket not found')) {
-                return { success: false, error: "Bucket 'avatars' tidak ditemukan di Supabase Storage." };
-            }
             return { success: false, error: `Gagal mengunggah ke storage: ${uploadError.message}` };
         }
 

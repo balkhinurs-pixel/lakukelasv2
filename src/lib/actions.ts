@@ -289,7 +289,31 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
     if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
     
     const bucket = 'avatars';
-    // Gunakan ekstensi file asli jika ada
+
+    // --- STEP 1: Hapus file lama jika ada ---
+    try {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.avatar_url) {
+            // Ekstrak path file dari URL publik
+            // URL format: .../storage/v1/object/public/avatars/USER_ID/filename.ext
+            const urlParts = profile.avatar_url.split('/avatars/');
+            if (urlParts.length > 1) {
+                const oldFilePath = urlParts[1];
+                await supabase.storage.from(bucket).remove([oldFilePath]);
+                console.log(`[STORAGE] Deleted old avatar: ${oldFilePath}`);
+            }
+        }
+    } catch (err) {
+        console.error("Error during old image cleanup:", err);
+        // Lanjutkan saja jika gagal hapus file lama, jangan batalkan upload baru
+    }
+
+    // --- STEP 2: Unggah file baru ---
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/avatar_${Date.now()}.${fileExt}`;
     

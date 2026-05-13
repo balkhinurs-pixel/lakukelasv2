@@ -54,4 +54,14 @@ Peningkatan sistem unggah foto profil dan logo sekolah agar lebih stabil dan mud
 - **Validasi Ganda**: Memastikan file gambar divalidasi di sisi klien (ukuran < 2MB) dan diproses dengan benar oleh server action.
 
 ---
-*Update ini memastikan aplikasi Lakukelas siap digunakan pada proyek baru dengan konfigurasi storage yang otomatis dan aman.*
+
+# Update V5.0: Smart Storage Management (SELESAI)
+
+Fitur manajemen storage otomatis untuk mencegah penumpukan file sampah di server.
+
+## 1. Fitur Utama
+- **Auto-Delete Old Files**: Saat pengguna mengganti foto profil atau Admin mengganti logo sekolah, sistem akan otomatis mendeteksi file lama di storage dan menghapusnya sebelum mengunggah file baru.
+- **Efisiensi Storage**: Memastikan setiap guru hanya memiliki 1 file foto aktif dan sekolah hanya memiliki 1 file logo aktif di bucket Supabase.
+
+---
+*Update ini memastikan penggunaan sumber daya storage tetap efisien dan tertata rapi.*
