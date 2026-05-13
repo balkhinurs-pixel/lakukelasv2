@@ -366,7 +366,11 @@ export async function testFonnteConnection(token: string) {
             method: 'POST',
             headers: {
                 'Authorization': cleanToken
-            }
+            },
+            body: new URLSearchParams({
+                'token': cleanToken
+            }),
+            cache: 'no-store'
         });
 
         const result = await response.json();
@@ -380,7 +384,7 @@ export async function testFonnteConnection(token: string) {
         } else {
             let errorMsg = result.reason || 'Token tidak valid.';
             if (errorMsg === 'unknown user') {
-                errorMsg = 'Fonnte: Pengguna tidak dikenal (Token Salah). Pastikan menyalin token yang benar dari Fonnte.';
+                errorMsg = 'Fonnte: Pengguna tidak dikenal (Token Salah). Pastikan menyalin "Account Token" dari menu profil di Fonnte.';
             }
             console.warn('[WA-TEST] Connection failed reason:', errorMsg);
             return { 
