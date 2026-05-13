@@ -276,7 +276,7 @@ export default function DashboardClientPage({
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-              <CardTitle className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              <CardTitle className="text-slate-900 dark:text-slate-100">
                 Jadwal Hari Ini ({today})
               </CardTitle>
             </div>
@@ -389,7 +389,7 @@ export default function DashboardClientPage({
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-              <CardTitle className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <CardTitle className="text-slate-900 dark:text-slate-100">
                 Jurnal Terbaru
               </CardTitle>
             </div>
@@ -418,7 +418,7 @@ export default function DashboardClientPage({
                                     </h4>
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 ml-6">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                                         {entry.className}
                                     </span>
                                 </div>
