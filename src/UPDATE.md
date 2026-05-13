@@ -52,10 +52,10 @@ Penyesuaian tata letak dasbor monitoring untuk meningkatkan kenyamanan akses Kep
 # Update V5.2: Modern App-Style Bottom Navigation (SELESAI)
 
 Pembaruan sistem navigasi mobile menjadi gaya aplikasi modern:
-- **Non-Modal Drawer**: Memperbaiki tombol hamburger agar berfungsi sebagai toggle buka/tutup yang sempurna.
+- **Non-Modal Drawer**: Memperbaiki tombol hamburger agar berfungsi sebagai saklar buka/tutup yang sempurna tanpa error konsol.
 - **App Drawer Grid**: Item navigasi menggunakan gaya ikon Android (ikon kotak membulat dengan label di bawah).
 - **Manual Backdrop**: Menambahkan overlay transparan yang tetap memungkinkan interaksi tombol navigasi utama.
-- **Fixed Scrolling**: Area gulir menu bawah diperbaiki agar item tidak terpotong oleh bar navigasi.
+- **Bug Fix**: Menghapus error aksesibilitas pada komponen Sheet Radix.
 
 ---
 *Update ini memastikan navigasi mobile Lakukelas setara dengan aplikasi native premium.*
