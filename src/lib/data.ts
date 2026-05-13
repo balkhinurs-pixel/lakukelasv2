@@ -32,18 +32,15 @@ export async function getAdminDashboardData() {
     const nowIndo = getIndonesianTime();
     const todayStr = format(nowIndo, 'yyyy-MM-dd');
 
-    console.log(`[DEBUG] Dashboard Fetch Started - Date: ${todayStr}`);
-
     try {
         // Run diagnosis for logging
-        const { data: diag, error: diagErr } = await supabase.rpc('diagnose_attendance_logic', { p_date: todayStr });
-        if (diagErr) {
-            console.error('[DEBUG-ERR] Diagnostic function failed:', diagErr.message);
-        } else {
+        const { data: diag } = await supabase.rpc('diagnose_attendance_logic', { p_date: todayStr });
+        if (diag) {
             console.log('[DEBUG-RESULT] Attendance Logic Diagnosis:', JSON.stringify(diag, null, 2));
         }
 
         // Call main summary function
+        // Note: RPC results with RETURNS TABLE are returned as an array of objects
         const [summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
             getJournalEntries(),
@@ -55,15 +52,25 @@ export async function getAdminDashboardData() {
             console.error('[DEBUG-ERR] Summary RPC failed:', summaryRes.error.message);
         }
         
-        // Take the first row of the returned table with safe defaults
+        // Robust data extraction from RPC table result
         const rawData = summaryRes.data;
-        const summaryData = (Array.isArray(rawData) && rawData.length > 0) ? rawData[0] : { 
+        let summaryData = { 
             total_expected: 0, 
             total_present: 0, 
             total_late: 0, 
             total_absent: 0, 
             attendance_rate: 0 
         };
+
+        if (Array.isArray(rawData) && rawData.length > 0) {
+            summaryData = {
+                total_expected: Number(rawData[0].total_expected || 0),
+                total_present: Number(rawData[0].total_present || 0),
+                total_late: Number(rawData[0].total_late || 0),
+                total_absent: Number(rawData[0].total_absent || 0),
+                attendance_rate: Number(rawData[0].attendance_rate || 0)
+            };
+        }
 
         console.log('[DEBUG-RESULT] Final Summary Data used in UI:', JSON.stringify(summaryData));
 
@@ -100,13 +107,7 @@ export async function getAdminDashboardData() {
             recentActivities,
             isTodayHoliday,
             activePolicy,
-            summary: {
-                total_expected: Number(summaryData.total_expected || 0),
-                total_present: Number(summaryData.total_present || 0),
-                total_late: Number(summaryData.total_late || 0),
-                total_absent: Number(summaryData.total_absent || 0),
-                attendance_rate: Number(summaryData.attendance_rate || 0)
-            }
+            summary: summaryData
         };
         
     } catch (error) {
