@@ -15,8 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile } from "@/lib/types";
 import { updateSchoolData, uploadProfileImage } from "@/lib/actions/admin";
-import { Loader2, Building } from "lucide-react";
+import { Loader2, Building, Camera, MapPin, User, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export default function SchoolSettingsClientPage({ profile }: { profile: Profile }) {
     const { toast } = useToast();
@@ -56,26 +57,24 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const MAX_LOGO_SIZE = 500 * 1024; // 500KB
+        const MAX_LOGO_SIZE = 1 * 1024 * 1024; // 1MB
         const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
         if (file.size > MAX_LOGO_SIZE) {
             toast({
-                title: "Ukuran File Terlalu Besar",
-                description: `Ukuran file maksimal adalah 500KB.`,
+                title: "File Terlalu Besar",
+                description: `Ukuran logo maksimal adalah 1MB.`,
                 variant: "destructive",
             });
-            e.target.value = '';
             return;
         }
 
         if (!ALLOWED_FILE_TYPES.includes(file.type)) {
              toast({
-                title: "Format File Tidak Didukung",
-                description: "Mohon gunakan file dengan format JPEG, PNG, atau WEBP.",
+                title: "Format Tidak Didukung",
+                description: "Gunakan file gambar dengan format JPEG, PNG, atau WEBP.",
                 variant: "destructive",
             });
-            e.target.value = '';
             return;
         }
 
@@ -83,76 +82,149 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
         const formData = new FormData();
         formData.append('file', file);
 
-        const result = await uploadProfileImage(formData, 'logo');
+        try {
+            const result = await uploadProfileImage(formData, 'logo');
 
-        if (result.success && result.url) {
-            toast({ title: "Sukses", description: "Logo berhasil diunggah." });
-            setLogoUrl(result.url);
-            router.refresh();
-        } else {
-            toast({ title: "Gagal Mengunggah", description: result.error, variant: "destructive" });
+            if (result.success && result.url) {
+                setLogoUrl(result.url);
+                toast({ title: "Sukses", description: "Logo sekolah berhasil diperbarui." });
+                router.refresh();
+            } else {
+                toast({ title: "Gagal Mengunggah", description: result.error, variant: "destructive" });
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Terjadi kesalahan sistem saat mengunggah logo.", variant: "destructive" });
+        } finally {
+            setUploading(false);
+            if (logoInputRef.current) logoInputRef.current.value = '';
         }
-        setUploading(false);
-        e.target.value = '';
     }
 
     return (
-    <div className="space-y-6">
-        <input type="file" ref={logoInputRef} onChange={handleImageUpload} accept="image/png, image/jpeg, image/webp" className="hidden" />
+    <div className="space-y-8 max-w-4xl mx-auto">
+        <input 
+            type="file" 
+            ref={logoInputRef} 
+            onChange={handleImageUpload} 
+            accept="image/*" 
+            className="hidden" 
+        />
+        
         <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
                 <Building className="h-6 w-6" />
             </div>
             <div>
-                <h1 className="text-2xl font-bold font-headline">Data Sekolah</h1>
-                <p className="text-muted-foreground">Kelola informasi sekolah yang akan tampil di kop surat laporan.</p>
+                <h1 className="text-3xl font-bold font-headline text-slate-900 tracking-tight">Data Sekolah</h1>
+                <p className="text-slate-500 mt-1">Konfigurasi informasi institusi untuk kop surat laporan.</p>
             </div>
         </div>
         
-        <Card>
+        <Card className="border-0 shadow-xl shadow-slate-200/50 overflow-hidden">
             <form onSubmit={handleSchoolDataSave}>
-                <CardHeader>
-                    <CardTitle>Informasi Institusi</CardTitle>
-                    <CardDescription>Informasi ini akan digunakan pada kop surat di semua laporan yang dicetak.</CardDescription>
+                <CardHeader className="bg-slate-50/50 border-b p-8">
+                    <div className="flex flex-col md:flex-row items-center gap-8">
+                        <div className="relative group">
+                            <div className="h-32 w-32 bg-white rounded-2xl border-2 border-slate-200 p-2 shadow-inner flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105">
+                                <Avatar className="h-full w-full rounded-xl">
+                                    <AvatarImage src={logoUrl || ""} alt="Logo Sekolah" className="object-contain" />
+                                    <AvatarFallback className="bg-slate-50 text-slate-400">
+                                        <Building className="h-10 w-10" />
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
+                            <button 
+                                type="button"
+                                disabled={uploading}
+                                onClick={() => logoInputRef.current?.click()}
+                                className={cn(
+                                    "absolute bottom-0 right-0 p-2.5 rounded-full shadow-lg border-2 border-white transition-all duration-200",
+                                    uploading ? "bg-slate-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-90"
+                                )}
+                            >
+                                {uploading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Camera className="h-4 w-4" />
+                                )}
+                            </button>
+                        </div>
+                        <div className="text-center md:text-left flex-1">
+                            <CardTitle className="text-2xl font-bold">Logo Institusi</CardTitle>
+                            <CardDescription className="max-w-md mt-2">
+                                Logo ini akan tampil pada setiap laporan PDF yang diunduh (Leger, Presensi, Rapor). Disarankan gunakan gambar transparan berformat PNG.
+                            </CardDescription>
+                        </div>
+                    </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                
+                <CardContent className="space-y-8 p-8 pt-10">
                     <div className="space-y-2">
-                        <Label>Logo Sekolah</Label>
-                        <div className="flex items-center gap-4">
-                            <Avatar className="h-20 w-20 rounded-md">
-                                <AvatarImage src={logoUrl || "https://placehold.co/100x100.png"} alt="Logo Sekolah" data-ai-hint="school building" />
-                                <AvatarFallback>LOGO</AvatarFallback>
-                            </Avatar>
-                            <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploading}>
-                                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Ganti Logo
-                            </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">JPG, PNG, atau WEBP. Ukuran maksimal 500KB.</p>
+                        <Label htmlFor="schoolName" className="text-slate-700 font-semibold flex items-center gap-2">
+                            <Building className="h-4 w-4 text-slate-400" /> Nama Sekolah
+                        </Label>
+                        <Input 
+                            id="schoolName" 
+                            name="schoolName" 
+                            value={schoolData.schoolName} 
+                            onChange={handleSchoolDataChange} 
+                            placeholder="e.g. SMAN 1 Jakarta"
+                            className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10 rounded-xl"
+                        />
                     </div>
-                   <div className="space-y-2">
-                        <Label htmlFor="schoolName">Nama Sekolah</Label>
-                        <Input id="schoolName" name="schoolName" value={schoolData.schoolName} onChange={handleSchoolDataChange} />
-                    </div>
+                    
                     <div className="space-y-2">
-                        <Label htmlFor="schoolAddress">Alamat Sekolah</Label>
-                        <Input id="schoolAddress" name="schoolAddress" value={schoolData.schoolAddress} onChange={handleSchoolDataChange} />
+                        <Label htmlFor="schoolAddress" className="text-slate-700 font-semibold flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-slate-400" /> Alamat Lengkap
+                        </Label>
+                        <Input 
+                            id="schoolAddress" 
+                            name="schoolAddress" 
+                            value={schoolData.schoolAddress} 
+                            onChange={handleSchoolDataChange} 
+                            placeholder="e.g. Jl. Merdeka No. 123, Jakarta Pusat"
+                            className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10 rounded-xl"
+                        />
                     </div>
-                     <div className="grid md:grid-cols-2 gap-4">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                         <div className="space-y-2">
-                            <Label htmlFor="headmasterName">Nama Kepala Sekolah</Label>
-                            <Input id="headmasterName" name="headmasterName" value={schoolData.headmasterName} onChange={handleSchoolDataChange} />
+                            <Label htmlFor="headmasterName" className="text-slate-700 font-semibold flex items-center gap-2">
+                                <User className="h-4 w-4 text-slate-400" /> Nama Kepala Sekolah
+                            </Label>
+                            <Input 
+                                id="headmasterName" 
+                                name="headmasterName" 
+                                value={schoolData.headmasterName} 
+                                onChange={handleSchoolDataChange} 
+                                placeholder="Nama Beserta Gelar"
+                                className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10 rounded-xl"
+                            />
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="headmasterNip">NIP Kepala Sekolah</Label>
-                            <Input id="headmasterNip" name="headmasterNip" value={schoolData.headmasterNip} onChange={handleSchoolDataChange} />
+                        <div className="space-y-2">
+                            <Label htmlFor="headmasterNip" className="text-slate-700 font-semibold flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-slate-400" /> NIP Kepala Sekolah
+                            </Label>
+                            <Input 
+                                id="headmasterNip" 
+                                name="headmasterNip" 
+                                value={schoolData.headmasterNip} 
+                                onChange={handleSchoolDataChange} 
+                                placeholder="1980XXXXXXXXX"
+                                className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10 rounded-xl"
+                            />
                         </div>
                     </div>
                 </CardContent>
-                <CardFooter className="border-t px-6 py-4">
-                   <Button type="submit" disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Simpan Data Sekolah
+                
+                <CardFooter className="bg-slate-50/50 border-t p-8">
+                   <Button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full sm:w-auto h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-200"
+                   >
+                        {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                        Simpan Seluruh Data Sekolah
                    </Button>
                 </CardFooter>
             </form>

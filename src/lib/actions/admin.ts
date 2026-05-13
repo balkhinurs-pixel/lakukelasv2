@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -282,30 +281,53 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     if (!user) return { success: false, error: "Tidak terautentikasi" };
     
     let targetUserId = user.id;
-    let bucket = 'avatars';
-    let fileName = `${user.id}/avatar_${Date.now()}`;
+    const bucket = 'avatars'; // Pastikan bucket ini ada dan berstatus Public di dashboard Supabase
 
     if (type === 'logo') {
          const {data: adminUser} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
          if(!adminUser) return { success: false, error: "Admin tidak ditemukan." };
          targetUserId = adminUser.id;
-         fileName = `school_logo_${Date.now()}`;
     }
 
     const file = formData.get('file') as File;
-    if (!file) return { success: false, error: "Tidak ada file." };
+    if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
     
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, { upsert: true });
-    if (uploadError) return { success: false, error: "Gagal mengunggah." };
+    const fileExt = file.name.split('.').pop();
+    const fileName = type === 'logo' 
+        ? `school_logo_${Date.now()}.${fileExt}`
+        : `${user.id}/avatar_${Date.now()}.${fileExt}`;
 
-    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
+    try {
+        const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, { 
+            upsert: true,
+            contentType: file.type 
+        });
+        
+        if (uploadError) {
+            console.error("Storage upload error:", uploadError);
+            if (uploadError.message.includes('bucket not found')) {
+                return { success: false, error: "Bucket 'avatars' tidak ditemukan di Supabase Storage." };
+            }
+            return { success: false, error: `Gagal mengunggah ke storage: ${uploadError.message}` };
+        }
 
-    await supabase.from('profiles').update({ [columnToUpdate]: publicUrl }).eq('id', targetUserId);
-    
-    revalidatePath('/dashboard/settings');
-    revalidatePath('/admin/settings/school');
-    return { success: true, url: publicUrl };
+        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
+        const columnToUpdate = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
+
+        const { error: dbError } = await supabase.from('profiles').update({ [columnToUpdate]: publicUrl }).eq('id', targetUserId);
+        
+        if (dbError) {
+            console.error("Database update error:", dbError);
+            return { success: false, error: "Gagal memperbarui profil di database." };
+        }
+
+        revalidatePath('/dashboard/settings');
+        revalidatePath('/admin/settings/school');
+        return { success: true, url: publicUrl };
+    } catch (err: any) {
+        console.error("Unexpected error in uploadProfileImage:", err);
+        return { success: false, error: "Terjadi kesalahan sistem saat proses unggah." };
+    }
 }
 
 export async function saveHoliday(holiday: { date: string, description: string }) {

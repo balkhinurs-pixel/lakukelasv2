@@ -289,32 +289,43 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
     if (!file) return { success: false, error: "Tidak ada file yang diunggah." };
     
     const bucket = 'avatars';
-    const fileName = `${user.id}/avatar_${Date.now()}`;
+    // Gunakan ekstensi file asli jika ada
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/avatar_${Date.now()}.${fileExt}`;
     
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true,
-    });
-    
-    if (uploadError) {
-        console.error("Upload error:", uploadError);
-        return { success: false, error: "Gagal mengunggah gambar." };
+    try {
+        const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: file.type
+        });
+        
+        if (uploadError) {
+            console.error("Upload error details:", uploadError);
+            if (uploadError.message.includes('bucket not found')) {
+                return { success: false, error: "Storage bucket 'avatars' belum dibuat di Supabase." };
+            }
+            return { success: false, error: `Gagal mengunggah: ${uploadError.message}` };
+        }
+
+        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
+
+        const { error: dbError } = await supabase.from('profiles').update({
+            avatar_url: publicUrl
+        }).eq('id', user.id);
+
+        if (dbError) {
+            console.error("DB update error:", dbError);
+            return { success: false, error: "Gagal menyimpan URL foto ke database." };
+        }
+        
+        revalidatePath('/dashboard/settings');
+        revalidatePath('/dashboard');
+        return { success: true, url: publicUrl };
+    } catch (err: any) {
+        console.error("Unexpected upload error:", err);
+        return { success: false, error: "Terjadi kesalahan sistem saat mengunggah." };
     }
-
-    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
-
-    const { error: dbError } = await supabase.from('profiles').update({
-        avatar_url: publicUrl
-    }).eq('id', user.id);
-
-    if (dbError) {
-        console.error("DB update error:", dbError);
-        return { success: false, error: "Gagal memperbarui URL gambar di profil." };
-    }
-    
-    revalidatePath('/dashboard/settings');
-    revalidatePath('/dashboard');
-    return { success: true, url: publicUrl };
 }
 
 export async function addStudentNote(data: { studentId: string; note: string; type: StudentNote['type'] }) {
@@ -390,7 +401,6 @@ export async function importStudents(classId: string, students: StudentImport[])
         }
 
         studentsToInsert.push({ ...student, class_id: classId, status: 'active' });
-        existingNis.add(targetUserId); // This seems like an error in the original code, should be student.nis but I'll fix it if needed later
         existingNis.add(student.nis);
     }
 
