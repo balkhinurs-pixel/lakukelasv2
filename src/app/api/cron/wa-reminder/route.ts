@@ -122,7 +122,6 @@ _LakuKelas Notifier_`;
                     'Authorization': settings.token 
                 },
                 body: new URLSearchParams({
-                    'token': settings.token,
                     'target': teacher.phone,
                     'message': message
                 })

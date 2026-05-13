@@ -362,14 +362,12 @@ export async function testFonnteConnection(token: string) {
     console.log('[WA-TEST] Testing connection with token starting:', cleanToken.substring(0, 5));
 
     try {
+        // Berdasarkan dokumentasi Fonnte, gunakan Authorization header
         const response = await fetch('https://api.fonnte.com/get-devices', {
             method: 'POST',
             headers: {
                 'Authorization': cleanToken
             },
-            body: new URLSearchParams({
-                'token': cleanToken
-            }),
             cache: 'no-store'
         });
 
@@ -402,22 +400,22 @@ export async function sendTestWhatsApp(token: string, target: string) {
     if (!token || !target) return { success: false, error: 'Token dan nomor tujuan wajib diisi.' };
     
     const cleanToken = token.trim();
-    const cleanTarget = target.trim().replace(/[^0-9]/g, ''); // Ambil hanya angka
+    const cleanTarget = target.trim().replace(/[^0-9]/g, '');
     const message = "Halo! Ini adalah pesan tes dari sistem LakuKelas. Jika Anda menerima ini, berarti integrasi WhatsApp sudah berfungsi dengan benar.";
 
     console.log(`[WA-TEST-SEND] Sending test message to: ${cleanTarget}`);
 
     try {
-        // Berdasarkan dokumentasi Fonnte, pengiriman pesan paling stabil menggunakan body parameter 'token'
+        // Sesuai standar Fonnte paling stabil: Token di Authorization Header, data di Body
         const response = await fetch('https://api.fonnte.com/send', {
             method: 'POST',
             headers: {
-                'Authorization': cleanToken // Tetap kirim di header
+                'Authorization': cleanToken
             },
             body: new URLSearchParams({
-                'token': cleanToken, // HARUS ada di body untuk menghindari 'unknown token'
                 'target': cleanTarget,
                 'message': message
+                // Jangan masukkan 'token' di body jika sudah ada di header untuk menghindari konflik "unknown token"
             })
         });
 
@@ -427,10 +425,9 @@ export async function sendTestWhatsApp(token: string, target: string) {
         if (result.status === true) {
             return { success: true, message: 'Pesan tes berhasil dikirim. Silakan cek WhatsApp tujuan.' };
         } else {
-            // Jika gagal, berikan pesan error yang lebih jelas dari Fonnte
             let errorDetail = result.reason || 'unknown error';
             if (errorDetail === 'unknown token') {
-                errorDetail = 'Fonnte: Token tidak dikenali untuk pengiriman pesan. Gunakan Account Token.';
+                errorDetail = 'Fonnte: Token tidak dikenali untuk pengiriman pesan. Pastikan menggunakan Account Token yang valid.';
             }
             return { success: false, error: `Gagal: ${errorDetail}` };
         }
