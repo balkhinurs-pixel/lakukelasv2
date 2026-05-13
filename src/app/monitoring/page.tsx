@@ -82,7 +82,6 @@ export default async function MonitoringDashboardPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-5">
-            {/* Today Attendance List - Moved to first position for mobile-first visibility */}
             <Card className="lg:col-span-2 border-0 shadow-lg">
                 <CardHeader className="bg-slate-50/50 border-b rounded-t-xl">
                     <div className="flex items-center gap-2">
@@ -98,21 +97,21 @@ export default async function MonitoringDashboardPage() {
                         <div className="p-4 sm:p-6 space-y-4">
                             {todayAttendanceList.length > 0 ? (
                                 todayAttendanceList.map((item) => (
-                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all shadow-sm bg-white">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-10 w-10 border-2 border-slate-100 shadow-sm">
+                                    <div key={item.id} className="flex items-start justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all shadow-sm bg-white gap-3">
+                                        <div className="flex items-start gap-3 min-w-0">
+                                            <Avatar className="h-10 w-10 border-2 border-slate-100 shadow-sm shrink-0">
                                                 <AvatarImage src={item.avatar_url || ""} />
                                                 <AvatarFallback className="bg-teal-50 text-teal-600 font-bold">{item.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-bold truncate max-w-[120px] text-slate-900">{item.name}</p>
-                                                <div className="flex items-center gap-1 mt-0.5">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-bold text-slate-900 leading-tight break-words">{item.name}</p>
+                                                <div className="flex items-center gap-1 mt-1">
                                                     <Clock className="h-3 w-3 text-slate-400" />
                                                     <p className="text-[11px] text-slate-500 font-mono">{item.time} WIB</p>
                                                 </div>
                                             </div>
                                         </div>
-                                        <Badge variant="outline" className={cn("text-[10px] uppercase font-bold py-1 px-2.5", getStatusBadge(item.status))}>
+                                        <Badge variant="outline" className={cn("text-[10px] uppercase font-bold py-1 px-2.5 shrink-0", getStatusBadge(item.status))}>
                                             {item.status}
                                         </Badge>
                                     </div>
@@ -128,7 +127,6 @@ export default async function MonitoringDashboardPage() {
                 </CardContent>
             </Card>
 
-            {/* Weekly Statistics Chart - Moved to bottom position */}
             <Card className="lg:col-span-3 border-0 shadow-lg">
                 <CardHeader className="bg-slate-50/50 border-b rounded-t-xl">
                     <div className="flex items-center gap-2">

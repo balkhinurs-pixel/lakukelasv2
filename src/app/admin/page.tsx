@@ -180,21 +180,21 @@ export default async function AdminDashboardPage() {
               </CardHeader>
               <CardContent className="p-0">
                   <ScrollArea className="h-[400px]">
-                      <div className="px-6 pb-6">
+                      <div className="p-4 sm:p-6 space-y-4">
                         {todayAttendanceList.length > 0 ? (
                             <div className="space-y-4">
                                 {todayAttendanceList.map((item) => (
-                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all duration-200">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                                    <div key={item.id} className="flex items-start justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all duration-200 bg-white gap-3 shadow-sm">
+                                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                                            <Avatar className="h-10 w-10 border-2 border-white shadow-sm shrink-0">
                                                 <AvatarImage src={item.avatar_url || ""} />
                                                 <AvatarFallback className="bg-slate-100 text-slate-600 text-xs">
                                                     {item.name.charAt(0)}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-bold text-slate-900 truncate max-w-[140px]">{item.name}</p>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-bold text-slate-900 leading-tight break-words">{item.name}</p>
+                                                <div className="flex items-center gap-1.5 mt-1">
                                                     <Clock className="h-3 w-3 text-slate-400" />
                                                     <span className="text-[11px] font-mono text-slate-500">{item.time} WIB</span>
                                                 </div>
@@ -202,7 +202,7 @@ export default async function AdminDashboardPage() {
                                         </div>
                                         <Badge 
                                             variant="outline" 
-                                            className={cn("text-[10px] uppercase tracking-wider font-bold py-1 px-2.5", getStatusBadge(item.status))}
+                                            className={cn("text-[10px] uppercase tracking-wider font-bold py-1 px-2.5 shrink-0", getStatusBadge(item.status))}
                                         >
                                             {item.status}
                                         </Badge>
