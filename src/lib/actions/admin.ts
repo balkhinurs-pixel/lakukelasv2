@@ -326,15 +326,17 @@ export async function deleteHoliday(holidayId: string) {
     return { success: true };
 }
 
-export async function saveWhatsAppSettings(token: string, enabled: boolean, time: string) {
+export async function saveWhatsAppSettings(token: string, enabled: boolean, time: string, appUrl: string) {
     const supabase = createClient();
     
     const cleanToken = token.trim();
+    const cleanAppUrl = appUrl.trim().replace(/\/$/, ''); // Remove trailing slash
 
     const settingsToSave = [
         { key: 'fonnte_api_token', value: cleanToken },
         { key: 'wa_reminder_enabled', value: String(enabled) },
         { key: 'wa_reminder_time', value: time },
+        { key: 'app_url', value: cleanAppUrl },
     ];
 
     try {
@@ -359,7 +361,7 @@ export async function sendTestWhatsApp(token: string, target: string) {
     
     const cleanToken = token.trim();
     const cleanTarget = target.trim().replace(/[^0-9]/g, '');
-    const message = "Halo! Ini adalah pesan tes dari sistem LakuKelas. Jika Anda menerima ini, berarti integrasi WhatsApp sudah berfungsi dengan benar.";
+    const message = "🌟 *LAKUKELAS TEST NOTIFICATION* 🌟\n\nHalo! Ini adalah pesan uji coba dari sistem LakuKelas. Jika Anda menerima ini, berarti konfigurasi WhatsApp Gateway Anda sudah berfungsi 100% dan siap digunakan untuk pengiriman jadwal otomatis harian.\n\nSelamat mengajar! 👋";
 
     console.log(`[WA-TEST-SEND] Sending test message to: ${cleanTarget}`);
 

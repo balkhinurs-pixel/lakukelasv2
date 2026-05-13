@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 
 /**
  * API Route untuk mengirimkan pengingat WhatsApp otomatis (Cron Job).
- * Menghubungi guru yang memiliki jadwal mengajar hari ini.
+ * Menghubungi guru yang memiliki jadwal mengajar hari ini dengan format profesional.
  */
 export async function GET(request: Request) {
   console.log('[CRON-WA] Starting reminder process...');
@@ -14,15 +14,16 @@ export async function GET(request: Request) {
   try {
     const supabase = createClient();
     
-    // 1. Ambil Pengaturan WhatsApp
+    // 1. Ambil Pengaturan WhatsApp & URL Aplikasi
     const { data: settingsData } = await supabase
       .from('settings')
       .select('key, value')
-      .in('key', ['fonnte_api_token', 'wa_reminder_enabled']);
+      .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'app_url']);
 
     const settings = {
         token: settingsData?.find(s => s.key === 'fonnte_api_token')?.value?.trim(),
-        enabled: settingsData?.find(s => s.key === 'wa_reminder_enabled')?.value === 'true'
+        enabled: settingsData?.find(s => s.key === 'wa_reminder_enabled')?.value === 'true',
+        appUrl: settingsData?.find(s => s.key === 'app_url')?.value || 'https://app.lakukelas.my.id'
     };
 
     if (!settings.enabled || !settings.token) {
@@ -90,28 +91,34 @@ export async function GET(request: Request) {
     const teacherCount = Object.keys(teacherMessages).length;
     console.log(`[CRON-WA] Preparing messages for ${teacherCount} teachers.`);
 
-    // 5. Kirim pesan via Fonnte menggunakan metode yang terbukti berhasil (Double Token)
+    // 5. Kirim pesan via Fonnte menggunakan format Modern & Profesional
     const results = [];
     for (const teacherId in teacherMessages) {
         const teacher = teacherMessages[teacherId];
         
         let scheduleText = teacher.schedules.map((s: any, i: number) => 
-            `${i + 1}. *${s.subject}* (${s.class}) jam ${s.time}`
+            `🔹 *${s.subject}* (${s.class}) jam ${s.time}`
         ).join('\n');
 
-        const message = `Halo Bapak/Ibu *${teacher.name}*,
+        const message = `🌟 *LAKUKELAS: JADWAL MENGAJAR HARI INI* 🌟
 
-Selamat pagi! Berikut adalah jadwal mengajar Anda hari ini, *${dayName}, ${todayStr}*:
+Halo Bapak/Ibu *${teacher.name}*, selamat pagi! 👋
+Semangat menyambut hari baru yang luar biasa.
 
+Berikut adalah jadwal mengajar Anda untuk hari ini, *${dayName}, ${todayStr}*:
+
+---
 ${scheduleText}
+---
 
-Jangan lupa untuk melakukan absensi kehadiran dan mengisi jurnal mengajar setelah kelas selesai ya.
+💡 *Info Penting:*
+Mohon pastikan Bapak/Ibu telah melakukan absensi di aplikasi sebelum memulai kelas dan mengisi jurnal setelah selesai.
 
-Klik link berikut untuk akses cepat:
-https://app.lakukelas.my.id/dashboard/teacher-attendance
+🔗 *Akses Aplikasi:*
+${settings.appUrl}/dashboard
 
-Semangat mengajar!
-_LakuKelas Notifier_`;
+Selamat beraktivitas dan semoga harinya menyenangkan!
+_Sistem Notifikasi LakuKelas_`;
 
         try {
             const response = await fetch('https://api.fonnte.com/send', {

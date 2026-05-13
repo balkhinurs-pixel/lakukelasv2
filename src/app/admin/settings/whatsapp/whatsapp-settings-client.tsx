@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Loader2, ExternalLink, ShieldCheck, BellRing, Clock, Send, Info } from "lucide-react";
+import { MessageSquare, Loader2, Globe, ShieldCheck, BellRing, Clock, Send, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { saveWhatsAppSettings, sendTestWhatsApp } from "@/lib/actions/admin";
@@ -17,6 +17,7 @@ type WASettings = {
     token: string;
     enabled: boolean;
     time: string;
+    appUrl: string;
 };
 
 export default function WhatsAppSettingsClient({ initialSettings }: { initialSettings: WASettings }) {
@@ -31,7 +32,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
         e.preventDefault();
         setLoading(true);
 
-        const result = await saveWhatsAppSettings(settings.token, settings.enabled, settings.time);
+        const result = await saveWhatsAppSettings(settings.token, settings.enabled, settings.time, settings.appUrl);
 
         if (result.success) {
             toast({
@@ -81,7 +82,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold font-headline text-slate-900">Pengaturan WhatsApp</h1>
-                    <p className="text-slate-600 mt-1">Konfigurasi WhatsApp Gateway menggunakan Fonnte untuk notifikasi otomatis.</p>
+                    <p className="text-slate-600 mt-1">Konfigurasi notifikasi otomatis dan alamat akses aplikasi.</p>
                 </div>
             </div>
 
@@ -90,39 +91,42 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                     <form onSubmit={handleSave}>
                         <Card>
                             <CardHeader>
-                                <CardTitle>Konfigurasi Gateway</CardTitle>
+                                <CardTitle>Konfigurasi Utama</CardTitle>
                                 <CardDescription>
-                                    Gunakan Device Token untuk stabilitas pengiriman pesan yang lebih baik.
+                                    Atur kredensial Fonnte dan alamat web aplikasi Anda.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="token">Fonnte Token</Label>
+                                    <Label htmlFor="token">Fonnte Device Token</Label>
                                     <Input 
                                         id="token" 
                                         type="password"
-                                        placeholder="Masukkan Token" 
+                                        placeholder="Masukkan Token Perangkat" 
                                         value={settings.token}
                                         onChange={(e) => setSettings({...settings, token: e.target.value})}
                                         required
                                     />
-                                    <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mt-2">
-                                        <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                                        <div className="text-xs text-amber-800 leading-relaxed">
-                                            <p className="font-bold mb-1">PANDUAN TOKEN:</p>
-                                            <ul className="list-disc pl-4 space-y-1">
-                                                <li>Sangat disarankan menggunakan <strong>Device Token</strong> (Klik tombol hitam 'Token' di menu Device pada dashboard Fonnte).</li>
-                                                <li>Pastikan status perangkat adalah <strong>Connected</strong>.</li>
-                                                <li>Verifikasi konfigurasi dengan tombol <strong>Kirim Tes</strong> di bawah.</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        Dapatkan token di <a href="https://fonnte.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center">fonnte.com <ExternalLink className="h-3 w-3 ml-1" /></a>
-                                    </p>
+                                    <p className="text-[10px] text-muted-foreground italic">Gunakan **Device Token** dari menu Device di Fonnte untuk stabilitas terbaik.</p>
                                 </div>
 
-                                <div className="flex items-center justify-between p-4 rounded-lg border bg-slate-50/50">
+                                <div className="space-y-2">
+                                    <Label htmlFor="app_url">URL Aplikasi (Domain)</Label>
+                                    <div className="relative">
+                                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                        <Input 
+                                            id="app_url" 
+                                            placeholder="https://app.anda.id" 
+                                            className="pl-10"
+                                            value={settings.appUrl}
+                                            onChange={(e) => setSettings({...settings, appUrl: e.target.value})}
+                                            required
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground italic">Alamat ini akan muncul sebagai link di dalam pesan WhatsApp guru.</p>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 rounded-xl border bg-slate-50/50">
                                     <div className="space-y-0.5">
                                         <div className="flex items-center gap-2">
                                             <BellRing className="h-4 w-4 text-primary" />
@@ -139,7 +143,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                             <CardFooter className="border-t pt-6">
                                 <Button type="submit" disabled={loading}>
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Simpan Pengaturan
+                                    Simpan Perubahan
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -150,9 +154,6 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <Send className="h-5 w-5 text-blue-600" /> Uji Kirim Pesan
                             </CardTitle>
-                            <CardDescription>
-                                Masukkan nomor tujuan untuk memastikan pesan bisa terkirim dengan token di atas.
-                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -195,11 +196,6 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                 <span className="text-sm">Waktu Eksekusi</span>
                                 <span className="text-xs font-bold text-primary px-2 py-1 rounded border bg-white">06:00 WIB</span>
                             </div>
-                            <div className="pt-4 border-t">
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    Sistem akan otomatis mengirimkan daftar mata pelajaran dan kelas yang harus diajar kepada masing-masing guru setiap pagi.
-                                </p>
-                            </div>
                         </CardContent>
                     </Card>
 
@@ -209,13 +205,13 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                 <ShieldCheck className="h-5 w-5 text-blue-500" /> Syarat Berhasil
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-2">
-                            <p>Agar pengingat otomatis sampai ke guru:</p>
-                            <ul className="list-disc pl-5 space-y-1">
-                                <li>Admin harus mengaktifkan toggle <strong>Pengingat Otomatis</strong>.</li>
-                                <li>Data <strong>Nomor WhatsApp</strong> guru wajib diisi lengkap (diawali 62).</li>
-                                <li>Guru harus memiliki <strong>Jadwal Mengajar</strong> pada hari tersebut.</li>
-                                <li>Perangkat Fonnte harus tetap dalam status <strong>Connected</strong>.</li>
+                        <CardContent className="text-xs text-muted-foreground space-y-2 leading-relaxed">
+                            <p>Agar notifikasi sampai ke guru:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                                <li>Gunakan <strong>Device Token</strong> (tombol hitam di daftar perangkat Fonnte).</li>
+                                <li>Nomor WhatsApp guru di profil harus diawali <strong>62</strong>.</li>
+                                <li>Guru harus memiliki jadwal mengajar di hari tersebut.</li>
+                                <li>Pastikan URL Aplikasi sudah benar untuk memudahkan akses guru.</li>
                             </ul>
                         </CardContent>
                     </Card>
