@@ -93,7 +93,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                             <CardHeader>
                                 <CardTitle>Konfigurasi Utama</CardTitle>
                                 <CardDescription>
-                                    Atur kredensial Fonnte dan alamat web aplikasi Anda.
+                                    Atur kredensial Fonnte dan jadwal pengiriman otomatis.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
@@ -107,7 +107,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                         onChange={(e) => setSettings({...settings, token: e.target.value})}
                                         required
                                     />
-                                    <p className="text-[10px] text-muted-foreground italic">Gunakan **Device Token** dari menu Device di Fonnte untuk stabilitas terbaik.</p>
+                                    <p className="text-[10px] text-muted-foreground italic">Gunakan <strong>Device Token</strong> (tombol hitam di daftar perangkat Fonnte).</p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -123,21 +123,38 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                             required
                                         />
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground italic">Alamat ini akan muncul sebagai link di dalam pesan WhatsApp guru.</p>
+                                    <p className="text-[10px] text-muted-foreground italic">Alamat ini akan muncul sebagai link akses guru.</p>
                                 </div>
 
-                                <div className="flex items-center justify-between p-4 rounded-xl border bg-slate-50/50">
-                                    <div className="space-y-0.5">
-                                        <div className="flex items-center gap-2">
-                                            <BellRing className="h-4 w-4 text-primary" />
-                                            <Label className="text-base font-semibold">Pengingat Otomatis</Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="wa_reminder_time">Waktu Pengiriman Harian</Label>
+                                        <div className="relative">
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <Input 
+                                                id="wa_reminder_time" 
+                                                type="time"
+                                                className="pl-10"
+                                                value={settings.time}
+                                                onChange={(e) => setSettings({...settings, time: e.target.value})}
+                                                required
+                                            />
                                         </div>
-                                        <p className="text-sm text-muted-foreground">Kirim jadwal mengajar ke guru setiap pagi pukul 06:00 WIB.</p>
+                                        <p className="text-[10px] text-muted-foreground italic">Penting: Sesuaikan juga pemicu di `vercel.json` jika Anda mengubah ini.</p>
                                     </div>
-                                    <Switch 
-                                        checked={settings.enabled}
-                                        onCheckedChange={(val) => setSettings({...settings, enabled: val})}
-                                    />
+
+                                    <div className="flex items-center justify-between p-4 rounded-xl border bg-slate-50/50 self-end">
+                                        <div className="space-y-0.5">
+                                            <div className="flex items-center gap-2">
+                                                <BellRing className="h-4 w-4 text-primary" />
+                                                <Label className="text-sm font-semibold">Aktifkan Pengingat</Label>
+                                            </div>
+                                        </div>
+                                        <Switch 
+                                            checked={settings.enabled}
+                                            onCheckedChange={(val) => setSettings({...settings, enabled: val})}
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                             <CardFooter className="border-t pt-6">
@@ -183,18 +200,18 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                 <div className="space-y-6">
                     <Card className="bg-slate-50 border-dashed">
                         <CardHeader>
-                            <CardTitle className="text-base">Informasi Cron Job</CardTitle>
+                            <CardTitle className="text-base">Informasi Jadwal</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm">Status Penjadwalan</span>
                                 <Badge variant="outline" className={settings.enabled ? "bg-green-100 text-green-800 border-green-200" : "bg-slate-200"}>
-                                    {settings.enabled ? "Terjadwal Aktif" : "Nonaktif"}
+                                    {settings.enabled ? "Terjadwal" : "Nonaktif"}
                                 </Badge>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm">Waktu Eksekusi</span>
-                                <span className="text-xs font-bold text-primary px-2 py-1 rounded border bg-white">06:00 WIB</span>
+                                <span className="text-sm">Target Waktu</span>
+                                <span className="text-xs font-bold text-primary px-2 py-1 rounded border bg-white">{settings.time} WIB</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -202,17 +219,15 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <ShieldCheck className="h-5 w-5 text-blue-500" /> Syarat Berhasil
+                                <ShieldCheck className="h-5 w-5 text-blue-500" /> Catatan Hosting
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="text-xs text-muted-foreground space-y-2 leading-relaxed">
-                            <p>Agar notifikasi sampai ke guru:</p>
-                            <ul className="list-disc pl-4 space-y-1">
-                                <li>Gunakan <strong>Device Token</strong> (tombol hitam di daftar perangkat Fonnte).</li>
-                                <li>Nomor WhatsApp guru di profil harus diawali <strong>62</strong>.</li>
-                                <li>Guru harus memiliki jadwal mengajar di hari tersebut.</li>
-                                <li>Pastikan URL Aplikasi sudah benar untuk memudahkan akses guru.</li>
-                            </ul>
+                        <CardContent className="text-xs text-muted-foreground space-y-3 leading-relaxed">
+                            <p>Sistem ini menggunakan <strong>Vercel Cron</strong> (Free Tier).</p>
+                            <div className="p-2 bg-amber-50 border border-amber-100 rounded text-amber-800">
+                                Pengingat hanya bisa dipicu <strong>1 kali dalam 24 jam</strong>. Pastikan pengaturan jam di atas sama dengan pengaturan di file <code>vercel.json</code> agar pengiriman tepat waktu.
+                            </div>
+                            <p>Saat ini default pemicu adalah jam 06:00 WIB (23:00 UTC).</p>
                         </CardContent>
                     </Card>
                 </div>

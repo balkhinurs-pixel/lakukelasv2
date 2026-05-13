@@ -14,15 +14,16 @@ export async function GET(request: Request) {
   try {
     const supabase = createClient();
     
-    // 1. Ambil Pengaturan WhatsApp & URL Aplikasi
+    // 1. Ambil Pengaturan WhatsApp, Waktu, & URL Aplikasi
     const { data: settingsData } = await supabase
       .from('settings')
       .select('key, value')
-      .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'app_url']);
+      .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'wa_reminder_time', 'app_url']);
 
     const settings = {
         token: settingsData?.find(s => s.key === 'fonnte_api_token')?.value?.trim(),
         enabled: settingsData?.find(s => s.key === 'wa_reminder_enabled')?.value === 'true',
+        targetTime: settingsData?.find(s => s.key === 'wa_reminder_time')?.value || '06:00',
         appUrl: settingsData?.find(s => s.key === 'app_url')?.value || 'https://app.lakukelas.my.id'
     };
 
@@ -31,11 +32,22 @@ export async function GET(request: Request) {
         return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing.' });
     }
 
-    // 2. Tentukan hari ini di Indonesia
-    const dayName = getIndonesianDayName();
+    // 2. Tentukan hari dan jam sekarang di Indonesia
     const nowIndo = getIndonesianTime();
+    const dayName = getIndonesianDayName();
     const todayStr = format(nowIndo, 'dd MMMM yyyy');
-    console.log(`[CRON-WA] Execution Day: ${dayName}, Date: ${todayStr}`);
+    const currentHourMin = format(nowIndo, 'HH:mm');
+    
+    console.log(`[CRON-WA] Execution - Day: ${dayName}, Time: ${currentHourMin}, Target: ${settings.targetTime}`);
+
+    // LOGIC: Pada Vercel Free, kita biasanya hanya punya 1 kesempatan eksekusi.
+    // Kita tetap memproses jika trigger Vercel menyala. 
+    // Jika suatu saat upgrade ke Pro dan Cron di-set tiap jam, uncomment baris di bawah:
+    /*
+    if (currentHourMin.substring(0, 2) !== settings.targetTime.substring(0, 2)) {
+        return NextResponse.json({ message: 'Not the configured time yet. Skipping.' });
+    }
+    */
 
     // 3. Ambil Guru yang memiliki jadwal hari ini
     const { data: schedules, error: scheduleError } = await supabase
@@ -121,6 +133,7 @@ Selamat beraktivitas dan semoga harinya menyenangkan!
 _Sistem Notifikasi LakuKelas_`;
 
         try {
+            // Fonnte requires token in both header and body for maximum compatibility
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
                 headers: { 
