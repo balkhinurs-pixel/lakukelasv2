@@ -18,12 +18,11 @@ export async function GET(request: Request) {
     const { data: settingsData } = await supabase
       .from('settings')
       .select('key, value')
-      .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'wa_reminder_time']);
+      .in('key', ['fonnte_api_token', 'wa_reminder_enabled']);
 
     const settings = {
         token: settingsData?.find(s => s.key === 'fonnte_api_token')?.value?.trim(),
-        enabled: settingsData?.find(s => s.key === 'wa_reminder_enabled')?.value === 'true',
-        time: settingsData?.find(s => s.key === 'wa_reminder_time')?.value
+        enabled: settingsData?.find(s => s.key === 'wa_reminder_enabled')?.value === 'true'
     };
 
     if (!settings.enabled || !settings.token) {
@@ -35,7 +34,7 @@ export async function GET(request: Request) {
     const dayName = getIndonesianDayName();
     const nowIndo = getIndonesianTime();
     const todayStr = format(nowIndo, 'dd MMMM yyyy');
-    console.log(`[CRON-WA] Day: ${dayName}, Date: ${todayStr}`);
+    console.log(`[CRON-WA] Execution Day: ${dayName}, Date: ${todayStr}`);
 
     // 3. Ambil Guru yang memiliki jadwal hari ini
     const { data: schedules, error: scheduleError } = await supabase
@@ -56,7 +55,7 @@ export async function GET(request: Request) {
     }
 
     if (!schedules || schedules.length === 0) {
-        console.log(`[CRON-WA] No schedules found for ${dayName}. Exiting.`);
+        console.log(`[CRON-WA] No schedules found for ${dayName}. No messages sent.`);
         return NextResponse.json({ message: `No schedules found for ${dayName}.` });
     }
 
@@ -91,7 +90,7 @@ export async function GET(request: Request) {
     const teacherCount = Object.keys(teacherMessages).length;
     console.log(`[CRON-WA] Preparing messages for ${teacherCount} teachers.`);
 
-    // 5. Kirim pesan via Fonnte
+    // 5. Kirim pesan via Fonnte menggunakan metode yang terbukti berhasil (Double Token)
     const results = [];
     for (const teacherId in teacherMessages) {
         const teacher = teacherMessages[teacherId];
@@ -102,33 +101,31 @@ export async function GET(request: Request) {
 
         const message = `Halo Bapak/Ibu *${teacher.name}*,
 
-Jangan lupa untuk melakukan absensi hari ini, *${dayName}, ${todayStr}*.
+Selamat pagi! Berikut adalah jadwal mengajar Anda hari ini, *${dayName}, ${todayStr}*:
 
-Berikut adalah jadwal mengajar Anda hari ini:
 ${scheduleText}
 
-Klik link berikut untuk melakukan absensi:
+Jangan lupa untuk melakukan absensi kehadiran dan mengisi jurnal mengajar setelah kelas selesai ya.
+
+Klik link berikut untuk akses cepat:
 https://app.lakukelas.my.id/dashboard/teacher-attendance
 
 Semangat mengajar!
 _LakuKelas Notifier_`;
 
-        console.log(`[CRON-WA] Sending message to ${teacher.name} (${teacher.phone})...`);
-
         try {
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
                 headers: { 
-                    'Authorization': settings.token as string // Essential header
+                    'Authorization': settings.token as string 
                 },
                 body: new URLSearchParams({
-                    'token': settings.token as string, // Double verify in body
+                    'token': settings.token as string,
                     'target': teacher.phone,
                     'message': message
                 })
             });
             const resData = await response.json();
-            console.log(`[CRON-WA] Fonnte API Result for ${teacher.name}:`, JSON.stringify(resData));
             results.push({ teacher: teacher.name, success: resData.status });
         } catch (err: any) {
             console.error(`[CRON-WA] Error sending to ${teacher.name}:`, err.message);
@@ -138,6 +135,7 @@ _LakuKelas Notifier_`;
 
     return NextResponse.json({ 
       success: true, 
+      day: dayName,
       processed_teachers: teacherCount,
       results: results
     });

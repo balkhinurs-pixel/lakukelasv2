@@ -92,16 +92,16 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                             <CardHeader>
                                 <CardTitle>Konfigurasi Gateway</CardTitle>
                                 <CardDescription>
-                                    Atur token API dan kebijakan pengiriman pesan pengingat.
+                                    Gunakan Device Token untuk stabilitas pengiriman pesan yang lebih baik.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="token">Fonnte API Token</Label>
+                                    <Label htmlFor="token">Fonnte Token</Label>
                                     <Input 
                                         id="token" 
                                         type="password"
-                                        placeholder="Masukkan Token dari fonnte.com" 
+                                        placeholder="Masukkan Token" 
                                         value={settings.token}
                                         onChange={(e) => setSettings({...settings, token: e.target.value})}
                                         required
@@ -109,10 +109,11 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                     <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mt-2">
                                         <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                                         <div className="text-xs text-amber-800 leading-relaxed">
-                                            <p className="font-bold mb-1">TIPS TOKEN:</p>
+                                            <p className="font-bold mb-1">PANDUAN TOKEN:</p>
                                             <ul className="list-disc pl-4 space-y-1">
-                                                <li>Disarankan menggunakan <strong>Device Token</strong> (dari menu Device di Fonnte) untuk kestabilan pengiriman.</li>
-                                                <li>Pastikan nomor WhatsApp Anda sudah discan (Connected) di dashboard Fonnte.</li>
+                                                <li>Sangat disarankan menggunakan <strong>Device Token</strong> (Klik tombol hitam 'Token' di menu Device pada dashboard Fonnte).</li>
+                                                <li>Pastikan status perangkat adalah <strong>Connected</strong>.</li>
+                                                <li>Verifikasi konfigurasi dengan tombol <strong>Kirim Tes</strong> di bawah.</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -127,30 +128,12 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                             <BellRing className="h-4 w-4 text-primary" />
                                             <Label className="text-base font-semibold">Pengingat Otomatis</Label>
                                         </div>
-                                        <p className="text-sm text-muted-foreground">Kirim jadwal mengajar ke guru setiap pagi.</p>
+                                        <p className="text-sm text-muted-foreground">Kirim jadwal mengajar ke guru setiap pagi pukul 06:00 WIB.</p>
                                     </div>
                                     <Switch 
                                         checked={settings.enabled}
                                         onCheckedChange={(val) => setSettings({...settings, enabled: val})}
                                     />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="time" className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-slate-400" />
-                                        Waktu Pengiriman (WIB)
-                                    </Label>
-                                    <Input 
-                                        id="time" 
-                                        type="time"
-                                        value={settings.time}
-                                        onChange={(e) => setSettings({...settings, time: e.target.value})}
-                                        className="w-full md:w-[200px]"
-                                        required
-                                    />
-                                    <p className="text-xs text-muted-foreground italic">
-                                        Saran: Atur antara pukul 06:00 s/d 07:00 WIB.
-                                    </p>
                                 </div>
                             </CardContent>
                             <CardFooter className="border-t pt-6">
@@ -168,7 +151,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                 <Send className="h-5 w-5 text-blue-600" /> Uji Kirim Pesan
                             </CardTitle>
                             <CardDescription>
-                                Gunakan ini untuk memastikan token yang Anda simpan di atas benar-benar bisa mengirim pesan.
+                                Masukkan nomor tujuan untuk memastikan pesan bisa terkirim dengan token di atas.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -203,18 +186,18 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm">Status Cron</span>
+                                <span className="text-sm">Status Penjadwalan</span>
                                 <Badge variant="outline" className={settings.enabled ? "bg-green-100 text-green-800 border-green-200" : "bg-slate-200"}>
-                                    {settings.enabled ? "Terjadwal" : "Nonaktif"}
+                                    {settings.enabled ? "Terjadwal Aktif" : "Nonaktif"}
                                 </Badge>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm">Jadwal Vercel</span>
-                                <span className="text-xs font-mono bg-white px-2 py-1 rounded border">0 23 * * * (UTC)</span>
+                                <span className="text-sm">Waktu Eksekusi</span>
+                                <span className="text-xs font-bold text-primary px-2 py-1 rounded border bg-white">06:00 WIB</span>
                             </div>
                             <div className="pt-4 border-t">
                                 <p className="text-xs text-muted-foreground leading-relaxed">
-                                    Cron Job akan memanggil endpoint <code>/api/cron/wa-reminder</code> setiap hari pada pukul 06:00 WIB untuk memproses antrean pesan ke seluruh guru yang mengajar.
+                                    Sistem akan otomatis mengirimkan daftar mata pelajaran dan kelas yang harus diajar kepada masing-masing guru setiap pagi.
                                 </p>
                             </div>
                         </CardContent>
@@ -223,15 +206,16 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <ShieldCheck className="h-5 w-5 text-blue-500" /> Syarat Notifikasi
+                                <ShieldCheck className="h-5 w-5 text-blue-500" /> Syarat Berhasil
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="text-sm text-muted-foreground space-y-2">
-                            <p>Agar pengingat otomatis berfungsi, pastikan:</p>
+                            <p>Agar pengingat otomatis sampai ke guru:</p>
                             <ul className="list-disc pl-5 space-y-1">
-                                <li>Nomor telepon guru sudah diawali kode negara (contoh: 62812xxx).</li>
-                                <li>Isi nomor telepon di menu <strong>Daftar Guru</strong> atau biarkan guru mengisi sendiri di Profil mereka.</li>
-                                <li>Token WhatsApp di atas sudah divalidasi dengan tombol <strong>Kirim Tes</strong>.</li>
+                                <li>Admin harus mengaktifkan toggle <strong>Pengingat Otomatis</strong>.</li>
+                                <li>Data <strong>Nomor WhatsApp</strong> guru wajib diisi lengkap (diawali 62).</li>
+                                <li>Guru harus memiliki <strong>Jadwal Mengajar</strong> pada hari tersebut.</li>
+                                <li>Perangkat Fonnte harus tetap dalam status <strong>Connected</strong>.</li>
                             </ul>
                         </CardContent>
                     </Card>
