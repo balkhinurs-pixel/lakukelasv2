@@ -40,7 +40,6 @@ export async function getAdminDashboardData() {
         }
 
         // Call main summary function
-        // Note: RPC results with RETURNS TABLE are returned as an array of objects
         const [summaryRes, journalEntries, holidays, settingsRes] = await Promise.all([
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
             getJournalEntries(),
@@ -52,7 +51,7 @@ export async function getAdminDashboardData() {
             console.error('[DEBUG-ERR] Summary RPC failed:', summaryRes.error.message);
         }
         
-        // Robust data extraction from RPC table result
+        // Robust data extraction from RPC result (which comes as an array of objects)
         const rawData = summaryRes.data;
         let summaryData = { 
             total_expected: 0, 
@@ -63,12 +62,13 @@ export async function getAdminDashboardData() {
         };
 
         if (Array.isArray(rawData) && rawData.length > 0) {
+            const firstRow = rawData[0];
             summaryData = {
-                total_expected: Number(rawData[0].total_expected || 0),
-                total_present: Number(rawData[0].total_present || 0),
-                total_late: Number(rawData[0].total_late || 0),
-                total_absent: Number(rawData[0].total_absent || 0),
-                attendance_rate: Number(rawData[0].attendance_rate || 0)
+                total_expected: Number(firstRow.total_expected || 0),
+                total_present: Number(firstRow.total_present || 0),
+                total_late: Number(firstRow.total_late || 0),
+                total_absent: Number(firstRow.total_absent || 0),
+                attendance_rate: Number(firstRow.attendance_rate || 0)
             };
         }
 

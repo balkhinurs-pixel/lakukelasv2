@@ -1,4 +1,4 @@
-# Rencana Pembaruan Sistem Absensi Guru (V4.3) - SELESAI
+# Rencana Pembaruan Sistem Absensi Guru (V4.5) - SELESAI
 
 Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan kehadiran guru yang lebih profesional dan fleksibel.
 
@@ -17,15 +17,15 @@ Admin dapat memilih salah satu dari dua kebijakan absensi yang diterapkan di sek
 
 ## 2. Perhitungan Statistik Kehadiran (Admin) (TERIMPLEMENTASI)
 Admin melihat laporan dengan metrik berikut:
-- **Total Hari Wajib Masuk**: Dihitung berdasarkan kebijakan yang dipilih (Jumlah hari unik dengan jadwal VS Jumlah total hari kerja efektif).
-- **Kehadiran Aktual**: Jumlah rekaman `check_in` di tabel `teacher_attendance`.
-- **Persentase Kehadiran**: `(Kehadiran Aktual / Hari Wajib Masuk) * 100`.
-- **Status "Tanpa Keterangan"**: Guru yang wajib hadir hari ini tetapi belum melakukan `check_in`.
+- **Wajib Hadir (Target)**: Dihitung secara real-time berdasarkan kebijakan yang dipilih.
+- **Hadir (Aktual)**: Jumlah unik guru yang sudah melakukan `check_in` hari ini.
+- **Terlambat**: Jumlah unik guru yang melakukan `check_in` melewati batas waktu.
+- **Tanpa Keterangan (Alpha)**: Selisih antara `Wajib Hadir` dan `Hadir`.
 
-## 3. Perubahan Database (TERIMPLEMENTASI)
+## 3. Perubahan Database (TERIMPLEMENTASI - V4.5)
 - **Tabel Settings**: Penambahan kunci baru `attendance_policy` dengan nilai `schedule_based` atau `daily_based`.
-- **Fungsi RPC (`get_teacher_attendance_summary`)**: Fungsi cerdas yang menyesuaikan daftar "siapa yang harus hadir" berdasarkan setting kebijakan yang dipilih Admin.
-- **Fungsi Pembantu (`get_indonesian_day_name_from_date`)**: Untuk pemetaan jadwal yang akurat.
+- **Fungsi RPC (`get_teacher_attendance_summary`)**: Versi 4.5 yang sangat stabil, menggunakan path tabel eksplisit dan penanganan array return yang robust.
+- **Fungsi Diagnostik (`diagnose_attendance_logic`)**: Alat bantu Admin untuk melacak kecocokan jadwal secara instan.
 
 ## 4. Keunggulan Sistem
 - **Fleksibel**: Menyesuaikan dengan budaya dan aturan internal sekolah masing-masing melalui menu Pengaturan.
@@ -33,4 +33,4 @@ Admin melihat laporan dengan metrik berikut:
 - **Profesional**: Laporan menampilkan "Kebijakan yang Berlaku" sehingga transparan bagi semua staf pengajar.
 
 ---
-*Update V4.3 telah selesai diimplementasikan.*
+*Update V4.5 telah selesai diimplementasikan dan diuji berhasil.*
