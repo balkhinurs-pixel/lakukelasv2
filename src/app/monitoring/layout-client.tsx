@@ -67,7 +67,7 @@ export default function MonitoringLayoutClient({
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const router = useRouter();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, openMobile } = useSidebar();
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -240,9 +240,35 @@ export default function MonitoringLayoutClient({
               
               <button 
                 onClick={() => toggleSidebar()} 
-                className="flex flex-col items-center justify-center -mt-8 h-14 w-14 rounded-full bg-gradient-to-br from-teal-600 to-cyan-600 text-white shadow-lg border-4 border-background"
+                className="group flex flex-col items-center justify-center -mt-8 h-14 w-14 rounded-full bg-gradient-to-br from-teal-600 to-cyan-600 text-white shadow-lg border-4 border-background transition-all active:scale-95"
+                aria-expanded={openMobile}
+                aria-label={openMobile ? "Tutup menu" : "Buka menu"}
               >
-                  <Menu className="w-6 h-6" />
+                  <svg
+                    className="pointer-events-none"
+                    width={24}
+                    height={24}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M4 12L20 12"
+                      className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]"
+                    />
+                    <path
+                      d="M4 12H20"
+                      className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45"
+                    />
+                    <path
+                      d="M4 12H20"
+                      className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]"
+                    />
+                  </svg>
               </button>
 
               <Link href="/monitoring/teacher-activity" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/monitoring/teacher-activity" ? "text-teal-600 bg-teal-500/10" : "text-muted-foreground")}>

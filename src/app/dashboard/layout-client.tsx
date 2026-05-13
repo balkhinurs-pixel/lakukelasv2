@@ -122,7 +122,7 @@ export default function DashboardLayoutClient({
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, openMobile } = useSidebar();
   
   const isHeadmaster = profile?.role === 'headmaster';
   const isAdmin = profile?.role === 'admin';
@@ -283,9 +283,35 @@ export default function DashboardLayoutClient({
               
               <button 
                 onClick={() => toggleSidebar()} 
-                className="flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg border-4 border-background"
+                className="group flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg border-4 border-background transition-all active:scale-95"
+                aria-expanded={openMobile}
+                aria-label={openMobile ? "Tutup menu" : "Buka menu"}
               >
-                  <Menu className="w-6 h-6" />
+                  <svg
+                    className="pointer-events-none"
+                    width={24}
+                    height={24}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M4 12L20 12"
+                      className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]"
+                    />
+                    <path
+                      d="M4 12H20"
+                      className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45"
+                    />
+                    <path
+                      d="M4 12H20"
+                      className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]"
+                    />
+                  </svg>
               </button>
 
               {rightMobileNavItems.map((item) => (
