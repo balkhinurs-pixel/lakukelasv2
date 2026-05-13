@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Clock, Loader2, CheckCircle, ShieldCheck } from "lucide-react";
+import { MapPin, Clock, Loader2, CheckCircle, ShieldCheck, Navigation } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
     const { toast } = useToast();
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
+    const [fetchingLocation, setFetchingLocation] = React.useState(false);
     const [settings, setSettings] = React.useState<AttendanceSettings>(initialSettings);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,6 +41,44 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
             ...prev,
             attendance_policy: value
         }));
+    };
+
+    const handleGetLiveLocation = () => {
+        if (!navigator.geolocation) {
+            toast({
+                title: "Tidak Didukung",
+                description: "Browser atau perangkat Anda tidak mendukung fitur GPS.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setFetchingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setSettings(prev => ({
+                    ...prev,
+                    latitude: position.coords.latitude.toString(),
+                    longitude: position.coords.longitude.toString()
+                }));
+                setFetchingLocation(false);
+                toast({
+                    title: "Lokasi Terdeteksi",
+                    description: "Koordinat berhasil diambil dari GPS perangkat Anda.",
+                });
+            },
+            (error) => {
+                setFetchingLocation(false);
+                let msg = "Gagal mengambil lokasi.";
+                if (error.code === error.PERMISSION_DENIED) msg = "Izin lokasi ditolak. Harap izinkan akses GPS di pengaturan browser/HP Anda.";
+                toast({
+                    title: "Gagal",
+                    description: msg,
+                    variant: "destructive"
+                });
+            },
+            { enableHighAccuracy: true }
+        );
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -97,14 +136,14 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
             </div>
             
             <form onSubmit={handleSave}>
-                <Card>
-                    <CardHeader>
+                <Card className="border-0 shadow-lg overflow-hidden">
+                    <CardHeader className="bg-slate-50/50 border-b">
                         <CardTitle>Konfigurasi Absensi</CardTitle>
                         <CardDescription>
                             Tentukan kebijakan kehadiran dan batas lokasi untuk seluruh staf pengajar.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-8">
+                    <CardContent className="space-y-8 p-6">
                         <div className="space-y-4">
                             <h3 className="font-semibold text-lg flex items-center gap-2 text-primary">
                                 <ShieldCheck className="h-5 w-5" /> Kebijakan Kehadiran
@@ -136,10 +175,32 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                         </div>
 
                         <div className="border-t pt-8 space-y-4">
-                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                <MapPin className="h-5 w-5 text-blue-500" /> Pengaturan Lokasi
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <h3 className="font-semibold text-lg flex items-center gap-2 text-blue-600">
+                                    <MapPin className="h-5 w-5" /> Pengaturan Lokasi
+                                </h3>
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={handleGetLiveLocation}
+                                    disabled={fetchingLocation}
+                                    className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 shadow-sm"
+                                >
+                                    {fetchingLocation ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Navigation className="mr-2 h-4 w-4" />
+                                    )}
+                                    Tentukan Lokasi via GPS HP
+                                </Button>
+                            </div>
+                            
+                            <div className="p-4 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-800 leading-relaxed">
+                                <strong>💡 Tips:</strong> Berdirilah di tengah area sekolah, lalu klik tombol <strong>&quot;Tentukan Lokasi via GPS HP&quot;</strong> di atas untuk mendapatkan koordinat yang presisi tanpa perlu mengetik manual.
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="latitude">Latitude</Label>
                                     <Input 
@@ -149,6 +210,7 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                                         value={settings.latitude}
                                         onChange={handleInputChange}
                                         required
+                                        className="bg-white"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -160,6 +222,7 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                                         value={settings.longitude}
                                         onChange={handleInputChange}
                                         required
+                                        className="bg-white"
                                     />
                                 </div>
                             </div>
@@ -175,13 +238,15 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                                     value={settings.radius}
                                     onChange={handleInputChange}
                                     required
+                                    className="bg-white"
                                 />
+                                <p className="text-[10px] text-muted-foreground italic">Disarankan 30-50 meter untuk akurasi terbaik di lingkungan sekolah.</p>
                             </div>
                         </div>
 
                         <div className="border-t pt-8 space-y-4">
-                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                <Clock className="h-5 w-5 text-green-500" /> Pengaturan Waktu
+                            <h3 className="font-semibold text-lg flex items-center gap-2 text-green-600">
+                                <Clock className="h-5 w-5" /> Pengaturan Waktu
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
@@ -193,10 +258,11 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                                         value={settings.check_in_start}
                                         onChange={handleInputChange}
                                         required
+                                        className="bg-white"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="check_in_deadline">Batas Waktu Absen Masuk</Label>
+                                    <Label htmlFor="check_in_deadline">Batas Waktu Absen Masuk (Terlambat)</Label>
                                     <Input 
                                         id="check_in_deadline" 
                                         name="check_in_deadline"
@@ -204,15 +270,16 @@ export default function LocationSettingsClient({ initialSettings }: { initialSet
                                         value={settings.check_in_deadline}
                                         onChange={handleInputChange}
                                         required
+                                        className="bg-white"
                                     />
                                 </div>
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter className="border-t pt-6">
-                        <Button type="submit" disabled={loading || !isFormValid}>
+                    <CardFooter className="bg-slate-50/50 border-t p-6">
+                        <Button type="submit" disabled={loading || !isFormValid} className="w-full sm:w-auto px-8">
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Simpan Pengaturan
+                            Simpan Seluruh Pengaturan
                         </Button>
                     </CardFooter>
                 </Card>
