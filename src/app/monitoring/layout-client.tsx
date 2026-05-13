@@ -6,26 +6,13 @@ import * as React from 'react';
 import {
   LayoutDashboard,
   LogOut,
-  Users,
   Menu,
-  User as UserIcon,
-  Users2,
-  CalendarCheck,
-  School,
-  BookOpen,
-  ArrowRightLeft,
-  GraduationCap,
-  MapPin,
   UserCheck as UserCheckIcon,
-  CalendarClock,
-  Bell,
-  Building,
-  CalendarOff,
   Activity,
   Home,
   ChevronLeft,
-  Zap,
-  MessageSquare,
+  Bell,
+  Settings,
   ShieldCheck,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
@@ -61,29 +48,13 @@ import { createClient } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const adminNavItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dasbor Admin' },
-  { href: '/admin/users', icon: Users, label: 'Kelola Staf' },
+const monitoringNavItems = [
+  { href: '/monitoring', icon: LayoutDashboard, label: 'Dasbor Statistik' },
+  { href: '/monitoring/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
+  { href: '/monitoring/teacher-activity', icon: Activity, label: 'Aktivitas Guru' },
 ];
 
-const rosterNavItems = [
-    { href: '/admin/roster/school-year', icon: CalendarCheck, label: 'Tahun Ajaran' },
-    { href: '/admin/roster/classes', icon: School, label: 'Pengaturan Kelas' },
-    { href: '/admin/roster/subjects', icon: BookOpen, label: 'Pengaturan Mapel' },
-    { href: '/admin/roster/students', icon: Users2, label: 'Daftar Siswa' },
-    { href: '/admin/roster/promotion', icon: ArrowRightLeft, label: 'Promosi & Mutasi' },
-    { href: '/admin/roster/alumni', icon: GraduationCap, label: 'Alumni' },
-];
-
-const settingsNavItems = [
-    { href: '/admin/settings/school', icon: Building, label: 'Data Sekolah' },
-    { href: '/admin/settings/location', icon: MapPin, label: 'Pengaturan Absensi' },
-    { href: '/admin/settings/whatsapp', icon: MessageSquare, label: 'Pengaturan WhatsApp' },
-    { href: '/admin/settings/schedule', icon: CalendarClock, label: 'Kelola Jadwal Guru' },
-    { href: '/admin/settings/holidays', icon: CalendarOff, label: 'Hari Libur' },
-]
-
-export default function AdminLayoutClient({ 
+export default function MonitoringLayoutClient({ 
   children,
   user,
   profile
@@ -105,47 +76,21 @@ export default function AdminLayoutClient({
     router.refresh();
   }
 
-  const NavContent = ({ items }: { items: typeof adminNavItems | typeof rosterNavItems | typeof settingsNavItems }) => (
-     <SidebarMenu className="gap-2">
-        {items.map((item, index) => {
-          const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/admin';
-          return (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={isActive}
-                tooltip={{ children: item.label }}
-                className={cn(
-                  "rounded-xl mx-2 transition-all duration-300",
-                  isActive && "bg-primary/15 text-primary border border-primary/20 shadow-sm"
-                )}
-              >
-                <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}}>
-                  <item.icon className={cn("w-4 h-4 mr-2", isActive && "text-primary")} />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )
-        })}
-      </SidebarMenu>
-  );
-
   const AppHeader = () => (
-    <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-700 to-indigo-600 text-white shadow-md">
+    <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-teal-600 to-cyan-500 text-white shadow-md">
         <div className="flex items-center justify-between h-16 px-4">
              <div className="flex items-center gap-2">
                  <SidebarTrigger className="md:hidden text-white hover:bg-white/20 hover:text-white" />
                  <h1 className="text-lg font-bold tracking-tight">
                     <span className="text-white">Panel</span>
-                    <span className="text-red-300 ml-1">Admin</span>
+                    <span className="text-teal-200 ml-1">Monitoring</span>
                 </h1>
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="ghost" asChild className="hidden sm:flex text-white hover:bg-white/20">
-                    <Link href="/monitoring">
-                      <ShieldCheck className="mr-2 h-4 w-4" />
-                      Panel Monitoring
+                    <Link href="/dashboard">
+                      <ChevronLeft className="mr-2 h-4 w-4" />
+                      Mode Guru
                     </Link>
                 </Button>
                 <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white rounded-full">
@@ -155,8 +100,8 @@ export default function AdminLayoutClient({
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Admin'} data-ai-hint="admin portrait"/>
-                                <AvatarFallback className="text-foreground text-xs">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
+                                <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Kepsek'} data-ai-hint="admin portrait"/>
+                                <AvatarFallback className="text-foreground text-xs">{profile?.full_name?.charAt(0) || 'K'}</AvatarFallback>
                              </Avatar>
                         </Button>
                     </DropdownMenuTrigger>
@@ -171,13 +116,7 @@ export default function AdminLayoutClient({
                         <DropdownMenuItem asChild>
                            <Link href="/dashboard">
                                 <Home className="mr-2 h-4 w-4"/>
-                                Ke Dasbor Guru
-                           </Link>
-                        </DropdownMenuItem>
-                         <DropdownMenuItem asChild>
-                           <Link href="/monitoring">
-                                <ShieldCheck className="mr-2 h-4 w-4"/>
-                                Ke Panel Monitoring
+                                Kembali ke Dasbor Guru
                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleLogout}>
@@ -195,18 +134,18 @@ export default function AdminLayoutClient({
     <>
       <Sidebar collapsible="icon">
         <SidebarHeader className="p-0 text-background">
-          <div className="relative flex flex-col items-center gap-2 bg-gradient-to-br from-purple-700 via-purple-600 to-indigo-600 p-6 group-data-[collapsible=icon]:hidden overflow-hidden">
+          <div className="relative flex flex-col items-center gap-2 bg-gradient-to-br from-teal-600 via-teal-600 to-cyan-500 p-6 group-data-[collapsible=icon]:hidden overflow-hidden">
               <div className="absolute inset-0 bg-white/[0.05] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
               
               <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 transition-transform duration-300 hover:scale-105 hover:border-white/50 relative z-10">
-                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="User" data-ai-hint="admin portrait" />
+                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="User" data-ai-hint="headmaster portrait" />
                 <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="text-center relative z-10">
-                <p className="text-lg font-bold text-white drop-shadow-sm">{profile?.full_name || 'Admin'}</p>
+                <p className="text-lg font-bold text-white drop-shadow-sm">{profile?.full_name || 'User'}</p>
                 <div className="mt-2">
-                  <div className="text-xs font-semibold px-3 py-1 rounded-lg border backdrop-blur-sm bg-red-500/20 text-red-100 border-red-300/30">
-                    🛡️ Administrator
+                  <div className="text-xs font-semibold px-3 py-1 rounded-lg border backdrop-blur-sm bg-teal-500/20 text-teal-100 border-teal-300/30">
+                    🎓 Kepala Sekolah
                   </div>
                 </div>
               </div>
@@ -216,28 +155,31 @@ export default function AdminLayoutClient({
         <SidebarContent className="p-0 bg-gradient-to-b from-background to-background/95">
           <ScrollArea className="h-full">
             <SidebarGroup className="p-4">
-              <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
-                Manajemen Sistem
+              <SidebarGroupLabel className="text-teal-600 font-semibold text-sm tracking-wider uppercase bg-teal-500/5 px-3 py-2 rounded-lg border border-teal-500/10 mb-4">
+                Menu Monitoring
               </SidebarGroupLabel>
-              <NavContent items={adminNavItems} />
-            </SidebarGroup>
-            
-            <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
-            
-            <SidebarGroup className="p-4">
-              <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
-                Manajemen Data
-              </SidebarGroupLabel>
-              <NavContent items={rosterNavItems} />
-            </SidebarGroup>
-
-            <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-border to-transparent" />
-            
-            <SidebarGroup className="p-4">
-              <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4 flex items-center">
-                Pengaturan
-              </SidebarGroupLabel>
-              <NavContent items={settingsNavItems} />
+              <SidebarMenu className="gap-2">
+                {monitoringNavItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        className={cn(
+                          "rounded-xl mx-2 transition-all duration-300",
+                          isActive && "bg-teal-500/10 text-teal-600 border border-teal-500/20 shadow-sm"
+                        )}
+                      >
+                        <Link href={item.href} onClick={() => {if (isMobile) toggleSidebar()}}>
+                          <item.icon className={cn("w-4 h-4 mr-2", isActive && "text-teal-600")} />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
             </SidebarGroup>
           </ScrollArea>
         </SidebarContent>
@@ -245,21 +187,23 @@ export default function AdminLayoutClient({
         <SidebarFooter className="p-4 border-t border-border/50">
             <SidebarMenu className="gap-2">
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip={{ children: "Buka Monitoring" }}>
-                        <Link href="/monitoring" className="flex items-center gap-3 w-full text-teal-600 font-bold">
-                            <ShieldCheck className="w-4 h-4" />
-                            <span className="group-data-[collapsible=icon]:hidden">Panel Monitoring</span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip={{ children: "Mode Guru" }}>
-                        <Link href="/dashboard" className="flex items-center gap-3 w-full text-blue-600 font-bold">
+                    <SidebarMenuButton asChild tooltip={{ children: "Kembali ke Guru" }}>
+                        <Link href="/dashboard" className="flex items-center gap-3 w-full text-teal-600 font-bold">
                             <ChevronLeft className="w-4 h-4" />
                             <span className="group-data-[collapsible=icon]:hidden">Mode Dasbor Guru</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
+                {profile?.role === 'admin' && (
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild className="text-blue-600 font-bold">
+                            <Link href="/admin">
+                                <Settings className="w-4 h-4 mr-2" />
+                                <span className="group-data-[collapsible=icon]:hidden">Panel Admin</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                )}
                 <SidebarSeparator className="my-2" />
                 <SidebarMenuItem>
                     <SidebarMenuButton
