@@ -116,7 +116,7 @@ export default function DashboardLayoutClient({
     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
       <SheetContent 
         side="bottom" 
-        className="rounded-t-[32px] border-t-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh]"
+        className="rounded-t-[32px] border-t-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[90]"
       >
         <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
         <SheetHeader className="px-6 pb-4">
@@ -133,7 +133,7 @@ export default function DashboardLayoutClient({
         </SheetHeader>
         
         <ScrollArea className="px-6 pb-8 h-full overflow-y-auto">
-          <div className="space-y-6 pb-24"> {/* Added pb-24 to avoid items being hidden behind bottom bar */}
+          <div className="space-y-6 pb-24">
             {(isHeadmaster || isAdmin) && (
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Monitoring</p>
@@ -180,7 +180,10 @@ export default function DashboardLayoutClient({
                       key={item.href} 
                       href={item.href} 
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-3 p-3 rounded-2xl bg-orange-500/10 text-orange-700 dark:text-orange-400 font-medium"
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-2xl transition-all",
+                        pathname.startsWith(item.href) ? "bg-orange-100 text-orange-700 font-bold border border-orange-200" : "bg-orange-500/10 text-orange-700 dark:text-orange-400 font-medium"
+                      )}
                     >
                       <item.icon className="w-5 h-5" />
                       <span>{item.label}</span>
@@ -377,7 +380,7 @@ export default function DashboardLayoutClient({
                 ))}
                 
                 <button 
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+                  onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
                   className="group flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg border-4 border-background transition-all active:scale-95"
                   aria-expanded={isMobileMenuOpen}
                   aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
