@@ -48,4 +48,14 @@ Penyesuaian tata letak dasbor monitoring untuk meningkatkan kenyamanan akses Kep
 - **Scroll Area**: Peningkatan area lihat daftar guru menjadi 450px.
 
 ---
-*Update ini memastikan Kepala Sekolah mendapatkan informasi paling krusial secara instan.*
+
+# Update V5.2: Modern App-Style Bottom Navigation (SELESAI)
+
+Pembaruan sistem navigasi mobile menjadi gaya aplikasi modern:
+- **Non-Modal Drawer**: Memperbaiki tombol hamburger agar berfungsi sebagai toggle buka/tutup yang sempurna.
+- **App Drawer Grid**: Item navigasi menggunakan gaya ikon Android (ikon kotak membulat dengan label di bawah).
+- **Manual Backdrop**: Menambahkan overlay transparan yang tetap memungkinkan interaksi tombol navigasi utama.
+- **Fixed Scrolling**: Area gulir menu bawah diperbaiki agar item tidak terpotong oleh bar navigasi.
+
+---
+*Update ini memastikan navigasi mobile Lakukelas setara dengan aplikasi native premium.*
