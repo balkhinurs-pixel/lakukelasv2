@@ -60,21 +60,21 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Dasbor' },
-  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absensi Guru' },
-  { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
-  { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi' },
-  { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai' },
-  { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
-  { href: '/dashboard/materials', icon: Link2, label: 'Materi' },
-  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
-  { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
+  { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
+  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen Guru', color: 'bg-rose-500' },
+  { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda', color: 'bg-amber-500' },
+  { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi', color: 'bg-emerald-500' },
+  { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai', color: 'bg-cyan-500' },
+  { href: '/dashboard/journal', icon: BookText, label: 'Jurnal', color: 'bg-indigo-500' },
+  { href: '/dashboard/materials', icon: Link2, label: 'Materi', color: 'bg-purple-500' },
+  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan', color: 'bg-orange-500' },
+  { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal', color: 'bg-slate-500' },
 ];
 
 const homeroomNavItems = [
-    { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Perkembangan Siswa' },
-    { href: '/dashboard/homeroom/student-ledger', icon: ClipboardList, label: 'Catatan & Leger Siswa' },
-    { href: '/dashboard/homeroom/reports', icon: BarChart3, label: 'Laporan Kelas' },
+    { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Progres', color: 'bg-teal-500' },
+    { href: '/dashboard/homeroom/student-ledger', icon: ClipboardList, label: 'Leger', color: 'bg-fuchsia-500' },
+    { href: '/dashboard/homeroom/reports', icon: BarChart3, label: 'Raport', color: 'bg-sky-500' },
 ];
 
 const leftMobileNavItems = [
@@ -116,7 +116,7 @@ export default function DashboardLayoutClient({
     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
       <SheetContent 
         side="bottom" 
-        className="rounded-t-[32px] border-t-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[90]"
+        className="rounded-t-[32px] border-t-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[90]"
       >
         <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
         <SheetHeader className="px-6 pb-4">
@@ -132,25 +132,27 @@ export default function DashboardLayoutClient({
           </div>
         </SheetHeader>
         
-        <ScrollArea className="h-full max-h-[calc(85vh-120px)] px-6 pb-24">
-          <div className="space-y-6 pb-12">
+        <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-24">
+          <div className="space-y-8 pb-32">
             {(isHeadmaster || isAdmin) && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Monitoring</p>
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Akses Cepat</p>
                 <Link 
                   href="/monitoring" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-2xl bg-teal-500/10 text-teal-700 dark:text-teal-400 font-bold border border-teal-500/20"
+                  className="flex items-center gap-4 p-4 rounded-3xl bg-teal-500/10 text-teal-700 dark:text-teal-400 font-bold border border-teal-500/20"
                 >
-                  <ShieldCheck className="w-5 h-5" />
+                  <div className="p-2 rounded-2xl bg-teal-500 text-white shadow-lg shadow-teal-500/20">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
                   <span>Panel Monitoring</span>
                 </Link>
               </div>
             )}
 
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold text-primary uppercase tracking-widest pl-2">Menu Utama</p>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-4">
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest pl-2">Aplikasi</p>
+              <div className="grid grid-cols-4 gap-y-6 gap-x-2">
                 {navItems.map((item) => {
                   const isActive = pathname === item.href;
                   return (
@@ -158,13 +160,20 @@ export default function DashboardLayoutClient({
                       key={item.href} 
                       href={item.href} 
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-2xl transition-all",
-                        isActive ? "bg-primary text-white shadow-lg shadow-primary/25" : "bg-slate-100/50 dark:bg-white/5 hover:bg-slate-100"
-                      )}
+                      className="flex flex-col items-center gap-2 group transition-transform active:scale-95"
                     >
-                      <item.icon className="w-4 h-4" />
-                      <span className="text-sm font-medium">{item.label}</span>
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all relative overflow-hidden",
+                        item.color,
+                        isActive ? "ring-4 ring-offset-2 ring-primary/30" : "opacity-90 group-hover:opacity-100"
+                      )}>
+                        <item.icon className="w-6 h-6 text-white" />
+                        {isActive && <div className="absolute inset-0 bg-white/20" />}
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold text-center leading-tight transition-colors",
+                        isActive ? "text-primary" : "text-slate-600 dark:text-slate-400"
+                      )}>{item.label}</span>
                     </Link>
                   );
                 })}
@@ -172,41 +181,47 @@ export default function DashboardLayoutClient({
             </div>
 
             {profile?.is_homeroom_teacher && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest pl-2">Wali Kelas</p>
-                <div className="grid grid-cols-1 gap-2">
+              <div className="space-y-4 pt-2">
+                <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest pl-2">Menu Wali Kelas</p>
+                <div className="grid grid-cols-4 gap-y-6 gap-x-2">
                   {homeroomNavItems.map((item) => (
                     <Link 
                       key={item.href} 
                       href={item.href} 
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-2xl transition-all",
-                        pathname.startsWith(item.href) ? "bg-orange-100 text-orange-700 font-bold border border-orange-200" : "bg-orange-500/10 text-orange-700 dark:text-orange-400 font-medium"
-                      )}
+                      className="flex flex-col items-center gap-2 group transition-transform active:scale-95"
                     >
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-bold">{item.label}</span>
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all",
+                        item.color,
+                        pathname.startsWith(item.href) ? "ring-4 ring-offset-2 ring-orange-500/30" : "opacity-90"
+                      )}>
+                        <item.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold text-center leading-tight",
+                        pathname.startsWith(item.href) ? "text-orange-600" : "text-slate-600 dark:text-slate-400"
+                      )}>{item.label}</span>
                     </Link>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
-              <Button asChild variant="ghost" className="justify-start h-12 rounded-2xl" onClick={() => setIsMobileMenuOpen(false)}>
+            <div className="pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3">
+              <Button asChild variant="secondary" className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center" onClick={() => setIsMobileMenuOpen(false)}>
                 <Link href="/dashboard/settings">
-                  <Settings className="w-5 h-5 mr-3" />
-                  Pengaturan Profil
+                  <Settings className="w-5 h-5" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Profil</span>
                 </Link>
               </Button>
               <Button 
                 variant="ghost" 
-                className="justify-start h-12 rounded-2xl text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30"
                 onClick={handleLogout}
               >
-                <LogOut className="w-5 h-5 mr-3" />
-                Keluar Aplikasi
+                <LogOut className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Keluar</span>
               </Button>
             </div>
           </div>

@@ -47,9 +47,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const monitoringNavItems = [
-  { href: '/monitoring', icon: LayoutDashboard, label: 'Dasbor Statistik' },
-  { href: '/monitoring/teacher-attendance', icon: UserCheckIcon, label: 'Kehadiran Guru' },
-  { href: '/monitoring/teacher-activity', icon: Activity, label: 'Aktivitas Guru' },
+  { href: '/monitoring', icon: LayoutDashboard, label: 'Statistik', color: 'bg-teal-600' },
+  { href: '/monitoring/teacher-attendance', icon: UserCheckIcon, label: 'Absensi', color: 'bg-emerald-500' },
+  { href: '/monitoring/teacher-activity', icon: Activity, label: 'Aktivitas', color: 'bg-cyan-500' },
 ];
 
 export default function MonitoringLayoutClient({ 
@@ -78,7 +78,7 @@ export default function MonitoringLayoutClient({
     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
       <SheetContent 
         side="bottom" 
-        className="rounded-t-[32px] border-t-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[90]"
+        className="rounded-t-[32px] border-t-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[90]"
       >
         <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
         <SheetHeader className="px-6 pb-6">
@@ -94,55 +94,67 @@ export default function MonitoringLayoutClient({
           </div>
         </SheetHeader>
         
-        <ScrollArea className="h-full max-h-[calc(85vh-120px)] px-6 pb-24">
-          <div className="space-y-6 pb-12">
-            <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Navigasi Monitoring</p>
-            <div className="grid grid-cols-1 gap-2">
-              {monitoringNavItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link 
-                    key={item.href} 
-                    href={item.href} 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center gap-4 p-4 rounded-2xl transition-all",
-                      isActive ? "bg-teal-600 text-white shadow-lg shadow-teal-500/25" : "bg-slate-100/50 dark:bg-white/5 hover:bg-slate-100"
-                    )}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    <span className="font-bold">{item.label}</span>
-                  </Link>
-                );
-              })}
+        <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-24">
+          <div className="space-y-8 pb-32">
+            <div className="space-y-4">
+              <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Navigasi Monitoring</p>
+              <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                {monitoringNavItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link 
+                      key={item.href} 
+                      href={item.href} 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex flex-col items-center gap-2 group transition-transform active:scale-95"
+                    >
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all",
+                        item.color,
+                        isActive ? "ring-4 ring-offset-2 ring-teal-500/30" : "opacity-90"
+                      )}>
+                        <item.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold text-center leading-tight",
+                        isActive ? "text-teal-600" : "text-slate-600 dark:text-slate-400"
+                      )}>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
                 <Link 
                   href="/dashboard" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold"
+                  className="flex items-center gap-4 p-4 rounded-3xl bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold"
                 >
-                  <Home className="w-5 h-5" />
+                  <div className="p-2 rounded-2xl bg-blue-500 text-white shadow-lg shadow-blue-500/20">
+                    <Home className="w-5 h-5" />
+                  </div>
                   <span>Mode Dasbor Guru</span>
                 </Link>
                 {profile?.role === 'admin' && (
                   <Link 
                     href="/admin" 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-purple-500/10 text-purple-700 dark:text-purple-400 font-bold"
+                    className="flex items-center gap-4 p-4 rounded-3xl bg-purple-500/10 text-purple-700 dark:text-purple-400 font-bold"
                   >
-                    <Settings className="w-5 h-5" />
+                    <div className="p-2 rounded-2xl bg-purple-500 text-white shadow-lg shadow-purple-500/20">
+                      <Settings className="w-5 h-5" />
+                    </div>
                     <span>Panel Admin</span>
                   </Link>
                 )}
                 <Button 
                   variant="ghost" 
-                  className="justify-start h-14 rounded-2xl text-red-600 font-bold mt-2"
+                  className="justify-start h-16 rounded-3xl text-red-600 font-bold mt-2 bg-red-50 dark:bg-red-950/20"
                   onClick={handleLogout}
                 >
                   <LogOut className="w-5 h-5 mr-4" />
-                  Keluar Aplikasi
+                  Keluar Monitoring
                 </Button>
             </div>
           </div>

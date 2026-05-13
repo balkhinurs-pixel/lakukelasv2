@@ -59,25 +59,25 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const adminNavItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dasbor Admin' },
-  { href: '/admin/users', icon: Users, label: 'Kelola Staf' },
+  { href: '/admin', icon: LayoutDashboard, label: 'Dasbor', color: 'bg-purple-600' },
+  { href: '/admin/users', icon: Users, label: 'Staf', color: 'bg-blue-600' },
 ];
 
 const rosterNavItems = [
-    { href: '/admin/roster/school-year', icon: CalendarCheck, label: 'Tahun Ajaran' },
-    { href: '/admin/roster/classes', icon: School, label: 'Pengaturan Kelas' },
-    { href: '/admin/roster/subjects', icon: BookOpen, label: 'Pengaturan Mapel' },
-    { href: '/admin/roster/students', icon: Users2, label: 'Daftar Siswa' },
-    { href: '/admin/roster/promotion', icon: ArrowRightLeft, label: 'Promosi & Mutasi' },
-    { href: '/admin/roster/alumni', icon: GraduationCap, label: 'Alumni' },
+    { href: '/admin/roster/school-year', icon: CalendarCheck, label: 'T. Ajaran', color: 'bg-indigo-500' },
+    { href: '/admin/roster/classes', icon: School, label: 'Kelas', color: 'bg-cyan-500' },
+    { href: '/admin/roster/subjects', icon: BookOpen, label: 'Mapel', color: 'bg-emerald-500' },
+    { href: '/admin/roster/students', icon: Users2, label: 'Siswa', color: 'bg-amber-500' },
+    { href: '/admin/roster/promotion', icon: ArrowRightLeft, label: 'Promosi', color: 'bg-orange-500' },
+    { href: '/admin/roster/alumni', icon: GraduationCap, label: 'Alumni', color: 'bg-slate-500' },
 ];
 
 const settingsNavItems = [
-    { href: '/admin/settings/school', icon: Building, label: 'Data Sekolah' },
-    { href: '/admin/settings/location', icon: MapPin, label: 'Pengaturan Absensi' },
-    { href: '/admin/settings/whatsapp', icon: MessageSquare, label: 'Pengaturan WhatsApp' },
-    { href: '/admin/settings/schedule', icon: CalendarClock, label: 'Kelola Jadwal Guru' },
-    { href: '/admin/settings/holidays', icon: CalendarOff, label: 'Hari Libur' },
+    { href: '/admin/settings/school', icon: Building, label: 'Sekolah', color: 'bg-rose-500' },
+    { href: '/admin/settings/location', icon: MapPin, label: 'Lokasi', color: 'bg-green-500' },
+    { href: '/admin/settings/whatsapp', icon: MessageSquare, label: 'WhatsApp', color: 'bg-emerald-600' },
+    { href: '/admin/settings/schedule', icon: CalendarClock, label: 'Jadwal', color: 'bg-violet-500' },
+    { href: '/admin/settings/holidays', icon: CalendarOff, label: 'Libur', color: 'bg-red-500' },
 ]
 
 export default function AdminLayoutClient({ 
@@ -106,7 +106,7 @@ export default function AdminLayoutClient({
     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
       <SheetContent 
         side="bottom" 
-        className="rounded-t-[32px] border-t-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[90vh] z-[90]"
+        className="rounded-t-[32px] border-t-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[90]"
       >
         <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
         <SheetHeader className="px-6 pb-4">
@@ -122,92 +122,123 @@ export default function AdminLayoutClient({
           </div>
         </SheetHeader>
         
-        <ScrollArea className="h-full max-h-[calc(90vh-120px)] px-6 pb-24">
-          <div className="space-y-8 pb-12">
-            <div className="space-y-3">
-              <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest pl-2">Sistem</p>
-              <div className="grid grid-cols-1 gap-2">
-                {adminNavItems.map((item) => (
-                  <Link 
-                    key={item.href} 
-                    href={item.href} 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 p-4 rounded-2xl transition-all",
-                      pathname === item.href ? "bg-purple-600 text-white shadow-lg shadow-purple-500/25" : "bg-slate-100/50 dark:bg-white/5"
-                    )}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    <span className="font-bold">{item.label}</span>
-                  </Link>
-                ))}
+        <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-24">
+          <div className="space-y-8 pb-32">
+            <div className="space-y-4">
+              <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest pl-2">Sistem & Staf</p>
+              <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                {adminNavItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link 
+                      key={item.href} 
+                      href={item.href} 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex flex-col items-center gap-2 group transition-transform active:scale-95"
+                    >
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all",
+                        item.color,
+                        isActive ? "ring-4 ring-offset-2 ring-purple-500/30" : "opacity-90"
+                      )}>
+                        <item.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold text-center leading-tight",
+                        isActive ? "text-purple-600" : "text-slate-600 dark:text-slate-400"
+                      )}>{item.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4 pt-2">
               <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest pl-2">Data Akademik</p>
-              <div className="grid grid-cols-2 gap-2">
-                {rosterNavItems.map((item) => (
-                  <Link 
-                    key={item.href} 
-                    href={item.href} 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-2xl transition-all",
-                      pathname.startsWith(item.href) ? "bg-purple-100 text-purple-700 font-bold border border-purple-200" : "bg-slate-100/50 dark:bg-white/5"
-                    )}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span className="text-xs font-medium">{item.label}</span>
-                  </Link>
-                ))}
+              <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                {rosterNavItems.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <Link 
+                      key={item.href} 
+                      href={item.href} 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex flex-col items-center gap-2 group transition-transform active:scale-95"
+                    >
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all",
+                        item.color,
+                        isActive ? "ring-4 ring-offset-2 ring-purple-500/30" : "opacity-90"
+                      )}>
+                        <item.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold text-center leading-tight",
+                        isActive ? "text-purple-600" : "text-slate-600 dark:text-slate-400"
+                      )}>{item.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4 pt-2">
               <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest pl-2">Pengaturan</p>
-              <div className="grid grid-cols-1 gap-2">
-                {settingsNavItems.map((item) => (
-                  <Link 
-                    key={item.href} 
-                    href={item.href} 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-2xl transition-all",
-                      pathname.startsWith(item.href) ? "bg-purple-100 text-purple-700 font-bold border border-purple-200" : "bg-slate-100/50 dark:bg-white/5"
-                    )}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </Link>
-                ))}
+              <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                {settingsNavItems.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <Link 
+                      key={item.href} 
+                      href={item.href} 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex flex-col items-center gap-2 group transition-transform active:scale-95"
+                    >
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all",
+                        item.color,
+                        isActive ? "ring-4 ring-offset-2 ring-purple-500/30" : "opacity-90"
+                      )}>
+                        <item.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold text-center leading-tight",
+                        isActive ? "text-purple-600" : "text-slate-600 dark:text-slate-400"
+                      )}>{item.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
             <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
-               <Link 
+                <Link 
                   href="/monitoring" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-4 rounded-2xl bg-teal-500/10 text-teal-700 dark:text-teal-400 font-bold"
+                  className="flex items-center gap-4 p-4 rounded-3xl bg-teal-500/10 text-teal-700 dark:text-teal-400 font-bold"
                 >
-                  <ShieldCheck className="w-5 h-5" />
-                  <span>Buka Monitoring</span>
+                  <div className="p-2 rounded-2xl bg-teal-500 text-white">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <span>Panel Monitoring</span>
                 </Link>
                 <Link 
                   href="/dashboard" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold"
+                  className="flex items-center gap-4 p-4 rounded-3xl bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <div className="p-2 rounded-2xl bg-blue-500 text-white">
+                    <ChevronLeft className="w-5 h-5" />
+                  </div>
                   <span>Kembali ke Mode Guru</span>
                 </Link>
                 <Button 
                   variant="ghost" 
-                  className="justify-start h-14 rounded-2xl text-red-600 font-bold"
+                  className="justify-start h-16 rounded-3xl text-red-600 font-bold mt-2 bg-red-50 dark:bg-red-950/20"
                   onClick={handleLogout}
                 >
-                  <LogOut className="w-5 h-5 mr-3" />
-                  Keluar
+                  <LogOut className="w-5 h-5 mr-4" />
+                  Keluar Admin
                 </Button>
             </div>
           </div>
@@ -225,7 +256,7 @@ export default function AdminLayoutClient({
               
               <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 transition-transform duration-300 hover:scale-105 hover:border-white/50 relative z-10">
                 <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="User" data-ai-hint="admin portrait" />
-                <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
               </Avatar>
               <div className="text-center relative z-10">
                 <p className="text-lg font-bold text-white drop-shadow-sm">{profile?.full_name || 'Admin'}</p>
