@@ -169,17 +169,17 @@ export default function TeacherAttendanceClient({
 
     return (
         <div className="flex flex-col h-full bg-[#f8fafc]">
-            {/* Header Purple Gradient Theme */}
+            {/* Header Purple Gradient Theme - Centered profile */}
             <div className="bg-gradient-to-br from-purple-700 via-purple-600 to-blue-500 text-white pt-10 pb-20 px-6 rounded-b-[3.5rem] shadow-2xl relative">
-                <div className="flex items-center gap-5 mb-10">
-                    <div className="flex-1">
+                <div className="flex flex-col items-center gap-4 mb-10">
+                    <Avatar className="h-24 w-24 border-4 border-white/20 shadow-xl">
+                        <AvatarImage src={profile?.avatar_url || ""} />
+                        <AvatarFallback className="bg-white/20 text-white font-bold text-2xl">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+                    </Avatar>
+                    <div className="text-center">
                         <h1 className="text-2xl font-black tracking-tight leading-tight">{profile?.full_name || 'Guru LakuKelas'}</h1>
                         <p className="text-white/70 text-sm font-medium mt-1">{profile?.jabatan || 'Guru'} ({profile?.nip || '-'})</p>
                     </div>
-                    <Avatar className="h-16 w-16 border-4 border-white/20 shadow-xl">
-                        <AvatarImage src={profile?.avatar_url || ""} />
-                        <AvatarFallback className="bg-white/20 text-white font-bold">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
-                    </Avatar>
                 </div>
 
                 <div className="mb-6">
