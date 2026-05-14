@@ -10,27 +10,23 @@ Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan 
 
 ---
 
-# Update V5.7: Arsitektur Hari Libur Terintegrasi (TERIMPLEMENTASI)
+# Update V5.8: Optimasi Sinkronisasi Hari Libur (TERIMPLEMENTASI)
 
-Fitur sinkronisasi cerdas yang memisahkan antara hari libur nasional dan kebijakan internal sekolah.
+Fitur sinkronisasi otomatis yang ramah kuota Supabase Free Tier dan menghindari limit Vercel Cron.
 
-## 1. Konsep Database (Tabel `holidays`)
-- Kolom `type`: 
-    - `national`: Data otomatis dari API (Warna Merah).
-    - `school`: Data input manual dari Admin (Warna Indigo).
-- Kolom `date` bersifat unik (Unique Index) untuk mencegah duplikasi.
+## 1. Mekanisme "Smart Sync on Load"
+- **Daily Cooldown**: Sistem mencatat `last_holiday_sync` di tabel `settings`.
+- **Logic**: API hanya dipanggil 1x dalam 24 jam oleh pengunjung pertama. Pengunjung berikutnya hanya mengambil data dari Database (0% pemborosan API).
+- **Deduplikasi**: Tetap menggunakan `upsert` pada kolom `date` yang unik untuk menjaga kebersihan data.
 
-## 2. Logika Sinkronisasi (Server-Side)
-- **Auto-Fetch**: Terjadi saat menu Agenda dibuka.
-- **Improved Parsing**: Mendukung format array langsung maupun objek dari API `api-hari-libur.vercel.app`.
-- **Deduplikasi**: Menggunakan metode `upsert` pada database untuk memastikan data tetap tunggal per tanggal.
-- **Dukungan Multi-Tahun**: Sinkronisasi data tahun 2025 dan 2026 berjalan secara otomatis.
+## 2. Pemisahan Tipe Libur
+- `national`: Otomatis dari API (Indikator Merah).
+- `school`: Manual dari Admin (Indikator Indigo).
+- Keduanya secara otomatis meniadakan kewajiban absen pada sistem Absensi Guru.
 
-## 3. Integrasi UI/UX
-- **Agenda Guru**: 
-    - Titik Merah & Angka Merah: Libur Nasional.
-    - Titik Indigo & Angka Indigo: Libur Khusus Sekolah.
-- **Absensi Guru**: Terintegrasi otomatis untuk meniadakan kewajiban absen pada kedua tipe hari libur tersebut.
+## 3. Efisiensi Database
+- Ukuran data sangat kecil (~0.1MB untuk data 2 tahun).
+- Jumlah request terminimalisir secara drastis dibandingkan versi sebelumnya.
 
 ---
-*LakuKelas: Integrasi cerdas, data akurat.*
+*LakuKelas: Cerdas dalam sinkronisasi, hemat dalam sumber daya.*

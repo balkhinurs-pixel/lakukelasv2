@@ -3,33 +3,46 @@ import { getAgendas, getHolidays } from "@/lib/data";
 import AgendaPageClient from "./agenda-page-client";
 import { getIndonesianTime } from "@/lib/timezone";
 import { createClient } from "@/lib/supabase/server";
+import { format } from "date-fns";
 
 /**
- * Fungsi untuk mensinkronisasi hari libur nasional dari API ke Database secara otomatis.
- * Strategi: Mengambil data tahun berjalan dan tahun depan, lalu menyimpannya ke tabel 'holidays'.
+ * Fungsi cerdas untuk sinkronisasi hari libur.
+ * Hanya berjalan 1x dalam 24 jam (saat pengunjung pertama membuka halaman).
  */
-async function syncNationalHolidays() {
-    const nowIndo = getIndonesianTime();
-    const currentYear = nowIndo.getFullYear();
-    // Sinkronkan tahun ini dan tahun depan untuk perencanaan jangka panjang
-    const yearsToSync = [currentYear, currentYear + 1];
+async function smartSyncNationalHolidays() {
     const supabase = createClient();
+    const nowIndo = getIndonesianTime();
+    const todayStr = format(nowIndo, 'yyyy-MM-dd');
 
     try {
+        // 1. Cek kapan terakhir kali sinkronisasi dilakukan
+        const { data: lastSync } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('key', 'last_holiday_sync')
+            .single();
+
+        // 2. Jika sudah sinkron hari ini, batalkan proses (hemat kuota)
+        if (lastSync?.value === todayStr) {
+            console.log(`[HOLIDAY-SYNC] Data already synced today (${todayStr}). Skipping.`);
+            return;
+        }
+
+        console.log(`[HOLIDAY-SYNC] New day detected. Starting background sync for ${todayStr}...`);
+
+        const currentYear = nowIndo.getFullYear();
+        const yearsToSync = [currentYear, currentYear + 1];
+
         for (const year of yearsToSync) {
-            // Gunakan API Hari Libur Nasional Indonesia
             const res = await fetch(`https://api-hari-libur.vercel.app/api?year=${year}`, {
-                next: { revalidate: 86400 } // Cache selama 24 jam
+                next: { revalidate: 0 } // Bypass cache untuk memastikan data segar saat sync
             });
 
             if (res.ok) {
                 const responseData = await res.json();
-                
-                // API ini terkadang mengembalikan Array langsung, terkadang Objek dengan properti 'data'
                 const rawList = Array.isArray(responseData) ? responseData : (responseData.data || []);
                 
                 if (rawList.length > 0) {
-                    // Petakan data ke format database kita
                     const newHolidays = rawList.map((h: any) => ({
                         date: h.date || h.holiday_date,
                         description: h.name || h.holiday_name || h.description || h.keterangan,
@@ -37,28 +50,27 @@ async function syncNationalHolidays() {
                     })).filter(h => h.date && h.description);
 
                     if (newHolidays.length > 0) {
-                        // Simpan ke database dengan upsert (menghindari duplikasi berdasarkan tanggal)
-                        const { error } = await supabase
-                            .from('holidays')
-                            .upsert(newHolidays, { onConflict: 'date' });
-                        
-                        if (error) {
-                            console.error(`[SYNC-DB-ERROR] Tahun ${year}:`, error.message);
-                        } else {
-                            console.log(`[SYNC-SUCCESS] Berhasil memperbarui ${newHolidays.length} hari libur nasional tahun ${year}`);
-                        }
+                        // Simpan ke database
+                        await supabase.from('holidays').upsert(newHolidays, { onConflict: 'date' });
                     }
                 }
             }
         }
+
+        // 3. Update tanggal terakhir sinkronisasi agar tidak berjalan lagi hari ini
+        await supabase
+            .from('settings')
+            .upsert({ key: 'last_holiday_sync', value: todayStr }, { onConflict: 'key' });
+
+        console.log(`[HOLIDAY-SYNC] Successfully updated holidays for 2025-2026.`);
     } catch (error) {
-        console.error("[SYNC-FATAL-ERROR] Gagal menghubungi API hari libur:", error);
+        console.error("[HOLIDAY-SYNC-ERROR]", error);
     }
 }
 
 export default async function AgendaPage() {
-    // Jalankan sinkronisasi otomatis setiap kali halaman dibuka di sisi server
-    await syncNationalHolidays();
+    // Jalankan Smart Sync (hanya 1x sehari secara efektif)
+    await smartSyncNationalHolidays();
 
     const [agendas, dbHolidays] = await Promise.all([
         getAgendas(),
