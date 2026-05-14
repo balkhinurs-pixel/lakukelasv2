@@ -1,3 +1,4 @@
+
 import { getAdminDashboardData } from "@/lib/data";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -53,7 +54,7 @@ export default async function MonitoringDashboardPage() {
       return <div className="p-8 text-center text-muted-foreground">Gagal memuat data monitoring.</div>;
   }
 
-  const { summary, isTodayHoliday, activePolicy, todayAttendanceList } = dashboardData;
+  const { summary, isTodayHoliday, todayHoliday, activePolicy, todayAttendanceList } = dashboardData;
   const policyLabel = activePolicy === 'schedule_based' ? 'Berbasis Jadwal' : 'Absensi Harian';
 
   return (
@@ -69,7 +70,7 @@ export default async function MonitoringDashboardPage() {
             <Alert className="border-blue-200 bg-blue-50">
                 <Calendar className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800 font-medium">
-                    Hari ini adalah Hari Libur Terdaftar. Kewajiban absen ditiadakan.
+                    Hari ini Libur: <strong>{todayHoliday?.description}</strong>. Kewajiban absen ditiadakan.
                 </AlertDescription>
             </Alert>
         )}

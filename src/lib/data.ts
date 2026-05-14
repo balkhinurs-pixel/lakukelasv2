@@ -44,7 +44,7 @@ export async function getAdminDashboardData() {
         const [summaryRes, settingsRes, holidaysRes, allStaffRes, todayAttendanceRes, todaySchedulesRes] = await Promise.all([
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
             supabase.from('settings').select('value').eq('key', 'attendance_policy').single(),
-            supabase.from('holidays').select('date').eq('date', todayStr),
+            supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle(),
             supabase.from('profiles').select('id, full_name, avatar_url').in('role', ['teacher', 'headmaster']).order('full_name'),
             supabase.from('teacher_attendance').select('*').eq('date', todayStr),
             supabase.from('schedule').select('teacher_id').eq('day', dayNameIndo)
@@ -55,7 +55,8 @@ export async function getAdminDashboardData() {
         }
         
         const rawData = summaryRes.data;
-        const isTodayHoliday = (holidaysRes.data || []).length > 0;
+        const todayHoliday = holidaysRes.data as Holiday | null;
+        const isTodayHoliday = !!todayHoliday;
         
         let summaryData = { 
             total_expected: 0, 
@@ -136,6 +137,7 @@ export async function getAdminDashboardData() {
             summary: summaryData,
             weeklyAttendance,
             todayAttendanceList,
+            todayHoliday,
             isTodayHoliday,
             activePolicy
         };

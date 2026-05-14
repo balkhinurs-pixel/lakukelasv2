@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -95,7 +96,7 @@ export default async function AdminDashboardPage() {
       return <div className="p-8 text-center text-muted-foreground">Gagal memuat data dasbor admin. Silakan segarkan halaman.</div>;
   }
 
-  const { summary, isTodayHoliday, activePolicy, todayAttendanceList } = dashboardData;
+  const { summary, isTodayHoliday, todayHoliday, activePolicy, todayAttendanceList } = dashboardData;
   const policyLabel = activePolicy === 'schedule_based' ? 'Berbasis Jadwal' : 'Absensi Harian (Full-Time)';
 
   return (
@@ -117,7 +118,7 @@ export default async function AdminDashboardPage() {
             <Alert className="border-blue-200 bg-blue-50">
                 <Calendar className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800">
-                    <strong>Hari Ini Libur.</strong> Kewajiban absen guru ditiadakan menurut sistem.
+                    <strong>Hari Ini Libur: {todayHoliday?.description}.</strong> Kewajiban absen guru ditiadakan menurut sistem.
                 </AlertDescription>
             </Alert>
         )}

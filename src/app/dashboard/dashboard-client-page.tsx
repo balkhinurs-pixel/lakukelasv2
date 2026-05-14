@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -54,12 +55,10 @@ const StatCard = ({
     color: string;
 }) => (
     <Card className={cn("relative overflow-hidden text-white shadow-2xl border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl group", color)}>
-        {/* Enhanced background elements */}
         <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-white/20 opacity-50 transition-opacity duration-300 group-hover:opacity-70" />
         <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 opacity-50 transition-opacity duration-300 group-hover:opacity-30" />
         
         <CardContent className="relative z-10 flex flex-col justify-between p-4 sm:p-6 h-full">
-            {/* Icon Row - Hidden on Mobile to save space */}
             <div className="hidden sm:flex items-center justify-between mb-4">
                 <div className="rounded-2xl bg-white/20 backdrop-blur-sm p-3 transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
                     <Icon className="h-6 w-6 drop-shadow-sm" />
@@ -73,8 +72,6 @@ const StatCard = ({
                 <p className="text-[10px] sm:text-xs text-white/80 leading-tight sm:leading-relaxed line-clamp-1">{subtitle}</p>
             </div>
         </CardContent>
-        
-        {/* Shimmer effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
     </Card>
 );
@@ -86,15 +83,17 @@ export default function DashboardClientPage({
     initialUnfilledJournalsCount,
     todayHoliday
 }: DashboardPageProps) {
+    const [isMounted, setIsMounted] = React.useState(false);
+    const [now, setNow] = React.useState<Date | null>(null);
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
     const [endedSchedules, setEndedSchedules] = React.useState<Record<string, boolean>>({});
-    const [now, setNow] = React.useState(new Date());
 
     const sortedSchedule = React.useMemo(() => {
         return todaySchedule.sort((a,b) => a.start_time.localeCompare(b.start_time));
     }, [todaySchedule]);
 
     React.useEffect(() => {
+        setIsMounted(true);
         const updateScheduleStatus = () => {
             const currentTime = new Date();
             setNow(currentTime); 
@@ -128,6 +127,8 @@ export default function DashboardClientPage({
     }, [sortedSchedule]);
 
     const getNextClassInfo = () => {
+        if (!now) return { title: "Jadwal Hari Ini", value: todayHoliday ? "Libur" : "...", subtitle: "Memuat informasi..." };
+
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
 
@@ -252,7 +253,7 @@ export default function DashboardClientPage({
           <StatCard
             icon={ClipboardCheck}
             title="Presensi Hari Ini"
-            value={`${initialAttendancePercentage}%`}
+            value={!isMounted ? "..." : `${initialAttendancePercentage}%`}
             subtitle={initialAttendancePercentage > 0 ? "Kehadiran terekam" : "Belum ada data"}
             color="bg-gradient-to-br from-green-500 via-green-500 to-emerald-600"
           />
@@ -263,7 +264,7 @@ export default function DashboardClientPage({
                   <StatCard
                     icon={Users}
                     title="Kelas Hari Ini"
-                    value={todayHoliday ? "0" : String(todaySchedule.length)}
+                    value={!isMounted ? "..." : (todayHoliday ? "0" : String(todaySchedule.length))}
                     subtitle={todayHoliday ? "Hari Libur" : "Total kelas terjadwal"}
                     color="bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-600"
                   />
@@ -279,7 +280,7 @@ export default function DashboardClientPage({
           <StatCard
             icon={BookText}
             title="Jurnal Belum Diisi"
-            value={todayHoliday ? "0" : String(initialUnfilledJournalsCount)}
+            value={!isMounted ? "..." : (todayHoliday ? "0" : String(initialUnfilledJournalsCount))}
             subtitle={todayHoliday ? "Semua jurnal terisi" : (initialUnfilledJournalsCount > 0 ? "Perlu segera diisi" : "Semua jurnal terisi")}
             color="bg-gradient-to-br from-red-500 via-red-500 to-orange-500"
           />
@@ -298,7 +299,7 @@ export default function DashboardClientPage({
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
               <CardTitle className="text-slate-900 dark:text-slate-100">
-                Jadwal Hari Ini ({todayName})
+                Jadwal Hari Ini ({todayName || '...'})
               </CardTitle>
             </div>
             <CardDescription className="text-muted-foreground/80">
