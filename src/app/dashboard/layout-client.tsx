@@ -245,7 +245,20 @@ export default function DashboardLayoutClient({
               >
                 <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
                 
-                <ScrollArea className="h-[calc(85vh-60px)] px-6 pb-6">
+                <SheetHeader className="px-6 pb-4">
+                  <div className="flex items-center gap-4 text-left">
+                    <Avatar className="h-12 w-12 border-2 border-primary/20">
+                      <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <SheetTitle className="text-lg font-bold truncate">{profile?.full_name || 'Guru'}</SheetTitle>
+                      <SheetDescription className="text-xs truncate">Akun Pro • {user?.email}</SheetDescription>
+                    </div>
+                  </div>
+                </SheetHeader>
+
+                <ScrollArea className="h-[calc(85vh-100px)] px-6">
                   <div className="space-y-8">
                     {(isHeadmaster || isAdmin) && (
                       <div className="space-y-3">
@@ -320,11 +333,11 @@ export default function DashboardLayoutClient({
                       </div>
                     )}
 
-                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3 pb-4">
-                      <Button asChild variant="secondary" className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center border border-slate-200" onClick={() => setIsMobileMenuOpen(false)}>
+                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3 pb-24">
+                      <Button asChild variant="secondary" className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center border border-slate-200 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>
                         <Link href="/dashboard/settings">
-                          <Settings className="w-5 h-5" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Profil</span>
+                          <User className="w-5 h-5 text-slate-700" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Profil</span>
                         </Link>
                       </Button>
                       <Button 
