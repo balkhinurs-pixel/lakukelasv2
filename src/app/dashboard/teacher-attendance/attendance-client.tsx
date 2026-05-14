@@ -3,9 +3,9 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Camera, Clock, LogOut, Bell, Flag, School, ChevronRight } from "lucide-react";
+import { Loader2, Flag, School, ChevronRight, Calendar as CalendarIcon, Filter, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { recordTeacherAttendance } from "@/lib/actions";
 import { format, parseISO } from "date-fns";
@@ -17,12 +17,20 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void }) {
+const months = [
+    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
+    { value: "3", label: 'Maret' }, { value: "4", label: 'April' },
+    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' },
+    { value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' },
+    { value: "9", label: 'September' }, { value: "10", label: 'Oktober' },
+    { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
+];
+
+function LeaveRequestDialog({ onLeaveSubmitted, loading: parentLoading }: { onLeaveSubmitted: () => void, parentLoading: boolean }) {
     const [isOpen, setIsOpen] = React.useState(false);
     const [leaveType, setLeaveType] = React.useState<'Sakit' | 'Izin'>('Sakit');
     const [reason, setReason] = React.useState('');
@@ -54,9 +62,21 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" className="text-slate-400 text-xs font-bold uppercase tracking-widest hover:text-primary">
-                    Ajukan Izin / Sakit <ChevronRight className="ml-1 h-3 w-3" />
-                </Button>
+                <button 
+                    disabled={parentLoading}
+                    className="w-full flex items-center justify-between p-5 rounded-[2rem] bg-white shadow-md border border-slate-100 transition-all active:scale-95 group hover:shadow-lg"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-2xl bg-amber-50 text-amber-600">
+                            <Clock className="h-6 w-6" />
+                        </div>
+                        <div className="text-left">
+                            <span className="block font-bold text-slate-900">Ajukan Izin / Sakit</span>
+                            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Formulir Ketidakhadiran</span>
+                        </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-colors" />
+                </button>
             </DialogTrigger>
             <DialogContent className="rounded-[2.5rem] max-w-[92vw] sm:max-w-md border-0 shadow-2xl p-6 sm:p-10">
                 <DialogHeader className="pb-6">
@@ -102,21 +122,11 @@ export default function TeacherAttendanceClient({
     todayHoliday: Holiday | null
 }) {
     const [loading, setLoading] = React.useState(false);
-    const [status, setStatus] = React.useState<'idle' | 'checking' | 'success' | 'error'>('idle');
+    const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
     const { toast } = useToast();
-    const router = useRouter();
-
-    const handleLogout = async () => {
-        const supabase = createClient();
-        if (!supabase) return;
-        await supabase.auth.signOut();
-        router.push('/');
-        router.refresh();
-    }
 
     const handleAttendance = async (type: 'in' | 'out') => {
         setLoading(true);
-        setStatus('checking');
         try {
             const pos: any = await new Promise((res, rej) => {
                 navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true });
@@ -129,39 +139,34 @@ export default function TeacherAttendanceClient({
             const result = await recordTeacherAttendance(formData);
             
             if (result.success) {
-                setStatus('success');
                 toast({ title: "Berhasil", description: result.message });
                 setTimeout(() => window.location.reload(), 1500);
             } else {
-                setStatus('error');
                 toast({ title: "Gagal", description: result.error, variant: "destructive" });
             }
         } catch (e: any) {
-            setStatus('error');
-            toast({ title: "Kesalahan", description: "Gagal mengambil lokasi GPS.", variant: "destructive" });
+            toast({ title: "Kesalahan", description: "Gagal mengambil lokasi GPS. Harap izinkan akses lokasi di browser/HP Anda.", variant: "destructive" });
         }
         setLoading(false);
     };
 
     const todayRecord = initialHistory.find(r => r.date === format(new Date(), 'yyyy-MM-dd'));
 
+    const filteredHistory = React.useMemo(() => {
+        return initialHistory.filter(h => {
+            const date = new Date(h.date);
+            return (date.getMonth() + 1).toString() === selectedMonth;
+        });
+    }, [initialHistory, selectedMonth]);
+
     return (
         <div className="flex flex-col h-full bg-[#f8fafc]">
             {/* Header Green Area */}
-            <div className="bg-[#2d7a5e] text-white pt-8 pb-20 px-6 rounded-b-[3.5rem] shadow-2xl relative">
-                <div className="flex justify-between items-center mb-8">
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
-                        <Bell className="h-6 w-6" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white hover:bg-white/20 rounded-full">
-                        <LogOut className="h-6 w-6" />
-                    </Button>
-                </div>
-
-                <div className="flex items-center gap-4 mb-10">
+            <div className="bg-[#2d7a5e] text-white pt-10 pb-20 px-6 rounded-b-[3.5rem] shadow-2xl relative">
+                <div className="flex items-center gap-5 mb-10">
                     <div className="flex-1">
-                        <h1 className="text-2xl font-black tracking-tight">{profile?.full_name || 'Guru LakuKelas'}</h1>
-                        <p className="text-white/70 text-sm font-medium mt-0.5">{profile?.jabatan || 'Tenaga Pengajar'} ({profile?.nip || '-'})</p>
+                        <h1 className="text-2xl font-black tracking-tight leading-tight">{profile?.full_name || 'Guru LakuKelas'}</h1>
+                        <p className="text-white/70 text-sm font-medium mt-1">{profile?.jabatan || 'Guru'} ({profile?.nip || '-'})</p>
                     </div>
                     <Avatar className="h-16 w-16 border-4 border-white/20 shadow-xl">
                         <AvatarImage src={profile?.avatar_url || ""} />
@@ -175,11 +180,11 @@ export default function TeacherAttendanceClient({
             </div>
 
             {/* Content Area */}
-            <div className="px-6 -mt-12 space-y-6 pb-20">
+            <div className="px-6 -mt-12 space-y-6 pb-32">
                 {/* Holiday Card */}
                 {todayHoliday && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                        <Card className="rounded-[2rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur">
+                        <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
                             <CardContent className="p-5 flex items-center gap-4">
                                 <div className={cn(
                                     "p-3 rounded-2xl text-white",
@@ -198,76 +203,116 @@ export default function TeacherAttendanceClient({
                     </motion.div>
                 )}
 
-                {/* Main Attendance Buttons */}
+                {/* Main Attendance Buttons - Solid Colors as requested */}
                 <div className="grid grid-cols-2 gap-4">
                     <button 
                         onClick={() => handleAttendance('in')}
                         disabled={loading || !!todayRecord?.checkIn}
                         className={cn(
-                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] bg-white shadow-lg transition-all active:scale-95 border-2",
-                            todayRecord?.checkIn ? "border-emerald-100 opacity-60" : "border-transparent hover:shadow-xl"
+                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0",
+                            todayRecord?.checkIn 
+                                ? "bg-emerald-50 text-emerald-600 opacity-60" 
+                                : "bg-emerald-600 text-white hover:bg-emerald-700"
                         )}
                     >
-                        <div className={cn("p-4 rounded-2xl mb-4", todayRecord?.checkIn ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-400")}>
-                            <Camera className="h-8 w-8" />
-                        </div>
-                        <span className="font-bold text-sm text-slate-900">Jam Masuk</span>
-                        <span className="font-mono text-xs text-slate-400 mt-1 font-bold">{todayRecord?.checkIn ? todayRecord.checkIn.substring(0, 5) : '--:--'}</span>
+                        {loading ? <Loader2 className="h-8 w-8 animate-spin mb-4" /> : <div className="h-8 mb-4" />}
+                        <span className="font-black text-base">Jam Masuk</span>
+                        <span className="font-mono text-xs opacity-80 mt-1 font-bold">{todayRecord?.checkIn ? todayRecord.checkIn.substring(0, 5) : '--:--'}</span>
                     </button>
 
                     <button 
                         onClick={() => handleAttendance('out')}
                         disabled={loading || !todayRecord?.checkIn || !!todayRecord?.checkOut}
                         className={cn(
-                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] bg-white shadow-lg transition-all active:scale-95 border-2",
-                            todayRecord?.checkOut ? "border-rose-100 opacity-60" : "border-transparent hover:shadow-xl"
+                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0",
+                            todayRecord?.checkOut 
+                                ? "bg-rose-50 text-rose-600 opacity-60" 
+                                : (!todayRecord?.checkIn ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-rose-600 text-white hover:bg-rose-700")
                         )}
                     >
-                        <div className={cn("p-4 rounded-2xl mb-4", todayRecord?.checkOut ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-400")}>
-                            <Camera className="h-8 w-8" />
-                        </div>
-                        <span className="font-bold text-sm text-slate-900">Jam Pulang</span>
-                        <span className="font-mono text-xs text-slate-400 mt-1 font-bold">{todayRecord?.checkOut ? todayRecord.checkOut.substring(0, 5) : '--:--'}</span>
+                        {loading ? <Loader2 className="h-8 w-8 animate-spin mb-4" /> : <div className="h-8 mb-4" />}
+                        <span className="font-black text-base">Jam Pulang</span>
+                        <span className="font-mono text-xs opacity-80 mt-1 font-bold">{todayRecord?.checkOut ? todayRecord.checkOut.substring(0, 5) : '--:--'}</span>
                     </button>
                 </div>
 
-                <div className="flex justify-between items-center px-2">
-                    <p className="text-xs font-black text-slate-300 uppercase tracking-widest">Presensi Bulan Ini</p>
-                    <LeaveRequestDialog onLeaveSubmitted={() => {}} />
-                </div>
+                {/* Wide Leave Button */}
+                <LeaveRequestDialog onLeaveSubmitted={() => {}} loading={loading} />
 
-                {/* Minimal History List */}
-                <div className="space-y-3">
-                    {initialHistory.slice(0, 5).map((r) => (
-                        <div key={r.id} className="bg-white p-4 rounded-3xl flex items-center justify-between shadow-sm border border-slate-100/50">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-slate-50 text-slate-400">
-                                    <Clock className="h-4 w-4" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-slate-800">{format(parseISO(r.date), 'dd MMM yyyy')}</p>
-                                    <p className="text-[10px] text-slate-400 font-medium uppercase">{format(parseISO(r.date), 'eeee', {locale: id})}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="text-right">
-                                    <p className="text-xs font-mono font-black text-slate-700">{r.checkIn?.substring(0, 5) || '--:--'}</p>
-                                    <p className="text-[9px] text-slate-300 font-bold uppercase">Masuk</p>
-                                </div>
-                                <div className="h-6 w-px bg-slate-100" />
-                                <div className="text-right">
-                                    <p className="text-xs font-mono font-black text-slate-700">{r.checkOut?.substring(0, 5) || '--:--'}</p>
-                                    <p className="text-[9px] text-slate-300 font-bold uppercase">Pulang</p>
-                                </div>
-                            </div>
+                {/* History Section */}
+                <div className="pt-4 space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 px-1">
+                        <div className="flex flex-col">
+                            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Riwayat Presensi</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Catatan Kehadiran Anda</p>
                         </div>
-                    ))}
-                    {initialHistory.length === 0 && (
-                        <div className="text-center py-10 opacity-30">
-                            <Clock className="mx-auto h-12 w-12 mb-2" />
-                            <p className="text-sm font-bold uppercase tracking-tighter">Belum ada riwayat</p>
+                        <div className="flex items-center gap-2 min-w-[140px]">
+                            <Filter className="h-3.5 w-3.5 text-slate-400" />
+                            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                <SelectTrigger className="h-8 text-[10px] font-bold uppercase tracking-wider rounded-xl border-slate-200 bg-white">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-0 shadow-2xl">
+                                    {months.map(m => (
+                                        <SelectItem key={m.value} value={m.value} className="text-xs font-bold">{m.label.toUpperCase()}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
-                    )}
+                    </div>
+
+                    <div className="space-y-3">
+                        {filteredHistory.length > 0 ? (
+                            filteredHistory.map((r) => (
+                                <div key={r.id} className="bg-white p-5 rounded-[2rem] flex items-center justify-between shadow-sm border border-slate-100/80 hover:shadow-md transition-all">
+                                    <div className="flex items-start gap-4">
+                                        <div className={cn(
+                                            "p-3 rounded-2xl shrink-0",
+                                            r.status === 'Tepat Waktu' ? "bg-emerald-50 text-emerald-600" :
+                                            r.status === 'Terlambat' ? "bg-amber-50 text-amber-600" :
+                                            r.status === 'Sakit' ? "bg-orange-50 text-orange-600" :
+                                            "bg-blue-50 text-blue-600"
+                                        )}>
+                                            <CalendarIcon className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-800 leading-tight">{format(parseISO(r.date), 'dd MMMM yyyy', { locale: id })}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Badge variant="outline" className={cn(
+                                                    "text-[8px] font-black uppercase tracking-wider border-0 px-2 py-0",
+                                                    r.status === 'Tepat Waktu' ? "bg-emerald-100 text-emerald-700" :
+                                                    r.status === 'Terlambat' ? "bg-amber-100 text-amber-700" :
+                                                    r.status === 'Sakit' ? "bg-orange-100 text-orange-700" :
+                                                    "bg-blue-100 text-blue-700"
+                                                )}>
+                                                    {r.status}
+                                                </Badge>
+                                                {r.reason && <span className="text-[9px] text-slate-400 font-medium italic truncate max-w-[80px]">({r.reason})</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-right">
+                                                <p className="text-xs font-mono font-black text-slate-700 leading-none">{r.checkIn?.substring(0, 5) || '--:--'}</p>
+                                                <p className="text-[8px] text-slate-300 font-black uppercase mt-1">In</p>
+                                            </div>
+                                            <div className="h-6 w-px bg-slate-100" />
+                                            <div className="text-right">
+                                                <p className="text-xs font-mono font-black text-slate-700 leading-none">{r.checkOut?.substring(0, 5) || '--:--'}</p>
+                                                <p className="text-[8px] text-slate-300 font-black uppercase mt-1">Out</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center flex flex-col items-center">
+                                <Clock className="h-10 w-10 text-slate-200 mb-3" />
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Tidak ada data untuk bulan ini</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
