@@ -15,9 +15,6 @@ import {
   Bell,
   CalendarDays,
   ShieldCheck,
-  PenTool,
-  Award,
-  ScanLine,
   TrendingUp,
   ClipboardList,
   Link2,
@@ -67,16 +64,6 @@ const homeroomNavItems = [
     { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Progres', color: 'bg-teal-500' },
     { href: '/dashboard/homeroom/student-ledger', icon: ClipboardList, label: 'Leger', color: 'bg-fuchsia-500' },
     { href: '/dashboard/homeroom/reports', icon: BarChart3, label: 'Raport', color: 'bg-sky-500' },
-];
-
-const leftMobileNavItems = [
-    { href: '/dashboard', icon: Home, label: 'Beranda' },
-    { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen Guru' },
-];
-
-const rightMobileNavItems = [
-    { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
-    { href: '/dashboard/settings', icon: User, label: 'Profil' },
 ];
 
 export default function DashboardLayoutClient({ 
@@ -366,44 +353,50 @@ export default function DashboardLayoutClient({
               </SheetContent>
             </Sheet>
 
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
-                {leftMobileNavItems.map((item) => (
-                    <Link key={item.href} href={item.href} className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === item.href ? "text-primary bg-primary/10" : "text-muted-foreground")}>
-                        <item.icon className="w-5 h-5" />
-                        <span className="text-[10px] mt-1 font-medium">{item.label}</span>
-                    </Link>
-                ))}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t grid grid-cols-5 items-center h-16 pb-safe px-1">
+                <Link href="/dashboard" className={cn("flex flex-col items-center justify-center h-full transition-all", pathname === "/dashboard" ? "text-primary" : "text-muted-foreground")}>
+                    <Home className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-bold">Home</span>
+                </Link>
+                <Link href="/dashboard/teacher-attendance" className={cn("flex flex-col items-center justify-center h-full transition-all", pathname === "/dashboard/teacher-attendance" ? "text-primary" : "text-muted-foreground")}>
+                    <MapPin className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-bold">Absen</span>
+                </Link>
                 
-                <button 
-                  onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
-                  className="group flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg border-4 border-background transition-all active:scale-95"
-                  aria-expanded={isMobileMenuOpen}
-                  aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
-                >
-                    <svg
-                      className="pointer-events-none"
-                      width={24}
-                      height={24}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
+                <div className="flex justify-center h-full items-center">
+                    <button 
+                      onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
+                      className="group flex items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg border-4 border-background transition-all active:scale-95"
+                      aria-expanded={isMobileMenuOpen}
+                      aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
                     >
-                      <path d="M4 12L20 12" className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]" />
-                      <path d="M4 12H20" className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45" />
-                      <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]" />
-                    </svg>
-                </button>
+                        <svg
+                          className="pointer-events-none"
+                          width={24}
+                          height={24}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M4 12L20 12" className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]" />
+                          <path d="M4 12H20" className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45" />
+                          <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]" />
+                        </svg>
+                    </button>
+                </div>
 
-                {rightMobileNavItems.map((item) => (
-                    <Link key={item.href} href={item.href} className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === item.href ? "text-primary bg-primary/10" : "text-muted-foreground")}>
-                        <item.icon className="w-5 h-5" />
-                        <span className="text-[10px] mt-1 font-medium">{item.label}</span>
-                    </Link>
-                ))}
+                <Link href="/dashboard/reports" className={cn("flex flex-col items-center justify-center h-full transition-all", pathname === "/dashboard/reports" ? "text-primary" : "text-muted-foreground")}>
+                    <BarChart3 className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-bold">Laporan</span>
+                </Link>
+                <Link href="/dashboard/settings" className={cn("flex flex-col items-center justify-center h-full transition-all", pathname === "/dashboard/settings" ? "text-primary" : "text-muted-foreground")}>
+                    <User className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-bold">Profil</span>
+                </Link>
             </div>
           </>
       )}
