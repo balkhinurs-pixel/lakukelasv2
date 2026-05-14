@@ -268,23 +268,25 @@ export default function TeacherAttendanceClient({
 
                 {/* History Section */}
                 <div className="pt-4 space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 px-1">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 px-1">
                         <div className="flex flex-col">
                             <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Riwayat Presensi</h3>
                             <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Catatan Kehadiran Anda</p>
                         </div>
-                        <div className="flex items-center gap-2 min-w-[140px]">
-                            <Filter className="h-3.5 w-3.5 text-slate-400" />
-                            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger className="h-8 text-[10px] font-bold uppercase tracking-wider rounded-xl border-slate-200 bg-white">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-0 shadow-2xl">
-                                    {months.map(m => (
-                                        <SelectItem key={m.value} value={m.value} className="text-xs font-bold">{m.label.toUpperCase()}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:min-w-[180px]">
+                                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10" />
+                                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                    <SelectTrigger className="h-12 pl-10 text-sm font-bold uppercase tracking-wider rounded-2xl border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary/20">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {months.map(m => (
+                                            <SelectItem key={m.value} value={m.value} className="text-sm font-bold py-3 uppercase">{m.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
 
