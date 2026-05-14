@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, LogIn, LogOut, Loader2, CheckCircle, XCircle, Clock, FileText, Navigation, History, ShieldAlert } from "lucide-react";
+import { LogIn, LogOut, Loader2, CheckCircle, XCircle, Clock, FileText, Navigation, History, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { recordTeacherAttendance } from "@/lib/actions";
@@ -222,14 +222,9 @@ export default function TeacherAttendanceClient({
     return (
         <div className="space-y-8 max-w-4xl mx-auto pb-10 px-1">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-xl shadow-indigo-200">
-                        <Navigation className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-black font-headline text-slate-900 tracking-tight">Presensi Lokasi</h1>
-                        <p className="text-slate-500 font-medium">Lakukan absensi mandiri berbasis GPS sekolah.</p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-black font-headline text-slate-900 tracking-tight">Presensi Lokasi</h1>
+                    <p className="text-slate-500 font-medium">Lakukan absensi mandiri berbasis GPS sekolah.</p>
                 </div>
             </div>
 
@@ -237,43 +232,36 @@ export default function TeacherAttendanceClient({
 
             <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                 <Card className="border-0 shadow-2xl shadow-slate-200/60 rounded-[2.5rem] overflow-hidden">
-                    <CardHeader className="bg-slate-50/50 border-b p-8 pb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                                <LogIn className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-xl font-bold">Lakukan Absen Sekarang</CardTitle>
-                                <CardDescription className="font-medium">Tekan tombol di bawah saat Anda berada di area sekolah.</CardDescription>
-                            </div>
+                    <CardHeader className="bg-slate-50/50 border-b p-8 pb-6 text-center sm:text-left">
+                        <div>
+                            <CardTitle className="text-xl font-bold">Lakukan Absen Sekarang</CardTitle>
+                            <CardDescription className="font-medium">Tekan tombol di bawah saat Anda berada di area sekolah.</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="p-8 space-y-8">
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Button 
                                 size="lg" 
-                                className="h-20 sm:h-24 px-8 text-xl font-black rounded-3xl bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active:scale-95 group flex-1"
+                                className="h-20 sm:h-24 px-8 text-xl font-black rounded-3xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex-1"
                                 onClick={() => handleAttendance('in')}
                                 disabled={loading || !locationSupported}
                             >
-                                <LogIn className="mr-3 h-8 w-8 group-hover:translate-x-1 transition-transform" />
-                                <div className="flex flex-col items-start text-left">
+                                <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
                                     <span>ABSEN MASUK</span>
-                                    <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">Klik di sini</span>
+                                    <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest mt-1">Mulai Tugas</span>
                                 </div>
                             </Button>
                             
                             <Button 
                                 size="lg" 
                                 variant="outline"
-                                className="h-20 sm:h-24 px-8 text-xl font-black rounded-3xl border-2 border-rose-500 text-rose-600 hover:bg-rose-50 shadow-xl shadow-rose-500/5 transition-all active:scale-95 group flex-1"
+                                className="h-20 sm:h-24 px-8 text-xl font-black rounded-3xl border-2 border-slate-200 text-slate-600 hover:bg-slate-50 shadow-xl shadow-slate-200/5 transition-all active:scale-95 flex-1"
                                 onClick={() => handleAttendance('out')}
                                 disabled={loading || !locationSupported}
                             >
-                                <LogOut className="mr-3 h-8 w-8 group-hover:-translate-x-1 transition-transform" />
-                                <div className="flex flex-col items-start text-left">
+                                <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
                                     <span>ABSEN PULANG</span>
-                                    <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">Selesai Tugas</span>
+                                    <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest mt-1">Selesai Tugas</span>
                                 </div>
                             </Button>
                         </div>
@@ -449,4 +437,3 @@ export default function TeacherAttendanceClient({
         </div>
     );
 }
-
