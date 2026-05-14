@@ -47,6 +47,17 @@ import type { Profile } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
@@ -222,6 +233,31 @@ export default function DashboardLayoutClient({
                     <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
                         <Bell className="h-5 w-5" />
                     </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-colors rounded-full">
+                            <LogOut className="h-5 w-5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Keluar dari LakuKelas?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Anda akan keluar dari sesi aktif. Pastikan semua data pekerjaan Anda sudah tersimpan.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="flex flex-row gap-2 pt-4">
+                          <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={handleLogout}
+                            className="flex-1 rounded-xl h-12 bg-red-600 hover:bg-red-700 text-white font-bold"
+                          >
+                            Ya, Keluar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
         </header>
@@ -259,7 +295,7 @@ export default function DashboardLayoutClient({
                 </SheetHeader>
 
                 <ScrollArea className="h-[calc(85vh-100px)] px-6">
-                  <div className="space-y-8">
+                  <div className="space-y-8 pb-10">
                     {(isHeadmaster || isAdmin) && (
                       <div className="space-y-3">
                         <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Akses Cepat</p>
@@ -332,17 +368,6 @@ export default function DashboardLayoutClient({
                         </div>
                       </div>
                     )}
-
-                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col pb-20">
-                      <Button 
-                        variant="destructive" 
-                        className="h-16 rounded-3xl flex items-center justify-center bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20 border-0 w-full"
-                        onClick={handleLogout}
-                      >
-                        <LogOut className="w-5 h-5 mr-3" />
-                        <span className="text-sm font-bold uppercase tracking-wider">Keluar Akun</span>
-                      </Button>
-                    </div>
                   </div>
                 </ScrollArea>
               </SheetContent>

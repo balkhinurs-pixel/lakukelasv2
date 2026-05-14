@@ -47,6 +47,17 @@ import { createClient } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const adminNavItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor', color: 'bg-purple-600' },
@@ -196,10 +207,24 @@ export default function AdminLayoutClient({
                 </SidebarMenuItem>
                 <SidebarSeparator className="my-2" />
                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleLogout} className="hover:bg-red-50 hover:text-red-600 rounded-xl">
-                        <LogOut className="w-4 h-4 mr-2" />
-                        <span>Keluar</span>
-                    </SidebarMenuButton>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <SidebarMenuButton className="hover:bg-red-50 hover:text-red-600 rounded-xl">
+                            <LogOut className="w-4 h-4 mr-2" />
+                            <span>Keluar</span>
+                        </SidebarMenuButton>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Keluar Admin?</AlertDialogTitle>
+                          <AlertDialogDescription>Anda akan keluar dari sesi administrator.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="flex flex-row gap-2 pt-4">
+                          <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-xl h-12 bg-red-600 font-bold">Keluar</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarFooter>
@@ -212,10 +237,27 @@ export default function AdminLayoutClient({
                      <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20" />
                      <h1 className="text-lg font-bold tracking-tight">Panel Admin</h1>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
                         <Bell className="h-5 w-5" />
                     </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-colors rounded-full">
+                            <LogOut className="h-5 w-5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Keluar Admin?</AlertDialogTitle>
+                          <AlertDialogDescription>Sesi administrator Anda akan diakhiri.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="flex flex-row gap-2 pt-4">
+                          <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-xl h-12 bg-red-600 font-bold">Keluar</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
         </header>
@@ -251,8 +293,8 @@ export default function AdminLayoutClient({
                   </div>
                 </SheetHeader>
                 
-                <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-32">
-                  <div className="space-y-8 pb-32">
+                <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-20">
+                  <div className="space-y-8">
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest pl-2">Sistem & Staf</p>
                       <div className="grid grid-cols-4 gap-y-6 gap-x-2">
@@ -340,7 +382,7 @@ export default function AdminLayoutClient({
                       </div>
                     </div>
 
-                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2 pb-8">
+                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2 pb-10">
                         <Link 
                           href="/monitoring" 
                           onClick={() => setIsMobileMenuOpen(false)}
@@ -361,14 +403,6 @@ export default function AdminLayoutClient({
                           </div>
                           <span>Kembali ke Mode Guru</span>
                         </Link>
-                        <Button 
-                          variant="ghost" 
-                          className="justify-start h-16 rounded-3xl text-red-600 font-bold mt-2 bg-red-50 dark:bg-red-950/20"
-                          onClick={handleLogout}
-                        >
-                          <LogOut className="w-5 h-5 mr-4" />
-                          Keluar Admin
-                        </Button>
                     </div>
                   </div>
                 </ScrollArea>
@@ -385,29 +419,31 @@ export default function AdminLayoutClient({
                     <span className="text-[10px] mt-1 font-medium">Staf</span>
                 </Link>
                 
-                <button 
-                  onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
-                  className="group flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg border-4 border-background transition-all active:scale-95"
-                  aria-expanded={isMobileMenuOpen}
-                  aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
-                >
-                    <svg
-                      className="pointer-events-none"
-                      width={24}
-                      height={24}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      xmlns="http://www.w3.org/2000/svg"
+                <div className="flex justify-center h-full items-center">
+                    <button 
+                      onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
+                      className="group flex items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg border-4 border-background transition-all active:scale-95"
+                      aria-expanded={isMobileMenuOpen}
+                      aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
                     >
-                      <path d="M4 12L20 12" className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]" />
-                      <path d="M4 12H20" className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45" />
-                      <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]" />
-                    </svg>
-                </button>
+                        <svg
+                          className="pointer-events-none"
+                          width={24}
+                          height={24}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M4 12L20 12" className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]" />
+                          <path d="M4 12H20" className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45" />
+                          <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]" />
+                        </svg>
+                    </button>
+                </div>
 
                 <Link href="/admin/roster/students" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/roster") ? "text-purple-600 bg-purple-500/10" : "text-muted-foreground")}>
                     <Users2 className="w-5 h-5" />
