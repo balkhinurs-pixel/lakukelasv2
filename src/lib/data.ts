@@ -34,13 +34,6 @@ export async function getAdminDashboardData() {
     const dayNameIndo = getIndonesianDayName();
 
     try {
-        // Run diagnosis for logging
-        const { data: diag } = await supabase.rpc('diagnose_attendance_logic', { p_date: todayStr });
-        if (diag) {
-            console.log('[DEBUG-RESULT] Attendance Logic Diagnosis:', JSON.stringify(diag, null, 2));
-        }
-
-        // Call main summary and other data
         const [summaryRes, settingsRes, holidaysRes, allStaffRes, todayAttendanceRes, todaySchedulesRes] = await Promise.all([
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
             supabase.from('settings').select('value').eq('key', 'attendance_policy').single(),
@@ -50,10 +43,6 @@ export async function getAdminDashboardData() {
             supabase.from('schedule').select('teacher_id').eq('day', dayNameIndo)
         ]);
 
-        if (summaryRes.error) {
-            console.error('[DEBUG-ERR] Summary RPC failed:', summaryRes.error.message);
-        }
-        
         const rawData = summaryRes.data;
         const todayHoliday = holidaysRes.data as Holiday | null;
         const isTodayHoliday = !!todayHoliday;
@@ -77,17 +66,14 @@ export async function getAdminDashboardData() {
             };
         }
 
-        // SAFU LOGIC: If today is a holiday, override expected and absent to 0
         if (isTodayHoliday) {
             summaryData.total_expected = 0;
             summaryData.total_absent = 0;
-            summaryData.attendance_rate = 100; // 100% because no one was failing attendance
+            summaryData.attendance_rate = 100;
         }
 
         const activePolicy = settingsRes.data?.value || 'schedule_based';
 
-        // Build the Today Attendance List for the Dashboard
-        // If it's a holiday, expectedTeacherIds will be empty effectively
         const expectedTeacherIds = isTodayHoliday 
             ? new Set<string>() 
             : new Set(
@@ -109,7 +95,6 @@ export async function getAdminDashboardData() {
                 };
             });
         
-        // Calculate weekly attendance (for the chart)
         const weeklyAttendance = [];
         const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
         
@@ -119,7 +104,6 @@ export async function getAdminDashboardData() {
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayIdx = date.getDay();
             
-            // Also check if this historical day was a holiday
             const { data: holidayCheck } = await supabase.from('holidays').select('id').eq('date', dateStr).limit(1);
             const wasHoliday = (holidayCheck || []).length > 0;
 
@@ -376,6 +360,72 @@ export async function getDashboardData(todayDay: string) {
         attendancePercentage, 
         unfilledJournalsCount,
         todayHoliday: holidayRes.data || null
+    };
+}
+
+export async function getLatestClassPresence(classId: string, date: string): Promise<Record<string, 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'>> {
+    noStore();
+    const supabase = createClient();
+    
+    const { data } = await supabase
+        .from('attendance_records')
+        .select('student_id, status, meeting_number')
+        .eq('class_id', classId)
+        .eq('date', date)
+        .order('meeting_number', { ascending: false });
+    
+    if (!data) return {};
+    
+    const result: Record<string, any> = {};
+    const seen = new Set();
+    data.forEach(r => {
+        if (!seen.has(r.student_id)) {
+            result[r.student_id] = r.status;
+            seen.add(r.student_id);
+        }
+    });
+    return result;
+}
+
+export async function getHomeroomTodayStatus() {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    
+    const supabase = createClient();
+    const { data: homeroomClass } = await supabase.from('classes').select('id, name').eq('teacher_id', user.id).limit(1).single();
+    if (!homeroomClass) return null;
+    
+    const today = format(getIndonesianTime(), 'yyyy-MM-dd');
+    
+    const { data: students } = await supabase.from('students').select('id, name, nis').eq('class_id', homeroomClass.id).eq('status', 'active');
+    if (!students) return null;
+    
+    const studentIds = students.map(s => s.id);
+    const { data: attendance } = await supabase
+        .from('attendance_records')
+        .select('student_id, status, meeting_number')
+        .in('student_id', studentIds)
+        .eq('date', today)
+        .order('meeting_number', { ascending: false });
+        
+    const latestStatus: Record<string, string> = {};
+    const seen = new Set();
+    (attendance || []).forEach(r => {
+        if (!seen.has(r.student_id)) {
+            latestStatus[r.student_id] = r.status;
+            seen.add(r.student_id);
+        }
+    });
+    
+    return {
+        className: homeroomClass.name,
+        today,
+        statuses: students.map(s => ({
+            id: s.id,
+            name: s.name,
+            status: latestStatus[s.id] || 'Belum Terabsen'
+        }))
     };
 }
 

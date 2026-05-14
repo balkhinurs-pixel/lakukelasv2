@@ -1,9 +1,10 @@
+
 "use client";
 
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, MessageSquare } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, MessageSquare, ArrowUpCircle } from "lucide-react";
 import { useSearchParams, useRouter } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, Class, AttendanceHistoryEntry, Subject, StudentNote } from "@/lib/types";
 import { saveAttendance, addStudentNote } from "@/lib/actions";
+import { getLatestClassPresence } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -232,9 +234,9 @@ export default function AttendancePageComponent({
   const [loading, setLoading] = React.useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = React.useState(false);
   const [viewingEntry, setViewingEntry] = React.useState<AttendanceHistoryEntry | null>(null);
+  const [isInherited, setIsInherited] = React.useState(false);
   const { toast } = useToast();
 
-  // Pagination states
   const [currentPage, setCurrentPage] = React.useState(1);
   const ITEMS_PER_PAGE = 3;
 
@@ -242,20 +244,43 @@ export default function AttendancePageComponent({
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   
   React.useEffect(() => {
-    if (selectedClassId) {
-      setLoading(true);
-      const filteredStudents = allStudents.filter(s => s.class_id === selectedClassId);
-      setStudents(filteredStudents);
-      if (!editingId) {
-        resetForm(filteredStudents);
-      }
-      setLoading(false);
-    } else {
-      setStudents([]);
-    }
-  }, [selectedClassId, allStudents, editingId]);
+    const initForm = async () => {
+        if (selectedClassId) {
+          setLoading(true);
+          const filteredStudents = allStudents.filter(s => s.class_id === selectedClassId);
+          setStudents(filteredStudents);
+          
+          if (!editingId) {
+            const newAttendance = new Map();
+            filteredStudents.forEach(student => {
+              newAttendance.set(student.id, 'Hadir');
+            });
+            setAttendance(newAttendance);
+            setIsInherited(false);
 
-  // Reset pagination when filters change
+            if (date) {
+                const dateStr = format(date, 'yyyy-MM-dd');
+                const inherited = await getLatestClassPresence(selectedClassId, dateStr);
+                if (Object.keys(inherited).length > 0) {
+                    setAttendance(prev => {
+                        const next = new Map(prev);
+                        Object.entries(inherited).forEach(([id, status]) => {
+                            next.set(id, status as any);
+                        });
+                        return next;
+                    });
+                    setIsInherited(true);
+                }
+            }
+          }
+          setLoading(false);
+        } else {
+          setStudents([]);
+        }
+    };
+    initForm();
+  }, [selectedClassId, date, editingId, allStudents]);
+
   React.useEffect(() => {
     setCurrentPage(1);
   }, [selectedClassId, selectedSubjectId]);
@@ -269,6 +294,7 @@ export default function AttendancePageComponent({
       newAttendance.set(student.id, 'Hadir');
     });
     setAttendance(newAttendance);
+    setIsInherited(false);
   }
 
   const handleAttendanceChange = React.useCallback((studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
@@ -416,7 +442,6 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
       );
   }, [groupedHistory, selectedClassId, selectedSubjectId]);
   
-  // Pagination logic
   const pageCount = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE);
   const paginatedHistory = filteredHistory.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -604,11 +629,19 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
         <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
           <CardHeader className="pb-4">
             <div className="flex flex-col items-center justify-center space-y-4">
-              <AnimatedText 
-                text={`Daftar Siswa - ${selectedClass?.name}`}
-                textClassName="text-2xl sm:text-3xl text-slate-900"
-                underlineClassName="text-blue-500/40"
-              />
+              <div className="flex flex-col items-center gap-2">
+                <AnimatedText 
+                    text={`Daftar Siswa - ${selectedClass?.name}`}
+                    textClassName="text-2xl sm:text-3xl text-slate-900"
+                    underlineClassName="text-blue-500/40"
+                />
+                {isInherited && !editingId && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 animate-pulse flex items-center gap-1.5 py-1 px-3 rounded-full shadow-sm">
+                        <ArrowUpCircle className="w-3.5 h-3.5" />
+                        Data disinkronkan dari jam sebelumnya
+                    </Badge>
+                )}
+              </div>
               <CardDescription className="text-center">
                 Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.
                 <span className="ml-2 text-sm font-semibold text-blue-600 block sm:inline mt-1">
@@ -634,7 +667,6 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 </div>
             ) : students.length > 0 ? (
                 <>
-                    {/* Mobile View */}
                     <div className="md:hidden space-y-3">
                         {students.map((student, index) => (
                             <div key={student.id} className="group relative border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-all duration-200 hover:border-slate-300">
@@ -663,7 +695,6 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                         ))}
                     </div>
 
-                    {/* Desktop View */}
                     <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
                     <Table>
                         <TableHeader>
@@ -772,7 +803,6 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
           <CardContent className="pt-0">
              {filteredHistory.length > 0 ? (
             <>
-              {/* Mobile View */}
               <div className="md:hidden space-y-3">
                 {paginatedHistory.map(({entry, records}) => {
                   const summary = records.reduce((acc, record) => {
@@ -841,7 +871,6 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 })}
               </div>
             
-              {/* Desktop View */}
               <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
                   <Table>
                       <TableHeader>
