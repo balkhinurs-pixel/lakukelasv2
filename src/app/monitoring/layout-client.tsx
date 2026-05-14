@@ -240,7 +240,7 @@ export default function MonitoringLayoutClient({
                   </div>
                 </SheetHeader>
                 
-                <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-20">
+                <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-24">
                   <div className="space-y-8">
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Navigasi Monitoring</p>
