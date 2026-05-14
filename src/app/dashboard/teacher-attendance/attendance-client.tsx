@@ -5,7 +5,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Flag, School, ChevronRight, Calendar as CalendarIcon, Filter, Clock } from "lucide-react";
+import { Loader2, Flag, School, ChevronRight, Calendar as CalendarIcon, Filter, Clock, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { recordTeacherAttendance } from "@/lib/actions";
 import { format, parseISO } from "date-fns";
@@ -170,26 +170,47 @@ export default function TeacherAttendanceClient({
     return (
         <div className="flex flex-col h-full bg-[#f8fafc]">
             {/* Header Purple Gradient Theme - Centered profile */}
-            <div className="bg-gradient-to-br from-purple-700 via-purple-600 to-blue-500 text-white pt-10 pb-20 px-6 rounded-b-[3.5rem] shadow-2xl relative">
-                <div className="flex flex-col items-center gap-4 mb-10">
+            <div className="bg-gradient-to-br from-purple-700 via-purple-600 to-blue-500 text-white pt-10 pb-16 px-6 rounded-b-[3.5rem] shadow-2xl relative">
+                <div className="flex flex-col items-center gap-4 mb-8">
                     <Avatar className="h-24 w-24 border-4 border-white/20 shadow-xl">
                         <AvatarImage src={profile?.avatar_url || ""} />
                         <AvatarFallback className="bg-white/20 text-white font-bold text-2xl">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
                     </Avatar>
-                    <div className="text-center">
+                    <div className="text-center space-y-1">
                         <h1 className="text-2xl font-black tracking-tight leading-tight">{profile?.full_name || 'Guru LakuKelas'}</h1>
-                        <p className="text-white/70 text-sm font-medium mt-1">{profile?.jabatan || 'Guru'} ({profile?.nip || '-'})</p>
+                        <p className="text-white/70 text-sm font-medium">{profile?.nip || '-'}</p>
+                        
+                        {/* Status Tag for Hari Biasa vs Holiday */}
+                        <div className="pt-2">
+                          {todayHoliday ? (
+                            <Badge className={cn(
+                              "text-[10px] font-black uppercase tracking-[0.1em] border-0 px-3 py-1",
+                              todayHoliday.type === 'national' ? "bg-red-500 text-white" : "bg-indigo-500 text-white"
+                            )}>
+                              {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
+                            </Badge>
+                          ) : todayRecord ? (
+                            <Badge className="bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.1em] border-0 px-3 py-1">
+                              {todayRecord.status}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-white/20 backdrop-blur-sm text-white text-[10px] font-black uppercase tracking-[0.1em] border border-white/30 px-3 py-1">
+                              <Briefcase className="w-3 h-3 mr-1.5 inline-block" />
+                              Hari Kerja Aktif
+                            </Badge>
+                          )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-2">
                     <DigitalClock />
                 </div>
             </div>
 
             {/* Content Area */}
-            <div className="px-6 -mt-12 space-y-6 pb-32">
-                {/* Holiday Card */}
+            <div className="px-6 -mt-10 space-y-6 pb-32">
+                {/* Holiday Card (Only if holiday) */}
                 {todayHoliday && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
@@ -203,7 +224,7 @@ export default function TeacherAttendanceClient({
                                 <div className="min-w-0">
                                     <h4 className="font-bold text-slate-900 leading-tight">{todayHoliday.description}</h4>
                                     <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">
-                                        {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
+                                        Informasi Hari Libur
                                     </p>
                                 </div>
                             </CardContent>
@@ -215,31 +236,31 @@ export default function TeacherAttendanceClient({
                 <div className="grid grid-cols-2 gap-4">
                     <button 
                         onClick={() => handleAttendance('in')}
-                        disabled={loading || !!todayRecord?.checkIn}
+                        disabled={loading || !!todayRecord?.checkIn || !!todayHoliday}
                         className={cn(
-                            "flex flex-col items-center justify-center p-6 rounded-[2rem] shadow-lg transition-all active:scale-95 border-0 h-32",
-                            todayRecord?.checkIn 
+                            "flex flex-col items-center justify-center p-6 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0 h-32",
+                            (todayRecord?.checkIn || todayHoliday) 
                                 ? "bg-emerald-50 text-emerald-600 opacity-60" 
                                 : "bg-emerald-600 text-white hover:bg-emerald-700"
                         )}
                     >
                         {loading && <Loader2 className="h-6 w-6 animate-spin mb-2" />}
-                        <span className="font-black text-base">JAM MASUK</span>
+                        <span className="font-black text-base tracking-tight">JAM MASUK</span>
                         <span className="font-mono text-xs opacity-80 mt-1 font-bold">{todayRecord?.checkIn ? todayRecord.checkIn.substring(0, 5) : '--:--'}</span>
                     </button>
 
                     <button 
                         onClick={() => handleAttendance('out')}
-                        disabled={loading || !todayRecord?.checkIn || !!todayRecord?.checkOut}
+                        disabled={loading || !todayRecord?.checkIn || !!todayRecord?.checkOut || !!todayHoliday}
                         className={cn(
-                            "flex flex-col items-center justify-center p-6 rounded-[2rem] shadow-lg transition-all active:scale-95 border-0 h-32",
-                            todayRecord?.checkOut 
-                                ? "bg-rose-50 text-rose-600 opacity-60" 
-                                : (!todayRecord?.checkIn ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-rose-600 text-white hover:bg-rose-700")
+                            "flex flex-col items-center justify-center p-6 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0 h-32",
+                            (todayRecord?.checkOut || todayHoliday) 
+                                ? "bg-red-50 text-red-600 opacity-60" 
+                                : (!todayRecord?.checkIn ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-red-600 text-white hover:bg-red-700")
                         )}
                     >
                         {loading && <Loader2 className="h-6 w-6 animate-spin mb-2" />}
-                        <span className="font-black text-base">JAM PULANG</span>
+                        <span className="font-black text-base tracking-tight">JAM PULANG</span>
                         <span className="font-mono text-xs opacity-80 mt-1 font-bold">{todayRecord?.checkOut ? todayRecord.checkOut.substring(0, 5) : '--:--'}</span>
                     </button>
                 </div>
