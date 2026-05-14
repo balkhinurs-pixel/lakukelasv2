@@ -5,7 +5,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Clock } from "lucide-react";
+import { Loader2, Clock, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert } from "@/components/ui/alert";
 import { recordTeacherAttendance } from "@/lib/actions";
@@ -14,7 +14,7 @@ import { id } from "date-fns/locale";
 import { cn, formatTime } from "@/lib/utils";
 import type { TeacherAttendance, Profile } from "@/lib/types";
 import DigitalClock from "./DigitalClock";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,7 +63,7 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium h-12 rounded-xl shadow-md transition-all active:scale-95">
+                <Button variant="outline" className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 font-medium h-12 rounded-xl transition-all active:scale-95">
                     Ajukan Izin / Sakit
                 </Button>
             </DialogTrigger>
@@ -95,7 +95,7 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700">
+                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-medium">
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Kirim Pengajuan
                     </Button>
@@ -154,11 +154,11 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'Tepat Waktu': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-            case 'Terlambat': return 'bg-amber-100 text-amber-800 border-amber-200';
-            case 'Sakit': return 'bg-orange-100 text-orange-800 border-orange-200';
-            case 'Izin': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'Tidak Hadir': return 'bg-red-100 text-red-800 border-red-200';
+            case 'Tepat Waktu': return 'bg-emerald-500 text-white border-emerald-600';
+            case 'Terlambat': return 'bg-amber-500 text-white border-amber-600';
+            case 'Sakit': return 'bg-orange-500 text-white border-orange-600';
+            case 'Izin': return 'bg-blue-500 text-white border-blue-600';
+            case 'Tidak Hadir': return 'bg-rose-600 text-white border-rose-700';
             default: return 'bg-slate-100 text-slate-800 border-slate-200';
         }
     }
@@ -170,14 +170,14 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
             <DigitalClock />
 
             <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-white">
-                <CardHeader className="bg-slate-50/50 border-b p-6 text-center sm:text-left">
-                    <CardTitle className="text-xl font-bold text-slate-800">Lakukan Absen Sekarang</CardTitle>
+                <CardHeader className="bg-slate-50/50 border-b p-6">
+                    <CardTitle className="text-xl font-medium text-slate-800 text-center">Lakukan Absen Sekarang</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 sm:p-8 space-y-6">
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Button 
                             size="lg" 
-                            className="h-16 px-8 text-lg font-medium rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex-1 shadow-lg shadow-emerald-600/20 transition-all active:scale-95" 
+                            className="h-14 px-8 text-base font-medium rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex-1 shadow-md transition-all active:scale-95" 
                             onClick={() => handleAttendance('in')} 
                             disabled={loading}
                         >
@@ -185,7 +185,7 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
                         </Button>
                         <Button 
                             size="lg" 
-                            className="h-16 px-8 text-lg font-medium rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex-1 shadow-lg shadow-rose-600/20 transition-all active:scale-95" 
+                            className="h-14 px-8 text-base font-medium rounded-xl bg-rose-500 hover:bg-rose-600 text-white flex-1 shadow-md transition-all active:scale-95" 
                             onClick={() => handleAttendance('out')} 
                             disabled={loading}
                         >
@@ -263,7 +263,7 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
                                                 <p className="font-mono font-bold text-sm text-slate-700 leading-none">{r.checkOut || '--:--'}</p>
                                             </div>
                                         </div>
-                                        <Badge variant="outline" className={cn("px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", getStatusBadge(r.status))}>
+                                        <Badge variant="outline" className={cn("px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider border-0", getStatusBadge(r.status))}>
                                             {r.status}
                                         </Badge>
                                     </div>
