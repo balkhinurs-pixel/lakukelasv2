@@ -9,11 +9,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, BookText, Users, Clock, CalendarDays, Tag, ClipboardEdit, CheckCircle } from "lucide-react";
+import { ClipboardCheck, BookText, Users, Clock, CalendarDays, Tag, ClipboardEdit, CheckCircle, Flag, School, CalendarOff } from "lucide-react";
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import type { ScheduleItem, Agenda } from "@/lib/types";
+import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -22,6 +22,7 @@ type DashboardPageProps = {
   agendas: Agenda[];
   initialAttendancePercentage: number;
   initialUnfilledJournalsCount: number;
+  todayHoliday: Holiday | null;
 }
 
 const StatCard = ({
@@ -68,6 +69,7 @@ export default function DashboardClientPage({
     agendas,
     initialAttendancePercentage,
     initialUnfilledJournalsCount,
+    todayHoliday
 }: DashboardPageProps) {
     const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
     const [endedSchedules, setEndedSchedules] = React.useState<Record<string, boolean>>({});
@@ -132,8 +134,8 @@ export default function DashboardClientPage({
         
         return {
             title: "Jadwal Hari Ini",
-            value: "Selesai",
-            subtitle: "Semua kelas telah berakhir"
+            value: todayHoliday ? "Libur" : "Selesai",
+            subtitle: todayHoliday ? todayHoliday.description : "Semua kelas telah berakhir"
         };
     };
 
@@ -276,6 +278,34 @@ export default function DashboardClientPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
+            {todayHoliday && (
+                <div className={cn(
+                    "mb-6 p-5 rounded-[1.5rem] border-2 flex items-center gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500",
+                    todayHoliday.type === 'national' 
+                        ? "bg-red-50/50 border-red-100 text-red-700" 
+                        : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
+                )}>
+                    <div className={cn(
+                        "p-3 rounded-2xl text-white shadow-lg shrink-0",
+                        todayHoliday.type === 'national' ? "bg-red-500 shadow-red-500/20" : "bg-indigo-500 shadow-indigo-500/20"
+                    )}>
+                        {todayHoliday.type === 'national' ? <Flag className="h-6 w-6" /> : <School className="h-6 w-6" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={cn(
+                                "text-[9px] uppercase font-black tracking-widest px-2 py-0 h-4 border-0",
+                                todayHoliday.type === 'national' ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-600"
+                            )}>
+                                {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
+                            </Badge>
+                        </div>
+                        <p className="font-bold text-lg leading-tight mt-1">{todayHoliday.description}</p>
+                        <p className="text-xs opacity-70 mt-0.5">Kewajiban mengajar & absen ditiadakan.</p>
+                    </div>
+                </div>
+            )}
+
             {sortedSchedule.length > 0 ? (
                 <div className="relative">
                     <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gradient-to-b from-primary/60 via-primary/30 to-transparent -z-10" aria-hidden="true" />
@@ -341,7 +371,7 @@ export default function DashboardClientPage({
                                             </div>
                                         </div>
                                         
-                                        {isActionAvailable && (
+                                        {isActionAvailable && !todayHoliday && (
                                             <div className="relative">
                                                 {hasEnded ? (
                                                     <div className="text-xs text-red-600 font-semibold mb-2 flex items-center gap-1">

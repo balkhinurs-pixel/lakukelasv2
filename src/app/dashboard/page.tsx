@@ -2,7 +2,7 @@
 
 import { getDashboardData } from '@/lib/data';
 import DashboardClientPage from './dashboard-client-page';
-import type { ScheduleItem, Agenda } from "@/lib/types";
+import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import * as React from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -14,6 +14,7 @@ type DashboardData = {
     agendas: Agenda[];
     attendancePercentage: number;
     unfilledJournalsCount: number;
+    todayHoliday: Holiday | null;
 };
 
 function DashboardLoadingSkeleton() {
@@ -90,7 +91,7 @@ export default function DashboardPage() {
                 const finalDayForQuery = dayMapping[indonesianDayName] || indonesianDayName;
                 
                 const dashboardData = await getDashboardData(finalDayForQuery);
-                setData(dashboardData);
+                setData(dashboardData as DashboardData);
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
             } finally {
@@ -111,6 +112,7 @@ export default function DashboardPage() {
             agendas={data.agendas}
             initialAttendancePercentage={data.attendancePercentage}
             initialUnfilledJournalsCount={data.unfilledJournalsCount}
+            todayHoliday={data.todayHoliday}
         />
     );
 }

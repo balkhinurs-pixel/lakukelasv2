@@ -199,7 +199,7 @@ export async function getSubjects(): Promise<Subject[]> {
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { data: scheduleData } = await supabase.from('subject_id').select('subject_id').eq('teacher_id', user.id);
+    const { data: scheduleData } = await supabase.from('schedule').select('subject_id').eq('teacher_id', user.id);
     if (!scheduleData) return [];
     const subjectIds = [...new Set(scheduleData.map(item => item.subject_id))];
     if (subjectIds.length === 0) return [];
@@ -330,15 +330,17 @@ export async function getAllStudents(): Promise<Student[]> {
 export async function getDashboardData(todayDay: string) {
     noStore();
     const user = await getAuthenticatedUser();
-    if (!user) return { todaySchedule: [], agendas: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
+    if (!user) return { todaySchedule: [], agendas: [], attendancePercentage: 0, unfilledJournalsCount: 0, todayHoliday: null };
     const supabase = createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
+    const todayStr = format(getIndonesianTime(), 'yyyy-MM-dd');
     
-    const [scheduleRes, agendasRes, attendanceRes, journalsRes] = await Promise.all([
+    const [scheduleRes, agendasRes, attendanceRes, journalsRes, holidayRes] = await Promise.all([
         supabase.from('schedule').select('*, class:class_id(name), subject:subject_id(name)').eq('teacher_id', user.id).eq('day', todayDay),
-        supabase.from('agendas').select('*').eq('teacher_id', user.id).gte('date', format(getIndonesianTime(), 'yyyy-MM-dd')).order('date', { ascending: true }).order('start_time', { ascending: true }).limit(5),
+        supabase.from('agendas').select('*').eq('teacher_id', user.id).gte('date', todayStr).order('date', { ascending: true }).order('start_time', { ascending: true }).limit(5),
         supabase.from('attendance_records').select('status').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId),
-        supabase.from('journal_entries').select('date').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId)
+        supabase.from('journal_entries').select('date').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId),
+        supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle()
     ]);
 
     const todayScheduleData = scheduleRes.data?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
@@ -348,14 +350,14 @@ export async function getDashboardData(todayDay: string) {
     const hadirRecords = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
     const attendancePercentage = totalRecords > 0 ? Math.round((hadirRecords / totalRecords) * 100) : 0;
     
-    const todayStr = format(getIndonesianTime(), 'yyyy-MM-dd');
     const unfilledJournalsCount = todayScheduleData.length - (journalsRes.data?.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === todayStr).length || 0);
 
     return { 
         todaySchedule: todayScheduleData, 
         agendas: agendasData, 
         attendancePercentage, 
-        unfilledJournalsCount 
+        unfilledJournalsCount,
+        todayHoliday: holidayRes.data || null
     };
 }
 
