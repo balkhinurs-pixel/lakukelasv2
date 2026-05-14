@@ -328,7 +328,7 @@ export default function JournalPageComponent({
                         </div>
                       </div>
                     </DialogHeader>
-                    <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto pr-4">
+                    <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto pr-4 mb-4">
                         <div className="space-y-2">
                             <Label className="text-sm font-medium text-slate-700">Tahun Ajaran Aktif</Label>
                             <Input 
@@ -436,20 +436,20 @@ export default function JournalPageComponent({
                         </div>
                     </div>
                     <DialogFooter className="pt-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg">
-                      <div className="flex flex-col sm:flex-row gap-3 w-full sm:justify-end">
+                      <div className="flex flex-row gap-2 w-full">
                         <Button 
                           type="button" 
                           variant="outline" 
                           onClick={() => setIsFormDialogOpen(false)} 
                           disabled={loading}
-                          className="border-slate-300 hover:bg-slate-50"
+                          className="flex-1 border-slate-300 hover:bg-slate-50 h-11 rounded-xl"
                         >
                           Batal
                         </Button>
                         <Button 
                           type="submit" 
                           disabled={loading}
-                          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                          className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 h-11 rounded-xl"
                         >
                           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Simpan Jurnal
@@ -639,7 +639,7 @@ export default function JournalPageComponent({
               )}
           </DialogHeader>
             {selectedEntry && (
-                 <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-4 pt-2">
+                 <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 pt-2 mb-4">
                     <div className="space-y-3 p-4 rounded-lg border border-slate-200 bg-slate-50/50">
                         <div className="flex items-center gap-2">
                           <Target className="h-4 w-4 text-indigo-600" />
@@ -671,28 +671,20 @@ export default function JournalPageComponent({
                  </div>
             )}
             <DialogFooter className="pt-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg">
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsViewDialogOpen(false)} 
-                  disabled={loading}
-                  className="border-slate-300 hover:bg-slate-50"
-                >
-                    Tutup
-                </Button>
-                <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col gap-3 w-full">
+                <div className="flex flex-row gap-2">
                      <Button 
                        variant="outline" 
                        onClick={() => selectedEntry && handleOpenEditDialog(selectedEntry)} 
                        disabled={loading}
-                       className="border-slate-300 hover:bg-slate-50"
+                       className="flex-1 border-slate-300 hover:bg-slate-50 h-11 rounded-xl"
                      >
                         <Edit className="mr-2 h-4 w-4" />
                         Ubah
                     </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                             <Button variant="destructive" disabled={loading}>
+                             <Button variant="destructive" disabled={loading} className="flex-1 h-11 rounded-xl">
                                 {loading === true ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4" />}
                                 Hapus
                             </Button>
@@ -716,6 +708,14 @@ export default function JournalPageComponent({
                          )}
                     </AlertDialog>
                 </div>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setIsViewDialogOpen(false)} 
+                  disabled={loading}
+                  className="w-full border-slate-200 h-10 rounded-xl"
+                >
+                    Tutup
+                </Button>
               </div>
             </DialogFooter>
         </DialogContent>

@@ -210,7 +210,7 @@ export default function GradesPageComponent({
     if (!selectedClassId || !selectedSubjectId || !date || !assessmentType) {
         toast({
             title: "Gagal Menyimpan",
-            description: "Harap pilih kelas, mata pelajaran, tanggal, dan isi jenis penilaian.",
+            description: "Harap pilih kelas, mata pelajaran, tanggal, and isi jenis penilaian.",
             variant: "destructive",
         });
         return;
@@ -803,7 +803,7 @@ export default function GradesPageComponent({
       </Card>
       
       <Dialog open={isKatrolDialogOpen} onOpenChange={setIsKatrolDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area">
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                     <Wand2 className="h-5 w-5 text-blue-600" />
@@ -870,9 +870,9 @@ export default function GradesPageComponent({
                 </TabsContent>
             </Tabs>
 
-            <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setIsKatrolDialogOpen(false)}>Batal</Button>
-                <Button onClick={handleKatrol} className="bg-blue-600 hover:bg-blue-700">
+            <DialogFooter className="mt-4 flex flex-row gap-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setIsKatrolDialogOpen(false)}>Batal</Button>
+                <Button onClick={handleKatrol} className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-xl">
                     Terapkan Katrol
                 </Button>
             </DialogFooter>
@@ -894,7 +894,7 @@ export default function GradesPageComponent({
                 </div>
               </div>
             </DialogHeader>
-            <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <div className="max-h-[50vh] overflow-y-auto pr-2 mb-4">
                 <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
                   <Table>
                       <TableHeader>
@@ -942,6 +942,9 @@ export default function GradesPageComponent({
                   </Table>
                 </div>
             </div>
+            <DialogFooter>
+                <Button variant="ghost" className="w-full h-11 rounded-xl" onClick={() => setIsDetailDialogOpen(false)}>Tutup</Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

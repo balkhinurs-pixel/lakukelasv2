@@ -162,7 +162,7 @@ const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNo
                     <MessageSquarePlus className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="dialog-content-mobile mobile-safe-area">
                 <DialogHeader>
                     <DialogTitle>Tambah Catatan untuk {student.name}</DialogTitle>
                     <DialogDescription>Catatan ini akan dapat dilihat oleh wali kelas.</DialogDescription>
@@ -190,8 +190,9 @@ const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNo
                         </RadioGroup>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button onClick={handleSaveNote} disabled={loading}>
+                <DialogFooter className="flex flex-row gap-2">
+                    <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setIsOpen(false)}>Batal</Button>
+                    <Button className="flex-1 rounded-xl" onClick={handleSaveNote} disabled={loading}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                         Simpan Catatan
                     </Button>
@@ -959,7 +960,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 </div>
               </div>
             </DialogHeader>
-            <ScrollArea className="max-h-[60vh] pr-2">
+            <ScrollArea className="max-h-[50vh] pr-2 mb-4">
                 {viewingEntry && students.length > 0 ? (
                     <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
                       <Table>
@@ -1003,6 +1004,9 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                     </div>
                 )}
             </ScrollArea>
+            <DialogFooter>
+                <Button variant="ghost" className="w-full h-11 rounded-xl" onClick={() => setIsDetailDialogOpen(false)}>Tutup</Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

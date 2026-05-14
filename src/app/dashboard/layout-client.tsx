@@ -247,14 +247,14 @@ export default function DashboardLayoutClient({
           <>
             {isMobileMenuOpen && (
               <div 
-                className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[80] animate-in fade-in duration-300"
+                className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[35] animate-in fade-in duration-300"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
             )}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen} modal={false}>
               <SheetContent 
                 side="bottom" 
-                className="rounded-t-[32px] border-t-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[90] animate-in slide-in-from-bottom duration-300"
+                className="rounded-t-[32px] border-t-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[40] animate-in slide-in-from-bottom duration-300"
               >
                 <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
                 <SheetHeader className="px-6 pb-4">
@@ -366,7 +366,7 @@ export default function DashboardLayoutClient({
               </SheetContent>
             </Sheet>
 
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
                 {leftMobileNavItems.map((item) => (
                     <Link key={item.href} href={item.href} className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === item.href ? "text-primary bg-primary/10" : "text-muted-foreground")}>
                         <item.icon className="w-5 h-5" />
@@ -394,7 +394,7 @@ export default function DashboardLayoutClient({
                     >
                       <path d="M4 12L20 12" className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]" />
                       <path d="M4 12H20" className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45" />
-                      <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]" />
+                      <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]" />
                     </svg>
                 </button>
 
