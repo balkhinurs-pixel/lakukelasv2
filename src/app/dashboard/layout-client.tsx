@@ -23,8 +23,9 @@ import {
   Link2,
   MapPin,
   CheckCircle2,
+  User,
 } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 import {
   Sidebar,
@@ -69,13 +70,13 @@ const homeroomNavItems = [
 ];
 
 const leftMobileNavItems = [
-    { href: '/dashboard', icon: Home, label: 'Dasbor' },
-    { href: '/dashboard/attendance', icon: ScanLine, label: 'Presensi' },
+    { href: '/dashboard', icon: Home, label: 'Beranda' },
+    { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen Guru' },
 ];
 
 const rightMobileNavItems = [
-    { href: '/dashboard/grades', icon: Award, label: 'Nilai' },
-    { href: '/dashboard/journal', icon: PenTool, label: 'Jurnal' },
+    { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
+    { href: '/dashboard/settings', icon: User, label: 'Profil' },
 ];
 
 export default function DashboardLayoutClient({ 
@@ -84,7 +85,7 @@ export default function DashboardLayoutClient({
   profile
 }: { 
   children: React.ReactNode;
-  user: User | null;
+  user: SupabaseUser | null;
   profile: Pick<Profile, 'full_name' | 'avatar_url' | 'is_homeroom_teacher' | 'role'> | null
 }) {
   const pathname = usePathname();
