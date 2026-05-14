@@ -33,7 +33,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, CheckCircle, Award, Download, BookCheck, FileSpreadsheet, PieChart as PieChartIcon, BarChart2, Filter, FileText, Loader2 } from "lucide-react";
