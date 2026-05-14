@@ -1,6 +1,5 @@
 
 
-
 # Rencana Pembaruan Sistem Absensi Guru (V4.6) - SELESAI
 Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan kehadiran guru.
 
@@ -9,6 +8,16 @@ Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan 
 
 ## 2. Monitoring Kepala Sekolah (TERIMPLEMENTASI - V4.6)
 - Akses Dashboard & Rekap Kehadiran.
+
+---
+
+# Update V6.4: Perbaikan Build Error & Kode Bersih (SELESAI)
+
+Mengatasi kegagalan build di Vercel akibat teks dokumentasi yang masuk ke file kode.
+
+## 1. Perbaikan Bug
+- **Syntax Error Fixed**: Menghapus seluruh teks non-kode yang mengganggu di `src/lib/actions/admin.ts`.
+- **Code Integrity**: Memastikan seluruh fungsi admin (save class, save schedule, dll) kembali normal dan dapat dikompilasi oleh Vercel.
 
 ---
 
