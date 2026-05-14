@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -135,8 +134,8 @@ export default function AgendaPageClient({
     return (
       <div className="relative h-full w-full flex items-center justify-center">
         <span className={cn(
-            "relative z-10",
-            holiday && "text-red-600 font-bold"
+            "relative z-10 transition-colors duration-200",
+            holiday ? "text-red-600 font-bold" : ""
         )}>
             {props.date.getDate()}
         </span>
@@ -441,7 +440,7 @@ export default function AgendaPageClient({
                 <div className="mt-6 pt-6 border-t border-slate-100 space-y-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <div className="w-2 h-2 bg-red-500 rounded-full" />
-                        <span>Hari Libur Nasional</span>
+                        <span>Hari Libur (Nasional/Sekolah)</span>
                     </div>
                 </div>
             </Card>
@@ -468,7 +467,7 @@ export default function AgendaPageClient({
                                     <CalendarOff className="h-5 w-5" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <h4 className="font-black text-red-700 dark:text-red-400 text-sm uppercase tracking-tighter">Hari Libur Nasional</h4>
+                                    <h4 className="font-black text-red-700 dark:text-red-400 text-sm uppercase tracking-tighter">Hari Libur</h4>
                                     <p className="text-red-600 dark:text-red-300 font-bold text-lg leading-tight mt-1">{holidayForDate.name}</p>
                                 </div>
                             </motion.div>
