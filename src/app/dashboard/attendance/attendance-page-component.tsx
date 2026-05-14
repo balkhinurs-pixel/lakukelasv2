@@ -65,6 +65,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { AnimatedText } from "@/components/ui/animated-underline-text-one";
+import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -512,20 +513,11 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
     <div className="space-y-6 p-1">
       <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
         <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "p-2 rounded-xl",
-              editingId ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
-            )}>
-              {editingId ? <Edit className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
-            </div>
-            <div>
-              <CardTitle className="text-xl">{editingId ? 'Ubah Presensi' : 'Input Presensi'}</CardTitle>
-              <CardDescription className="mt-1">
-                {editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mencatat presensi siswa.'}
-              </CardDescription>
-            </div>
-          </div>
+          <HandWrittenTitle 
+            title={editingId ? 'Ubah Presensi' : 'Input Presensi'} 
+            subtitle={editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mencatat presensi siswa.'}
+            className="py-4 md:py-6"
+          />
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
