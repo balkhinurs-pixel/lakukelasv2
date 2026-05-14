@@ -1,5 +1,25 @@
+# Update V8.0: Presensi Kolaboratif & Sinkronisasi Cerdas (RENCANA)
 
+Optimisasi alur kerja guru untuk efisiensi input data dan pemantauan real-time oleh Wali Kelas.
 
+## 1. Konsep "First Input Base"
+- **Logika**: Guru mata pelajaran yang melakukan input presensi pertama kali di suatu kelas (pada hari tersebut) akan menentukan status awal seluruh siswa.
+- **Penerapan**: Data ini menjadi referensi utama bagi sistem untuk hari itu.
+
+## 2. Fitur "Inherit & Update" bagi Guru
+- **Alur Kerja**: Guru di jam pelajaran berikutnya tidak akan menerima formulir kosong. Sistem otomatis mengisi formulir berdasarkan data presensi terakhir di hari yang sama.
+- **Efisiensi**: Guru hanya perlu melakukan perubahan (adjustment) jika ada perubahan status siswa (misal: siswa terlambat hadir atau izin pulang di tengah pelajaran).
+- **Manfaat**: Menghemat waktu input guru hingga 80% per sesi.
+
+## 3. Real-time Monitoring Wali Kelas
+- **Akses**: Wali kelas dapat melihat status kehadiran siswa di kelas perwaliannya secara langsung (live) sepanjang hari pelajaran berlangsung.
+- **Notifikasi**: Sistem akan menandai jika ada inkonsistensi data antar jam pelajaran untuk ditindaklanjuti oleh Wali Kelas.
+
+## 4. Teknis Implementasi
+- Penambahan fungsi `get_latest_class_attendance_status` pada database.
+- Optimisasi UI pada `attendance-page-component.tsx` untuk memicu penarikan data awal (pre-populate) sebelum input dimulai.
+
+---
 
 # Update V7.0: Konsolidasi Skema SQL Utama (TERIMPLEMENTASI)
 
@@ -24,18 +44,3 @@ Optimalisasi untuk deployment mandiri dan migrasi proyek Supabase.
 
 # Update V6.5: Otomatisasi Sinkronisasi Hari Libur (TERIMPLEMENTASI)
 Integrasi cerdas untuk memastikan hari libur selalu siap saat awal tahun ajaran.
-
----
-
-# Catatan Pengembang (Developer Instructions)
-
-Remember, the XML structure you generate is the only mechanism for applying changes to the user's code. Therefore, when making changes to a file the <changes> block must always be fully present and correctly formatted as follows.
-
-<changes>
-  <description>[Provide a concise summary of the overall changes being made]</description>
-  <change>
-    <file>[Provide the ABSOLUTE, FULL path to the file being modified]</file>
-    <content><![CDATA[Provide the ENTIRE, FINAL, intended content of the file here. Do NOT provide diffs or partial snippets. Ensure all code is properly escaped within the CDATA section.]]></content>
-  </change>
-  <!-- Add more <change> blocks as needed for other files -->
-</changes>
