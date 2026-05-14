@@ -24,3 +24,6 @@ Optimisasi alur kerja guru untuk efisiensi input data dan pemantauan real-time o
 
 # Update V7.0: Konsolidasi Skema SQL Utama (TERIMPLEMENTASI)
 Optimalisasi untuk deployment mandiri dan migrasi proyek Supabase.
+- Penyediaan file `schema.sql` yang idempotent (aman dijalankan berulang kali).
+- Penguatan aturan RLS untuk keamanan multi-role (Guru, Wali Kelas, Kepsek).
+- Otomatisasi profil pengguna baru melalui PostgreSQL Trigger.
