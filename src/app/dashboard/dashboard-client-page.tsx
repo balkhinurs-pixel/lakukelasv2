@@ -22,7 +22,8 @@ import {
   Flag, 
   School, 
   CalendarOff,
-  ArrowRight
+  ArrowRight,
+  Coffee
 } from "lucide-react";
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
@@ -135,7 +136,7 @@ export default function DashboardClientPage({
              return currentHour < endHours || (currentHour === endHours && currentMinute < endMinutes);
         });
 
-        if (upcomingOrCurrentClass) {
+        if (upcomingOrCurrentClass && !todayHoliday) {
             const [startHours, startMinutes] = upcomingOrCurrentClass.start_time.split(':').map(Number);
             const isOngoing = now.getHours() > startHours || (now.getHours() === startHours && now.getMinutes() >= startMinutes);
             
@@ -255,18 +256,31 @@ export default function DashboardClientPage({
             subtitle={initialAttendancePercentage > 0 ? "Kehadiran terekam" : "Belum ada data"}
             color="bg-gradient-to-br from-green-500 via-green-500 to-emerald-600"
           />
-          <StatCard
-            icon={Users}
-            title="Kelas Hari Ini"
-            value={String(todaySchedule.length)}
-            subtitle="Total kelas terjadwal"
-            color="bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-600"
-          />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <StatCard
+                    icon={Users}
+                    title="Kelas Hari Ini"
+                    value={todayHoliday ? "0" : String(todaySchedule.length)}
+                    subtitle={todayHoliday ? "Hari Libur" : "Total kelas terjadwal"}
+                    color="bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-600"
+                  />
+                </div>
+              </TooltipTrigger>
+              {todayHoliday && (
+                <TooltipContent>
+                  <p>Aktivitas mengajar ditiadakan karena libur</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           <StatCard
             icon={BookText}
             title="Jurnal Belum Diisi"
-            value={String(initialUnfilledJournalsCount)}
-            subtitle={initialUnfilledJournalsCount > 0 ? "Perlu segera diisi" : "Semua jurnal terisi"}
+            value={todayHoliday ? "0" : String(initialUnfilledJournalsCount)}
+            subtitle={todayHoliday ? "Semua jurnal terisi" : (initialUnfilledJournalsCount > 0 ? "Perlu segera diisi" : "Semua jurnal terisi")}
             color="bg-gradient-to-br from-red-500 via-red-500 to-orange-500"
           />
           <StatCard
@@ -292,35 +306,37 @@ export default function DashboardClientPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {todayHoliday && (
-                <div className={cn(
-                    "mb-6 p-5 rounded-[1.5rem] border-2 flex items-center gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500",
-                    todayHoliday.type === 'national' 
-                        ? "bg-red-50/50 border-red-100 text-red-700" 
-                        : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
-                )}>
+            {todayHoliday ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-6">
                     <div className={cn(
-                        "p-3 rounded-2xl text-white shadow-lg shrink-0",
-                        todayHoliday.type === 'national' ? "bg-red-500 shadow-red-500/20" : "bg-indigo-500 shadow-indigo-500/20"
+                        "p-8 rounded-[2.5rem] border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full",
+                        todayHoliday.type === 'national' 
+                            ? "bg-red-50/50 border-red-100 text-red-700" 
+                            : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
                     )}>
-                        {todayHoliday.type === 'national' ? <Flag className="h-6 w-6" /> : <School className="h-6 w-6" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className={cn(
+                            "p-5 rounded-3xl text-white shadow-2xl shrink-0 -mt-16 bg-white",
+                            todayHoliday.type === 'national' ? "bg-gradient-to-br from-red-500 to-rose-600" : "bg-gradient-to-br from-indigo-500 to-purple-600"
+                        )}>
+                            {todayHoliday.type === 'national' ? <Flag className="h-10 w-10" /> : <School className="h-10 w-10" />}
+                        </div>
+                        <div className="pt-2">
                             <Badge variant="outline" className={cn(
-                                "text-[9px] uppercase font-black tracking-widest px-2 py-0 h-4 border-0",
+                                "text-xs uppercase font-black tracking-[0.2em] px-3 py-1 mb-2 border-0",
                                 todayHoliday.type === 'national' ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-600"
                             )}>
                                 {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
+                            <h3 className="font-black text-2xl leading-tight tracking-tight">{todayHoliday.description}</h3>
+                            <p className="text-sm opacity-70 mt-3 font-medium">Selamat menikmati waktu istirahat Bapak/Ibu Guru. <br /> Daftar jadwal dan presensi ditiadakan hari ini.</p>
                         </div>
-                        <p className="font-bold text-lg leading-tight mt-1">{todayHoliday.description}</p>
-                        <p className="text-xs opacity-70 mt-0.5">Kewajiban mengajar & absen ditiadakan.</p>
+                        <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-white/50 rounded-2xl border border-white/50">
+                            <Coffee className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-widest">Happy Holiday!</span>
+                        </div>
                     </div>
                 </div>
-            )}
-
-            {sortedSchedule.length > 0 ? (
+            ) : sortedSchedule.length > 0 ? (
                 <div className="relative">
                     <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gradient-to-b from-primary/60 via-primary/30 to-transparent -z-10" aria-hidden="true" />
                     
@@ -385,7 +401,7 @@ export default function DashboardClientPage({
                                             </div>
                                         </div>
                                         
-                                        {isActionAvailable && !todayHoliday && (
+                                        {isActionAvailable && (
                                             <div className="relative">
                                                 {hasEnded ? (
                                                     <div className="text-xs text-red-600 font-semibold mb-2 flex items-center gap-1">
