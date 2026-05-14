@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianTime, createIndonesianTimestamp } from './timezone';
+import { syncNationalHolidaysManual } from './actions/admin';
 
 // Helper function to get active school year from global settings
 export async function getActiveSchoolYearId(): Promise<string | null> {
@@ -511,7 +512,7 @@ export async function createSchoolYear(startYear: number) {
     const ganjilName = `${startYear}/${startYear + 1} - Ganjil`;
     const genapName = `${startYear}/${startYear + 1} - Genap`;
 
-    // Pastikan memasukkan data ke tabel school_years dengan teacher_id yang valid
+    // 1. Tambahkan Tahun Ajaran
     const { error } = await supabase.from('school_years').insert([
         { name: ganjilName, teacher_id: user.id },
         { name: genapName, teacher_id: user.id }
@@ -520,6 +521,17 @@ export async function createSchoolYear(startYear: number) {
     if (error) {
         console.error("Error creating school year:", error);
         return { success: false, error: `Gagal membuat tahun ajaran: ${error.message}` };
+    }
+
+    // 2. Trigger Sinkronisasi Hari Libur Otomatis
+    // Ini memastikan saat tahun ajaran baru dibuat, data libur 2025-2026 langsung tersedia.
+    // Tidak akan dobel karena menggunakan logika 'upsert' di admin.ts.
+    try {
+        await syncNationalHolidaysManual();
+        console.log('[AUTO-SYNC] Holidays synced successfully after school year creation.');
+    } catch (syncErr) {
+        console.error('[AUTO-SYNC-ERR] Failed to sync holidays automatically:', syncErr);
+        // Tetap return success karena tahun ajaran berhasil dibuat
     }
     
     revalidatePath('/admin/roster/school-year');

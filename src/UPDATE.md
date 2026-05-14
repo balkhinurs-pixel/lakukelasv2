@@ -11,6 +11,20 @@ Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan 
 
 ---
 
+# Update V6.5: Otomatisasi Sinkronisasi Hari Libur (TERIMPLEMENTASI)
+
+Integrasi cerdas untuk memastikan hari libur selalu siap saat awal tahun ajaran.
+
+## 1. Trigger Otomatis
+- **Aksi**: Menambahkan pemicu pada fungsi `createSchoolYear`.
+- **Manfaat**: Setiap kali Admin menambah tahun ajaran baru, sistem secara otomatis menjalankan sinkronisasi data libur nasional dari `libur.deno.dev`.
+
+## 2. Keamanan Data (Anti-Double)
+- **Logika**: Menggunakan metode `upsert` pada Supabase dengan kunci unik pada kolom `date`.
+- **Hasil**: Data tidak akan pernah duplikat meskipun sinkronisasi dipicu berkali-kali secara manual maupun otomatis.
+
+---
+
 # Update V6.4: Perbaikan Build Error & Kode Bersih (SELESAI)
 
 Mengatasi kegagalan build di Vercel akibat teks dokumentasi yang masuk ke file kode.
@@ -30,10 +44,6 @@ Optimasi logika pengambilan data untuk memastikan hari libur nasional ditarik de
 - **Mapping Universal**: Menambahkan pemetaan nama kolom (`name`, `keterangan`, `holiday_name`) agar deskripsi libur tidak kosong.
 - **Network Headers**: Menambahkan `User-Agent` dan `cache: no-store` untuk mencegah pemblokiran dari server API dan memastikan data selalu paling baru.
 - **Robust Error Handling**: Menambahkan log error yang detail di sisi server jika sinkronisasi gagal.
-
-## 2. Fitur Admin
-- **Sync Latar Belakang**: Klik tombol Sync di Admin kini 100% lebih andal untuk tahun 2025 dan 2026.
-- **Deduplikasi**: Tetap menggunakan `upsert` pada kolom `date` untuk mencegah data ganda.
 
 ---
 
