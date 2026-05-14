@@ -136,7 +136,7 @@ export default function AgendaPageClient({
       <div className="relative h-full w-full flex items-center justify-center">
         <span className={cn(
             "relative z-10 transition-colors duration-200",
-            holiday ? "text-red-600 font-bold" : ""
+            holiday ? "text-red-600 font-black" : ""
         )}>
             {props.date.getDate()}
         </span>
@@ -246,8 +246,7 @@ export default function AgendaPageClient({
             />
             <Button 
                 onClick={handleOpenAddDialog}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-300 shrink-0"
-                size="lg"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-300 shrink-0 h-12 rounded-xl"
             >
                 <PlusCircle className="mr-2 h-5 w-5" />
                 Tambah Agenda
@@ -257,25 +256,21 @@ export default function AgendaPageClient({
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-2xl dialog-content-mobile mobile-safe-area bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
                 <form onSubmit={handleSaveAgenda}>
-                    <DialogHeader className="text-center space-y-4 pb-6">
-                        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-100 via-emerald-100 to-green-100 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-green-950/30 rounded-2xl flex items-center justify-center shadow-lg">
-                            {editingAgenda ? (
-                                <Edit className="h-8 w-8 text-green-600 dark:text-green-400" />
-                            ) : (
-                                <PlusCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
-                            )}
+                    <DialogHeader className="pb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-green-100 text-green-600">
+                          {editingAgenda ? <Edit className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
                         </div>
                         <div>
-                            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                                {editingAgenda ? 'Ubah Agenda' : 'Tambah Agenda Baru'}
-                            </DialogTitle>
-                            <DialogDescription className="text-muted-foreground mt-2">
-                                {editingAgenda ? 'Perbarui detail acara atau pengingat Anda.' : 'Isi detail acara atau pengingat Anda di bawah ini.'}
-                            </DialogDescription>
+                          <DialogTitle className="text-xl font-bold">{editingAgenda ? 'Ubah Agenda' : 'Tambah Agenda Baru'}</DialogTitle>
+                          <DialogDescription className="mt-1">
+                              {editingAgenda ? 'Perbarui detail acara atau pengingat Anda.' : 'Isi detail acara atau pengingat Anda di bawah ini.'}
+                          </DialogDescription>
                         </div>
+                      </div>
                     </DialogHeader>
                     
-                    <div className="grid gap-6 py-4">
+                    <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto pr-4 mb-4">
                         <div className="space-y-3">
                             <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
                                 <Sparkles className="h-4 w-4 text-green-600" />
@@ -286,7 +281,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.title} 
                                 onChange={e => setNewAgenda({...newAgenda, title: e.target.value})} 
                                 placeholder="e.g. Rapat Persiapan Ujian"
-                                className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600 focus:border-green-500 transition-all duration-200"
+                                className="h-12 rounded-xl border-slate-200 focus:border-green-500"
                                 required 
                             />
                         </div>
@@ -301,7 +296,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.description || ''} 
                                 onChange={e => setNewAgenda({...newAgenda, description: e.target.value})} 
                                 placeholder="e.g. Membahas teknis pelaksanaan ujian akhir semester."
-                                className="min-h-20 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 focus:border-blue-500 transition-all duration-200"
+                                className="min-h-20 rounded-xl border-slate-200 focus:border-blue-500"
                             />
                         </div>
                         
@@ -316,7 +311,7 @@ export default function AgendaPageClient({
                                     type="time" 
                                     value={newAgenda.start_time || ''} 
                                     onChange={e => setNewAgenda({...newAgenda, start_time: e.target.value})}
-                                    className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 focus:border-orange-500 transition-all duration-200"
+                                    className="h-12 rounded-xl border-slate-200 focus:border-orange-500"
                                 />
                             </div>
                             <div className="space-y-3">
@@ -329,7 +324,7 @@ export default function AgendaPageClient({
                                     type="time" 
                                     value={newAgenda.end_time || ''} 
                                     onChange={e => setNewAgenda({...newAgenda, end_time: e.target.value})}
-                                    className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 focus:border-red-500 transition-all duration-200"
+                                    className="h-12 rounded-xl border-slate-200 focus:border-red-500"
                                 />
                             </div>
                         </div>
@@ -344,7 +339,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.tag || ''} 
                                 onChange={e => setNewAgenda({...newAgenda, tag: e.target.value})} 
                                 placeholder="e.g. RAPAT"
-                                className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 focus:border-purple-500 transition-all duration-200"
+                                className="h-12 rounded-xl border-slate-200 focus:border-purple-500"
                             />
                         </div>
                         
@@ -381,31 +376,33 @@ export default function AgendaPageClient({
                         </div>
                     </div>
                     
-                    <DialogFooter className="flex flex-row gap-2 pt-6">
+                    <DialogFooter className="pt-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg">
+                      <div className="flex flex-row gap-2 w-full">
                         <Button 
                             type="button" 
                             variant="outline" 
                             onClick={() => setIsDialogOpen(false)} 
                             disabled={loading}
-                            className="flex-1 h-11 border-2 border-gray-200 dark:border-gray-700 rounded-xl"
+                            className="flex-1 h-11 border-slate-300 hover:bg-slate-50 rounded-xl"
                         >
                             Batal
                         </Button>
                         <Button 
                             type="submit" 
                             disabled={loading}
-                            className="flex-1 h-11 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl"
+                            className="flex-1 h-11 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl shadow-md"
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {editingAgenda ? 'Perbarui' : 'Simpan'} Agenda
                         </Button>
+                      </div>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
         <div className="grid md:grid-cols-7 md:gap-8 md:items-start">
-            <Card className="p-4 sm:p-6 bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-4 lg:col-span-3 rounded-3xl">
+            <Card className="p-4 sm:p-6 bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-4 lg:col-span-3 rounded-xl">
                 <DayPicker
                     locale={id}
                     mode="single"
@@ -439,14 +436,14 @@ export default function AgendaPageClient({
                     }}
                 />
                 <div className="mt-6 pt-6 border-t border-slate-100 space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                         <div className="w-2 h-2 bg-red-500 rounded-full" />
                         <span>Hari Libur (Nasional/Sekolah)</span>
                     </div>
                 </div>
             </Card>
       
-            <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-3 lg:col-span-4 h-full min-h-[500px] flex flex-col rounded-3xl">
+            <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-3 lg:col-span-4 h-full min-h-[500px] flex flex-col rounded-xl">
                 <CardHeader className="pb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full animate-pulse" />
@@ -478,9 +475,8 @@ export default function AgendaPageClient({
                         eventsForSelectedDate.map((event) => (
                             <div 
                                 key={event.id} 
-                                className="group p-5 rounded-2xl border-l-4 transition-all duration-300 hover:shadow-lg relative overflow-hidden"
+                                className="group p-5 rounded-2xl border-l-4 transition-all duration-300 hover:shadow-lg relative overflow-hidden bg-white border border-slate-100"
                                 style={{
-                                    backgroundColor: `${event.color || '#6b7280'}10`,
                                     borderLeftColor: event.color || '#6b7280',
                                 }}
                             >
@@ -507,7 +503,7 @@ export default function AgendaPageClient({
                                     <AlertDialog>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
@@ -537,12 +533,12 @@ export default function AgendaPageClient({
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </div>
-                                {event.description && <p className="mt-2 text-sm text-muted-foreground ml-4 leading-relaxed">{event.description}</p>}
+                                {event.description && <p className="mt-2 text-sm text-slate-600 ml-4 leading-relaxed">{event.description}</p>}
                                 {event.tag && (
                                     <div className="mt-3 ml-4">
                                         <Badge 
                                             variant="outline" 
-                                            className="border-0 px-2.5 py-0.5 rounded-lg font-bold text-[10px] uppercase tracking-wider" 
+                                            className="border-0 px-2.5 py-0.5 rounded-lg font-bold text-[10px] uppercase tracking-wider shadow-sm" 
                                             style={{
                                                 backgroundColor: event.color || '#6b7280',
                                                 color: getTextColor(event.color || '#6b7280')
@@ -555,7 +551,7 @@ export default function AgendaPageClient({
                             </div>
                         ))
                         ) : !holidayForDate ? (
-                            <div className="text-center py-16 opacity-50">
+                            <div className="text-center py-20 opacity-50">
                                 <CalendarDays className="w-12 h-12 mx-auto text-slate-300 mb-4" />
                                 <p className="text-sm font-medium">Tidak ada agenda hari ini</p>
                             </div>
