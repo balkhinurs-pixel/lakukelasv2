@@ -15,6 +15,8 @@ import {
   Sparkles,
   CalendarDays,
   CalendarOff,
+  School,
+  Flag,
 } from "lucide-react";
 import { format, isSameDay, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -64,6 +66,7 @@ import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 interface IndonesianHoliday {
     date: string;
     name: string;
+    type: 'national' | 'school';
     is_holiday: boolean;
 }
 
@@ -136,13 +139,17 @@ export default function AgendaPageClient({
       <div className="relative h-full w-full flex items-center justify-center">
         <span className={cn(
             "relative z-10 transition-colors duration-200",
-            holiday ? "text-red-600 font-black" : ""
+            holiday?.type === 'national' ? "text-red-600 font-black" : 
+            holiday?.type === 'school' ? "text-indigo-600 font-bold" : ""
         )}>
             {props.date.getDate()}
         </span>
         
         {holiday && (
-            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse" />
+            <div className={cn(
+                "absolute top-1 right-1 w-1.5 h-1.5 rounded-full shadow-sm animate-pulse",
+                holiday.type === 'national' ? "bg-red-500 shadow-red-500/50" : "bg-indigo-500 shadow-indigo-500/50"
+            )} />
         )}
 
         {colors.length > 0 && (
@@ -435,10 +442,14 @@ export default function AgendaPageClient({
                         day_disabled: "text-muted-foreground opacity-50",
                     }}
                 />
-                <div className="mt-6 pt-6 border-t border-slate-100 space-y-2">
+                <div className="mt-6 pt-6 border-t border-slate-100 space-y-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                        <div className="w-2 h-2 bg-red-500 rounded-full" />
-                        <span>Hari Libur (Nasional/Sekolah)</span>
+                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full" />
+                        <span>Hari Libur Nasional</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                        <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full" />
+                        <span>Libur Khusus Sekolah</span>
                     </div>
                 </div>
             </Card>
@@ -459,14 +470,24 @@ export default function AgendaPageClient({
                             <motion.div 
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="p-5 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 flex items-start gap-4 mb-2 shadow-sm"
+                                className={cn(
+                                    "p-5 rounded-2xl border flex items-start gap-4 mb-2 shadow-sm",
+                                    holidayForDate.type === 'national' 
+                                        ? "bg-red-50 border-red-100 text-red-700" 
+                                        : "bg-indigo-50 border-indigo-100 text-indigo-700"
+                                )}
                             >
-                                <div className="p-2 rounded-xl bg-red-500 text-white shadow-md">
-                                    <CalendarOff className="h-5 w-5" />
+                                <div className={cn(
+                                    "p-2 rounded-xl text-white shadow-md",
+                                    holidayForDate.type === 'national' ? "bg-red-500" : "bg-indigo-500"
+                                )}>
+                                    {holidayForDate.type === 'national' ? <Flag className="h-5 w-5" /> : <School className="h-5 w-5" />}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <h4 className="font-black text-red-700 dark:text-red-400 text-sm uppercase tracking-tighter">Hari Libur</h4>
-                                    <p className="text-red-600 dark:text-red-300 font-bold text-lg leading-tight mt-1">{holidayForDate.name}</p>
+                                    <h4 className="font-black text-[10px] uppercase tracking-widest opacity-70">
+                                        {holidayForDate.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
+                                    </h4>
+                                    <p className="font-bold text-lg leading-tight mt-1">{holidayForDate.name}</p>
                                 </div>
                             </motion.div>
                         )}

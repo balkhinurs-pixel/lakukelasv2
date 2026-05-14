@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   created_at: string;
@@ -139,6 +140,13 @@ export interface Material {
     // Joined data
     className?: string;
     subjectName?: string;
+}
+
+export interface Holiday {
+  id: string;
+  date: string;
+  description: string;
+  type: 'national' | 'school';
 }
 
 // --- History Types ---

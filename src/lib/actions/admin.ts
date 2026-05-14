@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -346,13 +347,13 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     }
 }
 
-export async function saveHoliday(holiday: { date: string, description: string }) {
+export async function saveHoliday(holiday: { date: string, description: string, type: 'national' | 'school' }) {
     const supabase = createClient();
     const { error } = await supabase.from('holidays').insert(holiday);
     
     if (error) {
         console.error("Supabase error adding holiday:", error.message);
-        return { success: false, error: 'Gagal menyimpan hari libur. Pastikan tabel holidays ada di database.' };
+        return { success: false, error: 'Gagal menyimpan hari libur.' };
     }
 
     revalidatePath('/admin/settings/holidays');

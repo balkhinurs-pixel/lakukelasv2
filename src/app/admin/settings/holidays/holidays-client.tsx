@@ -33,19 +33,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { PlusCircle, Trash2, Loader2, CalendarOff, Calendar as CalendarIcon } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, CalendarOff, Calendar as CalendarIcon, Flag, School } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
 import { saveHoliday, deleteHoliday } from "@/lib/actions/admin";
 import { cn } from "@/lib/utils";
-
-interface Holiday {
-  id: string;
-  date: string;
-  description: string;
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Holiday } from "@/lib/types";
 
 export default function HolidaysClientPage({ initialHolidays }: { initialHolidays: Holiday[] }) {
   const router = useRouter();
@@ -57,6 +53,7 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
 
   const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [description, setDescription] = React.useState("");
+  const [holidayType, setHolidayType] = React.useState<'national' | 'school'>('school');
 
   const [loading, setLoading] = React.useState(false);
 
@@ -72,13 +69,18 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
     }
     setLoading(true);
 
-    const result = await saveHoliday({ date: format(date, 'yyyy-MM-dd'), description });
+    const result = await saveHoliday({ 
+        date: format(date, 'yyyy-MM-dd'), 
+        description,
+        type: holidayType 
+    });
 
     if (result.success) {
       toast({ title: "Sukses", description: "Hari libur berhasil disimpan." });
       setIsDialogOpen(false);
       setDate(undefined);
       setDescription("");
+      setHolidayType('school');
       router.refresh();
     } else {
       toast({ title: "Gagal", description: result.error, variant: "destructive" });
@@ -116,7 +118,7 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setDate(undefined); setDescription(""); }}>
+            <Button onClick={() => { setDate(undefined); setDescription(""); setHolidayType('school'); }}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Tambah Hari Libur
             </Button>
@@ -126,7 +128,7 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
               <DialogHeader>
                 <DialogTitle>Tambah Hari Libur Baru</DialogTitle>
                 <DialogDescription>
-                  Pilih tanggal dan berikan keterangan untuk hari libur. Guru tidak akan ditandai "Belum Absen" pada tanggal ini.
+                  Pilih tanggal dan tipe libur. Guru tidak wajib absen pada tanggal ini.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -156,10 +158,22 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
                   </Popover>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="holiday-type">Tipe Hari Libur</Label>
+                  <Select value={holidayType} onValueChange={(v: any) => setHolidayType(v)}>
+                      <SelectTrigger id="holiday-type">
+                          <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="school">Libur Khusus Sekolah</SelectItem>
+                          <SelectItem value="national">Libur Nasional</SelectItem>
+                      </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="description">Keterangan</Label>
                   <Input
                     id="description"
-                    placeholder="e.g. Hari Raya Idul Fitri"
+                    placeholder="e.g. Libur Akhir Semester Genap"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     required
@@ -182,7 +196,7 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
               <AlertDialogHeader>
                   <AlertDialogTitle>Anda yakin ingin menghapus hari libur ini?</AlertDialogTitle>
                   <AlertDialogDescription>
-                      Tindakan ini tidak dapat dibatalkan. Hari libur <span className="font-bold">{holidayToDelete?.description}</span> pada tanggal <span className="font-bold">{holidayToDelete ? format(parseISO(holidayToDelete.date), "dd MMMM yyyy", { locale: id }) : ''}</span> akan dihapus.
+                      Tindakan ini tidak dapat dibatalkan. Hari libur <span className="font-bold">{holidayToDelete?.description}</span> akan dihapus.
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -197,28 +211,41 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
 
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Hari Libur</CardTitle>
-          <CardDescription>Total hari libur terdaftar: {holidays.length}</CardDescription>
+          <CardTitle>Daftar Hari Libur Terdaftar</CardTitle>
+          <CardDescription>Menampilkan semua libur (Nasional & Sekolah).</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {holidays.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((holiday) => (
-              <div key={holiday.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-semibold">{holiday.description}</p>
-                  <p className="text-sm text-muted-foreground">{format(parseISO(holiday.date), "EEEE, dd MMMM yyyy", { locale: id })}</p>
+              <div key={holiday.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-4">
+                    <div className={cn(
+                        "p-2 rounded-lg",
+                        holiday.type === 'national' ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-600"
+                    )}>
+                        {holiday.type === 'national' ? <Flag className="h-4 w-4" /> : <School className="h-4 w-4" />}
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900">{holiday.description}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-xs text-muted-foreground">{format(parseISO(holiday.date), "EEEE, dd MMMM yyyy", { locale: id })}</p>
+                          <Badge variant="outline" className="text-[9px] uppercase font-bold py-0 h-4">
+                              {holiday.type === 'national' ? 'Nasional' : 'Sekolah'}
+                          </Badge>
+                      </div>
+                    </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setHolidayToDelete(holiday)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                <Button variant="ghost" size="icon" onClick={() => setHolidayToDelete(holiday)} className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full">
                     <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             ))}
           </div>
           {holidays.length === 0 && (
-            <div className="text-center text-muted-foreground py-12">
-              <CalendarOff className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-xl">
+              <CalendarOff className="mx-auto h-12 w-12 text-slate-200 mb-4" />
               <h3 className="mt-2 text-sm font-medium">Belum Ada Hari Libur</h3>
-              <p className="mt-1 text-sm text-gray-500">Tambahkan hari libur agar sistem absensi lebih akurat.</p>
+              <p className="text-xs text-slate-400">Gunakan tombol di atas untuk menambah atau tunggu sinkronisasi otomatis.</p>
             </div>
           )}
         </CardContent>
