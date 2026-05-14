@@ -244,21 +244,9 @@ export default function DashboardLayoutClient({
                 className="rounded-t-[32px] border-t-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[40] animate-in slide-in-from-bottom duration-300"
               >
                 <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
-                <SheetHeader className="px-6 pb-4">
-                  <div className="flex items-center gap-4 text-left">
-                    <Avatar className="h-12 w-12 border-2 border-primary/20">
-                      <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} />
-                      <AvatarFallback>{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <SheetTitle className="text-lg font-bold truncate">{profile?.full_name || 'Guru'}</SheetTitle>
-                      <SheetDescription className="text-xs truncate">{user?.email}</SheetDescription>
-                    </div>
-                  </div>
-                </SheetHeader>
                 
-                <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-32">
-                  <div className="space-y-8 pb-32">
+                <ScrollArea className="h-[calc(85vh-60px)] px-6 pb-6">
+                  <div className="space-y-8">
                     {(isHeadmaster || isAdmin) && (
                       <div className="space-y-3">
                         <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Akses Cepat</p>
@@ -332,16 +320,16 @@ export default function DashboardLayoutClient({
                       </div>
                     )}
 
-                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3 pb-8">
-                      <Button asChild variant="secondary" className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center" onClick={() => setIsMobileMenuOpen(false)}>
+                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3 pb-4">
+                      <Button asChild variant="secondary" className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center border border-slate-200" onClick={() => setIsMobileMenuOpen(false)}>
                         <Link href="/dashboard/settings">
                           <Settings className="w-5 h-5" />
                           <span className="text-[10px] font-bold uppercase tracking-wider">Profil</span>
                         </Link>
                       </Button>
                       <Button 
-                        variant="ghost" 
-                        className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30"
+                        variant="destructive" 
+                        className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20 border-0"
                         onClick={handleLogout}
                       >
                         <LogOut className="w-5 h-5" />
