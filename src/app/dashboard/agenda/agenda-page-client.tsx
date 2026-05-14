@@ -15,12 +15,12 @@ import {
   Sparkles,
   CalendarDays,
   CalendarOff,
-  Info
 } from "lucide-react";
-import { format, isSameDay, parseISO, startOfDay } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
 import { DayPicker, DayContentProps } from "react-day-picker";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
     AlertDialog,
@@ -41,13 +40,13 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
   } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +112,7 @@ export default function AgendaPageClient({
   const eventsByDate = React.useMemo(() => {
     const map = new Map<string, string[]>();
     agendas.forEach(agenda => {
-        const dateKey = format(startOfDay(parseISO(agenda.date)), 'yyyy-MM-dd');
+        const dateKey = agenda.date; // agenda.date is YYYY-MM-DD
         if (!map.has(dateKey)) {
             map.set(dateKey, []);
         }
@@ -128,19 +127,25 @@ export default function AgendaPageClient({
   }, [agendas]);
 
   const CustomDayContent = (props: DayContentProps) => {
-    const dateKey = format(startOfDay(props.date), 'yyyy-MM-dd');
+    const dateKey = format(props.date, 'yyyy-MM-dd');
     const colors = eventsByDate.get(dateKey) || [];
     const holiday = indonesianHolidays.find(h => h.date === dateKey);
 
     return (
       <div className="relative h-full w-full flex items-center justify-center">
-        <span className={cn(holiday && "text-red-600 font-bold")}>{props.date.getDate()}</span>
+        <span className={cn(
+            "relative z-10",
+            holiday && "text-red-600 font-bold"
+        )}>
+            {props.date.getDate()}
+        </span>
         
-        {/* Holiday Indicator */}
+        {/* Red Dot for Holiday */}
         {holiday && (
-            <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-red-500 rounded-full" />
+            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse" />
         )}
 
+        {/* Dots for Agenda Events */}
         {colors.length > 0 && (
           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-0.5">
             {colors.slice(0, 3).map((color, index) => (
@@ -229,7 +234,7 @@ export default function AgendaPageClient({
     }
   }
 
-  const eventsForSelectedDate = agendas.filter(agenda => isSameDay(parseISO(agenda.date), selectedDate));
+  const eventsForSelectedDate = agendas.filter(agenda => agenda.date === format(selectedDate, 'yyyy-MM-dd'));
   const holidayForDate = indonesianHolidays.find(h => h.date === format(selectedDate, 'yyyy-MM-dd'));
 
   return (
@@ -512,6 +517,7 @@ export default function AgendaPageClient({
                                                 <DropdownMenuItem onClick={() => handleOpenEditDialog(event)} className="rounded-lg">
                                                     <Edit className="mr-2 h-4 w-4" /> Ubah
                                                 </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
                                                 <AlertDialogTrigger asChild>
                                                     <DropdownMenuItem className="rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50">
                                                         <Trash2 className="mr-2 h-4 w-4" /> Hapus

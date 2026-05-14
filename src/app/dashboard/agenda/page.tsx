@@ -5,11 +5,31 @@ import AgendaPageClient from "./agenda-page-client";
 async function getIndonesianHolidays() {
     try {
         const year = new Date().getFullYear();
-        const res = await fetch(`https://api-hari-libur.vercel.app/api?year=${year}`, {
-            next: { revalidate: 86400 } // Cache for 24 hours
-        });
-        if (!res.ok) return [];
-        return await res.json();
+        // Fetch current and next year to cover planning
+        const [thisYearRes, nextYearRes] = await Promise.all([
+            fetch(`https://api-hari-libur.vercel.app/api?year=${year}`, { 
+                next: { revalidate: 86400 },
+                headers: { 'Accept': 'application/json' }
+            }),
+            fetch(`https://api-hari-libur.vercel.app/api?year=${year + 1}`, { 
+                next: { revalidate: 86400 },
+                headers: { 'Accept': 'application/json' }
+            })
+        ]);
+        
+        const thisYearData = thisYearRes.ok ? await thisYearRes.json() : [];
+        const nextYearData = nextYearRes.ok ? await nextYearRes.json() : [];
+        
+        const allData = [
+            ...(Array.isArray(thisYearData) ? thisYearData : []),
+            ...(Array.isArray(nextYearData) ? nextYearData : [])
+        ];
+
+        return allData.map((h: any) => ({
+            date: h.holiday_date,
+            name: h.holiday_name,
+            is_holiday: h.is_holiday
+        }));
     } catch (error) {
         console.error("Failed to fetch holidays:", error);
         return [];
@@ -22,12 +42,5 @@ export default async function AgendaPage() {
         getIndonesianHolidays()
     ]);
 
-    // Map API structure to a simpler internal format
-    const formattedHolidays = Array.isArray(holidays) ? holidays.map((h: any) => ({
-        date: h.holiday_date,
-        name: h.holiday_name,
-        is_holiday: true
-    })) : [];
-
-    return <AgendaPageClient initialAgendas={agendas} indonesianHolidays={formattedHolidays} />;
+    return <AgendaPageClient initialAgendas={agendas} indonesianHolidays={holidays} />;
 }
