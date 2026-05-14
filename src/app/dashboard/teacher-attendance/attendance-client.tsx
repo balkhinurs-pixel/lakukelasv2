@@ -4,18 +4,17 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, XCircle, Clock, CalendarDays } from "lucide-react";
+import { Loader2, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { recordTeacherAttendance } from "@/lib/actions";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn, formatTime } from "@/lib/utils";
 import type { TeacherAttendance, Profile } from "@/lib/types";
 import DigitalClock from "./DigitalClock";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +40,10 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
     const { toast } = useToast();
 
     const handleLeaveRequest = async () => {
+        if (!reason) {
+            toast({ title: "Gagal", description: "Alasan harus diisi.", variant: "destructive" });
+            return;
+        }
         setLoading(true);
         const formData = new FormData();
         formData.append('type', 'leave');
@@ -51,6 +54,8 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
             toast({ title: "Berhasil", description: `Tercatat ${leaveType}.` });
             onLeaveSubmitted();
             setIsOpen(false);
+        } else {
+            toast({ title: "Gagal", description: result.error || "Gagal mengirim pengajuan.", variant: "destructive" });
         }
         setLoading(false);
     };
@@ -58,18 +63,43 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" className="w-full text-slate-500 font-bold h-12 rounded-2xl">Ajukan Izin / Sakit</Button>
+                <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium h-12 rounded-xl shadow-md transition-all active:scale-95">
+                    Ajukan Izin / Sakit
+                </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-3xl">
-                <DialogHeader><DialogTitle>Izin Tidak Masuk</DialogTitle></DialogHeader>
+            <DialogContent className="rounded-2xl">
+                <DialogHeader>
+                    <DialogTitle>Izin Tidak Masuk</DialogTitle>
+                    <DialogDescription>Pilih jenis ketidakhadiran dan berikan alasan yang jelas.</DialogDescription>
+                </DialogHeader>
                 <div className="space-y-4 py-4">
                     <RadioGroup value={leaveType} onValueChange={(v: any) => setLeaveType(v)} className="flex gap-4">
-                        <div className="flex items-center space-x-2 border p-3 rounded-xl flex-1"><RadioGroupItem value="Sakit" id="sakit" /><Label htmlFor="sakit">Sakit</Label></div>
-                        <div className="flex items-center space-x-2 border p-3 rounded-xl flex-1"><RadioGroupItem value="Izin" id="izin" /><Label htmlFor="izin">Izin</Label></div>
+                        <div className="flex items-center space-x-2 border p-3 rounded-xl flex-1 bg-white cursor-pointer hover:bg-slate-50">
+                            <RadioGroupItem value="Sakit" id="sakit" />
+                            <Label htmlFor="sakit" className="cursor-pointer">Sakit</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 border p-3 rounded-xl flex-1 bg-white cursor-pointer hover:bg-slate-50">
+                            <RadioGroupItem value="Izin" id="izin" />
+                            <Label htmlFor="izin" className="cursor-pointer">Izin</Label>
+                        </div>
                     </RadioGroup>
-                    <Textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="Alasan..." className="rounded-xl" />
+                    <div className="space-y-2">
+                        <Label htmlFor="reason">Alasan Ketidakhadiran</Label>
+                        <Textarea 
+                            id="reason"
+                            value={reason} 
+                            onChange={e => setReason(e.target.value)} 
+                            placeholder="Tulis alasan lengkap di sini..." 
+                            className="rounded-xl min-h-[100px]" 
+                        />
+                    </div>
                 </div>
-                <DialogFooter><Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-12 rounded-xl">Kirim Pengajuan</Button></DialogFooter>
+                <DialogFooter>
+                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700">
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Kirim Pengajuan
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )
@@ -92,26 +122,46 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
         setStatus('checking');
         setMessage('Mencari lokasi...');
         try {
-            const pos: any = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej));
+            const pos: any = await new Promise((res, rej) => {
+                navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true });
+            });
             const formData = new FormData();
             formData.append('type', type);
             formData.append('latitude', pos.coords.latitude.toString());
             formData.append('longitude', pos.coords.longitude.toString());
+            
             const result = await recordTeacherAttendance(formData);
+            
             if (result.success) {
                 setStatus('success');
                 setMessage(result.message);
-                window.location.reload();
+                toast({ title: "Berhasil", description: result.message });
+                setTimeout(() => window.location.reload(), 1500);
             } else {
                 setStatus('error');
-                setMessage(result.error || 'Gagal');
+                setMessage(result.error || 'Gagal melakukan absensi.');
+                toast({ title: "Gagal", description: result.error, variant: "destructive" });
             }
         } catch (e: any) {
             setStatus('error');
-            setMessage(e.message || 'Kesalahan GPS');
+            let msg = 'Kesalahan GPS: Pastikan izin lokasi aktif.';
+            if (e.code === 1) msg = "Izin lokasi ditolak oleh pengguna.";
+            setMessage(msg);
+            toast({ title: "Kesalahan", description: msg, variant: "destructive" });
         }
         setLoading(false);
     };
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'Tepat Waktu': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+            case 'Terlambat': return 'bg-amber-100 text-amber-800 border-amber-200';
+            case 'Sakit': return 'bg-orange-100 text-orange-800 border-orange-200';
+            case 'Izin': return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'Tidak Hadir': return 'bg-red-100 text-red-800 border-red-200';
+            default: return 'bg-slate-100 text-slate-800 border-slate-200';
+        }
+    }
 
     return (
         <div className="space-y-6 p-1">
@@ -119,60 +169,112 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
 
             <DigitalClock />
 
-            <Card className="border-0 shadow-2xl rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b p-8 pb-6 text-center sm:text-left">
-                    <CardTitle className="text-xl font-bold">Lakukan Absen Sekarang</CardTitle>
+            <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-white">
+                <CardHeader className="bg-slate-50/50 border-b p-6 text-center sm:text-left">
+                    <CardTitle className="text-xl font-bold text-slate-800">Lakukan Absen Sekarang</CardTitle>
                 </CardHeader>
-                <CardContent className="p-8 space-y-8">
+                <CardContent className="p-6 sm:p-8 space-y-6">
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button size="lg" className="h-20 sm:h-24 px-8 text-xl font-black rounded-3xl bg-slate-900 text-white flex-1" onClick={() => handleAttendance('in')} disabled={loading}>
+                        <Button 
+                            size="lg" 
+                            className="h-16 px-8 text-lg font-medium rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex-1 shadow-lg shadow-emerald-600/20 transition-all active:scale-95" 
+                            onClick={() => handleAttendance('in')} 
+                            disabled={loading}
+                        >
                             ABSEN MASUK
                         </Button>
-                        <Button size="lg" variant="outline" className="h-20 sm:h-24 px-8 text-xl font-black rounded-3xl border-2 border-slate-200 text-slate-600 flex-1" onClick={() => handleAttendance('out')} disabled={loading}>
+                        <Button 
+                            size="lg" 
+                            className="h-16 px-8 text-lg font-medium rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex-1 shadow-lg shadow-rose-600/20 transition-all active:scale-95" 
+                            onClick={() => handleAttendance('out')} 
+                            disabled={loading}
+                        >
                             ABSEN PULANG
                         </Button>
                     </div>
-                    <div className="flex justify-center border-t pt-6"><LeaveRequestDialog onLeaveSubmitted={() => window.location.reload()} /></div>
+                    
+                    <div className="flex justify-center pt-4 border-t border-slate-100">
+                        <LeaveRequestDialog onLeaveSubmitted={() => window.location.reload()} />
+                    </div>
+
                     <AnimatePresence>
                         {status !== 'idle' && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                <Alert className="rounded-3xl bg-slate-50">{message}</Alert>
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-4"
+                            >
+                                <Alert className={cn(
+                                    "rounded-xl border-0 shadow-sm",
+                                    status === 'success' ? "bg-emerald-50 text-emerald-800" : 
+                                    status === 'error' ? "bg-rose-50 text-rose-800" : "bg-blue-50 text-blue-800"
+                                )}>
+                                    <div className="flex items-center gap-2">
+                                        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        <p className="text-sm font-medium">{message}</p>
+                                    </div>
+                                </Alert>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-xl rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b p-8">
-                    <div className="flex justify-between items-center">
-                        <CardTitle className="text-xl font-bold">Riwayat</CardTitle>
+            <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-white">
+                <CardHeader className="bg-slate-50/50 border-b p-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <CalendarDays className="h-5 w-5 text-slate-400" />
+                            <CardTitle className="text-xl font-bold text-slate-800">Riwayat Kehadiran</CardTitle>
+                        </div>
                         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                            <SelectTrigger className="w-40 rounded-xl"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="w-full sm:w-48 rounded-xl bg-white">
+                                <SelectValue placeholder="Pilih Bulan" />
+                            </SelectTrigger>
                             <SelectContent className="rounded-xl">
                                 {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
                 </CardHeader>
-                <CardContent className="p-8">
+                <CardContent className="p-0">
                     {filteredHistory.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="divide-y divide-slate-100">
                             {filteredHistory.map((r) => (
-                                <div key={r.id} className="border p-4 rounded-3xl flex justify-between items-center">
-                                    <div>
-                                        <p className="font-bold">{format(parseISO(r.date), 'dd MMM yyyy', {locale: id})}</p>
-                                        <p className="text-xs text-muted-foreground uppercase">{format(parseISO(r.date), 'eeee', {locale: id})}</p>
+                                <div key={r.id} className="p-5 flex justify-between items-center hover:bg-slate-50/50 transition-colors">
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-slate-900 truncate">
+                                            {format(parseISO(r.date), 'dd MMMM yyyy', {locale: id})}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-0.5">
+                                            {format(parseISO(r.date), 'eeee', {locale: id})}
+                                        </p>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="font-mono font-bold text-sm">{r.checkIn || '--'} / {r.checkOut || '--'}</p>
-                                        <Badge variant="outline" className="mt-1">{r.status}</Badge>
+                                    <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
+                                        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
+                                            <div className="text-center">
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase leading-none mb-1">In</p>
+                                                <p className="font-mono font-bold text-sm text-slate-700 leading-none">{r.checkIn || '--:--'}</p>
+                                            </div>
+                                            <div className="w-px h-6 bg-slate-200" />
+                                            <div className="text-center">
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase leading-none mb-1">Out</p>
+                                                <p className="font-mono font-bold text-sm text-slate-700 leading-none">{r.checkOut || '--:--'}</p>
+                                            </div>
+                                        </div>
+                                        <Badge variant="outline" className={cn("px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", getStatusBadge(r.status))}>
+                                            {r.status}
+                                        </Badge>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-20 opacity-50"><Clock className="mx-auto mb-2 h-10 w-10"/><p>Tidak ada data</p></div>
+                        <div className="text-center py-20 opacity-40">
+                            <Clock className="mx-auto mb-3 h-12 w-12 text-slate-300"/>
+                            <p className="text-sm font-medium">Tidak ada riwayat absensi bulan ini</p>
+                        </div>
                     )}
                 </CardContent>
             </Card>
