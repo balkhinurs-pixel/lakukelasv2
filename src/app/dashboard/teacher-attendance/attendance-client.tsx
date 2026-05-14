@@ -54,6 +54,7 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
             toast({ title: "Berhasil", description: `Tercatat ${leaveType}.` });
             onLeaveSubmitted();
             setIsOpen(false);
+            setReason('');
         } else {
             toast({ title: "Gagal", description: result.error || "Gagal mengirim pengajuan.", variant: "destructive" });
         }
@@ -63,41 +64,108 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="w-full border-orange-200 bg-orange-50/50 text-orange-700 hover:bg-orange-100 font-medium h-14 rounded-xl transition-all active:scale-95 text-base tracking-wide shadow-sm">
-                    Ajukan Izin / Sakit
+                <Button variant="outline" className="w-full border-slate-200 bg-slate-50/50 text-slate-500 hover:bg-slate-100 font-medium h-14 rounded-xl transition-all active:scale-95 text-xs tracking-wide">
+                    Lainnya: Ajukan Izin / Sakit
                 </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-xl">
-                <DialogHeader>
-                    <DialogTitle>Izin Tidak Masuk</DialogTitle>
-                    <DialogDescription>Pilih jenis ketidakhadiran dan berikan alasan yang jelas.</DialogDescription>
+            <DialogContent className="rounded-[2.5rem] max-w-[92vw] sm:max-w-md border-0 shadow-2xl p-6 sm:p-10 overflow-hidden">
+                <DialogHeader className="pb-6 space-y-3">
+                    <DialogTitle className="text-2xl font-bold text-center text-slate-900 tracking-tight">Izin Tidak Masuk</DialogTitle>
+                    <DialogDescription className="text-center text-slate-500 text-sm">Pilih jenis ketidakhadiran dan berikan alasan yang jelas untuk dokumentasi sistem.</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <RadioGroup value={leaveType} onValueChange={(v: any) => setLeaveType(v)} className="flex gap-4">
-                        <div className="flex items-center space-x-2 border p-3 rounded-xl flex-1 bg-white cursor-pointer hover:bg-slate-50">
-                            <RadioGroupItem value="Sakit" id="sakit" />
-                            <Label htmlFor="sakit" className="cursor-pointer font-medium">Sakit</Label>
-                        </div>
-                        <div className="flex items-center space-x-2 border p-3 rounded-xl flex-1 bg-white cursor-pointer hover:bg-slate-50">
-                            <RadioGroupItem value="Izin" id="izin" />
-                            <Label htmlFor="izin" className="cursor-pointer font-medium">Izin</Label>
-                        </div>
+                
+                <div className="space-y-8 py-2">
+                    <RadioGroup value={leaveType} onValueChange={(v: any) => setLeaveType(v)} className="grid grid-cols-2 gap-4">
+                        <label 
+                            htmlFor="sakit" 
+                            className={cn(
+                                "relative flex flex-col items-center justify-center p-6 border-2 rounded-[2rem] cursor-pointer transition-all duration-300 group",
+                                leaveType === 'Sakit' 
+                                    ? "border-emerald-500 bg-emerald-50/50 shadow-inner" 
+                                    : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/30"
+                            )}
+                        >
+                            <RadioGroupItem value="Sakit" id="sakit" className="sr-only" />
+                            <motion.div 
+                                animate={leaveType === 'Sakit' ? { y: [0, -5, 0] } : {}}
+                                transition={{ repeat: Infinity, duration: 2 }}
+                                className={cn(
+                                    "text-5xl mb-3 transition-all duration-300",
+                                    leaveType === 'Sakit' ? "drop-shadow-lg scale-110" : "grayscale opacity-50"
+                                )}
+                            >
+                                🤒
+                            </motion.div>
+                            <span className={cn("font-bold text-sm", leaveType === 'Sakit' ? "text-emerald-700" : "text-slate-600")}>Sakit</span>
+                            <span className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-tighter">Izin Medis</span>
+                            
+                            {leaveType === 'Sakit' && (
+                                <motion.div 
+                                    layoutId="leaveSelectionCheck" 
+                                    className="absolute top-3 right-3 bg-emerald-500 text-white p-1 rounded-full shadow-lg"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                >
+                                    <div className="w-2 h-2 rounded-full bg-white" />
+                                </motion.div>
+                            )}
+                        </label>
+                        
+                        <label 
+                            htmlFor="izin" 
+                            className={cn(
+                                "relative flex flex-col items-center justify-center p-6 border-2 rounded-[2rem] cursor-pointer transition-all duration-300 group",
+                                leaveType === 'Izin' 
+                                    ? "border-blue-500 bg-blue-50/50 shadow-inner" 
+                                    : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/30"
+                            )}
+                        >
+                            <RadioGroupItem value="Izin" id="izin" className="sr-only" />
+                            <motion.div 
+                                animate={leaveType === 'Izin' ? { scale: [1, 1.1, 1] } : {}}
+                                transition={{ repeat: Infinity, duration: 2 }}
+                                className={cn(
+                                    "text-5xl mb-3 transition-all duration-300",
+                                    leaveType === 'Izin' ? "drop-shadow-lg scale-110" : "grayscale opacity-50"
+                                )}
+                            >
+                                📩
+                            </motion.div>
+                            <span className={cn("font-bold text-sm", leaveType === 'Izin' ? "text-blue-700" : "text-slate-600")}>Izin</span>
+                            <span className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-tighter">Keperluan</span>
+
+                            {leaveType === 'Izin' && (
+                                <motion.div 
+                                    layoutId="leaveSelectionCheck" 
+                                    className="absolute top-3 right-3 bg-blue-500 text-white p-1 rounded-full shadow-lg"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                >
+                                    <div className="w-2 h-2 rounded-full bg-white" />
+                                </motion.div>
+                            )}
+                        </label>
                     </RadioGroup>
-                    <div className="space-y-2">
-                        <Label htmlFor="reason">Alasan Ketidakhadiran</Label>
+                    
+                    <div className="space-y-4">
+                        <Label htmlFor="reason" className="text-sm font-black text-slate-800 uppercase tracking-widest ml-1">Alasan Detail</Label>
                         <Textarea 
                             id="reason"
                             value={reason} 
                             onChange={e => setReason(e.target.value)} 
-                            placeholder="Tulis alasan lengkap di sini..." 
-                            className="rounded-xl min-h-[100px]" 
+                            placeholder="Contoh: Mengantar anak imunisasi, kontrol kesehatan rutin, dll..." 
+                            className="rounded-[1.5rem] min-h-[160px] bg-slate-50 border-slate-100 focus:bg-white focus:border-slate-900 transition-all text-base resize-none p-5 shadow-inner border-0" 
                         />
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-medium">
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Kirim Pengajuan
+                
+                <DialogFooter className="pt-8">
+                    <Button 
+                        onClick={handleLeaveRequest} 
+                        disabled={loading} 
+                        className="w-full h-16 rounded-[1.5rem] bg-slate-900 hover:bg-black text-white font-bold shadow-2xl shadow-slate-300 transition-all active:scale-95 text-lg tracking-tight"
+                    >
+                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Kirim Pengajuan Sekarang"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -171,7 +239,7 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
 
             <Card className="border-0 shadow-xl rounded-xl overflow-hidden bg-white">
                 <CardHeader className="bg-slate-50/50 border-b p-6 text-center">
-                    <CardTitle className="text-xl font-medium text-slate-800">Lakukan Absen Sekarang</CardTitle>
+                    <CardTitle className="text-xl font-medium text-slate-800 tracking-tight">Lakukan Absen Sekarang</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 sm:p-10 space-y-6">
                     <div className="flex flex-col gap-5">
