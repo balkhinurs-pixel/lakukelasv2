@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LogIn, LogOut, Loader2, CheckCircle, XCircle, Clock, FileText, Navigation, History, ShieldAlert } from "lucide-react";
+import { LogIn, LogOut, Loader2, CheckCircle, XCircle, Clock, FileText, Navigation, History, ShieldAlert, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { recordTeacherAttendance } from "@/lib/actions";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { TeacherAttendance, Profile } from "@/lib/types";
@@ -19,6 +19,17 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const months = [
+    { value: "all", label: 'Semua Bulan' },
+    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
+    { value: "3", label: 'Maret' }, { value: "4", label: 'April' },
+    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' },
+    { value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' },
+    { value: "9", label: 'September' }, { value: "10", label: 'Oktober' },
+    { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
+];
 
 function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void }) {
     const [isOpen, setIsOpen] = React.useState(false);
@@ -57,7 +68,6 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
                 <Button variant="ghost" className="w-full text-slate-500 hover:text-primary hover:bg-primary/5 font-bold h-12 rounded-2xl transition-all">
-                    <FileText className="mr-2 h-5 w-5" />
                     Ajukan Izin / Sakit
                 </Button>
             </DialogTrigger>
@@ -115,7 +125,7 @@ export default function TeacherAttendanceClient({
     const [status, setStatus] = React.useState<'idle' | 'checking' | 'success' | 'error'>('idle');
     const [message, setMessage] = React.useState('');
     const [locationSupported, setLocationSupported] = React.useState(true);
-    const [attendanceHistory, setAttendanceHistory] = React.useState<TeacherAttendance[]>(initialHistory);
+    const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
 
     const { toast } = useToast();
 
@@ -126,6 +136,14 @@ export default function TeacherAttendanceClient({
             setMessage('Browser Anda tidak mendukung fitur lokasi.');
         }
     }, []);
+
+    const filteredHistory = React.useMemo(() => {
+        if (selectedMonth === 'all') return initialHistory;
+        return initialHistory.filter(record => {
+            const date = parseISO(record.date);
+            return (date.getMonth() + 1).toString() === selectedMonth;
+        });
+    }, [initialHistory, selectedMonth]);
 
     const getCurrentLocation = (): Promise<{ latitude: number; longitude: number }> => {
         return new Promise((resolve, reject) => {
@@ -221,7 +239,7 @@ export default function TeacherAttendanceClient({
 
     return (
         <div className="space-y-8 max-w-4xl mx-auto pb-10 px-1">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-center md:text-left">
                 <div>
                     <h1 className="text-3xl font-black font-headline text-slate-900 tracking-tight">Presensi Lokasi</h1>
                     <p className="text-slate-500 font-medium">Lakukan absensi mandiri berbasis GPS sekolah.</p>
@@ -246,7 +264,7 @@ export default function TeacherAttendanceClient({
                                 onClick={() => handleAttendance('in')}
                                 disabled={loading || !locationSupported}
                             >
-                                <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                                <div className="flex flex-col items-center">
                                     <span>ABSEN MASUK</span>
                                     <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest mt-1">Mulai Tugas</span>
                                 </div>
@@ -259,7 +277,7 @@ export default function TeacherAttendanceClient({
                                 onClick={() => handleAttendance('out')}
                                 disabled={loading || !locationSupported}
                             >
-                                <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                                <div className="flex flex-col items-center">
                                     <span>ABSEN PULANG</span>
                                     <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest mt-1">Selesai Tugas</span>
                                 </div>
@@ -319,32 +337,42 @@ export default function TeacherAttendanceClient({
 
             <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden">
                 <CardHeader className="bg-slate-50/50 border-b p-8 pb-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
-                                <History className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-xl font-bold">Riwayat Absensi</CardTitle>
-                                <CardDescription className="font-medium">Rekaman kehadiran Anda 30 hari terakhir.</CardDescription>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                        <div>
+                            <CardTitle className="text-xl font-bold">Riwayat Absensi</CardTitle>
+                            <CardDescription className="font-medium">Rekaman kehadiran Anda bulan ini.</CardDescription>
+                        </div>
+                        <div className="w-full sm:w-64">
+                            <div className="flex items-center gap-2 bg-white rounded-2xl border border-slate-200 px-3 py-1 shadow-sm">
+                                <CalendarDays className="h-4 w-4 text-slate-400" />
+                                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                    <SelectTrigger className="border-0 shadow-none focus:ring-0 font-bold text-slate-700 h-10">
+                                        <SelectValue placeholder="Pilih Bulan" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl">
+                                        {months.map(m => (
+                                            <SelectItem key={m.value} value={m.value} className="rounded-xl">{m.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-8">
-                    {attendanceHistory.length > 0 ? (
+                    {filteredHistory.length > 0 ? (
                         <div className="space-y-4">
                             {/* Mobile list */}
                             <div className="md:hidden space-y-4">
-                                {attendanceHistory.map((record) => (
+                                {filteredHistory.map((record) => (
                                     <div key={record.id} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="space-y-0.5">
                                                 <p className="font-black text-slate-900 text-lg">
-                                                    {format(new Date(record.date), 'dd MMMM', { locale: id })}
+                                                    {format(parseISO(record.date), 'dd MMMM', { locale: id })}
                                                 </p>
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                                    {format(new Date(record.date), 'eeee', { locale: id })}
+                                                    {format(parseISO(record.date), 'eeee', { locale: id })}
                                                 </p>
                                             </div>
                                             <Badge variant="outline" className={cn("px-3 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-wider", getStatusBadge(record.status || 'Tidak Hadir'))}>
@@ -387,10 +415,10 @@ export default function TeacherAttendanceClient({
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {attendanceHistory.map((record) => (
+                                        {filteredHistory.map((record) => (
                                             <TableRow key={record.id} className="hover:bg-slate-50/30 transition-colors">
                                                 <TableCell className="font-bold text-slate-900 py-5 pl-6">
-                                                    {format(new Date(record.date), 'eeee, dd MMMM yyyy', { locale: id })}
+                                                    {format(parseISO(record.date), 'eeee, dd MMMM yyyy', { locale: id })}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     <span className={cn(
@@ -426,8 +454,8 @@ export default function TeacherAttendanceClient({
                                     <Clock className="h-12 w-12 text-slate-200" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-400">Belum Ada Riwayat</h3>
-                                    <p className="text-slate-400 font-medium">Absensi harian Anda akan muncul di sini.</p>
+                                    <h3 className="text-xl font-bold text-slate-400">Tidak Ada Data</h3>
+                                    <p className="text-slate-400 font-medium">Data absensi untuk bulan yang dipilih belum tersedia.</p>
                                 </div>
                             </div>
                         </div>
