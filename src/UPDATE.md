@@ -1,4 +1,5 @@
 
+
 # Rencana Pembaruan Sistem Absensi Guru (V4.6) - SELESAI
 Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan kehadiran guru.
 
@@ -7,6 +8,24 @@ Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan 
 
 ## 2. Monitoring Kepala Sekolah (TERIMPLEMENTASI - V4.6)
 - Akses Dashboard & Rekap Kehadiran.
+
+---
+
+# Update V6.2: Manajemen Libur Nasional Terpisah & Hapus Massal (TERIMPLEMENTASI)
+
+Optimalisasi UI dan fungsionalitas untuk manajemen hari libur nasional.
+
+## 1. Antarmuka Terpisah (Tabs)
+- **Menu Tab**: Memisahkan "Libur Sekolah" dan "Libur Nasional" untuk kenyamanan visual.
+- **Counter Data**: Menampilkan jumlah hari libur pada setiap kategori tab.
+
+## 2. Pembersihan Data Massal
+- **Fitur Baru**: Tombol "Bersihkan Data Nasional" di tab Libur Nasional.
+- **Kegunaan**: Menghapus seluruh record `type: national` sekaligus untuk persiapan sinkronisasi ulang yang bersih (mencegah data lama menumpuk).
+
+## 3. Sinkronisasi API libur.deno.dev
+- **Endpoint**: Menarik data terupdate tahun 2025 dan 2026.
+- **Deduplikasi**: Menggunakan `upsert` pada kolom `date` untuk menjamin tidak ada data ganda.
 
 ---
 

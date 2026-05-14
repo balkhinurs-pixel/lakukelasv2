@@ -10,21 +10,18 @@ export async function syncNationalHolidaysManual() {
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
     try {
-        // Menggunakan API libur.deno.dev yang lebih update
-        // Kita akan menarik data tahun 2025 dan 2026
         const years = [2025, 2026];
         let allHolidays: any[] = [];
 
         for (const year of years) {
             try {
-                // API libur.deno.dev biasanya mengembalikan array objek: { date, name, is_holiday }
                 const res = await fetch(`https://libur.deno.dev/api?year=${year}`);
                 if (res.ok) {
                     const rawList = await res.json();
                     
                     if (Array.isArray(rawList)) {
                         const mapped = rawList
-                            .filter((h: any) => h.is_holiday === true) // Pastikan hanya hari libur (bukan sekedar tanggal penting)
+                            .filter((h: any) => h.is_holiday === true)
                             .map((h: any) => ({
                                 date: h.date,
                                 description: h.name,
@@ -42,7 +39,6 @@ export async function syncNationalHolidaysManual() {
             return { success: false, error: "Gagal mengambil data dari API libur.deno.dev." };
         }
 
-        // Upsert ke database (mencegah duplikasi berdasarkan kolom date)
         const { error } = await supabase
             .from('holidays')
             .upsert(allHolidays, { onConflict: 'date' });
@@ -54,11 +50,32 @@ export async function syncNationalHolidaysManual() {
         
         return { 
             success: true, 
-            message: `Berhasil mensinkronkan ${allHolidays.length} hari libur nasional tahun 2025-2026 dari sumber terupdate.` 
+            message: `Berhasil mensinkronkan ${allHolidays.length} hari libur nasional tahun 2025-2026.` 
         };
     } catch (error: any) {
         console.error('[SYNC-ERR]', error.message);
         return { success: false, error: "Terjadi kesalahan saat menyimpan ke database." };
+    }
+}
+
+export async function clearNationalHolidays() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    try {
+        const { error } = await supabase
+            .from('holidays')
+            .delete()
+            .eq('type', 'national');
+
+        if (error) throw error;
+
+        revalidatePath('/admin/settings/holidays');
+        revalidatePath('/dashboard/agenda');
+        return { success: true, message: "Seluruh data libur nasional berhasil dihapus." };
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 }
 
@@ -347,7 +364,6 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
          if(!adminUser) return { success: false, error: "Admin tidak ditemukan." };
          targetUserId = adminUser.id;
 
-         // --- Hapus logo lama jika ada ---
          if (adminUser.school_logo_url) {
             const urlParts = adminUser.school_logo_url.split('/avatars/');
             if (urlParts.length > 1) {
@@ -356,7 +372,6 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
             }
          }
     } else {
-        // --- Hapus avatar lama jika ada ---
         const { data: profile } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single();
         if (profile?.avatar_url) {
             const urlParts = profile.avatar_url.split('/avatars/');
@@ -438,7 +453,7 @@ export async function saveWhatsAppSettings(token: string, enabled: boolean, time
     const supabase = createClient();
     
     const cleanToken = token.trim();
-    const cleanAppUrl = appUrl.trim().replace(/\/$/, ''); // Remove trailing slash
+    const cleanAppUrl = appUrl.trim().replace(/\/$/, '');
 
     const settingsToSave = [
         { key: 'fonnte_api_token', value: cleanToken },
