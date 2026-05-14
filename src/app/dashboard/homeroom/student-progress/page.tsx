@@ -1,5 +1,5 @@
 
-import { getHomeroomStudentProgress, getHomeroomTodayStatus } from "@/lib/data";
+import { getHomeroomStudentProgress } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -17,27 +17,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { TrendingUp, UserCheck, TrendingDown, UserX, Users2, Info, Percent, Award, Clock, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { TrendingUp, UserCheck, TrendingDown, UserX, Info, Percent, Award } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-
-const AttendanceBadge = ({ status }: { status: string }) => {
-    switch (status) {
-        case 'Hadir': return <Badge className="bg-green-600"><CheckCircle2 className="w-3 h-3 mr-1" /> Hadir</Badge>;
-        case 'Sakit': return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" /> Sakit</Badge>;
-        case 'Izin': return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200"><Clock className="w-3 h-3 mr-1" /> Izin</Badge>;
-        case 'Alpha': return <Badge variant="destructive" className="bg-red-50 text-red-700 border-red-200"><XCircle className="w-3 h-3 mr-1" /> Alpha</Badge>;
-        default: return <Badge variant="outline" className="text-slate-400 border-slate-200 italic">Belum Terabsen</Badge>;
-    }
-}
+import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
 export default async function StudentProgressPage() {
-    const [progressData, todayStatus] = await Promise.all([
-        getHomeroomStudentProgress(),
-        getHomeroomTodayStatus()
-    ]);
-
+    const progressData = await getHomeroomStudentProgress();
     const { studentData, className } = progressData;
 
     const getStatusInfo = (status: string) => {
@@ -70,104 +55,64 @@ export default async function StudentProgressPage() {
     }
     
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold font-headline text-slate-900 tracking-tight">Monitoring Wali Kelas - {className}</h1>
-                    <p className="text-muted-foreground">Status kehadiran real-time dan analisis perkembangan siswa.</p>
-                </div>
+        <div className="space-y-8 p-1">
+            <HandWrittenTitle 
+                title={`Progres Siswa ${className}`} 
+                subtitle="Wali Kelas"
+                className="py-4 md:py-6"
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Alert className="bg-indigo-50 border-indigo-200">
+                    <Info className="h-4 w-4 text-indigo-600" />
+                    <AlertTitle className="text-indigo-800 font-bold uppercase tracking-tight">Kriteria Analisis</AlertTitle>
+                    <AlertDescription className="text-indigo-700 text-sm">
+                        Status performa siswa dihitung berdasarkan kombinasi rata-rata nilai akademik dan persentase kehadiran selama semester berjalan.
+                    </AlertDescription>
+                </Alert>
             </div>
 
-            {/* LIVE TODAY STATUS SECTION */}
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-600 text-white overflow-hidden">
-                <CardHeader className="relative z-10">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner">
-                                <Clock className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-xl">Kehadiran Live Hari Ini</CardTitle>
-                                <CardDescription className="text-indigo-100 opacity-80">Update status terakhir dari guru mata pelajaran hari ini.</CardDescription>
-                            </div>
-                        </div>
-                        <Badge variant="outline" className="bg-white/10 text-white border-white/20 animate-pulse font-bold">LIVE UPDATE</Badge>
-                    </div>
-                </CardHeader>
-                <CardContent className="relative z-10 pt-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {todayStatus?.statuses.slice(0, 6).map((s) => (
-                            <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300">
-                                <div className="min-w-0">
-                                    <p className="font-bold truncate text-sm">{s.name}</p>
-                                    <p className="text-[10px] text-indigo-100 uppercase tracking-widest mt-0.5">Status Sekarang</p>
-                                </div>
-                                <AttendanceBadge status={s.status} />
-                            </div>
-                        ))}
-                    </div>
-                    {todayStatus && todayStatus.statuses.length > 6 && (
-                        <p className="text-center text-[10px] text-indigo-100 mt-4 font-medium italic opacity-70">
-                            + {todayStatus.statuses.length - 6} siswa lainnya tercatat di sistem.
-                        </p>
-                    )}
-                    {!todayStatus || todayStatus.statuses.length === 0 && (
-                        <div className="text-center py-8 opacity-60">
-                            <p className="text-sm font-medium italic">Belum ada input presensi dari guru mapel hari ini.</p>
-                        </div>
-                    )}
-                </CardContent>
-                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-            </Card>
-
-            {/* PERFORMANCE ANALYSIS SECTION */}
-            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-blue-100 text-blue-600 shadow-sm">
-                            <Award className="h-5 w-5" />
+            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-[2rem] overflow-hidden">
+                <CardHeader className="bg-slate-50/30 border-b border-slate-100 px-6 py-8">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-2xl bg-blue-100 text-blue-600 shadow-inner">
+                            <Award className="h-6 w-6" />
                         </div>
                         <div>
-                            <CardTitle className="text-xl">Analisis Performa Semester</CardTitle>
+                            <CardTitle className="text-2xl font-bold tracking-tight">Peta Performa Siswa</CardTitle>
                             <CardDescription>
-                            Status dihitung dari kombinasi rata-rata nilai dan persentase kehadiran.
+                                Pemantauan holistik terhadap perkembangan belajar seluruh anak didik.
                             </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                     {studentData.length > 0 ? (
                         <>
                         {/* Mobile View */}
-                        <div className="md:hidden space-y-4">
+                        <div className="md:hidden divide-y divide-slate-100">
                             {studentData.map((student) => {
                                 const StatusIcon = getStatusInfo(student.status).icon;
                                 return (
-                                    <div key={student.id} className="border border-slate-100 rounded-2xl p-5 space-y-4 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-                                        <div className="flex justify-between items-start">
+                                    <div key={student.id} className="p-6 space-y-4 hover:bg-slate-50/50 transition-colors">
+                                        <div className="flex justify-between items-start gap-4">
                                             <div className="min-w-0">
-                                                <p className="font-bold text-slate-900 leading-tight truncate">{student.name}</p>
-                                                <p className="text-[10px] text-muted-foreground font-bold tracking-widest mt-1 uppercase">NIS: {student.nis}</p>
+                                                <p className="font-black text-slate-900 leading-tight truncate text-lg">{student.name}</p>
+                                                <p className="text-[10px] text-slate-400 font-black tracking-widest mt-1 uppercase">NIS: {student.nis}</p>
                                             </div>
-                                            <Badge variant="outline" className={cn("font-bold text-[10px] uppercase tracking-wider py-1 px-2.5", getStatusInfo(student.status).className)}>
-                                                <StatusIcon className="mr-1.5 h-3 w-3" />
+                                            <Badge variant="outline" className={cn("font-black text-[10px] uppercase tracking-widest py-1.5 px-3 rounded-xl shrink-0", getStatusInfo(student.status).className)}>
+                                                <StatusIcon className="mr-2 h-3.5 w-3.5" />
                                                 {student.status}
                                             </Badge>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4 text-center pt-4 border-t border-slate-50">
+                                        <div className="grid grid-cols-2 gap-4 text-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                             <div className="space-y-1">
-                                                <p className="text-lg font-black text-blue-600 flex items-center justify-center gap-1.5">
-                                                    <Award className="h-4 w-4 opacity-70" />
-                                                    {student.average_grade}
-                                                </p>
-                                                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Rata-rata Nilai</p>
+                                                <p className="text-xl font-black text-blue-600">{student.average_grade}</p>
+                                                <p className="text-[9px] uppercase font-black text-slate-400 tracking-widest">Rata-rata Nilai</p>
                                             </div>
-                                            <div className="space-y-1 border-l border-slate-50">
-                                                <p className="text-lg font-black text-emerald-600 flex items-center justify-center gap-1.5">
-                                                    <Percent className="h-4 w-4 opacity-70" />
-                                                    {student.attendance_percentage}%
-                                                </p>
-                                                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Kehadiran</p>
+                                            <div className="space-y-1 border-l border-slate-200">
+                                                <p className="text-xl font-black text-emerald-600">{student.attendance_percentage}%</p>
+                                                <p className="text-[9px] uppercase font-black text-slate-400 tracking-widest">Kehadiran</p>
                                             </div>
                                         </div>
                                     </div>
@@ -176,15 +121,15 @@ export default async function StudentProgressPage() {
                         </div>
 
                         {/* Desktop View */}
-                        <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-100">
+                        <div className="hidden md:block overflow-x-auto">
                             <Table>
                                 <TableHeader className="bg-slate-50/50">
-                                    <TableRow>
-                                        <TableHead className="font-bold text-slate-700">Nama Siswa</TableHead>
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="font-bold text-slate-700 py-6 px-8">Nama Siswa</TableHead>
                                         <TableHead className="text-center font-bold text-slate-700">NIS</TableHead>
                                         <TableHead className="text-center font-bold text-slate-700">Rata-rata Nilai</TableHead>
                                         <TableHead className="text-center font-bold text-slate-700">Kehadiran (%)</TableHead>
-                                        <TableHead className="text-center font-bold text-slate-700">Status Performa</TableHead>
+                                        <TableHead className="text-center font-bold text-slate-700 pr-8">Status Performa</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -192,13 +137,17 @@ export default async function StudentProgressPage() {
                                         const StatusIcon = getStatusInfo(student.status).icon;
                                         return (
                                             <TableRow key={student.id} className="hover:bg-slate-50/50 transition-colors">
-                                                <TableCell className="font-bold text-slate-900">{student.name}</TableCell>
-                                                <TableCell className="text-center font-mono text-xs text-slate-500">{student.nis}</TableCell>
-                                                <TableCell className="text-center font-black text-blue-600 text-lg">{student.average_grade}</TableCell>
-                                                <TableCell className="text-center font-black text-emerald-600 text-lg">{student.attendance_percentage}%</TableCell>
+                                                <TableCell className="font-bold text-slate-900 py-5 px-8 text-base">{student.name}</TableCell>
+                                                <TableCell className="text-center font-mono text-xs text-slate-500 font-bold">{student.nis}</TableCell>
                                                 <TableCell className="text-center">
-                                                    <Badge variant="outline" className={cn("font-bold uppercase tracking-wider py-1.5 px-3", getStatusInfo(student.status).className)}>
-                                                        <StatusIcon className="mr-2 h-3.5 w-3.5" />
+                                                    <span className="text-xl font-black text-blue-600">{student.average_grade}</span>
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <span className="text-xl font-black text-emerald-600">{student.attendance_percentage}%</span>
+                                                </TableCell>
+                                                <TableCell className="text-center pr-8">
+                                                    <Badge variant="outline" className={cn("font-black uppercase tracking-widest py-2 px-4 rounded-xl", getStatusInfo(student.status).className)}>
+                                                        <StatusIcon className="mr-2 h-4 w-4" />
                                                         {student.status}
                                                     </Badge>
                                                 </TableCell>
@@ -210,10 +159,10 @@ export default async function StudentProgressPage() {
                         </div>
                         </>
                     ) : (
-                        <div className="text-center py-20 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
-                            <Users2 className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                            <h3 className="text-lg font-bold text-slate-600">Belum Ada Data Siswa</h3>
-                            <p className="text-sm text-slate-400 mt-1">Siswa di kelas {className} akan muncul di sini setelah didaftarkan oleh admin.</p>
+                        <div className="text-center py-32 opacity-40">
+                             <TrendingUp className="h-16 w-16 mx-auto text-slate-300 mb-4" />
+                             <p className="text-lg font-bold text-slate-900">Data Kosong</p>
+                             <p className="text-sm font-medium text-slate-500 mt-2">Belum ada analisis untuk semester ini.</p>
                         </div>
                     )}
                 </CardContent>

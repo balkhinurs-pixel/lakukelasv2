@@ -4,7 +4,7 @@
 import { createClient } from './supabase/server';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
-import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, toIndonesianTime, getIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
@@ -325,7 +325,7 @@ export async function getAlumni(): Promise<Student[]> {
 export async function getAllStudents(): Promise<Student[]> {
     noStore();
     const supabase = createClient();
-    const { data = [] } = await supabase.from('students').select('id, name, class_id').eq('status', 'active').order('name');
+    const { data = [] } = await supabase.from('students').select('id, name, nis').eq('status', 'active').order('name');
     return data || [];
 }
 
@@ -426,6 +426,74 @@ export async function getHomeroomTodayStatus() {
             name: s.name,
             status: latestStatus[s.id] || 'Belum Terabsen'
         }))
+    };
+}
+
+export async function getHomeroomMonthlyAttendance(month: number, year: number) {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    const supabase = createClient();
+
+    // 1. Get homeroom class
+    const { data: homeroomClass } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('teacher_id', user.id)
+        .limit(1)
+        .single();
+    if (!homeroomClass) return null;
+
+    // 2. Get students in class
+    const { data: students } = await supabase
+        .from('students')
+        .select('id, name, nis, gender')
+        .eq('class_id', homeroomClass.id)
+        .eq('status', 'active')
+        .order('name');
+    if (!students) return null;
+
+    // 3. Date range
+    const startDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd');
+    const lastDayDate = new Date(year, month, 0);
+    const lastDayCount = lastDayDate.getDate();
+    const endDate = format(lastDayDate, 'yyyy-MM-dd');
+
+    // 4. Get holidays
+    const { data: dbHolidays } = await supabase
+        .from('holidays')
+        .select('date')
+        .gte('date', startDate)
+        .lte('date', endDate);
+    const holidayDates = new Set(dbHolidays?.map(h => h.date) || []);
+
+    // 5. Get attendance records
+    // We take the first meeting of the day as the representative status
+    const { data: records } = await supabase
+        .from('attendance_records')
+        .select('student_id, date, status, meeting_number')
+        .eq('class_id', homeroomClass.id)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date')
+        .order('meeting_number', { ascending: true });
+
+    const attendanceMap: Record<string, Record<string, string>> = {};
+    records?.forEach(r => {
+        if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
+        if (!attendanceMap[r.student_id][r.date]) {
+            attendanceMap[r.student_id][r.date] = r.status;
+        }
+    });
+
+    return {
+        className: homeroomClass.name,
+        students,
+        attendanceMap,
+        holidayDates,
+        daysInMonth: lastDayCount,
+        month,
+        year
     };
 }
 
