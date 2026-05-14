@@ -80,7 +80,7 @@ const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: s
         label: 'Sakit', 
         icon: <AlertCircle className="h-4 w-4" />,
         className: 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:border-amber-300', 
-        selectedClassName: 'bg-amber-500 text-white hover:bg-amber-600 border-amber-500 shadow-md shadow-amber-200' 
+        selectedClassName: 'bg-amber-50 text-white hover:bg-amber-600 border-amber-500 shadow-md shadow-amber-200' 
     },
     { 
         value: 'Izin', 
@@ -503,23 +503,25 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
    const getStatusBadgeClass = (status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
     switch (status) {
         case 'Hadir': return "bg-green-600 hover:bg-green-700";
-        case 'Sakit': return "bg-yellow-500 hover:bg-yellow-600 text-black";
-        case 'Izin': return "bg-blue-500 hover:bg-blue-600";
-        case 'Alpha': return "bg-red-600 hover:bg-red-700";
+        case 'Sakit': return "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200";
+        case 'Izin': return "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200";
+        case 'Alpha': return "bg-red-50 hover:bg-red-100 text-red-700 border-red-200";
     }
   }
 
   return (
     <div className="space-y-6 p-1">
       <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-4 text-center">
           <HandWrittenTitle 
             title={editingId ? 'Ubah Presensi' : 'Input Presensi'} 
-            subtitle={editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mencatat presensi siswa.'}
             className="py-4 md:py-6"
           />
+          <CardDescription className="max-w-2xl mx-auto -mt-6">
+            {editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mencatat presensi siswa secara akurat.'}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <div className="space-y-2 xl:col-span-2">
                 <Label className="text-sm font-medium text-slate-700">Tahun Ajaran Aktif</Label>
