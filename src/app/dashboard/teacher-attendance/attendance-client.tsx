@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -63,11 +63,11 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 font-medium h-12 rounded-xl transition-all active:scale-95">
+                <Button variant="outline" className="w-full border-orange-200 bg-orange-50/50 text-orange-700 hover:bg-orange-100 font-medium h-14 rounded-xl transition-all active:scale-95 text-base tracking-wide shadow-sm">
                     Ajukan Izin / Sakit
                 </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-2xl">
+            <DialogContent className="rounded-xl">
                 <DialogHeader>
                     <DialogTitle>Izin Tidak Masuk</DialogTitle>
                     <DialogDescription>Pilih jenis ketidakhadiran dan berikan alasan yang jelas.</DialogDescription>
@@ -76,11 +76,11 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
                     <RadioGroup value={leaveType} onValueChange={(v: any) => setLeaveType(v)} className="flex gap-4">
                         <div className="flex items-center space-x-2 border p-3 rounded-xl flex-1 bg-white cursor-pointer hover:bg-slate-50">
                             <RadioGroupItem value="Sakit" id="sakit" />
-                            <Label htmlFor="sakit" className="cursor-pointer">Sakit</Label>
+                            <Label htmlFor="sakit" className="cursor-pointer font-medium">Sakit</Label>
                         </div>
                         <div className="flex items-center space-x-2 border p-3 rounded-xl flex-1 bg-white cursor-pointer hover:bg-slate-50">
                             <RadioGroupItem value="Izin" id="izin" />
-                            <Label htmlFor="izin" className="cursor-pointer">Izin</Label>
+                            <Label htmlFor="izin" className="cursor-pointer font-medium">Izin</Label>
                         </div>
                     </RadioGroup>
                     <div className="space-y-2">
@@ -95,7 +95,7 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-medium">
+                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-medium">
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Kirim Pengajuan
                     </Button>
@@ -154,11 +154,11 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'Tepat Waktu': return 'bg-emerald-500 text-white border-emerald-600';
-            case 'Terlambat': return 'bg-amber-500 text-white border-amber-600';
-            case 'Sakit': return 'bg-orange-500 text-white border-orange-600';
-            case 'Izin': return 'bg-blue-500 text-white border-blue-600';
-            case 'Tidak Hadir': return 'bg-rose-600 text-white border-rose-700';
+            case 'Tepat Waktu': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+            case 'Terlambat': return 'bg-amber-100 text-amber-800 border-amber-200';
+            case 'Sakit': return 'bg-orange-100 text-orange-800 border-orange-200';
+            case 'Izin': return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'Tidak Hadir': return 'bg-rose-100 text-rose-800 border-rose-200';
             default: return 'bg-slate-100 text-slate-800 border-slate-200';
         }
     }
@@ -169,31 +169,29 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
 
             <DigitalClock />
 
-            <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-white">
-                <CardHeader className="bg-slate-50/50 border-b p-6">
-                    <CardTitle className="text-xl font-medium text-slate-800 text-center">Lakukan Absen Sekarang</CardTitle>
+            <Card className="border-0 shadow-xl rounded-xl overflow-hidden bg-white">
+                <CardHeader className="bg-slate-50/50 border-b p-6 text-center">
+                    <CardTitle className="text-xl font-medium text-slate-800">Lakukan Absen Sekarang</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 sm:p-8 space-y-6">
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <CardContent className="p-6 sm:p-10 space-y-6">
+                    <div className="flex flex-col gap-5">
                         <Button 
-                            size="lg" 
-                            className="h-14 px-8 text-base font-medium rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex-1 shadow-md transition-all active:scale-95" 
+                            className="h-16 md:h-20 text-lg md:text-xl font-medium rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 transition-all active:scale-95 tracking-wider" 
                             onClick={() => handleAttendance('in')} 
                             disabled={loading}
                         >
-                            ABSEN MASUK
+                            {loading && status === 'checking' ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "ABSEN MASUK"}
                         </Button>
                         <Button 
-                            size="lg" 
-                            className="h-14 px-8 text-base font-medium rounded-xl bg-rose-500 hover:bg-rose-600 text-white flex-1 shadow-md transition-all active:scale-95" 
+                            className="h-16 md:h-20 text-lg md:text-xl font-medium rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/20 transition-all active:scale-95 tracking-wider" 
                             onClick={() => handleAttendance('out')} 
                             disabled={loading}
                         >
-                            ABSEN PULANG
+                             {loading && status === 'checking' ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "ABSEN PULANG"}
                         </Button>
                     </div>
                     
-                    <div className="flex justify-center pt-4 border-t border-slate-100">
+                    <div className="flex justify-center pt-6 border-t border-slate-100">
                         <LeaveRequestDialog onLeaveSubmitted={() => window.location.reload()} />
                     </div>
 
@@ -206,11 +204,11 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
                                 className="mt-4"
                             >
                                 <Alert className={cn(
-                                    "rounded-xl border-0 shadow-sm",
-                                    status === 'success' ? "bg-emerald-50 text-emerald-800" : 
-                                    status === 'error' ? "bg-rose-50 text-rose-800" : "bg-blue-50 text-blue-800"
+                                    "rounded-xl border border-slate-200 shadow-sm",
+                                    status === 'success' ? "bg-emerald-50 text-emerald-800 border-emerald-200" : 
+                                    status === 'error' ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-blue-50 text-blue-800 border-blue-200"
                                 )}>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-3">
                                         {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                                         <p className="text-sm font-medium">{message}</p>
                                     </div>
@@ -226,10 +224,10 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-2">
                             <CalendarDays className="h-5 w-5 text-slate-400" />
-                            <CardTitle className="text-xl font-bold text-slate-800">Riwayat Kehadiran</CardTitle>
+                            <CardTitle className="text-lg font-semibold text-slate-800 uppercase tracking-wide">Riwayat Kehadiran</CardTitle>
                         </div>
                         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                            <SelectTrigger className="w-full sm:w-48 rounded-xl bg-white">
+                            <SelectTrigger className="w-full sm:w-48 rounded-xl bg-white border-slate-200">
                                 <SelectValue placeholder="Pilih Bulan" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
@@ -244,26 +242,26 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
                             {filteredHistory.map((r) => (
                                 <div key={r.id} className="p-5 flex justify-between items-center hover:bg-slate-50/50 transition-colors">
                                     <div className="min-w-0">
-                                        <p className="font-bold text-slate-900 truncate">
+                                        <p className="font-semibold text-slate-900 truncate text-base">
                                             {format(parseISO(r.date), 'dd MMMM yyyy', {locale: id})}
                                         </p>
-                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-0.5">
+                                        <p className="text-[11px] text-slate-400 uppercase tracking-widest font-medium mt-1">
                                             {format(parseISO(r.date), 'eeee', {locale: id})}
                                         </p>
                                     </div>
                                     <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
-                                        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
+                                        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
                                             <div className="text-center">
                                                 <p className="text-[9px] text-slate-400 font-bold uppercase leading-none mb-1">In</p>
-                                                <p className="font-mono font-bold text-sm text-slate-700 leading-none">{r.checkIn || '--:--'}</p>
+                                                <p className="font-mono font-medium text-sm text-slate-700 leading-none">{r.checkIn || '--:--'}</p>
                                             </div>
                                             <div className="w-px h-6 bg-slate-200" />
                                             <div className="text-center">
                                                 <p className="text-[9px] text-slate-400 font-bold uppercase leading-none mb-1">Out</p>
-                                                <p className="font-mono font-bold text-sm text-slate-700 leading-none">{r.checkOut || '--:--'}</p>
+                                                <p className="font-mono font-medium text-sm text-slate-700 leading-none">{r.checkOut || '--:--'}</p>
                                             </div>
                                         </div>
-                                        <Badge variant="outline" className={cn("px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider border-0", getStatusBadge(r.status))}>
+                                        <Badge variant="outline" className={cn("px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider", getStatusBadge(r.status))}>
                                             {r.status}
                                         </Badge>
                                     </div>
@@ -271,9 +269,9 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-20 opacity-40">
-                            <Clock className="mx-auto mb-3 h-12 w-12 text-slate-300"/>
-                            <p className="text-sm font-medium">Tidak ada riwayat absensi bulan ini</p>
+                        <div className="text-center py-24 opacity-40">
+                            <Clock className="mx-auto mb-4 h-12 w-12 text-slate-300"/>
+                            <p className="text-sm font-medium tracking-wide">Tidak ada riwayat absensi bulan ini</p>
                         </div>
                     )}
                 </CardContent>
