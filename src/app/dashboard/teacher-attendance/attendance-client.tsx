@@ -5,32 +5,22 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Clock, CalendarDays } from "lucide-react";
+import { Loader2, Camera, Clock, LogOut, Bell, Flag, School, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Alert } from "@/components/ui/alert";
 import { recordTeacherAttendance } from "@/lib/actions";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import { cn, formatTime } from "@/lib/utils";
-import type { TeacherAttendance, Profile } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import type { TeacherAttendance, Profile, Holiday } from "@/lib/types";
 import DigitalClock from "./DigitalClock";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
-
-const months = [
-    { value: "all", label: 'Semua Bulan' },
-    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
-    { value: "3", label: 'Maret' }, { value: "4", label: 'April' },
-    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' },
-    { value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' },
-    { value: "9", label: 'September' }, { value: "10", label: 'Oktober' },
-    { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
-];
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void }) {
     const [isOpen, setIsOpen] = React.useState(false);
@@ -64,108 +54,36 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="w-full border-slate-200 bg-slate-50/50 text-slate-500 hover:bg-slate-100 font-medium h-14 rounded-xl transition-all active:scale-95 text-xs tracking-wide">
-                    Lainnya: Ajukan Izin / Sakit
+                <Button variant="ghost" className="text-slate-400 text-xs font-bold uppercase tracking-widest hover:text-primary">
+                    Ajukan Izin / Sakit <ChevronRight className="ml-1 h-3 w-3" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[2.5rem] max-w-[92vw] sm:max-w-md border-0 shadow-2xl p-6 sm:p-10 overflow-hidden">
-                <DialogHeader className="pb-6 space-y-3">
-                    <DialogTitle className="text-2xl font-bold text-center text-slate-900 tracking-tight">Izin Tidak Masuk</DialogTitle>
-                    <DialogDescription className="text-center text-slate-500 text-sm">Pilih jenis ketidakhadiran dan berikan alasan yang jelas untuk dokumentasi sistem.</DialogDescription>
+            <DialogContent className="rounded-[2.5rem] max-w-[92vw] sm:max-w-md border-0 shadow-2xl p-6 sm:p-10">
+                <DialogHeader className="pb-6">
+                    <DialogTitle className="text-2xl font-bold text-center">Izin Tidak Masuk</DialogTitle>
+                    <DialogDescription className="text-center">Berikan alasan yang jelas untuk dokumentasi sistem.</DialogDescription>
                 </DialogHeader>
-                
-                <div className="space-y-8 py-2">
+                <div className="space-y-6">
                     <RadioGroup value={leaveType} onValueChange={(v: any) => setLeaveType(v)} className="grid grid-cols-2 gap-4">
-                        <label 
-                            htmlFor="sakit" 
-                            className={cn(
-                                "relative flex flex-col items-center justify-center p-6 border-2 rounded-[2rem] cursor-pointer transition-all duration-300 group",
-                                leaveType === 'Sakit' 
-                                    ? "border-emerald-500 bg-emerald-50/50 shadow-inner" 
-                                    : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/30"
-                            )}
-                        >
+                        <label htmlFor="sakit" className={cn("flex flex-col items-center p-4 border-2 rounded-3xl cursor-pointer transition-all", leaveType === 'Sakit' ? "border-emerald-500 bg-emerald-50" : "border-slate-100 bg-white")}>
                             <RadioGroupItem value="Sakit" id="sakit" className="sr-only" />
-                            <motion.div 
-                                animate={leaveType === 'Sakit' ? { y: [0, -5, 0] } : {}}
-                                transition={{ repeat: Infinity, duration: 2 }}
-                                className={cn(
-                                    "text-5xl mb-3 transition-all duration-300",
-                                    leaveType === 'Sakit' ? "drop-shadow-lg scale-110" : "grayscale opacity-50"
-                                )}
-                            >
-                                🤒
-                            </motion.div>
-                            <span className={cn("font-bold text-sm", leaveType === 'Sakit' ? "text-emerald-700" : "text-slate-600")}>Sakit</span>
-                            <span className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-tighter">Izin Medis</span>
-                            
-                            {leaveType === 'Sakit' && (
-                                <motion.div 
-                                    layoutId="leaveSelectionCheck" 
-                                    className="absolute top-3 right-3 bg-emerald-500 text-white p-1 rounded-full shadow-lg"
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                >
-                                    <div className="w-2 h-2 rounded-full bg-white" />
-                                </motion.div>
-                            )}
+                            <span className="text-3xl mb-1">🤒</span>
+                            <span className="font-bold text-sm text-slate-700">Sakit</span>
                         </label>
-                        
-                        <label 
-                            htmlFor="izin" 
-                            className={cn(
-                                "relative flex flex-col items-center justify-center p-6 border-2 rounded-[2rem] cursor-pointer transition-all duration-300 group",
-                                leaveType === 'Izin' 
-                                    ? "border-blue-500 bg-blue-50/50 shadow-inner" 
-                                    : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/30"
-                            )}
-                        >
+                        <label htmlFor="izin" className={cn("flex flex-col items-center p-4 border-2 rounded-3xl cursor-pointer transition-all", leaveType === 'Izin' ? "border-blue-500 bg-blue-50" : "border-slate-100 bg-white")}>
                             <RadioGroupItem value="Izin" id="izin" className="sr-only" />
-                            <motion.div 
-                                animate={leaveType === 'Izin' ? { scale: [1, 1.1, 1] } : {}}
-                                transition={{ repeat: Infinity, duration: 2 }}
-                                className={cn(
-                                    "text-5xl mb-3 transition-all duration-300",
-                                    leaveType === 'Izin' ? "drop-shadow-lg scale-110" : "grayscale opacity-50"
-                                )}
-                            >
-                                📩
-                            </motion.div>
-                            <span className={cn("font-bold text-sm", leaveType === 'Izin' ? "text-blue-700" : "text-slate-600")}>Izin</span>
-                            <span className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-tighter">Keperluan</span>
-
-                            {leaveType === 'Izin' && (
-                                <motion.div 
-                                    layoutId="leaveSelectionCheck" 
-                                    className="absolute top-3 right-3 bg-blue-500 text-white p-1 rounded-full shadow-lg"
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                >
-                                    <div className="w-2 h-2 rounded-full bg-white" />
-                                </motion.div>
-                            )}
+                            <span className="text-3xl mb-1">📩</span>
+                            <span className="font-bold text-sm text-slate-700">Izin</span>
                         </label>
                     </RadioGroup>
-                    
-                    <div className="space-y-4">
-                        <Label htmlFor="reason" className="text-sm font-black text-slate-800 uppercase tracking-widest ml-1">Alasan Detail</Label>
-                        <Textarea 
-                            id="reason"
-                            value={reason} 
-                            onChange={e => setReason(e.target.value)} 
-                            placeholder="Contoh: Mengantar anak imunisasi, kontrol kesehatan rutin, dll..." 
-                            className="rounded-[1.5rem] min-h-[160px] bg-slate-50 border-slate-100 focus:bg-white focus:border-slate-900 transition-all text-base resize-none p-5 shadow-inner border-0" 
-                        />
+                    <div className="space-y-2">
+                        <Label htmlFor="reason" className="text-xs font-bold uppercase text-slate-400 ml-1">Alasan Detail</Label>
+                        <Textarea id="reason" value={reason} onChange={e => setReason(e.target.value)} placeholder="Contoh: Sakit demam, keperluan keluarga..." className="rounded-2xl min-h-[120px] bg-slate-50 border-0 focus:ring-2 focus:ring-primary/20" />
                     </div>
                 </div>
-                
-                <DialogFooter className="pt-8">
-                    <Button 
-                        onClick={handleLeaveRequest} 
-                        disabled={loading} 
-                        className="w-full h-16 rounded-[1.5rem] bg-slate-900 hover:bg-black text-white font-bold shadow-2xl shadow-slate-300 transition-all active:scale-95 text-lg tracking-tight"
-                    >
-                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Kirim Pengajuan Sekarang"}
+                <DialogFooter className="pt-6">
+                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-14 rounded-2xl bg-slate-900 font-bold text-lg">
+                        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Kirim Pengajuan"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -173,22 +91,32 @@ function LeaveRequestDialog({ onLeaveSubmitted }: { onLeaveSubmitted: () => void
     )
 }
 
-export default function TeacherAttendanceClient({ initialHistory }: { initialHistory: TeacherAttendance[], users: Profile[] }) {
+export default function TeacherAttendanceClient({ 
+    initialHistory, 
+    profile,
+    todayHoliday 
+}: { 
+    initialHistory: TeacherAttendance[], 
+    users: Profile[], 
+    profile: Profile | null,
+    todayHoliday: Holiday | null
+}) {
     const [loading, setLoading] = React.useState(false);
     const [status, setStatus] = React.useState<'idle' | 'checking' | 'success' | 'error'>('idle');
-    const [message, setMessage] = React.useState('');
-    const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
     const { toast } = useToast();
+    const router = useRouter();
 
-    const filteredHistory = React.useMemo(() => {
-        if (selectedMonth === 'all') return initialHistory;
-        return initialHistory.filter(record => (parseISO(record.date).getMonth() + 1).toString() === selectedMonth);
-    }, [initialHistory, selectedMonth]);
+    const handleLogout = async () => {
+        const supabase = createClient();
+        if (!supabase) return;
+        await supabase.auth.signOut();
+        router.push('/');
+        router.refresh();
+    }
 
     const handleAttendance = async (type: 'in' | 'out') => {
         setLoading(true);
         setStatus('checking');
-        setMessage('Mencari lokasi...');
         try {
             const pos: any = await new Promise((res, rej) => {
                 navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true });
@@ -202,148 +130,146 @@ export default function TeacherAttendanceClient({ initialHistory }: { initialHis
             
             if (result.success) {
                 setStatus('success');
-                setMessage(result.message);
                 toast({ title: "Berhasil", description: result.message });
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 setStatus('error');
-                setMessage(result.error || 'Gagal melakukan absensi.');
                 toast({ title: "Gagal", description: result.error, variant: "destructive" });
             }
         } catch (e: any) {
             setStatus('error');
-            let msg = 'Kesalahan GPS: Pastikan izin lokasi aktif.';
-            if (e.code === 1) msg = "Izin lokasi ditolak oleh pengguna.";
-            setMessage(msg);
-            toast({ title: "Kesalahan", description: msg, variant: "destructive" });
+            toast({ title: "Kesalahan", description: "Gagal mengambil lokasi GPS.", variant: "destructive" });
         }
         setLoading(false);
     };
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'Tepat Waktu': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-            case 'Terlambat': return 'bg-amber-100 text-amber-800 border-amber-200';
-            case 'Sakit': return 'bg-orange-100 text-orange-800 border-orange-200';
-            case 'Izin': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'Tidak Hadir': return 'bg-rose-100 text-rose-800 border-rose-200';
-            default: return 'bg-slate-100 text-slate-800 border-slate-200';
-        }
-    }
+    const todayRecord = initialHistory.find(r => r.date === format(new Date(), 'yyyy-MM-dd'));
 
     return (
-        <div className="space-y-6 p-1">
-            <HandWrittenTitle title="Presensi Lokasi" subtitle="Guru" className="py-4 md:py-6" />
+        <div className="flex flex-col h-full bg-[#f8fafc]">
+            {/* Header Green Area */}
+            <div className="bg-[#2d7a5e] text-white pt-8 pb-20 px-6 rounded-b-[3.5rem] shadow-2xl relative">
+                <div className="flex justify-between items-center mb-8">
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
+                        <Bell className="h-6 w-6" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white hover:bg-white/20 rounded-full">
+                        <LogOut className="h-6 w-6" />
+                    </Button>
+                </div>
 
-            <DigitalClock />
-
-            <Card className="border-0 shadow-xl rounded-xl overflow-hidden bg-white">
-                <CardHeader className="bg-slate-50/50 border-b p-6 text-center">
-                    <CardTitle className="text-xl font-medium text-slate-800 tracking-tight">Lakukan Absen Sekarang</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 sm:p-10 space-y-6">
-                    <div className="flex flex-col gap-5">
-                        <Button 
-                            className="h-16 md:h-20 text-lg md:text-xl font-medium rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 transition-all active:scale-95 tracking-wider" 
-                            onClick={() => handleAttendance('in')} 
-                            disabled={loading}
-                        >
-                            {loading && status === 'checking' ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "ABSEN MASUK"}
-                        </Button>
-                        <Button 
-                            className="h-16 md:h-20 text-lg md:text-xl font-medium rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/20 transition-all active:scale-95 tracking-wider" 
-                            onClick={() => handleAttendance('out')} 
-                            disabled={loading}
-                        >
-                             {loading && status === 'checking' ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "ABSEN PULANG"}
-                        </Button>
+                <div className="flex items-center gap-4 mb-10">
+                    <div className="flex-1">
+                        <h1 className="text-2xl font-black tracking-tight">{profile?.full_name || 'Guru LakuKelas'}</h1>
+                        <p className="text-white/70 text-sm font-medium mt-0.5">{profile?.jabatan || 'Tenaga Pengajar'} ({profile?.nip || '-'})</p>
                     </div>
-                    
-                    <div className="flex justify-center pt-6 border-t border-slate-100">
-                        <LeaveRequestDialog onLeaveSubmitted={() => window.location.reload()} />
-                    </div>
+                    <Avatar className="h-16 w-16 border-4 border-white/20 shadow-xl">
+                        <AvatarImage src={profile?.avatar_url || ""} />
+                        <AvatarFallback className="bg-white/20 text-white font-bold">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+                    </Avatar>
+                </div>
 
-                    <AnimatePresence>
-                        {status !== 'idle' && (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 10 }} 
-                                animate={{ opacity: 1, y: 0 }} 
-                                exit={{ opacity: 0, y: -10 }}
-                                className="mt-4"
-                            >
-                                <Alert className={cn(
-                                    "rounded-xl border border-slate-200 shadow-sm",
-                                    status === 'success' ? "bg-emerald-50 text-emerald-800 border-emerald-200" : 
-                                    status === 'error' ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-blue-50 text-blue-800 border-blue-200"
+                <div className="mb-6">
+                    <DigitalClock />
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="px-6 -mt-12 space-y-6 pb-20">
+                {/* Holiday Card */}
+                {todayHoliday && (
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                        <Card className="rounded-[2rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur">
+                            <CardContent className="p-5 flex items-center gap-4">
+                                <div className={cn(
+                                    "p-3 rounded-2xl text-white",
+                                    todayHoliday.type === 'national' ? "bg-rose-500" : "bg-indigo-500"
                                 )}>
-                                    <div className="flex items-center gap-3">
-                                        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                        <p className="text-sm font-medium">{message}</p>
-                                    </div>
-                                </Alert>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg rounded-xl overflow-hidden bg-white">
-                <CardHeader className="bg-slate-50/50 border-b p-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <CalendarDays className="h-5 w-5 text-slate-400" />
-                            <CardTitle className="text-lg font-semibold text-slate-800 uppercase tracking-wide">Riwayat Kehadiran</CardTitle>
-                        </div>
-                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                            <SelectTrigger className="w-full sm:w-48 rounded-xl bg-white border-slate-200">
-                                <SelectValue placeholder="Pilih Bulan" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                                {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                    {filteredHistory.length > 0 ? (
-                        <div className="divide-y divide-slate-100">
-                            {filteredHistory.map((r) => (
-                                <div key={r.id} className="p-5 flex justify-between items-center hover:bg-slate-50/50 transition-colors">
-                                    <div className="min-w-0">
-                                        <p className="font-semibold text-slate-900 truncate text-base">
-                                            {format(parseISO(r.date), 'dd MMMM yyyy', {locale: id})}
-                                        </p>
-                                        <p className="text-[11px] text-slate-400 uppercase tracking-widest font-medium mt-1">
-                                            {format(parseISO(r.date), 'eeee', {locale: id})}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
-                                        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                                            <div className="text-center">
-                                                <p className="text-[9px] text-slate-400 font-bold uppercase leading-none mb-1">In</p>
-                                                <p className="font-mono font-medium text-sm text-slate-700 leading-none">{r.checkIn || '--:--'}</p>
-                                            </div>
-                                            <div className="w-px h-6 bg-slate-200" />
-                                            <div className="text-center">
-                                                <p className="text-[9px] text-slate-400 font-bold uppercase leading-none mb-1">Out</p>
-                                                <p className="font-mono font-medium text-sm text-slate-700 leading-none">{r.checkOut || '--:--'}</p>
-                                            </div>
-                                        </div>
-                                        <Badge variant="outline" className={cn("px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider", getStatusBadge(r.status))}>
-                                            {r.status}
-                                        </Badge>
-                                    </div>
+                                    {todayHoliday.type === 'national' ? <Flag className="h-6 w-6" /> : <School className="h-6 w-6" />}
                                 </div>
-                            ))}
+                                <div className="min-w-0">
+                                    <h4 className="font-bold text-slate-900 leading-tight">{todayHoliday.description}</h4>
+                                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">
+                                        {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                )}
+
+                {/* Main Attendance Buttons */}
+                <div className="grid grid-cols-2 gap-4">
+                    <button 
+                        onClick={() => handleAttendance('in')}
+                        disabled={loading || !!todayRecord?.checkIn}
+                        className={cn(
+                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] bg-white shadow-lg transition-all active:scale-95 border-2",
+                            todayRecord?.checkIn ? "border-emerald-100 opacity-60" : "border-transparent hover:shadow-xl"
+                        )}
+                    >
+                        <div className={cn("p-4 rounded-2xl mb-4", todayRecord?.checkIn ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-400")}>
+                            <Camera className="h-8 w-8" />
                         </div>
-                    ) : (
-                        <div className="text-center py-24 opacity-40">
-                            <Clock className="mx-auto mb-4 h-12 w-12 text-slate-300"/>
-                            <p className="text-sm font-medium tracking-wide">Tidak ada riwayat absensi bulan ini</p>
+                        <span className="font-bold text-sm text-slate-900">Jam Masuk</span>
+                        <span className="font-mono text-xs text-slate-400 mt-1 font-bold">{todayRecord?.checkIn ? todayRecord.checkIn.substring(0, 5) : '--:--'}</span>
+                    </button>
+
+                    <button 
+                        onClick={() => handleAttendance('out')}
+                        disabled={loading || !todayRecord?.checkIn || !!todayRecord?.checkOut}
+                        className={cn(
+                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] bg-white shadow-lg transition-all active:scale-95 border-2",
+                            todayRecord?.checkOut ? "border-rose-100 opacity-60" : "border-transparent hover:shadow-xl"
+                        )}
+                    >
+                        <div className={cn("p-4 rounded-2xl mb-4", todayRecord?.checkOut ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-400")}>
+                            <Camera className="h-8 w-8" />
+                        </div>
+                        <span className="font-bold text-sm text-slate-900">Jam Pulang</span>
+                        <span className="font-mono text-xs text-slate-400 mt-1 font-bold">{todayRecord?.checkOut ? todayRecord.checkOut.substring(0, 5) : '--:--'}</span>
+                    </button>
+                </div>
+
+                <div className="flex justify-between items-center px-2">
+                    <p className="text-xs font-black text-slate-300 uppercase tracking-widest">Presensi Bulan Ini</p>
+                    <LeaveRequestDialog onLeaveSubmitted={() => {}} />
+                </div>
+
+                {/* Minimal History List */}
+                <div className="space-y-3">
+                    {initialHistory.slice(0, 5).map((r) => (
+                        <div key={r.id} className="bg-white p-4 rounded-3xl flex items-center justify-between shadow-sm border border-slate-100/50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-slate-50 text-slate-400">
+                                    <Clock className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-800">{format(parseISO(r.date), 'dd MMM yyyy')}</p>
+                                    <p className="text-[10px] text-slate-400 font-medium uppercase">{format(parseISO(r.date), 'eeee', {locale: id})}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <p className="text-xs font-mono font-black text-slate-700">{r.checkIn?.substring(0, 5) || '--:--'}</p>
+                                    <p className="text-[9px] text-slate-300 font-bold uppercase">Masuk</p>
+                                </div>
+                                <div className="h-6 w-px bg-slate-100" />
+                                <div className="text-right">
+                                    <p className="text-xs font-mono font-black text-slate-700">{r.checkOut?.substring(0, 5) || '--:--'}</p>
+                                    <p className="text-[9px] text-slate-300 font-bold uppercase">Pulang</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {initialHistory.length === 0 && (
+                        <div className="text-center py-10 opacity-30">
+                            <Clock className="mx-auto h-12 w-12 mb-2" />
+                            <p className="text-sm font-bold uppercase tracking-tighter">Belum ada riwayat</p>
                         </div>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 }

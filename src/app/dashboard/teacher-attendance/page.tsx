@@ -1,22 +1,33 @@
 
-import { getTeacherAttendanceHistory, getAllUsers, getUserProfile } from "@/lib/data";
+import { getTeacherAttendanceHistory, getAllUsers, getUserProfile, getHolidays } from "@/lib/data";
 import TeacherAttendanceClient from "./attendance-client";
-import type { Profile } from "@/lib/types";
+import { format } from "date-fns";
+import { getIndonesianTime } from "@/lib/timezone";
 
 export default async function TeacherAttendancePage() {
-    const [initialAttendanceHistory, users, profile] = await Promise.all([
+    const todayStr = format(getIndonesianTime(), 'yyyy-MM-dd');
+    
+    const [initialAttendanceHistory, users, profile, holidays] = await Promise.all([
         getTeacherAttendanceHistory(),
         getAllUsers(),
-        getUserProfile()
+        getUserProfile(),
+        getHolidays()
     ]);
 
-    // This is for the personal attendance client. It only needs the user's own history.
+    // Ambil info libur hari ini
+    const todayHoliday = holidays.find(h => h.date === todayStr) || null;
+
+    // Filter riwayat untuk user ini saja
     const userHistory = profile ? initialAttendanceHistory.filter(h => h.teacherId === profile.id) : [];
 
     return (
-        <div className="space-y-8">
-            {/* This component is for ALL users to do their personal attendance */}
-            <TeacherAttendanceClient initialHistory={userHistory} users={users} />
+        <div className="min-h-screen -m-4 sm:-m-6 lg:-m-8 bg-slate-50">
+            <TeacherAttendanceClient 
+                initialHistory={userHistory} 
+                users={users} 
+                profile={profile}
+                todayHoliday={todayHoliday}
+            />
         </div>
     );
 }
