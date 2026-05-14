@@ -333,20 +333,14 @@ export default function DashboardLayoutClient({
                       </div>
                     )}
 
-                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3 pb-24">
-                      <Button asChild variant="secondary" className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center border border-slate-200 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>
-                        <Link href="/dashboard/settings">
-                          <User className="w-5 h-5 text-slate-700" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Profil</span>
-                        </Link>
-                      </Button>
+                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col pb-20">
                       <Button 
                         variant="destructive" 
-                        className="h-16 rounded-3xl flex flex-col gap-1 items-center justify-center bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20 border-0"
+                        className="h-16 rounded-3xl flex items-center justify-center bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20 border-0 w-full"
                         onClick={handleLogout}
                       >
-                        <LogOut className="w-5 h-5" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Keluar</span>
+                        <LogOut className="w-5 h-5 mr-3" />
+                        <span className="text-sm font-bold uppercase tracking-wider">Keluar Akun</span>
                       </Button>
                     </div>
                   </div>
