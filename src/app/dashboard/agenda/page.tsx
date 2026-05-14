@@ -2,79 +2,65 @@
 import { getAgendas, getHolidays } from "@/lib/data";
 import AgendaPageClient from "./agenda-page-client";
 import { getIndonesianTime } from "@/lib/timezone";
+import { createClient } from "@/lib/supabase/server";
 
-async function getIndonesianHolidays() {
+async function syncNationalHolidays() {
     const nowIndo = getIndonesianTime();
     const currentYear = nowIndo.getFullYear();
-    
-    // Kita ambil data untuk 3 tahun: tahun ini, tahun depan, dan tahun berikutnya
-    // Ini penting karena user sering mengetes input untuk tahun depan (misal: 2026)
-    const yearsToFetch = [currentYear, currentYear + 1, currentYear + 2];
-    
-    const fetchFromSource = async (url: string) => {
-        try {
-            const res = await fetch(url, { 
-                next: { revalidate: 86400 }, // Cache 24 jam
-                headers: { 'Accept': 'application/json' }
-            });
-            if (!res.ok) return null;
-            const data = await res.json();
-            return Array.isArray(data) ? data : (data.data || null);
-        } catch (error) {
-            return null;
-        }
-    };
+    const yearsToSync = [currentYear, currentYear + 1];
+    const supabase = createClient();
 
     try {
-        let allHolidays: any[] = [];
+        // 1. Ambil data yang sudah ada di DB untuk menghindari duplikasi
+        const { data: existingHolidays } = await supabase
+            .from('holidays')
+            .select('date');
         
-        for (const year of yearsToFetch) {
-            const sources = [
-                `https://api-hari-libur.vercel.app/api?year=${year}`,
-                `https://day-off-api.vercel.app/api?year=${year}`,
-            ];
+        const existingDates = new Set(existingHolidays?.map(h => h.date) || []);
 
-            for (const source of sources) {
-                const data = await fetchFromSource(source);
-                if (data && Array.isArray(data) && data.length > 0) {
-                    // Mapping data agar kompatibel dengan berbagai format field API
-                    const mapped = data.map((h: any) => ({
-                        date: h.date || h.holiday_date || h.tanggal,
-                        name: h.name || h.holiday_name || h.keterangan || h.event,
-                        is_holiday: h.is_holiday !== undefined ? h.is_holiday : true
-                    })).filter(h => !!h.date && !!h.name);
-                    
-                    allHolidays = [...allHolidays, ...mapped];
-                    break; // Jika satu sumber berhasil untuk tahun ini, lanjut ke tahun berikutnya
+        for (const year of yearsToSync) {
+            const res = await fetch(`https://api-hari-libur.vercel.app/api?year=${year}`, {
+                next: { revalidate: 86400 }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    const newHolidays = data
+                        .map((h: any) => ({
+                            date: h.date || h.holiday_date || h.tanggal,
+                            description: h.name || h.holiday_name || h.keterangan || h.event
+                        }))
+                        .filter(h => h.date && h.description && !existingDates.has(h.date));
+
+                    if (newHolidays.length > 0) {
+                        console.log(`[SYNC] Menambahkan ${newHolidays.length} hari libur baru untuk tahun ${year}`);
+                        await supabase.from('holidays').insert(newHolidays);
+                    }
                 }
             }
         }
-
-        return allHolidays;
-        
     } catch (error) {
-        console.error("Critical failure fetching holidays:", error);
-        return [];
+        console.error("[SYNC-ERROR] Gagal sinkronisasi hari libur:", error);
     }
 }
 
 export default async function AgendaPage() {
-    // Ambil data dari Database (Agenda Guru, Libur Sekolah) dan API (Libur Nasional)
-    const [agendas, dbHolidays, apiHolidays] = await Promise.all([
+    // Jalankan sinkronisasi di background (tidak menunggu selesai agar page load tetap cepat)
+    syncNationalHolidays();
+
+    // Ambil data dari Database (Sudah termasuk yang barusan disinkronkan)
+    const [agendas, dbHolidays] = await Promise.all([
         getAgendas(),
-        getHolidays(),
-        getIndonesianHolidays()
+        getHolidays()
     ]);
 
-    // Gabungkan hari libur dari Database Admin dan API Nasional
-    const combinedHolidays = [
-        ...apiHolidays,
-        ...dbHolidays.map(h => ({
-            date: h.date,
-            name: h.description,
-            is_holiday: true
-        }))
-    ];
+    // Format data untuk dikirim ke client
+    const combinedHolidays = dbHolidays.map(h => ({
+        date: h.date,
+        name: h.description,
+        is_holiday: true
+    }));
 
     return <AgendaPageClient initialAgendas={agendas} indonesianHolidays={combinedHolidays} />;
 }

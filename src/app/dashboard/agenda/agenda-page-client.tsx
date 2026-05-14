@@ -205,7 +205,7 @@ export default function AgendaPageClient({
     const result = await saveAgenda(formData);
 
     if (result.success) {
-        toast({ title: "Sukses", description: `Agenda berhasil ${editingAgenda ? 'diperbarui' : 'disimpan'}.` });
+        toast({ title: "Sukses", description: `Agenda berhasil ${editingAgenda ? 'diperbarui' : 'didisimpan'}.` });
         setIsDialogOpen(false);
         router.refresh();
     } else {
