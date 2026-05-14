@@ -5,7 +5,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Flag, School, ChevronRight, Calendar as CalendarIcon, Filter, Clock, Briefcase } from "lucide-react";
+import { Loader2, Flag, School, ChevronRight, Calendar as CalendarIcon, Filter, Clock, Briefcase, Coffee, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { recordTeacherAttendance } from "@/lib/actions";
 import { format, parseISO } from "date-fns";
@@ -164,7 +164,38 @@ export default function TeacherAttendanceClient({
         });
     }, [initialHistory, selectedMonth]);
 
+    const getInfoCardContent = () => {
+        if (todayHoliday) {
+            return {
+                title: todayHoliday.description,
+                subtitle: "Informasi Hari Libur",
+                icon: todayHoliday.type === 'national' ? Flag : School,
+                iconBg: todayHoliday.type === 'national' ? "bg-rose-500" : "bg-indigo-500"
+            };
+        }
+        
+        const day = new Date().getDay();
+        if (day === 0) { // Minggu
+            return {
+                title: "Hari Minggu",
+                subtitle: "Waktunya Istirahat - Libur Rutin",
+                icon: Coffee,
+                iconBg: "bg-amber-500"
+            };
+        }
+
+        return {
+            title: "Silakan Melakukan Presensi",
+            subtitle: todayRecord ? "Status: " + todayRecord.status : "Jangan lupa absen masuk & pulang tepat waktu",
+            icon: todayRecord ? CheckCircle2 : Briefcase,
+            iconBg: todayRecord ? "bg-emerald-500" : "bg-blue-500"
+        };
+    };
+
     if (!isClient) return null;
+
+    const info = getInfoCardContent();
+    const InfoIcon = info.icon;
 
     return (
         <div className="flex flex-col h-full bg-[#f8fafc]">
@@ -208,27 +239,25 @@ export default function TeacherAttendanceClient({
 
             {/* Content Area */}
             <div className="px-6 -mt-10 space-y-6 pb-32">
-                {/* Holiday Card (Only if holiday) */}
-                {todayHoliday && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                        <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
-                            <CardContent className="p-5 flex items-center gap-4">
-                                <div className={cn(
-                                    "p-3 rounded-2xl text-white",
-                                    todayHoliday.type === 'national' ? "bg-rose-500" : "bg-indigo-500"
-                                )}>
-                                    {todayHoliday.type === 'national' ? <Flag className="h-6 w-6" /> : <School className="h-6 w-6" />}
-                                </div>
-                                <div className="min-w-0">
-                                    <h4 className="font-bold text-slate-900 leading-tight">{todayHoliday.description}</h4>
-                                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">
-                                        Informasi Hari Libur
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                )}
+                {/* Info Card (Always Visible) */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                    <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
+                        <CardContent className="p-5 flex items-center gap-4">
+                            <div className={cn(
+                                "p-3 rounded-2xl text-white shadow-lg transition-transform group-hover:scale-110",
+                                info.iconBg
+                            )}>
+                                <InfoIcon className="h-6 w-6" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h4 className="font-bold text-slate-900 leading-tight truncate">{info.title}</h4>
+                                <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">
+                                    {info.subtitle}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
 
                 {/* Main Attendance Buttons */}
                 <div className="grid grid-cols-2 gap-4">
