@@ -10,29 +10,36 @@ export async function syncNationalHolidaysManual() {
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
     try {
+        // Menggunakan API libur.deno.dev yang lebih update
+        // Kita akan menarik data tahun 2025 dan 2026
         const years = [2025, 2026];
         let allHolidays: any[] = [];
 
         for (const year of years) {
-            const res = await fetch(`https://api-hari-libur.vercel.app/api?year=${year}`);
-            if (res.ok) {
-                const responseData = await res.json();
-                // API bisa mengembalikan array langsung atau dibungkus .data
-                const rawList = Array.isArray(responseData) ? responseData : (responseData.data || []);
-                
-                if (rawList.length > 0) {
-                    const mapped = rawList.map((h: any) => ({
-                        date: h.date || h.holiday_date,
-                        description: h.name || h.holiday_name || h.description || h.keterangan,
-                        type: 'national'
-                    })).filter((h: any) => h.date && h.description);
-                    allHolidays = [...allHolidays, ...mapped];
+            try {
+                // API libur.deno.dev biasanya mengembalikan array objek: { date, name, is_holiday }
+                const res = await fetch(`https://libur.deno.dev/api?year=${year}`);
+                if (res.ok) {
+                    const rawList = await res.json();
+                    
+                    if (Array.isArray(rawList)) {
+                        const mapped = rawList
+                            .filter((h: any) => h.is_holiday === true) // Pastikan hanya hari libur (bukan sekedar tanggal penting)
+                            .map((h: any) => ({
+                                date: h.date,
+                                description: h.name,
+                                type: 'national'
+                            }));
+                        allHolidays = [...allHolidays, ...mapped];
+                    }
                 }
+            } catch (err) {
+                console.error(`Failed to fetch year ${year}:`, err);
             }
         }
 
         if (allHolidays.length === 0) {
-            return { success: false, error: "Gagal mengambil data dari API nasional." };
+            return { success: false, error: "Gagal mengambil data dari API libur.deno.dev." };
         }
 
         // Upsert ke database (mencegah duplikasi berdasarkan kolom date)
@@ -47,7 +54,7 @@ export async function syncNationalHolidaysManual() {
         
         return { 
             success: true, 
-            message: `Berhasil mensinkronkan ${allHolidays.length} hari libur nasional untuk tahun 2025-2026.` 
+            message: `Berhasil mensinkronkan ${allHolidays.length} hari libur nasional tahun 2025-2026 dari sumber terupdate.` 
         };
     } catch (error: any) {
         console.error('[SYNC-ERR]', error.message);
