@@ -1,0 +1,28 @@
+name: LakuKelas Cron Scheduler
+
+on:
+  schedule:
+    # GitHub menggunakan UTC. WIB adalah UTC+7.
+    - cron: '0 23 * * *' # 06:00 WIB (Daily Schedule Reminder)
+    - cron: '0 1 * * *'  # 08:00 WIB (Attendance Missing Reminder)
+    - cron: '0 0 * * 0'  # 07:00 WIB Minggu (Weekly Keep-Alive)
+  workflow_dispatch:      # Memungkinkan pemicu manual untuk pengetesan
+
+jobs:
+  trigger_cron_endpoints:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger WA Daily Schedule Reminder (06:00 WIB)
+        if: github.event.schedule == '0 23 * * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -X GET "https://app.lakukelas.my.id/api/cron/wa-reminder"
+
+      - name: Trigger WA Attendance Reminder (08:00 WIB)
+        if: github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -X GET "https://app.lakukelas.my.id/api/cron/wa-attendance-reminder"
+
+      - name: Trigger Weekly Keep-Alive (Minggu)
+        if: github.event.schedule == '0 0 * * 0' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -X GET "https://app.lakukelas.my.id/api/keep-alive"

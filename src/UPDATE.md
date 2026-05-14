@@ -21,21 +21,20 @@ Fitur sinkronisasi otomatis yang ramah kuota Supabase Free Tier dan menghindari 
 
 ---
 
-# Update V5.9: Migrasi Penjadwalan ke GitHub Actions (RENCANA)
+# Update V5.9: Migrasi Penjadwalan ke GitHub Actions (TERIMPLEMENTASI)
 
-Mengatasi batasan 1 cron/hari pada Vercel Hobby Tier dengan menggunakan pemicu eksternal.
+Mengatasi batasan 1 cron/hari pada Vercel Hobby Tier dengan menggunakan pemicu eksternal yang lebih andal.
 
 ## 1. Pemindahan Scheduler
-- Menghapus konfigurasi `crons` di `vercel.json`.
-- Menggunakan **GitHub Actions** untuk memicu endpoint API `/api/cron/*`.
-- Memungkinkan pemicu multi-waktu (Jam 06:00 untuk Jadwal dan Jam 08:00 untuk Absensi).
+- Menghapus konfigurasi `crons` di `vercel.json` untuk menghindari konflik limitasi.
+- Menggunakan **GitHub Actions** (`.github/workflows/cron-scheduler.yml`) untuk memicu endpoint API.
+- Mendukung pemicu multi-waktu: 
+    - Jam 06:00 WIB: Notifikasi Jadwal Harian.
+    - Jam 08:00 WIB: Teguran Belum Absen.
 
 ## 2. Konservasi Supabase (Keep-Alive)
 - Mengubah jadwal `keep-alive` menjadi **Mingguan (Setiap Hari Minggu)**.
-- Menjamin database tidak ter-suspend oleh Supabase tanpa harus memicu aktivitas setiap hari.
-
-## 3. Keamanan Endpoint
-- Menambahkan rahasia `CRON_SECRET` agar endpoint API cron tidak bisa ditembak sembarangan oleh publik.
+- Strategi ini cukup untuk mencegah database ter-suspend tanpa membuang kuota request harian.
 
 ---
 *LakuKelas: Cerdas dalam sinkronisasi, hemat dalam sumber daya.*
