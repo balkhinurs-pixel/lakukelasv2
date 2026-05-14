@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -134,21 +133,24 @@ export default function AgendaPageClient({
     const dateKey = format(props.date, 'yyyy-MM-dd');
     const colors = eventsByDate.get(dateKey) || [];
     const holiday = indonesianHolidays.find(h => h.date === dateKey);
+    const isSelected = isSameDay(props.date, selectedDate);
 
     return (
       <div className="relative h-full w-full flex items-center justify-center">
         <span className={cn(
-            "relative z-10 transition-colors duration-200",
-            holiday?.type === 'national' ? "text-red-600 font-black" : 
-            holiday?.type === 'school' ? "text-indigo-600 font-bold" : ""
+            "relative z-10 transition-colors duration-200 font-bold",
+            // Override holiday colors if selected to prevent clashing with primary background
+            isSelected ? "text-white" : 
+            holiday?.type === 'national' ? "text-red-600" : 
+            holiday?.type === 'school' ? "text-indigo-600" : ""
         )}>
             {props.date.getDate()}
         </span>
         
         {holiday && (
             <div className={cn(
-                "absolute top-1 right-1 w-1.5 h-1.5 rounded-full shadow-sm animate-pulse",
-                holiday.type === 'national' ? "bg-red-500 shadow-red-500/50" : "bg-indigo-500 shadow-indigo-500/50"
+                "absolute top-1 right-1 w-1.5 h-1.5 rounded-full shadow-sm",
+                isSelected ? "bg-white" : (holiday.type === 'national' ? "bg-red-500 shadow-red-500/50" : "bg-indigo-500 shadow-indigo-500/50")
             )} />
         )}
 
@@ -157,8 +159,8 @@ export default function AgendaPageClient({
             {colors.slice(0, 3).map((color, index) => (
               <div
                 key={index}
-                className="h-1 w-1 rounded-full"
-                style={{ backgroundColor: color }}
+                className={cn("h-1 w-1 rounded-full", isSelected && "bg-white/80")}
+                style={{ backgroundColor: isSelected ? undefined : color }}
               />
             ))}
           </div>
@@ -461,10 +463,10 @@ export default function AgendaPageClient({
             </Card>
       
             <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-4 lg:col-span-4 h-full min-h-[500px] flex flex-col rounded-[2rem] overflow-hidden">
-                <CardHeader className="pb-6 pt-8 px-6 sm:px-8 border-b border-slate-50 bg-slate-50/30">
+                <CardHeader className="pb-4 pt-6 px-6 sm:px-8 border-b border-slate-50 bg-slate-50/30">
                     <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full animate-pulse shadow-lg shadow-emerald-500/40" />
-                        <h3 className="text-xl font-black text-slate-900 dark:text-gray-100 uppercase tracking-tight" suppressHydrationWarning>
+                        <div className="w-2.5 h-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full animate-pulse shadow-lg shadow-emerald-500/40" />
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 tracking-tight" suppressHydrationWarning>
                             {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}
                         </h3>
                     </div>
@@ -484,27 +486,23 @@ export default function AgendaPageClient({
                             {holidayForDate && (
                                 <div 
                                     className={cn(
-                                        "p-6 rounded-[1.5rem] border-2 flex items-start gap-5 shadow-sm",
+                                        "p-4 rounded-[1.2rem] border-2 flex items-center gap-4 shadow-sm",
                                         holidayForDate.type === 'national' 
                                             ? "bg-red-50/50 border-red-100 text-red-700" 
                                             : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
                                     )}
                                 >
                                     <div className={cn(
-                                        "p-3 rounded-2xl text-white shadow-lg",
+                                        "p-2.5 rounded-xl text-white shadow-md",
                                         holidayForDate.type === 'national' ? "bg-red-500 shadow-red-500/20" : "bg-indigo-500 shadow-indigo-500/20"
                                     )}>
-                                        {holidayForDate.type === 'national' ? <Flag className="h-6 w-6" /> : <School className="h-6 w-6" />}
+                                        {holidayForDate.type === 'national' ? <Flag className="h-5 w-5" /> : <School className="h-5 w-5" />}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="font-black text-[10px] uppercase tracking-[0.2em] opacity-60">
-                                            {holidayForDate.type === 'national' ? 'Hari Libur Nasional' : 'Libur Khusus Sekolah'}
+                                        <h4 className="font-bold text-[9px] uppercase tracking-wider opacity-60">
+                                            {holidayForDate.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                                         </h4>
-                                        <p className="font-bold text-xl leading-tight mt-1">{holidayForDate.name}</p>
-                                        <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold opacity-70">
-                                          <CalendarOff className="h-3.5 w-3.5" />
-                                          <span>Bebas Administrasi & Absensi</span>
-                                        </div>
+                                        <p className="font-bold text-base leading-tight mt-0.5">{holidayForDate.name}</p>
                                     </div>
                                 </div>
                             )}
