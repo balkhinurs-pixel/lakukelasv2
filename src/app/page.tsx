@@ -1,14 +1,14 @@
-
 'use client';
 
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import GradientText from '@/components/ui/gradient-text';
 import SplitText from '@/components/ui/split-text';
+import { InfiniteGrid } from '@/components/ui/the-infinite-grid';
 
 export default function WelcomePage() {
     const supabase = createClient();
@@ -39,52 +39,64 @@ export default function WelcomePage() {
     }
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-white via-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8">
-            <main className="flex flex-col items-center justify-center text-center w-full max-w-md flex-1">
-                <div className="w-full max-w-xs">
-                    <Image
-                        src="/ilustration.png"
-                        alt="Ilustrasi guru dan siswa menggunakan aplikasi Lakukelas"
-                        width={1024}
-                        height={1536}
-                        className="h-auto w-full"
-                        data-ai-hint="teacher students application"
-                        priority
-                    />
-                </div>
-
-                <div className="mt-8 space-y-2">
-                     <h1 className="text-3xl font-bold tracking-tighter text-slate-900">
-                        <SplitText
-                            text="Selamat Datang di"
-                            className="inline-block"
-                            from={{ opacity: 0, y: 20 }}
-                            to={{ opacity: 1, y: 0 }}
-                            delay={80}
-                            splitType="chars"
+        <InfiniteGrid>
+            <div className="flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 min-h-screen">
+                <main className="flex flex-col items-center justify-center text-center w-full max-w-2xl flex-1 z-10">
+                    <div className="w-full max-w-sm transform transition-transform duration-700 hover:scale-105">
+                        <Image
+                            src="/ilustration.png"
+                            alt="Ilustrasi guru dan siswa menggunakan aplikasi Lakukelas"
+                            width={1024}
+                            height={1536}
+                            className="h-auto w-full drop-shadow-2xl"
+                            data-ai-hint="teacher students application"
+                            priority
                         />
-                        <GradientText
-                            colors={['#5DADE2', '#A9DFBF', '#5DADE2']}
-                            className="font-extrabold ml-2"
-                        >
-                            LakuKelas
-                        </GradientText>
-                    </h1>
-                    <p className="text-sm text-slate-600 max-w-prose">
-                        Manajemen administrasi kelas menjadi lebih mudah dan intuitif. Fokus pada mengajar, biar kami yang urus sisanya.
-                    </p>
-                </div>
-                
-                <Button size="lg" className="mt-6 w-full max-w-xs shadow-lg" asChild>
-                    <a href="/login">Masuk atau Daftar Sekarang</a>
-                </Button>
-            </main>
+                    </div>
 
-            <footer className="w-full text-center py-4 mt-auto">
-                <p className="text-xs text-slate-500">
-                    © {new Date().getFullYear()} LakuKelas. All rights reserved.
-                </p>
-            </footer>
-        </div>
+                    <div className="mt-8 space-y-4">
+                        <div className="space-y-1">
+                             <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white">
+                                <SplitText
+                                    text="Selamat Datang di"
+                                    className="inline-block"
+                                    from={{ opacity: 0, y: 20 }}
+                                    to={{ opacity: 1, y: 0 }}
+                                    delay={80}
+                                    splitType="chars"
+                                />
+                                <br className="sm:hidden" />
+                                <GradientText
+                                    colors={['#6366f1', '#a855f7', '#6366f1']}
+                                    className="font-black ml-0 sm:ml-3 inline-block"
+                                >
+                                    LakuKelas
+                                </GradientText>
+                            </h1>
+                        </div>
+                        <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-prose mx-auto leading-relaxed font-medium">
+                            Platform manajemen kelas digital tercanggih untuk guru masa kini. <br className="hidden sm:block" />
+                            Administrasi jadi ringan, mengajar jadi menyenangkan.
+                        </p>
+                    </div>
+                    
+                    <div className="mt-10 w-full max-w-sm flex flex-col gap-3">
+                        <Button size="lg" className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 group" asChild>
+                            <a href="/login">
+                                Mulai Sekarang
+                                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                            </a>
+                        </Button>
+                        <p className="text-xs text-slate-400 font-medium">Gratis untuk seluruh guru di Indonesia</p>
+                    </div>
+                </main>
+
+                <footer className="w-full text-center py-6 mt-auto z-10">
+                    <p className="text-xs text-slate-400 font-semibold tracking-widest uppercase">
+                        © {new Date().getFullYear()} LakuKelas • Digitalizing Education
+                    </p>
+                </footer>
+            </div>
+        </InfiniteGrid>
     );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -11,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { InfiniteGrid } from '@/components/ui/the-infinite-grid';
 
 function AuthForm() {
     const supabase = createClient();
@@ -66,24 +66,24 @@ function AuthForm() {
     return (
         <div className="w-full">
             <Tabs defaultValue="sign_in" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-white/30 dark:bg-black/30 p-1 rounded-xl backdrop-blur-sm">
-                    <TabsTrigger value="sign_in" className="data-[state=active]:bg-white/80 dark:data-[state=active]:bg-black/80 data-[state=active]:shadow-md rounded-lg">Masuk</TabsTrigger>
-                    <TabsTrigger value="sign_up" className="data-[state=active]:bg-white/80 dark:data-[state=active]:bg-black/80 data-[state=active]:shadow-md rounded-lg">Daftar</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 bg-slate-200/50 dark:bg-white/10 p-1 rounded-xl backdrop-blur-sm">
+                    <TabsTrigger value="sign_in" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-md rounded-lg">Masuk</TabsTrigger>
+                    <TabsTrigger value="sign_up" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-md rounded-lg">Daftar</TabsTrigger>
                 </TabsList>
                 <TabsContent value="sign_in">
                     <form onSubmit={(e) => handleAuthAction(e, 'sign_in')} className="space-y-6 mt-6">
                         <div className="space-y-2">
-                            <Label htmlFor="email-in" className="text-white drop-shadow-sm">Email</Label>
+                            <Label htmlFor="email-in" className="text-slate-700 dark:text-white font-semibold">Email</Label>
                             <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <Input id="email-in" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white/90 dark:bg-black/80 rounded-xl text-base"/>
+                                <Input id="email-in" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white/80 dark:bg-black/50 border-slate-200 rounded-xl text-base"/>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password-in" className="text-white drop-shadow-sm">Kata Sandi</Label>
+                            <Label htmlFor="password-in" className="text-slate-700 dark:text-white font-semibold">Kata Sandi</Label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <Input id="password-in" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white/90 dark:bg-black/80 rounded-xl text-base"/>
+                                <Input id="password-in" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white/80 dark:bg-black/50 border-slate-200 rounded-xl text-base"/>
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
@@ -93,26 +93,26 @@ function AuthForm() {
                                 </button>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-[#FFD93D] hover:bg-[#FFD93D]/90 text-black rounded-xl shadow-lg" disabled={loading}>
+                        <Button type="submit" className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/25" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Masuk
+                            Masuk ke LakuKelas
                         </Button>
                     </form>
                 </TabsContent>
                 <TabsContent value="sign_up">
                     <form onSubmit={(e) => handleAuthAction(e, 'sign_up')} className="space-y-6 mt-6">
                          <div className="space-y-2">
-                            <Label htmlFor="email-up" className="text-white drop-shadow-sm">Email</Label>
+                            <Label htmlFor="email-up" className="text-slate-700 dark:text-white font-semibold">Email</Label>
                              <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <Input id="email-up" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white/90 dark:bg-black/80 rounded-xl text-base"/>
+                                <Input id="email-up" name="email" type="email" placeholder="email@anda.com" required className="pl-12 h-14 bg-white/80 dark:bg-black/50 border-slate-200 rounded-xl text-base"/>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password-up" className="text-white drop-shadow-sm">Kata Sandi</Label>
+                            <Label htmlFor="password-up" className="text-slate-700 dark:text-white font-semibold">Kata Sandi</Label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <Input id="password-up" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white/90 dark:bg-black/80 rounded-xl text-base"/>
+                                <Input id="password-up" name="password" type={showPassword ? 'text' : 'password'} required className="pl-12 pr-12 h-14 bg-white/80 dark:bg-black/50 border-slate-200 rounded-xl text-base"/>
                                  <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
@@ -122,19 +122,19 @@ function AuthForm() {
                                 </button>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full h-14 text-base font-semibold bg-[#FFD93D] hover:bg-[#FFD93D]/90 text-black rounded-xl shadow-lg" disabled={loading}>
+                        <Button type="submit" className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/25" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Daftar
+                            Daftar Akun Baru
                         </Button>
                     </form>
                 </TabsContent>
             </Tabs>
             <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-white/30" />
+                    <span className="w-full border-t border-slate-200 dark:border-white/20" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                    <span className="px-2 text-white/90 backdrop-blur-sm">
+                    <span className="px-2 text-slate-500 bg-white/0 backdrop-blur-sm">
                         Atau lanjutkan dengan
                     </span>
                 </div>
@@ -142,7 +142,7 @@ function AuthForm() {
             <button 
                 onClick={handleGoogleSignIn} 
                 disabled={loading}
-                className="w-full h-14 bg-white hover:bg-gray-50 border border-gray-300 rounded-md shadow-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 font-medium text-gray-700"
+                className="w-full h-14 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 font-semibold text-slate-700 active:scale-[0.98]"
             >
                 {loading ? (
                     <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
@@ -166,8 +166,8 @@ function AuthForm() {
                         />
                     </svg>
                 )}
-                <span className="text-sm font-medium">
-                    {loading ? 'Memproses...' : 'Lanjutkan dengan Google'}
+                <span className="text-sm">
+                    {loading ? 'Memproses...' : 'Masuk dengan Google'}
                 </span>
             </button>
         </div>
@@ -193,25 +193,21 @@ export default function LoginPage() {
     }, [supabase, router]);
     
     return (
-        <div 
-            className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center"
-            style={{ backgroundImage: `url('/bg-login.png')` }}
-        >
-            <div className="absolute inset-0 bg-black/30"></div>
-            <div className="relative mx-auto grid w-full max-w-sm gap-6">
+        <InfiniteGrid>
+            <div className="relative mx-auto grid w-full max-w-sm gap-8 px-4">
                 <div className="grid gap-2 text-center">
-                    <h1 className="text-3xl font-bold text-white drop-shadow-md">Masuk Akun</h1>
-                    <p className="text-balance text-white/90 drop-shadow-sm">
-                        Masukkan detail Anda untuk mengakses dasbor guru.
+                    <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Selamat Datang</h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">
+                        Akses sistem manajemen kelas digital Anda.
                     </p>
                 </div>
                 <AuthForm />
-                <div className="mt-4 text-center text-sm">
-                    <Link href="/" className="underline text-white/80 hover:text-white">
-                        Kembali ke Halaman Utama
+                <div className="mt-4 text-center">
+                    <Link href="/" className="text-sm font-semibold text-primary hover:underline transition-all">
+                        ← Kembali ke Halaman Utama
                     </Link>
                 </div>
             </div>
-        </div>
+        </InfiniteGrid>
     )
 }
