@@ -19,19 +19,40 @@ import { Clock, UserX, UserCheck, Calendar, RefreshCw, ShieldCheck, User as User
 import WeeklyAttendanceChart from "../admin/weekly-attendance-chart";
 import { cn } from "@/lib/utils";
 
-const StatCard = ({ icon: Icon, title, value, subtitle, color, bgColor, trend }: any) => (
-    <Card className={cn("border-0 shadow-lg transition-all duration-300 hover:scale-[1.02]", bgColor)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className={cn("text-sm font-medium", color)}>{title}</CardTitle>
-            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", bgColor.replace('bg-', 'bg-').replace('50', '100'))}>
-                <Icon className={cn("h-4 w-4", color)} />
+const StatCard = ({
+    icon: Icon,
+    title,
+    value,
+    subtitle,
+    color,
+}: {
+    icon: React.ElementType;
+    title: string;
+    value: string | number;
+    subtitle: string;
+    color: string;
+}) => (
+    <Card className={cn("relative overflow-hidden text-white shadow-2xl border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl group", color)}>
+        {/* Decorative circles */}
+        <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-white/20 opacity-50 transition-opacity duration-300 group-hover:opacity-70" />
+        <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 opacity-50 transition-opacity duration-300 group-hover:opacity-30" />
+        
+        <CardContent className="relative z-10 flex flex-col justify-between p-4 sm:p-6 h-full">
+            <div className="hidden sm:flex items-center justify-between mb-4">
+                <div className="rounded-2xl bg-white/20 backdrop-blur-sm p-3 transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
+                    <Icon className="h-6 w-6 drop-shadow-sm" />
+                </div>
+                <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" />
             </div>
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-            <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-            {trend && <p className="text-[10px] font-semibold mt-1 uppercase opacity-70">{trend}</p>}
+            
+            <div className="space-y-1">
+                <p className="text-[10px] sm:text-sm font-medium text-white/90 tracking-wide uppercase sm:normal-case">{title}</p>
+                <p className="text-2xl sm:text-3xl font-bold drop-shadow-sm tracking-tight">{value}</p>
+                <p className="text-[10px] sm:text-xs text-white/80 leading-tight sm:leading-relaxed line-clamp-1">{subtitle}</p>
+            </div>
         </CardContent>
+        {/* Shine effect animation */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
     </Card>
 );
 
@@ -75,11 +96,35 @@ export default async function MonitoringDashboardPage() {
             </Alert>
         )}
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard icon={ShieldCheck} title="Wajib Hadir" value={summary.total_expected} subtitle="Guru sesuai kebijakan" color="text-blue-600" bgColor="bg-blue-50" trend={policyLabel} />
-            <StatCard icon={UserCheck} title="Hadir" value={summary.total_present} subtitle={`${summary.attendance_rate}% tingkat kehadiran`} color="text-green-600" bgColor="bg-green-50" />
-            <StatCard icon={Clock} title="Terlambat" value={summary.total_late} subtitle="Melewati batas waktu" color="text-yellow-600" bgColor="bg-yellow-50" />
-            <StatCard icon={UserX} title="Belum Absen" value={summary.total_absent} subtitle="Tanpa keterangan" color="text-red-600" bgColor="bg-red-50" />
+        <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-4">
+            <StatCard 
+                icon={ShieldCheck} 
+                title="Wajib Hadir" 
+                value={summary.total_expected} 
+                subtitle={policyLabel} 
+                color="bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-600" 
+            />
+            <StatCard 
+                icon={UserCheck} 
+                title="Hadir" 
+                value={summary.total_present} 
+                subtitle={`${summary.attendance_rate}% Kehadiran`} 
+                color="bg-gradient-to-br from-green-500 via-green-500 to-emerald-600" 
+            />
+            <StatCard 
+                icon={Clock} 
+                title="Terlambat" 
+                value={summary.total_late} 
+                subtitle="Melewati batas" 
+                color="bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-400" 
+            />
+            <StatCard 
+                icon={UserX} 
+                title="Belum Absen" 
+                value={summary.total_absent} 
+                subtitle="Tanpa keterangan" 
+                color="bg-gradient-to-br from-red-500 via-red-500 to-orange-500" 
+            />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-5">
