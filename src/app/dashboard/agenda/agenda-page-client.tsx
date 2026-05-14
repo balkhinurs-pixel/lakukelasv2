@@ -113,7 +113,7 @@ export default function AgendaPageClient({
   const eventsByDate = React.useMemo(() => {
     const map = new Map<string, string[]>();
     agendas.forEach(agenda => {
-        const dateKey = agenda.date; // agenda.date is YYYY-MM-DD
+        const dateKey = agenda.date;
         if (!map.has(dateKey)) {
             map.set(dateKey, []);
         }
@@ -141,12 +141,10 @@ export default function AgendaPageClient({
             {props.date.getDate()}
         </span>
         
-        {/* Red Dot for Holiday */}
         {holiday && (
             <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse" />
         )}
 
-        {/* Dots for Agenda Events */}
         {colors.length > 0 && (
           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-0.5">
             {colors.slice(0, 3).map((color, index) => (
@@ -460,7 +458,6 @@ export default function AgendaPageClient({
                 <CardContent className="flex-grow overflow-hidden">
                   <ScrollArea className="h-full pr-4">
                     <div className="space-y-4">
-                        {/* Indonesian Holiday Header */}
                         {holidayForDate && (
                             <motion.div 
                                 initial={{ opacity: 0, scale: 0.95 }}
