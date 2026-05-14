@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,14 +6,19 @@ import { id } from "date-fns/locale";
 import { motion } from "framer-motion";
 
 export default function DigitalClock() {
-  const [time, setTime] = React.useState(new Date());
+  const [time, setTime] = React.useState<Date | null>(null);
 
   React.useEffect(() => {
+    // Set initial time only on client mount
+    setTime(new Date());
     const timerId = setInterval(() => setTime(new Date()), 1000);
     return () => {
       clearInterval(timerId);
     };
   }, []);
+
+  // Prevent hydration mismatch by not rendering time on server
+  if (!time) return <div className="h-[72px]" />;
 
   return (
     <div className="flex flex-col items-center justify-center text-white">

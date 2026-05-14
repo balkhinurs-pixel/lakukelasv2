@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -75,7 +74,7 @@ function LeaveRequestDialog({ onLeaveSubmitted, loading: parentLoading }: { onLe
                             <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Formulir Ketidakhadiran</span>
                         </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-colors" />
+                    <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-[#2d7a5e] transition-colors" />
                 </button>
             </DialogTrigger>
             <DialogContent className="rounded-[2.5rem] max-w-[92vw] sm:max-w-md border-0 shadow-2xl p-6 sm:p-10">
@@ -98,7 +97,7 @@ function LeaveRequestDialog({ onLeaveSubmitted, loading: parentLoading }: { onLe
                     </RadioGroup>
                     <div className="space-y-2">
                         <Label htmlFor="reason" className="text-xs font-bold uppercase text-slate-400 ml-1">Alasan Detail</Label>
-                        <Textarea id="reason" value={reason} onChange={e => setReason(e.target.value)} placeholder="Contoh: Sakit demam, keperluan keluarga..." className="rounded-2xl min-h-[120px] bg-slate-50 border-0 focus:ring-2 focus:ring-primary/20" />
+                        <Textarea id="reason" value={reason} onChange={e => setReason(e.target.value)} placeholder="Contoh: Sakit demam, keperluan keluarga..." className="rounded-2xl min-h-[120px] bg-slate-50 border-0 focus:ring-2 focus:ring-[#2d7a5e]/20" />
                     </div>
                 </div>
                 <DialogFooter className="pt-6">
@@ -150,7 +149,8 @@ export default function TeacherAttendanceClient({
         setLoading(false);
     };
 
-    const todayRecord = initialHistory.find(r => r.date === format(new Date(), 'yyyy-MM-dd'));
+    const todayStr = React.useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
+    const todayRecord = initialHistory.find(r => r.date === todayStr);
 
     const filteredHistory = React.useMemo(() => {
         return initialHistory.filter(h => {
@@ -161,7 +161,7 @@ export default function TeacherAttendanceClient({
 
     return (
         <div className="flex flex-col h-full bg-[#f8fafc]">
-            {/* Header Green Area */}
+            {/* Header Green Area - Using precise Forest Green #2d7a5e */}
             <div className="bg-[#2d7a5e] text-white pt-10 pb-20 px-6 rounded-b-[3.5rem] shadow-2xl relative">
                 <div className="flex items-center gap-5 mb-10">
                     <div className="flex-1">
@@ -203,36 +203,36 @@ export default function TeacherAttendanceClient({
                     </motion.div>
                 )}
 
-                {/* Main Attendance Buttons - Solid Colors as requested */}
+                {/* Main Attendance Buttons - Solid Colors with No Icons */}
                 <div className="grid grid-cols-2 gap-4">
                     <button 
                         onClick={() => handleAttendance('in')}
                         disabled={loading || !!todayRecord?.checkIn}
                         className={cn(
-                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0",
+                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0 h-40",
                             todayRecord?.checkIn 
                                 ? "bg-emerald-50 text-emerald-600 opacity-60" 
                                 : "bg-emerald-600 text-white hover:bg-emerald-700"
                         )}
                     >
-                        {loading ? <Loader2 className="h-8 w-8 animate-spin mb-4" /> : <div className="h-8 mb-4" />}
-                        <span className="font-black text-base">Jam Masuk</span>
-                        <span className="font-mono text-xs opacity-80 mt-1 font-bold">{todayRecord?.checkIn ? todayRecord.checkIn.substring(0, 5) : '--:--'}</span>
+                        {loading && <Loader2 className="h-8 w-8 animate-spin mb-4" />}
+                        <span className="font-black text-lg">JAM MASUK</span>
+                        <span className="font-mono text-sm opacity-80 mt-2 font-bold">{todayRecord?.checkIn ? todayRecord.checkIn.substring(0, 5) : '--:--'}</span>
                     </button>
 
                     <button 
                         onClick={() => handleAttendance('out')}
                         disabled={loading || !todayRecord?.checkIn || !!todayRecord?.checkOut}
                         className={cn(
-                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0",
+                            "flex flex-col items-center justify-center p-8 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0 h-40",
                             todayRecord?.checkOut 
                                 ? "bg-rose-50 text-rose-600 opacity-60" 
                                 : (!todayRecord?.checkIn ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-rose-600 text-white hover:bg-rose-700")
                         )}
                     >
-                        {loading ? <Loader2 className="h-8 w-8 animate-spin mb-4" /> : <div className="h-8 mb-4" />}
-                        <span className="font-black text-base">Jam Pulang</span>
-                        <span className="font-mono text-xs opacity-80 mt-1 font-bold">{todayRecord?.checkOut ? todayRecord.checkOut.substring(0, 5) : '--:--'}</span>
+                        {loading && <Loader2 className="h-8 w-8 animate-spin mb-4" />}
+                        <span className="font-black text-lg">JAM PULANG</span>
+                        <span className="font-mono text-sm opacity-80 mt-2 font-bold">{todayRecord?.checkOut ? todayRecord.checkOut.substring(0, 5) : '--:--'}</span>
                     </button>
                 </div>
 
