@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from './supabase/server';
@@ -54,6 +55,8 @@ export async function getAdminDashboardData() {
         }
         
         const rawData = summaryRes.data;
+        const isTodayHoliday = (holidaysRes.data || []).length > 0;
+        
         let summaryData = { 
             total_expected: 0, 
             total_present: 0, 
@@ -73,15 +76,24 @@ export async function getAdminDashboardData() {
             };
         }
 
+        // SAFU LOGIC: If today is a holiday, override expected and absent to 0
+        if (isTodayHoliday) {
+            summaryData.total_expected = 0;
+            summaryData.total_absent = 0;
+            summaryData.attendance_rate = 100; // 100% because no one was failing attendance
+        }
+
         const activePolicy = settingsRes.data?.value || 'schedule_based';
-        const isTodayHoliday = (holidaysRes.data || []).length > 0;
 
         // Build the Today Attendance List for the Dashboard
-        const expectedTeacherIds = new Set(
-            activePolicy === 'daily_based' 
-            ? allStaffRes.data?.map(s => s.id) 
-            : todaySchedulesRes.data?.map(s => s.teacher_id)
-        );
+        // If it's a holiday, expectedTeacherIds will be empty effectively
+        const expectedTeacherIds = isTodayHoliday 
+            ? new Set<string>() 
+            : new Set(
+                activePolicy === 'daily_based' 
+                ? allStaffRes.data?.map(s => s.id) 
+                : todaySchedulesRes.data?.map(s => s.teacher_id)
+            );
 
         const todayAttendanceList = (allStaffRes.data || [])
             .filter(staff => expectedTeacherIds.has(staff.id))
@@ -106,13 +118,17 @@ export async function getAdminDashboardData() {
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayIdx = date.getDay();
             
+            // Also check if this historical day was a holiday
+            const { data: holidayCheck } = await supabase.from('holidays').select('id').eq('date', dateStr).limit(1);
+            const wasHoliday = (holidayCheck || []).length > 0;
+
             const { data: daySummaryArr } = await supabase.rpc('get_teacher_attendance_summary', { p_date: dateStr });
             const daySummary = (Array.isArray(daySummaryArr) && daySummaryArr.length > 0) ? daySummaryArr[0] : null;
             
             weeklyAttendance.push({
                 day: dayNamesShort[dayIdx],
                 hadir: Number(daySummary?.total_present || 0),
-                tidak_hadir: Number(daySummary?.total_absent || 0)
+                tidak_hadir: wasHoliday ? 0 : Number(daySummary?.total_absent || 0)
             });
         }
         
