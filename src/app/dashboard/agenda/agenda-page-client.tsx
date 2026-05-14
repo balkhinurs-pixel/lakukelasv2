@@ -253,7 +253,7 @@ export default function AgendaPageClient({
             />
             <Button 
                 onClick={handleOpenAddDialog}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-300 shrink-0 h-12 rounded-xl"
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/40 transition-all duration-300 h-12 rounded-xl font-bold tracking-tight"
             >
                 <PlusCircle className="mr-2 h-5 w-5" />
                 Tambah Agenda
@@ -277,7 +277,7 @@ export default function AgendaPageClient({
                       </div>
                     </DialogHeader>
                     
-                    <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto pr-4 mb-4">
+                    <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto pr-4 mb-4 custom-scrollbar">
                         <div className="space-y-3">
                             <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
                                 <Sparkles className="h-4 w-4 text-green-600" />
@@ -288,7 +288,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.title} 
                                 onChange={e => setNewAgenda({...newAgenda, title: e.target.value})} 
                                 placeholder="e.g. Rapat Persiapan Ujian"
-                                className="h-12 rounded-xl border-slate-200 focus:border-green-500"
+                                className="h-12 rounded-xl border-slate-200 focus:border-green-500 shadow-sm"
                                 required 
                             />
                         </div>
@@ -303,7 +303,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.description || ''} 
                                 onChange={e => setNewAgenda({...newAgenda, description: e.target.value})} 
                                 placeholder="e.g. Membahas teknis pelaksanaan ujian akhir semester."
-                                className="min-h-20 rounded-xl border-slate-200 focus:border-blue-500"
+                                className="min-h-[100px] rounded-xl border-slate-200 focus:border-blue-500 shadow-sm resize-none"
                             />
                         </div>
                         
@@ -318,7 +318,7 @@ export default function AgendaPageClient({
                                     type="time" 
                                     value={newAgenda.start_time || ''} 
                                     onChange={e => setNewAgenda({...newAgenda, start_time: e.target.value})}
-                                    className="h-12 rounded-xl border-slate-200 focus:border-orange-500"
+                                    className="h-12 rounded-xl border-slate-200 focus:border-orange-500 shadow-sm"
                                 />
                             </div>
                             <div className="space-y-3">
@@ -331,7 +331,7 @@ export default function AgendaPageClient({
                                     type="time" 
                                     value={newAgenda.end_time || ''} 
                                     onChange={e => setNewAgenda({...newAgenda, end_time: e.target.value})}
-                                    className="h-12 rounded-xl border-slate-200 focus:border-red-500"
+                                    className="h-12 rounded-xl border-slate-200 focus:border-red-500 shadow-sm"
                                 />
                             </div>
                         </div>
@@ -346,7 +346,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.tag || ''} 
                                 onChange={e => setNewAgenda({...newAgenda, tag: e.target.value})} 
                                 placeholder="e.g. RAPAT"
-                                className="h-12 rounded-xl border-slate-200 focus:border-purple-500"
+                                className="h-12 rounded-xl border-slate-200 focus:border-purple-500 shadow-sm"
                             />
                         </div>
                         
@@ -355,7 +355,7 @@ export default function AgendaPageClient({
                                 <Palette className="h-4 w-4 text-pink-600" />
                                 Warna Tag
                             </Label>
-                            <div className="grid grid-cols-8 gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                            <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 p-4 bg-slate-50 dark:bg-gray-800/50 rounded-2xl border border-slate-100">
                                 {[
                                     { color: '#6b7280', name: 'Abu-abu' },
                                     { color: '#3b82f6', name: 'Biru' },
@@ -369,11 +369,12 @@ export default function AgendaPageClient({
                                     <button
                                         key={colorOption.color}
                                         type="button"
-                                        className={`w-10 h-10 rounded-xl border-2 transition-all duration-300 hover:scale-110 ${
+                                        className={cn(
+                                            "w-full aspect-square rounded-xl border-2 transition-all duration-300 hover:scale-110",
                                             newAgenda.color === colorOption.color 
-                                                ? 'border-white shadow-lg ring-2 ring-gray-400 ring-offset-2' 
-                                                : 'border-transparent hover:shadow-md'
-                                        }`}
+                                                ? "border-white shadow-xl ring-2 ring-primary ring-offset-2 scale-110" 
+                                                : "border-transparent opacity-80 hover:opacity-100"
+                                        )}
                                         style={{ backgroundColor: colorOption.color }}
                                         onClick={() => setNewAgenda({...newAgenda, color: colorOption.color})}
                                         title={colorOption.name}
@@ -383,24 +384,24 @@ export default function AgendaPageClient({
                         </div>
                     </div>
                     
-                    <DialogFooter className="pt-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg">
-                      <div className="flex flex-row gap-2 w-full">
+                    <DialogFooter className="pt-4 border-t border-slate-100">
+                      <div className="flex flex-row gap-3 w-full">
                         <Button 
                             type="button" 
                             variant="outline" 
                             onClick={() => setIsDialogOpen(false)} 
                             disabled={loading}
-                            className="flex-1 h-11 border-slate-300 hover:bg-slate-50 rounded-xl"
+                            className="flex-1 h-12 border-slate-200 hover:bg-slate-50 rounded-xl font-semibold"
                         >
                             Batal
                         </Button>
                         <Button 
                             type="submit" 
                             disabled={loading}
-                            className="flex-1 h-11 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl shadow-md"
+                            className="flex-1 h-12 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl shadow-lg shadow-emerald-600/20 font-bold"
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {editingAgenda ? 'Perbarui' : 'Simpan'} Agenda
+                            {editingAgenda ? 'Simpan Perubahan' : 'Simpan Agenda'}
                         </Button>
                       </div>
                     </DialogFooter>
@@ -408,8 +409,8 @@ export default function AgendaPageClient({
             </DialogContent>
         </Dialog>
 
-        <div className="grid md:grid-cols-7 md:gap-8 md:items-start">
-            <Card className="p-4 sm:p-6 bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-4 lg:col-span-3 rounded-xl">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-6 lg:gap-8 items-start">
+            <Card className="p-4 sm:p-6 bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-3 lg:col-span-3 rounded-[2rem]">
                 <DayPicker
                     locale={id}
                     mode="single"
@@ -418,170 +419,212 @@ export default function AgendaPageClient({
                     month={currentMonth}
                     onMonthChange={setCurrentMonth}
                     components={{ DayContent: CustomDayContent }}
+                    className="w-full flex justify-center"
                     classNames={{
                         root: "w-full",
-                        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                        month: "space-y-4 w-full",
-                        caption: "flex justify-center pt-1 relative items-center",
-                        caption_label: "text-lg font-bold font-headline",
+                        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+                        month: "space-y-6 w-full",
+                        caption: "flex justify-between pt-1 relative items-center px-2",
+                        caption_label: "text-xl font-bold font-headline text-slate-900 dark:text-white",
                         nav: "space-x-1 flex items-center",
                         nav_button: cn(
-                        "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                           "h-9 w-9 bg-slate-50 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-colors flex items-center justify-center"
                         ),
-                        nav_button_previous: "absolute left-1",
-                        nav_button_next: "absolute right-1",
-                        table: "w-full border-collapse space-y-1",
-                        head_row: "flex",
-                        head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
-                        row: "flex w-full mt-2",
-                        cell: "h-9 w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
-                        day: "h-9 w-full p-0 font-normal aria-selected:opacity-100",
-                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
-                        day_today: "bg-accent text-accent-foreground rounded-full",
-                        day_outside: "text-muted-foreground opacity-50",
-                        day_disabled: "text-muted-foreground opacity-50",
+                        nav_button_previous: "",
+                        nav_button_next: "",
+                        table: "w-full border-collapse",
+                        head_row: "flex w-full justify-between mb-4",
+                        head_cell: "text-slate-400 rounded-md w-9 font-bold text-[0.7rem] uppercase tracking-widest text-center flex-1",
+                        row: "flex w-full mt-2 justify-between",
+                        cell: "h-11 w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20 flex-1 flex justify-center items-center",
+                        day: cn(
+                          "h-10 w-10 p-0 font-bold text-slate-700 dark:text-slate-300 transition-all duration-200 rounded-xl hover:bg-slate-50 dark:hover:bg-gray-800"
+                        ),
+                        day_selected: "bg-primary text-white hover:bg-primary hover:text-white focus:bg-primary focus:text-white rounded-xl shadow-lg shadow-primary/30 scale-110",
+                        day_today: "bg-accent text-accent-foreground rounded-xl border-2 border-primary/20",
+                        day_outside: "text-slate-300 dark:text-slate-600 opacity-50",
+                        day_disabled: "text-slate-300 dark:text-slate-600 opacity-50",
                     }}
                 />
-                <div className="mt-6 pt-6 border-t border-slate-100 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full" />
-                        <span>Hari Libur Nasional</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                        <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full" />
-                        <span>Libur Khusus Sekolah</span>
+                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-gray-800 space-y-3">
+                    <div className="flex items-center justify-between px-2">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 font-bold uppercase tracking-wider">
+                          <div className="w-3 h-3 bg-red-500 rounded-full shadow-sm shadow-red-500/40" />
+                          <span>Libur Nasional</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-500 font-bold uppercase tracking-wider">
+                          <div className="w-3 h-3 bg-indigo-500 rounded-full shadow-sm shadow-indigo-500/40" />
+                          <span>Libur Sekolah</span>
+                      </div>
                     </div>
                 </div>
             </Card>
       
-            <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-3 lg:col-span-4 h-full min-h-[500px] flex flex-col rounded-xl">
-                <CardHeader className="pb-4">
+            <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-4 lg:col-span-4 h-full min-h-[500px] flex flex-col rounded-[2rem] overflow-hidden">
+                <CardHeader className="pb-6 pt-8 px-6 sm:px-8 border-b border-slate-50 bg-slate-50/30">
                     <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full animate-pulse" />
-                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100" suppressHydrationWarning>
-                            Agenda {format(selectedDate, 'dd MMMM yyyy', {locale: id})}
+                        <div className="w-3 h-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full animate-pulse shadow-lg shadow-emerald-500/40" />
+                        <h3 className="text-xl font-black text-slate-900 dark:text-gray-100 uppercase tracking-tight" suppressHydrationWarning>
+                            {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}
                         </h3>
                     </div>
                 </CardHeader>
-                <CardContent className="flex-grow overflow-hidden">
-                  <ScrollArea className="h-full pr-4">
-                    <div className="space-y-4">
-                        {holidayForDate && (
-                            <motion.div 
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className={cn(
-                                    "p-5 rounded-2xl border flex items-start gap-4 mb-2 shadow-sm",
-                                    holidayForDate.type === 'national' 
-                                        ? "bg-red-50 border-red-100 text-red-700" 
-                                        : "bg-indigo-50 border-indigo-100 text-indigo-700"
-                                )}
-                            >
-                                <div className={cn(
-                                    "p-2 rounded-xl text-white shadow-md",
-                                    holidayForDate.type === 'national' ? "bg-red-500" : "bg-indigo-500"
-                                )}>
-                                    {holidayForDate.type === 'national' ? <Flag className="h-5 w-5" /> : <School className="h-5 w-5" />}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h4 className="font-black text-[10px] uppercase tracking-widest opacity-70">
-                                        {holidayForDate.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
-                                    </h4>
-                                    <p className="font-bold text-lg leading-tight mt-1">{holidayForDate.name}</p>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {eventsForSelectedDate.length > 0 ? (
-                        eventsForSelectedDate.map((event) => (
-                            <div 
-                                key={event.id} 
-                                className="group p-5 rounded-2xl border-l-4 transition-all duration-300 hover:shadow-lg relative overflow-hidden bg-white border border-slate-100"
-                                style={{
-                                    borderLeftColor: event.color || '#6b7280',
-                                }}
-                            >
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div 
-                                                className="w-2.5 h-2.5 rounded-full"
-                                                style={{ backgroundColor: event.color || '#6b7280' }}
-                                            />
-                                            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">
-                                                {event.title}
-                                            </h3>
+                <CardContent className="flex-grow p-0">
+                  <ScrollArea className="h-full">
+                    <div className="p-6 sm:p-8 space-y-6">
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={format(selectedDate, 'yyyy-MM-dd')}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.3 }}
+                            className="space-y-6"
+                          >
+                            {holidayForDate && (
+                                <div 
+                                    className={cn(
+                                        "p-6 rounded-[1.5rem] border-2 flex items-start gap-5 shadow-sm",
+                                        holidayForDate.type === 'national' 
+                                            ? "bg-red-50/50 border-red-100 text-red-700" 
+                                            : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "p-3 rounded-2xl text-white shadow-lg",
+                                        holidayForDate.type === 'national' ? "bg-red-500 shadow-red-500/20" : "bg-indigo-500 shadow-indigo-500/20"
+                                    )}>
+                                        {holidayForDate.type === 'national' ? <Flag className="h-6 w-6" /> : <School className="h-6 w-6" />}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h4 className="font-black text-[10px] uppercase tracking-[0.2em] opacity-60">
+                                            {holidayForDate.type === 'national' ? 'Hari Libur Nasional' : 'Libur Khusus Sekolah'}
+                                        </h4>
+                                        <p className="font-bold text-xl leading-tight mt-1">{holidayForDate.name}</p>
+                                        <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold opacity-70">
+                                          <CalendarOff className="h-3.5 w-3.5" />
+                                          <span>Bebas Administrasi & Absensi</span>
                                         </div>
-                                        {event.start_time && (
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground ml-4">
-                                                <Clock className="h-4 w-4" />
-                                                <span className="font-medium">
-                                                    {formatTime(event.start_time)} {event.end_time && `- ${formatTime(event.end_time)}`}
-                                                </span>
-                                            </div>
-                                        )}
                                     </div>
-                                    <AlertDialog>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="rounded-xl">
-                                                <DropdownMenuItem onClick={() => handleOpenEditDialog(event)} className="rounded-lg">
-                                                    <Edit className="mr-2 h-4 w-4" /> Ubah
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem className="rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50">
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Hapus
-                                                    </DropdownMenuItem>
-                                                </AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        <AlertDialogContent className="rounded-3xl">
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Hapus Agenda?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Tindakan ini tidak dapat dibatalkan. Hapus agenda "{event.title}"?
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel className="rounded-xl">Batal</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-red-600 hover:bg-red-700 rounded-xl">Hapus</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
                                 </div>
-                                {event.description && <p className="mt-2 text-sm text-slate-600 ml-4 leading-relaxed">{event.description}</p>}
-                                {event.tag && (
-                                    <div className="mt-3 ml-4">
-                                        <Badge 
-                                            variant="outline" 
-                                            className="border-0 px-2.5 py-0.5 rounded-lg font-bold text-[10px] uppercase tracking-wider shadow-sm" 
-                                            style={{
-                                                backgroundColor: event.color || '#6b7280',
-                                                color: getTextColor(event.color || '#6b7280')
-                                            }}
-                                        >
-                                            {event.tag}
-                                        </Badge>
+                            )}
+
+                            {eventsForSelectedDate.length > 0 ? (
+                            <div className="space-y-4">
+                              {eventsForSelectedDate.map((event) => (
+                                <div 
+                                    key={event.id} 
+                                    className="group p-6 rounded-[1.8rem] border-l-8 transition-all duration-300 hover:shadow-xl relative overflow-hidden bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700"
+                                    style={{
+                                        borderLeftColor: event.color || '#6b7280',
+                                    }}
+                                >
+                                    <div className="flex justify-between items-start gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2.5 mb-3">
+                                                <div 
+                                                    className="w-2.5 h-2.5 rounded-full shadow-sm"
+                                                    style={{ backgroundColor: event.color || '#6b7280' }}
+                                                />
+                                                <h3 className="font-bold text-lg text-slate-900 dark:text-gray-100 truncate">
+                                                    {event.title}
+                                                </h3>
+                                            </div>
+                                            {event.start_time && (
+                                                <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-gray-900/50 w-fit px-3 py-1 rounded-full border border-slate-100 dark:border-gray-800">
+                                                    <Clock className="h-4 w-4 text-primary/70" />
+                                                    <span>
+                                                        {formatTime(event.start_time)} {event.end_time && `- ${formatTime(event.end_time)}`}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors shrink-0">
+                                                        <MoreHorizontal className="h-5 w-5 text-slate-400" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-2xl p-2 border-0 shadow-2xl w-48">
+                                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(event)} className="rounded-xl h-11 font-medium gap-2">
+                                                        <Edit className="h-4 w-4 text-blue-500" /> Ubah Agenda
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="my-1 mx-2" />
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="rounded-xl h-11 font-medium text-red-600 focus:text-red-600 focus:bg-red-50 gap-2">
+                                                            <Trash2 className="h-4 w-4" /> Hapus
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <AlertDialogContent className="rounded-[2.5rem] p-8 border-0 shadow-2xl">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle className="text-2xl font-bold">Hapus Agenda?</AlertDialogTitle>
+                                                    <AlertDialogDescription className="text-base">
+                                                        Agenda "<span className="font-bold text-slate-900">{event.title}</span>" akan dihapus permanen dari sistem. Tindakan ini tidak dapat dibatalkan.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter className="pt-6 gap-3">
+                                                    <AlertDialogCancel className="rounded-2xl h-12 font-semibold">Batal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-red-600 hover:bg-red-700 text-white rounded-2xl h-12 font-bold shadow-lg shadow-red-600/20">Ya, Hapus Agenda</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </div>
-                                )}
+                                    
+                                    {event.description && (
+                                      <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed pl-5 border-l border-slate-100 dark:border-gray-700">
+                                        {event.description}
+                                      </p>
+                                    )}
+                                    
+                                    {event.tag && (
+                                        <div className="mt-5 flex justify-end">
+                                            <Badge 
+                                                variant="outline" 
+                                                className="border-0 px-4 py-1 rounded-xl font-black text-[9px] uppercase tracking-[0.15em] shadow-sm" 
+                                                style={{
+                                                    backgroundColor: event.color || '#6b7280',
+                                                    color: getTextColor(event.color || '#6b7280')
+                                                }}
+                                            >
+                                                {event.tag}
+                                            </Badge>
+                                        </div>
+                                    )}
+                                </div>
+                              ))}
                             </div>
-                        ))
-                        ) : !holidayForDate ? (
-                            <div className="text-center py-20 opacity-50">
-                                <CalendarDays className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-                                <p className="text-sm font-medium">Tidak ada agenda hari ini</p>
-                            </div>
-                        ) : null}
+                            ) : !holidayForDate ? (
+                                <div className="text-center py-24 flex flex-col items-center justify-center opacity-40">
+                                    <div className="bg-slate-100 dark:bg-gray-800 p-6 rounded-[2rem] mb-6">
+                                      <CalendarDays className="w-16 h-16 text-slate-400" />
+                                    </div>
+                                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">Hari ini Kosong</p>
+                                    <p className="text-sm font-medium text-slate-500 mt-2 max-w-[200px]">Belum ada agenda atau pengingat untuk hari ini.</p>
+                                </div>
+                            ) : null}
+                          </motion.div>
+                        </AnimatePresence>
                     </div>
                   </ScrollArea>
                 </CardContent>
             </Card>
         </div>
+        
+        <style jsx global>{`
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+          }
+        `}</style>
     </div>
   );
 }
