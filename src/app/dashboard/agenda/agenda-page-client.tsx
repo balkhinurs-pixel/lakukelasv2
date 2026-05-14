@@ -13,7 +13,9 @@ import {
   AlignLeft,
   Palette,
   Sparkles,
-  CalendarDays
+  CalendarDays,
+  CalendarOff,
+  Info
 } from "lucide-react";
 import { format, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -59,6 +61,12 @@ import { saveAgenda, deleteAgenda } from "@/lib/actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
+interface IndonesianHoliday {
+    date: string;
+    name: string;
+    is_holiday: boolean;
+}
+
 type NewAgendaEntry = Omit<Agenda, 'id' | 'teacher_id' | 'created_at'>;
 
 const getTextColor = (hexColor: string): string => {
@@ -71,7 +79,13 @@ const getTextColor = (hexColor: string): string => {
   return brightness > 128 ? '#000000' : '#ffffff';
 };
 
-export default function AgendaPageClient({ initialAgendas }: { initialAgendas: Agenda[] }) {
+export default function AgendaPageClient({ 
+    initialAgendas,
+    indonesianHolidays = []
+}: { 
+    initialAgendas: Agenda[],
+    indonesianHolidays?: IndonesianHoliday[]
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [agendas, setAgendas] = React.useState(initialAgendas);
@@ -116,15 +130,23 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   const CustomDayContent = (props: DayContentProps) => {
     const dateKey = format(startOfDay(props.date), 'yyyy-MM-dd');
     const colors = eventsByDate.get(dateKey) || [];
+    const holiday = indonesianHolidays.find(h => h.date === dateKey);
+
     return (
       <div className="relative h-full w-full flex items-center justify-center">
-        <span>{props.date.getDate()}</span>
+        <span className={cn(holiday && "text-red-600 font-bold")}>{props.date.getDate()}</span>
+        
+        {/* Holiday Indicator */}
+        {holiday && (
+            <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-red-500 rounded-full" />
+        )}
+
         {colors.length > 0 && (
-          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-1">
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-0.5">
             {colors.slice(0, 3).map((color, index) => (
               <div
                 key={index}
-                className="h-1.5 w-1.5 rounded-full"
+                className="h-1 w-1 rounded-full"
                 style={{ backgroundColor: color }}
               />
             ))}
@@ -208,6 +230,7 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
   }
 
   const eventsForSelectedDate = agendas.filter(agenda => isSameDay(parseISO(agenda.date), selectedDate));
+  const holidayForDate = indonesianHolidays.find(h => h.date === format(selectedDate, 'yyyy-MM-dd'));
 
   return (
     <div className="space-y-6 p-1">
@@ -387,33 +410,39 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                     month={currentMonth}
                     onMonthChange={setCurrentMonth}
                     components={{ DayContent: CustomDayContent }}
-                classNames={{
-                    root: "w-full",
-                    months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                    month: "space-y-4 w-full",
-                    caption: "flex justify-center pt-1 relative items-center",
-                    caption_label: "text-lg font-bold font-headline",
-                    nav: "space-x-1 flex items-center",
-                    nav_button: cn(
-                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
-                    ),
-                    nav_button_previous: "absolute left-1",
-                    nav_button_next: "absolute right-1",
-                    table: "w-full border-collapse space-y-1",
-                    head_row: "flex",
-                    head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
-                    row: "flex w-full mt-2",
-                    cell: "h-9 w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
-                    day: "h-9 w-full p-0 font-normal aria-selected:opacity-100",
-                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
-                    day_today: "bg-accent text-accent-foreground rounded-full",
-                    day_outside: "text-muted-foreground opacity-50",
-                    day_disabled: "text-muted-foreground opacity-50",
-                }}
+                    classNames={{
+                        root: "w-full",
+                        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                        month: "space-y-4 w-full",
+                        caption: "flex justify-center pt-1 relative items-center",
+                        caption_label: "text-lg font-bold font-headline",
+                        nav: "space-x-1 flex items-center",
+                        nav_button: cn(
+                        "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                        ),
+                        nav_button_previous: "absolute left-1",
+                        nav_button_next: "absolute right-1",
+                        table: "w-full border-collapse space-y-1",
+                        head_row: "flex",
+                        head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
+                        row: "flex w-full mt-2",
+                        cell: "h-9 w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+                        day: "h-9 w-full p-0 font-normal aria-selected:opacity-100",
+                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
+                        day_today: "bg-accent text-accent-foreground rounded-full",
+                        day_outside: "text-muted-foreground opacity-50",
+                        day_disabled: "text-muted-foreground opacity-50",
+                    }}
                 />
+                <div className="mt-6 pt-6 border-t border-slate-100 space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                        <span>Hari Libur Nasional</span>
+                    </div>
+                </div>
             </Card>
       
-            <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-3 lg:col-span-4 h-full max-h-[500px] flex flex-col rounded-3xl">
+            <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-3 lg:col-span-4 h-full min-h-[500px] flex flex-col rounded-3xl">
                 <CardHeader className="pb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full animate-pulse" />
@@ -425,6 +454,23 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                 <CardContent className="flex-grow overflow-hidden">
                   <ScrollArea className="h-full pr-4">
                     <div className="space-y-4">
+                        {/* Indonesian Holiday Header */}
+                        {holidayForDate && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="p-5 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 flex items-start gap-4 mb-2 shadow-sm"
+                            >
+                                <div className="p-2 rounded-xl bg-red-500 text-white shadow-md">
+                                    <CalendarOff className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="font-black text-red-700 dark:text-red-400 text-sm uppercase tracking-tighter">Hari Libur Nasional</h4>
+                                    <p className="text-red-600 dark:text-red-300 font-bold text-lg leading-tight mt-1">{holidayForDate.name}</p>
+                                </div>
+                            </motion.div>
+                        )}
+
                         {eventsForSelectedDate.length > 0 ? (
                         eventsForSelectedDate.map((event) => (
                             <div 
@@ -504,12 +550,12 @@ export default function AgendaPageClient({ initialAgendas }: { initialAgendas: A
                                 )}
                             </div>
                         ))
-                        ) : (
+                        ) : !holidayForDate ? (
                             <div className="text-center py-16 opacity-50">
                                 <CalendarDays className="w-12 h-12 mx-auto text-slate-300 mb-4" />
                                 <p className="text-sm font-medium">Tidak ada agenda hari ini</p>
                             </div>
-                        )}
+                        ) : null}
                     </div>
                   </ScrollArea>
                 </CardContent>
