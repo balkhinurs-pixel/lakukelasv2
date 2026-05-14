@@ -14,7 +14,7 @@ async function getIndonesianHolidays() {
             });
             if (!res.ok) return null;
             const data = await res.json();
-            // Beberapa API mengembalikan { data: [] }, yang lain [] langsung
+            // Handle both { data: [] } and []
             return Array.isArray(data) ? data : (data.data || null);
         } catch (error) {
             return null;
@@ -22,7 +22,7 @@ async function getIndonesianHolidays() {
     };
 
     try {
-        // Coba beberapa sumber API populer jika salah satu gagal
+        // Coba beberapa sumber API populer
         const sources = [
             `https://api-hari-libur.vercel.app/api?year=${year}`,
             `https://day-off-api.vercel.app/api?year=${year}`,
@@ -34,16 +34,16 @@ async function getIndonesianHolidays() {
             const data = await fetchFromSource(source);
             if (data && Array.isArray(data) && data.length > 0) {
                 allData = data;
-                break; // Gunakan sumber pertama yang berhasil
+                break; 
             }
         }
 
         // Mapping data agar kompatibel dengan berbagai format field API
         return allData.map((h: any) => ({
-            date: h.date || h.holiday_date,
-            name: h.name || h.holiday_name,
+            date: h.date || h.holiday_date || h.tanggal,
+            name: h.name || h.holiday_name || h.keterangan || h.event,
             is_holiday: h.is_holiday !== undefined ? h.is_holiday : true
-        })).filter(h => !!h.date);
+        })).filter(h => !!h.date && !!h.name);
         
     } catch (error) {
         console.error("Critical failure fetching holidays:", error);
