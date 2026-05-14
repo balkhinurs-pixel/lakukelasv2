@@ -26,7 +26,8 @@ import {
     ChevronRight, 
     Calendar, 
     Filter,
-    Info
+    Info,
+    Search
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -34,6 +35,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 interface Props {
   initialData: {
@@ -60,6 +62,7 @@ export default function HomeroomReportsClient({ initialData }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { className, students, attendanceMap, holidayDates, daysInMonth, month, year } = initialData;
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   const handleMonthChange = (val: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -95,6 +98,10 @@ export default function HomeroomReportsClient({ initialData }: Props) {
       return { h, s, i, a };
   };
 
+  const filteredStudents = React.useMemo(() => {
+    return students.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [students, searchTerm]);
+
   return (
     <div className="space-y-8 p-1">
       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -115,19 +122,28 @@ export default function HomeroomReportsClient({ initialData }: Props) {
 
       <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white/80 backdrop-blur-sm">
         <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-indigo-100 text-indigo-600">
-                    <Calendar className="h-5 w-5" />
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-indigo-100 text-indigo-600 shadow-inner">
+                    <Calendar className="h-6 w-6" />
                 </div>
                 <div>
-                    <CardTitle className="text-xl font-bold tracking-tight">Rekap Kehadiran Siswa</CardTitle>
-                    <CardDescription>Pilih periode untuk melihat matriks presensi bulanan.</CardDescription>
+                    <CardTitle className="text-xl font-black tracking-tight text-slate-900">Rekap Presensi Siswa</CardTitle>
+                    <CardDescription className="font-medium">Periode {months.find(m => m.value === String(month))?.label} {year}</CardDescription>
                 </div>
             </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input 
+                        placeholder="Cari nama siswa..." 
+                        className="pl-10 h-11 rounded-xl border-slate-200"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
                 <Select value={String(month)} onValueChange={handleMonthChange}>
-                    <SelectTrigger className="h-12 w-full sm:w-[200px] rounded-xl border-slate-200 bg-white">
+                    <SelectTrigger className="h-11 w-full sm:w-[180px] rounded-xl border-slate-200 bg-white font-bold">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
@@ -140,15 +156,15 @@ export default function HomeroomReportsClient({ initialData }: Props) {
         <CardContent className="p-0">
           <ScrollArea className="w-full">
             <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full border-collapse text-xs">
+              <table className="min-w-full border-collapse text-[10px] sm:text-xs">
                 <thead>
                   <tr className="bg-slate-100/80 border-b border-slate-200">
-                    <th className="sticky left-0 z-20 bg-slate-100/90 backdrop-blur px-4 py-4 font-black uppercase tracking-widest text-slate-500 border-r border-slate-200" rowSpan={2}>No</th>
-                    <th className="sticky left-[52px] z-20 bg-slate-100/90 backdrop-blur px-4 py-4 font-black uppercase tracking-widest text-slate-500 border-r border-slate-200" rowSpan={2}>NIS</th>
-                    <th className="sticky left-[125px] z-20 bg-slate-100/90 backdrop-blur px-6 py-4 text-left font-black uppercase tracking-widest text-slate-500 border-r border-slate-200 min-w-[200px]" rowSpan={2}>Nama Lengkap</th>
-                    <th className="px-3 py-4 font-black uppercase tracking-widest text-slate-500 border-r border-slate-200" rowSpan={2}>JK</th>
-                    <th className="px-4 py-2 font-black uppercase tracking-widest text-slate-500 border-b border-slate-200" colSpan={daysInMonth}>Tanggal / Hari</th>
-                    <th className="px-4 py-2 font-black uppercase tracking-widest text-slate-500 border-l border-slate-200" colSpan={4}>Rekap</th>
+                    <th className="sticky left-0 z-30 bg-slate-100 px-3 py-4 font-black uppercase tracking-widest text-slate-500 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={2}>No</th>
+                    <th className="sticky left-[42px] sm:left-[52px] z-30 bg-slate-100 px-3 py-4 font-black uppercase tracking-widest text-slate-500 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={2}>NIS</th>
+                    <th className="sticky left-[105px] sm:left-[125px] z-30 bg-slate-100 px-6 py-4 text-left font-black uppercase tracking-widest text-slate-500 border-r border-slate-200 min-w-[180px] sm:min-w-[220px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={2}>Nama Lengkap</th>
+                    <th className="px-2 py-4 font-black uppercase tracking-widest text-slate-500 border-r border-slate-200" rowSpan={2}>JK</th>
+                    <th className="px-4 py-2 font-black uppercase tracking-widest text-slate-500 border-b border-slate-200 text-center" colSpan={daysInMonth}>Tanggal / Hari</th>
+                    <th className="px-4 py-2 font-black uppercase tracking-widest text-slate-500 border-l border-slate-200 text-center" colSpan={4}>Rekap</th>
                   </tr>
                   <tr className="bg-slate-50 border-b border-slate-200">
                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
@@ -156,27 +172,27 @@ export default function HomeroomReportsClient({ initialData }: Props) {
                         const isHoliday = holidayDates.has(dateStr) || isSunday(d);
                         return (
                             <th key={d} className={cn(
-                                "w-8 h-8 text-center font-bold border-r border-slate-200",
+                                "w-7 h-8 sm:w-8 text-center font-bold border-r border-slate-200",
                                 isHoliday ? "bg-red-100 text-red-600" : "text-slate-400"
                             )}>
                                 {d}
                             </th>
                         );
                     })}
-                    <th className="w-8 font-black text-emerald-600 border-l border-slate-200">H</th>
-                    <th className="w-8 font-black text-amber-600">S</th>
-                    <th className="w-8 font-black text-blue-600">I</th>
-                    <th className="w-8 font-black text-red-600">A</th>
+                    <th className="w-8 font-black text-emerald-600 border-l border-slate-200 bg-emerald-50/50">H</th>
+                    <th className="w-8 font-black text-amber-600 bg-amber-50/50">S</th>
+                    <th className="w-8 font-black text-blue-600 bg-blue-50/50">I</th>
+                    <th className="w-8 font-black text-red-600 bg-red-50/50">A</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {students.map((student, idx) => {
+                  {filteredStudents.map((student, idx) => {
                       const summary = getRowSummary(student.id);
                       return (
                         <tr key={student.id} className="hover:bg-indigo-50/30 transition-colors group">
-                          <td className="sticky left-0 z-10 bg-white group-hover:bg-indigo-50/50 text-center font-bold text-slate-400 border-r border-slate-100 py-3">{idx + 1}</td>
-                          <td className="sticky left-[52px] z-10 bg-white group-hover:bg-indigo-50/50 text-center font-mono text-slate-500 border-r border-slate-100">{student.nis}</td>
-                          <td className="sticky left-[125px] z-10 bg-white group-hover:bg-indigo-50/50 px-6 py-3 font-bold text-slate-900 border-r border-slate-100 truncate">{student.name}</td>
+                          <td className="sticky left-0 z-20 bg-white group-hover:bg-indigo-50 text-center font-bold text-slate-400 border-r border-slate-100 py-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{idx + 1}</td>
+                          <td className="sticky left-[42px] sm:left-[52px] z-20 bg-white group-hover:bg-indigo-50 text-center font-mono text-[9px] text-slate-500 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{student.nis}</td>
+                          <td className="sticky left-[105px] sm:left-[125px] z-20 bg-white group-hover:bg-indigo-50 px-6 py-3 font-bold text-slate-900 border-r border-slate-100 truncate shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{student.name}</td>
                           <td className="text-center font-bold text-slate-400 border-r border-slate-100 uppercase">{student.gender.charAt(0)}</td>
                           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
                               const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -184,21 +200,21 @@ export default function HomeroomReportsClient({ initialData }: Props) {
                               const status = getDayStatus(student.id, d);
                               return (
                                 <td key={d} className={cn(
-                                    "text-center font-black border-r border-slate-100 h-10",
-                                    isHoliday && "bg-red-50/50",
-                                    status === 'H' && "text-emerald-600",
-                                    status === 'S' && "text-amber-600",
-                                    status === 'I' && "text-blue-600",
-                                    status === 'A' && "text-red-600"
+                                    "text-center font-black border-r border-slate-100 h-10 min-w-[28px]",
+                                    isHoliday && "bg-red-50/30",
+                                    status === 'H' && "text-emerald-600 bg-emerald-50/20",
+                                    status === 'S' && "text-amber-600 bg-amber-50/20",
+                                    status === 'I' && "text-blue-600 bg-blue-50/20",
+                                    status === 'A' && "text-red-600 bg-red-50/20"
                                 )}>
                                     {status}
                                 </td>
                               );
                           })}
-                          <td className="text-center font-black text-emerald-600 bg-emerald-50/30 border-l border-slate-100">{summary.h}</td>
-                          <td className="text-center font-black text-amber-600 bg-amber-50/30 border-l border-slate-100">{summary.s}</td>
-                          <td className="text-center font-black text-blue-600 bg-blue-50/30 border-l border-slate-100">{summary.i}</td>
-                          <td className="text-center font-black text-red-600 bg-red-50/30 border-l border-slate-100">{summary.a}</td>
+                          <td className="text-center font-black text-emerald-600 bg-emerald-50/40 border-l border-slate-100">{summary.h}</td>
+                          <td className="text-center font-black text-amber-600 bg-amber-50/40 border-l border-slate-100">{summary.s}</td>
+                          <td className="text-center font-black text-blue-600 bg-blue-50/40 border-l border-slate-100">{summary.i}</td>
+                          <td className="text-center font-black text-red-600 bg-red-50/40 border-l border-slate-100">{summary.a}</td>
                         </tr>
                       );
                   })}
@@ -210,7 +226,7 @@ export default function HomeroomReportsClient({ initialData }: Props) {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-2">
             <div className="flex items-center gap-3 p-4 rounded-3xl bg-emerald-50 border border-emerald-100">
                 <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-xs">H</div>
                 <div className="text-[10px] font-black uppercase text-emerald-800 tracking-widest">Hadir</div>
@@ -227,6 +243,13 @@ export default function HomeroomReportsClient({ initialData }: Props) {
                 <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-xs">A</div>
                 <div className="text-[10px] font-black uppercase text-red-800 tracking-widest">Alpha</div>
             </div>
+      </div>
+
+      <div className="p-4 bg-slate-50 border border-dashed rounded-3xl flex items-start gap-4">
+          <Info className="h-5 w-5 text-slate-400 mt-0.5 shrink-0" />
+          <p className="text-xs text-slate-500 leading-relaxed">
+            <strong>Catatan:</strong> Status harian diambil dari input presensi guru mata pelajaran pertama pada hari tersebut. Jika terdapat beberapa sesi mata pelajaran, sistem mengutamakan konsistensi data harian untuk laporan bulanan walikelas.
+          </p>
       </div>
     </div>
   );

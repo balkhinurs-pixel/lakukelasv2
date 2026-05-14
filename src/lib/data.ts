@@ -435,23 +435,23 @@ export async function getHomeroomMonthlyAttendance(month: number, year: number) 
     if (!user) return null;
     const supabase = createClient();
 
-    // 1. Get homeroom class
+    // 1. Get homeroom class (Request 1)
     const { data: homeroomClass } = await supabase
         .from('classes')
         .select('id, name')
         .eq('teacher_id', user.id)
         .limit(1)
-        .single();
+        .maybeSingle();
     if (!homeroomClass) return null;
 
-    // 2. Get students in class
+    // 2. Get students in class (Request 2)
     const { data: students } = await supabase
         .from('students')
         .select('id, name, nis, gender')
         .eq('class_id', homeroomClass.id)
         .eq('status', 'active')
         .order('name');
-    if (!students) return null;
+    if (!students || students.length === 0) return { className: homeroomClass.name, students: [], attendanceMap: {}, holidayDates: new Set(), daysInMonth: 0, month, year };
 
     // 3. Date range
     const startDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd');
@@ -459,28 +459,24 @@ export async function getHomeroomMonthlyAttendance(month: number, year: number) 
     const lastDayCount = lastDayDate.getDate();
     const endDate = format(lastDayDate, 'yyyy-MM-dd');
 
-    // 4. Get holidays
-    const { data: dbHolidays } = await supabase
-        .from('holidays')
-        .select('date')
-        .gte('date', startDate)
-        .lte('date', endDate);
-    const holidayDates = new Set(dbHolidays?.map(h => h.date) || []);
+    // 4. Get holidays & attendance concurrently (Request 3 & 4)
+    const [holidaysRes, attendanceRes] = await Promise.all([
+        supabase.from('holidays').select('date').gte('date', startDate).lte('date', endDate),
+        supabase.from('attendance_records')
+            .select('student_id, date, status, meeting_number')
+            .eq('class_id', homeroomClass.id)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date')
+            .order('meeting_number', { ascending: true })
+    ]);
 
-    // 5. Get attendance records
-    // We take the first meeting of the day as the representative status
-    const { data: records } = await supabase
-        .from('attendance_records')
-        .select('student_id, date, status, meeting_number')
-        .eq('class_id', homeroomClass.id)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date')
-        .order('meeting_number', { ascending: true });
+    const holidayDates = new Set(holidaysRes.data?.map(h => h.date) || []);
 
     const attendanceMap: Record<string, Record<string, string>> = {};
-    records?.forEach(r => {
+    attendanceRes.data?.forEach(r => {
         if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
+        // We take the first meeting of the day as the representative status for the matrix
         if (!attendanceMap[r.student_id][r.date]) {
             attendanceMap[r.student_id][r.date] = r.status;
         }
