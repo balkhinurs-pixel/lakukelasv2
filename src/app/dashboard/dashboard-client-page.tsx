@@ -9,7 +9,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, BookText, Users, Clock, CalendarDays, Tag, ClipboardEdit, CheckCircle, Flag, School, CalendarOff } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  ClipboardCheck, 
+  BookText, 
+  Users, 
+  Clock, 
+  CalendarDays, 
+  Tag, 
+  ClipboardEdit, 
+  CheckCircle, 
+  Flag, 
+  School, 
+  CalendarOff,
+  ArrowRight
+} from "lucide-react";
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
