@@ -1,7 +1,8 @@
+
 'use server';
 
 import { createClient } from './supabase/server';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -154,7 +155,7 @@ export async function getAllSubjects(): Promise<Subject[]> {
     return data;
 }
 
-export async function getHolidays(): Promise<{ id: string; date: string; description: string }[]> {
+export async function getHolidays(): Promise<Holiday[]> {
     noStore();
     const supabase = createClient();
     const { data, error } = await supabase.from('holidays').select('*').order('date', { ascending: true });
@@ -199,7 +200,7 @@ export async function getSubjects(): Promise<Subject[]> {
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { data: scheduleData } = await supabase.from('schedule').select('subject_id').eq('teacher_id', user.id);
+    const { data: scheduleData } = await supabase.from('subject_id').select('subject_id').eq('teacher_id', user.id);
     if (!scheduleData) return [];
     const subjectIds = [...new Set(scheduleData.map(item => item.subject_id))];
     if (subjectIds.length === 0) return [];

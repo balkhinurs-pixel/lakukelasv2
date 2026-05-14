@@ -349,7 +349,7 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 
 export async function saveHoliday(holiday: { date: string, description: string, type: 'national' | 'school' }) {
     const supabase = createClient();
-    const { error } = await supabase.from('holidays').insert(holiday);
+    const { error } = await supabase.from('holidays').upsert(holiday, { onConflict: 'date' });
     
     if (error) {
         console.error("Supabase error adding holiday:", error.message);

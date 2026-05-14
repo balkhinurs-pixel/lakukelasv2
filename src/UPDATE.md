@@ -10,7 +10,7 @@ Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan 
 
 ---
 
-# Update V5.7: Arsitektur Hari Libur Terintegrasi (NEW - IMPLEMENTING)
+# Update V5.7: Arsitektur Hari Libur Terintegrasi (TERIMPLEMENTASI)
 
 Fitur sinkronisasi cerdas yang memisahkan antara hari libur nasional dan kebijakan internal sekolah.
 
@@ -18,11 +18,11 @@ Fitur sinkronisasi cerdas yang memisahkan antara hari libur nasional dan kebijak
 - Tambahan kolom `type`: 
     - `national`: Data otomatis dari API.
     - `school`: Data input manual dari Admin.
-- Kolom `date` bersifat unik untuk mencegah duplikasi.
+- Kolom `date` bersifat unik (Unique Index) untuk mencegah duplikasi data ganda.
 
 ## 2. Logika Sinkronisasi (Server-Side)
-- **Auto-Fetch**: Terjadi saat menu Agenda dibuka.
-- **Deduplikasi**: Pengecekan berbasis `date` dan `Set` di level aplikasi sebelum masuk ke database.
+- **Auto-Fetch**: Terjadi saat menu Agenda dibuka oleh user manapun.
+- **Deduplikasi**: Pengecekan berbasis `date` dan `Set` di level aplikasi sebelum masuk ke database dengan metode `upsert`.
 - **Dukungan Multi-Tahun**: Sinkronisasi otomatis data tahun 2025 dan 2026.
 
 ## 3. Integrasi UI/UX
