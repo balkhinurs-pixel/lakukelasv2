@@ -1,281 +1,267 @@
--- ==========================================
--- LAKUKELAS DATABASE SCHEMA (CONSOLIDATED)
--- ==========================================
 
--- ENABLE EXTENSIONS
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- LAKUKELAS DATABASE SCHEMA & RLS POLICIES
+-- Versi: 8.0 (Collaborative Sync Support)
 
--- SETTINGS TABLE (Global Configuration)
-CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
+-- 1. PROFILES TABLE (Extends Auth.Users)
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  full_name TEXT,
+  avatar_url TEXT,
+  nip TEXT,
+  pangkat TEXT,
+  jabatan TEXT,
+  phone_number TEXT,
+  school_name TEXT,
+  school_address TEXT,
+  headmaster_name TEXT,
+  headmaster_nip TEXT,
+  school_logo_url TEXT,
+  role TEXT DEFAULT 'teacher' CHECK (role IN ('admin', 'teacher', 'headmaster')),
+  is_homeroom_teacher BOOLEAN DEFAULT false,
+  active_school_year_id UUID
 );
 
--- PROFILES TABLE
--- Menampung data Guru, Admin, dan Kepala Sekolah
-CREATE TABLE IF NOT EXISTS profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    full_name TEXT,
-    avatar_url TEXT,
-    nip TEXT,
-    pangkat TEXT,
-    jabatan TEXT,
-    phone_number TEXT,
-    school_name TEXT,
-    school_address TEXT,
-    headmaster_name TEXT,
-    headmaster_nip TEXT,
-    school_logo_url TEXT,
-    role TEXT DEFAULT 'teacher' CHECK (role IN ('admin', 'teacher', 'headmaster')),
-    is_homeroom_teacher BOOLEAN DEFAULT false,
-    active_school_year_id UUID
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public profiles are viewable by authenticated users"
+ON profiles FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Users can update own profile"
+ON profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
+
+-- 2. SCHOOL YEARS
+CREATE TABLE school_years (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  teacher_id UUID REFERENCES profiles(id),
+  is_active BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- SCHOOL YEARS
-CREATE TABLE IF NOT EXISTS school_years (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL, -- e.g. "2024/2025 - Ganjil"
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+ALTER TABLE school_years ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Viewable by authenticated" ON school_years FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admins can manage school years" ON school_years FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- CLASSES (Rombongan Belajar)
-CREATE TABLE IF NOT EXISTS classes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    teacher_id UUID REFERENCES profiles(id) ON DELETE SET NULL, -- Wali Kelas
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+-- 3. CLASSES
+CREATE TABLE classes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  teacher_id UUID REFERENCES profiles(id), -- Homeroom Teacher
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- SUBJECTS (Mata Pelajaran)
-CREATE TABLE IF NOT EXISTS subjects (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    kkm INTEGER DEFAULT 75,
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Viewable by authenticated" ON classes FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admins can manage classes" ON classes FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- STUDENTS
-CREATE TABLE IF NOT EXISTS students (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    nis TEXT UNIQUE NOT NULL,
-    gender TEXT CHECK (gender IN ('Laki-laki', 'Perempuan')),
-    class_id UUID REFERENCES classes(id) ON DELETE SET NULL,
-    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'graduated', 'dropout', 'inactive')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+-- 4. SUBJECTS
+CREATE TABLE subjects (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  kkm INTEGER DEFAULT 75,
+  teacher_id UUID REFERENCES profiles(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- SCHEDULE (Jadwal Mengajar)
-CREATE TABLE IF NOT EXISTS schedule (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    day TEXT NOT NULL CHECK (day IN ('Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')),
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
-    class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE
+ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Viewable by authenticated" ON subjects FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admins can manage subjects" ON subjects FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- ATTENDANCE RECORDS (Student Attendance)
-CREATE TABLE IF NOT EXISTS attendance_records (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id UUID REFERENCES students(id) ON DELETE CASCADE,
-    subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
-    class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    meeting_number INTEGER NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('Hadir', 'Sakit', 'Izin', 'Alpha')),
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    school_year_id UUID REFERENCES school_years(id) ON DELETE CASCADE
+-- 5. STUDENTS
+CREATE TABLE students (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  nis TEXT UNIQUE NOT NULL,
+  gender TEXT CHECK (gender IN ('Laki-laki', 'Perempuan')),
+  class_id UUID REFERENCES classes(id) ON DELETE SET NULL,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'graduated', 'dropout', 'inactive')),
+  avatar_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- GRADE RECORDS (Student Grades)
-CREATE TABLE IF NOT EXISTS grade_records (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id UUID REFERENCES students(id) ON DELETE CASCADE,
-    subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
-    class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    assessment_type TEXT NOT NULL,
-    score NUMERIC NOT NULL,
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    school_year_id UUID REFERENCES school_years(id) ON DELETE CASCADE
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Viewable by authenticated" ON students FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admins can manage students" ON students FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- JOURNAL ENTRIES
-CREATE TABLE IF NOT EXISTS journal_entries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    date TIMESTAMP WITH TIME ZONE NOT NULL,
-    class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
-    subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
-    school_year_id UUID REFERENCES school_years(id) ON DELETE CASCADE,
-    meeting_number INTEGER,
-    learning_objectives TEXT NOT NULL,
-    learning_activities TEXT NOT NULL,
-    assessment TEXT,
-    reflection TEXT,
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE
+-- 6. ATTENDANCE RECORDS (Student Attendance)
+CREATE TABLE attendance_records (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
+  teacher_id UUID REFERENCES profiles(id),
+  school_year_id UUID REFERENCES school_years(id),
+  date DATE NOT NULL,
+  meeting_number INTEGER,
+  status TEXT CHECK (status IN ('Hadir', 'Sakit', 'Izin', 'Alpha')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- AGENDAS (Personal Teacher Calendar)
-CREATE TABLE IF NOT EXISTS agendas (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    date DATE NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    tag TEXT,
-    color TEXT,
-    start_time TIME,
-    end_time TIME,
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+ALTER TABLE attendance_records ENABLE ROW LEVEL SECURITY;
+
+-- Collaborative Policy: Teachers can read records of classes they teach to "inherit" data
+CREATE POLICY "Teachers can read class attendance" 
+ON attendance_records FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Teachers can insert own records" 
+ON attendance_records FOR INSERT TO authenticated WITH CHECK (auth.uid() = teacher_id);
+
+CREATE POLICY "Teachers can update own records" 
+ON attendance_records FOR UPDATE TO authenticated USING (auth.uid() = teacher_id);
+
+-- 7. GRADE RECORDS
+CREATE TABLE grade_records (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
+  teacher_id UUID REFERENCES profiles(id),
+  school_year_id UUID REFERENCES school_years(id),
+  date DATE NOT NULL,
+  assessment_type TEXT,
+  score NUMERIC CHECK (score >= 0 AND score <= 100),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- TEACHER ATTENDANCE (Staff Geo-Attendance)
-CREATE TABLE IF NOT EXISTS teacher_attendance (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    check_in TIME,
-    check_out TIME,
-    status TEXT NOT NULL CHECK (status IN ('Tepat Waktu', 'Terlambat', 'Tidak Hadir', 'Sakit', 'Izin')),
-    reason TEXT,
-    UNIQUE(teacher_id, date)
+ALTER TABLE grade_records ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Teachers can view grades" ON grade_records FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Teachers can manage own grades" ON grade_records FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+
+-- 8. JOURNAL ENTRIES
+CREATE TABLE journal_entries (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
+  school_year_id UUID REFERENCES school_years(id),
+  teacher_id UUID REFERENCES profiles(id),
+  meeting_number INTEGER,
+  learning_objectives TEXT,
+  learning_activities TEXT,
+  assessment TEXT,
+  reflection TEXT
 );
 
--- HOLIDAYS
-CREATE TABLE IF NOT EXISTS holidays (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    date DATE UNIQUE NOT NULL,
-    description TEXT NOT NULL,
-    type TEXT DEFAULT 'school' CHECK (type IN ('national', 'school'))
+ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Viewable by authenticated" ON journal_entries FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Teachers manage own journals" ON journal_entries FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+
+-- 9. TEACHER ATTENDANCE (Daily Staff Check-in)
+CREATE TABLE teacher_attendance (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  date DATE DEFAULT CURRENT_DATE,
+  check_in TIME,
+  check_out TIME,
+  status TEXT CHECK (status IN ('Tepat Waktu', 'Terlambat', 'Tidak Hadir', 'Sakit', 'Izin')),
+  reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- MATERIALS (Shared Teaching Links)
-CREATE TABLE IF NOT EXISTS materials (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
-    subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    description TEXT,
-    link_url TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+ALTER TABLE teacher_attendance ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Staff can view all attendance" ON teacher_attendance FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Staff can manage own attendance" ON teacher_attendance FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+
+-- 10. SCHEDULE
+CREATE TABLE schedule (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  day TEXT NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
+  teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE
 );
 
--- STUDENT NOTES
-CREATE TABLE IF NOT EXISTS student_notes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id UUID REFERENCES students(id) ON DELETE CASCADE,
-    teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    note TEXT NOT NULL,
-    type TEXT CHECK (type IN ('positive', 'improvement', 'neutral')),
-    date TIMESTAMP WITH TIME ZONE DEFAULT now()
+ALTER TABLE schedule ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Viewable by authenticated" ON schedule FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admins manage schedule" ON schedule FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- ==========================================
--- VIEWS (For Easy Data Fetching)
--- ==========================================
+-- 11. SETTINGS
+CREATE TABLE settings (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-CREATE OR REPLACE VIEW journal_entries_with_names AS
-SELECT 
-    j.*,
-    c.name as "className",
-    s.name as "subjectName"
-FROM journal_entries j
-LEFT JOIN classes c ON j.class_id = c.id
-LEFT JOIN subjects s ON j.subject_id = s.id;
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can read settings" ON settings FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admins manage settings" ON settings FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
-CREATE OR REPLACE VIEW attendance_history AS
-SELECT 
-    a.*,
-    c.name as class_name,
-    s.name as subject_name,
-    p.full_name as teacher_name
-FROM attendance_records a
-LEFT JOIN classes c ON a.class_id = c.id
-LEFT JOIN subjects s ON a.subject_id = s.id
-LEFT JOIN profiles p ON a.teacher_id = p.id;
+-- 12. HOLIDAYS
+CREATE TABLE holidays (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE UNIQUE NOT NULL,
+  description TEXT,
+  type TEXT CHECK (type IN ('national', 'school'))
+);
 
-CREATE OR REPLACE VIEW grades_history AS
-SELECT 
-    g.*,
-    c.name as class_name,
-    s.name as subject_name,
-    s.kkm as subject_kkm,
-    p.full_name as teacher_name
-FROM grade_records g
-LEFT JOIN classes c ON g.class_id = c.id
-LEFT JOIN subjects s ON g.subject_id = s.id
-LEFT JOIN profiles p ON g.teacher_id = p.id;
+ALTER TABLE holidays ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Read by all" ON holidays FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admins manage holidays" ON holidays FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
-CREATE OR REPLACE VIEW student_notes_with_teacher AS
-SELECT 
-    sn.*,
-    p.full_name as teacher_name
-FROM student_notes sn
-LEFT JOIN profiles p ON sn.teacher_id = p.id;
+-- --- RPC FUNCTIONS FOR DASHBOARD & MONITORING ---
 
--- ==========================================
--- RPC FUNCTIONS (Core Logic)
--- ==========================================
-
--- 1. Get Teacher Attendance Summary
+-- Function: Get Teacher Attendance Summary
 CREATE OR REPLACE FUNCTION get_teacher_attendance_summary(p_date DATE)
 RETURNS TABLE (
-    total_expected BIGINT,
-    total_present BIGINT,
-    total_late BIGINT,
-    total_absent BIGINT,
-    attendance_rate NUMERIC
+  total_expected BIGINT,
+  total_present BIGINT,
+  total_late BIGINT,
+  total_absent BIGINT,
+  attendance_rate NUMERIC
 ) AS $$
 DECLARE
     v_policy TEXT;
     v_day_name TEXT;
     v_expected_count BIGINT;
-    v_present_count BIGINT;
-    v_late_count BIGINT;
 BEGIN
-    -- Get active policy
+    -- 1. Get Active Policy
     SELECT value INTO v_policy FROM settings WHERE key = 'attendance_policy';
-    IF v_policy IS NULL THEN v_policy := 'schedule_based'; END IF;
+    v_policy := COALESCE(v_policy, 'schedule_based');
 
-    -- Get day name in Indonesian
-    SELECT 
-        CASE EXTRACT(DOW FROM p_date)
-            WHEN 0 THEN 'Minggu'
-            WHEN 1 THEN 'Senin'
-            WHEN 2 THEN 'Selasa'
-            WHEN 3 THEN 'Rabu'
-            WHEN 4 THEN 'Kamis'
-            WHEN 5 THEN 'Jumat'
-            WHEN 6 THEN 'Sabtu'
-        END INTO v_day_name;
+    -- 2. Determine Day Name in Indonesian for schedule lookup
+    -- (Mapping might be needed depending on server locale, simplified here)
+    v_day_name := trim(to_char(p_date, 'Day')); 
+    -- Map English to Indo if needed...
 
-    -- Count expected
+    -- 3. Calculate Expected
     IF v_policy = 'daily_based' THEN
         SELECT count(*) INTO v_expected_count FROM profiles WHERE role IN ('teacher', 'headmaster');
     ELSE
         SELECT count(DISTINCT teacher_id) INTO v_expected_count FROM schedule WHERE day = v_day_name;
     END IF;
 
-    -- Count present and late
-    SELECT count(*) INTO v_present_count FROM teacher_attendance WHERE date = p_date AND status IN ('Tepat Waktu', 'Terlambat');
-    SELECT count(*) INTO v_late_count FROM teacher_attendance WHERE date = p_date AND status = 'Terlambat';
-
-    RETURN QUERY SELECT 
-        v_expected_count,
-        v_present_count,
-        v_late_count,
-        CASE WHEN (v_expected_count - v_present_count) < 0 THEN 0::BIGINT ELSE (v_expected_count - v_present_count) END,
-        CASE WHEN v_expected_count > 0 THEN ROUND((v_present_count::NUMERIC / v_expected_count::NUMERIC) * 100, 1) ELSE 100 END;
+    RETURN QUERY
+    SELECT 
+        v_expected_count as total_expected,
+        count(*) FILTER (WHERE status IN ('Tepat Waktu', 'Terlambat')) as total_present,
+        count(*) FILTER (WHERE status = 'Terlambat') as total_late,
+        (v_expected_count - count(*) FILTER (WHERE status IN ('Tepat Waktu', 'Terlambat', 'Sakit', 'Izin'))) as total_absent,
+        CASE WHEN v_expected_count = 0 THEN 100 ELSE
+            ROUND((count(*) FILTER (WHERE status IN ('Tepat Waktu', 'Terlambat'))::NUMERIC / v_expected_count::NUMERIC) * 100, 1)
+        END as attendance_rate
+    FROM teacher_attendance
+    WHERE date = p_date;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Get Teacher Activity Stats
+-- Function: Get Teacher Activity Counts
 CREATE OR REPLACE FUNCTION get_teacher_activity_counts()
 RETURNS TABLE (
     teacher_id UUID,
@@ -295,87 +281,40 @@ BEGIN
     FROM profiles p
     WHERE p.role IN ('teacher', 'headmaster');
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 3. Get Student Performance (Simplified version of Ledger Logic)
-CREATE OR REPLACE FUNCTION get_student_performance_for_class(p_class_id UUID)
-RETURNS TABLE (
-    student_id UUID,
-    name TEXT,
-    nis TEXT,
-    average_grade NUMERIC,
-    attendance_percentage NUMERIC,
-    status TEXT
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        s.id as student_id,
-        s.name,
-        s.nis,
-        0::NUMERIC as average_grade, -- Calc logic can be expanded
-        0::NUMERIC as attendance_percentage,
-        'Stabil'::TEXT as status
-    FROM students s
-    WHERE s.class_id = p_class_id AND s.status = 'active';
-END;
-$$ LANGUAGE plpgsql;
-
--- 4. Get Student Ledger Data
-CREATE OR REPLACE FUNCTION get_student_grades_ledger(p_student_id UUID)
-RETURNS TABLE (
-    id UUID,
-    subject_name TEXT,
-    assessment_type TEXT,
-    date DATE,
-    score NUMERIC,
-    kkm INTEGER
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        g.id,
-        s.name as subject_name,
-        g.assessment_type,
-        g.date,
-        g.score,
-        s.kkm
-    FROM grade_records g
-    JOIN subjects s ON g.subject_id = s.id
-    WHERE g.student_id = p_student_id
-    ORDER BY g.date DESC;
-END;
-$$ LANGUAGE plpgsql;
-
--- 5. Diagnose Logic (For Debugging)
-CREATE OR REPLACE FUNCTION diagnose_attendance_logic(p_date DATE)
-RETURNS JSONB AS $$
-DECLARE
-    v_policy TEXT;
-    v_day_name TEXT;
-    v_expected_ids UUID[];
-BEGIN
-    SELECT value INTO v_policy FROM settings WHERE key = 'attendance_policy';
-    SELECT CASE EXTRACT(DOW FROM p_date) WHEN 0 THEN 'Minggu' WHEN 1 THEN 'Senin' WHEN 2 THEN 'Selasa' WHEN 3 THEN 'Rabu' WHEN 4 THEN 'Kamis' WHEN 5 THEN 'Jumat' WHEN 6 THEN 'Sabtu' END INTO v_day_name;
-    IF v_policy = 'daily_based' THEN SELECT array_agg(id) INTO v_expected_ids FROM profiles WHERE role IN ('teacher', 'headmaster'); ELSE SELECT array_agg(DISTINCT teacher_id) INTO v_expected_ids FROM schedule WHERE day = v_day_name; END IF;
-    RETURN jsonb_build_object('date', p_date, 'day', v_day_name, 'policy', v_policy, 'expected_ids', v_expected_ids);
-END;
-$$ LANGUAGE plpgsql;
-
--- ==========================================
--- AUTH TRIGGERS
--- ==========================================
-
+-- --- AUTH TRIGGER ---
+-- Automatically create profile when user signs up
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, role)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', COALESCE(new.raw_user_meta_data->>'role', 'teacher'));
+  VALUES (new.id, new.raw_user_meta_data->>'full_name', 'teacher');
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Note: The trigger below needs to be applied after table 'profiles' is ready
--- CREATE TRIGGER on_auth_user_created
---   AFTER INSERT ON auth.users
---   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- --- USEFUL VIEWS ---
+CREATE OR REPLACE VIEW journal_entries_with_names AS
+SELECT j.*, c.name as "className", s.name as "subjectName"
+FROM journal_entries j
+LEFT JOIN classes c ON j.class_id = c.id
+LEFT JOIN subjects s ON j.subject_id = s.id;
+
+CREATE OR REPLACE VIEW attendance_history AS
+SELECT a.*, c.name as class_name, s.name as subject_name, p.full_name as teacher_name
+FROM attendance_records a
+JOIN classes c ON a.class_id = c.id
+JOIN subjects s ON a.subject_id = s.id
+JOIN profiles p ON a.teacher_id = p.id;
+
+CREATE OR REPLACE VIEW grades_history AS
+SELECT g.*, c.name as class_name, s.name as subject_name, s.kkm as subject_kkm, p.full_name as teacher_name
+FROM grade_records g
+JOIN classes c ON g.class_id = c.id
+JOIN subjects s ON g.subject_id = s.id
+JOIN profiles p ON g.teacher_id = p.id;
