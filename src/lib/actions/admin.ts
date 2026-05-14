@@ -4,6 +4,57 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+export async function syncNationalHolidaysManual() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    try {
+        const years = [2025, 2026];
+        let allHolidays: any[] = [];
+
+        for (const year of years) {
+            const res = await fetch(`https://api-hari-libur.vercel.app/api?year=${year}`);
+            if (res.ok) {
+                const responseData = await res.json();
+                // API bisa mengembalikan array langsung atau dibungkus .data
+                const rawList = Array.isArray(responseData) ? responseData : (responseData.data || []);
+                
+                if (rawList.length > 0) {
+                    const mapped = rawList.map((h: any) => ({
+                        date: h.date || h.holiday_date,
+                        description: h.name || h.holiday_name || h.description || h.keterangan,
+                        type: 'national'
+                    })).filter((h: any) => h.date && h.description);
+                    allHolidays = [...allHolidays, ...mapped];
+                }
+            }
+        }
+
+        if (allHolidays.length === 0) {
+            return { success: false, error: "Gagal mengambil data dari API nasional." };
+        }
+
+        // Upsert ke database (mencegah duplikasi berdasarkan kolom date)
+        const { error } = await supabase
+            .from('holidays')
+            .upsert(allHolidays, { onConflict: 'date' });
+
+        if (error) throw error;
+
+        revalidatePath('/admin/settings/holidays');
+        revalidatePath('/dashboard/agenda');
+        
+        return { 
+            success: true, 
+            message: `Berhasil mensinkronkan ${allHolidays.length} hari libur nasional untuk tahun 2025-2026.` 
+        };
+    } catch (error: any) {
+        console.error('[SYNC-ERR]', error.message);
+        return { success: false, error: "Terjadi kesalahan saat menyimpan ke database." };
+    }
+}
+
 export async function inviteTeacher(fullName: string, email: string) {
     const supabase = createClient();
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {

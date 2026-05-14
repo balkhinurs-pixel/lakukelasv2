@@ -10,14 +10,20 @@ Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan 
 
 ---
 
-# Update V5.8: Optimasi Sinkronisasi Hari Libur (TERIMPLEMENTASI)
+# Update V6.0: Sinkronisasi Hari Libur Manual (TERIMPLEMENTASI)
 
-Fitur sinkronisasi otomatis yang ramah kuota Supabase Free Tier dan menghindari limit Vercel Cron.
+Optimalisasi pengambilan data hari libur nasional untuk keandalan 100% dan performa aplikasi yang lebih kencang.
 
-## 1. Mekanisme "Smart Sync on Load"
-- **Daily Cooldown**: Sistem mencatat `last_holiday_sync` di tabel `settings`.
-- **Logic**: API hanya dipanggil 1x dalam 24 jam oleh pengunjung pertama. Pengunjung berikutnya hanya mengambil data dari Database (0% pemborosan API).
-- **Deduplikasi**: Tetap menggunakan `upsert` pada kolom `date` yang unik untuk menjaga kebersihan data.
+## 1. Mekanisme "Manual Sync by Admin"
+- **Kontrol Admin**: Menambahkan tombol "Sync Libur Nasional" di menu Admin > Pengaturan > Libur.
+- **Bulk Fetch**: Menarik data tahun 2025 dan 2026 sekaligus dari API Pemerintah dalam satu klik.
+- **Database Persistence**: Data disimpan permanen ke tabel `holidays` dengan tipe `national`.
+- **Zero Latency for Teachers**: Halaman Agenda Guru tidak lagi memanggil API luar saat dibuka (mengurangi waktu loading ~2 detik), karena data sudah tersedia di database internal.
+
+## 2. Keuntungan Arsitektur
+- **Bebas Kuota**: Tidak ada pemborosan request API eksternal di sisi klien.
+- **Stabilitas**: Tanggal merah tetap muncul meskipun API luar sedang mengalami gangguan.
+- **Integritas Data**: Menggunakan indeks unik pada kolom `date` untuk menjamin tidak ada data ganda.
 
 ---
 
@@ -26,15 +32,7 @@ Fitur sinkronisasi otomatis yang ramah kuota Supabase Free Tier dan menghindari 
 Mengatasi batasan 1 cron/hari pada Vercel Hobby Tier dengan menggunakan pemicu eksternal yang lebih andal.
 
 ## 1. Pemindahan Scheduler
-- Menghapus konfigurasi `crons` di `vercel.json` untuk menghindari konflik limitasi.
-- Menggunakan **GitHub Actions** (`.github/workflows/cron-scheduler.yml`) untuk memicu endpoint API.
-- Mendukung pemicu multi-waktu: 
-    - Jam 06:00 WIB: Notifikasi Jadwal Harian.
-    - Jam 08:00 WIB: Teguran Belum Absen.
-
-## 2. Konservasi Supabase (Keep-Alive)
-- Mengubah jadwal `keep-alive` menjadi **Mingguan (Setiap Hari Minggu)**.
-- Strategi ini cukup untuk mencegah database ter-suspend tanpa membuang kuota request harian.
+- Menggunakan **GitHub Actions** untuk memicu pengingat WA jam 06:00, 08:00, dan Keep-Alive mingguan.
 
 ---
-*LakuKelas: Cerdas dalam sinkronisasi, hemat dalam sumber daya.*
+*LakuKelas: Kendali penuh di tangan Admin, kecepatan maksimal bagi Guru.*
