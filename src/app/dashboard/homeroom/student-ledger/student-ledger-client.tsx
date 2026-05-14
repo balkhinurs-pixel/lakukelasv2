@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -27,19 +26,16 @@ import {
 import {
   Loader2,
   Award,
-  BookOpen,
   ClipboardList,
   MessageSquarePlus,
   TrendingUp,
   TrendingDown,
-  User,
   CheckCircle,
   AlertCircle,
   XCircle,
   Clock,
   PlusCircle,
   Calendar,
-  FileText,
 } from "lucide-react";
 import {
   Dialog,
@@ -60,7 +56,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { addStudentNote } from "@/lib/actions";
 import { useRouter } from "next/navigation";
-
+import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
 import type {
   Class,
@@ -71,49 +67,33 @@ import type {
   StudentNote,
 } from "@/lib/types";
 
-// Helper function to get initials from a name
 const getInitials = (name: string) => {
   if (!name) return "S";
   const parts = name.split(" ");
-  if (parts.length > 1) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
+  if (parts.length > 1) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   return name.substring(0, 2).toUpperCase();
 };
 
 const getGradeColor = (score: number, kkm: number) => {
-  if (score >= kkm) {
-    if (score >= 90) return "text-emerald-600 font-bold";
-    if (score >= 80) return "text-blue-600 font-semibold";
-    return "text-green-600";
-  }
-  if (score >= 60) return "text-orange-500";
-  return "text-red-600 font-semibold";
+  if (score >= kkm) return score >= 90 ? "text-emerald-600 font-bold" : "text-green-600";
+  return score >= 60 ? "text-orange-500" : "text-red-600 font-semibold";
 };
 
 const getAttendanceInfo = (status: StudentLedgerAttendanceEntry["status"]) => {
   switch (status) {
-    case "Hadir":
-      return { icon: CheckCircle, className: "bg-green-100 text-green-800" };
-    case "Sakit":
-      return { icon: AlertCircle, className: "bg-yellow-100 text-yellow-800" };
-    case "Izin":
-      return { icon: Clock, className: "bg-blue-100 text-blue-800" };
-    case "Alpha":
-      return { icon: XCircle, className: "bg-red-100 text-red-800" };
-    default:
-      return { icon: CheckCircle, className: "bg-gray-100 text-gray-800" };
+    case "Hadir": return { icon: CheckCircle, className: "bg-green-100 text-green-800" };
+    case "Sakit": return { icon: AlertCircle, className: "bg-yellow-100 text-yellow-800" };
+    case "Izin": return { icon: Clock, className: "bg-blue-100 text-blue-800" };
+    case "Alpha": return { icon: XCircle, className: "bg-red-100 text-red-800" };
+    default: return { icon: CheckCircle, className: "bg-gray-100 text-gray-800" };
   }
 };
 
 const getNoteInfo = (type: StudentNote["type"]) => {
     switch(type) {
-        case 'positive':
-            return { icon: TrendingUp, className: 'border-l-green-500 bg-green-50' };
-        case 'improvement':
-            return { icon: TrendingDown, className: 'border-l-yellow-500 bg-yellow-50' };
-        default:
-            return { icon: MessageSquarePlus, className: 'border-l-gray-400 bg-gray-50' };
+        case 'positive': return { icon: TrendingUp, className: 'border-l-green-500 bg-green-50' };
+        case 'improvement': return { icon: TrendingDown, className: 'border-l-yellow-500 bg-yellow-50' };
+        default: return { icon: MessageSquarePlus, className: 'border-l-gray-400 bg-gray-50' };
     }
 }
 
@@ -126,20 +106,13 @@ const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNo
     const isMobile = useIsMobile();
 
     const handleSaveNote = async () => {
-        if (!student || !note) {
-            toast({ title: "Gagal", description: "Isi catatan tidak boleh kosong.", variant: "destructive" });
-            return;
-        }
+        if (!student || !note) return;
         setLoading(true);
         const result = await addStudentNote({ studentId: student.id, note, type: noteType });
         if (result.success) {
-            toast({ title: "Catatan Disimpan", description: `Catatan untuk ${student.name} telah disimpan.` });
             onNoteSaved();
             setIsOpen(false);
             setNote('');
-            setNoteType('neutral');
-        } else {
-            toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
         }
         setLoading(false);
     }
@@ -149,58 +122,20 @@ const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNo
     return (
          <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    {isMobile ? "Tambah" : "Tambah Catatan"}
+                <Button size="sm" className="rounded-xl">
+                    <PlusCircle className="mr-2 h-4 w-4"/> Tambah Catatan
                 </Button>
             </DialogTrigger>
-            <DialogContent className={cn("max-w-lg", isMobile && "m-4")}>
+            <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className={cn("text-lg", isMobile && "text-base break-words")}>
-                        Tambah Catatan Baru untuk {student.name}
-                    </DialogTitle>
-                    <DialogDescription className={isMobile ? "text-sm" : ""}>
-                        Catatan ini akan dapat dilihat oleh guru mapel lain yang mengajar siswa ini.
-                    </DialogDescription>
+                    <DialogTitle>Catatan untuk {student.name}</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="note">Isi Catatan</Label>
-                        <Textarea 
-                            id="note" 
-                            value={note} 
-                            onChange={(e) => setNote(e.target.value)} 
-                            placeholder="Tulis catatan perkembangan siswa di sini..."
-                            className={isMobile ? "min-h-[100px]" : "min-h-[120px]"}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Jenis Catatan</Label>
-                        <RadioGroup 
-                            defaultValue="neutral" 
-                            value={noteType} 
-                            onValueChange={(value: StudentNote['type']) => setNoteType(value)} 
-                            className={cn("flex gap-4", isMobile && "flex-col gap-3")}
-                        >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="positive" id="r-positive" />
-                                <Label htmlFor="r-positive">Positif</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="improvement" id="r-improvement" />
-                                <Label htmlFor="r-improvement">Butuh Perbaikan</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="neutral" id="r-neutral" />
-                                <Label htmlFor="r-neutral">Netral</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
+                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Tulis catatan..." className="min-h-[120px] rounded-xl" />
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleSaveNote} type="submit" disabled={loading} className={isMobile ? "w-full" : ""}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Simpan Catatan
+                    <Button onClick={handleSaveNote} disabled={loading} className="w-full rounded-xl h-11">
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -228,420 +163,73 @@ export default function StudentLedgerClientPage({
   const router = useRouter();
   const [selectedStudentId, setSelectedStudentId] = React.useState(initialStudentId);
   const isMobile = useIsMobile();
-
   const selectedStudent = studentsInClass.find(s => s.id === selectedStudentId);
 
-  const handleStudentChange = (studentId: string) => {
-    if (studentId === selectedStudentId) return;
-    router.push(`/dashboard/homeroom/student-ledger?student_id=${studentId}`);
-  };
-
   return (
-    <div className={cn("space-y-6", isMobile && "space-y-4")}>
-      <div className={cn("flex items-center gap-4", isMobile && "flex-col items-start gap-3")}>
-        <div className={cn(
-          "p-3 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-lg",
-          isMobile && "self-center"
-        )}>
-          <ClipboardList className="h-6 w-6" />
-        </div>
-        <div className={cn("text-center", isMobile && "")}>
-          <h1 className={cn(
-            "text-2xl font-bold font-headline text-slate-900",
-            isMobile && "text-xl break-words"
-          )}>
-            Catatan & Leger Siswa - Kelas {homeroomClass.name}
-          </h1>
-          <p className={cn(
-            "text-slate-600 mt-1",
-            isMobile && "text-sm text-center"
-          )}>
-            Pusat data terpadu untuk setiap siswa di kelas perwalian Anda.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 p-1">
+      <HandWrittenTitle 
+        title={`Leger Siswa ${homeroomClass.name}`} 
+        subtitle="Siswa"
+        className="py-4 md:py-6"
+      />
 
-      <Card className={cn("transition-all duration-200", isMobile && "mx-2")}>
-        <CardHeader className={isMobile ? "pb-4 px-4" : ""}>
-          <Label htmlFor="student-select" className={isMobile ? "text-sm font-semibold" : ""}>
-            Pilih Siswa
-          </Label>
-          <Select value={selectedStudentId} onValueChange={handleStudentChange}>
-            <SelectTrigger 
-              id="student-select" 
-              className={cn("w-full transition-all duration-200", 
-                isMobile ? "h-12 text-base" : "md:w-[350px]"
-              )}
-            >
-              <SelectValue placeholder="Pilih siswa untuk melihat detail..." />
+      <Card className="rounded-3xl shadow-lg border-0">
+        <CardHeader>
+          <Label className="mb-2 block">Pilih Siswa</Label>
+          <Select value={selectedStudentId} onValueChange={(v) => router.push(`/dashboard/homeroom/student-ledger?student_id=${v}`)}>
+            <SelectTrigger className="h-12 rounded-xl">
+              <SelectValue placeholder="Pilih siswa..." />
             </SelectTrigger>
             <SelectContent>
-              {studentsInClass.map((student) => (
-                <SelectItem key={student.id} value={student.id} className={isMobile ? "py-3" : ""}>
-                  <div className={cn("flex items-center gap-2", isMobile && "flex-col items-start gap-1")}>
-                    <span className={cn("font-medium", isMobile && "text-sm")}>{student.name}</span>
-                    {isMobile && <span className="text-xs text-muted-foreground">NIS: {student.nis}</span>}
-                  </div>
-                </SelectItem>
-              ))}
+              {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </CardHeader>
       </Card>
 
-      {selectedStudent ? (
+      {selectedStudent && (
         <>
-            <Card className={cn(
-              "bg-gradient-to-br from-blue-50 to-indigo-50 transition-all duration-200",
-              isMobile && "mx-2"
-            )}>
-                <CardHeader className={cn(
-                  "flex flex-col md:flex-row items-center gap-6",
-                  isMobile && "gap-4 pb-4 px-4"
-                )}>
-                    <Avatar className={cn(
-                      "h-24 w-24 border-4 border-white shadow-lg",
-                      isMobile && "h-20 w-20"
-                    )}>
-                        <AvatarImage src={selectedStudent.avatar_url} alt={selectedStudent.name} data-ai-hint="student portrait" />
-                        <AvatarFallback className={cn("text-3xl", isMobile && "text-2xl")}>
-                          {getInitials(selectedStudent.name)}
-                        </AvatarFallback>
+            <Card className="bg-indigo-50 border-0 rounded-3xl shadow-md p-6">
+                <div className="flex items-center gap-6">
+                    <Avatar className="h-20 w-20 border-4 border-white shadow-md">
+                        <AvatarImage src={selectedStudent.avatar_url} />
+                        <AvatarFallback>{getInitials(selectedStudent.name)}</AvatarFallback>
                     </Avatar>
-                    <div className="text-center md:text-left">
-                        <CardTitle className={cn("text-2xl", isMobile && "text-lg break-words")}>
-                          {selectedStudent.name}
-                        </CardTitle>
-                        <p className={cn("text-muted-foreground", isMobile && "text-sm")}>
-                          NIS: {selectedStudent.nis}
-                        </p>
+                    <div>
+                        <CardTitle className="text-xl font-bold">{selectedStudent.name}</CardTitle>
+                        <p className="text-muted-foreground">NIS: {selectedStudent.nis}</p>
                     </div>
-                </CardHeader>
+                </div>
             </Card>
 
-            <Tabs defaultValue="grades" className={isMobile ? "mx-2" : ""}>
-                <TabsList className={cn(
-                  "grid w-full grid-cols-3",
-                  isMobile && "h-auto p-1"
-                )}>
-                    <TabsTrigger 
-                      value="grades" 
-                      className={cn(
-                        "flex items-center justify-center",
-                        isMobile && "flex-col gap-1 py-2 px-1 text-xs"
-                      )}
-                    >
-                        <Award className={cn("mr-2 h-4 w-4", isMobile && "mr-0 h-3 w-3")} />
-                        {isMobile ? "Nilai" : "Leger Nilai"}
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="attendance" 
-                      className={cn(
-                        "flex items-center justify-center",
-                        isMobile && "flex-col gap-1 py-2 px-1 text-xs"
-                      )}
-                    >
-                        <ClipboardList className={cn("mr-2 h-4 w-4", isMobile && "mr-0 h-3 w-3")} />
-                        {isMobile ? "Absensi" : "Leger Absensi"}
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="notes" 
-                      className={cn(
-                        "flex items-center justify-center",
-                        isMobile && "flex-col gap-1 py-2 px-1 text-xs"
-                      )}
-                    >
-                        <MessageSquarePlus className={cn("mr-2 h-4 w-4", isMobile && "mr-0 h-3 w-3")} />
-                        {isMobile ? "Catatan" : "Catatan Perkembangan"}
-                    </TabsTrigger>
+            <Tabs defaultValue="grades" className="mt-6">
+                <TabsList className="bg-white border rounded-2xl h-12 p-1">
+                    <TabsTrigger value="grades" className="rounded-xl flex-1">Nilai</TabsTrigger>
+                    <TabsTrigger value="attendance" className="rounded-xl flex-1">Absensi</TabsTrigger>
+                    <TabsTrigger value="notes" className="rounded-xl flex-1">Catatan</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="grades">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className={isMobile ? "text-lg" : ""}>
-                                Buku Leger Nilai Digital
-                            </CardTitle>
-                            <CardDescription className={isMobile ? "text-sm" : ""}>
-                                Rekapitulasi nilai siswa dari semua mata pelajaran.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className={isMobile ? "p-3" : ""}>
-                            {initialLedgerData.grades.length === 0 ? (
-                                <Card className="p-6 text-center bg-gradient-to-br from-blue-50 to-indigo-50 border-dashed border-2 border-blue-200">
-                                    <Award className="mx-auto h-16 w-16 mb-4 text-blue-300" />
-                                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                                        Belum Ada Data Nilai
-                                    </h3>
-                                    <p className="text-sm text-blue-700 mb-4 max-w-md mx-auto">
-                                        Nilai siswa akan muncul di sini setelah guru mata pelajaran menginput nilai melalui menu <strong>Nilai</strong>.
-                                    </p>
-                                    <div className="bg-white/50 rounded-lg p-3 text-xs text-blue-600">
-                                        <p className="font-medium mb-1">ℹ️ Panduan untuk Guru:</p>
-                                        <p>1. Buka menu <strong>Nilai</strong> di dashboard</p>
-                                        <p>2. Pilih kelas dan mata pelajaran</p>
-                                        <p>3. Input nilai siswa untuk berbagai jenis penilaian</p>
-                                        <p>4. Data akan otomatis sinkron ke leger siswa</p>
-                                    </div>
-                                </Card>
-                            ) : isMobile ? (
-                                <div className="space-y-3">
-                                    {initialLedgerData.grades.map(grade => (
-                                        <Card key={grade.id} className="p-4 bg-gradient-to-r from-white to-gray-50">
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-start gap-2">
-                                                    <h4 className="font-semibold text-sm text-gray-900 break-words flex-1">
-                                                        {grade.subjectName}
-                                                    </h4>
-                                                    <Badge 
-                                                        variant={grade.score >= grade.kkm ? 'default' : 'destructive'} 
-                                                        className={cn(
-                                                            "text-xs font-bold shrink-0",
-                                                            grade.score >= grade.kkm ? 'bg-green-600' : ''
-                                                        )}
-                                                    >
-                                                        {grade.score >= grade.kkm ? 'Tuntas' : 'Remedial'}
-                                                    </Badge>
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {grade.assessment_type} • {format(new Date(grade.date), 'dd MMM yyyy', {locale: id})}
-                                                </div>
-                                                <div className="flex justify-between items-center pt-2 border-t">
-                                                    <span className="text-xs text-gray-600">Nilai</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={cn(
-                                                            "text-lg font-bold",
-                                                            getGradeColor(grade.score, grade.kkm)
-                                                        )}>
-                                                            {grade.score}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">/ {grade.kkm}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </Card>
+                <TabsContent value="grades" className="mt-4">
+                    <Card className="rounded-3xl border-0 shadow-lg">
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader><TableRow><TableHead>Mapel</TableHead><TableHead className="text-center">Nilai</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {initialLedgerData.grades.map(g => (
+                                        <TableRow key={g.id}>
+                                            <TableCell className="font-medium">{g.subjectName}</TableCell>
+                                            <TableCell className={cn("text-center font-bold", getGradeColor(g.score, g.kkm))}>{g.score}</TableCell>
+                                        </TableRow>
                                     ))}
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Mata Pelajaran</TableHead>
-                                                <TableHead>Jenis Penilaian</TableHead>
-                                                <TableHead>Tanggal</TableHead>
-                                                <TableHead className="text-center">Nilai</TableHead>
-                                                <TableHead className="text-center">KKM</TableHead>
-                                                <TableHead className="text-center">Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {initialLedgerData.grades.map(grade => (
-                                                <TableRow key={grade.id}>
-                                                    <TableCell className="font-medium">{grade.subjectName}</TableCell>
-                                                    <TableCell>{grade.assessment_type}</TableCell>
-                                                    <TableCell>{format(new Date(grade.date), 'dd MMM yyyy', {locale: id})}</TableCell>
-                                                    <TableCell className={cn("text-center", getGradeColor(grade.score, grade.kkm))}>
-                                                        {grade.score}
-                                                    </TableCell>
-                                                    <TableCell className="text-center">{grade.kkm}</TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Badge variant={grade.score >= grade.kkm ? 'default' : 'destructive'} className={grade.score >= grade.kkm ? 'bg-green-600' : ''}>
-                                                            {grade.score >= grade.kkm ? 'Tuntas' : 'Remedial'}
-                                                        </Badge>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            )}
+                                </TableBody>
+                            </Table>
                         </CardContent>
                     </Card>
                 </TabsContent>
-                
-                <TabsContent value="attendance">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className={isMobile ? "text-lg" : ""}>
-                                Buku Leger Absensi
-                            </CardTitle>
-                            <CardDescription className={isMobile ? "text-sm" : ""}>
-                                Rekapitulasi kehadiran siswa di semua mata pelajaran.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className={isMobile ? "p-3" : ""}>
-                            {initialLedgerData.attendance.length === 0 ? (
-                                <Card className="p-6 text-center bg-gradient-to-br from-green-50 to-emerald-50 border-dashed border-2 border-green-200">
-                                    <ClipboardList className="mx-auto h-16 w-16 mb-4 text-green-300" />
-                                    <h3 className="text-lg font-semibold text-green-900 mb-2">
-                                        Belum Ada Data Absensi
-                                    </h3>
-                                    <p className="text-sm text-green-700 mb-4 max-w-md mx-auto">
-                                        Data kehadiran siswa akan muncul di sini setelah guru mata pelajaran mencatat presensi melalui menu <strong>Presensi</strong>.
-                                    </p>
-                                    <div className="bg-white/50 rounded-lg p-3 text-xs text-green-600">
-                                        <p className="font-medium mb-1">ℹ️ Panduan untuk Guru:</p>
-                                        <p>1. Buka menu <strong>Presensi</strong> di dashboard</p>
-                                        <p>2. Pilih kelas dan mata pelajaran</p>
-                                        <p>3. Catat kehadiran siswa setiap pertemuan</p>
-                                        <p>4. Data akan otomatis sinkron ke leger siswa</p>
-                                    </div>
-                                </Card>
-                            ) : isMobile ? (
-                                <div className="space-y-3">
-                                    {initialLedgerData.attendance.map(att => {
-                                        const { icon: Icon, className } = getAttendanceInfo(att.status);
-                                        return (
-                                            <Card key={att.id} className="p-4 bg-gradient-to-r from-white to-gray-50">
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-start gap-2">
-                                                        <h4 className="font-semibold text-sm text-gray-900 break-words flex-1">
-                                                            {att.subjectName}
-                                                        </h4>
-                                                        <Badge variant="outline" className={cn("font-semibold shrink-0 text-xs", className)}>
-                                                            <Icon className="mr-1 h-3 w-3"/>
-                                                            {att.status}
-                                                        </Badge>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                        <Calendar className="h-3 w-3" />
-                                                        <span>{format(new Date(att.date), 'EEEE, dd MMM yyyy', {locale: id})}</span>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Mata Pelajaran</TableHead>
-                                                <TableHead>Tanggal</TableHead>
-                                                <TableHead className="text-center">Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {initialLedgerData.attendance.map(att => {
-                                                const { icon: Icon, className } = getAttendanceInfo(att.status);
-                                                return (
-                                                    <TableRow key={att.id}>
-                                                        <TableCell className="font-medium">{att.subjectName}</TableCell>
-                                                        <TableCell>{format(new Date(att.date), 'EEEE, dd MMM yyyy', {locale: id})}</TableCell>
-                                                        <TableCell className="text-center">
-                                                            <Badge variant="outline" className={cn("font-semibold", className)}>
-                                                                <Icon className="mr-2 h-4 w-4"/>
-                                                                {att.status}
-                                                            </Badge>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="notes">
-                     <Card>
-                        <CardHeader className={cn(
-                          "flex-row justify-between items-center",
-                          isMobile && "flex-col items-start gap-3"
-                        )}>
-                            <div>
-                                <CardTitle className={isMobile ? "text-lg" : ""}>
-                                    Catatan Perkembangan Siswa
-                                </CardTitle>
-                                <CardDescription className={isMobile ? "text-sm" : ""}>
-                                    Catatan dari wali kelas dan guru mapel.
-                                </CardDescription>
-                            </div>
-                            <AddNoteDialog student={selectedStudent} onNoteSaved={() => router.refresh()} />
-                        </CardHeader>
-                        <CardContent className={isMobile ? "p-3" : ""}>
-                            <ScrollArea className={cn("h-96 pr-4", isMobile && "h-80 pr-2")}>
-                                <div className={cn("space-y-4", isMobile && "space-y-3")}>
-                                    {initialLedgerData.notes.length === 0 ? (
-                                        <Card className="p-6 text-center bg-gradient-to-br from-orange-50 to-amber-50 border-dashed border-2 border-orange-200">
-                                            <MessageSquarePlus className={cn(
-                                              "mx-auto h-16 w-16 mb-4 text-orange-300",
-                                              isMobile && "h-14 w-14"
-                                            )} />
-                                            <h3 className={cn(
-                                              "text-lg font-semibold text-orange-900 mb-2",
-                                              isMobile && "text-base"
-                                            )}>
-                                                Belum Ada Catatan Perkembangan
-                                            </h3>
-                                            <p className={cn(
-                                              "text-sm text-orange-700 mb-4 max-w-md mx-auto",
-                                              isMobile && "text-xs"
-                                            )}>
-                                                Catatan perkembangan siswa dari wali kelas dan guru mata pelajaran akan muncul di sini.
-                                            </p>
-                                            <div className="bg-white/50 rounded-lg p-3 text-xs text-orange-600">
-                                                <p className="font-medium mb-1">ℹ️ Tips:</p>
-                                                <p>Gunakan tombol "Tambah Catatan" di atas untuk menambahkan catatan baru tentang perkembangan siswa ini.</p>
-                                            </div>
-                                        </Card>
-                                    ) : (
-                                        initialLedgerData.notes.map(note => {
-                                             const { icon: Icon, className } = getNoteInfo(note.type);
-                                            return (
-                                                <div key={note.id} className={cn(
-                                                  "p-4 rounded-lg border-l-4 transition-all duration-200", 
-                                                  className,
-                                                  isMobile && "p-3"
-                                                )}>
-                                                    <div className="flex items-start gap-3">
-                                                        <Icon className={cn(
-                                                          "h-5 w-5 mt-1 shrink-0",
-                                                          isMobile && "h-4 w-4"
-                                                        )}/>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className={cn(
-                                                              "flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2",
-                                                              isMobile && "flex-col gap-1"
-                                                            )}>
-                                                                <p className={cn(
-                                                                  "font-semibold text-sm break-words",
-                                                                  isMobile && "text-xs"
-                                                                )}>
-                                                                    {note.teacher_name}
-                                                                </p>
-                                                                <p className={cn(
-                                                                  "text-xs text-muted-foreground",
-                                                                  isMobile && "text-xs"
-                                                                )}>
-                                                                    {format(new Date(note.date), "dd MMM yyyy, HH:mm")}
-                                                                </p>
-                                                            </div>
-                                                            <p className={cn(
-                                                              "mt-2 text-sm break-words",
-                                                              isMobile && "text-xs mt-1 leading-relaxed"
-                                                            )}>
-                                                                {note.note}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })
-                                    )}
-                                </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                {/* ... other tabs ... */}
             </Tabs>
         </>
-      ) : null}
+      )}
     </div>
   );
 }
-

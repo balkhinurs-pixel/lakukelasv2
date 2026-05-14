@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -41,8 +42,8 @@ import type { Material, Class, Subject } from "@/lib/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { saveMaterial, deleteMaterial } from "@/lib/actions";
 import { FileCard, type FormatFileProps } from "@/components/ui/file-card-collections";
+import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
-// Helper function to guess file format from URL
 const getFileFormat = (url: string): FormatFileProps => {
     const lowerUrl = url.toLowerCase();
     if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) return 'video';
@@ -55,16 +56,13 @@ const getFileFormat = (url: string): FormatFileProps => {
     if (lowerUrl.endsWith('.png')) return 'png';
     if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg')) return 'jpg';
     if (lowerUrl.endsWith('.json')) return 'json';
-    
-    // Google Drive specific guessing
     if (lowerUrl.includes('drive.google.com')) {
         if (lowerUrl.includes('spreadsheets')) return 'xlsx';
         if (lowerUrl.includes('presentation')) return 'ppt';
         if (lowerUrl.includes('document')) return 'doc';
         if (lowerUrl.includes('forms')) return 'html';
     }
-    
-    return 'txt'; // Default fallback
+    return 'txt';
 }
 
 export default function MaterialsPageClient({
@@ -172,17 +170,13 @@ export default function MaterialsPageClient({
 
     return (
         <div className="space-y-6 p-1">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg">
-                        <Link2 className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold font-headline text-slate-900">Materi Pembelajaran</h1>
-                        <p className="text-slate-600 mt-1">Kelola tautan sumber belajar untuk setiap kelas dan mata pelajaran.</p>
-                    </div>
-                </div>
-                <Button onClick={handleOpenAddDialog} className="bg-primary hover:bg-primary/90 shadow-md">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                <HandWrittenTitle 
+                    title="Materi Pembelajaran" 
+                    subtitle="Guru"
+                    className="py-4 md:py-6"
+                />
+                <Button onClick={handleOpenAddDialog} className="bg-primary hover:bg-primary/90 shadow-md shrink-0">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Tambah Materi
                 </Button>
@@ -284,13 +278,10 @@ export default function MaterialsPageClient({
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-20 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                        <div className="text-center py-20 opacity-50">
                             <div className="flex flex-col items-center gap-3">
                                 <Link2 className="h-12 w-12 text-slate-300" />
-                                <div>
-                                    <p className="text-lg font-semibold text-slate-600">Belum ada materi</p>
-                                    <p className="text-sm text-slate-400">Klik "Tambah Materi" untuk mulai membagikan tautan belajar.</p>
-                                </div>
+                                <p className="text-sm font-medium">Belum ada materi dibagikan</p>
                             </div>
                         </div>
                     )}
@@ -298,12 +289,12 @@ export default function MaterialsPageClient({
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-lg dialog-content-mobile mobile-safe-area">
                     <form onSubmit={handleSave}>
                         <DialogHeader>
                             <DialogTitle>{editingMaterial ? 'Ubah Materi' : 'Tambah Materi Baru'}</DialogTitle>
                             <DialogDescription>
-                                Masukkan detail materi dan tautkan ke link sumber belajar (Drive, YouTube, dll).
+                                Masukkan detail materi dan tautkan ke link sumber belajar.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -343,7 +334,7 @@ export default function MaterialsPageClient({
                                 <Label htmlFor="title">Judul Materi</Label>
                                 <Input 
                                     id="title" 
-                                    placeholder="e.g. Modul Bab 1: Aljabar" 
+                                    placeholder="e.g. Modul Bab 1" 
                                     value={formState.title}
                                     onChange={(e) => setFormState({ ...formState, title: e.target.value })}
                                     required
@@ -356,33 +347,32 @@ export default function MaterialsPageClient({
                                     <Input 
                                         id="link_url" 
                                         type="url"
-                                        placeholder="https://drive.google.com/..." 
+                                        placeholder="https://..." 
                                         className="pl-10"
                                         value={formState.link_url}
                                         onChange={(e) => setFormState({ ...formState, link_url: e.target.value })}
                                         required
                                     />
                                 </div>
-                                <p className="text-[10px] text-muted-foreground italic">Contoh: Link Google Drive, YouTube, Canva, atau website materi lainnya.</p>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="description">Deskripsi Singkat (Opsional)</Label>
+                                <Label htmlFor="description">Deskripsi (Opsional)</Label>
                                 <Textarea 
                                     id="description" 
-                                    placeholder="Berikan gambaran isi materi ini..." 
+                                    placeholder="Deskripsi singkat..." 
                                     className="min-h-[80px]"
                                     value={formState.description}
                                     onChange={(e) => setFormState({ ...formState, description: e.target.value })}
                                 />
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={loading}>
+                        <DialogFooter className="flex flex-row gap-2">
+                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={loading} className="flex-1 rounded-xl h-11">
                                 Batal
                             </Button>
-                            <Button type="submit" disabled={loading}>
+                            <Button type="submit" disabled={loading} className="flex-1 rounded-xl h-11">
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {editingMaterial ? 'Simpan Perubahan' : 'Simpan Materi'}
+                                Simpan
                             </Button>
                         </DialogFooter>
                     </form>
@@ -390,25 +380,22 @@ export default function MaterialsPageClient({
             </Dialog>
 
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent className="rounded-3xl">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Materi?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Materi "{materialToDelete?.title}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+                            Materi akan dihapus secara permanen.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={loading}>Batal</AlertDialogCancel>
+                    <AlertDialogFooter className="flex flex-row gap-2">
+                        <AlertDialogCancel disabled={loading} className="flex-1 rounded-xl h-11">Batal</AlertDialogCancel>
                         <AlertDialogAction 
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleDelete();
-                            }} 
+                            onClick={handleDelete} 
                             disabled={loading}
-                            className="bg-red-600 hover:bg-red-700"
+                            className="bg-red-600 hover:bg-red-700 flex-1 rounded-xl h-11"
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Ya, Hapus
+                            Hapus
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
