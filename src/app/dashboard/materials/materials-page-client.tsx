@@ -40,6 +40,32 @@ import { cn } from "@/lib/utils";
 import type { Material, Class, Subject } from "@/lib/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { saveMaterial, deleteMaterial } from "@/lib/actions";
+import { FileCard, type FormatFileProps } from "@/components/ui/file-card-collections";
+
+// Helper function to guess file format from URL
+const getFileFormat = (url: string): FormatFileProps => {
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) return 'video';
+    if (lowerUrl.endsWith('.pdf')) return 'pdf';
+    if (lowerUrl.endsWith('.docx') || lowerUrl.endsWith('.doc')) return 'doc';
+    if (lowerUrl.endsWith('.xlsx') || lowerUrl.endsWith('.xls')) return 'xlsx';
+    if (lowerUrl.endsWith('.csv')) return 'csv';
+    if (lowerUrl.endsWith('.pptx') || lowerUrl.endsWith('.ppt')) return 'ppt';
+    if (lowerUrl.endsWith('.zip') || lowerUrl.endsWith('.rar')) return 'zip';
+    if (lowerUrl.endsWith('.png')) return 'png';
+    if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg')) return 'jpg';
+    if (lowerUrl.endsWith('.json')) return 'json';
+    
+    // Google Drive specific guessing
+    if (lowerUrl.includes('drive.google.com')) {
+        if (lowerUrl.includes('spreadsheets')) return 'xlsx';
+        if (lowerUrl.includes('presentation')) return 'ppt';
+        if (lowerUrl.includes('document')) return 'doc';
+        if (lowerUrl.includes('forms')) return 'html';
+    }
+    
+    return 'txt'; // Default fallback
+}
 
 export default function MaterialsPageClient({
     initialMaterials,
@@ -200,18 +226,21 @@ export default function MaterialsPageClient({
                     {filteredMaterials.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredMaterials.map((material) => (
-                                <Card key={material.id} className="group border-slate-200 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-white">
+                                <Card key={material.id} className="group border-slate-200 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-white overflow-hidden">
                                     <CardHeader className="pb-2">
-                                        <div className="flex justify-between items-start">
+                                        <div className="flex justify-between items-start gap-3">
+                                            <div className="flex-shrink-0">
+                                                <FileCard formatFile={getFileFormat(material.link_url)} className="scale-75 origin-top-left" />
+                                            </div>
                                             <div className="flex-1 min-w-0">
-                                                <CardTitle className="text-lg font-bold text-slate-900 truncate" title={material.title}>
+                                                <CardTitle className="text-base font-bold text-slate-900 truncate" title={material.title}>
                                                     {material.title}
                                                 </CardTitle>
-                                                <div className="flex flex-wrap gap-2 mt-2">
-                                                    <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider">
+                                                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                                    <Badge variant="secondary" className="text-[9px] uppercase font-bold tracking-wider py-0 px-1.5">
                                                         {material.className}
                                                     </Badge>
-                                                    <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider text-primary border-primary/20">
+                                                    <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-wider text-primary border-primary/20 py-0 px-1.5">
                                                         {material.subjectName}
                                                     </Badge>
                                                 </div>
@@ -237,8 +266,8 @@ export default function MaterialsPageClient({
                                             </DropdownMenu>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pb-3 flex-grow">
-                                        <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed mb-4">
+                                    <CardContent className="pb-3 flex-grow mt-2">
+                                        <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed mb-2">
                                             {material.description || "Tidak ada deskripsi."}
                                         </p>
                                     </CardContent>
@@ -334,6 +363,7 @@ export default function MaterialsPageClient({
                                         required
                                     />
                                 </div>
+                                <p className="text-[10px] text-muted-foreground italic">Contoh: Link Google Drive, YouTube, Canva, atau website materi lainnya.</p>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description">Deskripsi Singkat (Opsional)</Label>
