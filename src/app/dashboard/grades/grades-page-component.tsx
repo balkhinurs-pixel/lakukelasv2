@@ -51,6 +51,7 @@ import type { Student, Class, GradeHistoryEntry, Subject } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { saveGrades } from "@/lib/actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
 function FormattedDate({ date, formatString }: { date: Date | null, formatString: string }) {
     const [formattedDate, setFormattedDate] = React.useState<string>('');
@@ -341,21 +342,12 @@ export default function GradesPageComponent({
   return (
     <div className="space-y-6 p-1">
       <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "p-2 rounded-xl",
-              editingId ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
-            )}>
-              {editingId ? <Edit className="h-5 w-5" /> : <Award className="h-5 w-5" />}
-            </div>
-            <div>
-              <CardTitle className="text-xl">{editingId ? 'Ubah Nilai' : 'Input Nilai'}</CardTitle>
-              <CardDescription className="mt-1">
-                {editingId ? 'Ubah detail nilai yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan jenis penilaian untuk menginput nilai siswa.'}
-              </CardDescription>
-            </div>
-          </div>
+        <CardHeader className="pb-4 text-center">
+          <HandWrittenTitle 
+            title={editingId ? 'Ubah Nilai' : 'Input Nilai'} 
+            subtitle="Siswa"
+            className="py-4 md:py-6"
+          />
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">

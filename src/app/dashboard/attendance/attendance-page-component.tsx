@@ -515,11 +515,9 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
         <CardHeader className="pb-4 text-center">
           <HandWrittenTitle 
             title={editingId ? 'Ubah Presensi' : 'Input Presensi'} 
+            subtitle="Siswa"
             className="py-4 md:py-6"
           />
-          <CardDescription className="max-w-2xl mx-auto -mt-6">
-            {editingId ? 'Ubah detail presensi yang sudah tersimpan.' : 'Pilih kelas, tanggal, dan pertemuan untuk mencatat presensi siswa secara akurat.'}
-          </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">

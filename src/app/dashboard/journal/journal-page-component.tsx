@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import * as React from "react";
@@ -53,6 +51,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { saveJournal, deleteJournal } from "@/lib/actions";
+import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
 
 type NewJournalEntry = Omit<JournalEntry, 'id' | 'date' | 'className' | 'subjectName' | 'teacher_id'>;
@@ -167,6 +166,10 @@ export default function JournalPageComponent({
       setLoading(false);
   }
 
+  const handlePageChange = (page: number) => {
+      setCurrentPage(page);
+  };
+
   const handleSaveJournal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEntry.class_id || !newEntry.subject_id || !newEntry.learning_objectives || !newEntry.learning_activities) {
@@ -221,9 +224,6 @@ export default function JournalPageComponent({
     currentPage * ITEMS_PER_PAGE
   );
 
-  const handlePageChange = (page: number) => {
-      setCurrentPage(page);
-  };
 
   const renderPagination = () => {
     if (pageCount <= 1) return null;
@@ -294,19 +294,15 @@ export default function JournalPageComponent({
 
   return (
     <div className="space-y-6 p-1">
-       <div className="flex justify-between items-start flex-wrap gap-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg">
-            <FileText className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold font-headline text-slate-900">Jurnal Mengajar</h1>
-            <p className="text-slate-600 mt-1">Catatan reflektif kegiatan mengajar harian Anda.</p>
-          </div>
-        </div>
+       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+        <HandWrittenTitle 
+          title="Jurnal Mengajar" 
+          subtitle="Guru"
+          className="py-4 md:py-6"
+        />
         <Button 
           onClick={handleOpenAddDialog}
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 shrink-0"
         >
             <PlusCircle className="mr-2 h-4 w-4" />
             Tambah Jurnal Baru
