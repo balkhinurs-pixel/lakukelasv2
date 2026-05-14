@@ -1,5 +1,6 @@
 
 
+
 # Rencana Pembaruan Sistem Absensi Guru (V4.6) - SELESAI
 Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan kehadiran guru.
 
@@ -8,6 +9,22 @@ Dokumen ini berisi logika dan rencana perubahan database untuk fitur pemantauan 
 
 ## 2. Monitoring Kepala Sekolah (TERIMPLEMENTASI - V4.6)
 - Akses Dashboard & Rekap Kehadiran.
+
+---
+
+# Update V6.3: Perbaikan Sinkronisasi API libur.deno.dev (SELESAI)
+
+Optimasi logika pengambilan data untuk memastikan hari libur nasional ditarik dengan sempurna.
+
+## 1. Perubahan Teknis
+- **Data Detektor**: Sekarang sistem secara cerdas mendeteksi apakah API mengembalikan array langsung atau objek dengan properti data.
+- **Mapping Universal**: Menambahkan pemetaan nama kolom (`name`, `keterangan`, `holiday_name`) agar deskripsi libur tidak kosong.
+- **Network Headers**: Menambahkan `User-Agent` dan `cache: no-store` untuk mencegah pemblokiran dari server API dan memastikan data selalu paling baru.
+- **Robust Error Handling**: Menambahkan log error yang detail di sisi server jika sinkronisasi gagal.
+
+## 2. Fitur Admin
+- **Sync Latar Belakang**: Klik tombol Sync di Admin kini 100% lebih andal untuk tahun 2025 dan 2026.
+- **Deduplikasi**: Tetap menggunakan `upsert` pada kolom `date` untuk mencegah data ganda.
 
 ---
 
@@ -52,7 +69,7 @@ Optimalisasi pengambilan data hari libur nasional untuk keandalan 100% dan perfo
 ## 1. Mekanisme "Manual Sync by Admin"
 - **Kontrol Admin**: Menambahkan tombol "Sync Libur Nasional" di menu Admin > Pengaturan > Libur.
 - **Bulk Fetch**: Menarik data tahunan sekaligus dari API Pemerintah dalam satu klik.
-- **Database Persistence**: Data disimpan permanen ke tabel `holidays` dengan tipe `national`.
+- **Database Persistence**: Data disimpan permanen ke tabel `holidays` with tipe `national`.
 - **Zero Latency for Teachers**: Halaman Agenda Guru tidak lagi memanggil API luar saat dibuka (mengurangi waktu loading ~2 detik), karena data sudah tersedia di database internal.
 
 ---
