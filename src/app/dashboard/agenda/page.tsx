@@ -3,31 +3,42 @@ import AgendaPageClient from "./agenda-page-client";
 import { getIndonesianTime } from "@/lib/timezone";
 
 async function getIndonesianHolidays() {
+    const nowIndo = getIndonesianTime();
+    const year = nowIndo.getFullYear();
+    
+    const fetchFromSource = async (url: string) => {
+        try {
+            const res = await fetch(url, { 
+                next: { revalidate: 86400 },
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            // Beberapa API mengembalikan { data: [] }, yang lain [] langsung
+            return Array.isArray(data) ? data : (data.data || null);
+        } catch (error) {
+            return null;
+        }
+    };
+
     try {
-        const nowIndo = getIndonesianTime();
-        const year = nowIndo.getFullYear();
-        
-        // Fetch current and next year to cover planning
-        const [thisYearRes, nextYearRes] = await Promise.all([
-            fetch(`https://api-hari-libur.vercel.app/api?year=${year}`, { 
-                next: { revalidate: 86400 },
-                headers: { 'Accept': 'application/json' }
-            }),
-            fetch(`https://api-hari-libur.vercel.app/api?year=${year + 1}`, { 
-                next: { revalidate: 86400 },
-                headers: { 'Accept': 'application/json' }
-            })
-        ]);
-        
-        const thisYearData = thisYearRes.ok ? await thisYearRes.json() : [];
-        const nextYearData = nextYearRes.ok ? await nextYearRes.json() : [];
-        
-        const allData = [
-            ...(Array.isArray(thisYearData) ? thisYearData : []),
-            ...(Array.isArray(nextYearData) ? nextYearData : [])
+        // Coba beberapa sumber API populer jika salah satu gagal
+        const sources = [
+            `https://api-hari-libur.vercel.app/api?year=${year}`,
+            `https://day-off-api.vercel.app/api?year=${year}`,
         ];
 
-        // Map data supporting various API formats (date/holiday_date and name/holiday_name)
+        let allData: any[] = [];
+        
+        for (const source of sources) {
+            const data = await fetchFromSource(source);
+            if (data && Array.isArray(data) && data.length > 0) {
+                allData = data;
+                break; // Gunakan sumber pertama yang berhasil
+            }
+        }
+
+        // Mapping data agar kompatibel dengan berbagai format field API
         return allData.map((h: any) => ({
             date: h.date || h.holiday_date,
             name: h.name || h.holiday_name,
@@ -35,7 +46,7 @@ async function getIndonesianHolidays() {
         })).filter(h => !!h.date);
         
     } catch (error) {
-        console.error("Failed to fetch holidays from API:", error);
+        console.error("Critical failure fetching holidays:", error);
         return [];
     }
 }
