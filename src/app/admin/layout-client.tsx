@@ -293,8 +293,8 @@ export default function AdminLayoutClient({
                   </div>
                 </SheetHeader>
                 
-                <ScrollArea className="h-[calc(85vh-120px)] px-6 pb-24">
-                  <div className="space-y-8">
+                <ScrollArea className="h-[calc(85vh-120px)] px-6">
+                  <div className="space-y-8 pb-32">
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest pl-2">Sistem & Staf</p>
                       <div className="grid grid-cols-4 gap-y-6 gap-x-2">
@@ -382,7 +382,7 @@ export default function AdminLayoutClient({
                       </div>
                     </div>
 
-                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2 pb-10">
+                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
                         <Link 
                           href="/monitoring" 
                           onClick={() => setIsMobileMenuOpen(false)}

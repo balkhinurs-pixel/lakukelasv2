@@ -294,8 +294,8 @@ export default function DashboardLayoutClient({
                   </div>
                 </SheetHeader>
 
-                <ScrollArea className="h-[calc(85vh-100px)] px-6">
-                  <div className="space-y-8 pb-24">
+                <ScrollArea className="h-[calc(85vh-120px)] px-6">
+                  <div className="space-y-8 pb-32">
                     {(isHeadmaster || isAdmin) && (
                       <div className="space-y-3">
                         <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Akses Cepat</p>
