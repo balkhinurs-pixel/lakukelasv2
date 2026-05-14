@@ -349,18 +349,29 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
 export async function saveHoliday(holiday: { date: string, description: string }) {
     const supabase = createClient();
     const { error } = await supabase.from('holidays').insert(holiday);
-    if (error) return { success: false, error: 'Gagal menyimpan hari libur.' };
+    
+    if (error) {
+        console.error("Supabase error adding holiday:", error.message);
+        return { success: false, error: 'Gagal menyimpan hari libur. Pastikan tabel holidays ada di database.' };
+    }
+
     revalidatePath('/admin/settings/holidays');
     revalidatePath('/admin');
+    revalidatePath('/dashboard/agenda');
     return { success: true };
 }
 
 export async function deleteHoliday(holidayId: string) {
     const supabase = createClient();
     const { error } = await supabase.from('holidays').delete().eq('id', holidayId);
-    if (error) return { success: false, error: 'Gagal menghapus hari libur.' };
+    
+    if (error) {
+        return { success: false, error: 'Gagal menghapus hari libur.' };
+    }
+
     revalidatePath('/admin/settings/holidays');
     revalidatePath('/admin');
+    revalidatePath('/dashboard/agenda');
     return { success: true };
 }
 
