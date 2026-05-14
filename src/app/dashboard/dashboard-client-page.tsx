@@ -8,26 +8,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, BookText, Users, Clock, ArrowRight, Check, ClipboardEdit, CheckCircle } from "lucide-react";
+import { ClipboardCheck, BookText, Users, Clock, CalendarDays, Tag, ClipboardEdit, CheckCircle } from "lucide-react";
 import Link from 'next/link';
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import type { ScheduleItem, JournalEntry } from "@/lib/types";
+import type { ScheduleItem, Agenda } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
-  journalEntries: JournalEntry[];
+  agendas: Agenda[];
   initialAttendancePercentage: number;
   initialUnfilledJournalsCount: number;
 }
@@ -49,7 +41,6 @@ const StatCard = ({
         {/* Enhanced background elements */}
         <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-white/20 opacity-50 transition-opacity duration-300 group-hover:opacity-70" />
         <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 opacity-50 transition-opacity duration-300 group-hover:opacity-30" />
-        <div className="absolute top-0 right-0 h-full w-1 bg-gradient-to-b from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <CardContent className="relative z-10 flex flex-col justify-between p-4 sm:p-6 h-full">
             {/* Icon Row - Hidden on Mobile to save space */}
@@ -74,7 +65,7 @@ const StatCard = ({
 
 export default function DashboardClientPage({ 
     todaySchedule, 
-    journalEntries,
+    agendas,
     initialAttendancePercentage,
     initialUnfilledJournalsCount,
 }: DashboardPageProps) {
@@ -148,9 +139,9 @@ export default function DashboardClientPage({
 
     const nextClassInfo = getNextClassInfo();
     
-    const [today, setToday] = React.useState('');
+    const [todayName, setTodayName] = React.useState('');
     React.useEffect(() => {
-        setToday(format(new Date(), 'eeee', { locale: id }));
+        setTodayName(format(new Date(), 'eeee', { locale: id }));
     }, []);
 
     const QuickActionButton = ({ 
@@ -277,7 +268,7 @@ export default function DashboardClientPage({
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
               <CardTitle className="text-slate-900 dark:text-slate-100">
-                Jadwal Hari Ini ({today})
+                Jadwal Hari Ini ({todayName})
               </CardTitle>
             </div>
             <CardDescription className="text-muted-foreground/80">
@@ -385,65 +376,96 @@ export default function DashboardClientPage({
             )}
           </CardContent>
         </Card>
-        <Card className="lg:col-span-4 shadow-xl border-0 bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-900 dark:to-blue-950/30 backdrop-blur-sm">
+        
+        <Card className="lg:col-span-4 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50/30 dark:from-gray-900 dark:to-indigo-950/30 backdrop-blur-sm">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+              <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
               <CardTitle className="text-slate-900 dark:text-slate-100">
-                Jurnal Terbaru
+                Agenda Mendatang
               </CardTitle>
             </div>
             <CardDescription className="text-muted-foreground/80">
-              Catatan aktivitas mengajar Anda yang terekam dalam sistem.
+              Rencana kegiatan dan pengingat yang akan datang.
             </CardDescription>
           </CardHeader>
           <CardContent>
-             {journalEntries.length > 0 ? (
+             {agendas.length > 0 ? (
                 <div className="space-y-3">
-                {journalEntries.map((entry, index) => (
+                {agendas.map((item, index) => (
                     <div 
-                        key={entry.id} 
-                        className="group p-4 rounded-xl border border-border/50 bg-white/50 dark:bg-gray-800/50 hover:bg-blue-50/70 dark:hover:bg-blue-950/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                        key={item.id} 
+                        className="group p-4 rounded-xl border border-border/50 bg-white/50 dark:bg-gray-800/50 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
                         style={{
                             animationDelay: `${index * 100}ms`,
                             animation: 'fadeInRight 0.6s ease-out forwards'
                         }}
                     >
-                        <div className="flex items-center justify-between">
-                            <div className="flex-1">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-3 h-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-sm group-hover:animate-pulse" />
-                                    <h4 className="font-semibold text-foreground group-hover:text-blue-600 transition-colors duration-300">
-                                        {entry.subjectName}
+                                    <div 
+                                        className="w-3 h-3 rounded-full shadow-sm shrink-0"
+                                        style={{ backgroundColor: item.color || '#6b7280' }}
+                                    />
+                                    <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-600 transition-colors duration-300">
+                                        {item.title}
                                     </h4>
                                 </div>
-                                <div className="flex items-center gap-2 mt-1 ml-6">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                        {entry.className}
-                                    </span>
+                                <div className="flex items-center gap-3 mt-2 ml-6">
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                                        <CalendarDays className="w-3.5 h-3.5" />
+                                        <span>{format(parseISO(item.date), "dd MMM", { locale: id })}</span>
+                                    </div>
+                                    {item.start_time && (
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            <span>{formatTime(item.start_time)}</span>
+                                        </div>
+                                    )}
+                                    {item.tag && (
+                                        <Badge 
+                                            variant="outline" 
+                                            className="px-2 py-0 h-4 text-[9px] uppercase font-bold tracking-wider border-0"
+                                            style={{ 
+                                                backgroundColor: `${item.color}15` || '#6b728015',
+                                                color: item.color || '#6b7280'
+                                            }}
+                                        >
+                                            {item.tag}
+                                        </Badge>
+                                    )}
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <div className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                                    {format(parseISO(entry.date), "dd MMM", { locale: id })}
-                                </div>
-                                <div className="text-xs text-muted-foreground/70">
-                                    {format(parseISO(entry.date), "EEEE", { locale: id })}
-                                </div>
-                            </div>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" asChild>
+                                <Link href={`/dashboard/agenda?date=${item.date}`}>
+                                    <ArrowRight className="h-4 w-4 text-indigo-600" />
+                                </Link>
+                            </Button>
                         </div>
                     </div>
                 ))}
+                <div className="pt-2">
+                    <Button variant="ghost" className="w-full text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-bold text-xs" asChild>
+                        <Link href="/dashboard/agenda">
+                            Lihat Semua Agenda
+                            <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                        </Link>
+                    </Button>
+                </div>
                 </div>
              ) : (
                 <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center">
-                        <BookText className="w-8 h-8 text-blue-500" />
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-full flex items-center justify-center">
+                        <CalendarDays className="w-8 h-8 text-indigo-500" />
                     </div>
-                    <p className="text-muted-foreground font-medium">Belum ada jurnal yang dibuat</p>
+                    <p className="text-muted-foreground font-medium">Belum ada agenda terdaftar</p>
                     <p className="text-sm text-muted-foreground/70 mt-1">
-                        Jurnal akan muncul setelah Anda mengisi aktivitas mengajar
+                        Catat rapat atau pengingat di menu Agenda
                     </p>
+                    <Button variant="outline" className="mt-4 rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50" asChild>
+                        <Link href="/dashboard/agenda">Buat Agenda Baru</Link>
+                    </Button>
                 </div>
              )}
           </CardContent>

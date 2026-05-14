@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from './supabase/server';
@@ -331,19 +330,33 @@ export async function getAllStudents(): Promise<Student[]> {
 export async function getDashboardData(todayDay: string) {
     noStore();
     const user = await getAuthenticatedUser();
-    if (!user) return { todaySchedule: [], journalEntries: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
+    if (!user) return { todaySchedule: [], agendas: [], attendancePercentage: 0, unfilledJournalsCount: 0 };
     const supabase = createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
-    const { data: schedule } = await supabase.from('schedule').select('*, class:class_id(name), subject:subject_id(name)').eq('teacher_id', user.id).eq('day', todayDay);
-    const { data: journals } = await supabase.from('journal_entries_with_names').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId).order('date', { ascending: false }).limit(5);
-    const { data: attendance } = await supabase.from('attendance_records').select('status').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId);
-    const todayScheduleData = schedule?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
-    const journalEntriesData = journals || [];
-    const totalRecords = attendance?.length || 0;
-    const hadirRecords = attendance?.filter(r => r.status === 'Hadir').length || 0;
+    
+    const [scheduleRes, agendasRes, attendanceRes, journalsRes] = await Promise.all([
+        supabase.from('schedule').select('*, class:class_id(name), subject:subject_id(name)').eq('teacher_id', user.id).eq('day', todayDay),
+        supabase.from('agendas').select('*').eq('teacher_id', user.id).gte('date', format(getIndonesianTime(), 'yyyy-MM-dd')).order('date', { ascending: true }).order('start_time', { ascending: true }).limit(5),
+        supabase.from('attendance_records').select('status').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId),
+        supabase.from('journal_entries').select('date').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId)
+    ]);
+
+    const todayScheduleData = scheduleRes.data?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
+    const agendasData = agendasRes.data || [];
+    
+    const totalRecords = attendanceRes.data?.length || 0;
+    const hadirRecords = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
     const attendancePercentage = totalRecords > 0 ? Math.round((hadirRecords / totalRecords) * 100) : 0;
-    const unfilledJournalsCount = todayScheduleData.length - journalEntriesData.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')).length;
-    return { todaySchedule: todayScheduleData, journalEntries: journalEntriesData, attendancePercentage, unfilledJournalsCount };
+    
+    const todayStr = format(getIndonesianTime(), 'yyyy-MM-dd');
+    const unfilledJournalsCount = todayScheduleData.length - (journalsRes.data?.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === todayStr).length || 0);
+
+    return { 
+        todaySchedule: todayScheduleData, 
+        agendas: agendasData, 
+        attendancePercentage, 
+        unfilledJournalsCount 
+    };
 }
 
 export async function getReportsData(filters: { schoolYearId: string, month?: number, classId?: string, subjectId?: string }) {

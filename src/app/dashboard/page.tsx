@@ -1,9 +1,8 @@
-
 'use client'
 
 import { getDashboardData } from '@/lib/data';
 import DashboardClientPage from './dashboard-client-page';
-import type { ScheduleItem, JournalEntry } from "@/lib/types";
+import type { ScheduleItem, Agenda } from "@/lib/types";
 import * as React from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -12,7 +11,7 @@ import { getIndonesianDayName } from '@/lib/timezone';
 
 type DashboardData = {
     todaySchedule: ScheduleItem[];
-    journalEntries: JournalEntry[];
+    agendas: Agenda[];
     attendancePercentage: number;
     unfilledJournalsCount: number;
 };
@@ -70,15 +69,6 @@ export default function DashboardPage() {
                 const dayViaDateFns = format(userToday, 'eeee', { locale: id });
                 const dayViaIntl = userToday.toLocaleDateString('id-ID', { weekday: 'long' });
                 
-                // TEMPORARY DEBUG
-                console.log('=== DASHBOARD DAY CALCULATION ===');
-                console.log('Indonesian timezone day:', indonesianDayName);
-                console.log('User local via date-fns:', dayViaDateFns);
-                console.log('User local via Intl:', dayViaIntl);
-                
-                // Use Indonesian timezone day as primary, with user local as fallback
-                let finalDayForQuery = indonesianDayName;
-                
                 // Map common variations to ensure consistency
                 const dayMapping: Record<string, string> = {
                     'Senin': 'Senin',
@@ -97,16 +87,12 @@ export default function DashboardPage() {
                     'Sunday': 'Minggu'
                 };
                 
-                finalDayForQuery = dayMapping[finalDayForQuery] || finalDayForQuery;
-                
-                console.log('Final day for query:', finalDayForQuery);
-                console.log('=== END DASHBOARD DAY CALCULATION ===');
+                const finalDayForQuery = dayMapping[indonesianDayName] || indonesianDayName;
                 
                 const dashboardData = await getDashboardData(finalDayForQuery);
                 setData(dashboardData);
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
-                // Handle error state if necessary
             } finally {
                 setLoading(false);
             }
@@ -122,7 +108,7 @@ export default function DashboardPage() {
     return (
         <DashboardClientPage 
             todaySchedule={data.todaySchedule} 
-            journalEntries={data.journalEntries}
+            agendas={data.agendas}
             initialAttendancePercentage={data.attendancePercentage}
             initialUnfilledJournalsCount={data.unfilledJournalsCount}
         />
