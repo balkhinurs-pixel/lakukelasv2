@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
 
-  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring'))) {
+  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring') || pathname === '/activate')) {
       return NextResponse.redirect(new URL('/login', request.url));
   }
   
@@ -49,9 +49,11 @@ export async function middleware(request: NextRequest) {
         .from('profiles')
         .select('role, is_activated')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-    const isActivated = profile?.is_activated || false;
+    // Jika profil belum ada (proses trigger di DB mungkin butuh sedetik), 
+    // atau jika user login via google dan baru pertama kali.
+    const isActivated = profile?.is_activated ?? false;
     const role = profile?.role || 'teacher';
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
@@ -61,8 +63,8 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // Gatekeeper Aktivasi: Jika belum aktif, paksa ke /activate
-    if (!isActivated && pathname !== '/activate' && !pathname.startsWith('/auth') && pathname !== '/') {
+    // Gatekeeper Aktivasi: Jika belum aktif, paksa ke /activate (kecuali user adalah admin pertama)
+    if (!isActivated && pathname !== '/activate' && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
         return NextResponse.redirect(new URL('/activate', request.url));
     }
 
