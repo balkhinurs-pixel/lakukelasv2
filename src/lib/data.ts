@@ -529,17 +529,22 @@ export async function getGradesReportList(filters: { schoolYearId: string, class
         query = query.eq('assessment_type', assessmentType);
     }
 
-    const { data } = await query.order('date', { ascending: true });
+    const { data, error } = await query.order('date', { ascending: true });
     
+    if (error) {
+        console.error("Error fetching grades for report:", error);
+        return [];
+    }
+
     return (data || []).map((g: any) => ({
         id: g.id,
         date: g.date,
         assessment_type: g.assessment_type,
         score: g.score,
-        student_name: g.students?.name,
-        class_name: g.classes?.name,
-        subject_name: g.subjects?.name,
-        subject_kkm: g.subjects?.kkm
+        student_name: g.students?.name || "Siswa",
+        class_name: g.classes?.name || "Kelas",
+        subject_name: g.subjects?.name || "Mapel",
+        subject_kkm: g.subjects?.kkm || 75
     }));
 }
 
@@ -550,7 +555,7 @@ export async function getJournalReportList(filters: { schoolYearId: string, clas
     const supabase = createClient();
     const { schoolYearId, classId, subjectId } = filters;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
         .from('journal_entries_with_names')
         .select('*')
         .eq('teacher_id', user.id)
@@ -558,6 +563,11 @@ export async function getJournalReportList(filters: { schoolYearId: string, clas
         .eq('class_id', classId)
         .eq('subject_id', subjectId)
         .order('date', { ascending: true });
+
+    if (error) {
+        console.error("Error fetching journals for report:", error);
+        return [];
+    }
 
     return data || [];
 }
@@ -649,4 +659,59 @@ export async function getMaterials(): Promise<Material[]> {
     const supabase = createClient();
     const { data } = await supabase.from('materials').select('*, className:classes(name), subjectName:subjects(name)').eq('teacher_id', user.id).order('created_at', { ascending: false });
     return data?.map(item => ({ ...item, className: item.className?.name, subjectName: item.subjectName?.name })) || [];
+}
+
+export async function getHomeroomMonthlyAttendance(month: number, year: number) {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    const supabase = createClient();
+
+    // 1. Dapatkan kelas perwalian
+    const { data: homeroomClass } = await supabase.from('classes').select('id, name').eq('teacher_id', user.id).limit(1).single();
+    if (!homeroomClass) return null;
+
+    // 2. Dapatkan daftar siswa aktif di kelas tersebut
+    const { data: students } = await supabase.from('students').select('id, name, gender, nis').eq('class_id', homeroomClass.id).eq('status', 'active').order('name');
+    if (!students) return null;
+
+    // 3. Tentukan rentang tanggal bulan tersebut
+    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
+
+    // 4. Ambil data presensi
+    const { data: records } = await supabase
+        .from('attendance_records')
+        .select('student_id, date, status')
+        .eq('class_id', homeroomClass.id)
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+    // 5. Ambil data libur
+    const { data: holidays } = await supabase.from('holidays').select('date').gte('date', startDate).lte('date', endDate);
+    const holidayDates = new Set(holidays?.map(h => h.date) || []);
+
+    // 6. Bangun matriks presensi [student_id][date] = status
+    // Gunakan hierarki status: Hadir > Izin > Sakit > Alpha (sesuai V8.0 PRD)
+    const attendanceMap: Record<string, Record<string, string>> = {};
+    const priority: Record<string, number> = { "Hadir": 4, "Izin": 3, "Sakit": 2, "Alpha": 1 };
+
+    records?.forEach(r => {
+        if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
+        const currentStatus = attendanceMap[r.student_id][r.date];
+        if (!currentStatus || priority[r.status] > priority[currentStatus]) {
+            attendanceMap[r.student_id][r.date] = r.status;
+        }
+    });
+
+    return {
+        className: homeroomClass.name,
+        students,
+        attendanceMap,
+        holidayDates,
+        daysInMonth: lastDay,
+        month,
+        year
+    };
 }

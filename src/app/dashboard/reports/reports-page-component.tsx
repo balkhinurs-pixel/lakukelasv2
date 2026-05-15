@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -37,14 +37,15 @@ import {
     BookOpen,
     School,
     FileSpreadsheet,
-    MessageSquare
+    AlertCircle
 } from "lucide-react";
 import type { Class, Subject, Profile, SchoolYear } from "@/lib/types";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { getReportsData, getGradesReportList, getJournalReportList, getAttendanceSemesterMatrix } from "@/lib/data";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 interface jsPDFWithAutoTable extends jsPDF {
@@ -70,6 +71,7 @@ export default function ReportsPageComponent({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   const [activeTab, setActiveTab] = React.useState('attendance');
   const [downloading, setDownloading] = React.useState(false);
@@ -90,7 +92,10 @@ export default function ReportsPageComponent({
   const { summaryCards, uniqueAssessments } = reportsData;
 
   const handleDownloadPdf = async (type: 'attendance' | 'grades' | 'journal') => {
-    if (!selectedClass || !selectedSubject) return;
+    if (!selectedClass || !selectedSubject) {
+        toast({ title: "Filter belum lengkap", description: "Pilih kelas dan mata pelajaran terlebih dahulu.", variant: "destructive" });
+        return;
+    }
     
     setDownloading(true);
     
@@ -130,8 +135,14 @@ export default function ReportsPageComponent({
                 startY: margin + 55,
                 theme: 'grid',
                 headStyles: { fillColor: [79, 70, 229], textColor: 255, halign: 'center' },
-                styles: { fontSize: 7, halign: 'center' },
-                columnStyles: {
+                styles: { fontSize: 7, halign: 'center', valign: 'middle' },
+                columnStyles: type === 'journal' ? {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 20 },
+                    2: { cellWidth: 15 },
+                    3: { cellWidth: 100, halign: 'left' },
+                    4: { cellWidth: 120, halign: 'left' }
+                } : {
                     0: { cellWidth: 10 },
                     1: { cellWidth: 50, halign: 'left' }
                 }
@@ -169,11 +180,13 @@ export default function ReportsPageComponent({
                 subjectId: selectedSubject
             });
             
-            if (!data) throw new Error("Data tidak ditemukan");
+            if (!data || data.students.length === 0) {
+                toast({ title: "Data Kosong", description: "Tidak ada riwayat presensi ditemukan untuk periode ini.", variant: "destructive" });
+                setDownloading(false);
+                return;
+            }
 
             const { students, attendanceMap, maxMeeting } = data;
-            
-            // Header: No, Nama, 1, 2, ..., N, H, S, I, A
             const meetings = Array.from({ length: Math.max(maxMeeting, 1) }, (_, i) => String(i + 1));
             const head = [['No', 'Nama Lengkap', ...meetings, 'H', 'S', 'I', 'A']];
             
@@ -207,6 +220,13 @@ export default function ReportsPageComponent({
                 subjectId: selectedSubject,
                 assessmentType: selectedAssessment
             });
+
+            if (!data || data.length === 0) {
+                toast({ title: "Data Kosong", description: "Tidak ada data nilai ditemukan untuk filter ini.", variant: "destructive" });
+                setDownloading(false);
+                return;
+            }
+
             const head = [['No', 'Nama Siswa', 'Jenis Penilaian', 'KKM', 'Nilai', 'Status']];
             const body = data.map((g: any, i: number) => [
                 i + 1, 
@@ -233,6 +253,13 @@ export default function ReportsPageComponent({
                 classId: selectedClass,
                 subjectId: selectedSubject
             });
+
+            if (!data || data.length === 0) {
+                toast({ title: "Data Kosong", description: "Belum ada entri jurnal mengajar untuk semester ini.", variant: "destructive" });
+                setDownloading(false);
+                return;
+            }
+
             const head = [['No', 'Tanggal', 'Pertemuan', 'Tujuan Pembelajaran', 'Kegiatan (Sintaks)']];
             const body = data.map((j: any, i: number) => [
                 i + 1, 
@@ -253,14 +280,18 @@ export default function ReportsPageComponent({
             img.onerror = () => generatePDFContent(head, body, "LOG JURNAL MENGAJAR GURU PER SEMESTER");
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to generate report:", error);
+        toast({ title: "Gagal Mencetak", description: "Terjadi kesalahan saat memproses dokumen PDF.", variant: "destructive" });
         setDownloading(false);
     }
   };
 
   const handleDownloadExcel = async () => {
-    if (!selectedClass || !selectedSubject) return;
+    if (!selectedClass || !selectedSubject) {
+        toast({ title: "Filter belum lengkap", description: "Pilih kelas dan mata pelajaran terlebih dahulu.", variant: "destructive" });
+        return;
+    }
     setDownloading(true);
     
     try {
@@ -270,6 +301,12 @@ export default function ReportsPageComponent({
             subjectId: selectedSubject,
             assessmentType: selectedAssessment
         });
+
+        if (!data || data.length === 0) {
+            toast({ title: "Data Tidak Ditemukan", description: "Tidak ada data nilai yang bisa diekspor.", variant: "destructive" });
+            setDownloading(false);
+            return;
+        }
 
         const worksheetData = data.map((g: any, i: number) => ({
             "No": i + 1,
@@ -285,8 +322,11 @@ export default function ReportsPageComponent({
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Nilai");
         XLSX.writeFile(workbook, `Leger_Nilai_${summaryCards.activeSchoolYearName.replace(/\//g, '-')}.xlsx`);
-    } catch (error) {
+        
+        toast({ title: "Berhasil", description: "File Excel berhasil diunduh." });
+    } catch (error: any) {
         console.error("Excel export error:", error);
+        toast({ title: "Ekspor Gagal", description: "Gagal membuat file Excel.", variant: "destructive" });
     }
     setDownloading(false);
   }
