@@ -310,10 +310,10 @@ export default function DashboardClientPage({
             {todayHoliday ? (
                 <div className="flex flex-col items-center justify-center py-10 space-y-6">
                     <div className={cn(
-                        "p-8 rounded-[2.5rem] border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full",
+                        "p-8 rounded-xl border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full bg-white",
                         todayHoliday.type === 'national' 
-                            ? "bg-red-50/50 border-red-100 text-red-700" 
-                            : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
+                            ? "border-red-100 text-red-700" 
+                            : "border-indigo-100 text-indigo-700"
                     )}>
                         <div className="shrink-0 -mt-16">
                             <LottieCalendar size={100} />
@@ -325,7 +325,7 @@ export default function DashboardClientPage({
                             )}>
                                 {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
-                            <h3 className="font-black text-2xl leading-tight tracking-tight">{todayHoliday.description}</h3>
+                            <h3 className="font-black text-2xl leading-tight tracking-tight text-rose-600">{todayHoliday.description}</h3>
                             <p className="text-sm opacity-70 mt-3 font-medium">Selamat menikmati waktu istirahat Bapak/Ibu Guru. <br /> Daftar jadwal dan presensi ditiadakan hari ini.</p>
                         </div>
                         <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-white/50 rounded-2xl border border-white/50">

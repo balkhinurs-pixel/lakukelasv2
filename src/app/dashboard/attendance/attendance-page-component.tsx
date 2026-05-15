@@ -726,7 +726,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
             ) : currentHoliday ? (
                 <div className="flex flex-col items-center justify-center py-10 space-y-6 px-4">
                     <div className={cn(
-                        "p-8 rounded-[2.5rem] border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full max-w-2xl bg-white",
+                        "p-8 rounded-xl border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full max-w-2xl bg-white",
                         currentHoliday.type === 'national' 
                             ? "border-red-100 text-red-700" 
                             : "border-indigo-100 text-indigo-700"
@@ -741,7 +741,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                             )}>
                                 {currentHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
-                            <h3 className="font-black text-2xl leading-tight tracking-tight break-words">{currentHoliday.description}</h3>
+                            <h3 className="font-black text-2xl leading-tight tracking-tight break-words text-rose-600">{currentHoliday.description}</h3>
                             <p className="text-sm opacity-70 mt-3 font-medium">Aktivitas belajar mengajar dan presensi siswa ditiadakan untuk tanggal ini.</p>
                         </div>
                     </div>

@@ -244,7 +244,7 @@ export default function TeacherAttendanceClient({
             <div className="px-6 -mt-10 space-y-6 pb-32">
                 {/* Info Card (Always Visible) */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                    <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
+                    <Card className="rounded-xl border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
                         <CardContent className="p-5 flex items-center gap-4">
                             {info.isLottie ? (
                                 <div className="shrink-0 flex items-center justify-center">
@@ -259,7 +259,12 @@ export default function TeacherAttendanceClient({
                                 </div>
                             )}
                             <div className="min-w-0 flex-1">
-                                <h4 className="font-bold text-slate-900 leading-tight break-words">{info.title}</h4>
+                                <h4 className={cn(
+                                    "font-bold leading-tight break-words",
+                                    todayHoliday ? "text-rose-600" : "text-slate-900"
+                                )}>
+                                    {info.title}
+                                </h4>
                                 <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">
                                     {info.subtitle}
                                 </p>
