@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Settings,
   MessageSquare,
+  Ticket,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -62,10 +63,11 @@ import {
 const adminNavItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor', color: 'bg-purple-600' },
   { href: '/admin/users', icon: Users, label: 'Staf', color: 'bg-blue-600' },
+  { href: '/admin/codes', icon: Ticket, label: 'Token', color: 'bg-indigo-600' },
 ];
 
 const rosterNavItems = [
-    { href: '/admin/roster/school-year', icon: CalendarCheck, label: 'T. Ajaran', color: 'bg-indigo-50' },
+    { href: '/admin/roster/school-year', icon: CalendarCheck, label: 'T. Ajaran', color: 'bg-indigo-500' },
     { href: '/admin/roster/classes', icon: School, label: 'Kelas', color: 'bg-cyan-500' },
     { href: '/admin/roster/subjects', icon: BookOpen, label: 'Mapel', color: 'bg-emerald-500' },
     { href: '/admin/roster/students', icon: Users2, label: 'Siswa', color: 'bg-amber-500' },
@@ -445,9 +447,9 @@ export default function AdminLayoutClient({
                     </button>
                 </div>
 
-                <Link href="/admin/roster/students" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/roster") ? "text-purple-600 bg-purple-500/10" : "text-muted-foreground")}>
-                    <Users2 className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Siswa</span>
+                <Link href="/admin/codes" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/admin/codes" ? "text-purple-600 bg-purple-500/10" : "text-muted-foreground")}>
+                    <Ticket className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">Token</span>
                 </Link>
                 <Link href="/admin/settings/school" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/settings") ? "text-purple-600 bg-purple-500/10" : "text-muted-foreground")}>
                     <Settings className="w-5 h-5" />
