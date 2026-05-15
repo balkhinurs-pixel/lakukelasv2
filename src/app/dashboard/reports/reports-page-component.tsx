@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react";
@@ -19,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -37,8 +36,6 @@ import {
     CalendarDays,
     BookOpen,
     School,
-    CheckCircle,
-    Info,
     FileSpreadsheet
 } from "lucide-react";
 import type { Class, Subject, Profile, SchoolYear } from "@/lib/types";
@@ -257,7 +254,7 @@ export default function ReportsPageComponent({
             <HandWrittenTitle title="Laporan Akademik" subtitle="Pusat Dokumentasi Administrasi" className="py-4 md:py-6" />
         </div>
         
-        <Card className="rounded-[2rem] border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+        <Card className="rounded-xl border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-6 px-8">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600 shadow-inner">
@@ -312,7 +309,7 @@ export default function ReportsPageComponent({
         </Card>
 
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100 rounded-[2rem] shadow-lg border-2">
+            <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100 rounded-xl shadow-lg border-2">
                 <CardHeader className="pb-2">
                     <Badge variant="outline" className="w-fit bg-emerald-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Presensi</Badge>
                 </CardHeader>
@@ -325,7 +322,7 @@ export default function ReportsPageComponent({
                 </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100 rounded-[2rem] shadow-lg border-2">
+            <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100 rounded-xl shadow-lg border-2">
                 <CardHeader className="pb-2">
                     <Badge variant="outline" className="w-fit bg-blue-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Nilai</Badge>
                 </CardHeader>
@@ -338,7 +335,7 @@ export default function ReportsPageComponent({
                 </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100 rounded-[2rem] shadow-lg border-2">
+            <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100 rounded-xl shadow-lg border-2">
                 <CardHeader className="pb-2">
                     <Badge variant="outline" className="w-fit bg-purple-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Jurnal</Badge>
                 </CardHeader>
@@ -353,16 +350,16 @@ export default function ReportsPageComponent({
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto bg-slate-100 p-1.5 rounded-[1.5rem] shadow-inner h-14">
-                <TabsTrigger value="attendance" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Presensi</TabsTrigger>
-                <TabsTrigger value="grades" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Nilai</TabsTrigger>
-                <TabsTrigger value="journal" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Jurnal</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto bg-slate-100 p-1.5 rounded-xl shadow-inner h-14">
+                <TabsTrigger value="attendance" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Presensi</TabsTrigger>
+                <TabsTrigger value="grades" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Nilai</TabsTrigger>
+                <TabsTrigger value="journal" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Jurnal</TabsTrigger>
             </TabsList>
 
             <TabsContent value="attendance" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
+                <Card className="rounded-xl border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
                     <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
-                        <div className="p-6 rounded-[2rem] bg-emerald-50 text-emerald-600 shadow-inner">
+                        <div className="p-6 rounded-xl bg-emerald-50 text-emerald-600 shadow-inner">
                             <Users className="h-12 w-12" />
                         </div>
                         <div className="space-y-2">
@@ -382,9 +379,9 @@ export default function ReportsPageComponent({
             </TabsContent>
 
             <TabsContent value="grades" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
+                <Card className="rounded-xl border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
                     <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
-                        <div className="p-6 rounded-[2rem] bg-blue-50 text-blue-600 shadow-inner">
+                        <div className="p-6 rounded-xl bg-blue-50 text-blue-600 shadow-inner">
                             <ClipboardList className="h-12 w-12" />
                         </div>
                         <div className="space-y-4 w-full">
@@ -429,9 +426,9 @@ export default function ReportsPageComponent({
             </TabsContent>
 
             <TabsContent value="journal" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
+                <Card className="rounded-xl border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
                     <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
-                        <div className="p-6 rounded-[2rem] bg-purple-50 text-purple-600 shadow-inner">
+                        <div className="p-6 rounded-xl bg-purple-50 text-purple-600 shadow-inner">
                             <BookCheck className="h-12 w-12" />
                         </div>
                         <div className="space-y-2">
@@ -450,20 +447,6 @@ export default function ReportsPageComponent({
                 </Card>
             </TabsContent>
         </Tabs>
-        
-        <div className="max-w-xl mx-auto">
-            <Card className="bg-blue-50/50 border-blue-100 rounded-3xl p-6">
-                <div className="flex gap-4">
-                    <div className="p-3 bg-blue-100 rounded-2xl h-fit">
-                        <Info className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="space-y-1">
-                        <h4 className="font-bold text-blue-900">Sistem Laporan Cerdas</h4>
-                        <p className="text-sm text-blue-700 leading-relaxed">Presensi dihitung per bulan, sementara Nilai dan Jurnal dihitung secara otomatis untuk seluruh semester yang sedang aktif guna efisiensi administrasi.</p>
-                    </div>
-                </div>
-            </Card>
-        </div>
     </div>
   );
 }
