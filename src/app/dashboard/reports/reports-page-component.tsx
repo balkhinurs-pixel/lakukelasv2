@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react";
@@ -40,6 +41,7 @@ import type { getReportsData } from "@/lib/data";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
