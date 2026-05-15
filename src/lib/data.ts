@@ -473,12 +473,24 @@ export async function getHomeroomMonthlyAttendance(month: number, year: number) 
 
     const holidayDates = new Set(holidaysRes.data?.map(h => h.date) || []);
 
+    // Hierarki Prioritas: Hadir (4) > Izin (3) > Sakit (2) > Alpha (1)
+    const statusPriority: Record<string, number> = { 
+        'Hadir': 4, 
+        'Izin': 3, 
+        'Sakit': 2, 
+        'Alpha': 1 
+    };
+
     const attendanceMap: Record<string, Record<string, string>> = {};
     attendanceRes.data?.forEach(r => {
         if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
-        // We take the first meeting of the day as the representative status for the matrix
-        if (!attendanceMap[r.student_id][r.date]) {
-            attendanceMap[r.student_id][r.date] = r.status;
+        
+        const existingStatus = attendanceMap[r.student_id][r.date];
+        const newStatus = r.status;
+
+        // Jika belum ada data untuk hari itu, ATAU status baru memiliki prioritas lebih tinggi (misal: jam 1 Alpha, jam 2 Hadir)
+        if (!existingStatus || statusPriority[newStatus] > statusPriority[existingStatus]) {
+            attendanceMap[r.student_id][r.date] = newStatus;
         }
     });
 
