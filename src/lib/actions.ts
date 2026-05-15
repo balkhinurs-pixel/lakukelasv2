@@ -29,13 +29,16 @@ export async function activateAccount(token: string) {
     // 1. MASTER TOKEN FALLBACK (Jalan tengah untuk Admin/Database baru)
     const MASTER_TOKEN = "LAKU2025";
     if (inputToken === MASTER_TOKEN) {
+        // Gunakan upsert untuk menangani kasus jika baris profil belum dibuat oleh trigger
         const { error: masterError } = await supabase
             .from('profiles')
-            .update({ 
+            .upsert({ 
+                id: user.id,
+                full_name: user.user_metadata?.full_name || 'Administrator LakuKelas',
+                avatar_url: user.user_metadata?.avatar_url,
                 is_activated: true, 
-                role: 'admin' // Master token otomatis memberikan hak Admin
-            })
-            .eq('id', user.id);
+                role: 'admin' 
+            }, { onConflict: 'id' });
 
         if (masterError) {
             console.error("Master activation error:", masterError);
