@@ -21,6 +21,37 @@ async function getAuthenticatedUser() {
     return user;
 }
 
+/**
+ * Mendapatkan rentang tanggal (start & end) untuk bulan tertentu dalam tahun ajaran tertentu.
+ * Logika: Jika Ganjil (7-12) gunakan tahun awal, jika Genap (1-6) gunakan tahun akhir.
+ */
+async function getMonthDateRange(schoolYearId: string, month: number) {
+    const supabase = createClient();
+    const { data: schoolYear } = await supabase
+        .from('school_years')
+        .select('name')
+        .eq('id', schoolYearId)
+        .single();
+
+    if (!schoolYear) return null;
+
+    // Ekstrak tahun dari string "2024/2025 - Ganjil"
+    const yearsMatch = schoolYear.name.match(/(\d{4})\/(\d{4})/);
+    if (!yearsMatch) return null;
+
+    const startYear = parseInt(yearsMatch[1]);
+    const endYear = parseInt(yearsMatch[2]);
+    
+    // Tentukan tahun kalender berdasarkan bulan
+    const calendarYear = month >= 7 ? startYear : endYear;
+    
+    const startDate = `${calendarYear}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(calendarYear, month, 0).getDate();
+    const endDate = `${calendarYear}-${String(month).padStart(2, '0')}-${lastDay}`;
+
+    return { startDate, endDate };
+}
+
 // --- Admin Data ---
 
 export async function getAdminDashboardData() {
@@ -511,9 +542,11 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
     if (!user) return null;
     const supabase = createClient();
     const { schoolYearId, month, classId, subjectId } = filters;
-    const monthStr = `-${String(month).padStart(2, '0')}-`;
 
-    // Ambil metadata dasar & KPI menggunakan query agregat (lebih hemat request/bandwidth)
+    // Gunakan Date Range untuk stabilitas maksimal di Postgres
+    const range = await getMonthDateRange(schoolYearId, month);
+    if (!range) return null;
+
     const [activeSchoolYearName] = await Promise.all([
         getActiveSchoolYearName()
     ]);
@@ -524,7 +557,8 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
         .select('status', { count: 'exact' })
         .eq('teacher_id', user.id)
         .eq('school_year_id', schoolYearId)
-        .like('date', `%${monthStr}%`);
+        .gte('date', range.startDate)
+        .lte('date', range.endDate);
     
     if (classId) attendanceKpiQuery = attendanceKpiQuery.eq('class_id', classId);
     if (subjectId) attendanceKpiQuery = attendanceKpiQuery.eq('subject_id', subjectId);
@@ -539,7 +573,8 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
         .select('score')
         .eq('teacher_id', user.id)
         .eq('school_year_id', schoolYearId)
-        .like('date', `%${monthStr}%`);
+        .gte('date', range.startDate)
+        .lte('date', range.endDate);
 
     if (classId) gradesKpiQuery = gradesKpiQuery.eq('class_id', classId);
     if (subjectId) gradesKpiQuery = gradesKpiQuery.eq('subject_id', subjectId);
@@ -556,7 +591,8 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
         .select('id', { count: 'exact', head: true })
         .eq('teacher_id', user.id)
         .eq('school_year_id', schoolYearId)
-        .like('date', `%${monthStr}%`);
+        .gte('date', range.startDate)
+        .lte('date', range.endDate);
 
     if (classId) journalKpiQuery = journalKpiQuery.eq('class_id', classId);
     if (subjectId) journalKpiQuery = journalKpiQuery.eq('subject_id', subjectId);
@@ -581,7 +617,9 @@ export async function getAttendanceReportList(filters: { schoolYearId: string, m
     if (!user) return [];
     const supabase = createClient();
     const { schoolYearId, month, classId, subjectId } = filters;
-    const monthStr = `-${String(month).padStart(2, '0')}-`;
+    
+    const range = await getMonthDateRange(schoolYearId, month);
+    if (!range) return [];
 
     const { data } = await supabase
         .from('attendance_history')
@@ -590,7 +628,8 @@ export async function getAttendanceReportList(filters: { schoolYearId: string, m
         .eq('school_year_id', schoolYearId)
         .eq('class_id', classId)
         .eq('subject_id', subjectId)
-        .like('date', `%${monthStr}%`)
+        .gte('date', range.startDate)
+        .lte('date', range.endDate)
         .order('date', { ascending: true });
 
     return data || [];
@@ -602,7 +641,9 @@ export async function getGradesReportList(filters: { schoolYearId: string, month
     if (!user) return [];
     const supabase = createClient();
     const { schoolYearId, month, classId, subjectId } = filters;
-    const monthStr = `-${String(month).padStart(2, '0')}-`;
+
+    const range = await getMonthDateRange(schoolYearId, month);
+    if (!range) return [];
 
     const { data } = await supabase
         .from('grades_history')
@@ -611,7 +652,8 @@ export async function getGradesReportList(filters: { schoolYearId: string, month
         .eq('school_year_id', schoolYearId)
         .eq('class_id', classId)
         .eq('subject_id', subjectId)
-        .like('date', `%${monthStr}%`)
+        .gte('date', range.startDate)
+        .lte('date', range.endDate)
         .order('date', { ascending: true });
 
     return data || [];
@@ -623,7 +665,9 @@ export async function getJournalReportList(filters: { schoolYearId: string, mont
     if (!user) return [];
     const supabase = createClient();
     const { schoolYearId, month, classId, subjectId } = filters;
-    const monthStr = `-${String(month).padStart(2, '0')}-`;
+
+    const range = await getMonthDateRange(schoolYearId, month);
+    if (!range) return [];
 
     const { data } = await supabase
         .from('journal_entries_with_names')
@@ -632,7 +676,8 @@ export async function getJournalReportList(filters: { schoolYearId: string, mont
         .eq('school_year_id', schoolYearId)
         .eq('class_id', classId)
         .eq('subject_id', subjectId)
-        .like('date', `%${monthStr}%`)
+        .gte('date', range.startDate)
+        .lte('date', range.endDate)
         .order('date', { ascending: true });
 
     return data || [];
