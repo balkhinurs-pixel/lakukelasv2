@@ -315,11 +315,8 @@ export default function DashboardClientPage({
                             ? "bg-red-50/50 border-red-100 text-red-700" 
                             : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
                     )}>
-                        <div className={cn(
-                            "p-5 rounded-3xl text-white shadow-2xl shrink-0 -mt-16 bg-white flex items-center justify-center overflow-hidden",
-                            todayHoliday.type === 'national' ? "bg-gradient-to-br from-red-500 to-rose-600" : "bg-gradient-to-br from-indigo-500 to-purple-600"
-                        )}>
-                            <LottieCalendar size={60} />
+                        <div className="shrink-0 -mt-16 bg-white rounded-full p-2 shadow-xl">
+                            <LottieCalendar size={100} />
                         </div>
                         <div className="pt-2">
                             <Badge variant="outline" className={cn(

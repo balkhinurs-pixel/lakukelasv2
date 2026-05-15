@@ -151,6 +151,7 @@ export default function TeacherAttendanceClient({
         } catch (e: any) {
             toast({ title: "Kesalahan", description: "Gagal mengambil lokasi GPS. Harap izinkan akses lokasi di browser/HP Anda.", variant: "destructive" });
         }
+        break;
         setLoading(false);
     };
 
@@ -170,7 +171,7 @@ export default function TeacherAttendanceClient({
                 title: todayHoliday.description,
                 subtitle: "Informasi Hari Libur",
                 icon: todayHoliday.type === 'national' ? Flag : School,
-                iconBg: todayHoliday.type === 'national' ? "bg-rose-500" : "bg-indigo-500"
+                isLottie: true
             };
         }
         
@@ -180,7 +181,8 @@ export default function TeacherAttendanceClient({
                 title: "Hari Minggu",
                 subtitle: "Waktunya Istirahat - Libur Rutin",
                 icon: Coffee,
-                iconBg: "bg-amber-500"
+                iconBg: "bg-amber-500",
+                isLottie: false
             };
         }
 
@@ -188,7 +190,8 @@ export default function TeacherAttendanceClient({
             title: "Silakan Melakukan Presensi",
             subtitle: todayRecord ? "Status: " + todayRecord.status : "Jangan lupa absen masuk & pulang tepat waktu",
             icon: todayRecord ? CheckCircle2 : Briefcase,
-            iconBg: todayRecord ? "bg-emerald-500" : "bg-blue-500"
+            iconBg: todayRecord ? "bg-emerald-500" : "bg-blue-500",
+            isLottie: false
         };
     };
 
@@ -243,12 +246,18 @@ export default function TeacherAttendanceClient({
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                     <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
                         <CardContent className="p-5 flex items-center gap-4">
-                            <div className={cn(
-                                "p-3 rounded-2xl text-white shadow-lg transition-transform group-hover:scale-110 flex items-center justify-center overflow-hidden",
-                                info.iconBg
-                            )}>
-                                {todayHoliday ? <LottieCalendar size={40} /> : <InfoIcon className="h-6 w-6" />}
-                            </div>
+                            {info.isLottie ? (
+                                <div className="shrink-0 flex items-center justify-center">
+                                    <LottieCalendar size={60} />
+                                </div>
+                            ) : (
+                                <div className={cn(
+                                    "p-3 rounded-2xl text-white shadow-lg transition-transform group-hover:scale-110 flex items-center justify-center overflow-hidden",
+                                    info.iconBg
+                                )}>
+                                    <InfoIcon className="h-6 w-6" />
+                                </div>
+                            )}
                             <div className="min-w-0 flex-1">
                                 <h4 className="font-bold text-slate-900 leading-tight break-words">{info.title}</h4>
                                 <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">

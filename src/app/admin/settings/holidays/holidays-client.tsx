@@ -143,8 +143,8 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div className="flex items-center gap-4">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg overflow-hidden flex items-center justify-center">
-            <LottieCalendar size={40} />
+          <div className="shrink-0 flex items-center justify-center">
+            <LottieCalendar size={60} />
           </div>
           <div>
             <h1 className="text-2xl font-bold font-headline">Pengaturan Hari Libur</h1>
