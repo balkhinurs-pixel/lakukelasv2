@@ -2,13 +2,13 @@
 
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/client';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import GradientText from '@/components/ui/gradient-text';
 import SplitText from '@/components/ui/split-text';
 import { InfiniteGrid } from '@/components/ui/the-infinite-grid';
+import { LottieWelcome } from '@/components/ui/lottie-welcome';
 
 export default function WelcomePage() {
     const supabase = createClient();
@@ -42,16 +42,8 @@ export default function WelcomePage() {
         <InfiniteGrid>
             <div className="flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 min-h-screen">
                 <main className="flex flex-col items-center justify-center text-center w-full max-w-2xl flex-1 z-10">
-                    <div className="w-full max-w-sm transform transition-transform duration-700 hover:scale-105">
-                        <Image
-                            src="/ilustration.png"
-                            alt="Ilustrasi guru dan siswa menggunakan aplikasi Lakukelas"
-                            width={1024}
-                            height={1536}
-                            className="h-auto w-full drop-shadow-2xl"
-                            data-ai-hint="teacher students application"
-                            priority
-                        />
+                    <div className="w-full flex justify-center transform transition-transform duration-700 hover:scale-105">
+                        <LottieWelcome className="drop-shadow-2xl" />
                     </div>
 
                     <div className="mt-8 space-y-4">
