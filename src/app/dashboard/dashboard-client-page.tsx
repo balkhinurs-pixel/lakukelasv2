@@ -33,6 +33,7 @@ import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
 import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
+import { LottieAgenda } from "@/components/ui/lottie-agenda";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -519,8 +520,8 @@ export default function DashboardClientPage({
                 </div>
              ) : (
                 <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-full flex items-center justify-center">
-                        <CalendarDays className="w-8 h-8 text-indigo-500" />
+                    <div className="shrink-0 flex items-center justify-center mb-4">
+                        <LottieAgenda size={120} />
                     </div>
                     <p className="text-muted-foreground font-medium">Belum ada agenda terdaftar</p>
                     <p className="text-sm text-muted-foreground/70 mt-1">
