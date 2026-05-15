@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -39,7 +40,7 @@ import {
   } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus, GraduationCap, Edit, Phone } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus, GraduationCap, Edit, Phone, ShieldCheck } from "lucide-react";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
@@ -48,7 +49,6 @@ import { deleteUser, inviteTeacher, updateUserRole, updateStaffProfile } from "@
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-
 
 function FormattedDate({ dateString }: { dateString: string }) {
     const [date, setDate] = React.useState('');
@@ -77,18 +77,11 @@ const InviteTeacherDialog = ({ onInviteSuccess }: { onInviteSuccess: () => void 
         const result = await inviteTeacher(fullName, email);
 
         if (result.success) {
-            toast({
-                title: "Undangan Terkirim",
-                description: `Email undangan telah dikirim ke ${email}.`,
-            });
+            toast({ title: "Undangan Terkirim", description: `Email undangan telah dikirim ke ${email}.` });
             onInviteSuccess();
             setOpen(false);
         } else {
-            toast({
-                title: "Gagal Mengundang",
-                description: result.error,
-                variant: "destructive"
-            });
+            toast({ title: "Gagal Mengundang", description: result.error, variant: "destructive" });
         }
         setLoading(false);
     }
@@ -105,9 +98,7 @@ const InviteTeacherDialog = ({ onInviteSuccess }: { onInviteSuccess: () => void 
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>Undang Guru Baru</DialogTitle>
-                        <DialogDescription>
-                           Masukkan nama dan email guru. Sistem akan mengirim email undangan agar mereka dapat mengatur kata sandi dan login.
-                        </DialogDescription>
+                        <DialogDescription>Masukkan nama dan email guru untuk dikirimkan undangan aktivasi.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
@@ -163,7 +154,7 @@ const EditStaffDialog = ({ user, open, onOpenChange }: { user: Profile, open: bo
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>Ubah Data Staf</DialogTitle>
-                        <DialogDescription>Perbarui informasi profil dan nomor WhatsApp staf.</DialogDescription>
+                        <DialogDescription>Perbarui informasi profil staf pengajar.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
@@ -175,9 +166,8 @@ const EditStaffDialog = ({ user, open, onOpenChange }: { user: Profile, open: bo
                             <Input id="nip" name="nip" defaultValue={user.nip} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="phoneNumber">Nomor WhatsApp (628...)</Label>
-                            <Input id="phoneNumber" name="phoneNumber" defaultValue={user.phone_number} placeholder="628123456789" />
-                            <p className="text-[10px] text-muted-foreground">Penting: Gunakan format internasional tanpa tanda + untuk fitur notifikasi.</p>
+                            <Label htmlFor="phoneNumber">Nomor WhatsApp</Label>
+                            <Input id="phoneNumber" name="phoneNumber" defaultValue={user.phone_number} placeholder="628..." />
                         </div>
                     </div>
                     <DialogFooter>
@@ -192,73 +182,47 @@ const EditStaffDialog = ({ user, open, onOpenChange }: { user: Profile, open: bo
     )
 }
 
-
 export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
     const router = useRouter();
-    const [users, setUsers] = React.useState<Profile[]>(initialUsers);
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [loading, setLoading] = React.useState<string | boolean>(false); // Can be userId or boolean
+    const [loading, setLoading] = React.useState<string | boolean>(false);
     const [editingUser, setEditingUser] = React.useState<Profile | null>(null);
     const { toast } = useToast();
 
-    React.useEffect(() => {
-        setUsers(initialUsers);
-    }, [initialUsers]);
-
-    const filteredUsers = users.filter(user => {
-        const matchesSearch = (user.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-        return matchesSearch;
+    const filteredUsers = initialUsers.filter(user => {
+        const name = user.full_name?.toLowerCase() || '';
+        const email = user.email?.toLowerCase() || '';
+        const search = searchTerm.toLowerCase();
+        return name.includes(search) || email.includes(search);
     });
 
     const handleDeleteUser = async (userId: string) => {
         setLoading(userId);
-        const userToDelete = users.find(u => u.id === userId);
-        if (!userToDelete) return;
-
         const result = await deleteUser(userId);
-
         if (result.success) {
-            toast({
-                title: "Guru Dihapus",
-                description: `Guru ${userToDelete.full_name} telah berhasil dihapus.`,
-            });
+            toast({ title: "Berhasil", description: "Guru telah dihapus." });
             router.refresh();
         } else {
-            toast({
-                title: "Gagal Menghapus",
-                description: result.error,
-                variant: "destructive"
-            });
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
         }
         setLoading(false);
     }
 
-    const handleRoleChange = async (userId: string, newRole: 'teacher' | 'headmaster') => {
+    const handleRoleChange = async (userId: string, newRole: 'teacher' | 'headmaster' | 'admin') => {
         setLoading(userId);
-        const userToUpdate = users.find(u => u.id === userId);
-        if (!userToUpdate) return;
-        
         const result = await updateUserRole(userId, newRole);
-
         if (result.success) {
-            toast({
-                title: "Peran Diperbarui",
-                description: `${userToUpdate.full_name} sekarang adalah seorang ${newRole === 'headmaster' ? 'Kepala Sekolah' : 'Guru'}.`
-            });
-            router.refresh(); // Refresh the page to show the new role
+            toast({ title: "Berhasil", description: `Peran diperbarui menjadi ${newRole}.` });
+            router.refresh();
         } else {
-            toast({
-                title: "Gagal Memperbarui Peran",
-                description: result.error,
-                variant: "destructive"
-            });
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
         }
         setLoading(false);
     }
     
   return (
     <>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="relative w-full sm:w-auto sm:flex-grow max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
@@ -271,160 +235,79 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
             <InviteTeacherDialog onInviteSuccess={() => router.refresh()} />
         </div>
 
-        {/* Mobile View */}
-        <div className="md:hidden space-y-4">
-            {filteredUsers.map((user) => (
-                 <div key={user.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                     <div className="flex justify-between items-start">
-                        <div>
-                            <p className="font-semibold">{user.full_name || 'N/A'}</p>
-                            {user.role === 'headmaster' && (
-                                <Badge variant="secondary" className="mt-1 bg-amber-200 text-amber-800">Kepala Sekolah</Badge>
-                            )}
-                        </div>
-                         <AlertDialog>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" disabled={loading === user.id} className="h-8 w-8 -mt-2 -mr-2">
-                                        {loading === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                                        <Edit className="mr-2 h-4 w-4" /> Ubah Data
-                                    </DropdownMenuItem>
-                                     {user.role === 'teacher' ? (
-                                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>
-                                            <GraduationCap className="mr-2 h-4 w-4" /> Jadikan Kepala Sekolah
-                                        </DropdownMenuItem>
-                                     ) : (
-                                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'teacher')}>
-                                            <User className="mr-2 h-4 w-4" /> Jadikan Guru Biasa
-                                        </DropdownMenuItem>
-                                     )}
-                                    <DropdownMenuSeparator />
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Hapus Guru
-                                        </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                             <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Tindakan ini tidak dapat dibatalkan. Ini akan menghapus guru <span className="font-semibold">{user.full_name}</span> secara permanen dari server.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading === user.id}>
-                                        {loading === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Ya, Hapus Guru
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                         </AlertDialog>
-                     </div>
-                     <div className="text-sm text-muted-foreground space-y-2 border-t pt-3 mt-3">
-                         <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-primary"/>
-                            <span>{user.email}</span>
-                        </div>
-                        {user.phone_number && (
-                            <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-green-600"/>
-                                <span>{user.phone_number}</span>
-                            </div>
-                        )}
-                         <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-primary"/>
-                            <span>Bergabung: <FormattedDate dateString={user.created_at} /></span>
-                        </div>
-                     </div>
-                </div>
-            ))}
-        </div>
-
-        {/* Desktop View */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto rounded-xl border">
             <Table>
-                <TableHeader>
+                <TableHeader className="bg-slate-50">
                     <TableRow>
                         <TableHead>Nama Guru</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>WhatsApp</TableHead>
                         <TableHead>Peran</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
-                            <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                            <TableCell className="text-muted-foreground text-xs font-mono">
-                                {user.phone_number || '-'}
-                            </TableCell>
-                             <TableCell>
-                                {user.role === 'headmaster' ? (
-                                    <Badge variant="secondary" className="bg-amber-100 text-amber-800">Kepala Sekolah</Badge>
-                                ) : (
-                                    <Badge variant="outline">Guru</Badge>
-                                )}
+                        <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
+                            <TableCell className="font-semibold text-slate-900">{user.full_name || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-500 text-xs">{user.email}</TableCell>
+                            <TableCell>
+                                {user.role === 'admin' && <Badge variant="secondary" className="bg-purple-100 text-purple-800">Admin</Badge>}
+                                {user.role === 'headmaster' && <Badge variant="secondary" className="bg-amber-100 text-amber-800">Kepala Sekolah</Badge>}
+                                {user.role === 'teacher' && <Badge variant="outline">Guru</Badge>}
                             </TableCell>
                             <TableCell className="text-right">
-                                <AlertDialog>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" disabled={loading === user.id}>
-                                                {loading === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Ubah Data
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" disabled={loading === user.id}>
+                                            {loading === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56 rounded-xl border-0 shadow-2xl">
+                                        <DropdownMenuLabel>Kelola Akun</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                                            <Edit className="mr-2 h-4 w-4" /> Ubah Profil
+                                        </DropdownMenuItem>
+                                        
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground">Ubah Peran</DropdownMenuLabel>
+                                        
+                                        {user.role !== 'admin' && (
+                                            <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'admin')} className="text-purple-600 font-bold">
+                                                <ShieldCheck className="mr-2 h-4 w-4" /> Jadikan Admin
                                             </DropdownMenuItem>
-                                            {user.role === 'teacher' ? (
-                                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>
-                                                    <GraduationCap className="mr-2 h-4 w-4" /> Jadikan Kepala Sekolah
-                                                </DropdownMenuItem>
-                                             ) : (
-                                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'teacher')}>
-                                                    <User className="mr-2 h-4 w-4" /> Jadikan Guru Biasa
-                                                </DropdownMenuItem>
-                                             )}
-                                            <DropdownMenuSeparator />
+                                        )}
+                                        {user.role !== 'headmaster' && (
+                                            <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>
+                                                <GraduationCap className="mr-2 h-4 w-4" /> Jadikan Kepala Sekolah
+                                            </DropdownMenuItem>
+                                        )}
+                                        {user.role !== 'teacher' && (
+                                            <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'teacher')}>
+                                                <User className="mr-2 h-4 w-4" /> Jadikan Guru Biasa
+                                            </DropdownMenuItem>
+                                        )}
+
+                                        <DropdownMenuSeparator />
+                                        <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    Hapus Guru
+                                                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Hapus Guru
                                                 </DropdownMenuItem>
                                             </AlertDialogTrigger>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Tindakan ini tidak dapat dibatalkan. Ini akan menghapus guru <span className="font-semibold">{user.full_name}</span> secara permanen dari server.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90" disabled={loading === user.id}>
-                                                {loading === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Ya, Hapus Guru
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                            <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Hapus Staf?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Data guru <b>{user.full_name}</b> akan dihapus permanen.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel className="rounded-xl">Batal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-red-600 hover:bg-red-700 rounded-xl">Hapus</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </TableCell>
                         </TableRow>
                     ))}
@@ -432,20 +315,42 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
             </Table>
         </div>
 
-        {filteredUsers.length === 0 && (
-            <div className="text-center text-muted-foreground py-12">
-                <Users className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium">Guru Tidak Ditemukan</h3>
-                <p className="mt-1 text-sm text-gray-500">Coba ubah filter atau kata kunci pencarian Anda.</p>
-            </div>
-        )}
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
+            {filteredUsers.map((user) => (
+                 <div key={user.id} className="border border-slate-200 rounded-2xl p-5 bg-white shadow-sm space-y-4">
+                    <div className="flex justify-between items-start gap-4">
+                        <div className="min-w-0">
+                            <p className="font-bold text-slate-900 truncate">{user.full_name || 'N/A'}</p>
+                            <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                        </div>
+                        <Badge variant="secondary" className={cn(
+                            "shrink-0 text-[10px] uppercase font-bold",
+                            user.role === 'admin' ? "bg-purple-100 text-purple-700" :
+                            user.role === 'headmaster' ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"
+                        )}>
+                            {user.role}
+                        </Badge>
+                    </div>
+                    <div className="flex gap-2 pt-2 border-t border-slate-50">
+                        <Button variant="outline" size="sm" className="flex-1 rounded-xl h-10 font-bold" onClick={() => setEditingUser(user)}>Ubah</Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="secondary" size="sm" className="flex-1 rounded-xl h-10 font-bold">Peran</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56 rounded-2xl border-0 shadow-2xl">
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'admin')} className="font-bold text-purple-600">Jadikan Admin</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>Jadikan Kepala Sekolah</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'teacher')}>Jadikan Guru Biasa</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                 </div>
+            ))}
+        </div>
 
         {editingUser && (
-            <EditStaffDialog 
-                user={editingUser} 
-                open={!!editingUser} 
-                onOpenChange={(open) => !open && setEditingUser(null)} 
-            />
+            <EditStaffDialog user={editingUser} open={!!editingUser} onOpenChange={(o) => !o && setEditingUser(null)} />
         )}
     </>
   );
