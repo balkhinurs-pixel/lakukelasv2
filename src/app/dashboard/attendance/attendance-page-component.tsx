@@ -695,7 +695,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 {!currentHoliday && isInherited && !editingId && (
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 animate-pulse flex items-center gap-1.5 py-1 px-3 rounded-full shadow-sm">
                         <ArrowUpCircle className="w-3.5 h-3.5" />
-                        Data disinkronkan dari jam sebelumnya
+                        <span className="text-xs">Data disinkronkan dari jam sebelumnya</span>
                     </Badge>
                 )}
               </div>
@@ -970,6 +970,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                               <TableHead className="font-semibold text-slate-700">Ringkasan</TableHead>
                               <TableHead className="text-right font-semibold text-slate-700">Aksi</TableHead>
                           </TableRow>
+                      </TableHeader>
                       <TableBody>
                           {paginatedHistory.map(({entry, records}) => {
                               const summary = records.reduce((acc, record) => {
