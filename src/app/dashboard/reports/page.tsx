@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears, getAdminProfile } from "@/lib/data";
@@ -9,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getIndonesianTime } from "@/lib/timezone";
 
 export default async function ReportsPage({
     searchParams
@@ -17,16 +16,21 @@ export default async function ReportsPage({
 }) {
     const classId = searchParams.class as string | undefined;
     const subjectId = searchParams.subject as string | undefined;
-    const month = searchParams.month ? Number(searchParams.month) : undefined;
+    
+    // Tentukan bulan default (bulan saat ini dalam zona waktu Indonesia)
+    const nowIndo = getIndonesianTime();
+    const currentMonthDefault = nowIndo.getMonth() + 1;
+    const month = searchParams.month ? Number(searchParams.month) : currentMonthDefault;
+
     const schoolYearIdFromParams = searchParams.schoolYear as string | undefined;
 
-    // Fetch all data in parallel, including the admin profile for school data
+    // Ambil data dasar
     const [classes, subjects, profile, { schoolYears, activeSchoolYearId: defaultActiveSchoolYearId }, adminProfile] = await Promise.all([
         getClasses(),
         getSubjects(),
         getUserProfile(),
         getSchoolYears(),
-        getAdminProfile() // Explicitly fetch admin profile
+        getAdminProfile()
     ]);
     
     if (!profile) {
@@ -37,14 +41,15 @@ export default async function ReportsPage({
         )
     }
 
+    // Gunakan Tahun Ajaran Aktif sebagai default wajib jika tidak ada di params
     const schoolYearToFetch = schoolYearIdFromParams || defaultActiveSchoolYearId;
 
     if (!schoolYearToFetch) {
          return (
-            <div className="space-y-6 max-w-xl mx-auto">
+            <div className="space-y-6 max-w-xl mx-auto p-4">
                  <div>
                     <h1 className="text-2xl font-bold font-headline">Laporan Akademik</h1>
-                    <p className="text-muted-foreground">Analisis komprehensif tentang kehadiran dan nilai siswa.</p>
+                    <p className="text-muted-foreground">Pusat dokumentasi dan pencetakan laporan.</p>
                 </div>
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -60,25 +65,22 @@ export default async function ReportsPage({
         )
     }
 
+    // Ambil data laporan berdasarkan filter
     const reportsData = await getReportsData({
         schoolYearId: schoolYearToFetch,
-        month,
+        month: month,
         classId,
         subjectId,
     });
     
     if (!reportsData) {
         return (
-            <div className="space-y-6 max-w-xl mx-auto">
-                 <div>
-                    <h1 className="text-2xl font-bold font-headline">Laporan Akademik</h1>
-                    <p className="text-muted-foreground">Analisis komprehensif tentang kehadiran dan nilai siswa.</p>
-                </div>
+            <div className="space-y-6 max-w-xl mx-auto p-4">
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Gagal Memuat Data Laporan</AlertTitle>
+                    <AlertTitle>Gagal Memuat Data</AlertTitle>
                     <AlertDescription>
-                        Terjadi kesalahan saat mengambil data dari database. Silakan coba lagi atau hubungi dukungan jika masalah berlanjut.
+                        Terjadi kesalahan saat mengambil data dari database.
                     </AlertDescription>
                 </Alert>
             </div>
@@ -91,7 +93,6 @@ export default async function ReportsPage({
         schoolYears={schoolYears}
         reportsData={reportsData}
         profile={profile}
-        schoolProfile={adminProfile} // Pass admin profile to the client component
+        schoolProfile={adminProfile}
     />;
 }
-

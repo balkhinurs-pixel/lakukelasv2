@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react";
@@ -49,8 +48,16 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
 
-const monthsGanjil = [{ value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' }, { value: "9", label: 'September' }, { value: "10", label: 'Oktober' }, { value: "11", label: 'November' }, { value: "12", label: 'Desember' }];
-const monthsGenap = [{ value: "1", label: 'Januari' }, { value: "2", label: 'Februari' }, { value: "3", label: 'Maret' }, { value: "4", label: 'April' }, { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' }];
+const monthsGanjil = [
+    { value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' }, 
+    { value: "9", label: 'September' }, { value: "10", label: 'Oktober' }, 
+    { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
+];
+const monthsGenap = [
+    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' }, 
+    { value: "3", label: 'Maret' }, { value: "4", label: 'April' }, 
+    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' }
+];
 const allMonths = [...monthsGenap, ...monthsGanjil].sort((a,b) => parseInt(a.value) - parseInt(b.value));
 
 export default function ReportsPageComponent({
@@ -72,17 +79,22 @@ export default function ReportsPageComponent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [selectedClass, setSelectedClass] = React.useState(searchParams.get('class') || "all");
-  const [selectedSubject, setSelectedSubject] = React.useState(searchParams.get('subject') || "all");
   const [downloading, setDownloading] = React.useState(false);
   
+  // Ambil nilai dari search params atau gunakan default yang dikirim dari server
   const currentSchoolYearId = searchParams.get('schoolYear') || reportsData.summaryCards.activeSchoolYearId || "all";
-  const currentMonth = searchParams.get('month') || "all";
+  const currentMonth = searchParams.get('month') || String(new Date().getMonth() + 1);
+  const selectedClass = searchParams.get('class') || "all";
+  const selectedSubject = searchParams.get('subject') || "all";
 
   const handleFilterChange = React.useCallback(
     (key: 'schoolYear' | 'month' | 'class' | 'subject', value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value === 'all') params.delete(key); else params.set(key, value);
+      if (value === 'all') {
+          params.delete(key);
+      } else {
+          params.set(key, value);
+      }
       router.push(`${pathname}?${params.toString()}`);
     },
     [searchParams, router, pathname]
@@ -93,7 +105,8 @@ export default function ReportsPageComponent({
   const selectedSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYearId);
   const availableMonths = React.useMemo(() => {
     if (!selectedSchoolYear) return allMonths;
-    return selectedSchoolYear.name.toLowerCase().includes('ganjil') ? monthsGanjil : monthsGenap;
+    // Tampilkan semua bulan saja agar fleksibel namun tetap teratur
+    return allMonths;
   }, [selectedSchoolYear]);
 
   const handleDownloadPdf = async (type: 'attendance' | 'grades' | 'journal') => {
@@ -104,6 +117,7 @@ export default function ReportsPageComponent({
     const margin = 14;
 
     const generateContent = () => {
+        // Kop Surat
         if (schoolProfile) {
             doc.setFontSize(16).setFont(undefined, 'bold');
             doc.text((schoolProfile.school_name || "LAKUKELAS").toUpperCase(), margin + 25, margin + 8);
@@ -151,7 +165,9 @@ export default function ReportsPageComponent({
         if (finalY > pageHeight - 60) { doc.addPage(); finalY = margin + 20; }
 
         const today = format(new Date(), 'dd MMMM yyyy', { locale: id });
-        doc.text(`Dicetak pada: ${today}`, margin, finalY - 5);
+        const city = schoolProfile?.school_address?.split(',')[1]?.trim() || "Kota";
+
+        doc.text(`${city}, ${today}`, pageWidth - margin - 60, finalY - 5);
         
         doc.text("Mengetahui,", margin + 20, finalY);
         doc.text("Kepala Sekolah,", margin + 20, finalY + 6);
@@ -183,7 +199,7 @@ export default function ReportsPageComponent({
   return (
     <div className="space-y-8 p-1 pb-20">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <HandWrittenTitle title="Laporan Akademik" subtitle="Pusat Pencetakan Dokumen" className="py-4 md:py-6" />
+            <HandWrittenTitle title="Laporan Akademik" subtitle="Pusat Dokumentasi Administrasi" className="py-4 md:py-6" />
         </div>
         
         <Card className="rounded-[2rem] border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
@@ -194,7 +210,7 @@ export default function ReportsPageComponent({
                     </div>
                     <div>
                         <CardTitle className="text-xl font-bold tracking-tight">Filter Laporan</CardTitle>
-                        <CardDescription>Pilih kriteria data sebelum mengunduh laporan.</CardDescription>
+                        <CardDescription>Default: Tahun Ajaran Aktif & Bulan Berjalan.</CardDescription>
                     </div>
                 </div>
             </CardHeader>
@@ -297,7 +313,7 @@ export default function ReportsPageComponent({
                             </div>
                             <div>
                                 <CardTitle className="text-xl font-bold tracking-tight">Data Presensi</CardTitle>
-                                <CardDescription>Data mentah presensi siswa sebelum dicetak.</CardDescription>
+                                <CardDescription>Catatan kehadiran siswa bulan ini.</CardDescription>
                             </div>
                         </div>
                         <Button 
@@ -316,28 +332,38 @@ export default function ReportsPageComponent({
                                     <TableRow>
                                         <TableHead className="font-bold py-5 px-8">Tanggal</TableHead>
                                         <TableHead className="font-bold">Nama Siswa</TableHead>
-                                        <TableHead className="font-bold">Mata Pelajaran</TableHead>
+                                        <TableHead className="font-bold">Kelas</TableHead>
+                                        <TableHead className="font-bold">Mapel</TableHead>
                                         <TableHead className="text-center font-bold">Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {attendanceHistory.slice(0, 20).map((record) => (
-                                        <TableRow key={record.id}>
-                                            <TableCell className="py-4 px-8 font-medium text-slate-500">{format(parseISO(record.date), 'dd MMM yyyy')}</TableCell>
-                                            <TableCell className="font-bold text-slate-900">{record.student_name || 'Siswa'}</TableCell>
-                                            <TableCell className="text-slate-600 text-sm font-medium">{record.subject_name}</TableCell>
-                                            <TableCell className="text-center">
-                                                <Badge className={cn(
-                                                    "rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider",
-                                                    record.status === 'Hadir' ? "bg-emerald-100 text-emerald-700" :
-                                                    record.status === 'Alpha' ? "bg-red-100 text-red-700" :
-                                                    "bg-blue-100 text-blue-700"
-                                                )}>
-                                                    {record.status}
-                                                </Badge>
+                                    {attendanceHistory.length > 0 ? (
+                                        attendanceHistory.map((record) => (
+                                            <TableRow key={record.id}>
+                                                <TableCell className="py-4 px-8 font-medium text-slate-500">{format(parseISO(record.date), 'dd MMM yyyy')}</TableCell>
+                                                <TableCell className="font-bold text-slate-900">{record.student_name || 'Siswa'}</TableCell>
+                                                <TableCell className="text-slate-600 text-sm font-medium">{record.class_name}</TableCell>
+                                                <TableCell className="text-slate-600 text-sm font-medium">{record.subject_name}</TableCell>
+                                                <TableCell className="text-center">
+                                                    <Badge className={cn(
+                                                        "rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider",
+                                                        record.status === 'Hadir' ? "bg-emerald-100 text-emerald-700" :
+                                                        record.status === 'Alpha' ? "bg-red-100 text-red-700" :
+                                                        "bg-blue-100 text-blue-700"
+                                                    )}>
+                                                        {record.status}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="py-20 text-center text-muted-foreground italic">
+                                                Tidak ada data kehadiran untuk periode ini.
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
@@ -378,21 +404,29 @@ export default function ReportsPageComponent({
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {gradeHistory.slice(0, 20).map((record) => (
-                                        <TableRow key={record.id}>
-                                            <TableCell className="py-4 px-8 font-bold text-slate-900">{record.student_name || 'Siswa'}</TableCell>
-                                            <TableCell className="text-slate-600 text-sm font-medium">{record.subject_name}</TableCell>
-                                            <TableCell className="text-slate-500 text-xs font-bold uppercase">{record.assessment_type}</TableCell>
-                                            <TableCell className="text-center">
-                                                <span className={cn(
-                                                    "text-lg font-black",
-                                                    record.score >= (record.subject_kkm || 75) ? "text-emerald-600" : "text-red-600"
-                                                )}>
-                                                    {record.score}
-                                                </span>
+                                    {gradeHistory.length > 0 ? (
+                                        gradeHistory.map((record) => (
+                                            <TableRow key={record.id}>
+                                                <TableCell className="py-4 px-8 font-bold text-slate-900">{record.student_name || 'Siswa'}</TableCell>
+                                                <TableCell className="text-slate-600 text-sm font-medium">{record.subject_name}</TableCell>
+                                                <TableCell className="text-slate-500 text-xs font-bold uppercase">{record.assessment_type}</TableCell>
+                                                <TableCell className="text-center">
+                                                    <span className={cn(
+                                                        "text-lg font-black",
+                                                        record.score >= (record.subject_kkm || 75) ? "text-emerald-600" : "text-red-600"
+                                                    )}>
+                                                        {record.score}
+                                                    </span>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="py-20 text-center text-muted-foreground italic">
+                                                Tidak ada data nilai untuk periode ini.
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
@@ -432,18 +466,26 @@ export default function ReportsPageComponent({
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {journalEntries.map((journal) => (
-                                        <TableRow key={journal.id}>
-                                            <TableCell className="py-4 px-8 font-medium text-slate-500">{format(parseISO(journal.date), 'dd/MM/yy')}</TableCell>
-                                            <TableCell>
-                                                <p className="font-bold text-slate-900 leading-tight">{journal.className}</p>
-                                                <p className="text-[10px] font-bold text-indigo-500 uppercase">{journal.subjectName}</p>
-                                            </TableCell>
-                                            <TableCell>
-                                                <p className="text-sm text-slate-600 line-clamp-1 max-w-md">{journal.learning_objectives}</p>
+                                    {journalEntries.length > 0 ? (
+                                        journalEntries.map((journal) => (
+                                            <TableRow key={journal.id}>
+                                                <TableCell className="py-4 px-8 font-medium text-slate-500">{format(parseISO(journal.date), 'dd/MM/yy')}</TableCell>
+                                                <TableCell>
+                                                    <p className="font-bold text-slate-900 leading-tight">{journal.className}</p>
+                                                    <p className="text-[10px] font-bold text-indigo-500 uppercase">{journal.subjectName}</p>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <p className="text-sm text-slate-600 line-clamp-1 max-w-md">{journal.learning_objectives}</p>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="py-20 text-center text-muted-foreground italic">
+                                                Tidak ada entri jurnal untuk periode ini.
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
