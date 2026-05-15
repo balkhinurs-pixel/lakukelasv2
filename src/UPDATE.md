@@ -1,6 +1,15 @@
 # Log Pembaruan LakuKelas
 
-## V9.4: Aktivasi & Keamanan Fix (TERBARU)
+## V9.5: Aktivasi & Redirection Fix (TERBARU)
+Perbaikan pada alur kerja setelah aktivasi akun.
+
+### 1. Perbaikan Redirection
+- **Hard Reload**: Mengganti `router.push` dengan `window.location.href` pada halaman aktivasi untuk memastikan navigasi memicu pemindaian ulang oleh *middleware*. Ini menyelesaikan masalah pengguna yang tetap tertahan di halaman `/activate` padahal sudah berhasil aktivasi.
+- **Revalidation**: Menambahkan `revalidatePath('/', 'layout')` pada server action `activateAccount` untuk memastikan cache server dibersihkan segera setelah status akun berubah.
+
+---
+
+## V9.4: Aktivasi & Keamanan Fix
 Perbaikan krusial pada sistem aktivasi token dan monitoring.
 
 ### 1. Perbaikan Token Aktivasi

@@ -38,10 +38,12 @@ export async function activateAccount(token: string) {
     }
 
     // 2. Tandai token sebagai terpakai
-    await supabase
+    const { error: tokenUpdateError } = await supabase
         .from('activation_tokens')
         .update({ used_by: user.id, used_at: new Date().toISOString() })
         .eq('id', tokenData.id);
+
+    if (tokenUpdateError) return { success: false, error: "Gagal memproses token." };
 
     // 3. Aktifkan profil
     const { error: profileError } = await supabase
@@ -51,7 +53,8 @@ export async function activateAccount(token: string) {
 
     if (profileError) return { success: false, error: "Gagal memperbarui status akun." };
 
-    revalidatePath('/');
+    // Revalidate seluruh layout agar middleware mendapatkan data terbaru
+    revalidatePath('/', 'layout');
     return { success: true };
 }
 

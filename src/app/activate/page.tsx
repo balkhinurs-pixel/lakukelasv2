@@ -26,12 +26,13 @@ export default function ActivationPage() {
 
         if (result.success) {
             toast({ title: "Akun Aktif!", description: "Selamat datang di LakuKelas." });
-            router.push('/dashboard');
-            router.refresh();
+            // Menggunakan window.location.href untuk memaksa reload penuh 
+            // agar middleware mendeteksi status is_activated yang baru.
+            window.location.href = '/dashboard';
         } else {
             toast({ title: "Gagal Aktivasi", description: result.error, variant: "destructive" });
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleLogout = async () => {
