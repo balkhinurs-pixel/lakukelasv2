@@ -331,7 +331,10 @@ export default function DashboardClientPage({
                             )}>
                                 {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
-                            <h3 className="font-black text-2xl leading-tight tracking-tight text-rose-600">{todayHoliday.description}</h3>
+                            <h3 className={cn(
+                                "font-black text-2xl leading-tight tracking-tight",
+                                todayHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600"
+                            )}>{todayHoliday.description}</h3>
                             <p className="text-sm opacity-70 mt-3 font-medium">Selamat menikmati waktu istirahat Bapak/Ibu Guru. <br /> Daftar jadwal dan presensi ditiadakan hari ini.</p>
                         </div>
                         <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-white/50 rounded-2xl border border-white/50">

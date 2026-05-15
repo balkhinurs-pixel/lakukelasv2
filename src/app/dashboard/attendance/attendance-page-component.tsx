@@ -746,7 +746,10 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                             )}>
                                 {currentHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
-                            <h3 className="font-black text-2xl leading-tight tracking-tight break-words text-rose-600">{currentHoliday.description}</h3>
+                            <h3 className={cn(
+                                "font-black text-2xl leading-tight tracking-tight break-words",
+                                currentHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600"
+                            )}>{currentHoliday.description}</h3>
                             <p className="text-sm opacity-70 mt-3 font-medium">Aktivitas belajar mengajar dan presensi siswa ditiadakan untuk tanggal ini.</p>
                         </div>
                     </div>
@@ -966,8 +969,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                               <TableHead className="font-semibold text-slate-700">Pertemuan</TableHead>
                               <TableHead className="font-semibold text-slate-700">Ringkasan</TableHead>
                               <TableHead className="text-right font-semibold text-slate-700">Aksi</TableHead>
-                          </TableRow>
-                      </TableHeader>
+                          </TableHeader>
                       <TableBody>
                           {paginatedHistory.map(({entry, records}) => {
                               const summary = records.reduce((acc, record) => {
@@ -1086,7 +1088,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                               </TableRow>
                           </TableHeader>
                           <TableBody>
-                              {groupedHistory.find(g => g.entry.id === viewingEntry.id)?.records.map(record => (
+                              {groupedHistory.find(h => h.entry.id === viewingEntry.id)?.records.map(record => (
                                   <TableRow key={record.student_id} className="hover:bg-slate-50/50 transition-colors duration-150">
                                       <TableCell className="font-medium text-slate-900">{getStudentName(record.student_id)}</TableCell>
                                       <TableCell className="text-right">

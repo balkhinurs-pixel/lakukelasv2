@@ -435,7 +435,7 @@ export default function AgendaPageClient({
                         nav_button_next: "",
                         table: "w-full border-collapse",
                         head_row: "flex w-full justify-between mb-4",
-                        head_cell: "text-slate-400 rounded-md w-9 font-bold text-[0.7rem] uppercase tracking-widest text-center flex-1",
+                        head_cell: "text-slate-400 rounded-md w-9 font-normal text-[0.7rem] uppercase tracking-widest text-center flex-1",
                         row: "flex w-full mt-2 justify-between",
                         cell: "h-11 w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20 flex-1 flex justify-center items-center",
                         day: cn(
@@ -449,11 +449,11 @@ export default function AgendaPageClient({
                 />
                 <div className="mt-8 pt-6 border-t border-slate-100 dark:border-gray-800 space-y-3">
                     <div className="flex items-center justify-between px-2">
-                      <div className="flex items-center gap-3 text-xs text-slate-500 font-bold uppercase tracking-wider">
+                      <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                           <div className="w-3 h-3 bg-red-500 rounded-full shadow-sm shadow-red-500/40" />
                           <span>Libur Nasional</span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-500 font-bold uppercase tracking-wider">
+                      <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                           <div className="w-3 h-3 bg-indigo-500 rounded-full shadow-sm shadow-indigo-500/40" />
                           <span>Libur Sekolah</span>
                       </div>
@@ -466,7 +466,7 @@ export default function AgendaPageClient({
                     <div className="flex items-center gap-3">
                         <div className="w-2.5 h-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full animate-pulse shadow-lg shadow-emerald-500/40" />
                         <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 tracking-tight" suppressHydrationWarning>
-                            {format(selectedDate, 'eeee, dd MMMM yyyy', {locale: id})}
+                            {format(selectedDate, 'eeee, d MMMM yyyy', {locale: id})}
                         </h3>
                     </div>
                 </CardHeader>
@@ -502,7 +502,10 @@ export default function AgendaPageClient({
                                         <h4 className="font-bold text-[9px] uppercase tracking-wider opacity-60 text-slate-500">
                                             {holidayForDate.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                                         </h4>
-                                        <p className="font-black text-lg leading-tight mt-0.5 text-rose-600">
+                                        <p className={cn(
+                                            "font-black text-lg leading-tight mt-0.5",
+                                            holidayForDate.type === 'national' ? "text-rose-600" : "text-indigo-600"
+                                        )}>
                                             {holidayForDate.name}
                                         </p>
                                     </div>

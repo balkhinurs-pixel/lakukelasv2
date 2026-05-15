@@ -267,7 +267,7 @@ export default function TeacherAttendanceClient({
                             <div className="min-w-0 flex-1">
                                 <h4 className={cn(
                                     "font-bold leading-tight break-words",
-                                    todayHoliday ? "text-rose-600" : "text-slate-900"
+                                    todayHoliday ? (todayHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600") : "text-slate-900"
                                 )}>
                                     {info.title}
                                 </h4>
