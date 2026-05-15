@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react";
@@ -6,12 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Loader2, Globe, ShieldCheck, BellRing, Clock, Send, Info } from "lucide-react";
+import { Loader2, Globe, ShieldCheck, BellRing, Clock, Send, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { saveWhatsAppSettings, sendTestWhatsApp } from "@/lib/actions/admin";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { LottieWhatsApp } from "@/components/ui/lottie-whatsapp";
 
 type WASettings = {
     token: string;
@@ -77,8 +77,8 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
-                    <MessageSquare className="h-6 w-6" />
+                <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg overflow-hidden">
+                    <LottieWhatsApp size={40} />
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold font-headline text-slate-900">Pengaturan WhatsApp</h1>
@@ -188,7 +188,7 @@ export default function WhatsAppSettingsClient({ initialSettings }: { initialSet
                                         disabled={sendingTest || !settings.token || !testPhone}
                                         className="shrink-0 bg-blue-600 hover:bg-blue-700"
                                     >
-                                        {sendingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                                        {sendingTest ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                                         Kirim Tes
                                     </Button>
                                 </div>

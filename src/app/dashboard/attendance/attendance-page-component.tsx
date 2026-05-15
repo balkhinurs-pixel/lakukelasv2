@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -69,6 +68,7 @@ import {
 import { AnimatedText } from "@/components/ui/animated-underline-text-one";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { getIndonesianDayFromDate } from "@/lib/timezone";
+import { LottieWhatsApp } from "@/components/ui/lottie-whatsapp";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -392,7 +392,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
     if (!selectedClassId || !selectedSubjectId || !date || !meetingNumber) {
         toast({
             title: "Gagal Menyimpan",
-            description: "Harap pilih kelas, mata pelajaran, tanggal, dan isi nomor pertemuan.",
+            description: "Harap pilih kelas, mata pelajaran, tanggal, and isi nomor pertemuan.",
             variant: "destructive",
         });
         return;
@@ -843,9 +843,9 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   <Button 
                     variant="outline"
                     onClick={handleSendWhatsApp}
-                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm"
+                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm overflow-hidden"
                   >
-                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <LottieWhatsApp size={18} className="mr-2" />
                     Kirim ke WhatsApp
                   </Button>
                   {editingId && (
