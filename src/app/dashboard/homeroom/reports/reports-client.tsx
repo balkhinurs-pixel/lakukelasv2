@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -8,7 +9,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,10 +20,8 @@ import {
 } from "@/components/ui/select";
 import { 
     Download, 
-    Printer, 
     Calendar, 
     Search,
-    Info,
     FileSpreadsheet,
     LayoutList,
     Table as TableIcon,
@@ -34,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import type { Profile } from "@/lib/types";
 
@@ -53,6 +51,7 @@ interface Props {
       year: number;
   },
   schoolProfile: Profile | null;
+  teacherProfile: Profile | null;
 }
 
 const months = [
@@ -64,7 +63,7 @@ const months = [
     { value: "11", label: "November" }, { value: "12", label: "Desember" }
 ];
 
-export default function HomeroomReportsClient({ initialData, schoolProfile }: Props) {
+export default function HomeroomReportsClient({ initialData, schoolProfile, teacherProfile }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
@@ -134,8 +133,6 @@ export default function HomeroomReportsClient({ initialData, schoolProfile }: Pr
         // 1. Kop Surat
         const addHeader = (docInstance: jsPDF) => {
             if (schoolProfile) {
-                const logoSize = 22;
-                // Add Logo if exists (handled outside in onload)
                 docInstance.setFontSize(16).setFont('helvetica', 'bold');
                 docInstance.text((schoolProfile.school_name || "NAMA SEKOLAH").toUpperCase(), 40, margin + 7);
                 docInstance.setFontSize(10).setFont('helvetica', 'normal');
@@ -149,13 +146,11 @@ export default function HomeroomReportsClient({ initialData, schoolProfile }: Pr
 
         addHeader(doc);
 
-        // 2. Judul Laporan
         doc.setFontSize(13).setFont('helvetica', 'bold');
         doc.text("LAPORAN BULANAN PRESENSI SISWA", pageWidth / 2, margin + 28, { align: 'center' });
         doc.setFontSize(11).setFont('helvetica', 'normal');
         doc.text(`Kelas: ${className}   |   Bulan: ${monthLabel} ${year}`, pageWidth / 2, margin + 34, { align: 'center' });
 
-        // 3. Persiapan Data Tabel
         const tableHeader = [
             ['No', 'Nama Lengkap', 'JK', ...Array.from({ length: daysInMonth }, (_, i) => String(i + 1)), 'H', 'S', 'I', 'A']
         ];
@@ -175,7 +170,6 @@ export default function HomeroomReportsClient({ initialData, schoolProfile }: Pr
             ];
         });
 
-        // 4. Render Tabel
         doc.autoTable({
             head: tableHeader,
             body: tableBody,
@@ -191,7 +185,7 @@ export default function HomeroomReportsClient({ initialData, schoolProfile }: Pr
                 textColor: [33, 33, 33]
             },
             headStyles: {
-                fillColor: [59, 130, 246], // Indigo Primary
+                fillColor: [59, 130, 246],
                 textColor: 255,
                 fontStyle: 'bold',
                 fontSize: 7.5
@@ -205,38 +199,33 @@ export default function HomeroomReportsClient({ initialData, schoolProfile }: Pr
                 fillColor: [250, 250, 250]
             },
             didParseCell: (data: any) => {
-                // Warna merah untuk hari libur (Minggu/Nasional) pada Header
                 if (data.section === 'head' && data.column.index >= 3 && data.column.index < 3 + daysInMonth) {
                     const dayNum = parseInt(data.cell.text[0]);
                     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
                     if (isSunday(dayNum) || holidayDates.has(dateStr)) {
-                        data.cell.styles.fillColor = [239, 68, 68]; // Red 500
+                        data.cell.styles.fillColor = [239, 68, 68];
                     }
                 }
-                // Warnai isi sel jika libur
                 if (data.section === 'body' && data.column.index >= 3 && data.column.index < 3 + daysInMonth) {
                     const dayNum = data.column.index - 2;
                     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
                     if (isSunday(dayNum) || holidayDates.has(dateStr)) {
-                        data.cell.styles.fillColor = [254, 226, 226]; // Red 50
+                        data.cell.styles.fillColor = [254, 226, 226];
                     }
                 }
-                // Styling khusus untuk rekap di ujung kanan
                 if (data.section === 'body' && data.column.index >= 3 + daysInMonth) {
                     data.cell.styles.fontStyle = 'bold';
-                    data.cell.styles.fillColor = [241, 245, 249]; // Slate 100
+                    data.cell.styles.fillColor = [241, 245, 249];
                 }
             }
         });
 
-        // 5. Penanganan Tanda Tangan & Halaman Baru
         let finalY = (doc as any).lastAutoTable.finalY + 10;
-        const requiredSpace = 45; // Space needed for signatures (mm)
+        const requiredSpace = 45;
         
-        // Cek apakah sisa ruang cukup untuk tanda tangan
         if (finalY + requiredSpace > pageHeight - margin) {
             doc.addPage();
-            finalY = margin + 10; // Start at top of new page
+            finalY = margin + 10;
         }
 
         const todayDate = format(new Date(), "dd MMMM yyyy", { locale: id });
@@ -245,39 +234,32 @@ export default function HomeroomReportsClient({ initialData, schoolProfile }: Pr
         doc.setFontSize(9).setFont('helvetica', 'italic');
         doc.text(`Dicetak melalui aplikasi LakuKelas pada: ${todayDate}`, margin, finalY - 5);
 
-        // Grid tanda tangan
         doc.setFontSize(10).setFont('helvetica', 'normal');
         const signY = finalY + 5;
         
-        // Kiri: Kepala Sekolah
         doc.text("Mengetahui,", margin + 25, signY);
         doc.text("Kepala Sekolah,", margin + 25, signY + 6);
         
-        // Kanan: Wali Kelas
         doc.text(`${city}, ${todayDate}`, pageWidth - margin - 65, signY);
         doc.text("Wali Kelas,", pageWidth - margin - 65, signY + 6);
 
-        // Baris Nama
         doc.setFont(undefined, 'bold');
         doc.text(schoolProfile?.headmaster_name || "..................................................", margin + 25, signY + 32);
-        doc.text(schoolProfile?.full_name || "..................................................", pageWidth - margin - 65, signY + 32);
+        doc.text(teacherProfile?.full_name || "..................................................", pageWidth - margin - 65, signY + 32);
         
-        // Baris NIP
         doc.setFont(undefined, 'normal').setFontSize(9);
         doc.text(`NIP. ${schoolProfile?.headmaster_nip || "..........................."}`, margin + 25, signY + 37);
-        doc.text(`NIP. ${schoolProfile?.nip || "..........................."}`, pageWidth - margin - 65, signY + 37);
+        doc.text(`NIP. ${teacherProfile?.nip || "..........................."}`, pageWidth - margin - 65, signY + 37);
 
         doc.save(`Presensi_${className}_${monthLabel}_${year}.pdf`);
         setDownloading(false);
     };
 
-    // Load logo if exists, then generate
     if (schoolProfile?.school_logo_url) {
         const img = new Image();
         img.src = schoolProfile.school_logo_url;
         img.crossOrigin = "Anonymous";
         img.onload = () => {
-            // Background cleanup for white logos or weird transparency
             doc.addImage(img, 'PNG', margin + 5, margin, 22, 22);
             generateContent();
         };
@@ -298,21 +280,13 @@ export default function HomeroomReportsClient({ initialData, schoolProfile }: Pr
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-xl border-slate-200 shrink-0 bg-white"
-                onClick={() => window.print()}
-             >
-                <Printer className="mr-2 h-4 w-4" /> Cetak Layar
-             </Button>
-             <Button 
                 size="sm" 
                 className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 shadow-lg shadow-indigo-200"
                 onClick={handleDownloadPdf}
                 disabled={downloading}
              >
                 {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                Unduh PDF Resmi
+                Unduh PDF
              </Button>
              <Button variant="outline" size="sm" className="rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 shrink-0 bg-white">
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Ekspor Excel
@@ -441,7 +415,7 @@ export default function HomeroomReportsClient({ initialData, schoolProfile }: Pr
                                 return (
                                   <tr key={student.id} className="hover:bg-indigo-50/40 transition-colors group">
                                     <td className="sticky left-0 z-30 bg-white group-hover:bg-slate-50 text-center font-bold text-slate-400 border-r border-slate-100 py-3.5">{idx + 1}</td>
-                                    <td className="sticky left-[40px] z-30 bg-white group-hover:bg-slate-50 px-6 py-3.5 font-bold text-slate-900 border-r border-slate-100 truncate shadow-[4px_0_8px_-2px_rgba(0,0,0,0.05)]">{student.name}</td>
+                                    <td className="sticky left-[40px] z-30 bg-white group-hover:bg-slate-50 px-6 py-3.5 font-bold text-slate-900 border-r border-slate-100 break-words shadow-[4px_0_8px_-2px_rgba(0,0,0,0.05)]">{student.name}</td>
                                     <td className="text-center font-bold text-slate-400 border-r border-slate-100 uppercase">{student.gender.charAt(0)}</td>
                                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
                                         const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
