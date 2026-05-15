@@ -843,7 +843,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   <Button 
                     variant="outline"
                     onClick={handleSendWhatsApp}
-                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm overflow-hidden"
+                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm"
                   >
                     <LottieWhatsApp size={18} className="mr-2" />
                     Kirim ke WhatsApp

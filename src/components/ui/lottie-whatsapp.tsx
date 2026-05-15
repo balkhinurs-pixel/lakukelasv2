@@ -13,20 +13,23 @@ export function LottieWhatsApp({ className, size = 24 }: LottieWhatsAppProps) {
   const [animationData, setAnimationData] = React.useState<any>(null);
 
   React.useEffect(() => {
-    // Memuat file JSON dari folder public secara asinkron
+    // Memuat file JSON animasi dengan nama yang tepat dari folder public
     fetch('/WhatsApp icon animation.json')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('File animasi tidak ditemukan');
+        return res.json();
+      })
       .then((data) => setAnimationData(data))
       .catch((err) => console.error('Gagal memuat animasi WhatsApp:', err));
   }, []);
 
   if (!animationData) {
-    // Fallback ke div kosong dengan ukuran yang sama saat loading
-    return <div style={{ width: size, height: size }} className={className} />;
+    // Fallback ke div kosong dengan ukuran yang sama saat loading untuk menjaga layout
+    return <div style={{ width: size, height: size }} className={cn("bg-green-100/50 rounded-full animate-pulse", className)} />;
   }
 
   return (
-    <div style={{ width: size, height: size }} className={cn("flex items-center justify-center", className)}>
+    <div style={{ width: size, height: size }} className={cn("flex items-center justify-center shrink-0", className)}>
       <Lottie 
         animationData={animationData} 
         loop={true} 
