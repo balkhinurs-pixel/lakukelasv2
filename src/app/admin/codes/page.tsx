@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import {
   Card,
@@ -6,8 +7,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { KeyRound, Ticket, Trash2, Calendar, User, UserCheck } from 'lucide-react';
+import { KeyRound, Ticket, Calendar, UserCheck, Smartphone } from 'lucide-react';
 import { GenerateCodeButton } from './generate-button';
+import { TokenActions } from './token-actions';
 import { createClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -22,45 +24,63 @@ export default async function AdminCodesPage() {
         .select('*, profiles:used_by(full_name)')
         .order('created_at', { ascending: false });
 
+    // Fetch app url from settings
+    const { data: appUrlSetting } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'app_url')
+        .single();
+    
+    const appUrl = appUrlSetting?.value || 'https://app.lakukelas.my.id';
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <h1 className="text-2xl font-bold font-headline">Token Aktivasi</h1>
-                    <p className="text-muted-foreground">Kelola token untuk mengizinkan pengguna baru mengakses sistem.</p>
+                    <p className="text-muted-foreground">Kelola kode unik untuk mengizinkan staf baru bergabung.</p>
                 </div>
                 <GenerateCodeButton />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tokens && tokens.length > 0 ? (
                     tokens.map((token) => (
-                        <Card key={token.id} className={token.used_by ? "opacity-60 bg-slate-50" : "border-primary/20 shadow-lg"}>
-                            <CardContent className="pt-6 space-y-4">
-                                <div className="flex justify-between items-start">
-                                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                                        <Ticket className="h-5 w-5" />
+                        <Card key={token.id} className={token.used_by ? "opacity-60 bg-slate-50 border-dashed" : "border-primary/20 shadow-xl relative overflow-hidden"}>
+                            {!token.used_by && (
+                                <div className="absolute top-0 right-0 p-2">
+                                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                </div>
+                            )}
+                            <CardContent className="pt-8 space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                                        <Ticket className="h-6 w-6" />
                                     </div>
-                                    <Badge variant={token.used_by ? "secondary" : "default"} className="font-bold">
-                                        {token.used_by ? "Terpakai" : "Tersedia"}
+                                    <Badge variant={token.used_by ? "secondary" : "default"} className="font-black uppercase text-[10px] tracking-widest px-3 py-1">
+                                        {token.used_by ? "Terpakai" : "Siap Kirim"}
                                     </Badge>
                                 </div>
                                 
-                                <div className="text-center py-2">
-                                    <code className="text-3xl font-black tracking-widest text-primary font-mono">
+                                <div className="text-center py-4 bg-slate-50 rounded-2xl border border-slate-100 group relative">
+                                    <code className="text-3xl font-black tracking-[0.2em] text-primary font-mono drop-shadow-sm">
                                         {token.token}
                                     </code>
                                 </div>
 
-                                <div className="space-y-2 border-t pt-4 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                {!token.used_by && (
+                                    <TokenActions token={token.token} appUrl={appUrl} id={token.id} />
+                                )}
+
+                                <div className="space-y-2 border-t pt-4 text-[10px] uppercase font-black text-slate-400 tracking-widest">
                                     <div className="flex items-center gap-2">
-                                        <Calendar className="h-3 w-3" />
+                                        <Calendar className="h-3.5 w-3.5" />
                                         <span>Dibuat: {format(new Date(token.created_at), 'dd MMM yyyy HH:mm', { locale: id })}</span>
                                     </div>
                                     {token.used_by && (
                                         <div className="flex items-center gap-2 text-emerald-600">
-                                            <UserCheck className="h-3 w-3" />
-                                            <span>Oleh: {token.profiles?.full_name || "Seseorang"}</span>
+                                            <UserCheck className="h-3.5 w-3.5" />
+                                            <span className="truncate">Oleh: {token.profiles?.full_name || "Seseorang"}</span>
                                         </div>
                                     )}
                                 </div>
@@ -68,12 +88,15 @@ export default async function AdminCodesPage() {
                         </Card>
                     ))
                 ) : (
-                    <Card className="col-span-full border-dashed">
-                        <CardContent className="py-12 text-center text-muted-foreground">
-                            <KeyRound className="mx-auto h-12 w-12 opacity-20 mb-4" />
-                            <h3 className="text-sm font-medium">Belum Ada Token</h3>
-                            <p className="text-xs">Klik tombol "Buat Token Baru" untuk memulai.</p>
-                        </CardContent>
+                    <Card className="col-span-full border-dashed border-2 py-20 flex flex-col items-center justify-center text-center">
+                        <div className="p-6 rounded-full bg-slate-50 mb-4">
+                            <KeyRound className="h-16 w-16 text-slate-200" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900">Belum Ada Token</h3>
+                        <p className="text-sm text-slate-500 max-w-xs mx-auto mt-2">Buat token baru untuk memberikan akses kepada guru atau staf lain.</p>
+                        <div className="mt-6">
+                            <GenerateCodeButton />
+                        </div>
                     </Card>
                 )}
             </div>
