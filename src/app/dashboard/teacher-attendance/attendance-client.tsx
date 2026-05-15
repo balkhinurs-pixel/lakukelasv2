@@ -250,7 +250,7 @@ export default function TeacherAttendanceClient({
                                 <InfoIcon className="h-6 w-6" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h4 className="font-bold text-slate-900 leading-tight truncate">{info.title}</h4>
+                                <h4 className="font-bold text-slate-900 leading-tight break-words">{info.title}</h4>
                                 <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">
                                     {info.subtitle}
                                 </p>
