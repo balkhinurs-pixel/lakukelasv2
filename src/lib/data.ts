@@ -511,34 +511,116 @@ export async function getReportsData(filters: { schoolYearId: string, month?: nu
     if (!user) return null;
     const supabase = createClient();
     const { schoolYearId, month, classId, subjectId } = filters;
+
     let attendanceQuery = supabase.from('attendance_history').select('*').eq('teacher_id', user.id);
     let gradesQuery = supabase.from('grades_history').select('*').eq('teacher_id', user.id);
     let journalQuery = supabase.from('journal_entries_with_names').select('*').eq('teacher_id', user.id);
+    
     if (schoolYearId && schoolYearId !== 'all') {
         attendanceQuery = attendanceQuery.eq('school_year_id', schoolYearId);
         gradesQuery = gradesQuery.eq('school_year_id', schoolYearId);
         journalQuery = journalQuery.eq('school_year_id', schoolYearId);
     }
-    if (classId) {
+    
+    if (classId && classId !== 'all') {
         attendanceQuery = attendanceQuery.eq('class_id', classId);
         gradesQuery = gradesQuery.eq('class_id', classId);
         journalQuery = journalQuery.eq('class_id', classId);
     }
-    const [attendanceRes, gradesRes, journalRes, studentsRes, activeSchoolYear, teacherClassesRes] = await Promise.all([
+    
+    if (subjectId && subjectId !== 'all') {
+        attendanceQuery = attendanceQuery.eq('subject_id', subjectId);
+        gradesQuery = gradesQuery.eq('subject_id', subjectId);
+        journalQuery = journalQuery.eq('subject_id', subjectId);
+    }
+
+    if (month && month !== 0) {
+        // Simple logic for month filter on ISO date strings
+        const monthStr = `-${String(month).padStart(2, '0')}-`;
+        attendanceQuery = attendanceQuery.like('date', `%${monthStr}%`);
+        gradesQuery = gradesQuery.like('date', `%${monthStr}%`);
+        journalQuery = journalQuery.like('date', `%${monthStr}%`);
+    }
+
+    const [attendanceRes, gradesRes, journalRes, studentsRes, activeSchoolYearName, teacherClassesRes] = await Promise.all([
         attendanceQuery, gradesQuery, journalQuery, getActiveStudents(), getActiveSchoolYearName(), getClasses(),
     ]);
+
     const attendanceHistory = attendanceRes.data || [];
     const gradeHistory = gradesRes.data || [];
     const journalEntries = journalRes.data || [];
+    const students = studentsRes || [];
+
+    // KPI Aggregations
     const hadirCount = attendanceHistory.filter(r => r.status === 'Hadir').length;
-    const overallAttendanceRate = attendanceHistory.length > 0 ? Math.round((hadirCount / attendanceHistory.length) * 100) : 0;
+    const totalAttendance = attendanceHistory.length;
+    const overallAttendanceRate = totalAttendance > 0 ? Math.round((hadirCount / totalAttendance) * 100) : 0;
+    
     const allGradeScores = gradeHistory.map(r => Number(r.score));
     const overallAverageGrade = allGradeScores.length > 0 ? Math.round(allGradeScores.reduce((a, b) => a + b, 0) / allGradeScores.length) : 0;
+
+    // Attendance distribution for Pie Chart
+    const overallAttendanceDistribution = {
+        Hadir: hadirCount,
+        Sakit: attendanceHistory.filter(r => r.status === 'Sakit').length,
+        Izin: attendanceHistory.filter(r => r.status === 'Izin').length,
+        Alpha: attendanceHistory.filter(r => r.status === 'Alpha').length
+    };
+
+    // Attendance by Class for Bar Chart
+    const attendanceByClass = teacherClassesRes.map(c => {
+        const classAtt = attendanceHistory.filter(h => h.class_id === c.id);
+        const present = classAtt.filter(r => r.status === 'Hadir').length;
+        const total = classAtt.length;
+        return {
+            name: c.name,
+            rate: total > 0 ? Math.round((present / total) * 100) : 0,
+            present,
+            total
+        };
+    });
+
+    // Student Performance Analysis (PRD requirement)
+    const studentPerformance = students
+        .filter(s => classId === 'all' || !classId || s.class_id === classId)
+        .map(student => {
+            const studentGrades = gradeHistory.filter(r => r.student_id === student.id).map(r => Number(r.score));
+            const studentAtt = attendanceHistory.filter(r => r.student_id === student.id);
+            
+            const avgGrade = studentGrades.length > 0 ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length) : 0;
+            const attRate = studentAtt.length > 0 ? Math.round((studentAtt.filter(r => r.status === 'Hadir').length / studentAtt.length) * 100) : 100;
+
+            let status: 'Sangat Baik' | 'Stabil' | 'Butuh Perhatian' | 'Berisiko' = 'Stabil';
+            if (avgGrade >= 85 && attRate >= 95) status = 'Sangat Baik';
+            else if (avgGrade < 65 || attRate < 75) status = 'Berisiko';
+            else if (avgGrade < 75 || attRate < 85) status = 'Butuh Perhatian';
+
+            return {
+                id: student.id,
+                name: student.name,
+                nis: student.nis,
+                avgGrade,
+                attRate,
+                status
+            };
+        })
+        .sort((a, b) => a.avgGrade < b.avgGrade ? 1 : -1);
+
     return {
-        summaryCards: { overallAttendanceRate: String(overallAttendanceRate), overallAverageGrade: String(overallAverageGrade), totalJournals: journalEntries.length, activeSchoolYearId: schoolYearId, activeSchoolYearName: activeSchoolYear },
-        attendanceByClass: teacherClassesRes.map(c => ({ name: c.name, Hadir: attendanceHistory.filter(h => h.class_id === c.id && h.status === 'Hadir').length, Sakit: attendanceHistory.filter(h => h.class_id === c.id && h.status === 'Sakit').length, Izin: attendanceHistory.filter(h => h.class_id === c.id && h.status === 'Izin').length, Alpha: attendanceHistory.filter(h => h.class_id === c.id && h.status === 'Alpha').length })),
-        overallAttendanceDistribution: { Hadir: hadirCount, Sakit: attendanceHistory.filter(r => r.status === 'Sakit').length, Izin: attendanceHistory.filter(r => r.status === 'Izin').length, Alpha: attendanceHistory.filter(r => r.status === 'Alpha').length },
-        journalEntries, attendanceHistory, gradeHistory, allStudents: studentsRes || []
+        summaryCards: { 
+            overallAttendanceRate: String(overallAttendanceRate), 
+            overallAverageGrade: String(overallAverageGrade), 
+            totalJournals: journalEntries.length, 
+            activeSchoolYearId: schoolYearId, 
+            activeSchoolYearName 
+        },
+        attendanceByClass,
+        overallAttendanceDistribution,
+        studentPerformance,
+        journalEntries,
+        attendanceHistory,
+        gradeHistory,
+        allStudents: students
     };
 }
 
@@ -606,6 +688,13 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
     const { data } = await supabase.from('teacher_attendance').select('*, teacherName:profiles(full_name)').order('date', { ascending: false });
     if (!data) return [];
     return data.map((item: any) => ({ id: item.id, teacherId: item.teacher_id, teacherName: item.teacherName?.full_name || 'Unknown', date: item.date, checkIn: item.check_in, checkOut: item.check_out, status: item.status, reason: item.reason }));
+}
+
+export async function getTeacherActivityCounts(): Promise<any[]> {
+     noStore();
+     const supabase = createClient();
+     const { data } = await supabase.rpc('get_teacher_activity_counts');
+     return data || [];
 }
 
 export async function getTeacherActivityStats() {
