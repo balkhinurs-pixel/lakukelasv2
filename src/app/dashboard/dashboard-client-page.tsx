@@ -296,7 +296,7 @@ export default function DashboardClientPage({
       </div>
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-3 shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 backdrop-blur-sm">
+        <Card className="lg:col-span-3 shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 backdrop-blur-sm rounded-xl">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
@@ -314,8 +314,8 @@ export default function DashboardClientPage({
                     <div className={cn(
                         "p-8 rounded-xl border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full bg-white",
                         todayHoliday.type === 'national' 
-                            ? "border-red-100 text-red-700" 
-                            : "border-indigo-100 text-indigo-700"
+                            ? "border-red-100" 
+                            : "border-indigo-100"
                     )}>
                         <div className="shrink-0 -mt-16">
                             {todayHoliday.type === 'national' ? (
@@ -332,14 +332,14 @@ export default function DashboardClientPage({
                                 {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
                             <h3 className={cn(
-                                "font-black text-2xl leading-tight tracking-tight",
+                                "font-black text-2xl leading-tight tracking-tight break-words",
                                 todayHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600"
                             )}>{todayHoliday.description}</h3>
-                            <p className="text-sm opacity-70 mt-3 font-medium">Selamat menikmati waktu istirahat Bapak/Ibu Guru. <br /> Daftar jadwal dan presensi ditiadakan hari ini.</p>
+                            <p className="text-sm opacity-70 mt-3 font-medium text-slate-500">Selamat menikmati waktu istirahat Bapak/Ibu Guru. <br /> Daftar jadwal dan presensi ditiadakan hari ini.</p>
                         </div>
                         <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-white/50 rounded-2xl border border-white/50">
-                            <Coffee className="h-4 w-4" />
-                            <span className="text-xs font-bold uppercase tracking-widest">Happy Holiday!</span>
+                            <Coffee className="h-4 w-4 text-amber-600" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Happy Holiday!</span>
                         </div>
                     </div>
                 </div>
@@ -444,7 +444,7 @@ export default function DashboardClientPage({
           </CardContent>
         </Card>
         
-        <Card className="lg:col-span-4 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50/30 dark:from-gray-900 dark:to-indigo-950/30 backdrop-blur-sm">
+        <Card className="lg:col-span-4 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50/30 dark:from-gray-900 dark:to-indigo-950/30 backdrop-blur-sm rounded-xl">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
@@ -526,11 +526,11 @@ export default function DashboardClientPage({
                     <div className="shrink-0 flex items-center justify-center mb-4">
                         <LottieAgenda size={120} />
                     </div>
-                    <p className="text-muted-foreground font-medium">Belum ada agenda terdaftar</p>
-                    <p className="text-sm text-muted-foreground/70 mt-1">
+                    <p className="text-muted-foreground font-bold">Belum ada agenda terdaftar</p>
+                    <p className="text-sm text-muted-foreground/70 mt-1 font-medium">
                         Catat rapat atau pengingat di menu Agenda
                     </p>
-                    <Button variant="outline" className="mt-4 rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50" asChild>
+                    <Button variant="outline" className="mt-4 rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold" asChild>
                         <Link href="/dashboard/agenda">Buat Agenda Baru</Link>
                     </Button>
                 </div>

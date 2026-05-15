@@ -140,7 +140,7 @@ export default function AgendaPageClient({
         <span className={cn(
             "relative z-10 transition-colors duration-200 font-bold",
             isSelected ? "text-white" : 
-            holiday?.type === 'national' ? "text-red-600" : 
+            holiday?.type === 'national' ? "text-rose-600" : 
             holiday?.type === 'school' ? "text-indigo-600" : ""
         )}>
             {props.date.getDate()}
@@ -149,7 +149,7 @@ export default function AgendaPageClient({
         {holiday && (
             <div className={cn(
                 "absolute top-1 right-1 w-1.5 h-1.5 rounded-full shadow-sm",
-                isSelected ? "bg-white" : (holiday.type === 'national' ? "bg-red-500 shadow-red-500/50" : "bg-indigo-500 shadow-indigo-500/50")
+                isSelected ? "bg-white" : (holiday.type === 'national' ? "bg-rose-500 shadow-rose-500/50" : "bg-indigo-500 shadow-indigo-500/50")
             )} />
         )}
 
@@ -271,7 +271,7 @@ export default function AgendaPageClient({
                         </div>
                         <div>
                           <DialogTitle className="text-xl font-bold">{editingAgenda ? 'Ubah Agenda' : 'Tambah Agenda Baru'}</DialogTitle>
-                          <DialogDescription className="mt-1">
+                          <DialogDescription className="mt-1 font-medium">
                               {editingAgenda ? 'Perbarui detail acara atau pengingat Anda.' : 'Isi detail acara atau pengingat Anda di bawah ini.'}
                           </DialogDescription>
                         </div>
@@ -289,7 +289,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.title} 
                                 onChange={e => setNewAgenda({...newAgenda, title: e.target.value})} 
                                 placeholder="e.g. Rapat Persiapan Ujian"
-                                className="h-12 rounded-xl border-slate-200 focus:border-green-500 shadow-sm"
+                                className="h-12 rounded-xl border-slate-200 focus:border-green-500 shadow-sm font-medium"
                                 required 
                             />
                         </div>
@@ -304,7 +304,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.description || ''} 
                                 onChange={e => setNewAgenda({...newAgenda, description: e.target.value})} 
                                 placeholder="e.g. Membahas teknis pelaksanaan ujian akhir semester."
-                                className="min-h-[100px] rounded-xl border-slate-200 focus:border-blue-500 shadow-sm resize-none"
+                                className="min-h-[100px] rounded-xl border-slate-200 focus:border-blue-500 shadow-sm resize-none font-medium"
                             />
                         </div>
                         
@@ -319,7 +319,7 @@ export default function AgendaPageClient({
                                     type="time" 
                                     value={newAgenda.start_time || ''} 
                                     onChange={e => setNewAgenda({...newAgenda, start_time: e.target.value})}
-                                    className="h-12 rounded-xl border-slate-200 focus:border-orange-500 shadow-sm"
+                                    className="h-12 rounded-xl border-slate-200 focus:border-orange-500 shadow-sm font-mono font-bold"
                                 />
                             </div>
                             <div className="space-y-3">
@@ -332,7 +332,7 @@ export default function AgendaPageClient({
                                     type="time" 
                                     value={newAgenda.end_time || ''} 
                                     onChange={e => setNewAgenda({...newAgenda, end_time: e.target.value})}
-                                    className="h-12 rounded-xl border-slate-200 focus:border-red-500 shadow-sm"
+                                    className="h-12 rounded-xl border-slate-200 focus:border-red-500 shadow-sm font-mono font-bold"
                                 />
                             </div>
                         </div>
@@ -347,7 +347,7 @@ export default function AgendaPageClient({
                                 value={newAgenda.tag || ''} 
                                 onChange={e => setNewAgenda({...newAgenda, tag: e.target.value})} 
                                 placeholder="e.g. RAPAT"
-                                className="h-12 rounded-xl border-slate-200 focus:border-purple-500 shadow-sm"
+                                className="h-12 rounded-xl border-slate-200 focus:border-purple-500 shadow-sm font-bold uppercase tracking-wider"
                             />
                         </div>
                         
@@ -392,7 +392,7 @@ export default function AgendaPageClient({
                             variant="outline" 
                             onClick={() => setIsDialogOpen(false)} 
                             disabled={loading}
-                            className="flex-1 h-12 border-slate-200 hover:bg-slate-50 rounded-xl font-semibold"
+                            className="flex-1 h-12 border-slate-200 hover:bg-slate-50 rounded-xl font-bold text-slate-600"
                         >
                             Batal
                         </Button>
@@ -411,7 +411,7 @@ export default function AgendaPageClient({
         </Dialog>
 
         <div className="grid grid-cols-1 md:grid-cols-7 gap-6 lg:gap-8 items-start">
-            <Card className="p-4 sm:p-6 bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-3 lg:col-span-3 rounded-[2rem]">
+            <Card className="p-4 sm:p-6 bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-3 lg:col-span-3 rounded-xl overflow-hidden">
                 <DayPicker
                     locale={id}
                     mode="single"
@@ -450,7 +450,7 @@ export default function AgendaPageClient({
                 <div className="mt-8 pt-6 border-t border-slate-100 dark:border-gray-800 space-y-3">
                     <div className="flex items-center justify-between px-2">
                       <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                          <div className="w-3 h-3 bg-red-500 rounded-full shadow-sm shadow-red-500/40" />
+                          <div className="w-3 h-3 bg-rose-500 rounded-full shadow-sm shadow-rose-500/40" />
                           <span>Libur Nasional</span>
                       </div>
                       <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
@@ -461,7 +461,7 @@ export default function AgendaPageClient({
                 </div>
             </Card>
       
-            <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-4 lg:col-span-4 h-full min-h-[500px] flex flex-col rounded-[2rem] overflow-hidden">
+            <Card className="bg-white dark:bg-gray-900 border-0 shadow-xl md:col-span-4 lg:col-span-4 h-full min-h-[500px] flex flex-col rounded-xl overflow-hidden">
                 <CardHeader className="pb-4 pt-6 px-6 sm:px-8 border-b border-slate-50 bg-slate-50/30">
                     <div className="flex items-center gap-3">
                         <div className="w-2.5 h-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full animate-pulse shadow-lg shadow-emerald-500/40" />
@@ -485,9 +485,9 @@ export default function AgendaPageClient({
                             {holidayForDate && (
                                 <div 
                                     className={cn(
-                                        "p-4 rounded-[1.2rem] border-2 flex items-center gap-4 shadow-sm",
+                                        "p-4 rounded-xl border-2 flex items-center gap-4 shadow-sm",
                                         holidayForDate.type === 'national' 
-                                            ? "bg-red-50/50 border-red-100" 
+                                            ? "bg-rose-50/50 border-rose-100" 
                                             : "bg-indigo-50/50 border-indigo-100"
                                     )}
                                 >
@@ -499,7 +499,7 @@ export default function AgendaPageClient({
                                         )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="font-bold text-[9px] uppercase tracking-wider opacity-60 text-slate-500">
+                                        <h4 className="font-bold text-[9px] uppercase tracking-wider opacity-60 text-slate-500 font-black">
                                             {holidayForDate.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                                         </h4>
                                         <p className={cn(
@@ -517,7 +517,7 @@ export default function AgendaPageClient({
                               {eventsForSelectedDate.map((event) => (
                                 <div 
                                     key={event.id} 
-                                    className="group p-6 rounded-[1.8rem] border-l-8 transition-all duration-300 hover:shadow-xl relative overflow-hidden bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700"
+                                    className="group p-6 rounded-xl border-l-8 transition-all duration-300 hover:shadow-xl relative overflow-hidden bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700"
                                     style={{
                                         borderLeftColor: event.color || '#6b7280',
                                     }}
@@ -529,13 +529,13 @@ export default function AgendaPageClient({
                                                     className="w-2.5 h-2.5 rounded-full shadow-sm"
                                                     style={{ backgroundColor: event.color || '#6b7280' }}
                                                 />
-                                                <h3 className="font-bold text-lg text-slate-900 dark:text-gray-100 truncate">
+                                                <h3 className="font-bold text-lg text-slate-900 dark:text-gray-100 truncate tracking-tight">
                                                     {event.title}
                                                 </h3>
                                             </div>
                                             {event.start_time && (
-                                                <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-gray-900/50 w-fit px-3 py-1 rounded-full border border-slate-100 dark:border-gray-800">
-                                                    <Clock className="h-4 w-4 text-primary/70" />
+                                                <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-gray-900/50 w-fit px-3 py-1 rounded-full border border-slate-100 dark:border-gray-800 font-mono">
+                                                    <Clock className="h-3.5 w-3.5 text-primary/70" />
                                                     <span>
                                                         {formatTime(event.start_time)} {event.end_time && `- ${formatTime(event.end_time)}`}
                                                     </span>
@@ -550,34 +550,34 @@ export default function AgendaPageClient({
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="rounded-2xl p-2 border-0 shadow-2xl w-48">
-                                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(event)} className="rounded-xl h-11 font-medium gap-2">
+                                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(event)} className="rounded-xl h-11 font-bold gap-2 text-slate-700">
                                                         <Edit className="h-4 w-4 text-blue-500" /> Ubah Agenda
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="my-1 mx-2" />
                                                     <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem className="rounded-xl h-11 font-medium text-red-600 focus:text-red-600 focus:bg-red-50 gap-2">
+                                                        <DropdownMenuItem className="rounded-xl h-11 font-bold text-red-600 focus:text-red-600 focus:bg-red-50 gap-2">
                                                             <Trash2 className="h-4 w-4" /> Hapus
                                                         </DropdownMenuItem>
                                                     </AlertDialogTrigger>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
-                                            <AlertDialogContent className="rounded-[2.5rem] p-8 border-0 shadow-2xl">
+                                            <AlertDialogContent className="rounded-3xl p-8 border-0 shadow-2xl">
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle className="text-2xl font-bold">Hapus Agenda?</AlertDialogTitle>
-                                                    <AlertDialogDescription className="text-base">
-                                                        Agenda "<span className="font-bold text-slate-900">{event.title}</span>" akan dihapus permanen dari sistem. Tindakan ini tidak dapat dibatalkan.
+                                                    <AlertDialogDescription className="text-base font-medium">
+                                                        Agenda "<span className="font-black text-slate-900">{event.title}</span>" akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
-                                                <AlertDialogFooter className="pt-6 gap-3">
-                                                    <AlertDialogCancel className="rounded-2xl h-12 font-semibold">Batal</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="bg-red-600 hover:bg-red-700 text-white rounded-2xl h-12 font-bold shadow-lg shadow-red-600/20">Ya, Hapus Agenda</AlertDialogAction>
+                                                <AlertDialogFooter className="pt-6 gap-3 flex flex-row">
+                                                    <AlertDialogCancel className="flex-1 rounded-xl h-12 font-bold text-slate-600">Batal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteAgenda(event.id)} className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-red-600/20">Hapus</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
                                     
                                     {event.description && (
-                                      <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed pl-5 border-l border-slate-100 dark:border-gray-700">
+                                      <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed pl-5 border-l border-slate-100 dark:border-gray-700">
                                         {event.description}
                                       </p>
                                     )}
@@ -586,7 +586,7 @@ export default function AgendaPageClient({
                                         <div className="mt-5 flex justify-end">
                                             <Badge 
                                                 variant="outline" 
-                                                className="border-0 px-4 py-1 rounded-xl font-black text-[9px] uppercase tracking-[0.15em] shadow-sm" 
+                                                className="border-0 px-4 py-1 rounded-lg font-black text-[9px] uppercase tracking-[0.15em] shadow-sm" 
                                                 style={{
                                                     backgroundColor: event.color || '#6b7280',
                                                     color: getTextColor(event.color || '#6b7280')
@@ -601,11 +601,11 @@ export default function AgendaPageClient({
                             </div>
                             ) : !holidayForDate ? (
                                 <div className="text-center py-24 flex flex-col items-center justify-center opacity-40">
-                                    <div className="bg-slate-100 dark:bg-gray-800 p-6 rounded-[2rem] mb-6">
+                                    <div className="bg-slate-100 dark:bg-gray-800 p-6 rounded-3xl mb-6">
                                       <CalendarDays className="w-16 h-16 text-slate-400" />
                                     </div>
-                                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">Hari ini Kosong</p>
-                                    <p className="text-sm font-medium text-slate-500 mt-2 max-w-[200px]">Belum ada agenda atau pengingat untuk hari ini.</p>
+                                    <p className="text-lg font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">Hari ini Kosong</p>
+                                    <p className="text-sm font-bold text-slate-500 mt-2 max-w-[200px]">Belum ada agenda atau pengingat untuk hari ini.</p>
                                 </div>
                             ) : null}
                           </motion.div>

@@ -267,7 +267,6 @@ export default function AttendancePageComponent({
       const dbHoliday = holidays.find(h => h.date === dateStr);
       if (dbHoliday) return dbHoliday;
       
-      // Check for Sunday
       if (date.getDay() === 0) {
           return {
               id: 'sunday',
@@ -573,7 +572,8 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
         case 'Alpha': return "destructive";
     }
   }
-   const getStatusBadgeClass = (status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
+
+  const getStatusBadgeClass = (status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
     switch (status) {
         case 'Hadir': return "bg-green-600 hover:bg-green-700";
         case 'Sakit': return "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200";
@@ -729,8 +729,8 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                     <div className={cn(
                         "p-8 rounded-xl border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full max-w-2xl bg-white",
                         currentHoliday.type === 'national' 
-                            ? "border-red-100 text-red-700" 
-                            : "border-indigo-100 text-indigo-700"
+                            ? "border-red-100" 
+                            : "border-indigo-100"
                     )}>
                         <div className="shrink-0 -mt-16">
                             {currentHoliday.type === 'national' ? (
@@ -750,7 +750,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                                 "font-black text-2xl leading-tight tracking-tight break-words",
                                 currentHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600"
                             )}>{currentHoliday.description}</h3>
-                            <p className="text-sm opacity-70 mt-3 font-medium">Aktivitas belajar mengajar dan presensi siswa ditiadakan untuk tanggal ini.</p>
+                            <p className="text-sm opacity-70 mt-3 font-medium text-slate-500">Aktivitas belajar mengajar dan presensi siswa ditiadakan untuk tanggal ini.</p>
                         </div>
                     </div>
                 </div>
@@ -841,7 +841,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   <Button 
                     onClick={handleSubmit} 
                     disabled={loading || !meetingNumber}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200 h-11 rounded-xl"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}
@@ -849,7 +849,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   <Button 
                     variant="outline"
                     onClick={handleSendWhatsApp}
-                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm"
+                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm h-11 rounded-xl"
                   >
                     <LottieWhatsApp size={18} className="mr-2" />
                     Kirim ke WhatsApp
@@ -859,14 +859,14 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                       variant="outline" 
                       onClick={resetForm} 
                       disabled={loading}
-                      className="border-slate-300 hover:bg-slate-50"
+                      className="border-slate-300 hover:bg-slate-50 h-11 rounded-xl"
                     >
                       Batal Mengubah
                     </Button>
                   )}
                 </div>
-                <div className="text-sm text-slate-600">
-                  Total siswa: <span className="font-semibold">{students.length}</span>
+                <div className="text-sm text-slate-600 font-medium">
+                  Total siswa: <span className="font-bold text-indigo-600">{students.length}</span>
                 </div>
               </div>
             </CardFooter>
@@ -875,7 +875,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
       )}
 
       {selectedClassId && (
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50 rounded-xl">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-purple-100 text-purple-600">
@@ -904,10 +904,10 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-slate-900 truncate">{entry.class_name} - {entry.subject_name}</p>
-                              <p className="text-sm text-slate-500 mt-1">
+                              <p className="text-sm text-slate-500 mt-1 font-medium">
                                 {format(parseISO(entry.date), 'EEEE, dd MMMM yyyy', { locale: id })}
                               </p>
-                              <p className="text-xs text-slate-400 mt-0.5">
+                              <p className="text-xs text-slate-400 mt-0.5 font-bold uppercase tracking-wider">
                                 Pertemuan ke-{entry.meeting_number}
                               </p>
                             </div>
@@ -918,38 +918,38 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                               <div className="text-sm">
                                 <span className="font-medium text-emerald-800">Hadir</span>
-                                <span className="ml-1 text-emerald-600">{summary.Hadir || 0}</span>
+                                <span className="ml-1 text-emerald-600 font-bold">{summary.Hadir || 0}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50">
                               <AlertCircle className="h-4 w-4 text-amber-600" />
                               <div className="text-sm">
                                 <span className="font-medium text-amber-800">Sakit</span>
-                                <span className="ml-1 text-emerald-600">{summary.Sakit || 0}</span>
+                                <span className="ml-1 text-emerald-600 font-bold">{summary.Sakit || 0}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50">
                               <Clock className="h-4 w-4 text-blue-600" />
                               <div className="text-sm">
                                 <span className="font-medium text-blue-800">Izin</span>
-                                <span className="ml-1 text-emerald-600">{summary.Izin || 0}</span>
+                                <span className="ml-1 text-emerald-600 font-bold">{summary.Izin || 0}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50">
                               <XCircle className="h-4 w-4 text-red-600" />
                               <div className="text-sm">
                                 <span className="font-medium text-red-800">Alpha</span>
-                                <span className="ml-1 text-emerald-600">{summary.Alpha || 0}</span>
+                                <span className="ml-1 text-emerald-600 font-bold">{summary.Alpha || 0}</span>
                               </div>
                             </div>
                           </div>
                           
                           <div className="flex gap-2 pt-2">
-                              <Button variant="secondary" size="sm" className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => handleViewDetails(entry)}>
+                              <Button variant="secondary" size="sm" className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 h-10 rounded-xl font-bold" onClick={() => handleViewDetails(entry)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   Detail
                               </Button>
-                              <Button variant="outline" size="sm" className="flex-1 border-slate-300 hover:bg-slate-50" onClick={() => handleEdit(entry)} disabled={loading}>
+                              <Button variant="outline" size="sm" className="flex-1 border-slate-300 hover:bg-slate-50 h-10 rounded-xl font-bold" onClick={() => handleEdit(entry)} disabled={loading}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Ubah
                               </Button>
@@ -960,7 +960,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 })}
               </div>
             
-              <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
+              <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white">
                   <Table>
                       <TableHeader>
                           <TableRow className="bg-slate-50 hover:bg-slate-50">
@@ -969,7 +969,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                               <TableHead className="font-semibold text-slate-700">Pertemuan</TableHead>
                               <TableHead className="font-semibold text-slate-700">Ringkasan</TableHead>
                               <TableHead className="text-right font-semibold text-slate-700">Aksi</TableHead>
-                          </TableHeader>
+                          </TableRow>
                       <TableBody>
                           {paginatedHistory.map(({entry, records}) => {
                               const summary = records.reduce((acc, record) => {
@@ -982,29 +982,29 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                                         {format(parseISO(entry.date), 'EEEE, dd MMMM yyyy', { locale: id })}
                                       </TableCell>
                                       <TableCell>
-                                          <div className="font-medium text-slate-900">{entry.class_name}</div>
-                                          <div className="text-sm text-slate-500">{entry.subject_name}</div>
+                                          <div className="font-bold text-slate-900">{entry.class_name}</div>
+                                          <div className="text-sm text-slate-500 font-medium">{entry.subject_name}</div>
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-700">
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-slate-100 text-slate-700">
                                           {entry.meeting_number}
                                         </span>
                                       </TableCell>
                                       <TableCell>
                                           <div className="flex flex-wrap gap-1">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">
                                               <CheckCircle2 className="w-3 h-3 mr-1" />
                                               {summary.Hadir || 0}
                                             </span>
-                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-800">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-800">
                                               <AlertCircle className="w-3 h-3 mr-1" />
                                               {summary.Sakit || 0}
                                             </span>
-                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-blue-100 text-blue-800">
                                               <Clock className="w-3 h-3 mr-1" />
                                               {summary.Izin || 0}
                                             </span>
-                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-800">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-red-100 text-red-800">
                                               <XCircle className="w-3 h-3 mr-1" />
                                               {summary.Alpha || 0}
                                             </span>
@@ -1016,7 +1016,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                                             variant="ghost" 
                                             size="sm" 
                                             onClick={() => handleViewDetails(entry)}
-                                            className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                                            className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold"
                                           >
                                               <Eye className="mr-2 h-4 w-4" />
                                               Detail
@@ -1026,7 +1026,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                                             size="sm" 
                                             onClick={() => handleEdit(entry)} 
                                             disabled={loading}
-                                            className="border-slate-300 hover:bg-slate-50 text-slate-700"
+                                            className="border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl"
                                           >
                                               <Edit className="mr-2 h-4 w-4" />
                                               Ubah
@@ -1042,13 +1042,13 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
             </>
              ) : (
                   <div className="text-center py-12">
-                      <div className="flex flex-col items-center gap-4">
+                      <div className="flex flex-col items-center gap-4 opacity-50">
                         <div className="p-4 rounded-full bg-slate-100">
                           <Clock className="h-8 w-8 text-slate-400" />
                         </div>
                         <div className="space-y-2">
-                          <p className="font-medium text-slate-700">Belum ada riwayat presensi</p>
-                          <p className="text-sm text-slate-500">Riwayat presensi yang sudah disimpan akan muncul di sini</p>
+                          <p className="font-bold text-slate-700 text-lg">Belum ada riwayat presensi</p>
+                          <p className="text-sm text-slate-500 font-medium">Riwayat presensi yang sudah disimpan akan muncul di sini</p>
                         </div>
                       </div>
                   </div>
@@ -1063,15 +1063,15 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
       )}
 
        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="dialog-content-mobile mobile-safe-area max-w-2xl">
+        <DialogContent className="dialog-content-mobile mobile-safe-area max-w-2xl rounded-3xl border-0 shadow-2xl">
             <DialogHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
                   <Eye className="h-5 w-5" />
                 </div>
                 <div>
-                  <DialogTitle className="text-xl">Detail Presensi: {viewingEntry?.class_name}</DialogTitle>
-                  <DialogDescription className="mt-1">
+                  <DialogTitle className="text-xl font-bold">Detail Presensi: {viewingEntry?.class_name}</DialogTitle>
+                  <DialogDescription className="mt-1 font-medium">
                       {viewingEntry?.subject_name} - {viewingEntry ? format(parseISO(viewingEntry.date), "EEEE, dd MMMM yyyy", { locale: id }) : ''}
                   </DialogDescription>
                 </div>
@@ -1079,24 +1079,24 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
             </DialogHeader>
             <ScrollArea className="max-h-[50vh] pr-2 mb-4">
                 {viewingEntry && students.length > 0 ? (
-                    <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
                       <Table>
                           <TableHeader>
                               <TableRow className="bg-slate-50 hover:bg-slate-50">
-                              <TableHead className="font-semibold text-slate-700">Nama Siswa</TableHead>
-                              <TableHead className="text-right font-semibold text-slate-700">Status</TableHead>
+                              <TableHead className="font-bold text-slate-700">Nama Siswa</TableHead>
+                              <TableHead className="text-right font-bold text-slate-700">Status</TableHead>
                               </TableRow>
                           </TableHeader>
                           <TableBody>
                               {groupedHistory.find(h => h.entry.id === viewingEntry.id)?.records.map(record => (
                                   <TableRow key={record.student_id} className="hover:bg-slate-50/50 transition-colors duration-150">
-                                      <TableCell className="font-medium text-slate-900">{getStudentName(record.student_id)}</TableCell>
+                                      <TableCell className="font-bold text-slate-900">{getStudentName(record.student_id)}</TableCell>
                                       <TableCell className="text-right">
                                           <Badge 
                                             variant={getStatusBadgeVariant(record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha')} 
                                             className={cn(
                                               getStatusBadgeClass(record.status as 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'),
-                                              "px-3 py-1 text-sm font-medium"
+                                              "px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg border-0"
                                             )}
                                           >
                                               {record.status}
@@ -1110,19 +1110,17 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 ) : (
                      <div className="text-center py-12">
                         <div className="flex flex-col items-center gap-4">
-                          <div className="p-4 rounded-full bg-slate-100">
-                            <Users className="h-8 w-8 text-slate-400" />
-                          </div>
+                          <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
                           <div className="space-y-2">
-                            <p className="font-medium text-slate-700">Memuat data...</p>
-                            <p className="text-sm text-slate-500">Mohon tunggu sebentar</p>
+                            <p className="font-bold text-slate-700">Memuat data detail...</p>
+                            <p className="text-sm text-slate-500 font-medium">Mohon tunggu sebentar</p>
                           </div>
                         </div>
                     </div>
                 )}
             </ScrollArea>
             <DialogFooter>
-                <Button variant="ghost" className="w-full h-11 rounded-xl" onClick={() => setIsDetailDialogOpen(false)}>Tutup</Button>
+                <Button variant="ghost" className="w-full h-12 rounded-xl font-bold text-slate-600 hover:bg-slate-50" onClick={() => setIsDetailDialogOpen(false)}>Tutup</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>

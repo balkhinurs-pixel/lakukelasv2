@@ -65,7 +65,7 @@ function LeaveRequestDialog({ onLeaveSubmitted, loading: parentLoading }: { onLe
             <DialogTrigger asChild>
                 <button 
                     disabled={parentLoading}
-                    className="w-full flex items-center justify-between p-5 rounded-[2rem] bg-white shadow-md border border-slate-100 transition-all active:scale-95 group hover:shadow-lg"
+                    className="w-full flex items-center justify-between p-5 rounded-xl bg-white shadow-md border border-slate-100 transition-all active:scale-95 group hover:shadow-lg"
                 >
                     <div className="flex items-center gap-4">
                         <div className="p-3 rounded-2xl bg-amber-50 text-amber-600">
@@ -73,37 +73,37 @@ function LeaveRequestDialog({ onLeaveSubmitted, loading: parentLoading }: { onLe
                         </div>
                         <div className="text-left">
                             <span className="block font-bold text-slate-900">Ajukan Izin / Sakit</span>
-                            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Formulir Ketidakhadiran</span>
+                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Formulir Ketidakhadiran</span>
                         </div>
                     </div>
                     <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-colors" />
                 </button>
             </DialogTrigger>
-            <DialogContent className="rounded-[2.5rem] max-w-[92vw] sm:max-w-md border-0 shadow-2xl p-6 sm:p-10">
+            <DialogContent className="rounded-3xl max-w-[92vw] sm:max-w-md border-0 shadow-2xl p-6 sm:p-10">
                 <DialogHeader className="pb-6">
-                    <DialogTitle className="text-2xl font-bold text-center">Izin Tidak Masuk</DialogTitle>
-                    <DialogDescription className="text-center">Berikan alasan yang jelas untuk dokumentasi sistem.</DialogDescription>
+                    <DialogTitle className="text-2xl font-black text-center tracking-tight">Izin Tidak Masuk</DialogTitle>
+                    <DialogDescription className="text-center font-medium">Berikan alasan yang jelas untuk dokumentasi sistem.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6">
                     <RadioGroup value={leaveType} onValueChange={(v: any) => setLeaveType(v)} className="grid grid-cols-2 gap-4">
-                        <label htmlFor="sakit" className={cn("flex flex-col items-center p-4 border-2 rounded-3xl cursor-pointer transition-all", leaveType === 'Sakit' ? "border-emerald-500 bg-emerald-50" : "border-slate-100 bg-white")}>
+                        <label htmlFor="sakit" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", leaveType === 'Sakit' ? "border-emerald-500 bg-emerald-50" : "border-slate-100 bg-white")}>
                             <RadioGroupItem value="Sakit" id="sakit" className="sr-only" />
                             <span className="text-3xl mb-1">🤒</span>
-                            <span className="font-bold text-sm text-slate-700">Sakit</span>
+                            <span className="font-black text-sm text-slate-700 uppercase tracking-wide">Sakit</span>
                         </label>
-                        <label htmlFor="izin" className={cn("flex flex-col items-center p-4 border-2 rounded-3xl cursor-pointer transition-all", leaveType === 'Izin' ? "border-blue-500 bg-blue-50" : "border-slate-100 bg-white")}>
+                        <label htmlFor="izin" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", leaveType === 'Izin' ? "border-blue-500 bg-blue-50" : "border-slate-100 bg-white")}>
                             <RadioGroupItem value="Izin" id="izin" className="sr-only" />
                             <span className="text-3xl mb-1">📩</span>
-                            <span className="font-bold text-sm text-slate-700">Izin</span>
+                            <span className="font-black text-sm text-slate-700 uppercase tracking-wide">Izin</span>
                         </label>
                     </RadioGroup>
                     <div className="space-y-2">
-                        <Label htmlFor="reason" className="text-xs font-bold uppercase text-slate-400 ml-1">Alasan Detail</Label>
-                        <Textarea id="reason" value={reason} onChange={e => setReason(e.target.value)} placeholder="Contoh: Sakit demam, keperluan keluarga..." className="rounded-2xl min-h-[120px] bg-slate-50 border-0 focus:ring-2 focus:ring-primary/20" />
+                        <Label htmlFor="reason" className="text-xs font-black uppercase text-slate-400 ml-1 tracking-widest">Alasan Detail</Label>
+                        <Textarea id="reason" value={reason} onChange={e => setReason(e.target.value)} placeholder="Contoh: Sakit demam, keperluan keluarga..." className="rounded-xl min-h-[120px] bg-slate-50 border-slate-200 focus:ring-2 focus:ring-primary/20 font-medium" />
                     </div>
                 </div>
                 <DialogFooter className="pt-6">
-                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-14 rounded-2xl bg-slate-900 font-bold text-lg">
+                    <Button onClick={handleLeaveRequest} disabled={loading} className="w-full h-14 rounded-xl bg-slate-900 font-bold text-lg shadow-xl shadow-slate-900/20">
                         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Kirim Pengajuan"}
                     </Button>
                 </DialogFooter>
@@ -171,14 +171,13 @@ export default function TeacherAttendanceClient({
             return {
                 title: todayHoliday.description,
                 subtitle: "Informasi Hari Libur",
-                icon: todayHoliday.type === 'national' ? Flag : School,
                 isLottie: true,
                 lottieType: todayHoliday.type
             };
         }
         
         const day = new Date().getDay();
-        if (day === 0) { // Minggu
+        if (day === 0) {
             return {
                 title: "Hari Minggu",
                 subtitle: "Waktunya Istirahat - Libur Rutin",
@@ -200,20 +199,19 @@ export default function TeacherAttendanceClient({
     if (!isClient) return null;
 
     const info = getInfoCardContent();
-    const InfoIcon = info.icon;
+    const InfoIcon = (info as any).icon;
 
     return (
         <div className="flex flex-col h-full bg-[#f8fafc]">
-            {/* Header Purple Gradient Theme - Centered profile */}
             <div className="bg-gradient-to-br from-purple-700 via-purple-600 to-blue-500 text-white pt-10 pb-16 px-6 rounded-b-[3.5rem] shadow-2xl relative">
                 <div className="flex flex-col items-center gap-4 mb-8">
                     <Avatar className="h-24 w-24 border-4 border-white/20 shadow-xl">
                         <AvatarImage src={profile?.avatar_url || ""} />
-                        <AvatarFallback className="bg-white/20 text-white font-bold text-2xl">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+                        <AvatarFallback className="bg-white/20 text-white font-black text-2xl">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
                     </Avatar>
                     <div className="text-center space-y-1">
                         <h1 className="text-2xl font-black tracking-tight leading-tight">{profile?.full_name || 'Guru LakuKelas'}</h1>
-                        <p className="text-white/70 text-sm font-medium">{profile?.nip || '-'}</p>
+                        <p className="text-white/70 text-sm font-bold tracking-widest">{profile?.nip || '-'}</p>
                         
                         <div className="pt-2">
                           {todayHoliday ? (
@@ -224,7 +222,7 @@ export default function TeacherAttendanceClient({
                               {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
                           ) : todayRecord ? (
-                            <Badge className="bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.1em] border-0 px-3 py-1">
+                            <Badge className="bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.1em] border-0 px-3 py-1 shadow-lg shadow-green-500/20">
                               {todayRecord.status}
                             </Badge>
                           ) : (
@@ -242,9 +240,7 @@ export default function TeacherAttendanceClient({
                 </div>
             </div>
 
-            {/* Content Area */}
             <div className="px-6 -mt-10 space-y-6 pb-32">
-                {/* Info Card (Always Visible) */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                     <Card className="rounded-xl border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
                         <CardContent className="p-5 flex items-center gap-4">
@@ -258,20 +254,20 @@ export default function TeacherAttendanceClient({
                                 </div>
                             ) : (
                                 <div className={cn(
-                                    "p-3 rounded-2xl text-white shadow-lg transition-transform group-hover:scale-110 flex items-center justify-center overflow-hidden",
-                                    info.iconBg
+                                    "p-3 rounded-2xl text-white shadow-lg transition-transform flex items-center justify-center overflow-hidden shrink-0",
+                                    (info as any).iconBg
                                 )}>
                                     <InfoIcon className="h-6 w-6" />
                                 </div>
                             )}
                             <div className="min-w-0 flex-1">
                                 <h4 className={cn(
-                                    "font-bold leading-tight break-words",
+                                    "font-black text-lg leading-tight break-words tracking-tight",
                                     todayHoliday ? (todayHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600") : "text-slate-900"
                                 )}>
                                     {info.title}
                                 </h4>
-                                <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">
+                                <p className="text-[10px] text-slate-400 uppercase font-black tracking-[0.15em] mt-1">
                                     {info.subtitle}
                                 </p>
                             </div>
@@ -279,59 +275,56 @@ export default function TeacherAttendanceClient({
                     </Card>
                 </motion.div>
 
-                {/* Main Attendance Buttons */}
                 <div className="grid grid-cols-2 gap-4">
                     <button 
                         onClick={() => handleAttendance('in')}
                         disabled={loading || !!todayRecord?.checkIn || !!todayHoliday}
                         className={cn(
-                            "flex flex-col items-center justify-center p-6 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0 h-32",
+                            "flex flex-col items-center justify-center p-6 rounded-3xl shadow-lg transition-all active:scale-95 border-0 h-32",
                             (todayRecord?.checkIn || todayHoliday) 
                                 ? "bg-emerald-50 text-emerald-600 opacity-60" 
-                                : "bg-emerald-600 text-white hover:bg-emerald-700"
+                                : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20"
                         )}
                     >
                         {loading && <Loader2 className="h-6 w-6 animate-spin mb-2" />}
-                        <span className="font-black text-base tracking-tight">JAM MASUK</span>
-                        <span className="font-mono text-xs opacity-80 mt-1 font-bold">{todayRecord?.checkIn ? todayRecord.checkIn.substring(0, 5) : '--:--'}</span>
+                        <span className="font-black text-base tracking-tight uppercase">Jam Masuk</span>
+                        <span className="font-mono text-sm opacity-80 mt-1 font-bold">{todayRecord?.checkIn ? todayRecord.checkIn.substring(0, 5) : '--:--'}</span>
                     </button>
 
                     <button 
                         onClick={() => handleAttendance('out')}
                         disabled={loading || !todayRecord?.checkIn || !!todayRecord?.checkOut || !!todayHoliday}
                         className={cn(
-                            "flex flex-col items-center justify-center p-6 rounded-[2.5rem] shadow-lg transition-all active:scale-95 border-0 h-32",
+                            "flex flex-col items-center justify-center p-6 rounded-3xl shadow-lg transition-all active:scale-95 border-0 h-32",
                             (todayRecord?.checkOut || todayHoliday) 
                                 ? "bg-red-50 text-red-600 opacity-60" 
-                                : (!todayRecord?.checkIn ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-red-600 text-white hover:bg-red-700")
+                                : (!todayRecord?.checkIn ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-red-600 text-white hover:bg-red-700 shadow-red-600/20")
                         )}
                     >
                         {loading && <Loader2 className="h-6 w-6 animate-spin mb-2" />}
-                        <span className="font-black text-base tracking-tight">JAM PULANG</span>
-                        <span className="font-mono text-xs opacity-80 mt-1 font-bold">{todayRecord?.checkOut ? todayRecord.checkOut.substring(0, 5) : '--:--'}</span>
+                        <span className="font-black text-base tracking-tight uppercase">Jam Pulang</span>
+                        <span className="font-mono text-sm opacity-80 mt-1 font-bold">{todayRecord?.checkOut ? todayRecord.checkOut.substring(0, 5) : '--:--'}</span>
                     </button>
                 </div>
 
-                {/* Wide Leave Button */}
                 <LeaveRequestDialog onLeaveSubmitted={() => {}} loading={loading} />
 
-                {/* History Section */}
                 <div className="pt-4 space-y-4">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 px-1">
                         <div className="flex flex-col">
-                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Riwayat Presensi</h3>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Catatan Kehadiran Anda</p>
+                            <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">Riwayat Presensi</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">Catatan Kehadiran Anda</p>
                         </div>
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                             <div className="relative flex-1 sm:min-w-[180px]">
                                 <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10" />
                                 <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                    <SelectTrigger className="h-12 pl-10 text-sm font-bold uppercase tracking-wider rounded-2xl border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary/20">
+                                    <SelectTrigger className="h-11 pl-10 text-sm font-black uppercase tracking-widest rounded-xl border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary/20">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         {months.map(m => (
-                                            <SelectItem key={m.value} value={m.value} className="text-sm font-bold py-3 uppercase">{m.label}</SelectItem>
+                                            <SelectItem key={m.value} value={m.value} className="text-xs font-black py-3 uppercase tracking-widest">{m.label}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -342,10 +335,10 @@ export default function TeacherAttendanceClient({
                     <div className="space-y-3">
                         {filteredHistory.length > 0 ? (
                             filteredHistory.map((r) => (
-                                <div key={r.id} className="bg-white p-5 rounded-[2rem] flex items-center justify-between shadow-sm border border-slate-100/80 hover:shadow-md transition-all">
+                                <div key={r.id} className="bg-white p-5 rounded-2xl flex items-center justify-between shadow-sm border border-slate-100/80 hover:shadow-md transition-all">
                                     <div className="flex items-start gap-4">
                                         <div className={cn(
-                                            "p-3 rounded-2xl shrink-0",
+                                            "p-3 rounded-xl shrink-0",
                                             r.status === 'Tepat Waktu' ? "bg-emerald-50 text-emerald-600" :
                                             r.status === 'Terlambat' ? "bg-amber-50 text-amber-600" :
                                             r.status === 'Sakit' ? "bg-orange-50 text-orange-600" :
@@ -354,10 +347,10 @@ export default function TeacherAttendanceClient({
                                             <CalendarIcon className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-slate-800 leading-tight">{format(parseISO(r.date), 'dd MMMM yyyy', { locale: id })}</p>
+                                            <p className="text-sm font-black text-slate-800 leading-tight uppercase tracking-tight">{format(parseISO(r.date), 'dd MMMM yyyy', { locale: id })}</p>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <Badge variant="outline" className={cn(
-                                                    "text-[8px] font-semibold uppercase tracking-wider border-0 px-2 py-0",
+                                                    "text-[8px] font-black uppercase tracking-widest border-0 px-2 py-0",
                                                     r.status === 'Tepat Waktu' ? "bg-emerald-100 text-emerald-700" :
                                                     r.status === 'Terlambat' ? "bg-amber-100 text-amber-700" :
                                                     r.status === 'Sakit' ? "bg-orange-100 text-orange-700" :
@@ -365,29 +358,29 @@ export default function TeacherAttendanceClient({
                                                 )}>
                                                     {r.status}
                                                 </Badge>
-                                                {r.reason && <span className="text-[9px] text-slate-400 font-medium italic truncate max-w-[80px]">({r.reason})</span>}
+                                                {r.reason && <span className="text-[9px] text-slate-400 font-bold italic truncate max-w-[120px]">({r.reason})</span>}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1 shrink-0">
                                         <div className="flex items-center gap-4">
                                             <div className="text-right">
-                                                <p className="text-xs font-mono font-bold text-slate-700 leading-none">{r.checkIn?.substring(0, 5) || '--:--'}</p>
-                                                <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">In</p>
+                                                <p className="text-xs font-mono font-black text-slate-700 leading-none">{r.checkIn?.substring(0, 5) || '--:--'}</p>
+                                                <p className="text-[8px] text-slate-300 font-black uppercase mt-1 tracking-widest">In</p>
                                             </div>
                                             <div className="h-6 w-px bg-slate-100" />
                                             <div className="text-right">
-                                                <p className="text-xs font-mono font-bold text-slate-700 leading-none">{r.checkOut?.substring(0, 5) || '--:--'}</p>
-                                                <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">Out</p>
+                                                <p className="text-xs font-mono font-black text-slate-700 leading-none">{r.checkOut?.substring(0, 5) || '--:--'}</p>
+                                                <p className="text-[8px] text-slate-300 font-black uppercase mt-1 tracking-widest">Out</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center flex flex-col items-center">
+                            <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center">
                                 <Clock className="h-10 w-10 text-slate-200 mb-3" />
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tidak ada data untuk bulan ini</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tidak ada data untuk bulan ini</p>
                             </div>
                         )}
                     </div>
