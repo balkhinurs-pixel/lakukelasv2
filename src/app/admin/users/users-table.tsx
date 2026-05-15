@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -49,6 +48,7 @@ import { deleteUser, inviteTeacher, updateUserRole, updateStaffProfile } from "@
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 function FormattedDate({ dateString }: { dateString: string }) {
     const [date, setDate] = React.useState('');
@@ -247,7 +247,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                 </TableHeader>
                 <TableBody>
                     {filteredUsers.map((user) => (
-                        <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors duration-150">
                             <TableCell className="font-semibold text-slate-900">{user.full_name || 'N/A'}</TableCell>
                             <TableCell className="text-slate-500 text-xs">{user.email}</TableCell>
                             <TableCell>

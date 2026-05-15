@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -101,7 +100,6 @@ export async function deleteUser(userId: string) {
 export async function updateUserRole(userId: string, newRole: 'teacher' | 'headmaster' | 'admin') {
     const supabase = createClient();
     
-    // Pastikan admin yang melakukan aksi ini memiliki profil role 'admin'
     const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
@@ -109,7 +107,7 @@ export async function updateUserRole(userId: string, newRole: 'teacher' | 'headm
 
     if (error) {
         console.error("Error updating user role:", error.message);
-        return { success: false, error: "Gagal memperbarui peran pengguna. Cek izin database." };
+        return { success: false, error: "Gagal memperbarui peran pengguna." };
     }
     
     revalidatePath('/admin/users');
