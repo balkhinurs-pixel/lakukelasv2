@@ -62,7 +62,7 @@ export async function activateAccount(token: string) {
         return { success: false, error: "Gagal memperbarui status akun menjadi aktif." };
     }
 
-    // Revalidate seluruh cache agar middleware mendeteksi perubahan status
+    // Revalidate seluruh cache agar middleware mendeteksi perubahan status secara global
     revalidatePath('/', 'layout');
     return { success: true };
 }

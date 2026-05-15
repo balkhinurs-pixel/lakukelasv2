@@ -5,7 +5,7 @@
 Peningkatan pada kejelasan sistem token dan keandalan aktivasi otomatis.
 
 ### 1. Fix First-User Auto-Admin
-- **Logic Correction**: Menggunakan variabel `is_first_user` di dalam trigger `handle_new_user` untuk memastikan deteksi tabel kosong (0 profile) benar-benar akurat sebelum menyematkan role `Admin`. Ini menyelesaikan masalah pendaftar pertama yang tetap diminta token pada database baru.
+- **Logic Correction**: Menggunakan variabel `p_count` di dalam trigger `handle_new_user` untuk memastikan deteksi tabel kosong (0 profile) benar-benar akurat sebelum menyematkan role `Admin`. Ini menyelesaikan masalah pendaftar pertama yang tetap diminta token pada database baru.
 
 ### 2. Dashboard Admin: Token Clarity
 - **Visual Status**: Card token kini memiliki warna yang memudar (opacity) dan label "Sudah Terpakai" yang jelas untuk membedakan token lama dan baru.
