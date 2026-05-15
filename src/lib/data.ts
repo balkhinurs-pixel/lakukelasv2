@@ -505,123 +505,137 @@ export async function getHomeroomMonthlyAttendance(month: number, year: number) 
     };
 }
 
-export async function getReportsData(filters: { schoolYearId: string, month?: number, classId?: string, subjectId?: string }) {
+export async function getReportsData(filters: { schoolYearId: string, month: number, classId?: string, subjectId?: string }) {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return null;
     const supabase = createClient();
     const { schoolYearId, month, classId, subjectId } = filters;
+    const monthStr = `-${String(month).padStart(2, '0')}-`;
 
-    let attendanceQuery = supabase.from('attendance_history').select('*').eq('teacher_id', user.id);
-    let gradesQuery = supabase.from('grades_history').select('*').eq('teacher_id', user.id);
-    let journalQuery = supabase.from('journal_entries_with_names').select('*').eq('teacher_id', user.id);
-    
-    if (schoolYearId && schoolYearId !== 'all') {
-        attendanceQuery = attendanceQuery.eq('school_year_id', schoolYearId);
-        gradesQuery = gradesQuery.eq('school_year_id', schoolYearId);
-        journalQuery = journalQuery.eq('school_year_id', schoolYearId);
-    }
-    
-    if (classId && classId !== 'all') {
-        attendanceQuery = attendanceQuery.eq('class_id', classId);
-        gradesQuery = gradesQuery.eq('class_id', classId);
-        journalQuery = journalQuery.eq('class_id', classId);
-    }
-    
-    if (subjectId && subjectId !== 'all') {
-        attendanceQuery = attendanceQuery.eq('subject_id', subjectId);
-        gradesQuery = gradesQuery.eq('subject_id', subjectId);
-        journalQuery = journalQuery.eq('subject_id', subjectId);
-    }
-
-    if (month && month !== 0) {
-        // Simple logic for month filter on ISO date strings
-        const monthStr = `-${String(month).padStart(2, '0')}-`;
-        attendanceQuery = attendanceQuery.like('date', `%${monthStr}%`);
-        gradesQuery = gradesQuery.like('date', `%${monthStr}%`);
-        journalQuery = journalQuery.like('date', `%${monthStr}%`);
-    }
-
-    const [attendanceRes, gradesRes, journalRes, studentsRes, activeSchoolYearName, teacherClassesRes] = await Promise.all([
-        attendanceQuery, gradesQuery, journalQuery, getActiveStudents(), getActiveSchoolYearName(), getClasses(),
+    // Ambil metadata dasar & KPI menggunakan query agregat (lebih hemat request/bandwidth)
+    const [activeSchoolYearName] = await Promise.all([
+        getActiveSchoolYearName()
     ]);
 
-    const attendanceHistory = attendanceRes.data || [];
-    const gradeHistory = gradesRes.data || [];
-    const journalEntries = journalRes.data || [];
-    const students = studentsRes || [];
-
-    // KPI Aggregations
-    const hadirCount = attendanceHistory.filter(r => r.status === 'Hadir').length;
-    const totalAttendance = attendanceHistory.length;
-    const overallAttendanceRate = totalAttendance > 0 ? Math.round((hadirCount / totalAttendance) * 100) : 0;
+    // KPI: Hitung ringkasan presensi (Hadir vs Total)
+    let attendanceKpiQuery = supabase
+        .from('attendance_records')
+        .select('status', { count: 'exact' })
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', schoolYearId)
+        .like('date', `%${monthStr}%`);
     
-    const allGradeScores = gradeHistory.map(r => Number(r.score));
-    const overallAverageGrade = allGradeScores.length > 0 ? Math.round(allGradeScores.reduce((a, b) => a + b, 0) / allGradeScores.length) : 0;
+    if (classId) attendanceKpiQuery = attendanceKpiQuery.eq('class_id', classId);
+    if (subjectId) attendanceKpiQuery = attendanceKpiQuery.eq('subject_id', subjectId);
 
-    // Attendance distribution for Pie Chart
-    const overallAttendanceDistribution = {
-        Hadir: hadirCount,
-        Sakit: attendanceHistory.filter(r => r.status === 'Sakit').length,
-        Izin: attendanceHistory.filter(r => r.status === 'Izin').length,
-        Alpha: attendanceHistory.filter(r => r.status === 'Alpha').length
-    };
+    const { data: attendanceData, count: totalAttendance } = await attendanceKpiQuery;
+    const hadirCount = attendanceData?.filter(r => r.status === 'Hadir').length || 0;
+    const overallAttendanceRate = totalAttendance ? Math.round((hadirCount / totalAttendance) * 100) : 0;
 
-    // Attendance by Class for Bar Chart
-    const attendanceByClass = teacherClassesRes.map(c => {
-        const classAtt = attendanceHistory.filter(h => h.class_id === c.id);
-        const present = classAtt.filter(r => r.status === 'Hadir').length;
-        const total = classAtt.length;
-        return {
-            name: c.name,
-            rate: total > 0 ? Math.round((present / total) * 100) : 0,
-            present,
-            total
-        };
-    });
+    // KPI: Hitung rata-rata nilai
+    let gradesKpiQuery = supabase
+        .from('grade_records')
+        .select('score')
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', schoolYearId)
+        .like('date', `%${monthStr}%`);
 
-    // Student Performance Analysis (PRD requirement)
-    const studentPerformance = students
-        .filter(s => classId === 'all' || !classId || s.class_id === classId)
-        .map(student => {
-            const studentGrades = gradeHistory.filter(r => r.student_id === student.id).map(r => Number(r.score));
-            const studentAtt = attendanceHistory.filter(r => r.student_id === student.id);
-            
-            const avgGrade = studentGrades.length > 0 ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length) : 0;
-            const attRate = studentAtt.length > 0 ? Math.round((studentAtt.filter(r => r.status === 'Hadir').length / studentAtt.length) * 100) : 100;
+    if (classId) gradesKpiQuery = gradesKpiQuery.eq('class_id', classId);
+    if (subjectId) gradesKpiQuery = gradesKpiQuery.eq('subject_id', subjectId);
 
-            let status: 'Sangat Baik' | 'Stabil' | 'Butuh Perhatian' | 'Berisiko' = 'Stabil';
-            if (avgGrade >= 85 && attRate >= 95) status = 'Sangat Baik';
-            else if (avgGrade < 65 || attRate < 75) status = 'Berisiko';
-            else if (avgGrade < 75 || attRate < 85) status = 'Butuh Perhatian';
+    const { data: gradesData } = await gradesKpiQuery;
+    const totalGrades = gradesData?.length || 0;
+    const overallAverageGrade = totalGrades > 0 
+        ? Math.round(gradesData!.reduce((a, b) => a + Number(b.score), 0) / totalGrades) 
+        : 0;
 
-            return {
-                id: student.id,
-                name: student.name,
-                nis: student.nis,
-                avgGrade,
-                attRate,
-                status
-            };
-        })
-        .sort((a, b) => a.avgGrade < b.avgGrade ? 1 : -1);
+    // KPI: Hitung total jurnal
+    let journalKpiQuery = supabase
+        .from('journal_entries')
+        .select('id', { count: 'exact', head: true })
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', schoolYearId)
+        .like('date', `%${monthStr}%`);
+
+    if (classId) journalKpiQuery = journalKpiQuery.eq('class_id', classId);
+    if (subjectId) journalKpiQuery = journalKpiQuery.eq('subject_id', subjectId);
+
+    const { count: totalJournals } = await journalKpiQuery;
 
     return {
         summaryCards: { 
             overallAttendanceRate: String(overallAttendanceRate), 
             overallAverageGrade: String(overallAverageGrade), 
-            totalJournals: journalEntries.length, 
+            totalJournals: totalJournals || 0, 
             activeSchoolYearId: schoolYearId, 
             activeSchoolYearName 
-        },
-        attendanceByClass,
-        overallAttendanceDistribution,
-        studentPerformance,
-        journalEntries,
-        attendanceHistory,
-        gradeHistory,
-        allStudents: students
+        }
     };
+}
+
+// Fungsi pengambilan data detail (HANYA saat klik cetak)
+export async function getAttendanceReportList(filters: { schoolYearId: string, month: number, classId: string, subjectId: string }) {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+    const supabase = createClient();
+    const { schoolYearId, month, classId, subjectId } = filters;
+    const monthStr = `-${String(month).padStart(2, '0')}-`;
+
+    const { data } = await supabase
+        .from('attendance_history')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', schoolYearId)
+        .eq('class_id', classId)
+        .eq('subject_id', subjectId)
+        .like('date', `%${monthStr}%`)
+        .order('date', { ascending: true });
+
+    return data || [];
+}
+
+export async function getGradesReportList(filters: { schoolYearId: string, month: number, classId: string, subjectId: string }) {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+    const supabase = createClient();
+    const { schoolYearId, month, classId, subjectId } = filters;
+    const monthStr = `-${String(month).padStart(2, '0')}-`;
+
+    const { data } = await supabase
+        .from('grades_history')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', schoolYearId)
+        .eq('class_id', classId)
+        .eq('subject_id', subjectId)
+        .like('date', `%${monthStr}%`)
+        .order('date', { ascending: true });
+
+    return data || [];
+}
+
+export async function getJournalReportList(filters: { schoolYearId: string, month: number, classId: string, subjectId: string }) {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+    const supabase = createClient();
+    const { schoolYearId, month, classId, subjectId } = filters;
+    const monthStr = `-${String(month).padStart(2, '0')}-`;
+
+    const { data } = await supabase
+        .from('journal_entries_with_names')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', schoolYearId)
+        .eq('class_id', classId)
+        .eq('subject_id', subjectId)
+        .like('date', `%${monthStr}%`)
+        .order('date', { ascending: true });
+
+    return data || [];
 }
 
 export async function getHomeroomStudentProgress() {

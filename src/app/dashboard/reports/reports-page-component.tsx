@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react";
@@ -34,15 +35,16 @@ import {
     Printer,
     CalendarDays,
     BookOpen,
-    School
+    School,
+    CheckCircle,
+    Info
 } from "lucide-react";
 import type { Class, Subject, Profile, SchoolYear } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import type { getReportsData } from "@/lib/data";
+import { getReportsData, getAttendanceReportList, getGradesReportList, getJournalReportList } from "@/lib/data";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 interface jsPDFWithAutoTable extends jsPDF {
@@ -97,99 +99,112 @@ export default function ReportsPageComponent({
     [searchParams, router, pathname]
   );
   
-  const { summaryCards, attendanceHistory, gradeHistory, journalEntries } = reportsData;
+  const { summaryCards } = reportsData;
 
   const handleDownloadPdf = async (type: 'attendance' | 'grades' | 'journal') => {
+    if (!selectedClass || !selectedSubject) return;
+    
     setDownloading(true);
-    const doc = new jsPDF() as jsPDFWithAutoTable;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 14;
+    
+    try {
+        const filters = {
+            schoolYearId: summaryCards.activeSchoolYearId,
+            month: Number(currentMonth),
+            classId: selectedClass,
+            subjectId: selectedSubject
+        };
 
-    const generateContent = () => {
-        // Kop Surat
-        if (schoolProfile) {
-            doc.setFontSize(16).setFont(undefined, 'bold');
-            doc.text((schoolProfile.school_name || "LAKUKELAS").toUpperCase(), margin + 25, margin + 8);
-            doc.setFontSize(10).setFont(undefined, 'normal');
-            doc.text(schoolProfile.school_address || "Alamat Sekolah", margin + 25, margin + 14);
-            doc.setLineWidth(0.5);
-            doc.line(margin, margin + 22, pageWidth - margin, margin + 22);
-        }
-
-        let title = "";
         let head: any[][] = [];
         let body: any[][] = [];
+        let title = "";
 
         if (type === 'attendance') {
+            const data = await getAttendanceReportList(filters);
             title = "LAPORAN REKAPITULASI PRESENSI SISWA";
             head = [['No', 'Tanggal', 'Siswa', 'Kelas', 'Mapel', 'Status']];
-            body = attendanceHistory.map((h, i) => [i + 1, format(parseISO(h.date), 'dd/MM/yyyy'), h.student_name || 'N/A', h.class_name, h.subject_name, h.status]);
+            body = data.map((h: any, i: number) => [i + 1, format(parseISO(h.date), 'dd/MM/yyyy'), h.student_name || 'N/A', h.class_name, h.subject_name, h.status]);
         } else if (type === 'grades') {
+            const data = await getGradesReportList(filters);
             title = "LAPORAN LEGER NILAI SISWA";
             head = [['No', 'Nama Siswa', 'Kelas', 'Mapel', 'Jenis Penilaian', 'Nilai']];
-            body = gradeHistory.map((g, i) => [i + 1, g.student_name || 'N/A', g.class_name, g.subject_name, g.assessment_type, g.score]);
+            body = data.map((g: any, i: number) => [i + 1, g.student_name || 'N/A', g.class_name, g.subject_name, g.assessment_type, g.score]);
         } else {
+            const data = await getJournalReportList(filters);
             title = "LAPORAN JURNAL MENGAJAR GURU";
             head = [['No', 'Tanggal', 'Kelas', 'Mapel', 'Tujuan Pembelajaran']];
-            body = journalEntries.map((j, i) => [i + 1, format(parseISO(j.date), 'dd/MM/yyyy'), j.className, j.subjectName, j.learning_objectives]);
+            body = data.map((j: any, i: number) => [i + 1, format(parseISO(j.date), 'dd/MM/yyyy'), j.className, j.subjectName, j.learning_objectives]);
         }
 
-        doc.setFontSize(12).setFont(undefined, 'bold');
-        doc.text(title, pageWidth / 2, margin + 35, { align: 'center' });
-        
-        doc.setFontSize(10).setFont(undefined, 'normal');
-        doc.text(`Tahun Ajaran: ${summaryCards.activeSchoolYearName}`, margin, margin + 45);
-        doc.text(`Guru Pengampu: ${profile.full_name}`, margin, margin + 50);
+        const doc = new jsPDF() as jsPDFWithAutoTable;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 14;
 
-        doc.autoTable({
-            head: head,
-            body: body,
-            startY: margin + 55,
-            theme: 'grid',
-            headStyles: { fillColor: [79, 70, 229], textColor: 255 },
-            styles: { fontSize: 8 }
-        });
-
-        let finalY = (doc as any).lastAutoTable.finalY + 20;
-        if (finalY > pageHeight - 60) { doc.addPage(); finalY = margin + 20; }
-
-        const today = format(new Date(), 'dd MMMM yyyy', { locale: id });
-        const city = schoolProfile?.school_address?.split(',')[1]?.trim() || "Kota";
-
-        doc.text(`${city}, ${today}`, pageWidth - margin - 60, finalY - 5);
-        
-        doc.text("Mengetahui,", margin + 20, finalY);
-        doc.text("Kepala Sekolah,", margin + 20, finalY + 6);
-        doc.text("Guru Mata Pelajaran,", pageWidth - margin - 60, finalY + 6);
-
-        doc.setFont(undefined, 'bold');
-        doc.text(schoolProfile?.headmaster_name || "(...........................)", margin + 20, finalY + 35);
-        doc.text(profile.full_name, pageWidth - margin - 60, finalY + 35);
-        
-        doc.setFont(undefined, 'normal');
-        doc.text(`NIP. ${schoolProfile?.headmaster_nip || "-"}`, margin + 20, finalY + 40);
-        doc.text(`NIP. ${profile.nip || "-"}`, pageWidth - margin - 60, finalY + 40);
-
-        doc.save(`Laporan_${type}_${format(new Date(), 'yyyyMMdd')}.pdf`);
-        setDownloading(false);
-    };
-
-    if (schoolProfile?.school_logo_url) {
-        const img = new Image();
-        img.src = schoolProfile.school_logo_url;
-        img.crossOrigin = "Anonymous";
-        img.onload = () => { 
-            try {
-                doc.addImage(img, 'PNG', margin, margin, 20, 20); 
-            } catch(e) {
-                console.error("Error adding image to PDF", e);
+        const generatePDFContent = () => {
+            if (schoolProfile) {
+                doc.setFontSize(16).setFont(undefined, 'bold');
+                doc.text((schoolProfile.school_name || "LAKUKELAS").toUpperCase(), margin + 25, margin + 8);
+                doc.setFontSize(10).setFont(undefined, 'normal');
+                doc.text(schoolProfile.school_address || "Alamat Sekolah", margin + 25, margin + 14);
+                doc.setLineWidth(0.5);
+                doc.line(margin, margin + 22, pageWidth - margin, margin + 22);
             }
-            generateContent(); 
+
+            doc.setFontSize(12).setFont(undefined, 'bold');
+            doc.text(title, pageWidth / 2, margin + 35, { align: 'center' });
+            
+            doc.setFontSize(10).setFont(undefined, 'normal');
+            doc.text(`Tahun Ajaran: ${summaryCards.activeSchoolYearName}`, margin, margin + 45);
+            doc.text(`Guru Pengampu: ${profile.full_name}`, margin, margin + 50);
+
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: margin + 55,
+                theme: 'grid',
+                headStyles: { fillColor: [79, 70, 229], textColor: 255 },
+                styles: { fontSize: 8 }
+            });
+
+            let finalY = (doc as any).lastAutoTable.finalY + 20;
+            if (finalY > pageHeight - 60) { doc.addPage(); finalY = margin + 20; }
+
+            const today = format(new Date(), 'dd MMMM yyyy', { locale: id });
+            const city = schoolProfile?.school_address?.split(',')[1]?.trim() || "Kota";
+
+            doc.text(`${city}, ${today}`, pageWidth - margin - 60, finalY - 5);
+            
+            doc.text("Mengetahui,", margin + 20, finalY);
+            doc.text("Kepala Sekolah,", margin + 20, finalY + 6);
+            doc.text("Guru Mata Pelajaran,", pageWidth - margin - 60, finalY + 6);
+
+            doc.setFont(undefined, 'bold');
+            doc.text(schoolProfile?.headmaster_name || "(...........................)", margin + 20, finalY + 35);
+            doc.text(profile.full_name, pageWidth - margin - 60, finalY + 35);
+            
+            doc.setFont(undefined, 'normal');
+            doc.text(`NIP. ${schoolProfile?.headmaster_nip || "-"}`, margin + 20, finalY + 40);
+            doc.text(`NIP. ${profile.nip || "-"}`, pageWidth - margin - 60, finalY + 40);
+
+            doc.save(`Laporan_${type}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+            setDownloading(false);
         };
-        img.onerror = () => generateContent();
-    } else {
-        generateContent();
+
+        if (schoolProfile?.school_logo_url) {
+            const img = new Image();
+            img.src = schoolProfile.school_logo_url;
+            img.crossOrigin = "Anonymous";
+            img.onload = () => { 
+                try { doc.addImage(img, 'PNG', margin, margin, 20, 20); } catch(e) {}
+                generatePDFContent(); 
+            };
+            img.onerror = () => generatePDFContent();
+        } else {
+            generatePDFContent();
+        }
+    } catch (error) {
+        console.error("Failed to generate report:", error);
+        setDownloading(false);
     }
   };
 
@@ -207,7 +222,7 @@ export default function ReportsPageComponent({
                     </div>
                     <div>
                         <CardTitle className="text-xl font-bold tracking-tight">Filter Laporan</CardTitle>
-                        <CardDescription>Tahun Ajaran: <span className="font-bold text-indigo-600">{summaryCards.activeSchoolYearName}</span> (Otomatis)</CardDescription>
+                        <CardDescription>Tahun Ajaran: <span className="font-bold text-indigo-600">{summaryCards.activeSchoolYearName}</span></CardDescription>
                     </div>
                 </div>
             </CardHeader>
@@ -253,7 +268,7 @@ export default function ReportsPageComponent({
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100 rounded-[2rem] shadow-lg border-2">
                 <CardHeader className="pb-2">
-                    <Badge variant="outline" className="w-fit bg-emerald-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Kehadiran</Badge>
+                    <Badge variant="outline" className="w-fit bg-emerald-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Presensi</Badge>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-baseline gap-2">
@@ -265,7 +280,7 @@ export default function ReportsPageComponent({
 
             <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100 rounded-[2rem] shadow-lg border-2">
                 <CardHeader className="pb-2">
-                    <Badge variant="outline" className="w-fit bg-blue-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Akademik</Badge>
+                    <Badge variant="outline" className="w-fit bg-blue-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Nilai</Badge>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-baseline gap-2">
@@ -277,7 +292,7 @@ export default function ReportsPageComponent({
 
             <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100 rounded-[2rem] shadow-lg border-2">
                 <CardHeader className="pb-2">
-                    <Badge variant="outline" className="w-fit bg-purple-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Administrasi</Badge>
+                    <Badge variant="outline" className="w-fit bg-purple-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Jurnal</Badge>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-baseline gap-2">
@@ -296,183 +311,94 @@ export default function ReportsPageComponent({
             </TabsList>
 
             <TabsContent value="attendance" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-[2rem] border-0 shadow-xl overflow-hidden bg-white">
-                    <CardHeader className="border-b border-slate-50 bg-slate-50/30 p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-600 shadow-inner">
-                                <Users className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-xl font-bold tracking-tight">Data Presensi</CardTitle>
-                                <CardDescription>Catatan kehadiran siswa bulan ini.</CardDescription>
-                            </div>
+                <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
+                    <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
+                        <div className="p-6 rounded-[2rem] bg-emerald-50 text-emerald-600 shadow-inner">
+                            <Users className="h-12 w-12" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-black text-slate-900">Laporan Presensi Siswa</h3>
+                            <p className="text-slate-500 font-medium">Klik tombol di bawah untuk mengunduh rekapitulasi kehadiran siswa dalam format PDF resmi.</p>
                         </div>
                         <Button 
                             onClick={() => handleDownloadPdf('attendance')} 
-                            disabled={downloading || attendanceHistory.length === 0}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 h-11 px-6 font-bold"
+                            disabled={downloading}
+                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-lg font-bold gap-3"
                         >
-                            {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-                            Cetak PDF Presensi
+                            {downloading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Printer className="h-6 w-6" />}
+                            Cetak Laporan Presensi
                         </Button>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader className="bg-slate-50">
-                                    <TableRow>
-                                        <TableHead className="font-bold py-5 px-8">Tanggal</TableHead>
-                                        <TableHead className="font-bold">Nama Siswa</TableHead>
-                                        <TableHead className="text-center font-bold">Status</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {attendanceHistory.length > 0 ? (
-                                        attendanceHistory.map((record) => (
-                                            <TableRow key={record.id}>
-                                                <TableCell className="py-4 px-8 font-medium text-slate-500">{format(parseISO(record.date), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell className="font-bold text-slate-900">{record.student_name || 'Siswa'}</TableCell>
-                                                <TableCell className="text-center">
-                                                    <Badge className={cn(
-                                                        "rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider",
-                                                        record.status === 'Hadir' ? "bg-emerald-100 text-emerald-700" :
-                                                        record.status === 'Alpha' ? "bg-red-100 text-red-700" :
-                                                        "bg-blue-100 text-blue-700"
-                                                    )}>
-                                                        {record.status}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={3} className="py-20 text-center text-muted-foreground italic">
-                                                Tidak ada data kehadiran untuk periode ini.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest pt-4">
+                            <CheckCircle className="h-4 w-4 text-emerald-500" /> Data Siap Cetak
                         </div>
-                    </CardContent>
+                    </div>
                 </Card>
             </TabsContent>
 
             <TabsContent value="grades" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-[2rem] border-0 shadow-xl overflow-hidden bg-white">
-                    <CardHeader className="border-b border-slate-50 bg-slate-50/30 p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-xl bg-blue-100 text-blue-600 shadow-inner">
-                                <ClipboardList className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-xl font-bold tracking-tight">Leger Nilai</CardTitle>
-                                <CardDescription>Daftar perolehan skor akademik siswa.</CardDescription>
-                            </div>
+                <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
+                    <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
+                        <div className="p-6 rounded-[2rem] bg-blue-50 text-blue-600 shadow-inner">
+                            <ClipboardList className="h-12 w-12" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-black text-slate-900">Leger Nilai Siswa</h3>
+                            <p className="text-slate-500 font-medium">Klik tombol di bawah untuk mengunduh daftar perolehan skor akademik siswa dalam format PDF resmi.</p>
                         </div>
                         <Button 
                             onClick={() => handleDownloadPdf('grades')} 
-                            disabled={downloading || gradeHistory.length === 0}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 h-11 px-6 font-bold"
+                            disabled={downloading}
+                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-lg font-bold gap-3"
                         >
-                            {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-                            Cetak PDF Nilai
+                            {downloading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Printer className="h-6 w-6" />}
+                            Cetak Leger Nilai
                         </Button>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader className="bg-slate-50">
-                                    <TableRow>
-                                        <TableHead className="font-bold py-5 px-8">Siswa</TableHead>
-                                        <TableHead className="font-bold">Asesmen</TableHead>
-                                        <TableHead className="text-center font-bold">Skor</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {gradeHistory.length > 0 ? (
-                                        gradeHistory.map((record) => (
-                                            <TableRow key={record.id}>
-                                                <TableCell className="py-4 px-8 font-bold text-slate-900">{record.student_name || 'Siswa'}</TableCell>
-                                                <TableCell className="text-slate-500 text-xs font-bold uppercase">{record.assessment_type}</TableCell>
-                                                <TableCell className="text-center">
-                                                    <span className={cn(
-                                                        "text-lg font-black",
-                                                        record.score >= (record.subject_kkm || 75) ? "text-emerald-600" : "text-red-600"
-                                                    )}>
-                                                        {record.score}
-                                                    </span>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={3} className="py-20 text-center text-muted-foreground italic">
-                                                Tidak ada data nilai untuk periode ini.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest pt-4">
+                            <CheckCircle className="h-4 w-4 text-emerald-500" /> Data Siap Cetak
                         </div>
-                    </CardContent>
+                    </div>
                 </Card>
             </TabsContent>
 
             <TabsContent value="journal" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-[2rem] border-0 shadow-xl overflow-hidden bg-white">
-                    <CardHeader className="border-b border-slate-50 bg-slate-50/30 p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-xl bg-purple-100 text-purple-600 shadow-inner">
-                                <BookCheck className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-xl font-bold tracking-tight">Log Jurnal Mengajar</CardTitle>
-                                <CardDescription>Catatan proses belajar mengajar harian.</CardDescription>
-                            </div>
+                <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
+                    <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
+                        <div className="p-6 rounded-[2rem] bg-purple-50 text-purple-600 shadow-inner">
+                            <BookCheck className="h-12 w-12" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-black text-slate-900">Log Jurnal Mengajar</h3>
+                            <p className="text-slate-500 font-medium">Klik tombol di bawah untuk mengunduh catatan proses belajar mengajar harian Bapak/Ibu dalam format PDF resmi.</p>
                         </div>
                         <Button 
                             onClick={() => handleDownloadPdf('journal')} 
-                            disabled={downloading || journalEntries.length === 0}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 h-11 px-6 font-bold"
+                            disabled={downloading}
+                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-lg font-bold gap-3"
                         >
-                            {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-                            Cetak PDF Jurnal
+                            {downloading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Printer className="h-6 w-6" />}
+                            Cetak Jurnal Mengajar
                         </Button>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader className="bg-slate-50">
-                                    <TableRow>
-                                        <TableHead className="font-bold py-5 px-8">Tanggal</TableHead>
-                                        <TableHead className="font-bold">Tujuan Pembelajaran</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {journalEntries.length > 0 ? (
-                                        journalEntries.map((journal) => (
-                                            <TableRow key={journal.id}>
-                                                <TableCell className="py-4 px-8 font-medium text-slate-500">{format(parseISO(journal.date), 'dd/MM/yy')}</TableCell>
-                                                <TableCell>
-                                                    <p className="text-sm text-slate-600 line-clamp-1 max-w-md">{journal.learning_objectives}</p>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={2} className="py-20 text-center text-muted-foreground italic">
-                                                Tidak ada entri jurnal untuk periode ini.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest pt-4">
+                            <CheckCircle className="h-4 w-4 text-emerald-500" /> Data Siap Cetak
                         </div>
-                    </CardContent>
+                    </div>
                 </Card>
             </TabsContent>
         </Tabs>
+        
+        <div className="max-w-xl mx-auto">
+            <Card className="bg-blue-50/50 border-blue-100 rounded-3xl p-6">
+                <div className="flex gap-4">
+                    <div className="p-3 bg-blue-100 rounded-2xl h-fit">
+                        <Info className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="space-y-1">
+                        <h4 className="font-bold text-blue-900">Sistem Hemat Data Aktif</h4>
+                        <p className="text-sm text-blue-700 leading-relaxed">Pratinjau tabel siswa disembunyikan untuk menghemat penggunaan data internet Anda. Seluruh informasi tetap akan muncul secara lengkap pada file PDF yang diunduh.</p>
+                    </div>
+                </div>
+            </Card>
+        </div>
     </div>
   );
 }
