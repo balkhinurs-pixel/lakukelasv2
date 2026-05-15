@@ -1,9 +1,11 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+/**
+ * Sinkronisasi Libur Nasional secara manual dari API eksternal.
+ */
 export async function syncNationalHolidaysManual() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -66,6 +68,9 @@ export async function syncNationalHolidaysManual() {
     }
 }
 
+/**
+ * Hapus semua data libur nasional untuk sinkronisasi ulang.
+ */
 export async function clearNationalHolidays() {
     const supabase = createClient();
     try {
@@ -83,6 +88,9 @@ export async function clearNationalHolidays() {
     }
 }
 
+/**
+ * Undang guru baru via email (Supabase Auth Invite).
+ */
 export async function inviteTeacher(fullName: string, email: string) {
     const supabase = createClient();
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
@@ -103,7 +111,9 @@ export async function inviteTeacher(fullName: string, email: string) {
     return { success: true, data };
 }
 
-
+/**
+ * Hapus pengguna dari Auth dan Tabel Profil.
+ */
 export async function deleteUser(userId: string) {
     const supabase = createClient();
     const { data, error } = await supabase.auth.admin.deleteUser(userId);
@@ -114,6 +124,9 @@ export async function deleteUser(userId: string) {
     return { success: true, data };
 }
 
+/**
+ * Update peran pengguna (Mendukung Admin, Guru, Kepsek).
+ */
 export async function updateUserRole(userId: string, newRole: 'teacher' | 'headmaster' | 'admin') {
     const supabase = createClient();
     
@@ -122,12 +135,18 @@ export async function updateUserRole(userId: string, newRole: 'teacher' | 'headm
         .update({ role: newRole })
         .eq('id', userId);
 
-    if (error) return { success: false, error: "Gagal memperbarui peran." };
+    if (error) {
+        console.error("Update role error:", error);
+        return { success: false, error: "Gagal memperbarui peran." };
+    }
     
     revalidatePath('/admin/users');
     return { success: true };
 }
 
+/**
+ * Update profil staf oleh admin.
+ */
 export async function updateStaffProfile(userId: string, data: { fullName: string, nip: string, phoneNumber: string }) {
     const supabase = createClient();
     const { error } = await supabase
@@ -145,6 +164,9 @@ export async function updateStaffProfile(userId: string, data: { fullName: strin
     return { success: true };
 }
 
+/**
+ * Simpan atau perbarui jadwal mengajar.
+ */
 export async function saveSchedule(formData: FormData) {
     const supabase = createClient();
     const scheduleData = {
@@ -170,6 +192,9 @@ export async function saveSchedule(formData: FormData) {
     return { success: true };
 }
 
+/**
+ * Hapus item jadwal.
+ */
 export async function deleteSchedule(scheduleId: string) {
     const supabase = createClient();
     const { error } = await supabase.from('schedule').delete().eq('id', scheduleId);
@@ -178,6 +203,9 @@ export async function deleteSchedule(scheduleId: string) {
     return { success: true };
 }
 
+/**
+ * Sinkronisasi flag is_homeroom_teacher berdasarkan tabel classes.
+ */
 export async function syncHomeroomTeacherStatus() {
     const supabase = createClient();
     try {
@@ -195,6 +223,9 @@ export async function syncHomeroomTeacherStatus() {
     }
 }
 
+/**
+ * Simpan atau perbarui data Kelas.
+ */
 export async function saveClass(formData: FormData) {
     const supabase = createClient();
     const classData = {
@@ -214,6 +245,9 @@ export async function saveClass(formData: FormData) {
     return { success: true };
 }
 
+/**
+ * Hapus data Kelas.
+ */
 export async function deleteClass(classId: string) {
     const supabase = createClient();
     await supabase.from('classes').delete().eq('id', classId);
@@ -222,6 +256,9 @@ export async function deleteClass(classId: string) {
     return { success: true };
 }
 
+/**
+ * Simpan atau perbarui data Mata Pelajaran.
+ */
 export async function saveSubject(formData: FormData) {
     const supabase = createClient();
     const subjectData = {
@@ -240,6 +277,9 @@ export async function saveSubject(formData: FormData) {
     return { success: true };
 }
 
+/**
+ * Simpan pengaturan absensi berbasis lokasi.
+ */
 export async function saveAttendanceSettings(formData: FormData) {
     const supabase = createClient();
     const settingsToSave = [
@@ -262,6 +302,9 @@ export async function saveAttendanceSettings(formData: FormData) {
     }
 }
 
+/**
+ * Update informasi dasar sekolah.
+ */
 export async function updateSchoolData(schoolData: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
     const supabase = createClient();
     const { data: adminUser } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
@@ -278,6 +321,9 @@ export async function updateSchoolData(schoolData: { schoolName: string, schoolA
     return { success: true };
 }
 
+/**
+ * Unggah gambar profil atau logo sekolah ke storage.
+ */
 export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'logo') {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -309,6 +355,9 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     return { success: true, url: publicUrl };
 }
 
+/**
+ * Simpan data hari libur (nasional/sekolah).
+ */
 export async function saveHoliday(holiday: { date: string, description: string, type: 'national' | 'school' }) {
     const supabase = createClient();
     await supabase.from('holidays').upsert(holiday, { onConflict: 'date' });
@@ -316,6 +365,9 @@ export async function saveHoliday(holiday: { date: string, description: string, 
     return { success: true };
 }
 
+/**
+ * Hapus data hari libur.
+ */
 export async function deleteHoliday(holidayId: string) {
     const supabase = createClient();
     await supabase.from('holidays').delete().eq('id', holidayId);
@@ -323,6 +375,9 @@ export async function deleteHoliday(holidayId: string) {
     return { success: true };
 }
 
+/**
+ * Simpan konfigurasi WhatsApp Gateway (Fonnte).
+ */
 export async function saveWhatsAppSettings(token: string, enabled: boolean, time: string, appUrl: string) {
     const supabase = createClient();
     const settings = [
@@ -340,6 +395,9 @@ export async function saveWhatsAppSettings(token: string, enabled: boolean, time
     return { success: true };
 }
 
+/**
+ * Kirim pesan tes WhatsApp via Fonnte.
+ */
 export async function sendTestWhatsApp(token: string, target: string) {
     const message = "🌟 *LAKUKELAS TEST NOTIFICATION* 🌟\n\nKoneksi WhatsApp Gateway Anda berfungsi dengan baik!";
     try {

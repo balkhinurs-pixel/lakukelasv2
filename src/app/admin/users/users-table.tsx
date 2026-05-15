@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -49,18 +48,6 @@ import { deleteUser, inviteTeacher, updateUserRole, updateStaffProfile } from "@
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-
-function FormattedDate({ dateString }: { dateString: string }) {
-    const [date, setDate] = React.useState('');
-    React.useEffect(() => {
-        if (dateString) {
-            setDate(format(new Date(dateString), 'dd MMMM yyyy', { locale: id }));
-        }
-    }, [dateString]);
-    
-    if (!dateString) return null;
-    return <>{date}</>;
-}
 
 const InviteTeacherDialog = ({ onInviteSuccess }: { onInviteSuccess: () => void }) => {
     const [open, setOpen] = React.useState(false);
@@ -207,7 +194,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         setLoading(userId);
         const result = await updateUserRole(userId, newRole);
         if (result.success) {
-            toast({ title: "Role Diperbarui", description: "Perubahan peran berhasil disimpan." });
+            toast({ title: "Role Diperbarui", description: `Pengguna kini menjadi ${newRole === 'admin' ? 'Admin' : newRole === 'headmaster' ? 'Kepala Sekolah' : 'Guru'}.` });
             router.refresh();
         } else {
             toast({ title: "Gagal", description: result.error, variant: "destructive" });
@@ -298,6 +285,38 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                     ))}
                 </TableBody>
             </Table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
+            {filteredUsers.map((user) => (
+                <Card key={user.id} className="p-4 border-slate-100 shadow-sm">
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="min-w-0">
+                            <p className="font-bold truncate">{user.full_name || 'N/A'}</p>
+                            <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
+                        </div>
+                        {user.role === 'admin' && <Badge className="bg-purple-600 text-[10px]">Admin</Badge>}
+                        {user.role === 'headmaster' && <Badge className="bg-amber-600 text-[10px]">Kepsek</Badge>}
+                        {user.role === 'teacher' && <Badge variant="outline" className="text-[10px]">Guru</Badge>}
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditingUser(user)}>
+                            <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="flex-1">Role</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'admin')}>Jadikan Admin</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'headmaster')}>Jadikan Kepsek</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'teacher')}>Jadikan Guru</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </Card>
+            ))}
         </div>
 
         {editingUser && <EditStaffDialog user={editingUser} open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)} />}
