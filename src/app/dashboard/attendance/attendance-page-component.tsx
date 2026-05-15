@@ -4,7 +4,7 @@
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, MessageSquare, ArrowUpCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, MessageSquare, ArrowUpCircle, Flag, School, Coffee } from "lucide-react";
 import { useSearchParams, useRouter } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import type { Student, Class, AttendanceHistoryEntry, Subject, StudentNote } from "@/lib/types";
+import type { Student, Class, AttendanceHistoryEntry, Subject, StudentNote, Holiday } from "@/lib/types";
 import { saveAttendance, addStudentNote } from "@/lib/actions";
 import { getLatestClassPresence } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
@@ -100,15 +100,16 @@ const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: s
     },
 ];
 
-const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId: string, value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', onChange: (studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => void }) => {
+const AttendanceInput = React.memo(({ studentId, value, onChange, disabled }: { studentId: string, value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', onChange: (studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => void, disabled?: boolean }) => {
     return (
-        <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+        <div className={cn("flex flex-wrap gap-2 justify-start sm:justify-end", disabled && "opacity-50 pointer-events-none")}>
         {attendanceOptions.map(opt => (
             <Button
                 key={opt.value}
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={disabled}
                 onClick={() => onChange(studentId, opt.value)}
                 className={cn(
                     "h-9 px-3 rounded-lg border text-sm font-medium transition-all duration-200 ease-in-out flex-shrink-0",
@@ -129,7 +130,7 @@ const AttendanceInput = React.memo(({ studentId, value, onChange }: { studentId:
 });
 AttendanceInput.displayName = 'AttendanceInput';
 
-const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNoteSaved: () => void }) => {
+const AddNoteDialog = ({ student, onNoteSaved, disabled }: { student: Student | null, onNoteSaved: () => void, disabled?: boolean }) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [note, setNote] = React.useState('');
     const [noteType, setNoteType] = React.useState<StudentNote['type']>('neutral');
@@ -160,7 +161,7 @@ const AddNoteDialog = ({ student, onNoteSaved }: { student: Student | null, onNo
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+                <Button variant="ghost" size="icon" disabled={disabled} className="h-8 w-8 shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100">
                     <MessageSquarePlus className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
@@ -210,7 +211,8 @@ export default function AttendancePageComponent({
     initialHistory,
     allStudents,
     activeSchoolYearName,
-    teacherName
+    teacherName,
+    holidays = []
 }: {
     classes: Class[];
     subjects: Subject[];
@@ -218,6 +220,7 @@ export default function AttendancePageComponent({
     allStudents: Student[];
     activeSchoolYearName: string;
     teacherName: string;
+    holidays?: Holiday[];
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -239,10 +242,8 @@ export default function AttendancePageComponent({
   const [currentPage, setCurrentPage] = React.useState(1);
   const ITEMS_PER_PAGE = 3;
 
-  // Track the last loaded state to prevent redundant updates and infinite loops
   const lastLoadedKeyRef = React.useRef<string>("");
 
-  // Fix hydration mismatch for date
   React.useEffect(() => {
     setDate(new Date());
   }, []);
@@ -250,20 +251,35 @@ export default function AttendancePageComponent({
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
 
-  // Derived state for students in selected class
   const students = React.useMemo(() => {
     if (!selectedClassId) return [];
     return allStudents.filter(s => s.class_id === selectedClassId);
   }, [allStudents, selectedClassId]);
+
+  const currentHoliday = React.useMemo(() => {
+      if (!date) return null;
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dbHoliday = holidays.find(h => h.date === dateStr);
+      if (dbHoliday) return dbHoliday;
+      
+      // Check for Sunday
+      if (date.getDay() === 0) {
+          return {
+              id: 'sunday',
+              date: dateStr,
+              description: "Hari Minggu - Libur Rutin",
+              type: 'school' as const
+          };
+      }
+      return null;
+  }, [date, holidays]);
   
-  // Effect to load attendance data (new or inherited)
   React.useEffect(() => {
-    if (!selectedClassId || !date || editingId) return;
+    if (!selectedClassId || !date || editingId || currentHoliday) return;
 
     const dateStr = format(date, 'yyyy-MM-dd');
     const currentKey = `${selectedClassId}-${dateStr}`;
     
-    // Prevent infinite loop by checking if we already loaded this specific combination
     if (lastLoadedKeyRef.current === currentKey) return;
     lastLoadedKeyRef.current = currentKey;
 
@@ -294,7 +310,7 @@ export default function AttendancePageComponent({
     };
     
     initForm();
-  }, [selectedClassId, date, editingId, students]);
+  }, [selectedClassId, date, editingId, students, currentHoliday]);
 
   React.useEffect(() => {
     setCurrentPage(1);
@@ -305,7 +321,7 @@ export default function AttendancePageComponent({
     setDate(new Date());
     setMeetingNumber("");
     setIsInherited(false);
-    lastLoadedKeyRef.current = ""; // Reset ref to allow re-initialization
+    lastLoadedKeyRef.current = "";
   }
 
   const handleAttendanceChange = React.useCallback((studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
@@ -357,6 +373,8 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
   };
 
   const handleSubmit = async () => {
+    if (currentHoliday) return;
+    
     if (!selectedClassId || !selectedSubjectId || !date || !meetingNumber) {
         toast({
             title: "Gagal Menyimpan",
@@ -631,6 +649,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   placeholder="e.g. 5" 
                   value={meetingNumber} 
                   onChange={(e) => setMeetingNumber(Number(e.target.value))}
+                  disabled={!!currentHoliday}
                   className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                 />
             </div>
@@ -639,7 +658,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
       </Card>
 
       {selectedClassId && (
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50 overflow-hidden">
           <CardHeader className="pb-4">
             <div className="flex flex-col items-center justify-center space-y-4">
               <div className="flex flex-col items-center gap-2">
@@ -648,19 +667,21 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                     textClassName="text-2xl sm:text-3xl text-slate-900"
                     underlineClassName="text-blue-500/40"
                 />
-                {isInherited && !editingId && (
+                {!currentHoliday && isInherited && !editingId && (
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 animate-pulse flex items-center gap-1.5 py-1 px-3 rounded-full shadow-sm">
                         <ArrowUpCircle className="w-3.5 h-3.5" />
                         Data disinkronkan dari jam sebelumnya
                     </Badge>
                 )}
               </div>
-              <CardDescription className="text-center">
-                Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.
-                <span className="ml-2 text-sm font-semibold text-blue-600 block sm:inline mt-1">
-                  ({students.length > 0 ? `${students.length} siswa terdaftar` : 'Memuat siswa...'})
-                </span>
-              </CardDescription>
+              {!currentHoliday && (
+                <CardDescription className="text-center">
+                    Pilih status kehadiran untuk setiap siswa. Nama siswa sudah diurutkan berdasarkan abjad.
+                    <span className="ml-2 text-sm font-semibold text-blue-600 block sm:inline mt-1">
+                    ({students.length > 0 ? `${students.length} siswa terdaftar` : 'Memuat siswa...'})
+                    </span>
+                </CardDescription>
+              )}
             </div>
           </CardHeader>
           <CardContent className="pt-0 overflow-hidden">
@@ -676,6 +697,32 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                         </div>
                       </div>
+                    </div>
+                </div>
+            ) : currentHoliday ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-6 px-4">
+                    <div className={cn(
+                        "p-8 rounded-[2.5rem] border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full max-w-2xl bg-white",
+                        currentHoliday.type === 'national' 
+                            ? "border-red-100 text-red-700" 
+                            : "border-indigo-100 text-indigo-700"
+                    )}>
+                        <div className={cn(
+                            "p-5 rounded-3xl text-white shadow-2xl shrink-0 -mt-16",
+                            currentHoliday.type === 'national' ? "bg-gradient-to-br from-red-500 to-rose-600" : "bg-gradient-to-br from-indigo-500 to-purple-600"
+                        )}>
+                            {currentHoliday.type === 'national' ? <Flag className="h-10 w-10" /> : currentHoliday.id === 'sunday' ? <Coffee className="h-10 w-10" /> : <School className="h-10 w-10" />}
+                        </div>
+                        <div className="pt-2">
+                            <Badge variant="outline" className={cn(
+                                "text-[10px] uppercase font-black tracking-[0.2em] px-3 py-1 mb-2 border-0",
+                                currentHoliday.type === 'national' ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-600"
+                            )}>
+                                {currentHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
+                            </Badge>
+                            <h3 className="font-black text-2xl leading-tight tracking-tight break-words">{currentHoliday.description}</h3>
+                            <p className="text-sm opacity-70 mt-3 font-medium">Aktivitas belajar mengajar dan presensi siswa ditiadakan untuk tanggal ini.</p>
+                        </div>
                     </div>
                 </div>
             ) : students.length > 0 ? (
@@ -758,7 +805,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 </div>
             )}
           </CardContent>
-          {students.length > 0 && (
+          {!currentHoliday && students.length > 0 && (
             <CardFooter className="border-t border-slate-200 bg-slate-50/50 px-6 py-4 rounded-b-xl">
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:justify-between sm:items-center">
                 <div className="flex flex-col sm:flex-row gap-3">
