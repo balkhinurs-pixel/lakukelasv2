@@ -26,11 +26,10 @@ export async function activateAccount(token: string) {
 
     const inputToken = token.trim().toUpperCase();
 
-    // 1. MASTER TOKEN FALLBACK (Jalan tengah untuk Admin/Database baru)
+    // 1. MASTER TOKEN FALLBACK (Admin-level privileges)
     const MASTER_TOKEN = "LAKU2025";
     if (inputToken === MASTER_TOKEN) {
-        // Gunakan upsert untuk menangani kasus jika baris profil belum dibuat oleh trigger
-        // Kita paksa data masuk dengan status Admin dan Aktif
+        // Master token automatically grants Admin role and sets activated to true
         const { error: masterError } = await supabase
             .from('profiles')
             .upsert({ 
@@ -45,7 +44,7 @@ export async function activateAccount(token: string) {
             console.error("Master activation error:", masterError);
             return { 
                 success: false, 
-                error: "Gagal membuat profil Admin. Pastikan skrip SQL terbaru sudah dijalankan di Supabase." 
+                error: "Gagal membuat profil Admin via Master Token." 
             };
         }
 
@@ -53,7 +52,7 @@ export async function activateAccount(token: string) {
         return { success: true };
     }
 
-    // 2. DATABASE DRIVEN TOKEN (Logika Standar untuk Guru)
+    // 2. DATABASE DRIVEN TOKEN (Standard logic for Teachers)
     const { data: tokenData, error: tokenError } = await supabase
         .from('activation_tokens')
         .select('id')
@@ -65,7 +64,7 @@ export async function activateAccount(token: string) {
         return { success: false, error: "Token tidak valid atau sudah pernah digunakan." };
     }
 
-    // Tandai token sebagai terpakai
+    // Claim the token
     const { error: tokenUpdateError } = await supabase
         .from('activation_tokens')
         .update({ 
@@ -78,7 +77,7 @@ export async function activateAccount(token: string) {
         return { success: false, error: "Gagal memproses klaim token." };
     }
 
-    // Aktifkan profil user
+    // Activate the profile
     const { error: profileError } = await supabase
         .from('profiles')
         .update({ is_activated: true })

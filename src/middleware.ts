@@ -51,20 +51,20 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .maybeSingle();
 
-    // Jika profil belum ada (proses trigger di DB mungkin butuh sedetik), 
-    // atau jika user login via google dan baru pertama kali.
+    // Default values if profile hasn't been created yet
     const isActivated = profile?.is_activated ?? false;
     const role = profile?.role || 'teacher';
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
 
-    // Rute aktivasi: Jika sudah aktif, jangan boleh balik ke /activate
-    if (pathname === '/activate' && isActivated) {
+    // Rute aktivasi: Jika sudah aktif atau dia adalah ADMIN, jangan boleh balik ke /activate
+    if (pathname === '/activate' && (isActivated || isAdmin)) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // Gatekeeper Aktivasi: Jika belum aktif, paksa ke /activate (kecuali user adalah admin pertama)
-    if (!isActivated && pathname !== '/activate' && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
+    // Gatekeeper Aktivasi: Hanya untuk non-Admin. 
+    // Jika bukan Admin dan belum aktif, paksa ke /activate
+    if (!isAdmin && !isActivated && pathname !== '/activate' && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
         return NextResponse.redirect(new URL('/activate', request.url));
     }
 

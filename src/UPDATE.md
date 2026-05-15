@@ -1,6 +1,20 @@
 
 # Log Pembaruan LakuKelas
 
+## V10.0: Privilese Admin & Bypass Aktivasi
+Menyempurnakan alur pendaftaran untuk administrator.
+
+### 1. Alur Khusus Admin
+- **Bypass Aktivasi**: Pengguna dengan peran `admin` kini secara otomatis melewati layar aktivasi token. Status `is_activated` tidak lagi menjadi penghalang bagi Admin.
+- **Auto-Admin First User**: Pendaftar pertama pada database baru kini 100% diatur sebagai Admin Aktif melalui *trigger* database dan logika *middleware*.
+- **Middleware Update**: Logika pemeriksaan `is_activated` pada `middleware.ts` kini menyertakan pengecualian untuk `role === 'admin'`.
+
+### 2. Master Token Re-Alignment
+- **LAKU2025**: Penggunaan Master Token darurat sekarang secara otomatis menetapkan `role = 'admin'` dan `is_activated = true` secara permanen pada database.
+- **Upsert Reliability**: Logika pendaftaran Master Token menggunakan `upsert` untuk menjamin pembuatan profil meskipun *trigger* database belum sempat berjalan.
+
+---
+
 ## V9.9: Perbaikan Kritis Master Token
 Memastikan instalasi baru dapat diaktifkan tanpa kendala profil.
 
@@ -21,18 +35,3 @@ Menyediakan jalur aktivasi darurat untuk Admin/Database baru.
 - **Master Token**: Menambahkan token hardcoded **`LAKU2025`** yang dapat digunakan di halaman `/activate`.
 - **Auto-Promotion**: Menggunakan Master Token otomatis menetapkan pengguna tersebut sebagai **Admin** dan status **Aktif**, tanpa bergantung pada data di tabel `activation_tokens`.
 - **Reliability**: Solusi ini menjamin pendaftar pertama di database mana pun (lama maupun baru) tidak akan pernah terkunci dari sistem.
-
----
-
-## V9.7: Perbaikan Gatekeeper Aktivasi (CRITICAL)
-Menyelesaikan masalah "ayam dan telur" pada pendaftaran pertama.
-
-### 1. Fix First-User Auto-Admin
-- **Logic Refinement**: Memperbarui trigger `handle_new_user` di `schema.sql` untuk menghitung jumlah profil (`p_count`) secara eksplisit sebelum melakukan penyisipan data.
-- **Auto-Activation**: Pendaftar pertama pada database kosong kini 100% dipastikan mendapatkan `role = 'admin'` and `is_activated = true` secara otomatis, sehingga tidak akan terjebak di halaman aktivasi.
-
-### 2. Middleware Sync
-- **Reliability**: Mengoptimalkan pemeriksaan `is_activated` di `middleware.ts` untuk menghindari loop pengalihan jika data profil belum sepenuhnya tersinkronisasi saat sesi dibuat.
-
-### 3. Izin RLS Token
-- **Akses Aktivasi**: Memperbarui kebijakan RLS pada tabel `activation_tokens` agar pendaftar baru (status non-aktif) diperbolehkan mencari token yang belum terpakai (`used_by IS NULL`) guna keperluan validasi di halaman `/activate`.
