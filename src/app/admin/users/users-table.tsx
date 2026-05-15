@@ -42,7 +42,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus, GraduationCap, Edit, Phone, ShieldAlert, ShieldX } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Search, UserPlus, GraduationCap, Edit, User, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
 import { deleteUser, inviteTeacher, updateUserRole, updateStaffProfile } from "@/lib/actions/admin";
@@ -163,7 +163,6 @@ const EditStaffDialog = ({ user, open, onOpenChange }: { user: Profile, open: bo
         </Dialog>
     )
 }
-
 
 export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
     const router = useRouter();

@@ -112,13 +112,12 @@ export async function inviteTeacher(fullName: string, email: string) {
 }
 
 /**
- * Hapus pengguna dari Tabel Profil (Logika hapus profil).
+ * Hapus profil pengguna.
  */
 export async function deleteUser(userId: string) {
     const supabase = createClient();
     
-    // Kita menghapus dari tabel profiles. Tabel Auth.users hanya bisa dihapus via Service Role.
-    // Jika profil dihapus, RLS akan otomatis menendang user tersebut dari dashboard.
+    // Hapus dari tabel profiles
     const { error } = await supabase
         .from('profiles')
         .delete()
