@@ -224,10 +224,9 @@ export default function AttendancePageComponent({
   const preselectedClassId = searchParams.get('classId');
   const preselectedSubjectId = searchParams.get('subjectId');
 
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [selectedClassId, setSelectedClassId] = React.useState<string | undefined>(preselectedClassId || undefined);
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<string | undefined>(preselectedSubjectId || undefined);
-  const [students, setStudents] = React.useState<Student[]>([]);
   const [meetingNumber, setMeetingNumber] = React.useState<number | "">("");
   const [attendance, setAttendance] = React.useState<Map<string, 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'>>(new Map());
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -240,65 +239,81 @@ export default function AttendancePageComponent({
   const [currentPage, setCurrentPage] = React.useState(1);
   const ITEMS_PER_PAGE = 3;
 
+  // Track the last loaded state to prevent redundant updates and infinite loops
+  const lastLoadedKeyRef = React.useRef<string>("");
+
+  // Fix hydration mismatch for date
+  React.useEffect(() => {
+    setDate(new Date());
+  }, []);
+
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
-  
-  React.useEffect(() => {
-    const initForm = async () => {
-        if (selectedClassId) {
-          setLoading(true);
-          const filteredStudents = allStudents.filter(s => s.class_id === selectedClassId);
-          setStudents(filteredStudents);
-          
-          if (!editingId) {
-            const newAttendance = new Map();
-            filteredStudents.forEach(student => {
-              newAttendance.set(student.id, 'Hadir');
-            });
-            setAttendance(newAttendance);
-            setIsInherited(false);
 
-            if (date) {
-                const dateStr = format(date, 'yyyy-MM-dd');
-                const inherited = await getLatestClassPresence(selectedClassId, dateStr);
-                if (Object.keys(inherited).length > 0) {
-                    setAttendance(prev => {
-                        const next = new Map(prev);
-                        Object.entries(inherited).forEach(([id, status]) => {
-                            next.set(id, status as any);
-                        });
-                        return next;
-                    });
-                    setIsInherited(true);
-                }
-            }
+  // Derived state for students in selected class
+  const students = React.useMemo(() => {
+    if (!selectedClassId) return [];
+    return allStudents.filter(s => s.class_id === selectedClassId);
+  }, [allStudents, selectedClassId]);
+  
+  // Effect to load attendance data (new or inherited)
+  React.useEffect(() => {
+    if (!selectedClassId || !date || editingId) return;
+
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const currentKey = `${selectedClassId}-${dateStr}`;
+    
+    // Prevent infinite loop by checking if we already loaded this specific combination
+    if (lastLoadedKeyRef.current === currentKey) return;
+    lastLoadedKeyRef.current = currentKey;
+
+    const initForm = async () => {
+        setLoading(true);
+        try {
+          const newAttendance = new Map();
+          students.forEach(student => {
+            newAttendance.set(student.id, 'Hadir');
+          });
+          
+          setIsInherited(false);
+          const inherited = await getLatestClassPresence(selectedClassId, dateStr);
+          
+          if (Object.keys(inherited).length > 0) {
+            Object.entries(inherited).forEach(([id, status]) => {
+                newAttendance.set(id, status as any);
+            });
+            setIsInherited(true);
           }
+          
+          setAttendance(newAttendance);
+        } catch (error) {
+          console.error("Failed to initialize attendance form:", error);
+        } finally {
           setLoading(false);
-        } else {
-          setStudents([]);
         }
     };
+    
     initForm();
-  }, [selectedClassId, date, editingId, allStudents]);
+  }, [selectedClassId, date, editingId, students]);
 
   React.useEffect(() => {
     setCurrentPage(1);
   }, [selectedClassId, selectedSubjectId]);
 
-  const resetForm = (studentList: Student[]) => {
+  const resetForm = () => {
     setEditingId(null);
     setDate(new Date());
     setMeetingNumber("");
-    const newAttendance = new Map();
-    studentList.forEach(student => {
-      newAttendance.set(student.id, 'Hadir');
-    });
-    setAttendance(newAttendance);
     setIsInherited(false);
+    lastLoadedKeyRef.current = ""; // Reset ref to allow re-initialization
   }
 
   const handleAttendanceChange = React.useCallback((studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
-    setAttendance(prev => new Map(prev.set(studentId, status)));
+    setAttendance(prev => {
+        const next = new Map(prev);
+        next.set(studentId, status);
+        return next;
+    });
   }, []);
 
   const getStudentName = (studentId: string) => {
@@ -376,7 +391,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
         description: `Presensi telah berhasil disimpan.`,
       });
       router.refresh();
-      resetForm(students);
+      resetForm();
     } else {
       toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
     }
@@ -390,9 +405,6 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
       }
       setSelectedSubjectId(entry.subject_id);
       
-      const studentsForClass = allStudents.filter(s => s.class_id === entry.class_id);
-      setStudents(studentsForClass);
-      
       setEditingId(entry.id); 
       setDate(parseISO(entry.date));
       setMeetingNumber(entry.meeting_number);
@@ -405,6 +417,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
           h.meeting_number === entry.meeting_number
       );
       
+      const studentsForClass = allStudents.filter(s => s.class_id === entry.class_id);
       studentsForClass.forEach(student => {
         const studentRecord = sessionRecords.find(h => h.student_id === student.id);
         loadedAttendance.set(student.id, studentRecord ? studentRecord.status : 'Hadir');
@@ -768,7 +781,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   {editingId && (
                     <Button 
                       variant="outline" 
-                      onClick={() => resetForm(students)} 
+                      onClick={resetForm} 
                       disabled={loading}
                       className="border-slate-300 hover:bg-slate-50"
                     >
