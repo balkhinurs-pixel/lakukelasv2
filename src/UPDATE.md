@@ -1,6 +1,16 @@
 
 # Log Pembaruan LakuKelas
 
+## V9.8: Solusi Jalan Tengah - Master Token
+Menyediakan jalur aktivasi darurat untuk Admin/Database baru.
+
+### 1. Jalur Darurat Aktivasi
+- **Master Token**: Menambahkan token hardcoded **`LAKU2025`** yang dapat digunakan di halaman `/activate`.
+- **Auto-Promotion**: Menggunakan Master Token otomatis menetapkan pengguna tersebut sebagai **Admin** dan status **Aktif**, tanpa bergantung pada data di tabel `activation_tokens`.
+- **Reliability**: Solusi ini menjamin pendaftar pertama di database mana pun (lama maupun baru) tidak akan pernah terkunci dari sistem.
+
+---
+
 ## V9.7: Perbaikan Gatekeeper Aktivasi (CRITICAL)
 Menyelesaikan masalah "ayam dan telur" pada pendaftaran pertama.
 
