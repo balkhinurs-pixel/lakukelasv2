@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -7,7 +8,6 @@ import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianTime, createIndonesianTimestamp } from './timezone';
-import { syncNationalHolidaysManual } from './actions/admin';
 
 // Helper function to get active school year from global settings
 export async function getActiveSchoolYearId(): Promise<string | null> {
@@ -37,23 +37,32 @@ export async function activateAccount(token: string) {
         return { success: false, error: "Token tidak valid atau sudah pernah digunakan." };
     }
 
-    // 2. Tandai token sebagai terpakai
+    // 2. Tandai token sebagai terpakai oleh user ini
     const { error: tokenUpdateError } = await supabase
         .from('activation_tokens')
-        .update({ used_by: user.id, used_at: new Date().toISOString() })
+        .update({ 
+            used_by: user.id, 
+            used_at: new Date().toISOString() 
+        })
         .eq('id', tokenData.id);
 
-    if (tokenUpdateError) return { success: false, error: "Gagal memproses token." };
+    if (tokenUpdateError) {
+        console.error("Token update error:", tokenUpdateError);
+        return { success: false, error: "Gagal memproses klaim token." };
+    }
 
-    // 3. Aktifkan profil
+    // 3. Aktifkan profil user
     const { error: profileError } = await supabase
         .from('profiles')
         .update({ is_activated: true })
         .eq('id', user.id);
 
-    if (profileError) return { success: false, error: "Gagal memperbarui status akun." };
+    if (profileError) {
+        console.error("Profile activation error:", profileError);
+        return { success: false, error: "Gagal memperbarui status akun menjadi aktif." };
+    }
 
-    // Revalidate seluruh layout agar middleware mendapatkan data terbaru
+    // Revalidate seluruh cache agar middleware mendeteksi perubahan status
     revalidatePath('/', 'layout');
     return { success: true };
 }
@@ -105,7 +114,6 @@ export async function deleteJournal(journalId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    // RLS handles the permission check (Owner or Admin)
     const { error } = await supabase.from('journal_entries').delete().eq('id', journalId);
 
     if (error) {
@@ -156,7 +164,6 @@ export async function deleteAgenda(agendaId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    // RLS handles the permission check (Owner or Admin)
     const { error } = await supabase.from('agendas').delete().eq('id', agendaId);
 
     if (error) {
@@ -188,7 +195,6 @@ export async function saveAttendance(formData: FormData) {
         return { success: false, error: "Data tidak lengkap." };
     }
     
-    // For editing, we delete existing records and insert new ones
     const original_date = formData.get('original_date');
     if (original_date) {
         const originalData = {
@@ -329,7 +335,6 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
     
     const bucket = 'avatars';
 
-    // --- STEP 1: Hapus file lama jika ada ---
     try {
         const { data: profile } = await supabase
             .from('profiles')
@@ -338,21 +343,16 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
             .single();
 
         if (profile?.avatar_url) {
-            // Ekstrak path file dari URL publik
-            // URL format: .../storage/v1/object/public/avatars/USER_ID/filename.ext
             const urlParts = profile.avatar_url.split('/avatars/');
             if (urlParts.length > 1) {
                 const oldFilePath = urlParts[1];
                 await supabase.storage.from(bucket).remove([oldFilePath]);
-                console.log(`[STORAGE] Deleted old avatar: ${oldFilePath}`);
             }
         }
     } catch (err) {
         console.error("Error during old image cleanup:", err);
-        // Lanjutkan saja jika gagal hapus file lama, jangan batalkan upload baru
     }
 
-    // --- STEP 2: Unggah file baru ---
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/avatar_${Date.now()}.${fileExt}`;
     
@@ -364,10 +364,6 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
         });
         
         if (uploadError) {
-            console.error("Upload error details:", uploadError);
-            if (uploadError.message.includes('bucket not found')) {
-                return { success: false, error: "Storage bucket 'avatars' belum dibuat di Supabase." };
-            }
             return { success: false, error: `Gagal mengunggah: ${uploadError.message}` };
         }
 
@@ -378,7 +374,6 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
         }).eq('id', user.id);
 
         if (dbError) {
-            console.error("DB update error:", dbError);
             return { success: false, error: "Gagal menyimpan URL foto ke database." };
         }
         
@@ -386,7 +381,6 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
         revalidatePath('/dashboard');
         return { success: true, url: publicUrl };
     } catch (err: any) {
-        console.error("Unexpected upload error:", err);
         return { success: false, error: "Terjadi kesalahan sistem saat mengunggah." };
     }
 }
@@ -437,7 +431,6 @@ export async function importStudents(classId: string, students: StudentImport[])
         failures: [] as { name: string, nis: string, reason: string }[],
     };
 
-    // Fetch existing NIS for this teacher to prevent duplicates
     const { data: existingStudents, error: fetchError } = await supabase
         .from('students')
         .select('nis');
@@ -471,8 +464,6 @@ export async function importStudents(classId: string, students: StudentImport[])
         const { error } = await supabase.from('students').insert(studentsToInsert);
 
         if (error) {
-            console.error('Batch insert error:', error);
-            // Since it's a batch, if it fails, all fail.
             report.failureCount += studentsToInsert.length;
             report.failures.push(...studentsToInsert.map(s => ({ name: s.name, nis: s.nis, reason: "Gagal menyimpan ke database." })));
         } else {
@@ -493,7 +484,6 @@ export async function moveStudents(studentIds: string[], newClassId: string) {
         .in('id', studentIds);
     
     if (error) {
-        console.error("Error moving students:", error);
         return { success: false, error: "Gagal memindahkan siswa." };
     }
 
@@ -510,7 +500,6 @@ export async function graduateStudents(studentIds: string[]) {
         .in('id', studentIds);
 
     if (error) {
-        console.error("Error graduating students:", error);
         return { success: false, error: "Gagal meluluskan siswa." };
     }
     
@@ -532,7 +521,6 @@ export async function updateStudentsStatus(studentIds: string[], status: 'dropou
         .in('id', studentIds);
 
     if (error) {
-        console.error(`Error updating students status to ${status}:`, error);
         return { success: false, error: `Gagal memperbarui status siswa.` };
     }
     
@@ -550,26 +538,13 @@ export async function createSchoolYear(startYear: number) {
     const ganjilName = `${startYear}/${startYear + 1} - Ganjil`;
     const genapName = `${startYear}/${startYear + 1} - Genap`;
 
-    // 1. Tambahkan Tahun Ajaran
     const { error } = await supabase.from('school_years').insert([
         { name: ganjilName, teacher_id: user.id },
         { name: genapName, teacher_id: user.id }
     ]);
     
     if (error) {
-        console.error("Error creating school year:", error);
         return { success: false, error: `Gagal membuat tahun ajaran: ${error.message}` };
-    }
-
-    // 2. Trigger Sinkronisasi Hari Libur Otomatis
-    // Ini memastikan saat tahun ajaran baru dibuat, data libur 2025-2026 langsung tersedia.
-    // Tidak akan dobel karena menggunakan logika 'upsert' di admin.ts.
-    try {
-        await syncNationalHolidaysManual();
-        console.log('[AUTO-SYNC] Holidays synced successfully after school year creation.');
-    } catch (syncErr) {
-        console.error('[AUTO-SYNC-ERR] Failed to sync holidays automatically:', syncErr);
-        // Tetap return success karena tahun ajaran berhasil dibuat
     }
     
     revalidatePath('/admin/roster/school-year');
@@ -583,7 +558,6 @@ export async function setActiveSchoolYear(schoolYearId: string) {
         .upsert({ key: 'active_school_year_id', value: schoolYearId });
 
     if (error) {
-        console.error("Error setting active school year:", error);
         return { success: false, error: "Gagal mengatur tahun ajaran aktif." };
     }
 
@@ -598,8 +572,6 @@ export async function recordTeacherAttendance(formData: FormData) {
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
     const attendanceType = formData.get('type') as 'in' | 'out' | 'leave';
-    
-    // Get current time in Indonesian timezone (GMT+7)
     const indonesianTime = getIndonesianTime();
     const currentTime = format(indonesianTime, 'HH:mm:ss');
     const today = format(indonesianTime, 'yyyy-MM-dd');
@@ -627,7 +599,6 @@ export async function recordTeacherAttendance(formData: FormData) {
                 .eq('id', existingAttendance.id);
             
             if (updateError) {
-                console.error('Error updating leave status:', updateError);
                 return { success: false, error: "Gagal memperbarui status izin." };
             }
         } else {
@@ -641,7 +612,6 @@ export async function recordTeacherAttendance(formData: FormData) {
                 });
 
             if (insertError) {
-                console.error('Error recording leave:', insertError);
                 return { success: false, error: "Gagal menyimpan pengajuan izin." };
             }
         }
@@ -652,7 +622,6 @@ export async function recordTeacherAttendance(formData: FormData) {
     const userLatitude = parseFloat(formData.get('latitude') as string);
     const userLongitude = parseFloat(formData.get('longitude') as string);
 
-    // Get attendance settings from database
     const { data: settings, error: settingsError } = await supabase
         .from('settings')
         .select('key, value')
@@ -695,13 +664,11 @@ export async function recordTeacherAttendance(formData: FormData) {
     if (attendanceType === 'in') {
         const checkInStart = attendanceSettings.check_in_start || '06:30';
         const checkInDeadline = attendanceSettings.check_in_deadline || '07:15';
-        
         const currentTimeOnly = format(indonesianTime, 'HH:mm');
         
         if (currentTimeOnly < checkInStart) {
             return { success: false, error: `Absen masuk belum dibuka. Mulai jam ${checkInStart}.` };
         }
-        
         if (currentTimeOnly > checkInDeadline) {
             status = 'Terlambat';
         }
@@ -723,7 +690,6 @@ export async function recordTeacherAttendance(formData: FormData) {
                 });
 
             if (insertError) {
-                console.error('Error recording check-in:', insertError);
                 return { success: false, error: "Gagal menyimpan absen masuk." };
             }
         } else {
@@ -741,7 +707,6 @@ export async function recordTeacherAttendance(formData: FormData) {
                 .eq('id', existingAttendance.id);
 
             if (updateError) {
-                console.error('Error recording check-out:', updateError);
                 return { success: false, error: "Gagal menyimpan absen pulang." };
             }
         }
@@ -750,39 +715,23 @@ export async function recordTeacherAttendance(formData: FormData) {
         revalidatePath('/admin');
         revalidatePath('/admin/teacher-attendance');
         
-        const result = { 
+        return { 
             success: true, 
             message: `Absen ${attendanceType === 'in' ? 'masuk' : 'pulang'} berhasil dicatat.`,
-            status: status,
-            distance: Math.round(distance)
+            status: status
         };
-        
-        return result;
     } catch (error) {
-        console.error('❌ Unexpected error in attendance recording:', error);
         return { success: false, error: "Terjadi kesalahan saat menyimpan absensi." };
     }
 }
 
-function calculateDistance(
-    lat1: number, 
-    lon1: number, 
-    lat2: number, 
-    lon2: number
-): number {
-    const R = 6371000; // Earth's radius in meters
-    const dLat = toRadians(lat2 - lat1);
-    const dLon = toRadians(lon2 - lon1);
-    const a = 
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; 
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in meters
-}
-
-function toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
+    return R * c;
 }
 
 export async function saveMaterial(formData: FormData) {
@@ -800,10 +749,6 @@ export async function saveMaterial(formData: FormData) {
         teacher_id: user.id,
     };
 
-    if (!materialData.class_id || !materialData.subject_id || !materialData.title || !materialData.link_url) {
-        return { success: false, error: "Data tidak lengkap. Harap isi semua kolom wajib." };
-    }
-
     let error;
     if (materialData.id) {
         const { error: updateError } = await supabase.from('materials').update(materialData).eq('id', materialData.id);
@@ -814,7 +759,6 @@ export async function saveMaterial(formData: FormData) {
     }
 
     if (error) {
-        console.error("Error saving material:", error);
         return { success: false, error: "Gagal menyimpan materi." };
     }
 
@@ -827,11 +771,9 @@ export async function deleteMaterial(materialId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    // RLS handles the permission check (Owner or Admin)
     const { error } = await supabase.from('materials').delete().eq('id', materialId);
 
     if (error) {
-        console.error("Error deleting material:", error);
         return { success: false, error: "Gagal menghapus materi." };
     }
     revalidatePath('/dashboard/materials');

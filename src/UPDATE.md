@@ -1,33 +1,24 @@
+
 # Log Pembaruan LakuKelas
 
-## V9.5: Aktivasi & Redirection Fix (TERBARU)
+## V9.6: Perbaikan Logika Aktivasi & Dashboard Admin (TERBARU)
+Peningkatan pada kejelasan sistem token dan keandalan aktivasi otomatis.
+
+### 1. Fix First-User Auto-Admin
+- **Logic Correction**: Menggunakan variabel `is_first_user` di dalam trigger `handle_new_user` untuk memastikan deteksi tabel kosong (0 profile) benar-benar akurat sebelum menyematkan role `Admin`. Ini menyelesaikan masalah pendaftar pertama yang tetap diminta token pada database baru.
+
+### 2. Dashboard Admin: Token Clarity
+- **Visual Status**: Card token kini memiliki warna yang memudar (opacity) dan label "Sudah Terpakai" yang jelas untuk membedakan token lama dan baru.
+- **Used-By tracking**: Menambahkan tampilan nama staf pengajar yang telah mengklaim token tersebut, mempermudah admin melakukan audit pendaftaran.
+
+### 3. Izin RLS Token
+- **Akses Aktivasi**: Memperbarui kebijakan RLS pada tabel `activation_tokens` agar pengguna `authenticated` yang baru mendaftar (status non-aktif) diperbolehkan mencari token yang belum terpakai (`used_by IS NULL`) guna keperluan validasi di halaman `/activate`.
+
+---
+
+## V9.5: Aktivasi & Redirection Fix
 Perbaikan pada alur kerja setelah aktivasi akun.
 
 ### 1. Perbaikan Redirection
 - **Hard Reload**: Mengganti `router.push` dengan `window.location.href` pada halaman aktivasi untuk memastikan navigasi memicu pemindaian ulang oleh *middleware*. Ini menyelesaikan masalah pengguna yang tetap tertahan di halaman `/activate` padahal sudah berhasil aktivasi.
 - **Revalidation**: Menambahkan `revalidatePath('/', 'layout')` pada server action `activateAccount` untuk memastikan cache server dibersihkan segera setelah status akun berubah.
-
----
-
-## V9.4: Aktivasi & Keamanan Fix
-Perbaikan krusial pada sistem aktivasi token dan monitoring.
-
-### 1. Perbaikan Token Aktivasi
-- **RLS Fix**: Memperbarui kebijakan Row Level Security pada tabel `activation_tokens`. Sebelumnya, pengguna baru tidak bisa "melihat" token karena batasan keamanan, sehingga muncul pesan "Token tidak valid".
-- **Claim Logic**: Menambahkan izin `UPDATE` bagi pengguna terautentikasi untuk mengklaim token yang belum terpakai.
-
-### 2. Keamanan & Pendaftaran
-- **First-User Auto-Admin**: Pendaftar pertama di database otomatis menjadi `Admin` yang sudah `Aktif`.
-- **Token-Based Auth**: Pengguna selanjutnya wajib memasukkan token 8-digit dari Admin untuk aktivasi akun.
-
-### 3. Monitoring & Performa
-- **Aktivitas Guru Fix**: Mengaktifkan `SECURITY DEFINER` pada fungsi agregasi database untuk memastikan data statistik guru terdeteksi 100% oleh akun Monitoring.
-
----
-
-## V9.3: Gatekeeper & UI Navigation
-Implementasi sistem keamanan token aktivasi dan penyelarasan navigasi admin.
-
-### 1. Navigasi & UI
-- **Menu Token Aktivasi**: Menambahkan tautan menu ke `/admin/codes` pada sidebar desktop dan drawer mobile layout Admin.
-- **WhatsApp Integration**: Tombol kirim token via WhatsApp dengan template pesan profesional.
