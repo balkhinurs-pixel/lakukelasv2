@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react";
@@ -19,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -36,23 +35,30 @@ import {
     Printer,
     BookOpen,
     School,
-    FileSpreadsheet,
-    AlertCircle
+    FileSpreadsheet
 } from "lucide-react";
 import type { Class, Subject, Profile, SchoolYear } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import { getReportsData, getGradesReportList, getJournalReportList, getAttendanceSemesterMatrix } from "@/lib/data";
+import { getGradesReportList, getJournalReportList, getAttendanceSemesterMatrix } from "@/lib/data";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
 }
 
-type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
+type ReportsData = {
+    summaryCards: {
+        overallAttendanceRate: string;
+        overallAverageGrade: string;
+        totalJournals: number;
+        activeSchoolYearId: string;
+        activeSchoolYearName: string;
+    };
+    uniqueAssessments: string[];
+};
 
 export default function ReportsPageComponent({
     classes,
@@ -112,18 +118,18 @@ export default function ReportsPageComponent({
 
         const generatePDFContent = (head: any[][], body: any[][], title: string) => {
             if (schoolProfile) {
-                doc.setFontSize(16).setFont(undefined, 'bold');
+                doc.setFontSize(16).setFont('helvetica', 'bold');
                 doc.text((schoolProfile.school_name || "LAKUKELAS").toUpperCase(), margin + 25, margin + 8);
-                doc.setFontSize(10).setFont(undefined, 'normal');
+                doc.setFontSize(10).setFont('helvetica', 'normal');
                 doc.text(schoolProfile.school_address || "Alamat Sekolah", margin + 25, margin + 14);
                 doc.setLineWidth(0.5);
                 doc.line(margin, margin + 22, pageWidth - margin, margin + 22);
             }
 
-            doc.setFontSize(12).setFont(undefined, 'bold');
+            doc.setFontSize(12).setFont('helvetica', 'bold');
             doc.text(title, pageWidth / 2, margin + 32, { align: 'center' });
             
-            doc.setFontSize(10).setFont(undefined, 'normal');
+            doc.setFontSize(10).setFont('helvetica', 'normal');
             doc.text(`Tahun Ajaran: ${summaryCards.activeSchoolYearName}`, margin, margin + 42);
             doc.text(`Mata Pelajaran: ${subjects.find(s => s.id === selectedSubject)?.name}`, margin, margin + 47);
             doc.text(`Guru Pengampu: ${profile.full_name}`, pageWidth - margin - 80, margin + 42);
@@ -161,11 +167,11 @@ export default function ReportsPageComponent({
             doc.text("Kepala Sekolah,", margin + 20, finalY + 6);
             doc.text("Guru Mata Pelajaran,", pageWidth - margin - 60, finalY + 6);
 
-            doc.setFont(undefined, 'bold');
+            doc.setFont('helvetica', 'bold');
             doc.text(schoolProfile?.headmaster_name || "(...........................)", margin + 20, finalY + 32);
             doc.text(profile.full_name, pageWidth - margin - 60, finalY + 32);
             
-            doc.setFont(undefined, 'normal').setFontSize(9);
+            doc.setFont('helvetica', 'normal').setFontSize(9);
             doc.text(`NIP. ${schoolProfile?.headmaster_nip || "-"}`, margin + 20, finalY + 37);
             doc.text(`NIP. ${profile.nip || "-"}`, pageWidth - margin - 60, finalY + 37);
 
