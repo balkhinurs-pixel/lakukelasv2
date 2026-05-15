@@ -4,7 +4,7 @@
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, MessageSquare, ArrowUpCircle, Flag, School, Coffee } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, MessageSquare, ArrowUpCircle, Flag, School, Coffee, AlertTriangle } from "lucide-react";
 import { useSearchParams, useRouter } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import type { Student, Class, AttendanceHistoryEntry, Subject, StudentNote, Holiday } from "@/lib/types";
+import type { Student, Class, AttendanceHistoryEntry, Subject, StudentNote, Holiday, ScheduleItem } from "@/lib/types";
 import { saveAttendance, addStudentNote } from "@/lib/actions";
 import { getLatestClassPresence } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +68,7 @@ import {
 } from "@/components/ui/pagination";
 import { AnimatedText } from "@/components/ui/animated-underline-text-one";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
+import { getIndonesianDayFromDate } from "@/lib/timezone";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -212,7 +213,8 @@ export default function AttendancePageComponent({
     allStudents,
     activeSchoolYearName,
     teacherName,
-    holidays = []
+    holidays = [],
+    teacherSchedule = []
 }: {
     classes: Class[];
     subjects: Subject[];
@@ -221,6 +223,7 @@ export default function AttendancePageComponent({
     activeSchoolYearName: string;
     teacherName: string;
     holidays?: Holiday[];
+    teacherSchedule?: ScheduleItem[];
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -273,6 +276,17 @@ export default function AttendancePageComponent({
       }
       return null;
   }, [date, holidays]);
+
+  const isScheduledToday = React.useMemo(() => {
+    if (!date || !selectedClassId || !selectedSubjectId || teacherSchedule.length === 0) return true;
+    
+    const dayName = getIndonesianDayFromDate(format(date, 'yyyy-MM-dd'));
+    return teacherSchedule.some(item => 
+        item.day === dayName && 
+        item.class_id === selectedClassId && 
+        item.subject_id === selectedSubjectId
+    );
+  }, [date, selectedClassId, selectedSubjectId, teacherSchedule]);
   
   React.useEffect(() => {
     if (!selectedClassId || !date || editingId || currentHoliday) return;
@@ -654,6 +668,15 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 />
             </div>
           </div>
+          
+          {selectedClassId && selectedSubjectId && !currentHoliday && !isScheduledToday && !editingId && (
+            <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1.5 py-1.5 px-4 rounded-xl shadow-sm w-full sm:w-fit">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="font-semibold">Perhatian: Anda tidak memiliki jadwal mengajar Mapel ini di Kelas ini pada hari {date ? getIndonesianDayFromDate(format(date, 'yyyy-MM-dd')) : 'tersebut'}.</span>
+                </Badge>
+            </div>
+          )}
         </CardContent>
       </Card>
 

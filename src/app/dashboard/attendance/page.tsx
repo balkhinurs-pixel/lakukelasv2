@@ -1,8 +1,8 @@
-import { getClasses, getSubjects, getAttendanceHistory, getUserProfile, getActiveStudents, getActiveSchoolYearName, getHolidays } from "@/lib/data";
+import { getClasses, getSubjects, getAttendanceHistory, getUserProfile, getActiveStudents, getActiveSchoolYearName, getHolidays, getSchedule } from "@/lib/data";
 import AttendancePageComponent from "./attendance-page-component";
 
 export default async function AttendancePage() {
-    const [classes, subjects, history, profile, allStudents, activeSchoolYearName, holidays] = await Promise.all([
+    const [classes, subjects, history, profile, allStudents, activeSchoolYearName, holidays, schedule] = await Promise.all([
         getClasses(),
         getSubjects(),
         getAttendanceHistory(),
@@ -10,6 +10,7 @@ export default async function AttendancePage() {
         getActiveStudents(),
         getActiveSchoolYearName(),
         getHolidays(),
+        getSchedule(),
     ]);
 
     return <AttendancePageComponent 
@@ -20,5 +21,6 @@ export default async function AttendancePage() {
         activeSchoolYearName={activeSchoolYearName} 
         teacherName={profile?.full_name || "Guru"}
         holidays={holidays}
+        teacherSchedule={schedule}
     />;
 }
