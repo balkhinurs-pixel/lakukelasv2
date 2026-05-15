@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react";
@@ -33,15 +34,15 @@ import {
     Users, 
     ClipboardList,
     Printer,
-    CalendarDays,
     BookOpen,
     School,
-    FileSpreadsheet
+    FileSpreadsheet,
+    MessageSquare
 } from "lucide-react";
 import type { Class, Subject, Profile, SchoolYear } from "@/lib/types";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { getReportsData, getAttendanceReportList, getGradesReportList, getJournalReportList } from "@/lib/data";
+import { getReportsData, getGradesReportList, getJournalReportList, getAttendanceSemesterMatrix } from "@/lib/data";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { cn } from "@/lib/utils";
@@ -52,22 +53,9 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 type ReportsData = NonNullable<Awaited<ReturnType<typeof getReportsData>>>;
 
-const monthsGanjil = [
-    { value: "7", label: 'Juli' }, { value: "8", label: 'Agustus' }, 
-    { value: "9", label: 'September' }, { value: "10", label: 'Oktober' }, 
-    { value: "11", label: 'November' }, { value: "12", label: 'Desember' }
-];
-const monthsGenap = [
-    { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' }, 
-    { value: "3", label: 'Maret' }, { value: "4", label: 'April' }, 
-    { value: "5", label: 'Mei' }, { value: "6", label: 'Juni' }
-];
-const allMonths = [...monthsGenap, ...monthsGanjil].sort((a,b) => parseInt(a.value) - parseInt(b.value));
-
 export default function ReportsPageComponent({
     classes,
     subjects,
-    schoolYears,
     reportsData,
     profile,
     schoolProfile,
@@ -87,12 +75,11 @@ export default function ReportsPageComponent({
   const [downloading, setDownloading] = React.useState(false);
   const [selectedAssessment, setSelectedAssessment] = React.useState('all');
   
-  const currentMonth = searchParams.get('month') || String(new Date().getMonth() + 1);
   const selectedClass = searchParams.get('class') || (classes.length > 0 ? classes[0].id : "");
   const selectedSubject = searchParams.get('subject') || (subjects.length > 0 ? subjects[0].id : "");
 
   const handleFilterChange = React.useCallback(
-    (key: 'month' | 'class' | 'subject', value: string) => {
+    (key: 'class' | 'subject', value: string) => {
       const params = new URLSearchParams(searchParams.toString());
       params.set(key, value);
       router.push(`${pathname}?${params.toString()}`);
@@ -108,47 +95,17 @@ export default function ReportsPageComponent({
     setDownloading(true);
     
     try {
-        let head: any[][] = [];
-        let body: any[][] = [];
-        let title = "";
+        const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        }) as jsPDFWithAutoTable;
 
-        if (type === 'attendance') {
-            const data = await getAttendanceReportList({
-                schoolYearId: summaryCards.activeSchoolYearId,
-                month: Number(currentMonth),
-                classId: selectedClass,
-                subjectId: selectedSubject
-            });
-            title = "LAPORAN REKAPITULASI PRESENSI SISWA";
-            head = [['No', 'Tanggal', 'Siswa', 'Kelas', 'Mapel', 'Status']];
-            body = data.map((h: any, i: number) => [i + 1, format(parseISO(h.date), 'dd/MM/yyyy'), h.student_name || 'N/A', h.class_name, h.subject_name, h.status]);
-        } else if (type === 'grades') {
-            const data = await getGradesReportList({
-                schoolYearId: summaryCards.activeSchoolYearId,
-                classId: selectedClass,
-                subjectId: selectedSubject,
-                assessmentType: selectedAssessment
-            });
-            title = "LAPORAN LEGER NILAI SISWA (SEMESTER)";
-            head = [['No', 'Nama Siswa', 'Kelas', 'Mapel', 'Jenis Penilaian', 'Nilai']];
-            body = data.map((g: any, i: number) => [i + 1, g.student_name || 'N/A', g.class_name, g.subject_name, g.assessment_type, g.score]);
-        } else {
-            const data = await getJournalReportList({
-                schoolYearId: summaryCards.activeSchoolYearId,
-                classId: selectedClass,
-                subjectId: selectedSubject
-            });
-            title = "LAPORAN JURNAL MENGAJAR GURU (SEMESTER)";
-            head = [['No', 'Tanggal', 'Kelas', 'Mapel', 'Tujuan Pembelajaran']];
-            body = data.map((j: any, i: number) => [i + 1, format(parseISO(j.date), 'dd/MM/yyyy'), j.className, j.subjectName, j.learning_objectives]);
-        }
-
-        const doc = new jsPDF() as jsPDFWithAutoTable;
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 14;
 
-        const generatePDFContent = () => {
+        const generatePDFContent = (head: any[][], body: any[][], title: string) => {
             if (schoolProfile) {
                 doc.setFontSize(16).setFont(undefined, 'bold');
                 doc.text((schoolProfile.school_name || "LAKUKELAS").toUpperCase(), margin + 25, margin + 8);
@@ -159,27 +116,34 @@ export default function ReportsPageComponent({
             }
 
             doc.setFontSize(12).setFont(undefined, 'bold');
-            doc.text(title, pageWidth / 2, margin + 35, { align: 'center' });
+            doc.text(title, pageWidth / 2, margin + 32, { align: 'center' });
             
             doc.setFontSize(10).setFont(undefined, 'normal');
-            doc.text(`Tahun Ajaran: ${summaryCards.activeSchoolYearName}`, margin, margin + 45);
-            doc.text(`Guru Pengampu: ${profile.full_name}`, margin, margin + 50);
+            doc.text(`Tahun Ajaran: ${summaryCards.activeSchoolYearName}`, margin, margin + 42);
+            doc.text(`Mata Pelajaran: ${subjects.find(s => s.id === selectedSubject)?.name}`, margin, margin + 47);
+            doc.text(`Guru Pengampu: ${profile.full_name}`, pageWidth - margin - 80, margin + 42);
+            doc.text(`Kelas: ${classes.find(c => c.id === selectedClass)?.name}`, pageWidth - margin - 80, margin + 47);
 
             doc.autoTable({
                 head: head,
                 body: body,
                 startY: margin + 55,
                 theme: 'grid',
-                headStyles: { fillColor: [79, 70, 229], textColor: 255 },
-                styles: { fontSize: 8 }
+                headStyles: { fillColor: [79, 70, 229], textColor: 255, halign: 'center' },
+                styles: { fontSize: 7, halign: 'center' },
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 50, halign: 'left' }
+                }
             });
 
-            let finalY = (doc as any).lastAutoTable.finalY + 20;
+            let finalY = (doc as any).lastAutoTable.finalY + 15;
             if (finalY > pageHeight - 60) { doc.addPage(); finalY = margin + 20; }
 
             const today = format(new Date(), 'dd MMMM yyyy', { locale: id });
             const city = schoolProfile?.school_address?.split(',')[1]?.trim() || "Kota";
 
+            doc.setFontSize(10);
             doc.text(`${city}, ${today}`, pageWidth - margin - 60, finalY - 5);
             
             doc.text("Mengetahui,", margin + 20, finalY);
@@ -187,29 +151,108 @@ export default function ReportsPageComponent({
             doc.text("Guru Mata Pelajaran,", pageWidth - margin - 60, finalY + 6);
 
             doc.setFont(undefined, 'bold');
-            doc.text(schoolProfile?.headmaster_name || "(...........................)", margin + 20, finalY + 35);
-            doc.text(profile.full_name, pageWidth - margin - 60, finalY + 35);
+            doc.text(schoolProfile?.headmaster_name || "(...........................)", margin + 20, finalY + 32);
+            doc.text(profile.full_name, pageWidth - margin - 60, finalY + 32);
             
-            doc.setFont(undefined, 'normal');
-            doc.text(`NIP. ${schoolProfile?.headmaster_nip || "-"}`, margin + 20, finalY + 40);
-            doc.text(`NIP. ${profile.nip || "-"}`, pageWidth - margin - 60, finalY + 40);
+            doc.setFont(undefined, 'normal').setFontSize(9);
+            doc.text(`NIP. ${schoolProfile?.headmaster_nip || "-"}`, margin + 20, finalY + 37);
+            doc.text(`NIP. ${profile.nip || "-"}`, pageWidth - margin - 60, finalY + 37);
 
             doc.save(`Laporan_${type}_${format(new Date(), 'yyyyMMdd')}.pdf`);
             setDownloading(false);
         };
 
-        if (schoolProfile?.school_logo_url) {
+        if (type === 'attendance') {
+            const data = await getAttendanceSemesterMatrix({
+                schoolYearId: summaryCards.activeSchoolYearId,
+                classId: selectedClass,
+                subjectId: selectedSubject
+            });
+            
+            if (!data) throw new Error("Data tidak ditemukan");
+
+            const { students, attendanceMap, maxMeeting } = data;
+            
+            // Header: No, Nama, 1, 2, ..., N, H, S, I, A
+            const meetings = Array.from({ length: Math.max(maxMeeting, 1) }, (_, i) => String(i + 1));
+            const head = [['No', 'Nama Lengkap', ...meetings, 'H', 'S', 'I', 'A']];
+            
+            const body = students.map((s, idx) => {
+                let h=0, st=0, i=0, a=0;
+                const dailyStatuses = meetings.map(m => {
+                    const status = attendanceMap[s.id]?.[Number(m)];
+                    if (status === 'Hadir') { h++; return 'H'; }
+                    if (status === 'Sakit') { st++; return 'S'; }
+                    if (status === 'Izin') { i++; return 'I'; }
+                    if (status === 'Alpha') { a++; return 'A'; }
+                    return '';
+                });
+                return [idx + 1, s.name, ...dailyStatuses, h, st, i, a];
+            });
+
+            const logoUrl = schoolProfile?.school_logo_url || "https://placehold.co/100x100.png";
             const img = new Image();
-            img.src = schoolProfile.school_logo_url;
+            img.src = logoUrl;
             img.crossOrigin = "Anonymous";
             img.onload = () => { 
                 try { doc.addImage(img, 'PNG', margin, margin, 20, 20); } catch(e) {}
-                generatePDFContent(); 
+                generatePDFContent(head, body, "LAPORAN PRESENSI SISWA PER SEMESTER");
             };
-            img.onerror = () => generatePDFContent();
-        } else {
-            generatePDFContent();
+            img.onerror = () => generatePDFContent(head, body, "LAPORAN PRESENSI SISWA PER SEMESTER");
+
+        } else if (type === 'grades') {
+            const data = await getGradesReportList({
+                schoolYearId: summaryCards.activeSchoolYearId,
+                classId: selectedClass,
+                subjectId: selectedSubject,
+                assessmentType: selectedAssessment
+            });
+            const head = [['No', 'Nama Siswa', 'Jenis Penilaian', 'KKM', 'Nilai', 'Status']];
+            const body = data.map((g: any, i: number) => [
+                i + 1, 
+                g.student_name, 
+                g.assessment_type, 
+                g.subject_kkm, 
+                g.score,
+                g.score >= g.subject_kkm ? 'Tuntas' : 'Remedial'
+            ]);
+            
+            const logoUrl = schoolProfile?.school_logo_url || "https://placehold.co/100x100.png";
+            const img = new Image();
+            img.src = logoUrl;
+            img.crossOrigin = "Anonymous";
+            img.onload = () => { 
+                try { doc.addImage(img, 'PNG', margin, margin, 20, 20); } catch(e) {}
+                generatePDFContent(head, body, "LEGER NILAI SISWA PER SEMESTER");
+            };
+            img.onerror = () => generatePDFContent(head, body, "LEGER NILAI SISWA PER SEMESTER");
+
+        } else if (type === 'journal') {
+            const data = await getJournalReportList({
+                schoolYearId: summaryCards.activeSchoolYearId,
+                classId: selectedClass,
+                subjectId: selectedSubject
+            });
+            const head = [['No', 'Tanggal', 'Pertemuan', 'Tujuan Pembelajaran', 'Kegiatan (Sintaks)']];
+            const body = data.map((j: any, i: number) => [
+                i + 1, 
+                format(parseISO(j.date), 'dd/MM/yyyy'), 
+                j.meeting_number || '-', 
+                j.learning_objectives,
+                j.learning_activities
+            ]);
+            
+            const logoUrl = schoolProfile?.school_logo_url || "https://placehold.co/100x100.png";
+            const img = new Image();
+            img.src = logoUrl;
+            img.crossOrigin = "Anonymous";
+            img.onload = () => { 
+                try { doc.addImage(img, 'PNG', margin, margin, 20, 20); } catch(e) {}
+                generatePDFContent(head, body, "LOG JURNAL MENGAJAR GURU PER SEMESTER");
+            };
+            img.onerror = () => generatePDFContent(head, body, "LOG JURNAL MENGAJAR GURU PER SEMESTER");
         }
+
     } catch (error) {
         console.error("Failed to generate report:", error);
         setDownloading(false);
@@ -231,10 +274,10 @@ export default function ReportsPageComponent({
         const worksheetData = data.map((g: any, i: number) => ({
             "No": i + 1,
             "Nama Siswa": g.student_name,
-            "Kelas": g.class_name,
-            "Mapel": g.subject_name,
             "Jenis Penilaian": g.assessment_type,
+            "KKM": g.subject_kkm,
             "Nilai": g.score,
+            "Status": g.score >= g.subject_kkm ? 'Tuntas' : 'Remedial',
             "Tanggal": format(parseISO(g.date), 'dd/MM/yyyy')
         }));
 
@@ -262,26 +305,12 @@ export default function ReportsPageComponent({
                     </div>
                     <div>
                         <CardTitle className="text-xl font-bold tracking-tight">Filter Laporan</CardTitle>
-                        <CardDescription>Tahun Ajaran: <span className="font-bold text-indigo-600">{summaryCards.activeSchoolYearName}</span></CardDescription>
+                        <CardDescription>Tahun Ajaran Aktif: <span className="font-bold text-indigo-600">{summaryCards.activeSchoolYearName}</span></CardDescription>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="p-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {activeTab === 'attendance' && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300">
-                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
-                                <CalendarDays className="w-3.5 h-3.5" /> Bulan Laporan
-                            </Label>
-                            <Select value={currentMonth} onValueChange={(v) => handleFilterChange('month', v)}>
-                                <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                    {allMonths.map(m => <SelectItem key={m.value} value={m.value} className="py-3 font-bold">{m.label}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-                    
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
                             <School className="w-3.5 h-3.5" /> Pilih Kelas
@@ -318,7 +347,7 @@ export default function ReportsPageComponent({
                         <p className="text-5xl font-black text-emerald-600">{summaryCards.overallAttendanceRate}%</p>
                         <TrendingUp className="h-6 w-6 text-emerald-400" />
                     </div>
-                    <p className="text-xs text-slate-400 mt-1 font-bold">Rata-rata Bulan Ini</p>
+                    <p className="text-xs text-slate-400 mt-1 font-bold">Rata-rata Semester</p>
                 </CardContent>
             </Card>
 
@@ -363,8 +392,8 @@ export default function ReportsPageComponent({
                             <Users className="h-12 w-12" />
                         </div>
                         <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-slate-900">Laporan Presensi Siswa</h3>
-                            <p className="text-slate-500 font-medium leading-relaxed">Format rekapitulasi kehadiran bulanan resmi. Pastikan bulan yang dipilih sudah benar.</p>
+                            <h3 className="text-2xl font-black text-slate-900">Rekap Presensi Semester</h3>
+                            <p className="text-slate-500 font-medium leading-relaxed">Matriks kehadiran siswa berdasarkan nomor pertemuan selama satu semester penuh.</p>
                         </div>
                         <Button 
                             onClick={() => handleDownloadPdf('attendance')} 
@@ -385,7 +414,7 @@ export default function ReportsPageComponent({
                             <ClipboardList className="h-12 w-12" />
                         </div>
                         <div className="space-y-4 w-full">
-                            <h3 className="text-2xl font-black text-slate-900">Leger Nilai Siswa</h3>
+                            <h3 className="text-2xl font-black text-slate-900">Leger Nilai Semester</h3>
                             <div className="space-y-2 text-left">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Saring Berdasarkan Ulangan</Label>
                                 <Select value={selectedAssessment} onValueChange={setSelectedAssessment}>

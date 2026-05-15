@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getClasses, getSubjects, getReportsData, getUserProfile, getSchoolYears, getAdminProfile } from "@/lib/data";
@@ -7,7 +8,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getIndonesianTime } from "@/lib/timezone";
 import { redirect } from "next/navigation";
 
 export default async function ReportsPage({
@@ -56,26 +56,21 @@ export default async function ReportsPage({
     // Penanganan Redirect jika filter belum lengkap (Defaulting)
     const classId = searchParams.class as string | undefined;
     const subjectId = searchParams.subject as string | undefined;
-    const month = searchParams.month as string | undefined;
 
     const defaultClassId = classId || (classes.length > 0 ? classes[0].id : undefined);
     const defaultSubjectId = subjectId || (subjects.length > 0 ? subjects[0].id : undefined);
-    const nowIndo = getIndonesianTime();
-    const defaultMonth = month || String(nowIndo.getMonth() + 1);
 
     // Jika param tidak ada di URL, redirect dengan param default
-    if (!classId || !subjectId || !month) {
+    if (!classId || !subjectId) {
         const query = new URLSearchParams();
         if (defaultClassId) query.set('class', defaultClassId);
         if (defaultSubjectId) query.set('subject', defaultSubjectId);
-        query.set('month', defaultMonth);
         redirect(`/dashboard/reports?${query.toString()}`);
     }
 
     // Ambil data laporan berdasarkan filter yang sudah valid
     const reportsData = await getReportsData({
         schoolYearId: defaultActiveSchoolYearId,
-        month: Number(defaultMonth),
         classId: defaultClassId,
         subjectId: defaultSubjectId,
     });

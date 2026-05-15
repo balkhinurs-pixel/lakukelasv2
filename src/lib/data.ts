@@ -21,30 +21,6 @@ async function getAuthenticatedUser() {
     return user;
 }
 
-async function getMonthDateRange(schoolYearId: string, month: number) {
-    const supabase = createClient();
-    const { data: schoolYear } = await supabase
-        .from('school_years')
-        .select('name')
-        .eq('id', schoolYearId)
-        .single();
-
-    if (!schoolYear) return null;
-
-    const yearsMatch = schoolYear.name.match(/(\d{4})\/(\d{4})/);
-    if (!yearsMatch) return null;
-
-    const startYear = parseInt(yearsMatch[1]);
-    const endYear = parseInt(yearsMatch[2]);
-    const calendarYear = month >= 7 ? startYear : endYear;
-    
-    const startDate = `${calendarYear}-${String(month).padStart(2, '0')}-01`;
-    const lastDay = new Date(calendarYear, month, 0).getDate();
-    const endDate = `${calendarYear}-${String(month).padStart(2, '0')}-${lastDay}`;
-
-    return { startDate, endDate };
-}
-
 // --- Admin Data ---
 
 export async function getAdminDashboardData() {
@@ -411,28 +387,23 @@ export async function getLatestClassPresence(classId: string, date: string): Pro
     return result;
 }
 
-export async function getReportsData(filters: { schoolYearId: string, month: number, classId?: string, subjectId?: string }) {
+export async function getReportsData(filters: { schoolYearId: string, classId?: string, subjectId?: string }) {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return null;
     const supabase = createClient();
-    const { schoolYearId, month, classId, subjectId } = filters;
-
-    const range = await getMonthDateRange(schoolYearId, month);
-    if (!range) return null;
+    const { schoolYearId, classId, subjectId } = filters;
 
     const [activeSchoolYearName] = await Promise.all([
         getActiveSchoolYearName()
     ]);
 
-    // KPI Attendance (Monthly)
+    // KPI Attendance (Semester-based)
     let attendanceKpiQuery = supabase
         .from('attendance_records')
         .select('status', { count: 'exact' })
         .eq('teacher_id', user.id)
-        .eq('school_year_id', schoolYearId)
-        .gte('date', range.startDate)
-        .lte('date', range.endDate);
+        .eq('school_year_id', schoolYearId);
     
     if (classId) attendanceKpiQuery = attendanceKpiQuery.eq('class_id', classId);
     if (subjectId) attendanceKpiQuery = attendanceKpiQuery.eq('subject_id', subjectId);
@@ -493,28 +464,50 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
     };
 }
 
-export async function getAttendanceReportList(filters: { schoolYearId: string, month: number, classId: string, subjectId: string }) {
+export async function getAttendanceSemesterMatrix(filters: { schoolYearId: string, classId: string, subjectId: string }) {
     noStore();
     const user = await getAuthenticatedUser();
-    if (!user) return [];
+    if (!user) return null;
     const supabase = createClient();
-    const { schoolYearId, month, classId, subjectId } = filters;
-    
-    const range = await getMonthDateRange(schoolYearId, month);
-    if (!range) return [];
+    const { schoolYearId, classId, subjectId } = filters;
 
-    const { data } = await supabase
-        .from('attendance_history')
-        .select('*')
+    // 1. Get all students in the class
+    const { data: students } = await supabase
+        .from('students')
+        .select('id, name, gender, nis')
+        .eq('class_id', classId)
+        .eq('status', 'active')
+        .order('name');
+    
+    if (!students) return null;
+
+    // 2. Get all attendance records for this subject/class/year
+    const { data: records } = await supabase
+        .from('attendance_records')
+        .select('student_id, status, meeting_number')
         .eq('teacher_id', user.id)
         .eq('school_year_id', schoolYearId)
         .eq('class_id', classId)
         .eq('subject_id', subjectId)
-        .gte('date', range.startDate)
-        .lte('date', range.endDate)
-        .order('date', { ascending: true });
+        .order('meeting_number', { ascending: true });
 
-    return data || [];
+    if (!records) return { students, attendanceMap: {}, maxMeeting: 0 };
+
+    // 3. Build a matrix: [student_id][meeting_number] = status
+    const attendanceMap: Record<string, Record<number, string>> = {};
+    let maxMeeting = 0;
+
+    records.forEach(r => {
+        if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
+        attendanceMap[r.student_id][r.meeting_number] = r.status;
+        if (r.meeting_number > maxMeeting) maxMeeting = r.meeting_number;
+    });
+
+    return {
+        students,
+        attendanceMap,
+        maxMeeting
+    };
 }
 
 export async function getGradesReportList(filters: { schoolYearId: string, classId: string, subjectId: string, assessmentType?: string }) {
@@ -525,8 +518,8 @@ export async function getGradesReportList(filters: { schoolYearId: string, class
     const { schoolYearId, classId, subjectId, assessmentType } = filters;
 
     let query = supabase
-        .from('grades_history')
-        .select('*')
+        .from('grade_records')
+        .select('*, students(name), classes(name), subjects(name, kkm)')
         .eq('teacher_id', user.id)
         .eq('school_year_id', schoolYearId)
         .eq('class_id', classId)
@@ -537,7 +530,17 @@ export async function getGradesReportList(filters: { schoolYearId: string, class
     }
 
     const { data } = await query.order('date', { ascending: true });
-    return data || [];
+    
+    return (data || []).map((g: any) => ({
+        id: g.id,
+        date: g.date,
+        assessment_type: g.assessment_type,
+        score: g.score,
+        student_name: g.students?.name,
+        class_name: g.classes?.name,
+        subject_name: g.subjects?.name,
+        subject_kkm: g.subjects?.kkm
+    }));
 }
 
 export async function getJournalReportList(filters: { schoolYearId: string, classId: string, subjectId: string }) {
