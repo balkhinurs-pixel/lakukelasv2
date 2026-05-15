@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -32,6 +31,7 @@ import { id } from "date-fns/locale";
 import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { LottieCalendar } from "@/components/ui/lottie-calendar";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -316,10 +316,10 @@ export default function DashboardClientPage({
                             : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
                     )}>
                         <div className={cn(
-                            "p-5 rounded-3xl text-white shadow-2xl shrink-0 -mt-16 bg-white",
+                            "p-5 rounded-3xl text-white shadow-2xl shrink-0 -mt-16 bg-white flex items-center justify-center overflow-hidden",
                             todayHoliday.type === 'national' ? "bg-gradient-to-br from-red-500 to-rose-600" : "bg-gradient-to-br from-indigo-500 to-purple-600"
                         )}>
-                            {todayHoliday.type === 'national' ? <Flag className="h-10 w-10" /> : <School className="h-10 w-10" />}
+                            <LottieCalendar size={60} />
                         </div>
                         <div className="pt-2">
                             <Badge variant="outline" className={cn(

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -20,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LottieCalendar } from "@/components/ui/lottie-calendar";
 
 const months = [
     { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
@@ -244,10 +244,10 @@ export default function TeacherAttendanceClient({
                     <Card className="rounded-[2.5rem] border-0 shadow-xl overflow-hidden bg-white/95 backdrop-blur border border-slate-100">
                         <CardContent className="p-5 flex items-center gap-4">
                             <div className={cn(
-                                "p-3 rounded-2xl text-white shadow-lg transition-transform group-hover:scale-110",
+                                "p-3 rounded-2xl text-white shadow-lg transition-transform group-hover:scale-110 flex items-center justify-center overflow-hidden",
                                 info.iconBg
                             )}>
-                                <InfoIcon className="h-6 w-6" />
+                                {todayHoliday ? <LottieCalendar size={40} /> : <InfoIcon className="h-6 w-6" />}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <h4 className="font-bold text-slate-900 leading-tight break-words">{info.title}</h4>

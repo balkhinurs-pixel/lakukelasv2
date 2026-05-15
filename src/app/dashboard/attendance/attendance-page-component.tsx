@@ -69,6 +69,7 @@ import { AnimatedText } from "@/components/ui/animated-underline-text-one";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { getIndonesianDayFromDate } from "@/lib/timezone";
 import { LottieWhatsApp } from "@/components/ui/lottie-whatsapp";
+import { LottieCalendar } from "@/components/ui/lottie-calendar";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -731,10 +732,10 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                             : "border-indigo-100 text-indigo-700"
                     )}>
                         <div className={cn(
-                            "p-5 rounded-3xl text-white shadow-2xl shrink-0 -mt-16",
+                            "p-5 rounded-3xl text-white shadow-2xl shrink-0 -mt-16 bg-white flex items-center justify-center",
                             currentHoliday.type === 'national' ? "bg-gradient-to-br from-red-500 to-rose-600" : "bg-gradient-to-br from-indigo-500 to-purple-600"
                         )}>
-                            {currentHoliday.type === 'national' ? <Flag className="h-10 w-10" /> : currentHoliday.id === 'sunday' ? <Coffee className="h-10 w-10" /> : <School className="h-10 w-10" />}
+                            <LottieCalendar size={80} />
                         </div>
                         <div className="pt-2">
                             <Badge variant="outline" className={cn(

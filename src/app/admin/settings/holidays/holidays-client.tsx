@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -44,6 +43,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Holiday } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LottieCalendar } from "@/components/ui/lottie-calendar";
 
 export default function HolidaysClientPage({ initialHolidays }: { initialHolidays: Holiday[] }) {
   const router = useRouter();
@@ -143,8 +143,8 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg">
-            <CalendarOff className="h-6 w-6" />
+          <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg overflow-hidden flex items-center justify-center">
+            <LottieCalendar size={40} />
           </div>
           <div>
             <h1 className="text-2xl font-bold font-headline">Pengaturan Hari Libur</h1>
