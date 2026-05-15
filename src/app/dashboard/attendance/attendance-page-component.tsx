@@ -82,7 +82,7 @@ const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: s
         label: 'Sakit', 
         icon: <AlertCircle className="h-4 w-4" />,
         className: 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:border-amber-300', 
-        selectedClassName: 'bg-amber-50 text-white hover:bg-amber-600 border-amber-500 shadow-md shadow-amber-200' 
+        selectedClassName: 'bg-amber-500 text-white hover:bg-amber-600 border-amber-500 shadow-md shadow-amber-200' 
     },
     { 
         value: 'Izin', 
@@ -112,11 +112,11 @@ const AttendanceInput = React.memo(({ studentId, value, onChange, disabled }: { 
                 disabled={disabled}
                 onClick={() => onChange(studentId, opt.value)}
                 className={cn(
-                    "h-9 px-3 rounded-lg border text-sm font-medium transition-all duration-200 ease-in-out flex-shrink-0",
+                    "h-10 px-3.5 rounded-xl border text-sm font-bold transition-all duration-200 ease-in-out flex-shrink-0",
                     "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-current/20",
                     "active:scale-95 transform",
                     value === opt.value
-                        ? `${opt.selectedClassName} scale-105`
+                        ? `${opt.selectedClassName} scale-105 z-10`
                         : `${opt.className}`
                 )}
             >
