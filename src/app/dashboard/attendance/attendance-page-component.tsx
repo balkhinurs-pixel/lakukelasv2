@@ -70,6 +70,7 @@ import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { getIndonesianDayFromDate } from "@/lib/timezone";
 import { LottieWhatsApp } from "@/components/ui/lottie-whatsapp";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
+import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -732,7 +733,11 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                             : "border-indigo-100 text-indigo-700"
                     )}>
                         <div className="shrink-0 -mt-16">
-                            <LottieCalendar size={120} />
+                            {currentHoliday.type === 'national' ? (
+                                <LottieCalendar size={120} />
+                            ) : (
+                                <LottieSchoolHoliday size={120} />
+                            )}
                         </div>
                         <div className="pt-2">
                             <Badge variant="outline" className={cn(

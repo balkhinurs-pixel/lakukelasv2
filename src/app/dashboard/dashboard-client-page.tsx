@@ -32,6 +32,7 @@ import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
+import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -316,7 +317,11 @@ export default function DashboardClientPage({
                             : "border-indigo-100 text-indigo-700"
                     )}>
                         <div className="shrink-0 -mt-16">
-                            <LottieCalendar size={100} />
+                            {todayHoliday.type === 'national' ? (
+                                <LottieCalendar size={100} />
+                            ) : (
+                                <LottieSchoolHoliday size={100} />
+                            )}
                         </div>
                         <div className="pt-2">
                             <Badge variant="outline" className={cn(

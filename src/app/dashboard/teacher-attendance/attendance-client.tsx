@@ -20,6 +20,7 @@ import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
+import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
 
 const months = [
     { value: "1", label: 'Januari' }, { value: "2", label: 'Februari' },
@@ -171,7 +172,8 @@ export default function TeacherAttendanceClient({
                 title: todayHoliday.description,
                 subtitle: "Informasi Hari Libur",
                 icon: todayHoliday.type === 'national' ? Flag : School,
-                isLottie: true
+                isLottie: true,
+                lottieType: todayHoliday.type
             };
         }
         
@@ -248,7 +250,11 @@ export default function TeacherAttendanceClient({
                         <CardContent className="p-5 flex items-center gap-4">
                             {info.isLottie ? (
                                 <div className="shrink-0 flex items-center justify-center">
-                                    <LottieCalendar size={60} />
+                                    {info.lottieType === 'national' ? (
+                                        <LottieCalendar size={60} />
+                                    ) : (
+                                        <LottieSchoolHoliday size={60} />
+                                    )}
                                 </div>
                             ) : (
                                 <div className={cn(
