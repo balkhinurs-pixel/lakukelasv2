@@ -7,6 +7,7 @@ Memastikan instalasi baru dapat diaktifkan tanpa kendala profil.
 ### 1. Robust Master Token Activation
 - **Upsert Logic**: Mengganti perintah `update` menjadi `upsert` pada Master Token. Hal ini memungkinkan pendaftar pertama membuat baris data profilnya sendiri jika *trigger* database belum sempat berjalan.
 - **Auto-Fill Profile**: Menarik data nama dan foto profil secara otomatis dari metadata Google saat menggunakan Master Token.
+- **Error Handling**: Memberikan pesan kesalahan yang lebih jelas jika proses `upsert` gagal (biasanya karena kendala izin RLS).
 
 ### 2. Keamanan RLS
 - **Izin Pendaftaran**: Memastikan kebijakan database mengizinkan pengguna untuk membuat profilnya sendiri (`INSERT`) di awal pendaftaran agar tidak terjadi *error* hak akses.
