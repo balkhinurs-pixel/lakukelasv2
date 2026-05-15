@@ -61,10 +61,8 @@ export default function HomeroomReportsClient({ initialData }: Props) {
   const { className, students, attendanceMap, holidayDates, daysInMonth, month, year } = initialData;
   const [searchTerm, setSearchTerm] = React.useState("");
   
-  // State viewMode: Jika mobile, default ke summary. Jika desktop, default ke matrix.
   const [viewMode, setViewMode] = React.useState<'summary' | 'matrix'>('summary');
 
-  // Sinkronisasi viewMode dengan status mobile saat mount
   React.useEffect(() => {
     if (isMobile !== undefined) {
         setViewMode(isMobile ? 'summary' : 'matrix');
@@ -111,7 +109,6 @@ export default function HomeroomReportsClient({ initialData }: Props) {
 
   return (
     <div className="space-y-6 max-w-full overflow-hidden pb-10">
-      {/* Header Section */}
       <div className="flex flex-col gap-4 px-1">
         <div className="text-center md:text-left">
             <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
@@ -132,7 +129,6 @@ export default function HomeroomReportsClient({ initialData }: Props) {
         </div>
       </div>
 
-      {/* Filter Card */}
       <Card className="rounded-3xl border-0 shadow-lg bg-white/90 backdrop-blur-sm overflow-hidden">
         <CardHeader className="p-4 md:p-6 border-b border-slate-50">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -161,7 +157,6 @@ export default function HomeroomReportsClient({ initialData }: Props) {
                     />
                 </div>
                 
-                {/* View Switcher Mobile */}
                 <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
                     <Button 
                         variant="ghost" 
@@ -186,23 +181,22 @@ export default function HomeroomReportsClient({ initialData }: Props) {
 
         <CardContent className="p-0">
           {viewMode === 'summary' ? (
-              /* MODE SUMMARY: Sangat Ramah Mobile */
               <div className="divide-y divide-slate-50">
                   {filteredStudents.length > 0 ? (
                     filteredStudents.map((student, idx) => {
                         const summary = getRowSummary(student.id);
                         return (
-                            <div key={student.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-black shrink-0">
+                            <div key={student.id} className="p-4 hover:bg-slate-50 transition-colors flex items-start justify-between group gap-4">
+                                <div className="flex items-start gap-3 min-w-0 flex-1">
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-black shrink-0 mt-0.5">
                                         {idx + 1}
                                     </div>
-                                    <div className="min-w-0">
-                                        <p className="font-bold text-slate-900 truncate text-sm">{student.name}</p>
-                                        <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase">NIS: {student.nis}</p>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-bold text-slate-900 break-words text-sm leading-tight">{student.name}</p>
+                                        <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-1">NIS: {student.nis}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 shrink-0">
+                                <div className="flex flex-wrap items-center justify-end gap-1 shrink-0 max-w-[140px]">
                                     <Badge variant="outline" className="h-7 px-2 border-emerald-100 bg-emerald-50 text-emerald-700 text-[10px] font-black">H:{summary.h}</Badge>
                                     <Badge variant="outline" className="h-7 px-2 border-amber-100 bg-amber-50 text-amber-700 text-[10px] font-black">S:{summary.s}</Badge>
                                     <Badge variant="outline" className="h-7 px-2 border-blue-100 bg-blue-50 text-blue-700 text-[10px] font-black">I:{summary.i}</Badge>
@@ -219,7 +213,6 @@ export default function HomeroomReportsClient({ initialData }: Props) {
                   )}
               </div>
           ) : (
-            /* MODE MATRIKS: Scroll Horizontal Terproteksi */
             <div className="relative w-full max-w-full overflow-hidden">
                 <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-200">
                     <div className="inline-block min-w-max align-middle">
@@ -292,7 +285,6 @@ export default function HomeroomReportsClient({ initialData }: Props) {
         </CardContent>
       </Card>
 
-      {/* Info Legend */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 px-1">
             <div className="flex items-center gap-2 p-3 rounded-2xl bg-white border border-slate-100 shadow-sm">
                 <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-[10px]">H</div>
