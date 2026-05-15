@@ -41,19 +41,30 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring'))) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/login', request.url));
   }
   
   if (user) {
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role, email')
+        .select('role, is_activated')
         .eq('id', user.id)
         .single();
 
+    const isActivated = profile?.is_activated || false;
     const role = profile?.role || 'teacher';
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
+
+    // Rute aktivasi: Jika sudah aktif, jangan boleh balik ke /activate
+    if (pathname === '/activate' && isActivated) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // Gatekeeper Aktivasi: Jika belum aktif, paksa ke /activate
+    if (!isActivated && pathname !== '/activate' && !pathname.startsWith('/auth') && pathname !== '/') {
+        return NextResponse.redirect(new URL('/activate', request.url));
+    }
 
     // Rute akar: Redirect berdasarkan role
     if (pathname === '/') {
@@ -74,12 +85,6 @@ export async function middleware(request: NextRequest) {
       if (!isAdmin && !isHeadmaster) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
-    }
-    
-    // Redirect Admin agar tidak masuk ke dashboard guru (opsional, tergantung preferensi)
-    if (pathname === '/dashboard' && isAdmin) {
-        // Biarkan tetap di dashboard jika dia ingin melihat sisi guru, 
-        // tapi middleware default kita mengizinkan
     }
   }
 

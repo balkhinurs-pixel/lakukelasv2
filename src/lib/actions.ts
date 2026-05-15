@@ -20,6 +20,41 @@ export async function getActiveSchoolYearId(): Promise<string | null> {
     return data?.value || null;
 }
 
+export async function activateAccount(token: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Sesi tidak valid." };
+
+    // 1. Cek apakah token ada dan belum dipakai
+    const { data: tokenData, error: tokenError } = await supabase
+        .from('activation_tokens')
+        .select('id')
+        .eq('token', token.trim().toUpperCase())
+        .is('used_by', null)
+        .single();
+
+    if (tokenError || !tokenData) {
+        return { success: false, error: "Token tidak valid atau sudah pernah digunakan." };
+    }
+
+    // 2. Tandai token sebagai terpakai
+    await supabase
+        .from('activation_tokens')
+        .update({ used_by: user.id, used_at: new Date().toISOString() })
+        .eq('id', tokenData.id);
+
+    // 3. Aktifkan profil
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ is_activated: true })
+        .eq('id', user.id);
+
+    if (profileError) return { success: false, error: "Gagal memperbarui status akun." };
+
+    revalidatePath('/');
+    return { success: true };
+}
+
 export async function saveJournal(formData: FormData) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

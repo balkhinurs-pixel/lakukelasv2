@@ -112,16 +112,25 @@ export async function inviteTeacher(fullName: string, email: string) {
 }
 
 /**
- * Hapus pengguna dari Auth dan Tabel Profil.
+ * Hapus pengguna dari Tabel Profil (Logika hapus profil).
  */
 export async function deleteUser(userId: string) {
     const supabase = createClient();
-    const { data, error } = await supabase.auth.admin.deleteUser(userId);
+    
+    // Kita menghapus dari tabel profiles. Tabel Auth.users hanya bisa dihapus via Service Role.
+    // Jika profil dihapus, RLS akan otomatis menendang user tersebut dari dashboard.
+    const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
 
-    if (error) return { success: false, error: "Gagal menghapus pengguna." };
+    if (error) {
+        console.error("Delete profile error:", error);
+        return { success: false, error: "Gagal menghapus profil pengguna." };
+    }
     
     revalidatePath('/admin/users');
-    return { success: true, data };
+    return { success: true };
 }
 
 /**
@@ -411,4 +420,37 @@ export async function sendTestWhatsApp(token: string, target: string) {
     } catch (error: any) {
         return { success: false, error: 'Gagal menghubungi Fonnte.' };
     }
+}
+
+/**
+ * Generate token aktivasi baru.
+ */
+export async function generateActivationToken() {
+    const supabase = createClient();
+    const token = Math.random().toString(36).substring(2, 10).toUpperCase();
+    
+    const { error } = await supabase
+        .from('activation_tokens')
+        .insert({ token });
+
+    if (error) return { success: false, error: "Gagal membuat token." };
+    
+    revalidatePath('/admin/codes');
+    return { success: true, token };
+}
+
+/**
+ * Hapus token aktivasi.
+ */
+export async function deleteActivationToken(id: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from('activation_tokens')
+        .delete()
+        .eq('id', id);
+
+    if (error) return { success: false, error: "Gagal menghapus token." };
+    
+    revalidatePath('/admin/codes');
+    return { success: true };
 }
