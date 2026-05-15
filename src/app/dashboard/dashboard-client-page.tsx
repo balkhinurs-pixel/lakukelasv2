@@ -315,7 +315,7 @@ export default function DashboardClientPage({
                             ? "bg-red-50/50 border-red-100 text-red-700" 
                             : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
                     )}>
-                        <div className="shrink-0 -mt-16 bg-white rounded-full p-2 shadow-xl">
+                        <div className="shrink-0 -mt-16">
                             <LottieCalendar size={100} />
                         </div>
                         <div className="pt-2">

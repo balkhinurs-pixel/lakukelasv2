@@ -150,9 +150,9 @@ export default function TeacherAttendanceClient({
             }
         } catch (e: any) {
             toast({ title: "Kesalahan", description: "Gagal mengambil lokasi GPS. Harap izinkan akses lokasi di browser/HP Anda.", variant: "destructive" });
+        } finally {
+            setLoading(false);
         }
-        break;
-        setLoading(false);
     };
 
     const todayStr = React.useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);

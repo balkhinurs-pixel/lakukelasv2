@@ -731,7 +731,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                             ? "border-red-100 text-red-700" 
                             : "border-indigo-100 text-indigo-700"
                     )}>
-                        <div className="shrink-0 -mt-16 bg-white rounded-full p-2 shadow-xl">
+                        <div className="shrink-0 -mt-16">
                             <LottieCalendar size={120} />
                         </div>
                         <div className="pt-2">

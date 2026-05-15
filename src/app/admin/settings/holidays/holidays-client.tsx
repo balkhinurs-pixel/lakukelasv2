@@ -266,16 +266,16 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
 
       <Tabs defaultValue="school" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-xl mb-6">
-              <TabsTrigger value="school" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <TabsTrigger value="school" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">
                   Libur Khusus Sekolah ({schoolHolidays.length})
               </TabsTrigger>
-              <TabsTrigger value="national" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <TabsTrigger value="national" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">
                   Libur Nasional ({nationalHolidays.length})
               </TabsTrigger>
           </TabsList>
 
           <TabsContent value="school">
-              <Card>
+              <Card className="border-0 shadow-lg">
                 <CardHeader>
                   <CardTitle>Daftar Libur Khusus Sekolah</CardTitle>
                   <CardDescription>Hari libur yang Anda tentukan sendiri untuk kebijakan sekolah.</CardDescription>
@@ -312,7 +312,7 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
           </TabsContent>
 
           <TabsContent value="national">
-              <Card>
+              <Card className="border-0 shadow-lg">
                 <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <CardTitle>Daftar Libur Nasional</CardTitle>
@@ -323,7 +323,7 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
                         variant="outline" 
                         size="sm"
                         onClick={() => setIsClearAlertOpen(true)}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        className="text-red-600 border-red-200 hover:bg-red-50 rounded-xl"
                         disabled={nationalHolidays.length === 0 || loading}
                     >
                         <Eraser className="mr-2 h-4 w-4" />
@@ -334,7 +334,7 @@ export default function HolidaysClientPage({ initialHolidays }: { initialHoliday
                         size="sm"
                         onClick={handleSyncManual} 
                         disabled={syncing}
-                        className="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                        className="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 rounded-xl"
                     >
                         {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                         Sync Libur Nasional
