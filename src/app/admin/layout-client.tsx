@@ -22,7 +22,6 @@ import {
   ShieldCheck,
   Settings,
   MessageSquare,
-  Ticket,
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
@@ -62,8 +61,7 @@ import {
 
 const adminNavItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dasbor', color: 'bg-purple-600' },
-  { href: '/admin/users', icon: Users, label: 'Staf', color: 'bg-blue-600' },
-  { href: '/admin/codes', icon: Ticket, label: 'Token', color: 'bg-indigo-600' },
+  { href: '/admin/users', icon: Users, label: 'Staf & Approval', color: 'bg-blue-600' },
 ];
 
 const rosterNavItems = [
@@ -113,7 +111,7 @@ export default function AdminLayoutClient({
               <div className="absolute inset-0 bg-white/[0.05] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
               
               <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 transition-transform duration-300 hover:scale-105 hover:border-white/50 relative z-10">
-                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="User" data-ai-hint="admin portrait" />
+                <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} alt="User" />
                 <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'A'}</AvatarFallback>
               </Avatar>
               <div className="text-center relative z-10">
@@ -447,9 +445,9 @@ export default function AdminLayoutClient({
                     </button>
                 </div>
 
-                <Link href="/admin/codes" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/admin/codes" ? "text-purple-600 bg-purple-500/10" : "text-muted-foreground")}>
-                    <Ticket className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Token</span>
+                <Link href="/admin/roster/students" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/roster") ? "text-purple-600 bg-purple-500/10" : "text-muted-foreground")}>
+                    <Users2 className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">Data</span>
                 </Link>
                 <Link href="/admin/settings/school" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/settings") ? "text-purple-600 bg-purple-500/10" : "text-muted-foreground")}>
                     <Settings className="w-5 h-5" />

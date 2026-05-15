@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
 
-  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring') || pathname === '/activate')) {
+  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring') || pathname === '/waiting-approval')) {
       return NextResponse.redirect(new URL('/login', request.url));
   }
   
@@ -51,21 +51,19 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .maybeSingle();
 
-    // Default values if profile hasn't been created yet
     const isActivated = profile?.is_activated ?? false;
     const role = profile?.role || 'teacher';
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
 
-    // Rute aktivasi: Jika sudah aktif atau dia adalah ADMIN, jangan boleh balik ke /activate
-    if (pathname === '/activate' && (isActivated || isAdmin)) {
+    // Rute Tunggu: Jika sudah aktif, jangan boleh ke halaman waiting
+    if (pathname === '/waiting-approval' && (isActivated || isAdmin)) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // Gatekeeper Aktivasi: Hanya untuk non-Admin. 
-    // Jika bukan Admin dan belum aktif, paksa ke /activate
-    if (!isAdmin && !isActivated && pathname !== '/activate' && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
-        return NextResponse.redirect(new URL('/activate', request.url));
+    // Gatekeeper Approval: Hanya untuk non-Admin. 
+    if (!isAdmin && !isActivated && pathname !== '/waiting-approval' && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
+        return NextResponse.redirect(new URL('/waiting-approval', request.url));
     }
 
     // Rute akar: Redirect berdasarkan role
@@ -75,14 +73,14 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // Proteksi rute Admin: Hanya untuk role 'admin'
+    // Proteksi rute Admin
     if (pathname.startsWith('/admin')) {
       if (!isAdmin) {
         return NextResponse.redirect(new URL(isHeadmaster ? '/monitoring' : '/dashboard', request.url));
       }
     }
 
-    // Proteksi rute Monitoring: Untuk Admin DAN Headmaster
+    // Proteksi rute Monitoring
     if (pathname.startsWith('/monitoring')) {
       if (!isAdmin && !isHeadmaster) {
         return NextResponse.redirect(new URL('/dashboard', request.url));

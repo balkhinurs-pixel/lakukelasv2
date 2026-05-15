@@ -4,6 +4,25 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 /**
+ * Setujui akses pengguna (Approval System).
+ */
+export async function approveUser(userId: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ is_activated: true })
+        .eq('id', userId);
+
+    if (error) return { success: false, error: "Gagal menyetujui pengguna." };
+
+    revalidatePath('/admin/users');
+    return { success: true };
+}
+
+/**
  * Sinkronisasi Libur Nasional secara manual dari API eksternal.
  */
 export async function syncNationalHolidaysManual() {
@@ -21,7 +40,7 @@ export async function syncNationalHolidaysManual() {
                     cache: 'no-store',
                     headers: {
                         'Accept': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                        'User-Agent': 'Mozilla/5.0'
                     }
                 });
                 
@@ -32,7 +51,7 @@ export async function syncNationalHolidaysManual() {
                     if (Array.isArray(list) && list.length > 0) {
                         const mapped = list.map((h: any) => ({
                             date: h.date,
-                            description: h.name || h.keterangan || h.holiday_name || "Hari Libur Nasional",
+                            description: h.name || h.keterangan || "Hari Libur Nasional",
                             type: 'national'
                         }));
                         allHolidays = [...allHolidays, ...mapped];
@@ -43,70 +62,38 @@ export async function syncNationalHolidaysManual() {
             }
         }
 
-        if (allHolidays.length === 0) {
-            return { 
-                success: false, 
-                error: "Gagal mengambil data dari API. Silakan coba lagi nanti." 
-            };
-        }
+        if (allHolidays.length === 0) return { success: false, error: "Gagal mengambil data API." };
 
-        const { error } = await supabase
-            .from('holidays')
-            .upsert(allHolidays, { onConflict: 'date' });
-
+        const { error } = await supabase.from('holidays').upsert(allHolidays, { onConflict: 'date' });
         if (error) throw error;
 
         revalidatePath('/admin/settings/holidays');
-        revalidatePath('/dashboard/agenda');
-        
-        return { 
-            success: true, 
-            message: `Berhasil mensinkronkan ${allHolidays.length} hari libur nasional.` 
-        };
+        return { success: true, message: `Berhasil sinkronisasi ${allHolidays.length} hari libur.` };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
 }
 
 /**
- * Hapus semua data libur nasional untuk sinkronisasi ulang.
+ * Hapus semua data libur nasional.
  */
 export async function clearNationalHolidays() {
     const supabase = createClient();
-    try {
-        const { error } = await supabase
-            .from('holidays')
-            .delete()
-            .eq('type', 'national');
-
-        if (error) throw error;
-
-        revalidatePath('/admin/settings/holidays');
-        return { success: true, message: "Data libur nasional berhasil dihapus." };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
+    const { error } = await supabase.from('holidays').delete().eq('type', 'national');
+    if (error) return { success: false, error: error.message };
+    revalidatePath('/admin/settings/holidays');
+    return { success: true, message: "Data berhasil dihapus." };
 }
 
 /**
- * Undang guru baru via email (Supabase Auth Invite).
+ * Undang guru baru via email.
  */
 export async function inviteTeacher(fullName: string, email: string) {
     const supabase = createClient();
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
-        data: {
-            full_name: fullName,
-            role: 'teacher'
-        }
+        data: { full_name: fullName, role: 'teacher' }
     });
-
-    if (error) {
-        if (error.message.includes('User already registered')) {
-            return { success: false, error: 'Email ini sudah terdaftar.' };
-        }
-        return { success: false, error: error.message };
-    }
-
+    if (error) return { success: false, error: error.message };
     revalidatePath('/admin/users');
     return { success: true, data };
 }
@@ -116,38 +103,19 @@ export async function inviteTeacher(fullName: string, email: string) {
  */
 export async function deleteUser(userId: string) {
     const supabase = createClient();
-    
-    // Hapus dari tabel profiles
-    const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-    if (error) {
-        console.error("Delete profile error:", error);
-        return { success: false, error: "Gagal menghapus profil pengguna." };
-    }
-    
+    const { error } = await supabase.from('profiles').delete().eq('id', userId);
+    if (error) return { success: false, error: "Gagal menghapus profil." };
     revalidatePath('/admin/users');
     return { success: true };
 }
 
 /**
- * Update peran pengguna (Mendukung Admin, Guru, Kepsek).
+ * Update peran pengguna.
  */
 export async function updateUserRole(userId: string, newRole: 'teacher' | 'headmaster' | 'admin') {
     const supabase = createClient();
-    
-    const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-
-    if (error) {
-        console.error("Update role error:", error);
-        return { success: false, error: "Gagal memperbarui peran." };
-    }
-    
+    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+    if (error) return { success: false, error: "Gagal memperbarui peran." };
     revalidatePath('/admin/users');
     return { success: true };
 }
@@ -157,17 +125,12 @@ export async function updateUserRole(userId: string, newRole: 'teacher' | 'headm
  */
 export async function updateStaffProfile(userId: string, data: { fullName: string, nip: string, phoneNumber: string }) {
     const supabase = createClient();
-    const { error } = await supabase
-        .from('profiles')
-        .update({
-            full_name: data.fullName,
-            nip: data.nip,
-            phone_number: data.phoneNumber
-        })
-        .eq('id', userId);
-
+    const { error } = await supabase.from('profiles').update({
+        full_name: data.fullName,
+        nip: data.nip,
+        phone_number: data.phoneNumber
+    }).eq('id', userId);
     if (error) return { success: false, error: "Gagal memperbarui data." };
-    
     revalidatePath('/admin/users');
     return { success: true };
 }
@@ -186,17 +149,12 @@ export async function saveSchedule(formData: FormData) {
         end_time: formData.get('end_time') as string,
         teacher_id: formData.get('teacher_id') as string,
     };
-
     if (scheduleData.id) {
-        const { error } = await supabase.from('schedule').update(scheduleData).eq('id', scheduleData.id);
-        if (error) return { success: false, error: 'Gagal memperbarui jadwal.' };
+        await supabase.from('schedule').update(scheduleData).eq('id', scheduleData.id);
     } else {
-        const { error } = await supabase.from('schedule').insert(scheduleData);
-        if (error) return { success: false, error: 'Gagal membuat jadwal baru.' };
+        await supabase.from('schedule').insert(scheduleData);
     }
-
     revalidatePath('/admin/settings/schedule');
-    revalidatePath('/admin');
     return { success: true };
 }
 
@@ -206,29 +164,22 @@ export async function saveSchedule(formData: FormData) {
 export async function deleteSchedule(scheduleId: string) {
     const supabase = createClient();
     const { error } = await supabase.from('schedule').delete().eq('id', scheduleId);
-    if (error) return { success: false, error: 'Gagal menghapus jadwal.' };
+    if (error) return { success: false, error: 'Gagal menghapus.' };
     revalidatePath('/admin/settings/schedule');
     return { success: true };
 }
 
 /**
- * Sinkronisasi flag is_homeroom_teacher berdasarkan tabel classes.
+ * Sinkronisasi flag is_homeroom_teacher.
  */
 export async function syncHomeroomTeacherStatus() {
     const supabase = createClient();
-    try {
-        const { data: homeroomAssignments } = await supabase.from('classes').select('teacher_id').not('teacher_id', 'is', null);
-        if (!homeroomAssignments) return { success: false, error: 'Gagal mengambil data.' };
-        const homeroomTeacherIds = [...new Set(homeroomAssignments.map(c => c.teacher_id))];
-        
-        await supabase.from('profiles').update({ is_homeroom_teacher: false });
-        if (homeroomTeacherIds.length > 0) {
-            await supabase.from('profiles').update({ is_homeroom_teacher: true }).in('id', homeroomTeacherIds);
-        }
-        return { success: true };
-    } catch (error) {
-        return { success: false, error: 'Gagal sinkronisasi.' };
-    }
+    const { data: homeroomAssignments } = await supabase.from('classes').select('teacher_id').not('teacher_id', 'is', null);
+    if (!homeroomAssignments) return { success: false };
+    const ids = [...new Set(homeroomAssignments.map(c => c.teacher_id))];
+    await supabase.from('profiles').update({ is_homeroom_teacher: false });
+    if (ids.length > 0) await supabase.from('profiles').update({ is_homeroom_teacher: true }).in('id', ids);
+    return { success: true };
 }
 
 /**
@@ -236,18 +187,9 @@ export async function syncHomeroomTeacherStatus() {
  */
 export async function saveClass(formData: FormData) {
     const supabase = createClient();
-    const classData = {
-        id: formData.get('id') as string || undefined,
-        name: formData.get('name') as string,
-        teacher_id: formData.get('teacher_id') as string || null,
-    };
-
-    if (classData.id) {
-        await supabase.from('classes').update({ name: classData.name, teacher_id: classData.teacher_id }).eq('id', classData.id);
-    } else {
-        await supabase.from('classes').insert({ name: classData.name, teacher_id: classData.teacher_id });
-    }
-    
+    const data = { id: formData.get('id') as string || undefined, name: formData.get('name') as string, teacher_id: formData.get('teacher_id') as string || null };
+    if (data.id) await supabase.from('classes').update({ name: data.name, teacher_id: data.teacher_id }).eq('id', data.id);
+    else await supabase.from('classes').insert({ name: data.name, teacher_id: data.teacher_id });
     await syncHomeroomTeacherStatus();
     revalidatePath('/admin/roster/classes');
     return { success: true };
@@ -269,18 +211,9 @@ export async function deleteClass(classId: string) {
  */
 export async function saveSubject(formData: FormData) {
     const supabase = createClient();
-    const subjectData = {
-        id: formData.get('id') as string || undefined,
-        name: formData.get('name') as string,
-        kkm: Number(formData.get('kkm')),
-    };
-
-    if (subjectData.id) {
-        await supabase.from('subjects').update({ name: subjectData.name, kkm: subjectData.kkm }).eq('id', subjectData.id);
-    } else {
-        await supabase.from('subjects').insert({ name: subjectData.name, kkm: subjectData.kkm });
-    }
-
+    const data = { id: formData.get('id') as string || undefined, name: formData.get('name') as string, kkm: Number(formData.get('kkm')) };
+    if (data.id) await supabase.from('subjects').update({ name: data.name, kkm: data.kkm }).eq('id', data.id);
+    else await supabase.from('subjects').insert({ name: data.name, kkm: data.kkm });
     revalidatePath('/admin/roster/subjects');
     return { success: true };
 }
@@ -290,7 +223,7 @@ export async function saveSubject(formData: FormData) {
  */
 export async function saveAttendanceSettings(formData: FormData) {
     const supabase = createClient();
-    const settingsToSave = [
+    const settings = [
         { key: 'attendance_latitude', value: formData.get('latitude') as string },
         { key: 'attendance_longitude', value: formData.get('longitude') as string },
         { key: 'attendance_radius', value: formData.get('radius') as string },
@@ -298,77 +231,60 @@ export async function saveAttendanceSettings(formData: FormData) {
         { key: 'attendance_check_in_deadline', value: formData.get('check_in_deadline') as string },
         { key: 'attendance_policy', value: formData.get('attendance_policy') as string },
     ];
-
-    try {
-        for (const setting of settingsToSave) {
-            await supabase.from('settings').upsert(setting, { onConflict: 'key' });
-        }
-        revalidatePath('/admin/settings/location');
-        return { success: true };
-    } catch (error) {
-        return { success: false, error: 'Gagal menyimpan.' };
-    }
+    for (const s of settings) await supabase.from('settings').upsert(s, { onConflict: 'key' });
+    revalidatePath('/admin/settings/location');
+    return { success: true };
 }
 
 /**
  * Update informasi dasar sekolah.
  */
-export async function updateSchoolData(schoolData: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
+export async function updateSchoolData(data: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
     const supabase = createClient();
-    const { data: adminUser } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
-    if (!adminUser) return { success: false, error: "Admin tidak ditemukan." };
-
+    const { data: admin } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
+    if (!admin) return { success: false, error: "Admin tidak ditemukan." };
     await supabase.from('profiles').update({
-        school_name: schoolData.schoolName,
-        school_address: schoolData.schoolAddress,
-        headmaster_name: schoolData.headmasterName,
-        headmaster_nip: schoolData.headmasterNip,
-    }).eq('id', adminUser.id);
-
+        school_name: data.schoolName,
+        school_address: data.schoolAddress,
+        headmaster_name: data.headmasterName,
+        headmaster_nip: data.headmasterNip,
+    }).eq('id', admin.id);
     revalidatePath('/admin/settings/school');
     return { success: true };
 }
 
 /**
- * Unggah gambar profil atau logo sekolah ke storage.
+ * Unggah gambar profil atau logo sekolah.
  */
 export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'logo') {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
-    
-    let targetUserId = user.id;
+    let targetId = user.id;
     if (type === 'logo') {
-         const {data: adminUser} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
-         if(!adminUser) return { success: false, error: "Admin tidak ditemukan." };
-         targetUserId = adminUser.id;
+         const {data: admin} = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
+         if(!admin) return { success: false, error: "Admin tidak ditemukan." };
+         targetId = admin.id;
     }
-
     const file = formData.get('file') as File;
-    if (!file) return { success: false, error: "File kosong." };
-    
     const fileExt = file.name.split('.').pop();
-    const fileName = `${targetUserId}/${type}_${Date.now()}.${fileExt}`;
-
+    const fileName = `${targetId}/${type}_${Date.now()}.${fileExt}`;
     const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
     if (uploadError) return { success: false, error: uploadError.message };
-
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
-    const column = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
-
-    await supabase.from('profiles').update({ [column]: publicUrl }).eq('id', targetUserId);
-    
+    const col = type === 'avatar' ? 'avatar_url' : 'school_logo_url';
+    await supabase.from('profiles').update({ [col]: publicUrl }).eq('id', targetId);
     revalidatePath('/dashboard/settings');
     revalidatePath('/admin/settings/school');
     return { success: true, url: publicUrl };
 }
 
 /**
- * Simpan data hari libur (nasional/sekolah).
+ * Simpan data hari libur.
  */
-export async function saveHoliday(holiday: { date: string, description: string, type: 'national' | 'school' }) {
+export async function saveHoliday(h: { date: string, description: string, type: 'national' | 'school' }) {
     const supabase = createClient();
-    await supabase.from('holidays').upsert(holiday, { onConflict: 'date' });
+    await supabase.from('holidays').upsert(h, { onConflict: 'date' });
     revalidatePath('/admin/settings/holidays');
     return { success: true };
 }
@@ -376,80 +292,32 @@ export async function saveHoliday(holiday: { date: string, description: string, 
 /**
  * Hapus data hari libur.
  */
-export async function deleteHoliday(holidayId: string) {
+export async function deleteHoliday(id: string) {
     const supabase = createClient();
-    await supabase.from('holidays').delete().eq('id', holidayId);
+    await supabase.from('holidays').delete().eq('id', id);
     revalidatePath('/admin/settings/holidays');
     return { success: true };
 }
 
 /**
- * Simpan konfigurasi WhatsApp Gateway (Fonnte).
+ * Simpan konfigurasi WhatsApp Gateway.
  */
 export async function saveWhatsAppSettings(token: string, enabled: boolean, time: string, appUrl: string) {
     const supabase = createClient();
-    const settings = [
-        { key: 'fonnte_api_token', value: token.trim() },
-        { key: 'wa_reminder_enabled', value: String(enabled) },
-        { key: 'wa_reminder_time', value: time },
-        { key: 'app_url', value: appUrl.trim() },
-    ];
-
-    for (const s of settings) {
-        await supabase.from('settings').upsert(s, { onConflict: 'key' });
-    }
-
+    const s = [{ key: 'fonnte_api_token', value: token.trim() }, { key: 'wa_reminder_enabled', value: String(enabled) }, { key: 'wa_reminder_time', value: time }, { key: 'app_url', value: appUrl.trim() }];
+    for (const item of s) await supabase.from('settings').upsert(item, { onConflict: 'key' });
     revalidatePath('/admin/settings/whatsapp');
     return { success: true };
 }
 
 /**
- * Kirim pesan tes WhatsApp via Fonnte.
+ * Kirim pesan tes WhatsApp.
  */
 export async function sendTestWhatsApp(token: string, target: string) {
-    const message = "🌟 *LAKUKELAS TEST NOTIFICATION* 🌟\n\nKoneksi WhatsApp Gateway Anda berfungsi dengan baik!";
+    const msg = "🌟 *LAKUKELAS TEST* 🌟\nKoneksi WA Gateway Berhasil!";
     try {
-        const response = await fetch('https://api.fonnte.com/send', {
-            method: 'POST',
-            headers: { 'Authorization': token.trim() },
-            body: new URLSearchParams({ 'token': token.trim(), 'target': target.trim(), 'message': message })
-        });
-        const result = await response.json();
-        return result.status ? { success: true, message: 'Pesan terkirim.' } : { success: false, error: result.reason };
-    } catch (error: any) {
-        return { success: false, error: 'Gagal menghubungi Fonnte.' };
-    }
-}
-
-/**
- * Generate token aktivasi baru.
- */
-export async function generateActivationToken() {
-    const supabase = createClient();
-    const token = Math.random().toString(36).substring(2, 10).toUpperCase();
-    
-    const { error } = await supabase
-        .from('activation_tokens')
-        .insert({ token });
-
-    if (error) return { success: false, error: "Gagal membuat token." };
-    
-    revalidatePath('/admin/codes');
-    return { success: true, token };
-}
-
-/**
- * Hapus token aktivasi.
- */
-export async function deleteActivationToken(id: string) {
-    const supabase = createClient();
-    const { error } = await supabase
-        .from('activation_tokens')
-        .delete()
-        .eq('id', id);
-
-    if (error) return { success: false, error: "Gagal menghapus token." };
-    
-    revalidatePath('/admin/codes');
-    return { success: true };
+        const res = await fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': token.trim() }, body: new URLSearchParams({ 'token': token.trim(), 'target': target.trim(), 'message': msg }) });
+        const resData = await res.json();
+        return resData.status ? { success: true, message: 'Terkirim.' } : { success: false, error: resData.reason };
+    } catch (e) { return { success: false, error: 'Gagal menghubungi Fonnte.' }; }
 }
