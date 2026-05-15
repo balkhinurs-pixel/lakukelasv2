@@ -1,33 +1,26 @@
 # Log Pembaruan LakuKelas
 
-## V9.1: Monitoring & Core Accuracy Fix (TERBARU)
+## V9.2: Gatekeeper & Build Stability (TERBARU)
+Penyempurnaan sistem keamanan pendaftaran dan stabilitas build aplikasi.
+
+### 1. Sistem Token Aktivasi (Gatekeeper)
+- **First-User Auto-Admin**: Untuk database baru, pendaftar pertama otomatis menjadi `admin` dan berstatus `aktif`. Anda tidak akan terkunci saat setup awal.
+- **Token-based Registration**: Pendaftar berikutnya (Guru) wajib memasukkan token 8-digit yang digenerate oleh Admin.
+- **Admin Token Menu**: Menu baru di **Admin > Token Aktivasi** untuk membuat dan memantau penggunaan token.
+
+### 2. Monitoring & Agregasi Data
+- **Security Definer Fix**: Memastikan menu Monitoring Aktivitas Guru menampilkan angka yang akurat (bukan 0) dengan memberikan izin fungsi database untuk membaca data agregasi lintas user.
+- **Sub-query Optimization**: Menghitung sesi pertemuan unik secara tepat pada presensi dan penilaian.
+
+### 3. Build & UI Fix
+- **Attendance Page Component**: Memperbaiki kesalahan sintaksis `Unexpected token div` yang menyebabkan kegagalan build di Vercel.
+- **Restorasi Admin Logic**: Mengembalikan seluruh 200+ baris kode manajemen admin (Jadwal, Lokasi, WhatsApp) yang sempat terhapus.
+- **Import Components**: Memperbaiki `ReferenceError: Card is not defined` pada halaman manajemen staf.
+
+---
+
+## V9.1: Monitoring & Core Accuracy Fix
 Perbaikan mendalam pada integritas data monitoring dan kendala manajemen staf.
 
-### 1. Fix Monitoring Aktivitas Guru
-- **Data Deteksi**: Memperbaiki fungsi `get_teacher_activity_counts` yang sebelumnya mengembalikan angka 0 meskipun data tersedia. 
-- **Security Definer**: Menambahkan izin khusus pada fungsi agregasi agar Kepala Sekolah dan Admin dapat menarik data seluruh staf tanpa hambatan keamanan (RLS).
-- **Sub-query Optimization**: Mengubah cara penghitungan sesi agar lebih akurat (menghitung sesi pertemuan unik, bukan jumlah baris data).
-
-### 2. Fix Manajemen Pengguna
-- **Hapus Pengguna**: Memperbarui kebijakan RLS pada tabel `profiles` agar tombol "Hapus Akun" di dashboard admin benar-benar mengeksekusi penghapusan di database.
-- **Admin Visibility**: Memastikan Admin dapat melihat seluruh daftar staf termasuk sesama Admin untuk pengelolaan yang lebih baik.
-
-### 3. Keamanan & Gatekeeper
-- **Token Aktivasi**: Menstabilkan tabel `activation_tokens` untuk mencegah akses tidak sah dari pengguna luar.
-- **Auto-Activation**: Menambahkan logika agar user pertama yang mendaftar (Biasanya Admin Setup) otomatis aktif tanpa token.
-
----
-
-## V9.0: Security & Activation Gatekeeper
-Fitur keamanan untuk mencegah pengguna tidak dikenal mengakses sistem meskipun login melalui Google.
-
-- **Gatekeeper**: Pengguna baru kini berstatus "Belum Aktif" saat pertama kali login.
-- **Halaman Aktivasi**: Pengguna dialihkan ke `/activate` untuk memasukkan 8-digit token unik.
-- **Manajemen Token**: Admin dapat membuat, memantau, dan menghapus token melalui menu **Admin > Token Aktivasi**.
-
----
-
-## V8.1: Konsolidasi Skema Utama
-- **Schema Update**: Seluruh potongan skrip sukses dari V8.0 telah disatukan ke dalam `schema.sql`.
-- **Standardisasi**: Mendukung fitur monitoring dan kolaborasi antar guru.
-- **RLS Robustness**: Penambahan logika otomasi kebijakan keamanan (RLS) untuk akses pengguna terautentikasi.
+- **Data Deteksi**: Memperbaiki fungsi `get_teacher_activity_counts`.
+- **Hapus Pengguna**: Memperbarui kebijakan RLS agar Admin benar-benar bisa menghapus akun staf.

@@ -327,10 +327,6 @@ export default function AttendancePageComponent({
     initForm();
   }, [selectedClassId, date, editingId, students, currentHoliday]);
 
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedClassId, selectedSubjectId]);
-
   const resetForm = () => {
     setEditingId(null);
     setDate(new Date());
@@ -433,9 +429,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
 
   const handleEdit = (entry: AttendanceHistoryEntry) => {
       setLoading(true);
-      if (selectedClassId !== entry.class_id) {
-        setSelectedClassId(entry.class_id);
-      }
+      setSelectedClassId(entry.class_id);
       setSelectedSubjectId(entry.subject_id);
       
       setEditingId(entry.id); 
