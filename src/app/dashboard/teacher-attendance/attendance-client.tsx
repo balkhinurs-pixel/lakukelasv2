@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronRight, Calendar as CalendarIcon, Filter, Clock, Briefcase, Coffee, CheckCircle2 } from "lucide-react";
+import { Loader2, Flag, School, ChevronRight, Calendar as CalendarIcon, Filter, Clock, Briefcase, Coffee, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { recordTeacherAttendance } from "@/lib/actions";
 import { format, parseISO } from "date-fns";
@@ -217,7 +217,7 @@ export default function TeacherAttendanceClient({
                           {todayHoliday ? (
                             <Badge className={cn(
                               "text-[10px] font-black uppercase tracking-[0.1em] border-0 px-3 py-1",
-                              todayHoliday.type === 'national' ? "bg-rose-500 text-white" : "bg-indigo-500 text-white"
+                              todayHoliday.type === 'national' ? "bg-red-500 text-white" : "bg-indigo-500 text-white"
                             )}>
                               {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>

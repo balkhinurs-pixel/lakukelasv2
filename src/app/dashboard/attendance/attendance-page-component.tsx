@@ -3,7 +3,7 @@
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, ArrowUpCircle, AlertTriangle, Coffee } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, User, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, MessageSquare, ArrowUpCircle, Flag, School, Coffee, AlertTriangle } from "lucide-react";
 import { useSearchParams, useRouter } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -168,7 +168,7 @@ const AddNoteDialog = ({ student, onNoteSaved, disabled }: { student: Student | 
                     <MessageSquarePlus className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="dialog-content-mobile mobile-safe-area rounded-3xl">
+            <DialogContent className="dialog-content-mobile mobile-safe-area">
                 <DialogHeader>
                     <DialogTitle>Tambah Catatan untuk {student.name}</DialogTitle>
                     <DialogDescription>Catatan ini akan dapat dilihat oleh wali kelas.</DialogDescription>
@@ -176,7 +176,7 @@ const AddNoteDialog = ({ student, onNoteSaved, disabled }: { student: Student | 
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="note-content">Isi Catatan</Label>
-                        <Textarea id="note-content" value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Tidak mengerjakan PR, sangat aktif di kelas, dll." className="rounded-xl" />
+                        <Textarea id="note-content" value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Tidak mengerjakan PR, sangat aktif di kelas, dll." />
                     </div>
                     <div className="space-y-2">
                         <Label>Jenis Catatan</Label>
@@ -683,7 +683,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
       </Card>
 
       {selectedClassId && (
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50 overflow-hidden rounded-xl">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50 overflow-hidden">
           <CardHeader className="pb-4">
             <div className="flex flex-col items-center justify-center space-y-4">
               <div className="flex flex-col items-center gap-2">
@@ -729,7 +729,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                     <div className={cn(
                         "p-8 rounded-xl border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full max-w-2xl bg-white",
                         currentHoliday.type === 'national' 
-                            ? "border-rose-100" 
+                            ? "border-red-100" 
                             : "border-indigo-100"
                     )}>
                         <div className="shrink-0 -mt-16">
@@ -742,7 +742,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                         <div className="pt-2">
                             <Badge variant="outline" className={cn(
                                 "text-[10px] uppercase font-black tracking-[0.2em] px-3 py-1 mb-2 border-0",
-                                currentHoliday.type === 'national' ? "bg-rose-100 text-rose-600" : "bg-indigo-100 text-indigo-600"
+                                currentHoliday.type === 'national' ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-600"
                             )}>
                                 {currentHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
@@ -966,11 +966,10 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                           <TableRow className="bg-slate-50 hover:bg-slate-50">
                               <TableHead className="font-semibold text-slate-700">Tanggal</TableHead>
                               <TableHead className="font-semibold text-slate-700">Info</TableHead>
-                              <TableHead className="font-semibold text-slate-700 text-center">Pertemuan</TableHead>
+                              <TableHead className="font-semibold text-slate-700">Pertemuan</TableHead>
                               <TableHead className="font-semibold text-slate-700">Ringkasan</TableHead>
                               <TableHead className="text-right font-semibold text-slate-700">Aksi</TableHead>
                           </TableRow>
-                      </TableHeader>
                       <TableBody>
                           {paginatedHistory.map(({entry, records}) => {
                               const summary = records.reduce((acc, record) => {
@@ -1079,7 +1078,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
               </div>
             </DialogHeader>
             <ScrollArea className="max-h-[50vh] pr-2 mb-4">
-                {viewingEntry ? (
+                {viewingEntry && students.length > 0 ? (
                     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
                       <Table>
                           <TableHeader>

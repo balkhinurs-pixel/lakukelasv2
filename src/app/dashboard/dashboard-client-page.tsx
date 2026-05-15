@@ -16,8 +16,12 @@ import {
   Users, 
   Clock, 
   CalendarDays, 
+  Tag, 
   ClipboardEdit, 
   CheckCircle, 
+  Flag, 
+  School, 
+  CalendarOff,
   ArrowRight,
   Coffee
 } from "lucide-react";
@@ -310,7 +314,7 @@ export default function DashboardClientPage({
                     <div className={cn(
                         "p-8 rounded-xl border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full bg-white",
                         todayHoliday.type === 'national' 
-                            ? "border-rose-100" 
+                            ? "border-red-100" 
                             : "border-indigo-100"
                     )}>
                         <div className="shrink-0 -mt-16">
@@ -323,7 +327,7 @@ export default function DashboardClientPage({
                         <div className="pt-2">
                             <Badge variant="outline" className={cn(
                                 "text-xs uppercase font-black tracking-[0.2em] px-3 py-1 mb-2 border-0",
-                                todayHoliday.type === 'national' ? "bg-rose-100 text-rose-600" : "bg-indigo-100 text-indigo-600"
+                                todayHoliday.type === 'national' ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-600"
                             )}>
                                 {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
