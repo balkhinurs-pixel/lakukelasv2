@@ -14,8 +14,6 @@ import {
   Sparkles,
   CalendarDays,
   CalendarOff,
-  School,
-  Flag,
 } from "lucide-react";
 import { format, isSameDay, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -61,6 +59,8 @@ import { useToast } from "@/hooks/use-toast";
 import { saveAgenda, deleteAgenda } from "@/lib/actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
+import { LottieCalendar } from "@/components/ui/lottie-calendar";
+import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
 
 interface IndonesianHoliday {
     date: string;
@@ -139,7 +139,6 @@ export default function AgendaPageClient({
       <div className="relative h-full w-full flex items-center justify-center">
         <span className={cn(
             "relative z-10 transition-colors duration-200 font-bold",
-            // Override holiday colors if selected to prevent clashing with primary background
             isSelected ? "text-white" : 
             holiday?.type === 'national' ? "text-red-600" : 
             holiday?.type === 'school' ? "text-indigo-600" : ""
@@ -488,21 +487,24 @@ export default function AgendaPageClient({
                                     className={cn(
                                         "p-4 rounded-[1.2rem] border-2 flex items-center gap-4 shadow-sm",
                                         holidayForDate.type === 'national' 
-                                            ? "bg-red-50/50 border-red-100 text-red-700" 
-                                            : "bg-indigo-50/50 border-indigo-100 text-indigo-700"
+                                            ? "bg-red-50/50 border-red-100" 
+                                            : "bg-indigo-50/50 border-indigo-100"
                                     )}
                                 >
-                                    <div className={cn(
-                                        "p-2.5 rounded-xl text-white shadow-md",
-                                        holidayForDate.type === 'national' ? "bg-red-500 shadow-red-500/20" : "bg-indigo-500 shadow-indigo-500/20"
-                                    )}>
-                                        {holidayForDate.type === 'national' ? <Flag className="h-5 w-5" /> : <School className="h-5 w-5" />}
+                                    <div className="shrink-0 flex items-center justify-center">
+                                        {holidayForDate.type === 'national' ? (
+                                            <LottieCalendar size={60} />
+                                        ) : (
+                                            <LottieSchoolHoliday size={60} />
+                                        )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="font-bold text-[9px] uppercase tracking-wider opacity-60">
+                                        <h4 className="font-bold text-[9px] uppercase tracking-wider opacity-60 text-slate-500">
                                             {holidayForDate.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                                         </h4>
-                                        <p className="font-bold text-base leading-tight mt-0.5">{holidayForDate.name}</p>
+                                        <p className="font-black text-lg leading-tight mt-0.5 text-rose-600">
+                                            {holidayForDate.name}
+                                        </p>
                                     </div>
                                 </div>
                             )}
