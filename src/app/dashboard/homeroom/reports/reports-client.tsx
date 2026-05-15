@@ -2,6 +2,8 @@
 "use client";
 
 import * as React from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import {
   Card,
   CardContent,
@@ -25,13 +27,21 @@ import {
     Info,
     FileSpreadsheet,
     LayoutList,
-    Table as TableIcon
+    Table as TableIcon,
+    Loader2
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
+import { format, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
+import type { Profile } from "@/lib/types";
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
 
 interface Props {
   initialData: {
@@ -42,7 +52,8 @@ interface Props {
       daysInMonth: number;
       month: number;
       year: number;
-  }
+  },
+  schoolProfile: Profile | null;
 }
 
 const months = [
@@ -54,14 +65,14 @@ const months = [
     { value: "11", label: "November" }, { value: "12", label: "Desember" }
 ];
 
-export default function HomeroomReportsClient({ initialData }: Props) {
+export default function HomeroomReportsClient({ initialData, schoolProfile }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { className, students, attendanceMap, holidayDates, daysInMonth, month, year } = initialData;
   const [searchTerm, setSearchTerm] = React.useState("");
-  
   const [viewMode, setViewMode] = React.useState<'summary' | 'matrix'>('summary');
+  const [downloading, setDownloading] = React.useState(false);
 
   React.useEffect(() => {
     if (isMobile !== undefined) {
@@ -107,6 +118,145 @@ export default function HomeroomReportsClient({ initialData }: Props) {
     return students.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [students, searchTerm]);
 
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    }) as jsPDFWithAutoTable;
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 10;
+    const monthLabel = months.find(m => m.value === String(month))?.label;
+
+    const generateContent = () => {
+        // 1. Kop Surat
+        if (schoolProfile) {
+            const logoUrl = schoolProfile.school_logo_url;
+            if (logoUrl) {
+                // Background handling for logo if needed
+            }
+            doc.setFontSize(14).setFont('helvetica', 'bold');
+            doc.text((schoolProfile.school_name || "NAMA SEKOLAH").toUpperCase(), 40, margin + 5);
+            doc.setFontSize(9).setFont('helvetica', 'normal');
+            doc.text(schoolProfile.school_address || "Alamat Sekolah", 40, margin + 10);
+            doc.setLineWidth(0.5);
+            doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
+        }
+
+        // 2. Judul Laporan
+        doc.setFontSize(12).setFont('helvetica', 'bold');
+        doc.text("LAPORAN BULANAN PRESENSI SISWA", pageWidth / 2, margin + 25, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text(`Kelas: ${className} | Bulan: ${monthLabel} ${year}`, pageWidth / 2, margin + 30, { align: 'center' });
+
+        // 3. Persiapan Data Tabel
+        const tableHeader = [
+            ['No', 'Nama Lengkap', 'JK', ...Array.from({ length: daysInMonth }, (_, i) => String(i + 1)), 'H', 'S', 'I', 'A']
+        ];
+
+        const tableBody = filteredStudents.map((student, idx) => {
+            const summary = getRowSummary(student.id);
+            const dailyStatus = Array.from({ length: daysInMonth }, (_, i) => getDayStatus(student.id, i + 1));
+            return [
+                idx + 1,
+                student.name,
+                student.gender.charAt(0),
+                ...dailyStatus,
+                summary.h,
+                summary.s,
+                summary.i,
+                summary.a
+            ];
+        });
+
+        // 4. Render Tabel
+        doc.autoTable({
+            head: tableHeader,
+            body: tableBody,
+            startY: margin + 35,
+            theme: 'grid',
+            styles: {
+                fontSize: 6.5,
+                cellPadding: 1,
+                halign: 'center',
+                valign: 'middle',
+                lineWidth: 0.1,
+                lineColor: [200, 200, 200]
+            },
+            headStyles: {
+                fillColor: [63, 81, 181],
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            columnStyles: {
+                0: { cellWidth: 8 },
+                1: { cellWidth: 45, halign: 'left' },
+                2: { cellWidth: 7 },
+            },
+            didParseCell: (data: any) => {
+                // Warna merah untuk hari libur (Minggu/Nasional)
+                if (data.section === 'head' && data.column.index >= 3 && data.column.index < 3 + daysInMonth) {
+                    const dayNum = parseInt(data.cell.text[0]);
+                    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+                    if (isSunday(dayNum) || holidayDates.has(dateStr)) {
+                        data.cell.styles.fillColor = [239, 68, 68];
+                    }
+                }
+                // Warnai isi sel jika libur
+                if (data.section === 'body' && data.column.index >= 3 && data.column.index < 3 + daysInMonth) {
+                    const dayNum = data.column.index - 2;
+                    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+                    if (isSunday(dayNum) || holidayDates.has(dateStr)) {
+                        data.cell.styles.fillColor = [254, 226, 226];
+                    }
+                }
+            }
+        });
+
+        // 5. Tanda Tangan
+        const finalY = (doc as any).lastAutoTable.finalY + 15;
+        const todayDate = format(new Date(), "dd MMMM yyyy", { locale: id });
+        
+        doc.setFontSize(9).setFont('helvetica', 'normal');
+        doc.text(`Dicetak pada: ${todayDate}`, margin, finalY - 5);
+
+        // Grid tanda tangan
+        const signY = finalY + 10;
+        doc.text("Mengetahui,", margin + 20, signY);
+        doc.text("Kepala Sekolah,", margin + 20, signY + 5);
+        
+        doc.text(`${schoolProfile?.school_address?.split(',')[1]?.trim() || "Kota"}, ${todayDate}`, pageWidth - margin - 60, signY);
+        doc.text("Wali Kelas,", pageWidth - margin - 60, signY + 5);
+
+        doc.setFont(undefined, 'bold');
+        doc.text(schoolProfile?.headmaster_name || "..................................................", margin + 20, signY + 30);
+        doc.text(schoolProfile?.full_name || "..................................................", pageWidth - margin - 60, signY + 30);
+        
+        doc.setFont(undefined, 'normal');
+        doc.text(`NIP. ${schoolProfile?.headmaster_nip || "..........................."}`, margin + 20, signY + 35);
+        doc.text(`NIP. ${schoolProfile?.nip || "..........................."}`, pageWidth - margin - 60, signY + 35);
+
+        doc.save(`Presensi_${className}_${monthLabel}_${year}.pdf`);
+        setDownloading(false);
+    };
+
+    // Load logo if exists, then generate
+    if (schoolProfile?.school_logo_url) {
+        const img = new Image();
+        img.src = schoolProfile.school_logo_url;
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+            doc.addImage(img, 'PNG', margin, margin, 25, 25);
+            generateContent();
+        };
+        img.onerror = () => generateContent();
+    } else {
+        generateContent();
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-full overflow-hidden pb-10">
       <div className="flex flex-col gap-4 px-1">
@@ -117,11 +267,22 @@ export default function HomeroomReportsClient({ initialData }: Props) {
             <p className="text-xs md:text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest">Sistem Matriks Kehadiran Siswa</p>
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-             <Button variant="outline" size="sm" className="rounded-xl border-slate-200 shrink-0 bg-white">
+             <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-xl border-slate-200 shrink-0 bg-white"
+                onClick={() => window.print()}
+             >
                 <Printer className="mr-2 h-4 w-4" /> Cetak
              </Button>
-             <Button size="sm" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shrink-0">
-                <Download className="mr-2 h-4 w-4" /> PDF
+             <Button 
+                size="sm" 
+                className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+                onClick={handleDownloadPdf}
+                disabled={downloading}
+             >
+                {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                Unduh PDF
              </Button>
              <Button variant="outline" size="sm" className="rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 shrink-0 bg-white">
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel

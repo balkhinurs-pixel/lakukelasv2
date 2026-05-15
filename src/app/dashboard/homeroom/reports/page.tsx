@@ -1,5 +1,5 @@
 
-import { getHomeroomClassDetails, getHomeroomMonthlyAttendance } from "@/lib/data";
+import { getHomeroomClassDetails, getHomeroomMonthlyAttendance, getAdminProfile } from "@/lib/data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import HomeroomReportsClient from "./reports-client";
@@ -30,7 +30,10 @@ export default async function HomeroomReportsPage({
   const currentMonth = searchParams.month ? parseInt(searchParams.month) : now.getMonth() + 1;
   const currentYear = searchParams.year ? parseInt(searchParams.year) : now.getFullYear();
 
-  const monthlyAttendanceData = await getHomeroomMonthlyAttendance(currentMonth, currentYear);
+  const [monthlyAttendanceData, schoolProfile] = await Promise.all([
+    getHomeroomMonthlyAttendance(currentMonth, currentYear),
+    getAdminProfile()
+  ]);
 
   if (!monthlyAttendanceData) {
     return (
@@ -47,6 +50,7 @@ export default async function HomeroomReportsPage({
   return (
     <HomeroomReportsClient 
       initialData={monthlyAttendanceData}
+      schoolProfile={schoolProfile}
     />
   );
 }
