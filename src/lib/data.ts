@@ -38,7 +38,8 @@ export async function getAdminDashboardData() {
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
             supabase.from('settings').select('value').eq('key', 'attendance_policy').single(),
             supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle(),
-            supabase.from('profiles').select('id, full_name, avatar_url').in('role', ['teacher', 'headmaster']).order('full_name'),
+            // HANYA ambil staff yang SUDAH AKTIF untuk statistik
+            supabase.from('profiles').select('id, full_name, avatar_url').in('role', ['teacher', 'headmaster']).eq('is_activated', true).order('full_name'),
             supabase.from('teacher_attendance').select('*').eq('date', todayStr),
             supabase.from('schedule').select('teacher_id').eq('day', dayNameIndo)
         ]);
@@ -135,7 +136,7 @@ export async function getAdminDashboardData() {
 export async function getAllUsers(): Promise<Profile[]> {
     noStore();
     const supabase = createClient();
-    const { data, error } = await supabase.from('profiles').select('*');
+    const { data, error } = await supabase.from('profiles').select('*').order('full_name');
     if (error) return [];
     return data;
 }
@@ -642,8 +643,9 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 export async function getTeacherActivityStats() {
     noStore();
     const supabase = createClient();
+    // RPC get_teacher_activity_counts HARUS diupdate di SQL agar memfilter is_activated = true
     const { data: activityData } = await supabase.rpc('get_teacher_activity_counts');
-    const { data: teachers } = await supabase.from('profiles').select('id, full_name').in('role', ['teacher', 'headmaster']).order('full_name');
+    const { data: teachers } = await supabase.from('profiles').select('id, full_name').in('role', ['teacher', 'headmaster']).eq('is_activated', true).order('full_name');
     if (!teachers) return [];
     const statsMap = new Map(activityData?.map((item: any) => [item.teacher_id, item]) || []);
     return teachers.map(teacher => {
