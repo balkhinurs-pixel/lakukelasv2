@@ -4,6 +4,7 @@
 import * as React from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import * as XLSX from "xlsx";
 import {
   Card,
   CardContent,
@@ -18,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -37,7 +38,8 @@ import {
     BookOpen,
     School,
     CheckCircle,
-    Info
+    Info,
+    FileSpreadsheet
 } from "lucide-react";
 import type { Class, Subject, Profile, SchoolYear } from "@/lib/types";
 import { format, parseISO } from "date-fns";
@@ -84,7 +86,9 @@ export default function ReportsPageComponent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const [activeTab, setActiveTab] = React.useState('attendance');
   const [downloading, setDownloading] = React.useState(false);
+  const [selectedAssessment, setSelectedAssessment] = React.useState('all');
   
   const currentMonth = searchParams.get('month') || String(new Date().getMonth() + 1);
   const selectedClass = searchParams.get('class') || (classes.length > 0 ? classes[0].id : "");
@@ -99,7 +103,7 @@ export default function ReportsPageComponent({
     [searchParams, router, pathname]
   );
   
-  const { summaryCards } = reportsData;
+  const { summaryCards, uniqueAssessments } = reportsData;
 
   const handleDownloadPdf = async (type: 'attendance' | 'grades' | 'journal') => {
     if (!selectedClass || !selectedSubject) return;
@@ -107,30 +111,37 @@ export default function ReportsPageComponent({
     setDownloading(true);
     
     try {
-        const filters = {
-            schoolYearId: summaryCards.activeSchoolYearId,
-            month: Number(currentMonth),
-            classId: selectedClass,
-            subjectId: selectedSubject
-        };
-
         let head: any[][] = [];
         let body: any[][] = [];
         let title = "";
 
         if (type === 'attendance') {
-            const data = await getAttendanceReportList(filters);
+            const data = await getAttendanceReportList({
+                schoolYearId: summaryCards.activeSchoolYearId,
+                month: Number(currentMonth),
+                classId: selectedClass,
+                subjectId: selectedSubject
+            });
             title = "LAPORAN REKAPITULASI PRESENSI SISWA";
             head = [['No', 'Tanggal', 'Siswa', 'Kelas', 'Mapel', 'Status']];
             body = data.map((h: any, i: number) => [i + 1, format(parseISO(h.date), 'dd/MM/yyyy'), h.student_name || 'N/A', h.class_name, h.subject_name, h.status]);
         } else if (type === 'grades') {
-            const data = await getGradesReportList(filters);
-            title = "LAPORAN LEGER NILAI SISWA";
+            const data = await getGradesReportList({
+                schoolYearId: summaryCards.activeSchoolYearId,
+                classId: selectedClass,
+                subjectId: selectedSubject,
+                assessmentType: selectedAssessment
+            });
+            title = "LAPORAN LEGER NILAI SISWA (SEMESTER)";
             head = [['No', 'Nama Siswa', 'Kelas', 'Mapel', 'Jenis Penilaian', 'Nilai']];
             body = data.map((g: any, i: number) => [i + 1, g.student_name || 'N/A', g.class_name, g.subject_name, g.assessment_type, g.score]);
         } else {
-            const data = await getJournalReportList(filters);
-            title = "LAPORAN JURNAL MENGAJAR GURU";
+            const data = await getJournalReportList({
+                schoolYearId: summaryCards.activeSchoolYearId,
+                classId: selectedClass,
+                subjectId: selectedSubject
+            });
+            title = "LAPORAN JURNAL MENGAJAR GURU (SEMESTER)";
             head = [['No', 'Tanggal', 'Kelas', 'Mapel', 'Tujuan Pembelajaran']];
             body = data.map((j: any, i: number) => [i + 1, format(parseISO(j.date), 'dd/MM/yyyy'), j.className, j.subjectName, j.learning_objectives]);
         }
@@ -208,6 +219,38 @@ export default function ReportsPageComponent({
     }
   };
 
+  const handleDownloadExcel = async () => {
+    if (!selectedClass || !selectedSubject) return;
+    setDownloading(true);
+    
+    try {
+        const data = await getGradesReportList({
+            schoolYearId: summaryCards.activeSchoolYearId,
+            classId: selectedClass,
+            subjectId: selectedSubject,
+            assessmentType: selectedAssessment
+        });
+
+        const worksheetData = data.map((g: any, i: number) => ({
+            "No": i + 1,
+            "Nama Siswa": g.student_name,
+            "Kelas": g.class_name,
+            "Mapel": g.subject_name,
+            "Jenis Penilaian": g.assessment_type,
+            "Nilai": g.score,
+            "Tanggal": format(parseISO(g.date), 'dd/MM/yyyy')
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Nilai");
+        XLSX.writeFile(workbook, `Leger_Nilai_${summaryCards.activeSchoolYearName.replace(/\//g, '-')}.xlsx`);
+    } catch (error) {
+        console.error("Excel export error:", error);
+    }
+    setDownloading(false);
+  }
+
   return (
     <div className="space-y-8 p-1 pb-20">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -228,17 +271,20 @@ export default function ReportsPageComponent({
             </CardHeader>
             <CardContent className="p-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
-                            <CalendarDays className="w-3.5 h-3.5" /> Bulan Laporan
-                        </Label>
-                        <Select value={currentMonth} onValueChange={(v) => handleFilterChange('month', v)}>
-                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20"><SelectValue /></SelectTrigger>
-                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                {allMonths.map(m => <SelectItem key={m.value} value={m.value} className="py-3 font-bold">{m.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {activeTab === 'attendance' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
+                                <CalendarDays className="w-3.5 h-3.5" /> Bulan Laporan
+                            </Label>
+                            <Select value={currentMonth} onValueChange={(v) => handleFilterChange('month', v)}>
+                                <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                    {allMonths.map(m => <SelectItem key={m.value} value={m.value} className="py-3 font-bold">{m.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    
                     <div className="space-y-2">
                         <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
                             <School className="w-3.5 h-3.5" /> Pilih Kelas
@@ -275,6 +321,7 @@ export default function ReportsPageComponent({
                         <p className="text-5xl font-black text-emerald-600">{summaryCards.overallAttendanceRate}%</p>
                         <TrendingUp className="h-6 w-6 text-emerald-400" />
                     </div>
+                    <p className="text-xs text-slate-400 mt-1 font-bold">Rata-rata Bulan Ini</p>
                 </CardContent>
             </Card>
 
@@ -287,6 +334,7 @@ export default function ReportsPageComponent({
                         <p className="text-5xl font-black text-blue-600">{summaryCards.overallAverageGrade}</p>
                         <Award className="h-6 w-6 text-blue-400" />
                     </div>
+                    <p className="text-xs text-slate-400 mt-1 font-bold">Rata-rata Semester</p>
                 </CardContent>
             </Card>
 
@@ -299,11 +347,12 @@ export default function ReportsPageComponent({
                         <p className="text-5xl font-black text-purple-600">{summaryCards.totalJournals}</p>
                         <FileText className="h-6 w-6 text-purple-400" />
                     </div>
+                    <p className="text-xs text-slate-400 mt-1 font-bold">Total Semester Ini</p>
                 </CardContent>
             </Card>
         </div>
 
-        <Tabs defaultValue="attendance" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto bg-slate-100 p-1.5 rounded-[1.5rem] shadow-inner h-14">
                 <TabsTrigger value="attendance" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Presensi</TabsTrigger>
                 <TabsTrigger value="grades" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Nilai</TabsTrigger>
@@ -318,7 +367,7 @@ export default function ReportsPageComponent({
                         </div>
                         <div className="space-y-2">
                             <h3 className="text-2xl font-black text-slate-900">Laporan Presensi Siswa</h3>
-                            <p className="text-slate-500 font-medium">Klik tombol di bawah untuk mengunduh rekapitulasi kehadiran siswa dalam format PDF resmi.</p>
+                            <p className="text-slate-500 font-medium leading-relaxed">Format rekapitulasi kehadiran bulanan resmi. Pastikan bulan yang dipilih sudah benar.</p>
                         </div>
                         <Button 
                             onClick={() => handleDownloadPdf('attendance')} 
@@ -328,9 +377,6 @@ export default function ReportsPageComponent({
                             {downloading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Printer className="h-6 w-6" />}
                             Cetak Laporan Presensi
                         </Button>
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest pt-4">
-                            <CheckCircle className="h-4 w-4 text-emerald-500" /> Data Siap Cetak
-                        </div>
                     </div>
                 </Card>
             </TabsContent>
@@ -341,20 +387,42 @@ export default function ReportsPageComponent({
                         <div className="p-6 rounded-[2rem] bg-blue-50 text-blue-600 shadow-inner">
                             <ClipboardList className="h-12 w-12" />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-4 w-full">
                             <h3 className="text-2xl font-black text-slate-900">Leger Nilai Siswa</h3>
-                            <p className="text-slate-500 font-medium">Klik tombol di bawah untuk mengunduh daftar perolehan skor akademik siswa dalam format PDF resmi.</p>
+                            <div className="space-y-2 text-left">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Saring Berdasarkan Ulangan</Label>
+                                <Select value={selectedAssessment} onValueChange={setSelectedAssessment}>
+                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-0 shadow-inner font-bold">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-0 shadow-2xl">
+                                        <SelectItem value="all" className="font-bold">Semua Penilaian Semester</SelectItem>
+                                        {uniqueAssessments.map(a => (
+                                            <SelectItem key={a} value={a}>{a}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <Button 
-                            onClick={() => handleDownloadPdf('grades')} 
-                            disabled={downloading}
-                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-lg font-bold gap-3"
-                        >
-                            {downloading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Printer className="h-6 w-6" />}
-                            Cetak Leger Nilai
-                        </Button>
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest pt-4">
-                            <CheckCircle className="h-4 w-4 text-emerald-500" /> Data Siap Cetak
+                        
+                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                            <Button 
+                                onClick={() => handleDownloadPdf('grades')} 
+                                disabled={downloading}
+                                className="flex-1 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-lg font-bold gap-3"
+                            >
+                                {downloading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Printer className="h-5 w-5" />}
+                                Cetak PDF
+                            </Button>
+                            <Button 
+                                onClick={handleDownloadExcel}
+                                disabled={downloading}
+                                variant="outline"
+                                className="flex-1 h-14 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-2xl text-lg font-bold gap-3"
+                            >
+                                <FileSpreadsheet className="h-5 w-5" />
+                                Excel
+                            </Button>
                         </div>
                     </div>
                 </Card>
@@ -368,7 +436,7 @@ export default function ReportsPageComponent({
                         </div>
                         <div className="space-y-2">
                             <h3 className="text-2xl font-black text-slate-900">Log Jurnal Mengajar</h3>
-                            <p className="text-slate-500 font-medium">Klik tombol di bawah untuk mengunduh catatan proses belajar mengajar harian Bapak/Ibu dalam format PDF resmi.</p>
+                            <p className="text-slate-500 font-medium leading-relaxed">Rekapitulasi seluruh aktivitas KBM selama satu semester penuh untuk dokumen supervisi.</p>
                         </div>
                         <Button 
                             onClick={() => handleDownloadPdf('journal')} 
@@ -378,9 +446,6 @@ export default function ReportsPageComponent({
                             {downloading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Printer className="h-6 w-6" />}
                             Cetak Jurnal Mengajar
                         </Button>
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest pt-4">
-                            <CheckCircle className="h-4 w-4 text-emerald-500" /> Data Siap Cetak
-                        </div>
                     </div>
                 </Card>
             </TabsContent>
@@ -393,8 +458,8 @@ export default function ReportsPageComponent({
                         <Info className="h-6 w-6 text-blue-600" />
                     </div>
                     <div className="space-y-1">
-                        <h4 className="font-bold text-blue-900">Sistem Hemat Data Aktif</h4>
-                        <p className="text-sm text-blue-700 leading-relaxed">Pratinjau tabel siswa disembunyikan untuk menghemat penggunaan data internet Anda. Seluruh informasi tetap akan muncul secara lengkap pada file PDF yang diunduh.</p>
+                        <h4 className="font-bold text-blue-900">Sistem Laporan Cerdas</h4>
+                        <p className="text-sm text-blue-700 leading-relaxed">Presensi dihitung per bulan, sementara Nilai dan Jurnal dihitung secara otomatis untuk seluruh semester yang sedang aktif guna efisiensi administrasi.</p>
                     </div>
                 </div>
             </Card>

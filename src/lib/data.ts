@@ -4,9 +4,9 @@
 import { createClient } from './supabase/server';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
-import { format, parseISO, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { getIndonesianDayName, toIndonesianTime, getIndonesianTime } from './timezone';
+import { getIndonesianDayName, getIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
 
 // --- Helper Functions ---
@@ -21,10 +21,6 @@ async function getAuthenticatedUser() {
     return user;
 }
 
-/**
- * Mendapatkan rentang tanggal (start & end) untuk bulan tertentu dalam tahun ajaran tertentu.
- * Logika: Jika Ganjil (7-12) gunakan tahun awal, jika Genap (1-6) gunakan tahun akhir.
- */
 async function getMonthDateRange(schoolYearId: string, month: number) {
     const supabase = createClient();
     const { data: schoolYear } = await supabase
@@ -35,14 +31,11 @@ async function getMonthDateRange(schoolYearId: string, month: number) {
 
     if (!schoolYear) return null;
 
-    // Ekstrak tahun dari string "2024/2025 - Ganjil"
     const yearsMatch = schoolYear.name.match(/(\d{4})\/(\d{4})/);
     if (!yearsMatch) return null;
 
     const startYear = parseInt(yearsMatch[1]);
     const endYear = parseInt(yearsMatch[2]);
-    
-    // Tentukan tahun kalender berdasarkan bulan
     const calendarYear = month >= 7 ? startYear : endYear;
     
     const startDate = `${calendarYear}-${String(month).padStart(2, '0')}-01`;
@@ -418,124 +411,6 @@ export async function getLatestClassPresence(classId: string, date: string): Pro
     return result;
 }
 
-export async function getHomeroomTodayStatus() {
-    noStore();
-    const user = await getAuthenticatedUser();
-    if (!user) return null;
-    
-    const supabase = createClient();
-    const { data: homeroomClass } = await supabase.from('classes').select('id, name').eq('teacher_id', user.id).limit(1).single();
-    if (!homeroomClass) return null;
-    
-    const today = format(getIndonesianTime(), 'yyyy-MM-dd');
-    
-    const { data: students } = await supabase.from('students').select('id, name, nis').eq('class_id', homeroomClass.id).eq('status', 'active');
-    if (!students) return null;
-    
-    const studentIds = students.map(s => s.id);
-    const { data: attendance } = await supabase
-        .from('attendance_records')
-        .select('student_id, status, meeting_number')
-        .in('student_id', studentIds)
-        .eq('date', today)
-        .order('meeting_number', { ascending: false });
-        
-    const latestStatus: Record<string, string> = {};
-    const seen = new Set();
-    (attendance || []).forEach(r => {
-        if (!seen.has(r.student_id)) {
-            latestStatus[r.student_id] = r.status;
-            seen.add(r.student_id);
-        }
-    });
-    
-    return {
-        className: homeroomClass.name,
-        today,
-        statuses: students.map(s => ({
-            id: s.id,
-            name: s.name,
-            status: latestStatus[s.id] || 'Belum Terabsen'
-        }))
-    };
-}
-
-export async function getHomeroomMonthlyAttendance(month: number, year: number) {
-    noStore();
-    const user = await getAuthenticatedUser();
-    if (!user) return null;
-    const supabase = createClient();
-
-    // 1. Get homeroom class (Request 1)
-    const { data: homeroomClass } = await supabase
-        .from('classes')
-        .select('id, name')
-        .eq('teacher_id', user.id)
-        .limit(1)
-        .maybeSingle();
-    if (!homeroomClass) return null;
-
-    // 2. Get students in class (Request 2)
-    const { data: students } = await supabase
-        .from('students')
-        .select('id, name, nis, gender')
-        .eq('class_id', homeroomClass.id)
-        .eq('status', 'active')
-        .order('name');
-    if (!students || students.length === 0) return { className: homeroomClass.name, students: [], attendanceMap: {}, holidayDates: new Set(), daysInMonth: 0, month, year };
-
-    // 3. Date range
-    const startDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd');
-    const lastDayDate = new Date(year, month, 0);
-    const lastDayCount = lastDayDate.getDate();
-    const endDate = format(lastDayDate, 'yyyy-MM-dd');
-
-    // 4. Get holidays & attendance concurrently (Request 3 & 4)
-    const [holidaysRes, attendanceRes] = await Promise.all([
-        supabase.from('holidays').select('date').gte('date', startDate).lte('date', endDate),
-        supabase.from('attendance_records')
-            .select('student_id, date, status, meeting_number')
-            .eq('class_id', homeroomClass.id)
-            .gte('date', startDate)
-            .lte('date', endDate)
-            .order('date')
-            .order('meeting_number', { ascending: true })
-    ]);
-
-    const holidayDates = new Set(holidaysRes.data?.map(h => h.date) || []);
-
-    // Hierarki Prioritas: Hadir (4) > Izin (3) > Sakit (2) > Alpha (1)
-    const statusPriority: Record<string, number> = { 
-        'Hadir': 4, 
-        'Izin': 3, 
-        'Sakit': 2, 
-        'Alpha': 1 
-    };
-
-    const attendanceMap: Record<string, Record<string, string>> = {};
-    attendanceRes.data?.forEach(r => {
-        if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
-        
-        const existingStatus = attendanceMap[r.student_id][r.date];
-        const newStatus = r.status;
-
-        // Jika belum ada data untuk hari itu, ATAU status baru memiliki prioritas lebih tinggi (misal: jam 1 Alpha, jam 2 Hadir)
-        if (!existingStatus || statusPriority[newStatus] > statusPriority[existingStatus]) {
-            attendanceMap[r.student_id][r.date] = newStatus;
-        }
-    });
-
-    return {
-        className: homeroomClass.name,
-        students,
-        attendanceMap,
-        holidayDates,
-        daysInMonth: lastDayCount,
-        month,
-        year
-    };
-}
-
 export async function getReportsData(filters: { schoolYearId: string, month: number, classId?: string, subjectId?: string }) {
     noStore();
     const user = await getAuthenticatedUser();
@@ -543,7 +418,6 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
     const supabase = createClient();
     const { schoolYearId, month, classId, subjectId } = filters;
 
-    // Gunakan Date Range untuk stabilitas maksimal di Postgres
     const range = await getMonthDateRange(schoolYearId, month);
     if (!range) return null;
 
@@ -551,7 +425,7 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
         getActiveSchoolYearName()
     ]);
 
-    // KPI: Hitung ringkasan presensi (Hadir vs Total)
+    // KPI Attendance (Monthly)
     let attendanceKpiQuery = supabase
         .from('attendance_records')
         .select('status', { count: 'exact' })
@@ -567,14 +441,12 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
     const hadirCount = attendanceData?.filter(r => r.status === 'Hadir').length || 0;
     const overallAttendanceRate = totalAttendance ? Math.round((hadirCount / totalAttendance) * 100) : 0;
 
-    // KPI: Hitung rata-rata nilai
+    // KPI Grades (Semester-based)
     let gradesKpiQuery = supabase
         .from('grade_records')
         .select('score')
         .eq('teacher_id', user.id)
-        .eq('school_year_id', schoolYearId)
-        .gte('date', range.startDate)
-        .lte('date', range.endDate);
+        .eq('school_year_id', schoolYearId);
 
     if (classId) gradesKpiQuery = gradesKpiQuery.eq('class_id', classId);
     if (subjectId) gradesKpiQuery = gradesKpiQuery.eq('subject_id', subjectId);
@@ -585,19 +457,29 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
         ? Math.round(gradesData!.reduce((a, b) => a + Number(b.score), 0) / totalGrades) 
         : 0;
 
-    // KPI: Hitung total jurnal
+    // KPI Journal (Semester-based)
     let journalKpiQuery = supabase
         .from('journal_entries')
         .select('id', { count: 'exact', head: true })
         .eq('teacher_id', user.id)
-        .eq('school_year_id', schoolYearId)
-        .gte('date', range.startDate)
-        .lte('date', range.endDate);
+        .eq('school_year_id', schoolYearId);
 
     if (classId) journalKpiQuery = journalKpiQuery.eq('class_id', classId);
     if (subjectId) journalKpiQuery = journalKpiQuery.eq('subject_id', subjectId);
 
     const { count: totalJournals } = await journalKpiQuery;
+
+    // Unique Assessments for the Filter
+    let assessmentQuery = supabase
+        .from('grade_records')
+        .select('assessment_type')
+        .eq('teacher_id', user.id)
+        .eq('school_year_id', schoolYearId);
+    if (classId) assessmentQuery = assessmentQuery.eq('class_id', classId);
+    if (subjectId) assessmentQuery = assessmentQuery.eq('subject_id', subjectId);
+    
+    const { data: assessmentData } = await assessmentQuery;
+    const uniqueAssessments = Array.from(new Set((assessmentData || []).map(a => a.assessment_type))).sort();
 
     return {
         summaryCards: { 
@@ -606,11 +488,11 @@ export async function getReportsData(filters: { schoolYearId: string, month: num
             totalJournals: totalJournals || 0, 
             activeSchoolYearId: schoolYearId, 
             activeSchoolYearName 
-        }
+        },
+        uniqueAssessments
     };
 }
 
-// Fungsi pengambilan data detail (HANYA saat klik cetak)
 export async function getAttendanceReportList(filters: { schoolYearId: string, month: number, classId: string, subjectId: string }) {
     noStore();
     const user = await getAuthenticatedUser();
@@ -635,39 +517,35 @@ export async function getAttendanceReportList(filters: { schoolYearId: string, m
     return data || [];
 }
 
-export async function getGradesReportList(filters: { schoolYearId: string, month: number, classId: string, subjectId: string }) {
+export async function getGradesReportList(filters: { schoolYearId: string, classId: string, subjectId: string, assessmentType?: string }) {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { schoolYearId, month, classId, subjectId } = filters;
+    const { schoolYearId, classId, subjectId, assessmentType } = filters;
 
-    const range = await getMonthDateRange(schoolYearId, month);
-    if (!range) return [];
-
-    const { data } = await supabase
+    let query = supabase
         .from('grades_history')
         .select('*')
         .eq('teacher_id', user.id)
         .eq('school_year_id', schoolYearId)
         .eq('class_id', classId)
-        .eq('subject_id', subjectId)
-        .gte('date', range.startDate)
-        .lte('date', range.endDate)
-        .order('date', { ascending: true });
+        .eq('subject_id', subjectId);
+    
+    if (assessmentType && assessmentType !== 'all') {
+        query = query.eq('assessment_type', assessmentType);
+    }
 
+    const { data } = await query.order('date', { ascending: true });
     return data || [];
 }
 
-export async function getJournalReportList(filters: { schoolYearId: string, month: number, classId: string, subjectId: string }) {
+export async function getJournalReportList(filters: { schoolYearId: string, classId: string, subjectId: string }) {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { schoolYearId, month, classId, subjectId } = filters;
-
-    const range = await getMonthDateRange(schoolYearId, month);
-    if (!range) return [];
+    const { schoolYearId, classId, subjectId } = filters;
 
     const { data } = await supabase
         .from('journal_entries_with_names')
@@ -676,8 +554,6 @@ export async function getJournalReportList(filters: { schoolYearId: string, mont
         .eq('school_year_id', schoolYearId)
         .eq('class_id', classId)
         .eq('subject_id', subjectId)
-        .gte('date', range.startDate)
-        .lte('date', range.endDate)
         .order('date', { ascending: true });
 
     return data || [];
@@ -698,10 +574,11 @@ export async function getHomeroomStudentProgress() {
     const { data: attendanceData = [] } = await supabase.from('attendance_records').select('student_id, status').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId);
     const studentAggregates = students.map(student => {
         const studentGrades = (gradesData || []).filter(r => r.student_id === student.id).map(r => Number(r.score));
-        const studentAttendance = (attendanceData || []).filter(r => r.student_id === student.id);
-        const studentHadir = studentAttendance.filter(r => r.status === 'Hadir').length;
+        const studentAttendance = (attendanceData || []).filter(r => r.status !== 'Alpha' && r.student_id === student.id);
+        const totalAttendancePossible = (attendanceData || []).filter(r => r.student_id === student.id).length;
+        const hadirCount = studentAttendance.length;
         const average_grade = studentGrades.length > 0 ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length) : 0;
-        const attendance_percentage = studentAttendance.length > 0 ? Math.round((studentHadir / studentAttendance.length) * 100) : 0;
+        const attendance_percentage = totalAttendancePossible > 0 ? Math.round((hadirCount / totalAttendancePossible) * 100) : 0;
         let status = "Stabil";
         if (average_grade >= 85 && attendance_percentage >= 95) status = "Sangat Baik";
         else if (average_grade < 70 && attendance_percentage < 85) status = "Berisiko";
@@ -747,13 +624,6 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
     const { data } = await supabase.from('teacher_attendance').select('*, teacherName:profiles(full_name)').order('date', { ascending: false });
     if (!data) return [];
     return data.map((item: any) => ({ id: item.id, teacherId: item.teacher_id, teacherName: item.teacherName?.full_name || 'Unknown', date: item.date, checkIn: item.check_in, checkOut: item.check_out, status: item.status, reason: item.reason }));
-}
-
-export async function getTeacherActivityCounts(): Promise<any[]> {
-     noStore();
-     const supabase = createClient();
-     const { data } = await supabase.rpc('get_teacher_activity_counts');
-     return data || [];
 }
 
 export async function getTeacherActivityStats() {
