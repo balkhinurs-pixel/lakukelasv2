@@ -39,15 +39,14 @@ import {
   } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { MoreHorizontal, Trash2, Loader2, Calendar, Mail, User, Users, Search, UserPlus, GraduationCap, Edit, Phone, ShieldAlert } from "lucide-react";
-import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
 import { deleteUser, inviteTeacher, updateUserRole, updateStaffProfile } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 
 const InviteTeacherDialog = ({ onInviteSuccess }: { onInviteSuccess: () => void }) => {
     const [open, setOpen] = React.useState(false);
@@ -77,14 +76,14 @@ const InviteTeacherDialog = ({ onInviteSuccess }: { onInviteSuccess: () => void 
          <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button>
-                    <UserPlus className="mr-2 h-4 w-4" /> Tambah Guru
+                    <UserPlus className="mr-2 h-4 w-4" /> Tambah Staf
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
-                        <DialogTitle>Undang Guru Baru</DialogTitle>
-                        <DialogDescription>Masukkan nama dan email guru untuk dikirimi undangan login.</DialogDescription>
+                        <DialogTitle>Undang Staf Baru</DialogTitle>
+                        <DialogDescription>Masukkan nama dan email untuk dikirimi undangan login.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
