@@ -8,22 +8,13 @@ import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getIndonesianTime } from "@/lib/timezone";
+import { redirect } from "next/navigation";
 
 export default async function ReportsPage({
     searchParams
 }: {
     searchParams: { [key: string]: string | string[] | undefined }
 }) {
-    const classId = searchParams.class as string | undefined;
-    const subjectId = searchParams.subject as string | undefined;
-    
-    // Tentukan bulan default (bulan saat ini dalam zona waktu Indonesia)
-    const nowIndo = getIndonesianTime();
-    const currentMonthDefault = nowIndo.getMonth() + 1;
-    const month = searchParams.month ? Number(searchParams.month) : currentMonthDefault;
-
-    const schoolYearIdFromParams = searchParams.schoolYear as string | undefined;
-
     // Ambil data dasar
     const [classes, subjects, profile, { schoolYears, activeSchoolYearId: defaultActiveSchoolYearId }, adminProfile] = await Promise.all([
         getClasses(),
@@ -41,21 +32,18 @@ export default async function ReportsPage({
         )
     }
 
-    // Gunakan Tahun Ajaran Aktif sebagai default wajib jika tidak ada di params
-    const schoolYearToFetch = schoolYearIdFromParams || defaultActiveSchoolYearId;
-
-    if (!schoolYearToFetch) {
+    if (!defaultActiveSchoolYearId) {
          return (
             <div className="space-y-6 max-w-xl mx-auto p-4">
                  <div>
-                    <h1 className="text-2xl font-bold font-headline">Laporan Akademik</h1>
+                    <h1 className="text-2xl font-bold font-headline text-slate-900">Laporan Akademik</h1>
                     <p className="text-muted-foreground">Pusat dokumentasi dan pencetakan laporan.</p>
                 </div>
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Tahun Ajaran Belum Diatur</AlertTitle>
                     <AlertDescription>
-                        Anda harus mengatur tahun ajaran aktif terlebih dahulu untuk dapat melihat laporan.
+                        Administrator harus mengatur tahun ajaran aktif terlebih dahulu.
                         <Button asChild variant="link" className="p-0 h-auto ml-1 font-semibold">
                             <Link href="/admin/roster/school-year">Buka Pengaturan Tahun Ajaran (Admin)</Link>
                         </Button>
@@ -65,12 +53,31 @@ export default async function ReportsPage({
         )
     }
 
-    // Ambil data laporan berdasarkan filter
+    // Penanganan Redirect jika filter belum lengkap (Defaulting)
+    const classId = searchParams.class as string | undefined;
+    const subjectId = searchParams.subject as string | undefined;
+    const month = searchParams.month as string | undefined;
+
+    const defaultClassId = classId || (classes.length > 0 ? classes[0].id : undefined);
+    const defaultSubjectId = subjectId || (subjects.length > 0 ? subjects[0].id : undefined);
+    const nowIndo = getIndonesianTime();
+    const defaultMonth = month || String(nowIndo.getMonth() + 1);
+
+    // Jika param tidak ada di URL, redirect dengan param default
+    if (!classId || !subjectId || !month) {
+        const query = new URLSearchParams();
+        if (defaultClassId) query.set('class', defaultClassId);
+        if (defaultSubjectId) query.set('subject', defaultSubjectId);
+        query.set('month', defaultMonth);
+        redirect(`/dashboard/reports?${query.toString()}`);
+    }
+
+    // Ambil data laporan berdasarkan filter yang sudah valid
     const reportsData = await getReportsData({
-        schoolYearId: schoolYearToFetch,
-        month: month,
-        classId,
-        subjectId,
+        schoolYearId: defaultActiveSchoolYearId,
+        month: Number(defaultMonth),
+        classId: defaultClassId,
+        subjectId: defaultSubjectId,
     });
     
     if (!reportsData) {

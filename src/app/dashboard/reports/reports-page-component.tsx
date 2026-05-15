@@ -31,7 +31,10 @@ import {
     Loader2, 
     Users, 
     ClipboardList,
-    Printer
+    Printer,
+    CalendarDays,
+    BookOpen,
+    School
 } from "lucide-react";
 import type { Class, Subject, Profile, SchoolYear } from "@/lib/types";
 import { format, parseISO } from "date-fns";
@@ -81,33 +84,20 @@ export default function ReportsPageComponent({
 
   const [downloading, setDownloading] = React.useState(false);
   
-  // Ambil nilai dari search params atau gunakan default yang dikirim dari server
-  const currentSchoolYearId = searchParams.get('schoolYear') || reportsData.summaryCards.activeSchoolYearId || "all";
   const currentMonth = searchParams.get('month') || String(new Date().getMonth() + 1);
-  const selectedClass = searchParams.get('class') || "all";
-  const selectedSubject = searchParams.get('subject') || "all";
+  const selectedClass = searchParams.get('class') || (classes.length > 0 ? classes[0].id : "");
+  const selectedSubject = searchParams.get('subject') || (subjects.length > 0 ? subjects[0].id : "");
 
   const handleFilterChange = React.useCallback(
-    (key: 'schoolYear' | 'month' | 'class' | 'subject', value: string) => {
+    (key: 'month' | 'class' | 'subject', value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value === 'all') {
-          params.delete(key);
-      } else {
-          params.set(key, value);
-      }
+      params.set(key, value);
       router.push(`${pathname}?${params.toString()}`);
     },
     [searchParams, router, pathname]
   );
   
   const { summaryCards, attendanceHistory, gradeHistory, journalEntries } = reportsData;
-  
-  const selectedSchoolYear = schoolYears.find(sy => sy.id === currentSchoolYearId);
-  const availableMonths = React.useMemo(() => {
-    if (!selectedSchoolYear) return allMonths;
-    // Tampilkan semua bulan saja agar fleksibel namun tetap teratur
-    return allMonths;
-  }, [selectedSchoolYear]);
 
   const handleDownloadPdf = async (type: 'attendance' | 'grades' | 'journal') => {
     setDownloading(true);
@@ -189,7 +179,14 @@ export default function ReportsPageComponent({
         const img = new Image();
         img.src = schoolProfile.school_logo_url;
         img.crossOrigin = "Anonymous";
-        img.onload = () => { doc.addImage(img, 'PNG', margin, margin, 20, 20); generateContent(); };
+        img.onload = () => { 
+            try {
+                doc.addImage(img, 'PNG', margin, margin, 20, 20); 
+            } catch(e) {
+                console.error("Error adding image to PDF", e);
+            }
+            generateContent(); 
+        };
         img.onerror = () => generateContent();
     } else {
         generateContent();
@@ -210,47 +207,41 @@ export default function ReportsPageComponent({
                     </div>
                     <div>
                         <CardTitle className="text-xl font-bold tracking-tight">Filter Laporan</CardTitle>
-                        <CardDescription>Default: Tahun Ajaran Aktif & Bulan Berjalan.</CardDescription>
+                        <CardDescription>Tahun Ajaran: <span className="font-bold text-indigo-600">{summaryCards.activeSchoolYearName}</span> (Otomatis)</CardDescription>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="p-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Tahun Ajaran</Label>
-                        <Select value={currentSchoolYearId} onValueChange={(v) => handleFilterChange('schoolYear', v)}>
-                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                {schoolYears.map(sy => <SelectItem key={sy.id} value={sy.id} className="py-3 font-bold">{sy.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Bulan</Label>
+                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
+                            <CalendarDays className="w-3.5 h-3.5" /> Bulan Laporan
+                        </Label>
                         <Select value={currentMonth} onValueChange={(v) => handleFilterChange('month', v)}>
-                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20"><SelectValue /></SelectTrigger>
                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                <SelectItem value="all" className="py-3 font-bold">Semua Bulan</SelectItem>
-                                {availableMonths.map(m => <SelectItem key={m.value} value={m.value} className="py-3 font-bold">{m.label}</SelectItem>)}
+                                {allMonths.map(m => <SelectItem key={m.value} value={m.value} className="py-3 font-bold">{m.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Kelas</Label>
+                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
+                            <School className="w-3.5 h-3.5" /> Pilih Kelas
+                        </Label>
                         <Select value={selectedClass} onValueChange={(v) => handleFilterChange('class', v)}>
-                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20"><SelectValue /></SelectTrigger>
                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                <SelectItem value="all" className="py-3 font-bold">Semua Kelas</SelectItem>
                                 {classes.map(c => <SelectItem key={c.id} value={c.id} className="py-3 font-bold">{c.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Mata Pelajaran</Label>
+                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
+                            <BookOpen className="w-3.5 h-3.5" /> Pilih Mata Pelajaran
+                        </Label>
                         <Select value={selectedSubject} onValueChange={(v) => handleFilterChange('subject', v)}>
-                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20"><SelectValue /></SelectTrigger>
                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                <SelectItem value="all" className="py-3 font-bold">Semua Mapel</SelectItem>
                                 {subjects.map(s => <SelectItem key={s.id} value={s.id} className="py-3 font-bold">{s.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -322,7 +313,7 @@ export default function ReportsPageComponent({
                             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 h-11 px-6 font-bold"
                         >
                             {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-                            Unduh PDF Presensi
+                            Cetak PDF Presensi
                         </Button>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -332,8 +323,6 @@ export default function ReportsPageComponent({
                                     <TableRow>
                                         <TableHead className="font-bold py-5 px-8">Tanggal</TableHead>
                                         <TableHead className="font-bold">Nama Siswa</TableHead>
-                                        <TableHead className="font-bold">Kelas</TableHead>
-                                        <TableHead className="font-bold">Mapel</TableHead>
                                         <TableHead className="text-center font-bold">Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -343,8 +332,6 @@ export default function ReportsPageComponent({
                                             <TableRow key={record.id}>
                                                 <TableCell className="py-4 px-8 font-medium text-slate-500">{format(parseISO(record.date), 'dd MMM yyyy')}</TableCell>
                                                 <TableCell className="font-bold text-slate-900">{record.student_name || 'Siswa'}</TableCell>
-                                                <TableCell className="text-slate-600 text-sm font-medium">{record.class_name}</TableCell>
-                                                <TableCell className="text-slate-600 text-sm font-medium">{record.subject_name}</TableCell>
                                                 <TableCell className="text-center">
                                                     <Badge className={cn(
                                                         "rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider",
@@ -359,7 +346,7 @@ export default function ReportsPageComponent({
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="py-20 text-center text-muted-foreground italic">
+                                            <TableCell colSpan={3} className="py-20 text-center text-muted-foreground italic">
                                                 Tidak ada data kehadiran untuk periode ini.
                                             </TableCell>
                                         </TableRow>
@@ -389,7 +376,7 @@ export default function ReportsPageComponent({
                             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 h-11 px-6 font-bold"
                         >
                             {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-                            Unduh PDF Nilai
+                            Cetak PDF Nilai
                         </Button>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -398,7 +385,6 @@ export default function ReportsPageComponent({
                                 <TableHeader className="bg-slate-50">
                                     <TableRow>
                                         <TableHead className="font-bold py-5 px-8">Siswa</TableHead>
-                                        <TableHead className="font-bold">Mata Pelajaran</TableHead>
                                         <TableHead className="font-bold">Asesmen</TableHead>
                                         <TableHead className="text-center font-bold">Skor</TableHead>
                                     </TableRow>
@@ -408,7 +394,6 @@ export default function ReportsPageComponent({
                                         gradeHistory.map((record) => (
                                             <TableRow key={record.id}>
                                                 <TableCell className="py-4 px-8 font-bold text-slate-900">{record.student_name || 'Siswa'}</TableCell>
-                                                <TableCell className="text-slate-600 text-sm font-medium">{record.subject_name}</TableCell>
                                                 <TableCell className="text-slate-500 text-xs font-bold uppercase">{record.assessment_type}</TableCell>
                                                 <TableCell className="text-center">
                                                     <span className={cn(
@@ -422,7 +407,7 @@ export default function ReportsPageComponent({
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="py-20 text-center text-muted-foreground italic">
+                                            <TableCell colSpan={3} className="py-20 text-center text-muted-foreground italic">
                                                 Tidak ada data nilai untuk periode ini.
                                             </TableCell>
                                         </TableRow>
@@ -452,7 +437,7 @@ export default function ReportsPageComponent({
                             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 h-11 px-6 font-bold"
                         >
                             {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-                            Unduh PDF Jurnal
+                            Cetak PDF Jurnal
                         </Button>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -461,7 +446,6 @@ export default function ReportsPageComponent({
                                 <TableHeader className="bg-slate-50">
                                     <TableRow>
                                         <TableHead className="font-bold py-5 px-8">Tanggal</TableHead>
-                                        <TableHead className="font-bold">Kelas/Mapel</TableHead>
                                         <TableHead className="font-bold">Tujuan Pembelajaran</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -471,17 +455,13 @@ export default function ReportsPageComponent({
                                             <TableRow key={journal.id}>
                                                 <TableCell className="py-4 px-8 font-medium text-slate-500">{format(parseISO(journal.date), 'dd/MM/yy')}</TableCell>
                                                 <TableCell>
-                                                    <p className="font-bold text-slate-900 leading-tight">{journal.className}</p>
-                                                    <p className="text-[10px] font-bold text-indigo-500 uppercase">{journal.subjectName}</p>
-                                                </TableCell>
-                                                <TableCell>
                                                     <p className="text-sm text-slate-600 line-clamp-1 max-w-md">{journal.learning_objectives}</p>
                                                 </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={3} className="py-20 text-center text-muted-foreground italic">
+                                            <TableCell colSpan={2} className="py-20 text-center text-muted-foreground italic">
                                                 Tidak ada entri jurnal untuk periode ini.
                                             </TableCell>
                                         </TableRow>
