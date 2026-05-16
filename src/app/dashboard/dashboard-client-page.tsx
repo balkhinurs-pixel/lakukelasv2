@@ -127,10 +127,12 @@ const ScheduleItemCard = ({ item, now, isProminent = false }: { item: ScheduleIt
 
     return (
         <div className={cn(
-            "relative p-4 rounded-[32px] border transition-all duration-300 flex flex-col gap-4",
+            "relative p-4 rounded-[32px] border transition-all duration-300 flex flex-col gap-4 mb-4 last:mb-0",
             isActive 
                 ? "bg-white border-indigo-100 shadow-xl shadow-indigo-50" 
-                : "bg-slate-50/50 border-slate-100 opacity-80"
+                : isPast 
+                    ? "bg-slate-50/50 border-slate-100 opacity-60"
+                    : "bg-slate-50/30 border-slate-100 opacity-80"
         )}>
             {/* Indikator Pojok Kanan Atas */}
             <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5 z-20">
@@ -312,28 +314,32 @@ export default function DashboardClientPage({
                             <p className="text-[10px] text-slate-400 font-bold mt-1">{todayHoliday.description}</p>
                         </div>
                     ) : sortedSchedule.length > 0 ? (
-                        <div className="space-y-4">
-                            <AnimatePresence mode="wait">
+                        <div className="relative overflow-hidden">
+                            <AnimatePresence initial={false} mode="wait">
                                 {!showAll ? (
                                     <motion.div
                                         key="highlight"
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
                                     >
                                         {upcomingClass && <ScheduleItemCard item={upcomingClass} now={now} isProminent />}
                                     </motion.div>
                                 ) : (
                                     <motion.div
                                         key="list"
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: "auto" }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="space-y-4"
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
+                                        className="overflow-hidden"
                                     >
-                                        {sortedSchedule.map((item) => (
-                                            <ScheduleItemCard key={item.id} item={item} now={now} />
-                                        ))}
+                                        <div className="space-y-4 pt-2">
+                                            {sortedSchedule.map((item) => (
+                                                <ScheduleItemCard key={item.id} item={item} now={now} />
+                                            ))}
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
