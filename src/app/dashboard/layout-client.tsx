@@ -58,7 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Home' },
+  { href: '/dashboard', icon: Home, label: 'Dasbor' },
   { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen' },
   { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
   { href: '/dashboard/settings', icon: Settings, label: 'Profil' },
@@ -192,11 +192,11 @@ export default function DashboardLayoutClient({
        </Sidebar>
 
       <SidebarInset className="bg-[#f8fafc]">
-        <header className="sticky top-0 z-40 w-full bg-indigo-600 text-white shadow-lg h-16 shrink-0 flex items-center px-6">
-            <div className="flex items-center justify-between w-full">
+        <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md">
+            <div className="flex items-center justify-between h-16 px-4">
                  <div className="flex items-center gap-3">
                      <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20 rounded-xl" />
-                     <h1 className="text-xl font-black tracking-tight">LakuKelas</h1>
+                     <h1 className="text-lg font-bold tracking-tight">LakuKelas</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
@@ -229,57 +229,21 @@ export default function DashboardLayoutClient({
       </SidebarInset>
       
       {isMobile && (
-          <div className="fixed bottom-0 left-0 right-0 z-[45] pb-safe bg-white border-t rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
-            <div className="h-16 flex items-center justify-around px-4 relative">
-                {navItems.slice(0, 2).map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link 
-                            key={item.href} 
-                            href={item.href} 
-                            className={cn(
-                                "flex flex-col items-center justify-center transition-all",
-                                isActive ? "text-indigo-600" : "text-slate-400"
-                            )}
-                        >
-                            <item.icon className="w-6 h-6" />
-                            <span className="text-[10px] font-black uppercase tracking-widest mt-1">{item.label}</span>
-                        </Link>
-                    )
-                })}
-
-                <div className="relative -mt-12 flex flex-col items-center">
-                    <button 
-                        onClick={() => setIsMobileMenuOpen(true)}
-                        className="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-300 flex items-center justify-center transition-transform active:scale-90 border-4 border-white"
-                    >
-                        <LayoutGrid className="w-6 h-6" />
-                    </button>
-                    <span className="text-[10px] font-black uppercase tracking-widest mt-1.5 text-indigo-600">Menu</span>
-                </div>
-
-                {navItems.slice(2, 4).map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link 
-                            key={item.href} 
-                            href={item.href} 
-                            className={cn(
-                                "flex flex-col items-center justify-center transition-all",
-                                isActive ? "text-indigo-600" : "text-slate-400"
-                            )}
-                        >
-                            <item.icon className="w-6 h-6" />
-                            <span className="text-[10px] font-black uppercase tracking-widest mt-1">{item.label}</span>
-                        </Link>
-                    )
-                })}
-            </div>
-
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetContent side="bottom" className="rounded-t-[40px] border-t-0 p-0 overflow-hidden bg-white/95 backdrop-blur-xl h-[80vh]">
-                 <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4" />
-                 <div className="px-8 pt-4 pb-8 space-y-8 h-full overflow-y-auto">
+          <>
+            {isMobileMenuOpen && (
+              <div 
+                className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[35] animate-in fade-in duration-300"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+            )}
+            
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen} modal={false}>
+              <SheetContent 
+                side="bottom" 
+                className="rounded-t-[40px] border-t-0 p-0 overflow-hidden bg-white/95 backdrop-blur-xl h-[80vh] z-[40] animate-in slide-in-from-bottom duration-300"
+              >
+                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4" />
+                <div className="px-8 pt-4 pb-8 space-y-8 h-full overflow-y-auto">
                     <div className="flex items-center gap-4">
                         <Avatar className="h-14 w-14 border-2 border-indigo-100">
                             <AvatarImage src={profile?.avatar_url} />
@@ -293,7 +257,7 @@ export default function DashboardLayoutClient({
 
                     <div className="grid grid-cols-4 gap-y-8 gap-x-2">
                         {[
-                          { href: '/dashboard', icon: Home, label: 'Home', color: 'bg-blue-500' },
+                          { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
                           { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen', color: 'bg-rose-500' },
                           { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda', color: 'bg-amber-500' },
                           { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi', color: 'bg-emerald-500' },
@@ -325,7 +289,7 @@ export default function DashboardLayoutClient({
                                 onClick={() => setIsMobileMenuOpen(false)}
                                 className="flex items-center gap-4 p-4 rounded-3xl bg-teal-500/10 text-teal-700 font-bold"
                             >
-                                <div className="p-2 rounded-2xl bg-teal-500 text-white">
+                                <div className="p-2 rounded-2xl bg-teal-500 text-white shadow-lg shadow-teal-500/20">
                                     <ShieldCheck className="w-5 h-5" />
                                 </div>
                                 <span>Panel Monitoring</span>
@@ -333,7 +297,7 @@ export default function DashboardLayoutClient({
                         </div>
                     )}
                     
-                    <div className="pt-6 border-t">
+                    <div className="pt-6 border-t pb-20">
                         <Button variant="ghost" className="w-full h-14 rounded-2xl text-red-500 font-black tracking-widest uppercase text-xs hover:bg-red-50" onClick={handleLogout}>
                             <LogOut className="w-5 h-5 mr-3" /> Keluar Sesi
                         </Button>
@@ -341,7 +305,53 @@ export default function DashboardLayoutClient({
                  </div>
               </SheetContent>
             </Sheet>
-          </div>
+
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
+                <Link href="/dashboard" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                    <Home className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">Dasbor</span>
+                </Link>
+                <Link href="/dashboard/teacher-attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/teacher-attendance" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                    <MapPin className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">Absen</span>
+                </Link>
+                
+                <div className="flex justify-center h-full items-center">
+                    <button 
+                      onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
+                      className="group flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-indigo-600 to-blue-600 text-white shadow-lg border-4 border-background transition-all active:scale-95"
+                      aria-expanded={isMobileMenuOpen}
+                      aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
+                    >
+                        <svg
+                          className="pointer-events-none"
+                          width={24}
+                          height={24}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M4 12L20 12" className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]" />
+                          <path d="M4 12H20" className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45" />
+                          <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]" />
+                        </svg>
+                    </button>
+                </div>
+
+                <Link href="/dashboard/reports" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/reports") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                    <BarChart3 className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">Laporan</span>
+                </Link>
+                <Link href="/dashboard/settings" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/settings" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                    <Settings className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">Profil</span>
+                </Link>
+            </div>
+          </>
       )}
     </>
   );
