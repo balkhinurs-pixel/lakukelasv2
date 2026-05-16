@@ -43,7 +43,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MoreHorizontal, Trash2, Loader2, Search, UserPlus, GraduationCap, Edit, User, ShieldAlert, AlertCircle, CheckCircle2, UserCheck } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Search, UserPlus, GraduationCap, Edit, User, ShieldAlert, AlertCircle, CheckCircle2, UserCheck, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
 import { deleteUser, inviteTeacher, updateUserRole, updateStaffProfile, approveUser } from "@/lib/actions/admin";
@@ -151,9 +151,9 @@ const EditStaffDialog = ({ user, open, onOpenChange }: { user: Profile, open: bo
                         <Button type="submit" disabled={loading} className="w-full rounded-xl h-11">
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan Perubahan
                         </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </Dialog>
     )
 }
