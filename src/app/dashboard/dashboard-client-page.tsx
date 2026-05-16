@@ -86,7 +86,7 @@ export default function DashboardClientPage({
     const [now, setNow] = React.useState<Date>(new Date());
 
     React.useEffect(() => {
-        const timer = setInterval(() => setNow(new Date()), 60000);
+        const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
@@ -108,9 +108,11 @@ export default function DashboardClientPage({
         return Array.from({ length: 7 }, (_, i) => addDays(start, i));
     }, [now]);
 
+    const dayName = format(now, 'EEEE', { locale: id });
+
     return (
         <div className="space-y-6 pb-24">
-            {/* 1. Hero Welcome Section - Updated to flex-row and text-left for mobile */}
+            {/* 1. Hero Welcome Section */}
             <div className="relative overflow-hidden bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-row items-center justify-between gap-4">
                 <div className="space-y-3 flex-1 text-left">
                     <div className="space-y-1">
@@ -132,7 +134,7 @@ export default function DashboardClientPage({
                 </div>
             </div>
 
-            {/* 2. Grid Stats Section - Pastel Colors with Watermark Icons */}
+            {/* 2. Grid Stats Section */}
             <div className="grid grid-cols-2 gap-4">
                 <StatCard 
                     icon={CheckCircle2}
@@ -169,49 +171,61 @@ export default function DashboardClientPage({
                 />
             </div>
 
-            {/* 3. Next Schedule Section */}
-            <Card className="border-0 shadow-sm rounded-[24px] overflow-hidden bg-white">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 px-6 pt-6">
+            {/* 3. Next Schedule Section - Updated UI */}
+            <Card className="border-0 shadow-sm rounded-[32px] overflow-hidden bg-white">
+                <CardHeader className="flex flex-col items-start pb-2 px-6 pt-6 gap-2">
                     <div className="flex items-center gap-2">
-                        <CalendarDays className="h-5 w-5 text-indigo-600" />
-                        <CardTitle className="text-base font-black text-slate-800 uppercase tracking-tight">Jadwal Berikutnya</CardTitle>
+                        <CalendarDays className="h-6 w-6 text-indigo-600" />
+                        <CardTitle className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none flex flex-col sm:flex-row sm:gap-2">
+                            <span>JADWAL HARI</span>
+                            <span className="text-indigo-600">{dayName.toUpperCase()}</span>
+                        </CardTitle>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-indigo-600 font-bold text-xs" asChild>
-                        <Link href="/dashboard/schedule">Lihat Semua <ChevronRight className="h-3 w-3 ml-1" /></Link>
+                    <Button variant="ghost" size="sm" className="text-indigo-600 font-bold text-xs p-0 h-auto hover:bg-transparent" asChild>
+                        <Link href="/dashboard/schedule" className="flex items-center">
+                            Lihat Semua <ChevronRight className="h-4 w-4 ml-1" />
+                        </Link>
                     </Button>
                 </CardHeader>
                 <CardContent className="px-6 pb-6 pt-2">
                     {upcomingClass ? (
-                        <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex items-center justify-between group hover:bg-slate-100/50 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-indigo-600 text-white p-3 rounded-2xl flex flex-col items-center justify-center min-w-[70px] shadow-lg shadow-indigo-200">
-                                    <span className="text-xs font-bold leading-none">{formatTime(upcomingClass.start_time)}</span>
-                                    <div className="w-4 h-0.5 bg-white/30 my-1.5" />
-                                    <span className="text-xs font-bold leading-none">{formatTime(upcomingClass.end_time)}</span>
+                        <div className="bg-slate-50/50 p-4 rounded-[32px] border border-slate-100 flex items-center justify-between group hover:bg-slate-100/50 transition-all duration-300">
+                            <div className="flex items-center gap-4 flex-1">
+                                <div className="bg-indigo-600 text-white py-3 px-3 rounded-[24px] flex flex-col items-center justify-center min-w-[65px] sm:min-w-[80px] shadow-lg shadow-indigo-100 shrink-0">
+                                    <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.start_time)}</span>
+                                    <div className="w-4 h-0.5 bg-white/30 my-2 rounded-full" />
+                                    <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.end_time)}</span>
                                 </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 text-[10px] font-black">{upcomingClass.class}</Badge>
-                                        <p className="font-black text-slate-900 tracking-tight">{upcomingClass.subject}</p>
-                                    </div>
+                                <div className="flex flex-col gap-1.5 min-w-0">
+                                    <Badge variant="secondary" className="w-fit bg-indigo-50 text-indigo-700 border-indigo-100 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg">
+                                        {upcomingClass.class}
+                                    </Badge>
+                                    <h4 className="font-black text-slate-900 tracking-tight text-lg leading-tight truncate">
+                                        {upcomingClass.subject}
+                                    </h4>
                                     <div className="flex items-center gap-1.5 text-slate-400">
                                         <MapPin className="h-3 w-3" />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider">Ruang Kelas</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest">RUANG KELAS</span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="hidden sm:flex flex-col items-end gap-1">
-                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Mulai dalam</p>
-                                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200">
-                                    <span className="text-sm font-black text-slate-900">Segera</span>
-                                    <Clock className="h-4 w-4 text-indigo-500" />
+                            
+                            <div className="flex flex-col items-end gap-1.5 pl-2 shrink-0">
+                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Live Progress</p>
+                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm">
+                                    <span className="text-[10px] sm:text-xs font-black text-slate-900 whitespace-nowrap">Aktif</span>
+                                    <div className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center py-6">
-                            <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
-                            <p className="text-sm font-bold text-slate-500">Semua tugas mengajar selesai untuk hari ini!</p>
+                        <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200">
+                            <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3 opacity-50" />
+                            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Kelas Selesai</p>
+                            <p className="text-[10px] text-slate-400 font-bold mt-1">Anda telah menyelesaikan tugas hari ini.</p>
                         </div>
                     )}
                 </CardContent>
@@ -219,7 +233,7 @@ export default function DashboardClientPage({
 
             {/* 4. Progress & Calendar Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="border-0 shadow-sm rounded-[24px] bg-white p-6">
+                <Card className="border-0 shadow-sm rounded-[32px] bg-white p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <TrendingUp className="h-5 w-5 text-indigo-600" />
                         <CardTitle className="text-base font-black text-slate-800 uppercase tracking-tight">Progress Mengajar</CardTitle>
@@ -242,7 +256,7 @@ export default function DashboardClientPage({
                     </div>
                 </Card>
 
-                <Card className="border-0 shadow-sm rounded-[24px] bg-white p-6">
+                <Card className="border-0 shadow-sm rounded-[32px] bg-white p-6">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-2">
                             <CalendarDays className="h-5 w-5 text-indigo-600" />
