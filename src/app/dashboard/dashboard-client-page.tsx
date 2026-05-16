@@ -190,34 +190,30 @@ export default function DashboardClientPage({
                 </CardHeader>
                 <CardContent className="px-6 pb-6 pt-2">
                     {upcomingClass ? (
-                        <div className="bg-slate-50/50 p-4 rounded-[32px] border border-slate-100 flex flex-col gap-4 group hover:bg-slate-100/50 transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4 flex-1">
+                        <div className="relative bg-slate-50/50 p-4 rounded-[32px] border border-slate-100 flex flex-col gap-4 group hover:bg-slate-100/50 transition-all duration-300">
+                            {/* Dot indicator in top right corner */}
+                            <div className="absolute top-4 right-4 flex h-2 w-2 z-20">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </div>
+
+                            <div className="flex items-center">
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
                                     <div className="bg-indigo-600 text-white py-3 px-3 rounded-[24px] flex flex-col items-center justify-center min-w-[65px] sm:min-w-[80px] shadow-lg shadow-indigo-100 shrink-0">
                                         <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.start_time)}</span>
                                         <div className="w-4 h-0.5 bg-white/30 my-2 rounded-full" />
                                         <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.end_time)}</span>
                                     </div>
-                                    <div className="flex flex-col gap-1.5 min-w-0">
-                                        <Badge variant="secondary" className="w-fit bg-indigo-50 text-indigo-700 border-indigo-100 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg">
+                                    <div className="flex flex-col gap-1 min-w-0 pr-4">
+                                        <Badge variant="secondary" className="w-fit bg-indigo-50 text-indigo-700 border-indigo-100 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg mb-0.5">
                                             {upcomingClass.class}
                                         </Badge>
-                                        <h4 className="font-black text-slate-900 tracking-tight text-lg leading-tight truncate">
+                                        <h4 className="font-black text-slate-900 tracking-tight text-base sm:text-lg leading-tight break-words">
                                             {upcomingClass.subject}
                                         </h4>
-                                        <div className="flex items-center gap-1.5 text-slate-400">
+                                        <div className="flex items-center gap-1.5 text-slate-400 mt-0.5">
                                             <MapPin className="h-3 w-3" />
                                             <span className="text-[9px] font-black uppercase tracking-widest">RUANG KELAS</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex flex-col items-end gap-1.5 pl-2 shrink-0">
-                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Live</p>
-                                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm">
-                                        <div className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                         </div>
                                     </div>
                                 </div>
