@@ -1,23 +1,20 @@
-
 "use client";
 
 import * as React from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  ClipboardCheck, 
   BookText, 
+  ClipboardCheck, 
   Users, 
   Clock, 
   CalendarDays, 
-  ArrowRight,
   MapPin,
   CheckCircle2,
   Calendar,
@@ -26,12 +23,10 @@ import {
   MessageSquareQuote
 } from "lucide-react";
 import Link from 'next/link';
-import { format, parseISO, startOfWeek, addDays, isSameDay } from "date-fns";
+import { format, startOfWeek, addDays, isSameDay } from "date-fns";
 import { id } from "date-fns/locale";
 import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
-import { LottieCalendar } from "@/components/ui/lottie-calendar";
 import { LottieWelcome } from "@/components/ui/lottie-welcome";
 
 type DashboardPageProps = {
@@ -105,7 +100,6 @@ export default function DashboardClientPage({
         });
     }, [sortedSchedule, now]);
 
-    // Calendar helper
     const weekDays = React.useMemo(() => {
         const start = startOfWeek(now, { weekStartsOn: 1 });
         return Array.from({ length: 7 }, (_, i) => addDays(start, i));
@@ -241,7 +235,6 @@ export default function DashboardClientPage({
 
             {/* 4. Progress & Calendar Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Teaching Progress */}
                 <Card className="border-0 shadow-sm rounded-[24px] bg-white p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <TrendingUp className="h-5 w-5 text-indigo-600" />
@@ -265,7 +258,6 @@ export default function DashboardClientPage({
                     </div>
                 </Card>
 
-                {/* Mini Calendar */}
                 <Card className="border-0 shadow-sm rounded-[24px] bg-white p-6">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-2">

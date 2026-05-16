@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -16,13 +15,10 @@ import {
   Bell,
   CalendarDays,
   ShieldCheck,
-  TrendingUp,
-  ClipboardList,
   Link2,
   MapPin,
-  CheckCircle2,
-  User,
-  LayoutGrid
+  LayoutGrid,
+  ChevronLeft
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -65,7 +61,7 @@ const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home' },
   { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen' },
   { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
-  { href: '/dashboard/settings', icon: User, label: 'Profil' },
+  { href: '/dashboard/settings', icon: Settings, label: 'Profil' },
 ];
 
 export default function DashboardLayoutClient({ 
@@ -174,10 +170,24 @@ export default function DashboardLayoutClient({
             </ScrollArea>
           </SidebarContent>
           <SidebarFooter className="p-4 border-t bg-slate-50">
-              <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 font-bold rounded-xl h-12" onClick={handleLogout}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Keluar
-              </Button>
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 font-bold rounded-xl h-12">
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Keluar
+                      </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>Keluar dari LakuKelas?</AlertDialogTitle>
+                          <AlertDialogDescription>Sesi Anda akan berakhir dan Anda perlu login kembali untuk mengakses data.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="flex flex-row gap-2 pt-4">
+                          <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-xl h-12 bg-red-600 font-bold">Ya, Keluar</AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
           </SidebarFooter>
        </Sidebar>
 
@@ -193,10 +203,23 @@ export default function DashboardLayoutClient({
                         <Bell className="h-5 w-5" />
                     </Button>
                     <div className="h-8 w-px bg-white/20 mx-2" />
-                    <Avatar className="h-9 w-9 border-2 border-white/30">
-                        <AvatarImage src={profile?.avatar_url} />
-                        <AvatarFallback>{profile?.full_name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-colors rounded-full">
+                              <LogOut className="h-5 w-5" />
+                          </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Keluar Akun?</AlertDialogTitle>
+                              <AlertDialogDescription>Anda akan keluar dari sesi mengajar Anda saat ini.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="flex flex-row gap-2 pt-4">
+                              <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-xl h-12 bg-red-600 font-bold">Keluar</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
         </header>
@@ -294,6 +317,21 @@ export default function DashboardLayoutClient({
                             </Link>
                         ))}
                     </div>
+
+                    {(isAdmin || isHeadmaster) && (
+                        <div className="pt-2">
+                            <Link 
+                                href="/monitoring" 
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="flex items-center gap-4 p-4 rounded-3xl bg-teal-500/10 text-teal-700 font-bold"
+                            >
+                                <div className="p-2 rounded-2xl bg-teal-500 text-white">
+                                    <ShieldCheck className="w-5 h-5" />
+                                </div>
+                                <span>Panel Monitoring</span>
+                            </Link>
+                        </div>
+                    )}
                     
                     <div className="pt-6 border-t">
                         <Button variant="ghost" className="w-full h-14 rounded-2xl text-red-500 font-black tracking-widest uppercase text-xs hover:bg-red-50" onClick={handleLogout}>
