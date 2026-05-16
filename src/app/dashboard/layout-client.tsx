@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -21,6 +22,7 @@ import {
   MapPin,
   CheckCircle2,
   User,
+  LayoutGrid
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -60,21 +62,10 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
-  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen Guru', color: 'bg-rose-500' },
-  { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda', color: 'bg-amber-500' },
-  { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi', color: 'bg-emerald-500' },
-  { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai', color: 'bg-cyan-500' },
-  { href: '/dashboard/journal', icon: BookText, label: 'Jurnal', color: 'bg-indigo-500' },
-  { href: '/dashboard/materials', icon: Link2, label: 'Materi', color: 'bg-purple-500' },
-  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan', color: 'bg-orange-500' },
-  { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal', color: 'bg-slate-500' },
-];
-
-const homeroomNavItems = [
-    { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Progres', color: 'bg-teal-500' },
-    { href: '/dashboard/homeroom/student-ledger', icon: ClipboardList, label: 'Leger', color: 'bg-fuchsia-500' },
-    { href: '/dashboard/homeroom/reports', icon: BarChart3, label: 'Raport', color: 'bg-sky-500' },
+  { href: '/dashboard', icon: Home, label: 'Home' },
+  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen' },
+  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
+  { href: '/dashboard/settings', icon: User, label: 'Profil' },
 ];
 
 export default function DashboardLayoutClient({ 
@@ -104,20 +95,18 @@ export default function DashboardLayoutClient({
 
   const ProfileHeader = () => (
     <SidebarHeader className="p-0 text-background">
-      <div className="relative flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 via-purple-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden overflow-hidden">
+      <div className="relative flex flex-col items-center gap-2 bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden overflow-hidden">
           <div className="absolute inset-0 bg-white/[0.05] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
           
           <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 transition-transform duration-300 hover:scale-105 hover:border-white/50 relative z-10">
-            <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} data-ai-hint="teacher portrait" />
+            <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} />
             <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
           </Avatar>
           <div className="text-center relative z-10">
             <p className="text-lg font-bold text-white drop-shadow-sm">{profile?.full_name || 'Guru'}</p>
-            <p className="text-sm text-white/80 drop-shadow-sm">{user?.email}</p>
             <div className="mt-2">
-              <Badge variant={'outline'} className="text-xs font-semibold backdrop-blur-sm border-white/30 bg-green-500/20 text-green-100 border-green-300/30">
-                <CheckCircle2 className="w-3 h-3 mr-1.5" />
-                {isHeadmaster ? 'Kepala Sekolah' : 'Akun Pro'}
+              <Badge variant={'outline'} className="text-[10px] font-black uppercase tracking-wider backdrop-blur-sm border-white/30 bg-green-500/20 text-green-100">
+                PRO ACTIVE
               </Badge>
             </div>
           </div>
@@ -129,19 +118,17 @@ export default function DashboardLayoutClient({
     <>
        <Sidebar className="hidden md:flex">
           <ProfileHeader />
-          <SidebarContent className="p-0">
+          <SidebarContent className="p-0 bg-slate-50">
             <ScrollArea className="flex-1">
                 {(isHeadmaster || isAdmin) && (
                     <SidebarGroup className="p-4">
-                        <SidebarGroupLabel className="text-teal-600 font-semibold text-sm tracking-wider uppercase bg-teal-500/10 px-3 py-2 rounded-lg border border-teal-500/20 mb-4">
-                            Monitoring
-                        </SidebarGroupLabel>
+                        <SidebarGroupLabel className="text-teal-600 font-bold text-[10px] tracking-[0.2em] uppercase mb-4">Monitoring</SidebarGroupLabel>
                         <SidebarMenu>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild className="rounded-xl mx-2 font-bold text-teal-700 bg-teal-50 hover:bg-teal-100">
+                                <SidebarMenuButton asChild className="rounded-xl font-bold text-teal-700 bg-teal-50 border border-teal-100">
                                     <Link href="/monitoring">
                                         <ShieldCheck className="w-4 h-4 mr-2" />
-                                        Buka Panel Monitoring
+                                        Dashboard Monitoring
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -150,11 +137,19 @@ export default function DashboardLayoutClient({
                 )}
 
                 <SidebarGroup className="p-4">
-                    <SidebarGroupLabel className="text-primary/80 font-semibold text-sm tracking-wider uppercase bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 mb-4">
-                        Menu Utama
-                    </SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-slate-400 font-bold text-[10px] tracking-[0.2em] uppercase mb-4">Aplikasi</SidebarGroupLabel>
                     <SidebarMenu className="gap-2">
-                      {navItems.map((item) => {
+                      {[
+                        { href: '/dashboard', icon: Home, label: 'Dasbor' },
+                        { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen Guru' },
+                        { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
+                        { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi Siswa' },
+                        { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Input Nilai' },
+                        { href: '/dashboard/journal', icon: BookText, label: 'Jurnal' },
+                        { href: '/dashboard/materials', icon: Link2, label: 'Materi' },
+                        { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
+                        { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal' },
+                      ].map((item) => {
                         const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/dashboard';
                         return (
                           <SidebarMenuItem key={item.href}>
@@ -162,12 +157,12 @@ export default function DashboardLayoutClient({
                               asChild
                               isActive={isActive}
                               className={cn(
-                                "rounded-xl mx-2 transition-all duration-300",
-                                isActive && "bg-primary/15 text-primary border border-primary/20 shadow-sm"
+                                "rounded-xl transition-all duration-300",
+                                isActive && "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
                               )}
                             >
                               <Link href={item.href}>
-                                <item.icon className={cn("w-4 h-4 mr-2", isActive && "text-primary")} />
+                                <item.icon className="w-4 h-4 mr-2" />
                                 <span>{item.label}</span>
                               </Link>
                             </SidebarMenuButton>
@@ -176,88 +171,32 @@ export default function DashboardLayoutClient({
                       })}
                     </SidebarMenu>
                 </SidebarGroup>
-                
-                 {profile?.is_homeroom_teacher && (
-                    <SidebarGroup className="p-4">
-                        <SidebarGroupLabel className="text-orange-600 font-semibold text-sm tracking-wider uppercase bg-orange-500/10 px-3 py-2 rounded-lg border border-orange-500/20 mb-4">
-                            Wali Kelas
-                        </SidebarGroupLabel>
-                        <SidebarMenu className="gap-2">
-                          {homeroomNavItems.map((item) => {
-                            const isActive = pathname.startsWith(item.href);
-                            return (
-                              <SidebarMenuItem key={item.href}>
-                                <SidebarMenuButton
-                                  asChild
-                                  isActive={isActive}
-                                  className={cn(
-                                    "rounded-xl mx-2 transition-all duration-300",
-                                    isActive && "bg-primary/15 text-primary border border-primary/20 shadow-sm"
-                                  )}
-                                >
-                                  <Link href={item.href}>
-                                    <item.icon className={cn("w-4 h-4 mr-2", isActive && "text-primary")} />
-                                    <span>{item.label}</span>
-                                  </Link>
-                                </SidebarMenuButton>
-                              </SidebarMenuItem>
-                            )
-                          })}
-                        </SidebarMenu>
-                    </SidebarGroup>
-                )}
             </ScrollArea>
           </SidebarContent>
-          <SidebarFooter className="p-2 border-t">
-              <SidebarMenu>
-                  <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                          <Link href="/dashboard/settings">
-                              <Settings className="w-4 h-4 mr-2" />
-                              <span>Pengaturan</span>
-                          </Link>
-                      </SidebarMenuButton>
-                  </SidebarMenuItem>
-              </SidebarMenu>
+          <SidebarFooter className="p-4 border-t bg-slate-50">
+              <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 font-bold rounded-xl h-12" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Keluar
+              </Button>
           </SidebarFooter>
        </Sidebar>
 
-      <SidebarInset>
-        <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md">
-            <div className="flex items-center justify-between h-16 px-4">
-                 <div className="flex items-center gap-2">
-                     <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20" />
-                     <h1 className="text-lg font-bold tracking-tight">LakuKelas</h1>
+      <SidebarInset className="bg-[#f8fafc]">
+        <header className="sticky top-0 z-40 w-full bg-indigo-600 text-white shadow-lg h-16 shrink-0 flex items-center px-6">
+            <div className="flex items-center justify-between w-full">
+                 <div className="flex items-center gap-3">
+                     <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20 rounded-xl" />
+                     <h1 className="text-xl font-black tracking-tight">LakuKelas</h1>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
                         <Bell className="h-5 w-5" />
                     </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-colors rounded-full">
-                            <LogOut className="h-5 w-5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Keluar dari LakuKelas?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Anda akan keluar dari sesi aktif. Pastikan semua data pekerjaan Anda sudah tersimpan.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="flex flex-row gap-2 pt-4">
-                          <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={handleLogout}
-                            className="flex-1 rounded-xl h-12 bg-red-600 hover:bg-red-700 text-white font-bold"
-                          >
-                            Ya, Keluar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="h-8 w-px bg-white/20 mx-2" />
+                    <Avatar className="h-9 w-9 border-2 border-white/30">
+                        <AvatarImage src={profile?.avatar_url} />
+                        <AvatarFallback>{profile?.full_name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
                 </div>
             </div>
         </header>
@@ -267,158 +206,104 @@ export default function DashboardLayoutClient({
       </SidebarInset>
       
       {isMobile && (
-          <>
-            {isMobileMenuOpen && (
-              <div 
-                className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[35] animate-in fade-in duration-300"
-                onClick={() => setIsMobileMenuOpen(false)}
-              />
-            )}
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen} modal={false}>
-              <SheetContent 
-                side="bottom" 
-                className="rounded-t-[32px] border-t-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl shadow-2xl p-0 overflow-hidden max-h-[85vh] z-[40] animate-in slide-in-from-bottom duration-300"
-              >
-                <div className="mx-auto w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full my-4" />
-                
-                <SheetHeader className="px-6 pb-4">
-                  <div className="flex items-center gap-4 text-left">
-                    <Avatar className="h-12 w-12 border-2 border-primary/20">
-                      <AvatarImage src={profile?.avatar_url || "https://placehold.co/100x100.png"} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <SheetTitle className="text-lg font-bold truncate">{profile?.full_name || 'Guru'}</SheetTitle>
-                      <SheetDescription className="text-xs truncate">Akun Pro • {user?.email}</SheetDescription>
-                    </div>
-                  </div>
-                </SheetHeader>
-
-                <ScrollArea className="h-[calc(85vh-120px)] px-6">
-                  <div className="space-y-8 pb-32">
-                    {(isHeadmaster || isAdmin) && (
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest pl-2">Akses Cepat</p>
+          <div className="fixed bottom-0 left-0 right-0 z-[45] pb-safe bg-white border-t rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+            <div className="h-16 flex items-center justify-around px-4 relative">
+                {navItems.slice(0, 2).map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
                         <Link 
-                          href="/monitoring" 
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="flex items-center gap-4 p-4 rounded-3xl bg-teal-500/10 text-teal-700 dark:text-teal-400 font-bold border border-teal-500/20"
+                            key={item.href} 
+                            href={item.href} 
+                            className={cn(
+                                "flex flex-col items-center justify-center transition-all",
+                                isActive ? "text-indigo-600" : "text-slate-400"
+                            )}
                         >
-                          <div className="p-2 rounded-2xl bg-teal-500 text-white shadow-lg shadow-teal-500/20">
-                            <ShieldCheck className="w-5 h-5" />
-                          </div>
-                          <span>Panel Monitoring</span>
+                            <item.icon className="w-6 h-6" />
+                            <span className="text-[10px] font-black uppercase tracking-widest mt-1">{item.label}</span>
                         </Link>
-                      </div>
-                    )}
+                    )
+                })}
 
-                    <div className="space-y-4">
-                      <p className="text-[10px] font-bold text-primary uppercase tracking-widest pl-2">Aplikasi</p>
-                      <div className="grid grid-cols-4 gap-y-6 gap-x-2">
-                        {navItems.map((item) => {
-                          const isActive = pathname === item.href;
-                          return (
-                            <Link 
-                              key={item.href} 
-                              href={item.href} 
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="flex flex-col items-center gap-2 group transition-transform active:scale-95"
-                            >
-                              <div className={cn(
-                                "w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all relative overflow-hidden",
-                                item.color,
-                                isActive ? "ring-4 ring-offset-2 ring-primary/30" : "opacity-90 group-hover:opacity-100"
-                              )}>
-                                <item.icon className="w-6 h-6 text-white" />
-                              </div>
-                              <span className={cn(
-                                "text-[10px] font-bold text-center leading-tight transition-colors",
-                                isActive ? "text-primary" : "text-slate-600 dark:text-slate-400"
-                              )}>{item.label}</span>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {profile?.is_homeroom_teacher && (
-                      <div className="space-y-4 pt-2">
-                        <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest pl-2">Menu Wali Kelas</p>
-                        <div className="grid grid-cols-4 gap-y-6 gap-x-2">
-                          {homeroomNavItems.map((item) => (
-                            <Link 
-                              key={item.href} 
-                              href={item.href} 
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="flex flex-col items-center gap-2 group transition-transform active:scale-95"
-                            >
-                              <div className={cn(
-                                "w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all",
-                                item.color,
-                                pathname.startsWith(item.href) ? "ring-4 ring-offset-2 ring-orange-500/30" : "opacity-90"
-                              )}>
-                                <item.icon className="w-6 h-6 text-white" />
-                              </div>
-                              <span className={cn(
-                                "text-[10px] font-bold text-center leading-tight",
-                                pathname.startsWith(item.href) ? "text-orange-600" : "text-slate-600 dark:text-slate-400"
-                              )}>{item.label}</span>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              </SheetContent>
-            </Sheet>
-
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t grid grid-cols-5 items-center h-16 pb-safe px-1">
-                <Link href="/dashboard" className={cn("flex flex-col items-center justify-center h-full transition-all", pathname === "/dashboard" ? "text-primary" : "text-muted-foreground")}>
-                    <Home className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-bold">Home</span>
-                </Link>
-                <Link href="/dashboard/teacher-attendance" className={cn("flex flex-col items-center justify-center h-full transition-all", pathname === "/dashboard/teacher-attendance" ? "text-primary" : "text-muted-foreground")}>
-                    <MapPin className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-bold">Absen</span>
-                </Link>
-                
-                <div className="flex justify-center h-full items-center">
+                <div className="relative -mt-12 flex flex-col items-center">
                     <button 
-                      onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
-                      className="group flex items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg border-4 border-background transition-all active:scale-95"
-                      aria-expanded={isMobileMenuOpen}
-                      aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        className="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-300 flex items-center justify-center transition-transform active:scale-90 border-4 border-white"
                     >
-                        <svg
-                          className="pointer-events-none"
-                          width={24}
-                          height={24}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path d="M4 12L20 12" className="origin-center -translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]" />
-                          <path d="M4 12H20" className="origin-center transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45" />
-                          <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 [transition-timing-function:cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]" />
-                        </svg>
+                        <LayoutGrid className="w-6 h-6" />
                     </button>
+                    <span className="text-[10px] font-black uppercase tracking-widest mt-1.5 text-indigo-600">Menu</span>
                 </div>
 
-                <Link href="/dashboard/reports" className={cn("flex flex-col items-center justify-center h-full transition-all", pathname === "/dashboard/reports" ? "text-primary" : "text-muted-foreground")}>
-                    <BarChart3 className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-bold">Laporan</span>
-                </Link>
-                <Link href="/dashboard/settings" className={cn("flex flex-col items-center justify-center h-full transition-all", pathname === "/dashboard/settings" ? "text-primary" : "text-muted-foreground")}>
-                    <User className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-bold">Profil</span>
-                </Link>
+                {navItems.slice(2, 4).map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                        <Link 
+                            key={item.href} 
+                            href={item.href} 
+                            className={cn(
+                                "flex flex-col items-center justify-center transition-all",
+                                isActive ? "text-indigo-600" : "text-slate-400"
+                            )}
+                        >
+                            <item.icon className="w-6 h-6" />
+                            <span className="text-[10px] font-black uppercase tracking-widest mt-1">{item.label}</span>
+                        </Link>
+                    )
+                })}
             </div>
-          </>
+
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetContent side="bottom" className="rounded-t-[40px] border-t-0 p-0 overflow-hidden bg-white/95 backdrop-blur-xl h-[80vh]">
+                 <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4" />
+                 <div className="px-8 pt-4 pb-8 space-y-8 h-full overflow-y-auto">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-14 w-14 border-2 border-indigo-100">
+                            <AvatarImage src={profile?.avatar_url} />
+                            <AvatarFallback>{profile?.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 leading-tight">{profile?.full_name}</h3>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Guru Profesional</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-y-8 gap-x-2">
+                        {[
+                          { href: '/dashboard', icon: Home, label: 'Home', color: 'bg-blue-500' },
+                          { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen', color: 'bg-rose-500' },
+                          { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda', color: 'bg-amber-500' },
+                          { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi', color: 'bg-emerald-500' },
+                          { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai', color: 'bg-cyan-500' },
+                          { href: '/dashboard/journal', icon: BookText, label: 'Jurnal', color: 'bg-indigo-500' },
+                          { href: '/dashboard/materials', icon: Link2, label: 'Materi', color: 'bg-purple-500' },
+                          { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan', color: 'bg-orange-500' },
+                          { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal', color: 'bg-slate-500' },
+                          { href: '/dashboard/settings', icon: Settings, label: 'Setelan', color: 'bg-slate-400' },
+                        ].map((item) => (
+                            <Link 
+                                key={item.href} 
+                                href={item.href} 
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="flex flex-col items-center gap-2 transition-transform active:scale-90"
+                            >
+                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
+                                    <item.icon className="w-6 h-6" />
+                                </div>
+                                <span className="text-[10px] font-black text-center leading-tight uppercase tracking-wider text-slate-600">{item.label}</span>
+                            </Link>
+                        ))}
+                    </div>
+                    
+                    <div className="pt-6 border-t">
+                        <Button variant="ghost" className="w-full h-14 rounded-2xl text-red-500 font-black tracking-widest uppercase text-xs hover:bg-red-50" onClick={handleLogout}>
+                            <LogOut className="w-5 h-5 mr-3" /> Keluar Sesi
+                        </Button>
+                    </div>
+                 </div>
+              </SheetContent>
+            </Sheet>
+          </div>
       )}
     </>
   );

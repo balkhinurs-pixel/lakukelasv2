@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -16,24 +17,22 @@ import {
   Users, 
   Clock, 
   CalendarDays, 
-  Tag, 
-  ClipboardEdit, 
-  CheckCircle, 
-  Flag, 
-  School, 
-  CalendarOff,
   ArrowRight,
-  Coffee
+  MapPin,
+  CheckCircle2,
+  Calendar,
+  ChevronRight,
+  TrendingUp,
+  MessageSquareQuote
 } from "lucide-react";
 import Link from 'next/link';
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfWeek, addDays, isSameDay } from "date-fns";
 import { id } from "date-fns/locale";
 import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
-import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
-import { LottieAgenda } from "@/components/ui/lottie-agenda";
+import { LottieWelcome } from "@/components/ui/lottie-welcome";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -41,6 +40,7 @@ type DashboardPageProps = {
   initialAttendancePercentage: number;
   initialUnfilledJournalsCount: number;
   todayHoliday: Holiday | null;
+  profileName?: string;
 }
 
 const StatCard = ({
@@ -48,33 +48,32 @@ const StatCard = ({
     title,
     value,
     subtitle,
-    color,
+    colorClass,
+    iconBg,
+    trendIcon: TrendIcon
 }: {
     icon: React.ElementType;
     title: string;
-    value: string;
+    value: string | number;
     subtitle: string;
-    color: string;
+    colorClass: string;
+    iconBg: string;
+    trendIcon?: React.ElementType;
 }) => (
-    <Card className={cn("relative overflow-hidden text-white shadow-2xl border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl group", color)}>
-        <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-white/20 opacity-50 transition-opacity duration-300 group-hover:opacity-70" />
-        <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 opacity-50 transition-opacity duration-300 group-hover:opacity-30" />
-        
-        <CardContent className="relative z-10 flex flex-col justify-between p-4 sm:p-6 h-full">
-            <div className="hidden sm:flex items-center justify-between mb-4">
-                <div className="rounded-2xl bg-white/20 backdrop-blur-sm p-3 transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
-                    <Icon className="h-6 w-6 drop-shadow-sm" />
+    <Card className="relative overflow-hidden border-0 shadow-sm rounded-[24px] bg-white transition-all duration-300 hover:shadow-md group">
+        <CardContent className="p-5 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+                <div className={cn("p-2.5 rounded-xl text-white shadow-sm", iconBg)}>
+                    <Icon className="h-5 w-5" />
                 </div>
-                <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" />
+                {TrendIcon && <TrendIcon className={cn("h-4 w-4", colorClass)} />}
             </div>
-            
-            <div className="space-y-1">
-                <p className="text-[10px] sm:text-sm font-medium text-white/90 tracking-wide uppercase sm:normal-case">{title}</p>
-                <p className="text-2xl sm:text-3xl font-bold drop-shadow-sm tracking-tight">{value}</p>
-                <p className="text-[10px] sm:text-xs text-white/80 leading-tight sm:leading-relaxed line-clamp-1">{subtitle}</p>
+            <div className="space-y-0.5">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{title}</p>
+                <p className="text-2xl font-black text-slate-900">{value}</p>
+                <p className="text-[10px] text-slate-400 font-medium">{subtitle}</p>
             </div>
         </CardContent>
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
     </Card>
 );
 
@@ -83,484 +82,241 @@ export default function DashboardClientPage({
     agendas,
     initialAttendancePercentage,
     initialUnfilledJournalsCount,
-    todayHoliday
+    todayHoliday,
+    profileName = "Bapak/Ibu Guru"
 }: DashboardPageProps) {
-    const [isMounted, setIsMounted] = React.useState(false);
-    const [now, setNow] = React.useState<Date | null>(null);
-    const [activeSchedules, setActiveSchedules] = React.useState<Record<string, boolean>>({});
-    const [endedSchedules, setEndedSchedules] = React.useState<Record<string, boolean>>({});
-
-    const sortedSchedule = React.useMemo(() => {
-        return todaySchedule.sort((a,b) => a.start_time.localeCompare(b.start_time));
-    }, [todaySchedule]);
+    const [now, setNow] = React.useState<Date>(new Date());
 
     React.useEffect(() => {
-        setIsMounted(true);
-        const updateScheduleStatus = () => {
-            const currentTime = new Date();
-            setNow(currentTime); 
-
-            const newActiveSchedules: Record<string, boolean> = {};
-            const newEndedSchedules: Record<string, boolean> = {};
-            
-            sortedSchedule.forEach(item => {
-                const [startHours, startMinutes] = item.start_time.split(':').map(Number);
-                const [endHours, endMinutes] = item.end_time.split(':').map(Number);
-                
-                const startTime = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), startHours, startMinutes, 0);
-                const endTime = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), endHours, endMinutes, 0);
-                
-                if (currentTime >= endTime) {
-                    newEndedSchedules[item.id] = true;
-                    newActiveSchedules[item.id] = true;
-                } else if (currentTime >= startTime) {
-                    newActiveSchedules[item.id] = true;
-                }
-            });
-            
-            setActiveSchedules(newActiveSchedules);
-            setEndedSchedules(newEndedSchedules);
-        };
-
-        updateScheduleStatus();
-        const interval = setInterval(updateScheduleStatus, 60000); 
-        return () => clearInterval(interval);
-
-    }, [sortedSchedule]);
-
-    const getNextClassInfo = () => {
-        if (!now) return { title: "Jadwal Hari Ini", value: todayHoliday ? "Libur" : "...", subtitle: "Memuat informasi..." };
-
-        const currentHour = now.getHours();
-        const currentMinute = now.getMinutes();
-
-        const upcomingOrCurrentClass = sortedSchedule.find(item => {
-             const [endHours, endMinutes] = item.end_time.split(':').map(Number);
-             return currentHour < endHours || (currentHour === endHours && currentMinute < endMinutes);
-        });
-
-        if (upcomingOrCurrentClass && !todayHoliday) {
-            const [startHours, startMinutes] = upcomingOrCurrentClass.start_time.split(':').map(Number);
-            const isOngoing = now.getHours() > startHours || (now.getHours() === startHours && now.getMinutes() >= startMinutes);
-            
-            return {
-                title: isOngoing ? "Sedang Berlangsung" : "Kelas Berikutnya",
-                value: formatTime(upcomingOrCurrentClass.start_time),
-                subtitle: `${upcomingOrCurrentClass.subject} - ${upcomingOrCurrentClass.class}`
-            };
-        }
-        
-        return {
-            title: "Jadwal Hari Ini",
-            value: todayHoliday ? "Libur" : "Selesai",
-            subtitle: todayHoliday ? todayHoliday.description : "Semua kelas telah berakhir"
-        };
-    };
-
-    const nextClassInfo = getNextClassInfo();
-    
-    const [todayName, setTodayName] = React.useState('');
-    React.useEffect(() => {
-        setTodayName(format(new Date(), 'eeee', { locale: id }));
+        const timer = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(timer);
     }, []);
 
-    const QuickActionButton = ({ 
-        href, 
-        icon: Icon, 
-        tooltipText, 
-        variant = "default" 
-    }: { 
-        href: string, 
-        icon: React.ElementType, 
-        tooltipText: string,
-        variant?: "attendance" | "grades" | "journal" | "default"
-    }) => {
-        const getVariantStyles = () => {
-            switch (variant) {
-                case "attendance":
-                    return "bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-green-500/25 hover:shadow-green-500/40";
-                case "grades":
-                    return "bg-gradient-to-br from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 shadow-blue-500/25 hover:shadow-blue-500/40";
-                case "journal":
-                    return "bg-gradient-to-br from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 shadow-purple-500/25 hover:shadow-purple-500/40";
-                default:
-                    return "bg-gradient-to-br from-gray-500 to-slate-600 hover:from-gray-600 hover:to-slate-700 shadow-gray-500/25 hover:shadow-gray-500/40";
-            }
-        };
+    const sortedSchedule = React.useMemo(() => {
+        return [...todaySchedule].sort((a,b) => a.start_time.localeCompare(b.start_time));
+    }, [todaySchedule]);
 
-        return (
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button 
-                            size="icon" 
-                            className={cn(
-                                "h-11 w-11 shrink-0 border-0 text-white shadow-lg transition-all duration-300 ease-out relative group overflow-hidden",
-                                "hover:scale-110 active:scale-95 hover:shadow-xl",
-                                getVariantStyles()
-                            )}
-                            asChild
-                        >
-                            <Link href={href} className="relative z-10">
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                                <Icon className="h-5 w-5 drop-shadow-sm transition-all duration-300 group-hover:scale-110"/>
-                                <div className="absolute inset-0 rounded-md bg-white/10 scale-0 group-hover:scale-100 group-hover:opacity-0 opacity-100 transition-all duration-300" />
-                            </Link>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="bg-black/90 text-white border-none shadow-xl">
-                        <p className="font-medium">{tooltipText}</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-        );
-    };
+    const upcomingClass = React.useMemo(() => {
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        return sortedSchedule.find(item => {
+            const [endH, endM] = item.end_time.split(':').map(Number);
+            return currentHour < endH || (currentHour === endH && currentMinute < endM);
+        });
+    }, [sortedSchedule, now]);
 
-    const getActionButtons = (item: ScheduleItem) => {
-        const classId = item.class_id;
-        const subjectId = item.subject_id;
-        if (!classId || !subjectId) return null;
-        
-        const attendanceParams = new URLSearchParams({ classId, subjectId }).toString();
-        const gradesParams = new URLSearchParams({ classId, subjectId }).toString();
-        const journalParams = new URLSearchParams({ classId, subjectId, openDialog: "true" }).toString();
+    // Calendar helper
+    const weekDays = React.useMemo(() => {
+        const start = startOfWeek(now, { weekStartsOn: 1 });
+        return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    }, [now]);
 
-        return (
-             <div className="mt-4 flex items-center gap-3">
-                <QuickActionButton 
-                    href={`/dashboard/attendance?${attendanceParams}`} 
-                    icon={ClipboardCheck} 
-                    tooltipText="Isi Presensi"
-                    variant="attendance"
+    return (
+        <div className="space-y-6 pb-24">
+            {/* 1. Hero Welcome Section */}
+            <div className="relative overflow-hidden bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="space-y-4 flex-1">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
+                            <span>👋</span>
+                            <span>Selamat Datang,</span>
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+                            {profileName} <span className="text-amber-400">👋</span>
+                        </h1>
+                        <p className="text-slate-400 text-sm font-medium">Semangat mengajar hari ini!</p>
+                    </div>
+                    
+                    <div className="flex gap-4">
+                        <div className="flex items-center gap-3 bg-indigo-50 p-2.5 rounded-2xl border border-indigo-100 min-w-[120px]">
+                            <div className="p-2 bg-indigo-500 rounded-xl text-white shadow-sm">
+                                <BookText className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-900 leading-none">{todaySchedule.length} Kelas</p>
+                                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">Hari ini</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 bg-amber-50 p-2.5 rounded-2xl border border-amber-100 min-w-[120px]">
+                            <div className="p-2 bg-amber-500 rounded-xl text-white shadow-sm">
+                                <ClipboardCheck className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-900 leading-none">{initialUnfilledJournalsCount} Jurnal</p>
+                                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">Belum diisi</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="w-48 h-48 shrink-0 relative hidden sm:block">
+                     <div className="absolute inset-0 bg-indigo-100/50 rounded-full blur-3xl animate-pulse" />
+                     <LottieWelcome />
+                </div>
+            </div>
+
+            {/* 2. Grid Stats Section */}
+            <div className="grid grid-cols-2 gap-4">
+                <StatCard 
+                    icon={CheckCircle2}
+                    title="Presensi Hari Ini"
+                    value={`${initialAttendancePercentage}%`}
+                    subtitle="Kehadiran terekam"
+                    colorClass="text-emerald-500"
+                    iconBg="bg-emerald-500"
+                    trendIcon={TrendingUp}
                 />
-                <QuickActionButton 
-                    href={`/dashboard/grades?${gradesParams}`} 
-                    icon={ClipboardEdit} 
-                    tooltipText="Input Nilai"
-                    variant="grades"
-                />
-                <QuickActionButton 
-                    href={`/dashboard/journal?${journalParams}`} 
-                    icon={BookText} 
-                    tooltipText="Isi Jurnal"
-                    variant="journal"
-                />
-             </div>
-        );
-    }
-  
-  return (
-    <div className="space-y-8 p-1">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <StatCard
-            icon={ClipboardCheck}
-            title="Presensi Hari Ini"
-            value={!isMounted ? "..." : `${initialAttendancePercentage}%`}
-            subtitle={initialAttendancePercentage > 0 ? "Kehadiran terekam" : "Belum ada data"}
-            color="bg-gradient-to-br from-green-500 via-green-500 to-emerald-600"
-          />
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <StatCard
+                <StatCard 
                     icon={Users}
                     title="Kelas Hari Ini"
-                    value={!isMounted ? "..." : (todayHoliday ? "0" : String(todaySchedule.length))}
-                    subtitle={todayHoliday ? "Hari Libur" : "Total kelas terjadwal"}
-                    color="bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-600"
-                  />
-                </div>
-              </TooltipTrigger>
-              {todayHoliday && (
-                <TooltipContent>
-                  <p>Aktivitas mengajar ditiadakan karena libur</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-          <StatCard
-            icon={BookText}
-            title="Jurnal Belum Diisi"
-            value={!isMounted ? "..." : (todayHoliday ? "0" : String(initialUnfilledJournalsCount))}
-            subtitle={todayHoliday ? "Semua jurnal terisi" : (initialUnfilledJournalsCount > 0 ? "Perlu segera diisi" : "Semua jurnal terisi")}
-            color="bg-gradient-to-br from-red-500 via-red-500 to-orange-500"
-          />
-          <StatCard
-            icon={Clock}
-            title={nextClassInfo.title}
-            value={nextClassInfo.value}
-            subtitle={nextClassInfo.subtitle}
-            color="bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-400"
-          />
-      </div>
+                    value={todayHoliday ? "0" : String(todaySchedule.length)}
+                    subtitle="Total kelas terjadwal"
+                    colorClass="text-blue-500"
+                    iconBg="bg-blue-500"
+                />
+                <StatCard 
+                    icon={BookText}
+                    title="Jurnal Belum Diisi"
+                    value={initialUnfilledJournalsCount}
+                    subtitle="Semua jurnal terisi"
+                    colorClass="text-rose-500"
+                    iconBg="bg-rose-500"
+                />
+                <StatCard 
+                    icon={Calendar}
+                    title="Jadwal Hari Ini"
+                    value={todayHoliday ? "Libur" : (upcomingClass ? "Aktif" : "Selesai")}
+                    subtitle={todayHoliday ? todayHoliday.description : "Semua kelas telah berakhir"}
+                    colorClass="text-amber-500"
+                    iconBg="bg-amber-500"
+                />
+            </div>
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-3 shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 backdrop-blur-sm rounded-xl">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-              <CardTitle className="text-slate-900 dark:text-slate-100">
-                Jadwal Hari Ini ({todayName || '...'})
-              </CardTitle>
-            </div>
-            <CardDescription className="text-muted-foreground/80">
-              Alur kerja cepat untuk mengajar dengan aksi real-time.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {todayHoliday ? (
-                <div className="flex flex-col items-center justify-center py-10 space-y-6">
-                    <div className={cn(
-                        "p-8 rounded-xl border-2 flex flex-col items-center text-center gap-4 shadow-xl animate-in zoom-in-95 duration-500 w-full bg-white",
-                        todayHoliday.type === 'national' 
-                            ? "border-red-100" 
-                            : "border-indigo-100"
-                    )}>
-                        <div className="shrink-0 -mt-16">
-                            {todayHoliday.type === 'national' ? (
-                                <LottieCalendar size={100} />
-                            ) : (
-                                <LottieSchoolHoliday size={100} />
-                            )}
-                        </div>
-                        <div className="pt-2">
-                            <Badge variant="outline" className={cn(
-                                "text-xs uppercase font-black tracking-[0.2em] px-3 py-1 mb-2 border-0",
-                                todayHoliday.type === 'national' ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-600"
-                            )}>
-                                {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
-                            </Badge>
-                            <h3 className={cn(
-                                "font-black text-2xl leading-tight tracking-tight break-words",
-                                todayHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600"
-                            )}>{todayHoliday.description}</h3>
-                            <p className="text-sm opacity-70 mt-3 font-medium text-slate-500">Selamat menikmati waktu istirahat Bapak/Ibu Guru. <br /> Daftar jadwal dan presensi ditiadakan hari ini.</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-white/50 rounded-2xl border border-white/50">
-                            <Coffee className="h-4 w-4 text-amber-600" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Happy Holiday!</span>
-                        </div>
+            {/* 3. Next Schedule Section */}
+            <Card className="border-0 shadow-sm rounded-[24px] overflow-hidden bg-white">
+                <CardHeader className="flex flex-row items-center justify-between pb-2 px-6 pt-6">
+                    <div className="flex items-center gap-2">
+                        <CalendarDays className="h-5 w-5 text-indigo-600" />
+                        <CardTitle className="text-base font-black text-slate-800">Jadwal Berikutnya</CardTitle>
                     </div>
-                </div>
-            ) : sortedSchedule.length > 0 ? (
-                <div className="relative">
-                    <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gradient-to-b from-primary/60 via-primary/30 to-transparent -z-10" aria-hidden="true" />
-                    
-                    <div className="space-y-6">
-                         {sortedSchedule.map((item, index) => {
-                            const isActionAvailable = activeSchedules[item.id];
-                            const hasEnded = endedSchedules[item.id];
-                            return (
-                                <div 
-                                    key={item.id} 
-                                    className={cn(
-                                        "relative flex items-start gap-6 p-4 rounded-2xl transition-all duration-300 group",
-                                        "hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/2 hover:shadow-md hover:scale-[1.02]",
-                                        hasEnded 
-                                            ? "bg-gradient-to-r from-red-50/50 to-rose-50/30 border border-red-200/30"
-                                            : isActionAvailable 
-                                                ? "bg-gradient-to-r from-green-50/50 to-emerald-50/30 border border-green-200/30" 
-                                                : "hover:bg-muted/30"
-                                    )}
-                                    style={{ 
-                                        animationDelay: `${index * 100}ms`,
-                                        animation: 'fadeInUp 0.6s ease-out forwards'
-                                    }}
-                                >
-                                    <div className="relative">
-                                        <div className={cn(
-                                            "flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 shadow-lg transition-all duration-300",
-                                            "bg-gradient-to-br from-primary/90 to-primary text-white",
-                                            "group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-primary/25",
-                                            hasEnded 
-                                                ? "bg-gradient-to-br from-red-500 to-rose-600"
-                                                : isActionAvailable && "bg-gradient-to-br from-green-500 to-emerald-600 animate-pulse"
-                                        )}>
-                                            <Clock className="h-6 w-6 drop-shadow-sm" />
-                                        </div>
-                                        
-                                        {isActionAvailable && !hasEnded && (
-                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-bounce shadow-sm">
-                                                <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75" />
-                                            </div>
-                                        )}
-                                        
-                                        {hasEnded && (
-                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-sm">
-                                                <div className="w-full h-full bg-red-600 rounded-full" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="flex-grow">
-                                        <div className="mb-2">
-                                            <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors duration-300">
-                                                {item.subject}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                                                    {item.class}
-                                                </span>
-                                                <span className="text-sm text-muted-foreground font-medium">
-                                                    {formatTime(item.start_time)} - {formatTime(item.end_time)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        
-                                        {isActionAvailable && (
-                                            <div className="relative">
-                                                {hasEnded ? (
-                                                    <div className="text-xs text-red-600 font-semibold mb-2 flex items-center gap-1">
-                                                        <CheckCircle className="w-3 h-3" />
-                                                        Kelas sudah berakhir
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-xs text-green-600 font-semibold mb-2 flex items-center gap-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                                        Kelas sudah dimulai - Aksi tersedia
-                                                    </div>
-                                                )}
-                                                {getActionButtons(item)}
-                                            </div>
-                                        )}
-                                    </div>
+                    <Button variant="ghost" size="sm" className="text-indigo-600 font-bold text-xs" asChild>
+                        <Link href="/dashboard/schedule">Lihat Semua <ChevronRight className="h-3 w-3 ml-1" /></Link>
+                    </Button>
+                </CardHeader>
+                <CardContent className="px-6 pb-6 pt-2">
+                    {upcomingClass ? (
+                        <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex items-center justify-between group hover:bg-slate-100/50 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-indigo-600 text-white p-3 rounded-2xl flex flex-col items-center justify-center min-w-[70px] shadow-lg shadow-indigo-200">
+                                    <span className="text-xs font-bold leading-none">{formatTime(upcomingClass.start_time)}</span>
+                                    <div className="w-4 h-0.5 bg-white/30 my-1.5" />
+                                    <span className="text-xs font-bold leading-none">{formatTime(upcomingClass.end_time)}</span>
                                 </div>
-                            )
-                         })}
-                    </div>
-                </div>
-            ) : (
-                <div className="text-center text-muted-foreground py-12">
-                    <div className="space-y-3">
-                        <Clock className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                        <div>
-                            <p className="text-lg font-medium">Tidak ada jadwal mengajar hari ini</p>
-                            <p className="text-sm text-muted-foreground/70">Nikmati waktu istirahat Anda atau periksa jadwal untuk hari lain.</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card className="lg:col-span-4 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50/30 dark:from-gray-900 dark:to-indigo-950/30 backdrop-blur-sm rounded-xl">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-              <CardTitle className="text-slate-900 dark:text-slate-100">
-                Agenda Mendatang
-              </CardTitle>
-            </div>
-            <CardDescription className="text-muted-foreground/80">
-              Rencana kegiatan dan pengingat yang akan datang.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-             {agendas.length > 0 ? (
-                <div className="space-y-3">
-                {agendas.map((item, index) => (
-                    <div 
-                        key={item.id} 
-                        className="group p-4 rounded-xl border border-border/50 bg-white/50 dark:bg-gray-800/50 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
-                        style={{
-                            animationDelay: `${index * 100}ms`,
-                            animation: 'fadeInRight 0.6s ease-out forwards'
-                        }}
-                    >
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3">
-                                    <div 
-                                        className="w-3 h-3 rounded-full shadow-sm shrink-0"
-                                        style={{ backgroundColor: item.color || '#6b7280' }}
-                                    />
-                                    <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-600 transition-colors duration-300">
-                                        {item.title}
-                                    </h4>
-                                </div>
-                                <div className="flex items-center gap-3 mt-2 ml-6">
-                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                                        <CalendarDays className="w-3.5 h-3.5" />
-                                        <span>{format(parseISO(item.date), "dd MMM", { locale: id })}</span>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 text-[10px] font-black">{upcomingClass.class}</Badge>
+                                        <p className="font-black text-slate-900 tracking-tight">{upcomingClass.subject}</p>
                                     </div>
-                                    {item.start_time && (
-                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            <span>{formatTime(item.start_time)}</span>
-                                        </div>
-                                    )}
-                                    {item.tag && (
-                                        <Badge 
-                                            variant="outline" 
-                                            className="px-2 py-0 h-4 text-[9px] uppercase font-bold tracking-wider border-0"
-                                            style={{ 
-                                                backgroundColor: `${item.color}15` || '#6b728015',
-                                                color: item.color || '#6b7280'
-                                            }}
-                                        >
-                                            {item.tag}
-                                        </Badge>
-                                    )}
+                                    <div className="flex items-center gap-1.5 text-slate-400">
+                                        <MapPin className="h-3 w-3" />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">Ruang Kelas</span>
+                                    </div>
                                 </div>
                             </div>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" asChild>
-                                <Link href={`/dashboard/agenda?date=${item.date}`}>
-                                    <ArrowRight className="h-4 w-4 text-indigo-600" />
-                                </Link>
-                            </Button>
+                            <div className="hidden sm:flex flex-col items-end gap-1">
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Mulai dalam</p>
+                                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200">
+                                    <span className="text-sm font-black text-slate-900">Segera</span>
+                                    <Clock className="h-4 w-4 text-indigo-500" />
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-6">
+                            <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
+                            <p className="text-sm font-bold text-slate-500">Semua tugas mengajar selesai untuk hari ini!</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* 4. Progress & Calendar Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Teaching Progress */}
+                <Card className="border-0 shadow-sm rounded-[24px] bg-white p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                        <TrendingUp className="h-5 w-5 text-indigo-600" />
+                        <CardTitle className="text-base font-black text-slate-800">Progress Mengajar</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <div className="relative h-24 w-24 shrink-0">
+                            <svg className="h-full w-full" viewBox="0 0 36 36">
+                                <circle className="stroke-slate-100 fill-none" strokeWidth="3" cx="18" cy="18" r="15.91549430918954" />
+                                <circle className="stroke-indigo-600 fill-none transition-all duration-1000" strokeWidth="3" strokeDasharray="72 28" strokeDashoffset="25" strokeLinecap="round" cx="18" cy="18" r="15.91549430918954" />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-lg font-black text-slate-900">72%</span>
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Minggu Ini</p>
+                            <p className="text-sm font-bold text-slate-700 leading-tight">8 dari 11 kelas telah diselesaikan</p>
+                            <Button variant="link" size="sm" className="p-0 h-auto text-indigo-600 font-black text-[11px] uppercase tracking-wider">Lihat detail ></Button>
                         </div>
                     </div>
-                ))}
-                <div className="pt-2">
-                    <Button variant="ghost" className="w-full text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-bold text-xs" asChild>
-                        <Link href="/dashboard/agenda">
-                            Lihat Semua Agenda
-                            <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                        </Link>
-                    </Button>
-                </div>
-                </div>
-             ) : (
-                <div className="text-center py-12">
-                    <div className="shrink-0 flex items-center justify-center mb-4">
-                        <LottieAgenda size={120} />
+                </Card>
+
+                {/* Mini Calendar */}
+                <Card className="border-0 shadow-sm rounded-[24px] bg-white p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2">
+                            <CalendarDays className="h-5 w-5 text-indigo-600" />
+                            <CardTitle className="text-base font-black text-slate-800">Kalender</CardTitle>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <span>{format(now, 'MMMM yyyy', { locale: id })}</span>
+                        </div>
                     </div>
-                    <p className="text-muted-foreground font-bold">Belum ada agenda terdaftar</p>
-                    <p className="text-sm text-muted-foreground/70 mt-1 font-medium">
-                        Catat rapat atau pengingat di menu Agenda
-                    </p>
-                    <Button variant="outline" className="mt-4 rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold" asChild>
-                        <Link href="/dashboard/agenda">Buat Agenda Baru</Link>
-                    </Button>
+                    <div className="grid grid-cols-7 gap-2">
+                        {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(d => (
+                            <div key={d} className="text-center text-[10px] font-black text-slate-300 uppercase">{d}</div>
+                        ))}
+                        {weekDays.map((day, i) => (
+                            <div 
+                                key={i} 
+                                className={cn(
+                                    "aspect-square rounded-xl flex items-center justify-center text-xs font-black transition-all",
+                                    isSameDay(day, now) 
+                                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
+                                        : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                                )}
+                            >
+                                {day.getDate()}
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+
+            {/* 5. Motivation Banner */}
+            <div className="relative rounded-[32px] bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6 border border-indigo-100/50 flex items-center gap-6 overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full" />
+                <div className="relative shrink-0 w-24 h-24 hidden sm:block">
+                     <LottieWelcome />
                 </div>
-             )}
-          </CardContent>
-          
-          <style jsx>{`
-            @keyframes fadeInRight {
-                from {
-                    opacity: 0;
-                    transform: translateX(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-            }
-            @keyframes fadeInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-          `}</style>
-        </Card>
-      </div>
-    </div>
-  );
+                <div className="flex-1">
+                    <div className="flex items-start gap-3">
+                        <MessageSquareQuote className="h-6 w-6 text-indigo-400 shrink-0" />
+                        <p className="text-sm font-bold text-slate-600 leading-relaxed italic">
+                            "Mengajar bukan hanya pekerjaan, tetapi cara untuk memberi kehidupan pada pengetahuan."
+                        </p>
+                    </div>
+                </div>
+                <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                    <div className="p-2 bg-amber-100 rounded-xl">
+                        <Badge variant="outline" className="border-0 bg-transparent text-amber-600 p-0"><TrendingUp className="h-5 w-5" /></Badge>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }

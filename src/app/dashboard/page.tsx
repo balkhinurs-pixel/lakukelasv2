@@ -1,8 +1,9 @@
+
 'use client'
 
-import { getDashboardData } from '@/lib/data';
+import { getDashboardData, getUserProfile } from '@/lib/data';
 import DashboardClientPage from './dashboard-client-page';
-import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
+import type { ScheduleItem, Agenda, Holiday, Profile } from "@/lib/types";
 import * as React from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -15,42 +16,19 @@ type DashboardData = {
     attendancePercentage: number;
     unfilledJournalsCount: number;
     todayHoliday: Holiday | null;
+    profile: Profile | null;
 };
 
 function DashboardLoadingSkeleton() {
     return (
         <div className="space-y-8 p-1">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <Skeleton className="h-48 rounded-[32px]" />
+            <div className="grid grid-cols-2 gap-4">
                 {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-32 rounded-2xl" />
+                    <Skeleton key={i} className="h-32 rounded-[24px]" />
                 ))}
             </div>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-                <div className="lg:col-span-3 space-y-4">
-                     <Skeleton className="h-8 w-48" />
-                     <Skeleton className="h-4 w-64" />
-                     <div className="space-y-4 pt-4">
-                        {[...Array(2)].map((_, i) => (
-                            <div key={i} className="flex gap-4">
-                                <Skeleton className="h-12 w-12 rounded-2xl" />
-                                <div className="space-y-2 flex-1">
-                                    <Skeleton className="h-5 w-32" />
-                                    <Skeleton className="h-4 w-24" />
-                                </div>
-                            </div>
-                        ))}
-                     </div>
-                </div>
-                <div className="lg:col-span-4 space-y-4">
-                    <Skeleton className="h-8 w-48" />
-                    <Skeleton className="h-4 w-64" />
-                    <div className="space-y-3 pt-4">
-                       {[...Array(3)].map((_, i) => (
-                         <Skeleton key={i} className="h-16 w-full rounded-xl" />
-                       ))}
-                    </div>
-                </div>
-            </div>
+            <Skeleton className="h-64 rounded-[24px]" />
         </div>
     )
 }
@@ -62,36 +40,16 @@ export default function DashboardPage() {
     React.useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // Use Indonesian timezone for consistent day calculation
                 const indonesianDayName = getIndonesianDayName();
+                const [dashboardData, profile] = await Promise.all([
+                    getDashboardData(indonesianDayName),
+                    getUserProfile()
+                ]);
                 
-                // Also get user's local day for comparison
-                const userToday = new Date();
-                const dayViaDateFns = format(userToday, 'eeee', { locale: id });
-                const dayViaIntl = userToday.toLocaleDateString('id-ID', { weekday: 'long' });
-                
-                // Map common variations to ensure consistency
-                const dayMapping: Record<string, string> = {
-                    'Senin': 'Senin',
-                    'Selasa': 'Selasa', 
-                    'Rabu': 'Rabu',
-                    'Kamis': 'Kamis',
-                    'Jumat': 'Jumat',
-                    'Sabtu': 'Sabtu',
-                    'Minggu': 'Minggu',
-                    'Monday': 'Senin',
-                    'Tuesday': 'Selasa',
-                    'Wednesday': 'Rabu', 
-                    'Thursday': 'Kamis',
-                    'Friday': 'Jumat',
-                    'Saturday': 'Sabtu',
-                    'Sunday': 'Minggu'
-                };
-                
-                const finalDayForQuery = dayMapping[indonesianDayName] || indonesianDayName;
-                
-                const dashboardData = await getDashboardData(finalDayForQuery);
-                setData(dashboardData as DashboardData);
+                setData({
+                    ...(dashboardData as any),
+                    profile
+                });
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
             } finally {
@@ -113,6 +71,7 @@ export default function DashboardPage() {
             initialAttendancePercentage={data.attendancePercentage}
             initialUnfilledJournalsCount={data.unfilledJournalsCount}
             todayHoliday={data.todayHoliday}
+            profileName={data.profile?.full_name}
         />
     );
 }
