@@ -67,11 +67,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { AnimatedText } from "@/components/ui/animated-underline-text-one";
-import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { getIndonesianDayFromDate } from "@/lib/timezone";
 import { LottieWhatsApp } from "@/components/ui/lottie-whatsapp";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
 import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
+import { LottieWelcome } from "@/components/ui/lottie-welcome";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -581,15 +581,28 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
 
   return (
     <div className="space-y-6 p-1">
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
-        <CardHeader className="pb-4 text-center">
-          <HandWrittenTitle 
-            title={editingId ? 'Ubah Presensi' : 'Input Presensi'} 
-            subtitle="Siswa"
-            className="py-4 md:py-6"
-          />
-        </CardHeader>
-        <CardContent className="pt-4">
+      <Card className="border-0 shadow-lg bg-white overflow-hidden rounded-[32px]">
+        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-6 sm:p-8 flex flex-row items-center justify-between gap-4 text-white">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full" />
+            <div className="relative z-10 space-y-2 flex-1">
+                <div className="flex items-center gap-2 text-indigo-100 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]">
+                    <span>📋</span>
+                    <span>Administrasi Kelas</span>
+                </div>
+                <h1 className="text-xl sm:text-4xl font-black tracking-tight leading-tight">
+                    {editingId ? 'Ubah Presensi Siswa' : 'Input Presensi Siswa'}
+                </h1>
+                <p className="text-indigo-100 text-[11px] sm:text-sm font-bold leading-relaxed max-w-md opacity-80">
+                    Catat kehadiran siswa secara akurat untuk memantau kedisiplinan dan progres belajar harian.
+                </p>
+            </div>
+            <div className="w-24 h-24 sm:w-32 sm:h-32 shrink-0 relative">
+                 <div className="absolute inset-0 bg-white/20 rounded-full blur-2xl animate-pulse" />
+                 <LottieWelcome />
+            </div>
+        </div>
+
+        <CardContent className="pt-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <div className="space-y-2 xl:col-span-2">
                 <Label className="text-sm font-medium text-slate-700">Tahun Ajaran Aktif</Label>
@@ -800,7 +813,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                             </TableCell>
                             <TableCell className="font-medium text-slate-900">
                                 <div className="flex items-center gap-2">
-                                    <span>{student.name}</span>
+                                    <span className="uppercase font-bold tracking-tight">{student.name}</span>
                                     <AddNoteDialog student={student} onNoteSaved={() => router.refresh()} />
                                 </div>
                             </TableCell>
