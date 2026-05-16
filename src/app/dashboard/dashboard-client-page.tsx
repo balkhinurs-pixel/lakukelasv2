@@ -41,6 +41,37 @@ type DashboardPageProps = {
   profileName?: string;
 }
 
+// Komponen Pembantu untuk Hitung Mundur Sisa Waktu Mengajar
+const CountdownDisplay = ({ startTimeStr, endTimeStr, now }: { startTimeStr: string, endTimeStr: string, now: Date }) => {
+    const [startH, startM] = startTimeStr.split(':').map(Number);
+    const [endH, endM] = endTimeStr.split(':').map(Number);
+    
+    const startTime = new Date(now);
+    startTime.setHours(startH, startM, 0, 0);
+    
+    const endTime = new Date(now);
+    endTime.setHours(endH, endM, 0, 0);
+
+    // Jika jam mengajar belum dimulai
+    if (now < startTime) {
+        return <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Segera</span>;
+    }
+
+    const diffInSeconds = Math.floor((endTime.getTime() - now.getTime()) / 1000);
+    
+    // Jika jam mengajar sudah selesai
+    if (diffInSeconds <= 0) return null;
+
+    const totalMinutes = Math.floor(diffInSeconds / 60);
+    const remainingSeconds = diffInSeconds % 60;
+    
+    return (
+        <span className="text-[10px] font-mono font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 shadow-sm">
+            {totalMinutes}:{remainingSeconds.toString().padStart(2, '0')}
+        </span>
+    );
+};
+
 const StatCard = ({
     icon: Icon,
     title,
@@ -117,12 +148,6 @@ export default function DashboardClientPage({
                             <span>👋</span>
                             <span>Selamat Datang</span>
                         </div>
-                        {/* 
-                           SOLUSI NAMA PANJANG:
-                           - Menghapus 'truncate' dan 'max-w-[200px]'
-                           - Menggunakan 'line-clamp-2' untuk membatasi maksimal 2 baris
-                           - Menambahkan 'min-w-0' pada parent flex untuk memastikan pembungkusan teks berfungsi
-                        */}
                         <h1 className="text-xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight line-clamp-2">
                             {profileName}
                         </h1>
@@ -193,9 +218,17 @@ export default function DashboardClientPage({
                 <CardContent className="px-6 pb-6 pt-2">
                     {upcomingClass ? (
                         <div className="relative bg-slate-50/50 p-4 rounded-[32px] border border-slate-100 flex flex-col gap-4 group hover:bg-slate-100/50 transition-all duration-300">
-                            <div className="absolute top-4 right-4 flex h-2 w-2 z-20">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            {/* Indikator Aktif & Countdown */}
+                            <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5 z-20">
+                                <div className="flex h-2 w-2 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </div>
+                                <CountdownDisplay 
+                                    startTimeStr={upcomingClass.start_time} 
+                                    endTimeStr={upcomingClass.end_time} 
+                                    now={now} 
+                                />
                             </div>
 
                             <div className="flex items-center">
