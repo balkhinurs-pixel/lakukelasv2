@@ -20,15 +20,14 @@ import {
   Calendar,
   ChevronRight,
   TrendingUp,
-  MessageSquareQuote,
-  ClipboardEdit
+  MessageSquareQuote
 } from "lucide-react";
 import Link from 'next/link';
+import Image from 'next/image';
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
-import { LottieWelcome } from "@/components/ui/lottie-welcome";
 import { MiniCalendar } from "@/components/ui/mini-calendar";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -179,7 +178,7 @@ const ScheduleItemCard = ({ item, now, isProminent = false }: { item: ScheduleIt
                 </Button>
                 <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 hover:text-blue-700 gap-1.5" asChild>
                     <Link href={`/dashboard/grades?classId=${item.class_id}&subjectId=${item.subject_id}`}>
-                        <ClipboardEdit className="w-4 h-4" />
+                        <TrendingUp className="w-4 h-4" />
                         Nilai
                     </Link>
                 </Button>
@@ -245,9 +244,16 @@ export default function DashboardClientPage({
                         </p>
                     </div>
                 </div>
-                <div className="w-24 h-24 sm:w-40 sm:h-40 shrink-0 relative">
+                <div className="w-24 h-24 sm:w-40 sm:h-40 shrink-0 relative flex items-center justify-center">
                      <div className="absolute inset-0 bg-indigo-100/40 rounded-full blur-2xl animate-pulse" />
-                     <LottieWelcome />
+                     <Image 
+                        src="/asset/icon dashboard.gif" 
+                        alt="Welcome Icon" 
+                        width={160} 
+                        height={160} 
+                        className="relative z-10 w-full h-full object-contain"
+                        unoptimized
+                     />
                 </div>
             </div>
 
@@ -397,7 +403,14 @@ export default function DashboardClientPage({
             <div className="relative rounded-[32px] bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6 border border-indigo-100/50 flex items-center gap-6 overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full" />
                 <div className="relative shrink-0 w-24 h-24 hidden sm:block">
-                     <LottieWelcome />
+                     <Image 
+                        src="/asset/icon dashboard.gif" 
+                        alt="Welcome Icon" 
+                        width={96} 
+                        height={96} 
+                        className="object-contain"
+                        unoptimized
+                     />
                 </div>
                 <div className="flex-1">
                     <div className="flex items-start gap-3">
