@@ -21,7 +21,8 @@ import {
   Calendar,
   ChevronRight,
   TrendingUp,
-  MessageSquareQuote
+  MessageSquareQuote,
+  ClipboardEdit
 } from "lucide-react";
 import Link from 'next/link';
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
@@ -171,7 +172,7 @@ export default function DashboardClientPage({
                 />
             </div>
 
-            {/* 3. Next Schedule Section - Updated UI */}
+            {/* 3. Next Schedule Section */}
             <Card className="border-0 shadow-sm rounded-[32px] overflow-hidden bg-white">
                 <CardHeader className="flex flex-col items-start pb-2 px-6 pt-6 gap-2">
                     <div className="flex items-center gap-2">
@@ -189,36 +190,59 @@ export default function DashboardClientPage({
                 </CardHeader>
                 <CardContent className="px-6 pb-6 pt-2">
                     {upcomingClass ? (
-                        <div className="bg-slate-50/50 p-4 rounded-[32px] border border-slate-100 flex items-center justify-between group hover:bg-slate-100/50 transition-all duration-300">
-                            <div className="flex items-center gap-4 flex-1">
-                                <div className="bg-indigo-600 text-white py-3 px-3 rounded-[24px] flex flex-col items-center justify-center min-w-[65px] sm:min-w-[80px] shadow-lg shadow-indigo-100 shrink-0">
-                                    <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.start_time)}</span>
-                                    <div className="w-4 h-0.5 bg-white/30 my-2 rounded-full" />
-                                    <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.end_time)}</span>
+                        <div className="bg-slate-50/50 p-4 rounded-[32px] border border-slate-100 flex flex-col gap-4 group hover:bg-slate-100/50 transition-all duration-300">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4 flex-1">
+                                    <div className="bg-indigo-600 text-white py-3 px-3 rounded-[24px] flex flex-col items-center justify-center min-w-[65px] sm:min-w-[80px] shadow-lg shadow-indigo-100 shrink-0">
+                                        <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.start_time)}</span>
+                                        <div className="w-4 h-0.5 bg-white/30 my-2 rounded-full" />
+                                        <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.end_time)}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 min-w-0">
+                                        <Badge variant="secondary" className="w-fit bg-indigo-50 text-indigo-700 border-indigo-100 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg">
+                                            {upcomingClass.class}
+                                        </Badge>
+                                        <h4 className="font-black text-slate-900 tracking-tight text-lg leading-tight truncate">
+                                            {upcomingClass.subject}
+                                        </h4>
+                                        <div className="flex items-center gap-1.5 text-slate-400">
+                                            <MapPin className="h-3 w-3" />
+                                            <span className="text-[9px] font-black uppercase tracking-widest">RUANG KELAS</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col gap-1.5 min-w-0">
-                                    <Badge variant="secondary" className="w-fit bg-indigo-50 text-indigo-700 border-indigo-100 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg">
-                                        {upcomingClass.class}
-                                    </Badge>
-                                    <h4 className="font-black text-slate-900 tracking-tight text-lg leading-tight truncate">
-                                        {upcomingClass.subject}
-                                    </h4>
-                                    <div className="flex items-center gap-1.5 text-slate-400">
-                                        <MapPin className="h-3 w-3" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest">RUANG KELAS</span>
+                                
+                                <div className="flex flex-col items-end gap-1.5 pl-2 shrink-0">
+                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Live</p>
+                                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm">
+                                        <div className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="flex flex-col items-end gap-1.5 pl-2 shrink-0">
-                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Live Progress</p>
-                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm">
-                                    <span className="text-[10px] sm:text-xs font-black text-slate-900 whitespace-nowrap">Aktif</span>
-                                    <div className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </div>
-                                </div>
+
+                            {/* Action Buttons Row */}
+                            <div className="flex items-center gap-2 pt-3 border-t border-slate-200/50">
+                                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1.5" asChild>
+                                    <Link href={`/dashboard/attendance?classId=${upcomingClass.class_id}&subjectId=${upcomingClass.subject_id}`}>
+                                        <ClipboardCheck className="w-4 h-4" />
+                                        Absen
+                                    </Link>
+                                </Button>
+                                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 hover:text-blue-700 gap-1.5" asChild>
+                                    <Link href={`/dashboard/grades?classId=${upcomingClass.class_id}&subjectId=${upcomingClass.subject_id}`}>
+                                        <ClipboardEdit className="w-4 h-4" />
+                                        Nilai
+                                    </Link>
+                                </Button>
+                                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-purple-600 hover:bg-purple-50 hover:text-purple-700 gap-1.5" asChild>
+                                    <Link href={`/dashboard/journal?classId=${upcomingClass.class_id}&subjectId=${upcomingClass.subject_id}&openDialog=true`}>
+                                        <BookText className="w-4 h-4" />
+                                        Jurnal
+                                    </Link>
+                                </Button>
                             </div>
                         </div>
                     ) : (
