@@ -9,18 +9,19 @@ import {
   startOfWeek,
   endOfWeek,
 } from "date-fns";
+import { id } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const DAYS_OF_WEEK = [
-  { key: "sun", label: "Min" },
   { key: "mon", label: "Sen" },
   { key: "tue", label: "Sel" },
   { key: "wed", label: "Rab" },
   { key: "thu", label: "Kam" },
   { key: "fri", label: "Jum" },
   { key: "sat", label: "Sab" },
+  { key: "sun", label: "Min" },
 ];
 
 export const MiniCalendar: React.FC = () => {
@@ -33,41 +34,40 @@ export const MiniCalendar: React.FC = () => {
   });
 
   return (
-    <div className="w-full overflow-hidden rounded-[24px] border border-slate-100 bg-white p-2 shadow-sm">
-      <div className="flex items-center justify-between p-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-xl hover:bg-slate-50"
-          onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}
-        >
-          <ChevronLeft className="h-4 w-4 text-slate-400" />
-        </Button>
-        <h2 className="text-xs font-black uppercase tracking-widest text-slate-900">
-          {format(currentWeek, "MMMM yyyy")}
+    <div className="w-full overflow-hidden">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+          {format(currentWeek, "MMMM yyyy", { locale: id })}
         </h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-xl hover:bg-slate-50"
-          onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-        >
-          <ChevronRight className="h-4 w-4 text-slate-400" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-lg hover:bg-slate-100"
+            onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}
+          >
+            <ChevronLeft className="h-4 w-4 text-slate-400" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-lg hover:bg-slate-100"
+            onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
+          >
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-7 text-center mb-2 px-2">
+      <div className="grid grid-cols-7 gap-2 mb-2">
         {DAYS_OF_WEEK.map((day) => (
           <div
             key={day.key}
-            className="text-[9px] font-black uppercase tracking-tighter text-slate-300"
+            className="text-[10px] font-black text-center uppercase tracking-tighter text-slate-300"
           >
             {day.label}
           </div>
         ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-1 p-2 pt-0">
         {weekDays.map((day) => {
           const isSelected =
             format(day, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
@@ -77,9 +77,9 @@ export const MiniCalendar: React.FC = () => {
               key={day.toString()}
               variant={isSelected ? "default" : "ghost"}
               className={cn(
-                "h-9 w-full p-0 font-bold text-xs transition-all duration-300 rounded-xl",
+                "aspect-square h-auto w-full p-0 font-black text-xs transition-all duration-300 rounded-xl",
                 isSelected 
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700" 
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 scale-105" 
                   : "text-slate-600 hover:bg-indigo-50"
               )}
               onClick={() => setSelectedDate(day)}

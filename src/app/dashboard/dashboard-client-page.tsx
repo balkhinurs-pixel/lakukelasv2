@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -25,11 +24,12 @@ import {
   ClipboardEdit
 } from "lucide-react";
 import Link from 'next/link';
-import { format, startOfWeek, addDays, isSameDay } from "date-fns";
+import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { LottieWelcome } from "@/components/ui/lottie-welcome";
+import { MiniCalendar } from "@/components/ui/mini-calendar";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -58,7 +58,6 @@ const StatCard = ({
     trendIcon?: React.ElementType;
 }) => (
     <Card className={cn("relative overflow-hidden border-0 shadow-sm rounded-[28px] transition-all duration-300 hover:shadow-md group", bgColor)}>
-        {/* Background Icon (Watermark) */}
         <div className="absolute -right-4 -bottom-4 opacity-[0.12] group-hover:scale-110 transition-transform duration-500">
             <Icon className={cn("w-24 h-24", colorClass)} />
         </div>
@@ -103,11 +102,6 @@ export default function DashboardClientPage({
             return currentHour < endH || (currentHour === endH && currentMinute < endM);
         });
     }, [sortedSchedule, now]);
-
-    const weekDays = React.useMemo(() => {
-        const start = startOfWeek(now, { weekStartsOn: 1 });
-        return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-    }, [now]);
 
     const dayName = format(now, 'EEEE', { locale: id });
 
@@ -191,7 +185,6 @@ export default function DashboardClientPage({
                 <CardContent className="px-6 pb-6 pt-2">
                     {upcomingClass ? (
                         <div className="relative bg-slate-50/50 p-4 rounded-[32px] border border-slate-100 flex flex-col gap-4 group hover:bg-slate-100/50 transition-all duration-300">
-                            {/* Dot indicator in top right corner */}
                             <div className="absolute top-4 right-4 flex h-2 w-2 z-20">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -219,7 +212,6 @@ export default function DashboardClientPage({
                                 </div>
                             </div>
 
-                            {/* Action Buttons Row */}
                             <div className="flex items-center gap-2 pt-3 border-t border-slate-200/50">
                                 <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1.5" asChild>
                                     <Link href={`/dashboard/attendance?classId=${upcomingClass.class_id}&subjectId=${upcomingClass.subject_id}`}>
@@ -282,28 +274,8 @@ export default function DashboardClientPage({
                             <CalendarDays className="h-5 w-5 text-indigo-600" />
                             <CardTitle className="text-base font-black text-slate-800 uppercase tracking-tight">Kalender</CardTitle>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            <span>{format(now, 'MMMM yyyy', { locale: id })}</span>
-                        </div>
                     </div>
-                    <div className="grid grid-cols-7 gap-2">
-                        {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(d => (
-                            <div key={d} className="text-center text-[10px] font-black text-slate-300 uppercase">{d}</div>
-                        ))}
-                        {weekDays.map((day, i) => (
-                            <div 
-                                key={i} 
-                                className={cn(
-                                    "aspect-square rounded-xl flex items-center justify-center text-xs font-black transition-all",
-                                    isSameDay(day, now) 
-                                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
-                                        : "bg-slate-50 text-slate-500 hover:bg-slate-100"
-                                )}
-                            >
-                                {day.getDate()}
-                            </div>
-                        ))}
-                    </div>
+                    <MiniCalendar />
                 </Card>
             </div>
 
