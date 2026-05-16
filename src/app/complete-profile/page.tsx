@@ -35,14 +35,29 @@ export default function CompleteProfilePage() {
             return;
         }
 
-        const result = await completeInitialProfile(data);
-        if (result.success) {
-            toast({ title: "Data Terkirim", description: "Data Anda telah disimpan. Sekarang silakan tunggu persetujuan Admin." });
-            router.push('/waiting-approval');
-        } else {
-            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        try {
+            const result = await completeInitialProfile(data);
+            if (result.success) {
+                toast({ 
+                    title: "Data Terkirim", 
+                    description: "Profil Anda telah diperbarui. Mengalihkan ke halaman tunggu..." 
+                });
+                
+                // Refresh router agar middleware mendapatkan data profil terbaru
+                router.refresh();
+                
+                // Otomatis pindah ke halaman tunggu
+                setTimeout(() => {
+                    router.push('/waiting-approval');
+                }, 500);
+            } else {
+                toast({ title: "Gagal", description: result.error, variant: "destructive" });
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Terjadi kesalahan koneksi.", variant: "destructive" });
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleLogout = async () => {
@@ -62,7 +77,7 @@ export default function CompleteProfilePage() {
                     <div className="space-y-2">
                         <CardTitle className="text-2xl font-black tracking-tight">Lengkapi Data Diri</CardTitle>
                         <CardDescription className="text-base font-medium">
-                            Sebelum diajukan ke Admin, mohon lengkapi informasi Anda agar proses verifikasi lebih cepat.
+                            Mohon identifikasi diri Anda agar Admin sekolah dapat menyetujui akses Anda dengan mudah.
                         </CardDescription>
                     </div>
                 </CardHeader>
@@ -90,7 +105,7 @@ export default function CompleteProfilePage() {
                                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                                 <Input id="phoneNumber" name="phoneNumber" placeholder="e.g. 62812XXXXXXXX" className="h-12 pl-12 rounded-xl bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-500/20" required />
                             </div>
-                            <p className="text-[10px] text-slate-400 italic pl-1">Digunakan untuk notifikasi jadwal harian.</p>
+                            <p className="text-[10px] text-slate-400 italic pl-1">Penting: Gunakan format angka saja (contoh: 62812...)</p>
                         </div>
 
                         <div className="pt-4 grid gap-3">

@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
     
-    // Deteksi apakah user sudah mengisi data diri (bukan nama default)
+    // Deteksi apakah user sudah mengisi data diri
     const hasFilledProfile = profile?.full_name && profile.full_name !== 'User LakuKelas';
 
     // Rute Tunggu & Lengkapi Profil: Jika sudah aktif atau Admin, jangan boleh ke sana
@@ -72,9 +72,6 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/complete-profile', request.url));
         }
         // 2. Jika sudah isi data diri tapi belum disetujui, paksa ke /waiting-approval
-        if (hasFilledProfile && pathname !== '/waiting-approval' && pathname === '/complete-profile') {
-             return NextResponse.redirect(new URL('/waiting-approval', request.url));
-        }
         if (hasFilledProfile && pathname !== '/waiting-approval') {
             return NextResponse.redirect(new URL('/waiting-approval', request.url));
         }
