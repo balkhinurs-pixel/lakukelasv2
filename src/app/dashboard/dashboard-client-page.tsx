@@ -229,8 +229,22 @@ export default function DashboardClientPage({
     return (
         <div className="space-y-6 pb-24">
             {/* 1. Hero Welcome Section */}
-            <div className="relative overflow-hidden bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-row items-center justify-between gap-4">
-                <div className="space-y-3 flex-1 text-left min-w-0">
+            <div className="relative overflow-hidden bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-row items-center justify-between gap-4 min-h-[160px] sm:min-h-[200px]">
+                {/* Background GIF Asset */}
+                <div className="absolute top-0 right-0 w-full h-full opacity-[0.15] sm:opacity-[0.25] pointer-events-none z-0">
+                     <Image 
+                        src="/asset/icon dashboard.gif" 
+                        alt="Welcome Background" 
+                        fill
+                        className="object-contain object-right"
+                        unoptimized
+                     />
+                </div>
+                
+                {/* Visual Decoration Blur */}
+                <div className="absolute -right-10 top-0 w-64 h-64 bg-indigo-100/40 rounded-full blur-3xl -z-10 animate-pulse" />
+
+                <div className="space-y-3 flex-1 text-left min-w-0 relative z-10">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-slate-400 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]">
                             <span>👋</span>
@@ -243,17 +257,6 @@ export default function DashboardClientPage({
                             Semangat mengabdi dan mendidik generasi bangsa hari ini!
                         </p>
                     </div>
-                </div>
-                <div className="w-24 h-24 sm:w-40 sm:h-40 shrink-0 relative flex items-center justify-center">
-                     <div className="absolute inset-0 bg-indigo-100/40 rounded-full blur-2xl animate-pulse" />
-                     <Image 
-                        src="/asset/icon dashboard.gif" 
-                        alt="Welcome Icon" 
-                        width={160} 
-                        height={160} 
-                        className="relative z-10 w-full h-full object-contain"
-                        unoptimized
-                     />
                 </div>
             </div>
 
@@ -405,7 +408,7 @@ export default function DashboardClientPage({
                 <div className="relative shrink-0 w-24 h-24 hidden sm:block">
                      <Image 
                         src="/asset/icon dashboard.gif" 
-                        alt="Welcome Icon" 
+                        alt="Motivation Icon" 
                         width={96} 
                         height={96} 
                         className="object-contain"
