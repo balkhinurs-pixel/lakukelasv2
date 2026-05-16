@@ -4,7 +4,7 @@ import * as React from "react";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Wand2, ArrowUpCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Wand2, ArrowUpCircle, ClipboardCheck, Info } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -54,18 +54,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { LottieWelcome } from "@/components/ui/lottie-welcome";
 
-function FormattedDate({ date, formatString }: { date: Date | null, formatString: string }) {
-    const [formattedDate, setFormattedDate] = React.useState<string>('');
-
-    React.useEffect(() => {
-        if (date) {
-            setFormattedDate(format(date, formatString, { locale: id }));
-        }
-    }, [date, formatString]);
-
-    return <>{formattedDate}</>;
-}
-
 export default function GradesPageComponent({
     classes,
     subjects,
@@ -84,7 +72,7 @@ export default function GradesPageComponent({
   const preselectedClassId = searchParams.get('classId');
   const preselectedSubjectId = searchParams.get('subjectId');
 
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [selectedClassId, setSelectedClassId] = React.useState<string | undefined>(preselectedClassId || undefined);
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<string | undefined>(preselectedSubjectId || undefined);
   const [students, setStudents] = React.useState<Student[]>([]);
@@ -105,6 +93,10 @@ export default function GradesPageComponent({
   const [searchTerm, setSearchTerm] = React.useState("");
 
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setDate(new Date());
+  }, []);
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
@@ -174,7 +166,6 @@ export default function GradesPageComponent({
         });
         toast({ title: "Katrol Berhasil", description: `Ditambahkan ${pointsToAdd} poin ke semua nilai.` });
     } else {
-        // Linear Scaling
         const minT = Number(targetMin);
         const maxT = Number(targetMax);
         
@@ -190,11 +181,8 @@ export default function GradesPageComponent({
         filledGrades.forEach(({ id, score }) => {
             let newScore: number;
             if (actualMax === actualMin) {
-                // If all scores are the same, lift them all to targetMin
                 newScore = minT;
             } else {
-                // Linear Transformation Formula: 
-                // NewValue = TargetMin + ((Value - ActualMin) / (ActualMax - ActualMin)) * (TargetMax - TargetMin)
                 newScore = minT + ((score - actualMin) / (actualMax - actualMin)) * (maxT - minT);
             }
             newGrades.set(id, Math.round(Math.max(0, Math.min(100, newScore))));
@@ -205,7 +193,6 @@ export default function GradesPageComponent({
     setGrades(newGrades);
     setIsKatrolDialogOpen(false);
   };
-
 
   const handleSubmit = async () => {
     if (!selectedClassId || !selectedSubjectId || !date || !assessmentType) {
@@ -291,26 +278,13 @@ export default function GradesPageComponent({
     setIsDetailDialogOpen(true);
   }
 
-  // Group history by assessment
   const groupedHistory = React.useMemo(() => {
     const groups: { [key: string]: { entry: Omit<GradeHistoryEntry, 'student_id'|'score'>, records: { studentId: string, score: number }[] } } = {};
     initialHistory.forEach(item => {
       const key = `${item.date}-${item.class_id}-${item.subject_id}-${item.assessment_type}`;
       if (!groups[key]) {
         groups[key] = {
-          entry: {
-              id: item.id,
-              date: item.date,
-              class_id: item.class_id,
-              subject_id: item.subject_id,
-              assessment_type: item.assessment_type,
-              teacher_id: item.teacher_id,
-              school_year_id: item.school_year_id,
-              class_name: item.class_name,
-              subject_name: item.subject_name,
-              subject_kkm: item.subject_kkm,
-              teacher_name: item.teacher_name,
-          },
+          entry: { ...item },
           records: []
         };
       }
@@ -335,7 +309,7 @@ export default function GradesPageComponent({
   };
   
   const getSubjectKkm = (subjectId: string | undefined): number => {
-      if (!subjectId) return 75; // Default KKM
+      if (!subjectId) return 75;
       const subject = subjects.find(s => s.id === subjectId);
       return subject ? subject.kkm : 75;
   }
@@ -416,7 +390,7 @@ export default function GradesPageComponent({
                       disabled={loading}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? <FormattedDate date={date} formatString="PPP" /> : <span>Pilih tanggal</span>}
+                      {date ? format(date, "PPP", { locale: id }) : <span>Pilih tanggal</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -440,64 +414,49 @@ export default function GradesPageComponent({
       </Card>
 
       {selectedClassId && (
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
+        <Card className="border-0 shadow-lg bg-white rounded-3xl overflow-hidden">
           <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
-                <BookOpen className="h-5 w-5" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Daftar Siswa - {selectedClass?.name}</CardTitle>
+                  <CardDescription>Input nilai (0-100) untuk setiap siswa.</CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-xl">
-                  Daftar Nilai - {selectedClass?.name}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    ({students.length > 0 ? `${students.length} siswa` : '...'})
-                  </span>
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  Input nilai (0-100) untuk setiap siswa. Kosongkan jika tidak ada nilai.
-                </CardDescription>
+              <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input 
+                      placeholder="Cari nama siswa..." 
+                      className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 focus:border-blue-500"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent>
             {loading ? (
-                <div className="text-center text-muted-foreground py-12">
-                    <div className="flex flex-col items-center gap-4">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                      <div className="space-y-2">
-                        <p className="font-medium">Memuat data siswa...</p>
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                        </div>
-                      </div>
-                    </div>
+                <div className="text-center py-20 flex flex-col items-center gap-4">
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                    <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Memuat Data Siswa...</p>
                 </div>
             ) : students.length > 0 ? (
                 <>
-                <div className="relative mb-6">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input 
-                        placeholder="Cari nama siswa..." 
-                        className="pl-10 bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                
                 {/* Mobile View */}
                 <div className="md:hidden space-y-3">
                   {filteredStudents.map((student, index) => (
-                    <div key={student.id} className="group border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-all duration-200 hover:border-slate-300">
+                    <div key={student.id} className="group border border-slate-100 rounded-2xl p-4 bg-white hover:shadow-md transition-all shadow-sm">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-semibold">
+                          <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-black">
                             {index + 1}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900">{student.name}</p>
-                            <p className="text-xs text-slate-500">Input nilai (0-100)</p>
+                            <p className="font-bold text-slate-900 uppercase tracking-tight text-sm">{student.name}</p>
+                            <p className="text-[10px] text-slate-400 font-black uppercase">NIS: {student.nis}</p>
                           </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -507,43 +466,31 @@ export default function GradesPageComponent({
                             max="100"
                             value={grades.get(student.id) ?? ""}
                             onChange={(e) => handleGradeChange(student.id, e.target.value)}
-                            className="w-20 text-center bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+                            className="w-20 h-11 text-center bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-500/20 font-black text-lg rounded-xl"
                             disabled={loading}
-                            placeholder="0-100"
+                            placeholder="-"
                           />
                         </div>
                       </div>
                     </div>
                   ))}
-                  {filteredStudents.length === 0 && (
-                    <div className="text-center py-8">
-                      <div className="flex flex-col items-center gap-3">
-                        <Search className="h-8 w-8 text-slate-400" />
-                        <p className="text-slate-600">Tidak ada siswa yang cocok dengan pencarian Anda.</p>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Desktop View */}
-                <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                <Table>
+                <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-100">
+                  <Table>
                     <TableHeader>
                     <TableRow className="bg-slate-50 hover:bg-slate-50">
-                        <TableHead className="w-[80px] text-center font-semibold text-slate-700">No.</TableHead>
-                        <TableHead className="font-semibold text-slate-700">Nama Siswa</TableHead>
-                        <TableHead className="w-[150px] text-right font-semibold text-slate-700">Nilai</TableHead>
+                        <TableHead className="w-[80px] text-center font-black uppercase text-[10px] tracking-widest text-slate-400">No.</TableHead>
+                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Nama Siswa</TableHead>
+                        <TableHead className="w-[150px] text-right font-black uppercase text-[10px] tracking-widest text-slate-400">Input Nilai</TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>
                     {filteredStudents.map((student, index) => (
-                        <TableRow key={student.id} className="hover:bg-slate-50/50 transition-colors duration-150">
-                        <TableCell className="text-center">
-                          <div className="w-6 h-6 bg-gradient-to-br from-slate-500 to-slate-600 rounded-md flex items-center justify-center text-white text-xs font-semibold mx-auto">
-                            {index + 1}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium text-slate-900">{student.name}</TableCell>
+                        <TableRow key={student.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="text-center font-bold text-slate-400">{index + 1}</TableCell>
+                        <TableCell className="font-bold text-slate-900 uppercase tracking-tight">{student.name}</TableCell>
                         <TableCell className="text-right">
                             <Input
                             type="number"
@@ -551,84 +498,64 @@ export default function GradesPageComponent({
                             max="100"
                             value={grades.get(student.id) ?? ""}
                             onChange={(e) => handleGradeChange(student.id, e.target.value)}
-                            className="w-24 text-center bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+                            className="w-24 text-center h-10 rounded-xl bg-slate-50 border-slate-200 font-bold"
                             disabled={loading}
-                            placeholder="0-100"
                             />
                         </TableCell>
                         </TableRow>
                     ))}
-                     {filteredStudents.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={3} className="text-center py-8">
-                              <div className="flex flex-col items-center gap-3">
-                                <Search className="h-8 w-8 text-slate-400" />
-                                <p className="text-slate-600">Tidak ada siswa yang cocok dengan pencarian Anda.</p>
-                              </div>
-                            </TableCell>
-                        </TableRow>
-                     )}
                     </TableBody>
-                </Table>
+                  </Table>
                 </div>
+                
+                {filteredStudents.length === 0 && (
+                   <div className="text-center py-20 opacity-30">
+                       <Search className="h-12 w-12 mx-auto mb-2" />
+                       <p className="text-sm font-bold uppercase tracking-widest">Siswa tidak ditemukan</p>
+                   </div>
+                )}
                 </>
             ) : (
-                <div className="text-center py-12">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="p-4 rounded-full bg-slate-100">
-                        <Users className="h-8 w-8 text-slate-400" />
-                      </div>
-                      <div className="space-y-2">
-                        <p className="font-medium text-slate-700">Belum ada siswa di kelas ini</p>
-                        <p className="text-sm text-slate-500">Silakan tambahkan siswa di menu Manajemen Rombel</p>
-                      </div>
-                    </div>
+                <div className="text-center py-20">
+                    <Info className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+                    <p className="text-sm font-bold text-slate-400">Belum ada siswa di kelas ini.</p>
                 </div>
             )}
           </CardContent>
           {students.length > 0 && (
-            <CardFooter className="border-t border-slate-200 bg-slate-50/50 px-6 py-4 rounded-b-xl">
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:justify-between sm:items-center">
-                <div className="flex flex-col sm:flex-row gap-3">
+            <CardFooter className="border-t border-slate-100 bg-slate-50/30 px-6 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                   <Button 
                     onClick={handleSubmit} 
                     disabled={loading || !assessmentType || !selectedSubjectId}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200 h-11 rounded-xl font-bold"
+                    className="h-12 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-200"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}
+                    {editingId ? 'Simpan Perubahan' : 'Simpan Nilai Sekarang'}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsKatrolDialogOpen(true)}
                     disabled={loading || !hasEnteredGrades}
-                    className="border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-sm h-11 rounded-xl font-bold"
+                    className="h-12 px-6 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 font-bold"
                   >
                     <Wand2 className="mr-2 h-4 w-4" />
-                    Katrol Nilai
+                    Katrol Nilai (Smart)
                   </Button>
                   {editingId && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => resetForm(students)} 
-                      disabled={loading}
-                      className="border-slate-300 hover:bg-slate-50 h-11 rounded-xl font-bold"
-                    >
-                      Batal Mengubah
-                    </Button>
+                    <Button variant="ghost" onClick={() => resetForm(students)} className="h-12 rounded-xl text-slate-500 font-bold">Batal Ubah</Button>
                   )}
                 </div>
-                <div className="text-sm text-slate-600 font-bold uppercase tracking-wider">
-                  Total siswa: <span className="text-indigo-600">{students.length}</span>
+                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Total: <span className="text-indigo-600 text-sm">{students.length} Siswa</span>
                 </div>
-              </div>
             </CardFooter>
           )}
         </Card>
       )}
 
-       <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50 rounded-xl">
+       <Card className="border-0 shadow-lg bg-white rounded-3xl overflow-hidden mt-8">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-purple-100 text-purple-600">
@@ -636,186 +563,58 @@ export default function GradesPageComponent({
             </div>
             <div>
               <CardTitle className="text-xl">Riwayat Penilaian</CardTitle>
-              <CardDescription className="mt-1">
-                Daftar nilai yang telah Anda simpan. Filter berdasarkan kelas atau mapel di atas.
-              </CardDescription>
+              <CardDescription>Daftar riwayat nilai yang pernah Anda simpan.</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
-            {/* Mobile View - Cards */}
-            <div className="md:hidden space-y-3">
-              {filteredHistory.map(({entry, records}) => {
-                const scores = records.map(r => Number(r.score)).filter(s => !isNaN(s));
-                const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
-                const kkm = getSubjectKkm(entry.subject_id);
-                const passingCount = scores.filter(score => score >= kkm).length;
-                const passingRate = scores.length > 0 ? ((passingCount / scores.length) * 100).toFixed(0) : '0';
-                
-                return (
-                    <div key={entry.id} className="group border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-all duration-200 hover:border-slate-300">
-                        <div className="space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-slate-900 truncate">{entry.assessment_type}</p>
-                                <p className="text-sm text-slate-500 mt-1">
-                                  {entry.class_name} - {entry.subject_name}
-                                </p>
-                                <p className="text-xs text-slate-400 mt-0.5">
-                                  <FormattedDate date={parseISO(entry.date)} formatString="dd MMM yyyy" />
-                                </p>
+        <CardContent>
+            {filteredHistory.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredHistory.map(({entry, records}) => {
+                    const scores = records.map(r => Number(r.score));
+                    const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '0';
+                    const kkm = getSubjectKkm(entry.subject_id);
+                    const passingCount = scores.filter(score => score >= kkm).length;
+                    const passingRate = scores.length > 0 ? ((passingCount / scores.length) * 100).toFixed(0) : '0';
+                    
+                    return (
+                        <div key={entry.id} className="border border-slate-100 rounded-3xl p-5 bg-white shadow-sm hover:shadow-md transition-all">
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="min-w-0">
+                                <h4 className="font-black text-slate-900 truncate uppercase tracking-tight">{entry.assessment_type}</h4>
+                                <p className="text-[10px] text-slate-400 font-black uppercase mt-1 tracking-widest">{entry.class_name} • {entry.subject_name}</p>
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50">
-                                <TrendingUp className="h-4 w-4 text-emerald-600" />
-                                <div className="text-sm">
-                                  <span className="font-medium text-emerald-800">Rata-rata</span>
-                                  <span className="ml-1 text-emerald-600 font-semibold">{average}</span>
+                            <div className="grid grid-cols-2 gap-3 mb-5">
+                                <div className="p-3 bg-emerald-50 rounded-2xl text-center">
+                                    <p className="text-lg font-black text-emerald-600">{average}</p>
+                                    <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Rata-rata</p>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50">
-                                <Users className="h-4 w-4 text-blue-600" />
-                                <div className="text-sm">
-                                  <span className="font-medium text-blue-800">Dinilai</span>
-                                  <span className="ml-1 text-blue-600 font-semibold">{records.length}</span>
+                                <div className="p-3 bg-blue-50 rounded-2xl text-center">
+                                    <p className="text-lg font-black text-blue-600">{passingRate}%</p>
+                                    <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest">Ketuntasan</p>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50">
-                                <Target className="h-4 w-4 text-amber-600" />
-                                <div className="text-sm">
-                                  <span className="font-medium text-amber-800">KKM</span>
-                                  <span className="ml-1 text-amber-600 font-semibold">{kkm}</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50">
-                                <Award className="h-4 w-4 text-green-600" />
-                                <div className="text-sm">
-                                  <span className="font-medium text-green-800">Tuntas</span>
-                                  <span className="ml-1 text-green-600 font-semibold">{passingRate}%</span>
-                                </div>
-                              </div>
                             </div>
                             
-                            <div className="flex gap-2 pt-2">
-                                 <Button variant="secondary" size="sm" className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 h-10 rounded-xl font-bold" onClick={() => handleViewDetails(entry)}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Detail
-                                </Button>
-                                <Button variant="outline" size="sm" className="flex-1 border-slate-300 hover:bg-slate-50 h-10 rounded-xl font-bold" onClick={() => handleEdit(entry)} disabled={loading}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Ubah
-                                </Button>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" className="flex-1 rounded-xl h-10 font-bold text-xs" onClick={() => handleViewDetails(entry as GradeHistoryEntry)}>Detail</Button>
+                                <Button variant="outline" size="sm" className="flex-1 rounded-xl h-10 font-bold text-xs border-indigo-200 text-indigo-700" onClick={() => handleEdit(entry as GradeHistoryEntry)}>Ubah</Button>
                             </div>
                         </div>
-                    </div>
-                )
-              })}
-            </div>
-
-            {/* Desktop View - Table */}
-            <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="bg-slate-50 hover:bg-slate-50">
-                            <TableHead className="font-semibold text-slate-700">Tanggal</TableHead>
-                            <TableHead className="font-semibold text-slate-700">Jenis Penilaian</TableHead>
-                            <TableHead className="font-semibold text-slate-700">Info</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700">Siswa</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700">Rata-rata</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700">KKM</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700">Tuntas</TableHead>
-                            <TableHead className="text-right font-semibold text-slate-700">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredHistory.map(({entry, records}) => {
-                           const scores = records.map(r => Number(r.score)).filter(s => !isNaN(s));
-                           const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A';
-                           const kkm = getSubjectKkm(entry.subject_id);
-                           const passingCount = scores.filter(score => score >= kkm).length;
-                           const passingRate = scores.length > 0 ? ((passingCount / scores.length) * 100).toFixed(0) : '0';
-                           return (
-                                <TableRow key={entry.id} className="hover:bg-slate-50/50 transition-colors duration-150">
-                                    <TableCell className="font-medium text-slate-900">
-                                      <FormattedDate date={parseISO(entry.date)} formatString="dd MMM yyyy" />
-                                    </TableCell>
-                                    <TableCell className="font-medium text-slate-900">{entry.assessment_type}</TableCell>
-                                    <TableCell>
-                                        <div className="font-medium text-slate-900">{entry.class_name}</div>
-                                        <div className="text-sm text-slate-500">{entry.subject_name}</div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                        {records.length}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 font-semibold">
-                                        {average}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
-                                        {kkm}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <span className={cn(
-                                        "inline-flex items-center px-2 py-1 rounded-full text-sm font-medium",
-                                        Number(passingRate) >= 80 ? "bg-green-100 text-green-800" :
-                                        Number(passingRate) >= 60 ? "bg-yellow-100 text-yellow-800" :
-                                        "bg-red-100 text-red-800"
-                                      )}>
-                                        {passingRate}%
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <div className="flex justify-end gap-2">
-                                         <Button 
-                                           variant="ghost" 
-                                           size="sm" 
-                                           onClick={() => handleViewDetails(entry)}
-                                           className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold"
-                                         >
-                                            <Eye className="mr-2 h-4 w-4" />
-                                            Detail
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          size="sm" 
-                                          onClick={() => handleEdit(entry)} 
-                                          disabled={loading}
-                                          className="border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl"
-                                        >
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Ubah
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
-                    </TableBody>
-                </Table>
-            </div>
-            {filteredHistory.length === 0 && (
-              <div className="text-center py-12">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="p-4 rounded-full bg-slate-100">
-                    <TrendingUp className="h-8 w-8 text-slate-400" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="font-bold text-slate-700 text-lg">Belum ada riwayat penilaian</p>
-                    <p className="text-sm text-slate-500 font-medium">Riwayat nilai yang sudah disimpan akan muncul di sini</p>
-                  </div>
+                    )
+                  })}
                 </div>
-              </div>
+             ) : (
+                <div className="text-center py-20 opacity-20">
+                    <TrendingUp className="h-16 w-16 mx-auto mb-2" />
+                    <p className="font-bold text-sm uppercase tracking-widest">Belum ada riwayat</p>
+                </div>
             )}
         </CardContent>
       </Card>
       
+      {/* Dialog Katrol Nilai */}
       <Dialog open={isKatrolDialogOpen} onOpenChange={setIsKatrolDialogOpen}>
         <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area rounded-3xl border-0 shadow-2xl">
             <DialogHeader>
@@ -823,79 +622,47 @@ export default function GradesPageComponent({
                     <Wand2 className="h-6 w-6 text-blue-600" />
                     Katrol Nilai Pintar
                 </DialogTitle>
-                <DialogDescription className="font-medium">
-                    Pilih metode yang paling sesuai untuk meningkatkan nilai siswa secara kolektif.
-                </DialogDescription>
+                <DialogDescription className="font-medium">Pilih metode untuk meningkatkan nilai siswa secara kolektif.</DialogDescription>
             </DialogHeader>
             
             <Tabs value={katrolMode} onValueChange={(v) => setKatrolMode(v as any)} className="mt-2">
                 <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-xl h-12">
-                    <TabsTrigger value="linear" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">
-                        <ArrowUpCircle className="h-3.5 w-3.5" /> Skala Linear
-                    </TabsTrigger>
-                    <TabsTrigger value="fixed" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">
-                        <Plus className="h-3.5 w-3.5" /> Tambah Poin
-                    </TabsTrigger>
+                    <TabsTrigger value="linear" className="rounded-lg data-[state=active]:bg-white font-bold">Skala Linear</TabsTrigger>
+                    <TabsTrigger value="fixed" className="rounded-lg data-[state=active]:bg-white font-bold">Tambah Poin</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="linear" className="space-y-4 pt-4">
-                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-700 leading-relaxed font-medium">
-                        <p className="font-black uppercase tracking-wider mb-1">💡 Tips Skala Linear:</p>
-                        Metode ini akan menarik nilai terendah menjadi <strong>Batas Minimal</strong> dan nilai tertinggi menjadi <strong>Batas Maksimal</strong>. Nilai lainnya akan menyesuaikan secara proporsional.
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-[10px] text-blue-700 leading-relaxed font-bold uppercase tracking-wide">
+                        Metode ini menarik nilai terendah ke <strong>Batas Minimal</strong> dan nilai tertinggi ke <strong>Batas Maksimal</strong>.
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="target-min" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Batas Minimal (KKM)</Label>
-                            <Input 
-                                id="target-min" 
-                                type="number"
-                                value={targetMin} 
-                                onChange={e => setTargetMin(e.target.value)} 
-                                placeholder={String(currentKKM)}
-                                className="h-11 rounded-xl"
-                            />
+                            <Label className="text-[10px] font-black uppercase text-slate-400">Min (KKM)</Label>
+                            <Input type="number" value={targetMin} onChange={e => setTargetMin(e.target.value)} className="h-11 rounded-xl" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="target-max" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Batas Maksimal</Label>
-                            <Input 
-                                id="target-max" 
-                                type="number"
-                                value={targetMax} 
-                                onChange={e => setTargetMax(e.target.value)} 
-                                placeholder="95"
-                                className="h-11 rounded-xl"
-                            />
+                            <Label className="text-[10px] font-black uppercase text-slate-400">Maksimal</Label>
+                            <Input type="number" value={targetMax} onChange={e => setTargetMax(e.target.value)} className="h-11 rounded-xl" />
                         </div>
                     </div>
                 </TabsContent>
                 
                 <TabsContent value="fixed" className="space-y-4 pt-4">
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 leading-relaxed font-medium">
-                        Menambahkan jumlah poin yang sama untuk setiap siswa yang sudah memiliki nilai.
-                    </div>
                     <div className="space-y-2">
-                        <Label htmlFor="katrol-points" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Poin yang Ditambahkan</Label>
-                        <Input 
-                            id="katrol-points" 
-                            type="number"
-                            value={katrolPoints} 
-                            onChange={e => setKatrolPoints(e.target.value)} 
-                            placeholder="e.g. 5"
-                            className="h-11 rounded-xl"
-                        />
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Tambahan Poin (Misal: 5)</Label>
+                        <Input type="number" value={katrolPoints} onChange={e => setKatrolPoints(e.target.value)} className="h-11 rounded-xl" />
                     </div>
                 </TabsContent>
             </Tabs>
 
             <DialogFooter className="mt-6 flex flex-row gap-3">
-                <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold text-slate-600 hover:bg-slate-50" onClick={() => setIsKatrolDialogOpen(false)}>Batal</Button>
-                <Button onClick={handleKatrol} className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200">
-                    Terapkan Katrol
-                </Button>
+                <Button variant="ghost" className="flex-1 h-12 rounded-xl font-bold" onClick={() => setIsKatrolDialogOpen(false)}>Batal</Button>
+                <Button onClick={handleKatrol} className="flex-1 h-12 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">Terapkan</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Dialog Detail Nilai */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="dialog-content-mobile mobile-safe-area max-w-2xl rounded-3xl border-0 shadow-2xl">
             <DialogHeader className="pb-4">
@@ -905,51 +672,29 @@ export default function GradesPageComponent({
                 </div>
                 <div>
                   <DialogTitle className="text-xl font-bold">Detail Nilai: {viewingEntry?.assessment_type}</DialogTitle>
-                  <DialogDescription className="mt-1 font-medium">
-                      Daftar nilai untuk kelas {viewingEntry?.class_name} ({viewingEntry?.subject_name}). KKM: <span className="font-bold text-amber-600">{getSubjectKkm(viewingEntry?.subject_id)}</span>
-                  </DialogDescription>
+                  <DialogDescription className="text-xs uppercase font-black tracking-widest text-slate-400 mt-1">KKM Mapel: {getSubjectKkm(viewingEntry?.subject_id)}</DialogDescription>
                 </div>
               </div>
             </DialogHeader>
             <div className="max-h-[50vh] overflow-y-auto pr-2 mb-4">
-                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div className="rounded-2xl border border-slate-100 overflow-hidden">
                   <Table>
-                      <TableHeader>
-                          <TableRow className="bg-slate-50 hover:bg-slate-50">
-                          <TableHead className="font-bold text-slate-700">Nama Siswa</TableHead>
-                          <TableHead className="text-right font-bold text-slate-700">Nilai</TableHead>
-                          <TableHead className="text-right font-bold text-slate-700">Status</TableHead>
+                      <TableHeader className="bg-slate-50">
+                          <TableRow>
+                          <TableHead className="font-black text-[10px] uppercase">Nama Siswa</TableHead>
+                          <TableHead className="text-right font-black text-[10px] uppercase">Nilai</TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
                           {groupedHistory.find(g => g.entry.id === viewingEntry?.id)?.records.map(record => {
                               const score = Number(record.score);
                               const kkm = getSubjectKkm(viewingEntry!.subject_id);
-                              const isPassing = score >= kkm;
                               return (
-                                  <TableRow key={record.studentId} className="hover:bg-slate-50/50 transition-colors duration-150">
-                                      <TableCell className="font-bold text-slate-900">{getStudentName(record.studentId)}</TableCell>
+                                  <TableRow key={record.studentId}>
+                                      <TableCell className="font-bold text-slate-900 uppercase text-xs">{getStudentName(record.studentId)}</TableCell>
                                       <TableCell className="text-right">
-                                        <span className={cn(
-                                          "inline-flex items-center px-2 py-1 rounded-md text-sm font-black",
-                                          score >= 90 ? "bg-emerald-100 text-emerald-800" :
-                                          score >= 80 ? "bg-blue-100 text-blue-800" :
-                                          score >= 70 ? "bg-amber-100 text-amber-800" :
-                                          score >= 60 ? "bg-orange-100 text-orange-800" :
-                                          "bg-red-100 text-red-800"
-                                        )}>
-                                          {record.score}
-                                        </span>
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                          <Badge 
-                                            variant={isPassing ? 'default' : 'destructive'} 
-                                            className={cn(
-                                              isPassing ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700",
-                                              "px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg border-0"
-                                            )}
-                                          >
-                                              {isPassing ? 'Tuntas' : 'Remedial'}
+                                          <Badge variant={score >= kkm ? 'default' : 'destructive'} className={cn("rounded-lg px-3 py-1 font-black", score >= kkm ? "bg-emerald-600" : "bg-red-600")}>
+                                              {score}
                                           </Badge>
                                       </TableCell>
                                   </TableRow>
@@ -960,7 +705,7 @@ export default function GradesPageComponent({
                 </div>
             </div>
             <DialogFooter>
-                <Button variant="ghost" className="w-full h-12 rounded-xl font-bold text-slate-600 hover:bg-slate-50" onClick={() => setIsDetailDialogOpen(false)}>Tutup</Button>
+                <Button variant="ghost" className="w-full h-12 rounded-xl font-bold" onClick={() => setIsDetailDialogOpen(false)}>Tutup</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
