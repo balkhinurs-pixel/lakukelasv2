@@ -2,7 +2,13 @@ import type {Metadata} from 'next';
 import { cn } from "@/lib/utils";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { GeistSans } from 'geist/font/sans';
+import { Plus_Jakarta_Sans } from 'next/font/google';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-plus-jakarta-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'LakuKelas - Sistem Manajemen Kelas Modern',
@@ -74,7 +80,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={GeistSans.className} suppressHydrationWarning>
+    <html lang="id" className={cn(plusJakartaSans.variable, "antialiased")} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="theme-color" content="#3b82f6" />
@@ -105,7 +111,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={cn("font-body antialiased")}>
+      <body className="font-sans antialiased">
         {children}
         <Toaster />
       </body>

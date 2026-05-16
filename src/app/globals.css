@@ -54,11 +54,11 @@
     --colors-inputText: hsl(var(--foreground));
     --colors-inputLabelText: hsl(var(--muted-foreground));
     --colors-inputPlaceholder: hsl(var(--muted-foreground));
-    --fonts-bodyFontFamily: "var(--font-geist-sans)";
-    --fonts-buttonFontFamily: "var(--font-geist-sans)";
-    --fonts-inputFontFamily: "ui-sans-serif, sans-serif";
-    --fonts-labelFontFamily: "var(--font-geist-sans)";
-    --fonts-linkFontFamily: "var(--font-geist-sans)";
+    --fonts-bodyFontFamily: "var(--font-plus-jakarta-sans)";
+    --fonts-buttonFontFamily: "var(--font-plus-jakarta-sans)";
+    --fonts-inputFontFamily: "var(--font-plus-jakarta-sans)";
+    --fonts-labelFontFamily: "var(--font-plus-jakarta-sans)";
+    --fonts-linkFontFamily: "var(--font-plus-jakarta-sans)";
     --border-radius: var(--radius);
   }
 

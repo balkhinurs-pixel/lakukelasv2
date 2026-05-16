@@ -11,9 +11,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-geist-sans)', ...fontFamily.sans],
-        body: ['var(--font-geist-sans)', ...fontFamily.sans],
-        headline: ['var(--font-geist-sans)', ...fontFamily.sans],
+        sans: ['var(--font-plus-jakarta-sans)', ...fontFamily.sans],
+        body: ['var(--font-plus-jakarta-sans)', ...fontFamily.sans],
+        headline: ['var(--font-plus-jakarta-sans)', ...fontFamily.sans],
         code: ['var(--font-geist-mono)', ...fontFamily.mono],
       },
       colors: {
