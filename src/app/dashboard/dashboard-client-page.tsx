@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -44,7 +45,7 @@ const StatCard = ({
     value,
     subtitle,
     colorClass,
-    iconBg,
+    bgColor,
     trendIcon: TrendIcon
 }: {
     icon: React.ElementType;
@@ -52,21 +53,23 @@ const StatCard = ({
     value: string | number;
     subtitle: string;
     colorClass: string;
-    iconBg: string;
+    bgColor: string;
     trendIcon?: React.ElementType;
 }) => (
-    <Card className="relative overflow-hidden border-0 shadow-sm rounded-[24px] bg-white transition-all duration-300 hover:shadow-md group">
-        <CardContent className="p-5 flex flex-col h-full">
-            <div className="flex items-start justify-between mb-3">
-                <div className={cn("p-2.5 rounded-xl text-white shadow-sm", iconBg)}>
-                    <Icon className="h-5 w-5" />
-                </div>
-                {TrendIcon && <TrendIcon className={cn("h-4 w-4", colorClass)} />}
+    <Card className={cn("relative overflow-hidden border-0 shadow-sm rounded-[28px] transition-all duration-300 hover:shadow-md group", bgColor)}>
+        {/* Background Icon (Watermark) */}
+        <div className="absolute -right-4 -bottom-4 opacity-[0.12] group-hover:scale-110 transition-transform duration-500">
+            <Icon className={cn("w-24 h-24", colorClass)} />
+        </div>
+        
+        <CardContent className="p-5 flex flex-col h-full relative z-10">
+            <div className="flex items-start justify-between mb-4">
+                <p className={cn("text-[10px] font-black uppercase tracking-[0.15em]", colorClass)}>{title}</p>
+                {TrendIcon && <TrendIcon className={cn("h-4 w-4 opacity-40", colorClass)} />}
             </div>
             <div className="space-y-0.5">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{title}</p>
-                <p className="text-2xl font-black text-slate-900">{value}</p>
-                <p className="text-[10px] text-slate-400 font-medium">{subtitle}</p>
+                <p className="text-3xl font-black text-slate-900 tracking-tight">{value}</p>
+                <p className="text-[11px] text-slate-500 font-bold leading-tight">{subtitle}</p>
             </div>
         </CardContent>
     </Card>
@@ -108,80 +111,59 @@ export default function DashboardClientPage({
     return (
         <div className="space-y-6 pb-24">
             {/* 1. Hero Welcome Section */}
-            <div className="relative overflow-hidden bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="space-y-4 flex-1">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
+            <div className="relative overflow-hidden bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="space-y-4 flex-1 text-center md:text-left">
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-slate-400 text-sm font-bold uppercase tracking-widest">
                             <span>👋</span>
-                            <span>Selamat Datang,</span>
+                            <span>Selamat Datang</span>
                         </div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                            {profileName} <span className="text-amber-400">👋</span>
+                        <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                            {profileName}
                         </h1>
-                        <p className="text-slate-400 text-sm font-medium">Semangat mengajar hari ini!</p>
-                    </div>
-                    
-                    <div className="flex gap-4">
-                        <div className="flex items-center gap-3 bg-indigo-50 p-2.5 rounded-2xl border border-indigo-100 min-w-[120px]">
-                            <div className="p-2 bg-indigo-500 rounded-xl text-white shadow-sm">
-                                <BookText className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-black text-slate-900 leading-none">{todaySchedule.length} Kelas</p>
-                                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">Hari ini</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 bg-amber-50 p-2.5 rounded-2xl border border-amber-100 min-w-[120px]">
-                            <div className="p-2 bg-amber-500 rounded-xl text-white shadow-sm">
-                                <ClipboardCheck className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-black text-slate-900 leading-none">{initialUnfilledJournalsCount} Jurnal</p>
-                                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">Belum diisi</p>
-                            </div>
-                        </div>
+                        <p className="text-slate-400 text-base font-medium max-w-md">Semangat mengabdi dan mendidik generasi bangsa hari ini!</p>
                     </div>
                 </div>
-                <div className="w-48 h-48 shrink-0 relative hidden sm:block">
-                     <div className="absolute inset-0 bg-indigo-100/50 rounded-full blur-3xl animate-pulse" />
+                <div className="w-40 h-40 shrink-0 relative hidden sm:block">
+                     <div className="absolute inset-0 bg-indigo-100/40 rounded-full blur-3xl animate-pulse" />
                      <LottieWelcome />
                 </div>
             </div>
 
-            {/* 2. Grid Stats Section */}
+            {/* 2. Grid Stats Section - Pastel Colors with Watermark Icons */}
             <div className="grid grid-cols-2 gap-4">
                 <StatCard 
                     icon={CheckCircle2}
-                    title="Presensi Hari Ini"
+                    title="Presensi"
                     value={`${initialAttendancePercentage}%`}
                     subtitle="Kehadiran terekam"
-                    colorClass="text-emerald-500"
-                    iconBg="bg-emerald-500"
+                    colorClass="text-emerald-700"
+                    bgColor="bg-emerald-50/80"
                     trendIcon={TrendingUp}
                 />
                 <StatCard 
                     icon={Users}
-                    title="Kelas Hari Ini"
+                    title="Kelas"
                     value={todayHoliday ? "0" : String(todaySchedule.length)}
-                    subtitle="Total kelas terjadwal"
-                    colorClass="text-blue-500"
-                    iconBg="bg-blue-500"
+                    subtitle="Jadwal hari ini"
+                    colorClass="text-blue-700"
+                    bgColor="bg-blue-50/80"
                 />
                 <StatCard 
                     icon={BookText}
-                    title="Jurnal Belum Diisi"
+                    title="Jurnal"
                     value={initialUnfilledJournalsCount}
-                    subtitle="Semua jurnal terisi"
-                    colorClass="text-rose-500"
-                    iconBg="bg-rose-500"
+                    subtitle="Belum terisi"
+                    colorClass="text-rose-700"
+                    bgColor="bg-rose-50/80"
                 />
                 <StatCard 
                     icon={Calendar}
-                    title="Jadwal Hari Ini"
+                    title="Agenda"
                     value={todayHoliday ? "Libur" : (upcomingClass ? "Aktif" : "Selesai")}
-                    subtitle={todayHoliday ? todayHoliday.description : "Semua kelas telah berakhir"}
-                    colorClass="text-amber-500"
-                    iconBg="bg-amber-500"
+                    subtitle={todayHoliday ? todayHoliday.description : "Status mengajar"}
+                    colorClass="text-amber-700"
+                    bgColor="bg-amber-50/80"
                 />
             </div>
 
@@ -190,7 +172,7 @@ export default function DashboardClientPage({
                 <CardHeader className="flex flex-row items-center justify-between pb-2 px-6 pt-6">
                     <div className="flex items-center gap-2">
                         <CalendarDays className="h-5 w-5 text-indigo-600" />
-                        <CardTitle className="text-base font-black text-slate-800">Jadwal Berikutnya</CardTitle>
+                        <CardTitle className="text-base font-black text-slate-800 uppercase tracking-tight">Jadwal Berikutnya</CardTitle>
                     </div>
                     <Button variant="ghost" size="sm" className="text-indigo-600 font-bold text-xs" asChild>
                         <Link href="/dashboard/schedule">Lihat Semua <ChevronRight className="h-3 w-3 ml-1" /></Link>
@@ -238,7 +220,7 @@ export default function DashboardClientPage({
                 <Card className="border-0 shadow-sm rounded-[24px] bg-white p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <TrendingUp className="h-5 w-5 text-indigo-600" />
-                        <CardTitle className="text-base font-black text-slate-800">Progress Mengajar</CardTitle>
+                        <CardTitle className="text-base font-black text-slate-800 uppercase tracking-tight">Progress Mengajar</CardTitle>
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="relative h-24 w-24 shrink-0">
@@ -262,7 +244,7 @@ export default function DashboardClientPage({
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-2">
                             <CalendarDays className="h-5 w-5 text-indigo-600" />
-                            <CardTitle className="text-base font-black text-slate-800">Kalender</CardTitle>
+                            <CardTitle className="text-base font-black text-slate-800 uppercase tracking-tight">Kalender</CardTitle>
                         </div>
                         <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             <span>{format(now, 'MMMM yyyy', { locale: id })}</span>
