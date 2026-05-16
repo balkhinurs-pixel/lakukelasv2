@@ -332,7 +332,11 @@ export default function DashboardClientPage({
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: "auto", opacity: 1 }}
                                         exit={{ height: 0, opacity: 0 }}
-                                        transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
+                                        transition={{ 
+                                            height: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },
+                                            opacity: { duration: 0.4, delay: 0.2 }
+                                        }}
+                                        className="overflow-hidden"
                                     >
                                         <div className="space-y-4 pt-2">
                                             {sortedSchedule.map((item) => (
