@@ -111,16 +111,22 @@ export default function DashboardClientPage({
         <div className="space-y-6 pb-24">
             {/* 1. Hero Welcome Section */}
             <div className="relative overflow-hidden bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-row items-center justify-between gap-4">
-                <div className="space-y-3 flex-1 text-left">
+                <div className="space-y-3 flex-1 text-left min-w-0">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-slate-400 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]">
                             <span>👋</span>
                             <span>Selamat Datang</span>
                         </div>
-                        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight truncate max-w-[200px] sm:max-w-none">
+                        {/* 
+                           SOLUSI NAMA PANJANG:
+                           - Menghapus 'truncate' dan 'max-w-[200px]'
+                           - Menggunakan 'line-clamp-2' untuk membatasi maksimal 2 baris
+                           - Menambahkan 'min-w-0' pada parent flex untuk memastikan pembungkusan teks berfungsi
+                        */}
+                        <h1 className="text-xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight line-clamp-2">
                             {profileName}
                         </h1>
-                        <p className="text-slate-400 text-[11px] sm:text-sm font-bold leading-relaxed max-w-[220px] sm:max-w-md">
+                        <p className="text-slate-400 text-[11px] sm:text-sm font-bold leading-relaxed max-w-md">
                             Semangat mengabdi dan mendidik generasi bangsa hari ini!
                         </p>
                     </div>
