@@ -79,34 +79,34 @@ const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: s
         label: 'Hadir', 
         icon: <CheckCircle2 className="h-4 w-4" />,
         className: 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300', 
-        selectedClassName: 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600 shadow-md shadow-emerald-200' 
+        selectedClassName: 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600 shadow-lg shadow-emerald-200' 
     },
     { 
         value: 'Sakit', 
         label: 'Sakit', 
         icon: <AlertCircle className="h-4 w-4" />,
         className: 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:border-amber-300', 
-        selectedClassName: 'bg-amber-500 text-white hover:bg-amber-600 border-amber-500 shadow-md shadow-amber-200' 
+        selectedClassName: 'bg-amber-500 text-white hover:bg-amber-600 border-amber-500 shadow-lg shadow-amber-200' 
     },
     { 
         value: 'Izin', 
         label: 'Izin', 
         icon: <Clock className="h-4 w-4" />,
         className: 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300', 
-        selectedClassName: 'bg-blue-500 text-white hover:bg-blue-600 border-blue-500 shadow-md shadow-blue-200' 
+        selectedClassName: 'bg-blue-500 text-white hover:bg-blue-600 border-blue-500 shadow-lg shadow-blue-200' 
     },
     { 
         value: 'Alpha', 
         label: 'Alpha', 
         icon: <XCircle className="h-4 w-4" />,
         className: 'border-red-200 text-red-700 bg-red-50 hover:bg-red-100 hover:border-red-300', 
-        selectedClassName: 'bg-red-500 text-white hover:bg-red-600 border-red-500 shadow-md shadow-red-200' 
+        selectedClassName: 'bg-red-500 text-white hover:bg-red-600 border-red-500 shadow-lg shadow-red-200' 
     },
 ];
 
 const AttendanceInput = React.memo(({ studentId, value, onChange, disabled }: { studentId: string, value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', onChange: (studentId: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => void, disabled?: boolean }) => {
     return (
-        <div className={cn("flex flex-wrap gap-2 justify-start sm:justify-end", disabled && "opacity-50 pointer-events-none")}>
+        <div className={cn("grid grid-cols-4 gap-1.5 sm:flex sm:flex-wrap sm:gap-2 sm:justify-end", disabled && "opacity-50 pointer-events-none")}>
         {attendanceOptions.map(opt => (
             <Button
                 key={opt.value}
@@ -116,7 +116,7 @@ const AttendanceInput = React.memo(({ studentId, value, onChange, disabled }: { 
                 disabled={disabled}
                 onClick={() => onChange(studentId, opt.value)}
                 className={cn(
-                    "h-10 px-3.5 rounded-xl border text-sm font-bold transition-all duration-200 ease-in-out flex-shrink-0",
+                    "h-11 px-0 sm:px-3.5 rounded-2xl border text-sm font-black transition-all duration-200 ease-in-out w-full sm:w-auto",
                     "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-current/20",
                     "active:scale-95 transform",
                     value === opt.value
@@ -124,9 +124,11 @@ const AttendanceInput = React.memo(({ studentId, value, onChange, disabled }: { 
                         : `${opt.className}`
                 )}
             >
-                <span className="mr-1.5">{opt.icon}</span>
-                <span className="hidden sm:inline">{opt.label}</span>
-                <span className="sm:hidden">{opt.label.charAt(0)}</span>
+                <span className="flex items-center justify-center gap-1.5">
+                    {opt.icon}
+                    <span className="hidden sm:inline">{opt.label}</span>
+                    <span className="sm:inline-block font-black text-base">{opt.label.charAt(0)}</span>
+                </span>
             </Button>
         ))}
         </div>
@@ -165,13 +167,13 @@ const AddNoteDialog = ({ student, onNoteSaved, disabled }: { student: Student | 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={disabled} className="h-8 w-8 shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100">
-                    <MessageSquarePlus className="h-4 w-4" />
+                <Button variant="ghost" size="icon" disabled={disabled} className="h-10 w-10 shrink-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
+                    <MessageSquarePlus className="h-6 w-6" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="dialog-content-mobile mobile-safe-area">
+            <DialogContent className="dialog-content-mobile mobile-safe-area rounded-3xl">
                 <DialogHeader>
-                    <DialogTitle>Tambah Catatan untuk {student.name}</DialogTitle>
+                    <DialogTitle>Catatan untuk {student.name}</DialogTitle>
                     <DialogDescription>Catatan ini akan dapat dilihat oleh wali kelas.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -753,20 +755,20 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                 <>
                     <div className="md:hidden space-y-3">
                         {students.map((student, index) => (
-                            <div key={student.id} className="group relative border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-all duration-200 hover:border-slate-300">
-                                <div className="flex items-start gap-3">
-                                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-semibold">
+                            <div key={student.id} className="group relative border border-slate-200 rounded-[2rem] p-5 bg-white hover:shadow-lg transition-all duration-300 hover:border-indigo-200 shadow-sm">
+                                <div className="flex items-start gap-4">
+                                  <div className="flex-shrink-0 w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-base font-black shadow-md shadow-indigo-100">
                                     {index + 1}
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="flex items-start justify-between gap-3 mb-4">
                                       <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-slate-900 break-words leading-tight">{student.name}</p>
-                                        <p className="text-xs text-slate-500 mt-0.5">Status kehadiran</p>
+                                        <p className="font-black text-slate-900 break-words leading-tight text-lg uppercase tracking-tight">{student.name}</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-0.5">Status kehadiran</p>
                                       </div>
                                       <AddNoteDialog student={student} onNoteSaved={() => router.refresh()} />
                                     </div>
-                                    <div className="pt-2 border-t border-slate-100">
+                                    <div className="pt-4 border-t border-slate-50">
                                        <AttendanceInput 
                                             studentId={student.id} 
                                             value={attendance.get(student.id) || 'Hadir'}
@@ -836,7 +838,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   <Button 
                     onClick={handleSubmit} 
                     disabled={loading || !meetingNumber}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200 h-11 rounded-xl"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200 h-11 rounded-xl font-bold"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingId ? 'Simpan Perubahan' : 'Simpan Presensi'}
@@ -844,7 +846,7 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   <Button 
                     variant="outline"
                     onClick={handleSendWhatsApp}
-                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm h-11 rounded-xl"
+                    className="border-green-600 text-green-700 hover:bg-green-50 shadow-sm h-11 rounded-xl font-bold"
                   >
                     <LottieWhatsApp size={18} className="mr-2" />
                     Kirim ke WhatsApp
@@ -854,14 +856,14 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                       variant="outline" 
                       onClick={resetForm} 
                       disabled={loading}
-                      className="border-slate-300 hover:bg-slate-50 h-11 rounded-xl"
+                      className="border-slate-300 hover:bg-slate-50 h-11 rounded-xl font-bold"
                     >
                       Batal Mengubah
                     </Button>
                   )}
                 </div>
-                <div className="text-sm text-slate-600 font-medium">
-                  Total siswa: <span className="font-bold text-indigo-600">{students.length}</span>
+                <div className="text-sm text-slate-600 font-bold uppercase tracking-wider">
+                  Total siswa: <span className="text-indigo-600">{students.length}</span>
                 </div>
               </div>
             </CardFooter>
