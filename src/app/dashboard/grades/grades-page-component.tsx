@@ -52,6 +52,7 @@ import { Badge } from "@/components/ui/badge";
 import { saveGrades } from "@/lib/actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
+import { LottieWelcome } from "@/components/ui/lottie-welcome";
 
 function FormattedDate({ date, formatString }: { date: Date | null, formatString: string }) {
     const [formattedDate, setFormattedDate] = React.useState<string>('');
@@ -341,15 +342,28 @@ export default function GradesPageComponent({
 
   return (
     <div className="space-y-6 p-1">
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
-        <CardHeader className="pb-4 text-center">
-          <HandWrittenTitle 
-            title={editingId ? 'Ubah Nilai' : 'Input Nilai'} 
-            subtitle="Siswa"
-            className="py-4 md:py-6"
-          />
-        </CardHeader>
-        <CardContent className="pt-0">
+      <Card className="border-0 shadow-lg bg-white overflow-hidden rounded-[32px]">
+        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-6 sm:p-8 flex flex-row items-center justify-between gap-4 text-white">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full" />
+            <div className="relative z-10 space-y-2 flex-1">
+                <div className="flex items-center gap-2 text-indigo-100 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]">
+                    <span>🎯</span>
+                    <span>Administrasi Nilai</span>
+                </div>
+                <h1 className="text-xl sm:text-4xl font-black tracking-tight leading-tight">
+                    {editingId ? 'Ubah Nilai Siswa' : 'Input Nilai Siswa'}
+                </h1>
+                <p className="text-indigo-100 text-[11px] sm:text-sm font-bold leading-relaxed max-w-md opacity-80">
+                    Catat capaian akademik siswa secara akurat untuk memantau progres belajar dan ketuntasan kurikulum.
+                </p>
+            </div>
+            <div className="w-24 h-24 sm:w-32 sm:h-32 shrink-0 relative">
+                 <div className="absolute inset-0 bg-white/20 rounded-full blur-2xl animate-pulse" />
+                 <LottieWelcome />
+            </div>
+        </div>
+
+        <CardContent className="pt-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
              <div className="space-y-2 xl:col-span-2">
                 <Label className="text-sm font-medium text-slate-700">Tahun Ajaran Aktif</Label>
@@ -579,7 +593,7 @@ export default function GradesPageComponent({
                   <Button 
                     onClick={handleSubmit} 
                     disabled={loading || !assessmentType || !selectedSubjectId}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200 h-11 rounded-xl font-bold"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingId ? 'Simpan Perubahan' : 'Simpan Nilai'}
@@ -589,7 +603,7 @@ export default function GradesPageComponent({
                     variant="outline"
                     onClick={() => setIsKatrolDialogOpen(true)}
                     disabled={loading || !hasEnteredGrades}
-                    className="border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-sm"
+                    className="border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-sm h-11 rounded-xl font-bold"
                   >
                     <Wand2 className="mr-2 h-4 w-4" />
                     Katrol Nilai
@@ -599,14 +613,14 @@ export default function GradesPageComponent({
                       variant="outline" 
                       onClick={() => resetForm(students)} 
                       disabled={loading}
-                      className="border-slate-300 hover:bg-slate-50"
+                      className="border-slate-300 hover:bg-slate-50 h-11 rounded-xl font-bold"
                     >
                       Batal Mengubah
                     </Button>
                   )}
                 </div>
-                <div className="text-sm text-slate-600">
-                  Total siswa: <span className="font-semibold">{students.length}</span>
+                <div className="text-sm text-slate-600 font-bold uppercase tracking-wider">
+                  Total siswa: <span className="text-indigo-600">{students.length}</span>
                 </div>
               </div>
             </CardFooter>
@@ -614,7 +628,7 @@ export default function GradesPageComponent({
         </Card>
       )}
 
-       <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50">
+       <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50/50 rounded-xl">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-purple-100 text-purple-600">
@@ -685,11 +699,11 @@ export default function GradesPageComponent({
                             </div>
                             
                             <div className="flex gap-2 pt-2">
-                                 <Button variant="secondary" size="sm" className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => handleViewDetails(entry)}>
+                                 <Button variant="secondary" size="sm" className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 h-10 rounded-xl font-bold" onClick={() => handleViewDetails(entry)}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Detail
                                 </Button>
-                                <Button variant="outline" size="sm" className="flex-1 border-slate-300 hover:bg-slate-50" onClick={() => handleEdit(entry)} disabled={loading}>
+                                <Button variant="outline" size="sm" className="flex-1 border-slate-300 hover:bg-slate-50 h-10 rounded-xl font-bold" onClick={() => handleEdit(entry)} disabled={loading}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Ubah
                                 </Button>
@@ -763,7 +777,7 @@ export default function GradesPageComponent({
                                            variant="ghost" 
                                            size="sm" 
                                            onClick={() => handleViewDetails(entry)}
-                                           className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                                           className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold"
                                          >
                                             <Eye className="mr-2 h-4 w-4" />
                                             Detail
@@ -773,7 +787,7 @@ export default function GradesPageComponent({
                                           size="sm" 
                                           onClick={() => handleEdit(entry)} 
                                           disabled={loading}
-                                          className="border-slate-300 hover:bg-slate-50 text-slate-700"
+                                          className="border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl"
                                         >
                                             <Edit className="mr-2 h-4 w-4" />
                                             Ubah
@@ -793,8 +807,8 @@ export default function GradesPageComponent({
                     <TrendingUp className="h-8 w-8 text-slate-400" />
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium text-slate-700">Belum ada riwayat penilaian</p>
-                    <p className="text-sm text-slate-500">Riwayat nilai yang sudah disimpan akan muncul di sini</p>
+                    <p className="font-bold text-slate-700 text-lg">Belum ada riwayat penilaian</p>
+                    <p className="text-sm text-slate-500 font-medium">Riwayat nilai yang sudah disimpan akan muncul di sini</p>
                   </div>
                 </div>
               </div>
@@ -803,76 +817,79 @@ export default function GradesPageComponent({
       </Card>
       
       <Dialog open={isKatrolDialogOpen} onOpenChange={setIsKatrolDialogOpen}>
-        <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area">
+        <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area rounded-3xl border-0 shadow-2xl">
             <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                    <Wand2 className="h-5 w-5 text-blue-600" />
+                <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+                    <Wand2 className="h-6 w-6 text-blue-600" />
                     Katrol Nilai Pintar
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="font-medium">
                     Pilih metode yang paling sesuai untuk meningkatkan nilai siswa secara kolektif.
                 </DialogDescription>
             </DialogHeader>
             
             <Tabs value={katrolMode} onValueChange={(v) => setKatrolMode(v as any)} className="mt-2">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="linear" className="flex items-center gap-1.5">
+                <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-xl h-12">
+                    <TabsTrigger value="linear" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">
                         <ArrowUpCircle className="h-3.5 w-3.5" /> Skala Linear
                     </TabsTrigger>
-                    <TabsTrigger value="fixed" className="flex items-center gap-1.5">
+                    <TabsTrigger value="fixed" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">
                         <Plus className="h-3.5 w-3.5" /> Tambah Poin
                     </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="linear" className="space-y-4 pt-4">
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700 leading-relaxed">
-                        <p className="font-semibold mb-1">💡 Tips Skala Linear:</p>
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-700 leading-relaxed font-medium">
+                        <p className="font-black uppercase tracking-wider mb-1">💡 Tips Skala Linear:</p>
                         Metode ini akan menarik nilai terendah menjadi <strong>Batas Minimal</strong> dan nilai tertinggi menjadi <strong>Batas Maksimal</strong>. Nilai lainnya akan menyesuaikan secara proporsional.
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="target-min">Batas Minimal (KKM)</Label>
+                            <Label htmlFor="target-min" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Batas Minimal (KKM)</Label>
                             <Input 
                                 id="target-min" 
                                 type="number"
                                 value={targetMin} 
                                 onChange={e => setTargetMin(e.target.value)} 
                                 placeholder={String(currentKKM)}
+                                className="h-11 rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="target-max">Batas Maksimal</Label>
+                            <Label htmlFor="target-max" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Batas Maksimal</Label>
                             <Input 
                                 id="target-max" 
                                 type="number"
                                 value={targetMax} 
                                 onChange={e => setTargetMax(e.target.value)} 
                                 placeholder="95"
+                                className="h-11 rounded-xl"
                             />
                         </div>
                     </div>
                 </TabsContent>
                 
                 <TabsContent value="fixed" className="space-y-4 pt-4">
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 leading-relaxed">
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 leading-relaxed font-medium">
                         Menambahkan jumlah poin yang sama untuk setiap siswa yang sudah memiliki nilai.
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="katrol-points">Poin yang Ditambahkan</Label>
+                        <Label htmlFor="katrol-points" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Poin yang Ditambahkan</Label>
                         <Input 
                             id="katrol-points" 
                             type="number"
                             value={katrolPoints} 
                             onChange={e => setKatrolPoints(e.target.value)} 
                             placeholder="e.g. 5"
+                            className="h-11 rounded-xl"
                         />
                     </div>
                 </TabsContent>
             </Tabs>
 
-            <DialogFooter className="mt-4 flex flex-row gap-2">
-                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setIsKatrolDialogOpen(false)}>Batal</Button>
-                <Button onClick={handleKatrol} className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-xl">
+            <DialogFooter className="mt-6 flex flex-row gap-3">
+                <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold text-slate-600 hover:bg-slate-50" onClick={() => setIsKatrolDialogOpen(false)}>Batal</Button>
+                <Button onClick={handleKatrol} className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200">
                     Terapkan Katrol
                 </Button>
             </DialogFooter>
@@ -880,28 +897,28 @@ export default function GradesPageComponent({
       </Dialog>
 
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="dialog-content-mobile mobile-safe-area max-w-2xl">
+        <DialogContent className="dialog-content-mobile mobile-safe-area max-w-2xl rounded-3xl border-0 shadow-2xl">
             <DialogHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
                   <Eye className="h-5 w-5" />
                 </div>
                 <div>
-                  <DialogTitle className="text-xl">Detail Nilai: {viewingEntry?.assessment_type}</DialogTitle>
-                  <DialogDescription className="mt-1">
+                  <DialogTitle className="text-xl font-bold">Detail Nilai: {viewingEntry?.assessment_type}</DialogTitle>
+                  <DialogDescription className="mt-1 font-medium">
                       Daftar nilai untuk kelas {viewingEntry?.class_name} ({viewingEntry?.subject_name}). KKM: <span className="font-bold text-amber-600">{getSubjectKkm(viewingEntry?.subject_id)}</span>
                   </DialogDescription>
                 </div>
               </div>
             </DialogHeader>
             <div className="max-h-[50vh] overflow-y-auto pr-2 mb-4">
-                <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
                   <Table>
                       <TableHeader>
                           <TableRow className="bg-slate-50 hover:bg-slate-50">
-                          <TableHead className="font-semibold text-slate-700">Nama Siswa</TableHead>
-                          <TableHead className="text-right font-semibold text-slate-700">Nilai</TableHead>
-                          <TableHead className="text-right font-semibold text-slate-700">Status</TableHead>
+                          <TableHead className="font-bold text-slate-700">Nama Siswa</TableHead>
+                          <TableHead className="text-right font-bold text-slate-700">Nilai</TableHead>
+                          <TableHead className="text-right font-bold text-slate-700">Status</TableHead>
                           </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -911,10 +928,10 @@ export default function GradesPageComponent({
                               const isPassing = score >= kkm;
                               return (
                                   <TableRow key={record.studentId} className="hover:bg-slate-50/50 transition-colors duration-150">
-                                      <TableCell className="font-medium text-slate-900">{getStudentName(record.studentId)}</TableCell>
+                                      <TableCell className="font-bold text-slate-900">{getStudentName(record.studentId)}</TableCell>
                                       <TableCell className="text-right">
                                         <span className={cn(
-                                          "inline-flex items-center px-2 py-1 rounded-md text-sm font-medium",
+                                          "inline-flex items-center px-2 py-1 rounded-md text-sm font-black",
                                           score >= 90 ? "bg-emerald-100 text-emerald-800" :
                                           score >= 80 ? "bg-blue-100 text-blue-800" :
                                           score >= 70 ? "bg-amber-100 text-amber-800" :
@@ -929,7 +946,7 @@ export default function GradesPageComponent({
                                             variant={isPassing ? 'default' : 'destructive'} 
                                             className={cn(
                                               isPassing ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700",
-                                              "px-3 py-1 text-sm font-medium"
+                                              "px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg border-0"
                                             )}
                                           >
                                               {isPassing ? 'Tuntas' : 'Remedial'}
@@ -943,7 +960,7 @@ export default function GradesPageComponent({
                 </div>
             </div>
             <DialogFooter>
-                <Button variant="ghost" className="w-full h-11 rounded-xl" onClick={() => setIsDetailDialogOpen(false)}>Tutup</Button>
+                <Button variant="ghost" className="w-full h-12 rounded-xl font-bold text-slate-600 hover:bg-slate-50" onClick={() => setIsDetailDialogOpen(false)}>Tutup</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
