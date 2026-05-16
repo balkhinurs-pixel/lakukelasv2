@@ -36,15 +36,20 @@ import {
     Printer,
     BookOpen,
     School,
-    FileSpreadsheet
+    FileSpreadsheet,
+    CalendarDays,
+    ChevronDown,
+    LineChart
 } from "lucide-react";
 import type { Class, Subject, Profile, SchoolYear } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { getGradesReportList, getJournalReportList, getAttendanceSemesterMatrix } from "@/lib/data";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { LottieWelcome } from "@/components/ui/lottie-welcome";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -60,6 +65,42 @@ type ReportsData = {
     };
     uniqueAssessments: string[];
 };
+
+const StatCard = ({ 
+    title, 
+    value, 
+    subtitle, 
+    icon: Icon, 
+    colorClass, 
+    bgColorClass,
+    trend
+}: { 
+    title: string; 
+    value: string | number; 
+    subtitle: string; 
+    icon: React.ElementType; 
+    colorClass: string; 
+    bgColorClass: string;
+    trend?: string;
+}) => (
+    <Card className="border-0 shadow-sm rounded-[32px] overflow-hidden bg-white group hover:shadow-md transition-all duration-300">
+        <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+                <p className={cn("text-[11px] font-black uppercase tracking-widest opacity-70", colorClass)}>{title}</p>
+                <div className={cn("p-2 rounded-xl transition-transform group-hover:scale-110", bgColorClass)}>
+                    <Icon className={cn("h-5 w-5", colorClass)} />
+                </div>
+            </div>
+            <div className="space-y-1">
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">{value}</h3>
+                <div className="flex items-center gap-1.5">
+                    {trend && <TrendingUp className="h-3 w-3 text-emerald-500" />}
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{subtitle}</p>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 export default function ReportsPageComponent({
     classes,
@@ -344,190 +385,221 @@ export default function ReportsPageComponent({
   }
 
   return (
-    <div className="space-y-8 p-1 pb-20">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <HandWrittenTitle title="Laporan Akademik" subtitle="Pusat Dokumentasi Administrasi" className="py-4 md:py-6" />
-        </div>
-        
-        <Card className="rounded-xl border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-6 px-8">
-                <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600 shadow-inner">
-                        <Filter className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <CardTitle className="text-xl font-bold tracking-tight">Filter Laporan</CardTitle>
-                        <CardDescription>Tahun Ajaran Aktif: <span className="font-bold text-indigo-600">{summaryCards.activeSchoolYearName}</span></CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="p-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
-                            <School className="w-3.5 h-3.5" /> Pilih Kelas
-                        </Label>
-                        <Select value={selectedClass} onValueChange={(v) => handleFilterChange('class', v)}>
-                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20"><SelectValue /></SelectTrigger>
-                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                {classes.map(c => <SelectItem key={c.id} value={c.id} className="py-3 font-bold">{c.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+    <div className="space-y-6 pb-24 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
+        {/* 1. Header Premium Indigo */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-8 sm:p-10 text-white rounded-b-[4rem] shadow-xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 blur-2xl rounded-full -ml-10 -mb-10" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                <div className="space-y-4 text-center md:text-left flex-1">
+                    <div className="flex items-center justify-center md:justify-start gap-2 text-indigo-100 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em]">
+                        <span>📊</span>
+                        <span>Dokumentasi Akademik</span>
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
-                            <BookOpen className="w-3.5 h-3.5" /> Pilih Mata Pelajaran
-                        </Label>
-                        <Select value={selectedSubject} onValueChange={(v) => handleFilterChange('subject', v)}>
-                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20"><SelectValue /></SelectTrigger>
-                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                {subjects.map(s => <SelectItem key={s.id} value={s.id} className="py-3 font-bold">{s.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+                        <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+                            Laporan Akademik
+                        </h1>
+                        <p className="text-indigo-100/80 text-sm sm:text-base font-medium max-w-xl leading-relaxed">
+                            Pusat analisis dan rekapitulasi data administrasi kelas Anda. Pantau progres siswa dan cetak dokumen resmi dengan mudah.
+                        </p>
+                    </div>
+                    
+                    {/* Active Year Badge / Select Style */}
+                    <div className="pt-4">
+                        <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 p-3 pl-5 rounded-[2rem] shadow-inner group transition-all hover:bg-white/15">
+                            <div className="flex flex-col text-left">
+                                <span className="text-[9px] font-black uppercase text-indigo-200 tracking-widest">Tahun Ajaran Aktif</span>
+                                <span className="text-sm font-black tracking-tight">{summaryCards.activeSchoolYearName}</span>
+                            </div>
+                            <div className="h-8 w-px bg-white/20 mx-1" />
+                            <div className="p-2 bg-white/20 rounded-full group-hover:rotate-180 transition-transform duration-500">
+                                <ChevronDown className="h-4 w-4" />
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </CardContent>
-        </Card>
-
-        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100 rounded-xl shadow-lg border-2">
-                <CardHeader className="pb-2">
-                    <Badge variant="outline" className="w-fit bg-emerald-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Presensi</Badge>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-5xl font-black text-emerald-600">{summaryCards.overallAttendanceRate}%</p>
-                        <TrendingUp className="h-6 w-6 text-emerald-400" />
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1 font-bold">Rata-rata Semester</p>
-                </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100 rounded-xl shadow-lg border-2">
-                <CardHeader className="pb-2">
-                    <Badge variant="outline" className="w-fit bg-blue-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Nilai</Badge>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-5xl font-black text-blue-600">{summaryCards.overallAverageGrade}</p>
-                        <Award className="h-6 w-6 text-blue-400" />
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1 font-bold">Rata-rata Semester</p>
-                </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100 rounded-xl shadow-lg border-2">
-                <CardHeader className="pb-2">
-                    <Badge variant="outline" className="w-fit bg-purple-500 text-white border-0 font-black text-[10px] tracking-[0.1em] uppercase px-3 py-1">Jurnal</Badge>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-5xl font-black text-purple-600">{summaryCards.totalJournals}</p>
-                        <FileText className="h-6 w-6 text-purple-400" />
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1 font-bold">Total Semester Ini</p>
-                </CardContent>
-            </Card>
+                
+                <div className="hidden md:block w-48 h-48 lg:w-64 lg:h-64 shrink-0 relative">
+                     <div className="absolute inset-0 bg-white/20 rounded-full blur-2xl animate-pulse" />
+                     <LottieWelcome />
+                </div>
+            </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto bg-slate-100 p-1.5 rounded-xl shadow-inner h-14">
-                <TabsTrigger value="attendance" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Presensi</TabsTrigger>
-                <TabsTrigger value="grades" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Nilai</TabsTrigger>
-                <TabsTrigger value="journal" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg font-bold text-xs">Jurnal</TabsTrigger>
-            </TabsList>
+        {/* 2. Content Container */}
+        <div className="px-4 sm:px-6 lg:px-10 -mt-12 space-y-8">
+            {/* 3. Grid Statistik (4 Cards) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard 
+                    title="Presensi Rata-rata"
+                    value={`${summaryCards.overallAttendanceRate}%`}
+                    subtitle="Tingkat kehadiran"
+                    icon={LineChart}
+                    colorClass="text-emerald-600"
+                    bgColorClass="bg-emerald-50"
+                    trend="+8% dari semester lalu"
+                />
+                <StatCard 
+                    title="Nilai Rata-rata"
+                    value={summaryCards.overallAverageGrade}
+                    subtitle="Capaian akademik"
+                    icon={Award}
+                    colorClass="text-blue-600"
+                    bgColorClass="bg-blue-50"
+                    trend="+5 poin dari semester lalu"
+                />
+                <StatCard 
+                    title="Jurnal Terisi"
+                    value={`${summaryCards.totalJournals}`}
+                    subtitle="Entri semester ini"
+                    icon={BookOpen}
+                    colorClass="text-purple-600"
+                    bgColorClass="bg-purple-50"
+                />
+                <StatCard 
+                    title="Total Pertemuan"
+                    value="16"
+                    subtitle="Selesai 15 dari 16"
+                    icon={CalendarDays}
+                    colorClass="text-amber-600"
+                    bgColorClass="bg-amber-50"
+                />
+            </div>
 
-            <TabsContent value="attendance" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-xl border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
-                    <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
-                        <div className="p-6 rounded-xl bg-emerald-50 text-emerald-600 shadow-inner">
-                            <Users className="h-12 w-12" />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-slate-900">Rekap Presensi Semester</h3>
-                            <p className="text-slate-500 font-medium leading-relaxed">Matriks kehadiran siswa berdasarkan nomor pertemuan selama satu semester penuh.</p>
-                        </div>
-                        <Button 
-                            onClick={() => handleDownloadPdf('attendance')} 
-                            disabled={downloading}
-                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-lg font-bold gap-3"
-                        >
-                            {downloading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Printer className="h-6 w-6" />}
-                            Cetak Laporan Presensi
-                        </Button>
-                    </div>
-                </Card>
-            </TabsContent>
-
-            <TabsContent value="grades" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-xl border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
-                    <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
-                        <div className="p-6 rounded-xl bg-blue-50 text-blue-600 shadow-inner">
-                            <ClipboardList className="h-12 w-12" />
-                        </div>
-                        <div className="space-y-4 w-full">
-                            <h3 className="text-2xl font-black text-slate-900">Leger Nilai Semester</h3>
-                            <div className="space-y-2 text-left">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Saring Berdasarkan Ulangan</Label>
-                                <Select value={selectedAssessment} onValueChange={setSelectedAssessment}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-0 shadow-inner font-bold">
+            {/* 4. Filter Row */}
+            <Card className="border-0 shadow-lg bg-white/95 backdrop-blur-md rounded-[2.5rem] overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col md:flex-row gap-4 items-center">
+                        <div className="flex items-center gap-3 bg-slate-50 p-2 pl-4 rounded-2xl border border-slate-100 flex-1 w-full">
+                            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                                <Users className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col flex-1">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Kelas</span>
+                                <Select value={selectedClass} onValueChange={(v) => handleFilterChange('class', v)}>
+                                    <SelectTrigger className="border-0 bg-transparent p-0 h-auto shadow-none focus:ring-0 font-black text-slate-900 text-sm">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-0 shadow-2xl">
-                                        <SelectItem value="all" className="font-bold">Semua Penilaian Semester</SelectItem>
-                                        {uniqueAssessments.map(a => (
-                                            <SelectItem key={a} value={a}>{a}</SelectItem>
-                                        ))}
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {classes.map(c => <SelectItem key={c.id} value={c.id} className="py-3 font-bold">{c.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
-                        
-                        <div className="flex flex-col sm:flex-row gap-3 w-full">
-                            <Button 
-                                onClick={() => handleDownloadPdf('grades')} 
-                                disabled={downloading}
-                                className="flex-1 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-lg font-bold gap-3"
-                            >
-                                {downloading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Printer className="h-5 w-5" />}
-                                Cetak PDF
-                            </Button>
-                            <Button 
-                                onClick={handleDownloadExcel}
-                                disabled={downloading}
-                                variant="outline"
-                                className="flex-1 h-14 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-2xl text-lg font-bold gap-3"
-                            >
-                                <FileSpreadsheet className="h-5 w-5" />
-                                Excel
-                            </Button>
-                        </div>
-                    </div>
-                </Card>
-            </TabsContent>
 
-            <TabsContent value="journal" className="mt-8 animate-in fade-in duration-500">
-                <Card className="rounded-xl border-0 shadow-xl overflow-hidden bg-white p-8 md:p-12 text-center">
-                    <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
-                        <div className="p-6 rounded-xl bg-purple-50 text-purple-600 shadow-inner">
-                            <BookCheck className="h-12 w-12" />
+                        <div className="flex items-center gap-3 bg-slate-50 p-2 pl-4 rounded-2xl border border-slate-100 flex-1 w-full">
+                            <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
+                                <BookOpen className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col flex-1">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mata Pelajaran</span>
+                                <Select value={selectedSubject} onValueChange={(v) => handleFilterChange('subject', v)}>
+                                    <SelectTrigger className="border-0 bg-transparent p-0 h-auto shadow-none focus:ring-0 font-black text-slate-900 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {subjects.map(s => <SelectItem key={s.id} value={s.id} className="py-3 font-bold">{s.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-slate-900">Log Jurnal Mengajar</h3>
-                            <p className="text-slate-500 font-medium leading-relaxed">Rekapitulasi seluruh aktivitas KBM selama satu semester penuh untuk dokumen supervisi.</p>
+
+                        <div className="flex items-center gap-3 bg-slate-50 p-2 pl-4 rounded-2xl border border-slate-100 flex-1 w-full">
+                            <div className="p-2 bg-purple-100 text-purple-600 rounded-xl">
+                                <CalendarDays className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col flex-1">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Semester</span>
+                                <div className="font-black text-slate-900 text-sm mt-0.5">Genap</div>
+                            </div>
                         </div>
-                        <Button 
-                            onClick={() => handleDownloadPdf('journal')} 
-                            disabled={downloading}
-                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-lg font-bold gap-3"
-                        >
-                            {downloading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Printer className="h-6 w-6" />}
-                            Cetak Jurnal Mengajar
-                        </Button>
                     </div>
-                </Card>
-            </TabsContent>
-        </Tabs>
+                </CardContent>
+            </Card>
+
+            {/* 5. Main Action Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <div className="flex justify-center mb-8">
+                    <TabsList className="bg-slate-100/80 p-1.5 rounded-[2rem] h-14 w-full max-w-2xl shadow-inner border border-slate-200/50">
+                        <TabsTrigger value="attendance" className="rounded-[1.5rem] flex-1 font-black text-xs uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-xl transition-all duration-300">Presensi</TabsTrigger>
+                        <TabsTrigger value="grades" className="rounded-[1.5rem] flex-1 font-black text-xs uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-xl transition-all duration-300">Nilai</TabsTrigger>
+                        <TabsTrigger value="journal" className="rounded-[1.5rem] flex-1 font-black text-xs uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-xl transition-all duration-300">Jurnal</TabsTrigger>
+                    </TabsList>
+                </div>
+
+                <motion.div 
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                >
+                    <Card className="rounded-[3rem] border-0 shadow-2xl overflow-hidden bg-white min-h-[400px]">
+                        <CardHeader className="p-8 sm:p-12 text-center space-y-6">
+                            <div className="flex flex-col items-center max-w-md mx-auto space-y-6">
+                                <div className={cn(
+                                    "p-8 rounded-[2.5rem] shadow-inner",
+                                    activeTab === 'attendance' ? "bg-emerald-50 text-emerald-600" :
+                                    activeTab === 'grades' ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"
+                                )}>
+                                    {activeTab === 'attendance' ? <Users className="h-14 w-14" /> :
+                                     activeTab === 'grades' ? <ClipboardList className="h-14 w-14" /> : <BookCheck className="h-14 w-14" />}
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">
+                                        {activeTab === 'attendance' ? 'Rekap Presensi' :
+                                         activeTab === 'grades' ? 'Leger Nilai' : 'Log Jurnal Mengajar'}
+                                    </h3>
+                                    <p className="text-slate-500 font-bold text-sm leading-relaxed">
+                                        {activeTab === 'attendance' ? 'Matriks kehadiran siswa berdasarkan nomor pertemuan selama satu semester penuh.' :
+                                         activeTab === 'grades' ? 'Daftar nilai akademik siswa yang dapat difilter berdasarkan jenis penilaian.' : 
+                                         'Rekapitulasi seluruh aktivitas KBM selama satu semester untuk dokumen supervisi.'}
+                                    </p>
+                                </div>
+                                
+                                {activeTab === 'grades' && (
+                                    <div className="w-full space-y-2 text-left bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Saring Penilaian</Label>
+                                        <Select value={selectedAssessment} onValueChange={setSelectedAssessment}>
+                                            <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-200 font-bold text-sm">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                                <SelectItem value="all" className="font-bold">Semua Penilaian Semester</SelectItem>
+                                                {uniqueAssessments.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col sm:flex-row gap-3 w-full pt-4">
+                                    <Button 
+                                        onClick={() => handleDownloadPdf(activeTab as any)} 
+                                        disabled={downloading}
+                                        className="flex-1 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 text-base font-black uppercase tracking-widest gap-3"
+                                    >
+                                        {downloading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Printer className="h-5 w-5" />}
+                                        Cetak PDF
+                                    </Button>
+                                    {activeTab === 'grades' && (
+                                        <Button 
+                                            onClick={handleDownloadExcel}
+                                            disabled={downloading}
+                                            variant="outline"
+                                            className="flex-1 h-14 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-2xl text-base font-black uppercase tracking-widest gap-3 bg-white"
+                                        >
+                                            <FileSpreadsheet className="h-5 w-5" />
+                                            Excel
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </CardHeader>
+                    </Card>
+                </motion.div>
+            </Tabs>
+        </div>
     </div>
   );
 }
