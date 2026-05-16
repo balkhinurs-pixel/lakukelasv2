@@ -643,14 +643,23 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 export async function getTeacherActivityStats() {
     noStore();
     const supabase = createClient();
-    // RPC get_teacher_activity_counts HARUS diupdate di SQL agar memfilter is_activated = true
     const { data: activityData } = await supabase.rpc('get_teacher_activity_counts');
-    const { data: teachers } = await supabase.from('profiles').select('id, full_name').in('role', ['teacher', 'headmaster']).eq('is_activated', true).order('full_name');
+    const { data: teachers } = await supabase.from('profiles').select('id, full_name').in('role', ['teacher', 'headmaster', 'admin']).eq('is_activated', true).order('full_name');
     if (!teachers) return [];
-    const statsMap = new Map(activityData?.map((item: any) => [item.teacher_id, item]) || []);
+    
+    // Gunakan Map untuk mempercepat pencarian, tangani kemungkinan nama kolom id atau teacher_id
+    const statsMap = new Map(activityData?.map((item: any) => [item.teacher_id || item.id, item]) || []);
+    
     return teachers.map(teacher => {
         const stats = statsMap.get(teacher.id) || { attendance_count: 0, grades_count: 0, journal_count: 0, classes_handled_count: 0 };
-        return { id: teacher.id, name: teacher.full_name, attendance_count: Number(stats.attendance_count), grades_count: Number(stats.grades_count), journal_count: Number(stats.journal_count), classes_handled_count: Number(stats.classes_handled_count) };
+        return { 
+            id: teacher.id, 
+            name: teacher.full_name, 
+            attendance_count: Number(stats.attendance_count), 
+            grades_count: Number(stats.grades_count), 
+            journal_count: Number(stats.journal_count), 
+            classes_handled_count: Number(stats.classes_handled_count) 
+        };
     });
 }
 
