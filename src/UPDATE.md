@@ -1,6 +1,16 @@
 
 # Log Pembaruan LakuKelas
 
+## V11.8: Kontrol Orientasi PWA (BARU)
+Memberikan kemampuan bagi pengguna untuk mengunci rotasi layar secara manual melalui aplikasi.
+
+### 1. Fitur Rotasi Manual
+- **Pilihan Pengguna**: Menambahkan opsi "Otomatis", "Vertikal", dan "Horisontal" di menu Pengaturan.
+- **Implementasi API**: Menggunakan Screen Orientation API untuk mengunci (`lock`) atau melepas (`unlock`) rotasi layar.
+- **Konfigurasi Manifest**: Mengatur `orientation: any` di `manifest.json` agar kontrol sepenuhnya berada di tangan kode JS aplikasi dan preferensi user.
+
+---
+
 ## V11.6: Finalisasi Alur Onboarding (PENYEMPURNAAN)
 Menyempurnakan transisi otomatis dari pengisian data diri ke halaman tunggu persetujuan.
 

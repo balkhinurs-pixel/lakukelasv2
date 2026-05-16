@@ -1,3 +1,4 @@
+
 "use client"
 import * as React from "react";
 import {
@@ -17,15 +18,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
-import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck } from "lucide-react";
+import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Smartphone, Monitor, RotateCw, MonitorSmartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
     const { toast } = useToast();
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
     const [uploading, setUploading] = React.useState(false);
+    const [orientation, setOrientation] = React.useState<'any' | 'portrait' | 'landscape'>('any');
 
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
     
@@ -60,7 +63,6 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validasi client-side sederhana
         const MAX_SIZE = 2 * 1024 * 1024; // 2MB
         if (file.size > MAX_SIZE) {
             toast({
@@ -109,6 +111,38 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
             if (avatarInputRef.current) avatarInputRef.current.value = '';
         }
     }
+
+    const handleOrientationChange = async (value: 'any' | 'portrait' | 'landscape') => {
+        setOrientation(value);
+        
+        if (typeof window !== 'undefined' && 'orientation' in screen && (screen.orientation as any).lock) {
+            try {
+                if (value === 'any') {
+                    screen.orientation.unlock();
+                    toast({ title: "Rotasi Bebas", description: "Layar akan mengikuti sensor perangkat." });
+                } else {
+                    await (screen.orientation as any).lock(value);
+                    toast({ 
+                        title: "Rotasi Dikunci", 
+                        description: `Layar dikunci ke mode ${value === 'portrait' ? 'Vertikal' : 'Horisontal'}.` 
+                    });
+                }
+            } catch (err) {
+                console.error("Orientation lock failed:", err);
+                toast({ 
+                    title: "Fitur Terbatas", 
+                    description: "Browser Anda tidak mendukung penguncian rotasi secara programatik. Gunakan fitur rotasi bawaan HP.",
+                    variant: "destructive" 
+                });
+            }
+        } else {
+            toast({ 
+                title: "Tidak Didukung", 
+                description: "Browser ini tidak mendukung Screen Orientation API.",
+                variant: "destructive" 
+            });
+        }
+    };
 
     const getAvatarFallback = (name: string | null) => {
         if (!name || typeof name !== 'string' || name.trim() === '') return 'G';
@@ -167,9 +201,9 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                                         )}
                                     >
                                         {uploading ? (
-                                            <Loader2 className="h-5 w-5 animate-spin" />
+                                            <Loader2 className="h-4 w-4 animate-spin" />
                                         ) : (
-                                            <Camera className="h-5 w-5" />
+                                            <Camera className="h-4 w-4" />
                                         )}
                                     </button>
                                 </div>
@@ -257,6 +291,58 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                            </Button>
                         </CardFooter>
                     </form>
+                </Card>
+
+                {/* Fitur Baru: Kontrol Orientasi PWA */}
+                <Card className="border-0 shadow-xl shadow-slate-200/50">
+                    <CardHeader className="p-8 border-b bg-slate-50/30">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
+                                <RotateCw className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-xl font-bold">Mode Tampilan & Rotasi</CardTitle>
+                                <CardDescription>Kunci orientasi layar Anda agar nyaman saat input data (Khusus Mode PWA/HP).</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-8">
+                        <RadioGroup 
+                            value={orientation} 
+                            onValueChange={(v: any) => handleOrientationChange(v)} 
+                            className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                        >
+                            <label className={cn(
+                                "flex flex-col items-center justify-center p-6 border-2 rounded-2xl cursor-pointer transition-all hover:bg-slate-50",
+                                orientation === 'any' ? "border-indigo-500 bg-indigo-50/50 shadow-md" : "border-slate-100"
+                            )}>
+                                <RadioGroupItem value="any" className="sr-only" />
+                                <MonitorSmartphone className={cn("h-8 w-8 mb-3", orientation === 'any' ? "text-indigo-600" : "text-slate-400")} />
+                                <span className="font-bold text-sm">Otomatis</span>
+                                <span className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Ikuti Sensor</span>
+                            </label>
+
+                            <label className={cn(
+                                "flex flex-col items-center justify-center p-6 border-2 rounded-2xl cursor-pointer transition-all hover:bg-slate-50",
+                                orientation === 'portrait' ? "border-indigo-500 bg-indigo-50/50 shadow-md" : "border-slate-100"
+                            )}>
+                                <RadioGroupItem value="portrait" className="sr-only" />
+                                <Smartphone className={cn("h-8 w-8 mb-3", orientation === 'portrait' ? "text-indigo-600" : "text-slate-400")} />
+                                <span className="font-bold text-sm">Vertikal</span>
+                                <span className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Portrait</span>
+                            </label>
+
+                            <label className={cn(
+                                "flex flex-col items-center justify-center p-6 border-2 rounded-2xl cursor-pointer transition-all hover:bg-slate-50",
+                                orientation === 'landscape' ? "border-indigo-500 bg-indigo-50/50 shadow-md" : "border-slate-100"
+                            )}>
+                                <RadioGroupItem value="landscape" className="sr-only" />
+                                <Monitor className={cn("h-8 w-8 mb-3", orientation === 'landscape' ? "text-indigo-600" : "text-slate-400")} />
+                                <span className="font-bold text-sm">Horisontal</span>
+                                <span className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Landscape</span>
+                            </label>
+                        </RadioGroup>
+                    </CardContent>
                 </Card>
             </TabsContent>
             
