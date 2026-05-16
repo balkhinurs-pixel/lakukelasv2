@@ -30,6 +30,7 @@ import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { LottieWelcome } from "@/components/ui/lottie-welcome";
 import { MiniCalendar } from "@/components/ui/mini-calendar";
+import { motion, AnimatePresence } from "framer-motion";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -54,19 +55,23 @@ const CountdownDisplay = ({ startTimeStr, endTimeStr, now }: { startTimeStr: str
 
     // Jika jam mengajar belum dimulai
     if (now < startTime) {
-        return <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Segera</span>;
+        return <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">Segera</span>;
+    }
+
+    // Jika jam mengajar sudah selesai
+    if (now > endTime) {
+        return <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100">Selesai</span>;
     }
 
     const diffInSeconds = Math.floor((endTime.getTime() - now.getTime()) / 1000);
-    
-    // Jika jam mengajar sudah selesai
     if (diffInSeconds <= 0) return null;
 
     const totalMinutes = Math.floor(diffInSeconds / 60);
     const remainingSeconds = diffInSeconds % 60;
     
     return (
-        <span className="text-[10px] font-mono font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 shadow-sm">
+        <span className="text-[10px] font-mono font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 shadow-sm flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
             {totalMinutes}:{remainingSeconds.toString().padStart(2, '0')}
         </span>
     );
@@ -107,6 +112,86 @@ const StatCard = ({
     </Card>
 );
 
+const ScheduleItemCard = ({ item, now, isProminent = false }: { item: ScheduleItem, now: Date, isProminent?: boolean }) => {
+    const [startH, startM] = item.start_time.split(':').map(Number);
+    const [endH, endM] = item.end_time.split(':').map(Number);
+    
+    const startTime = new Date(now);
+    startTime.setHours(startH, startM, 0, 0);
+    
+    const endTime = new Date(now);
+    endTime.setHours(endH, endM, 0, 0);
+
+    const isActive = now >= startTime && now <= endTime;
+    const isPast = now > endTime;
+
+    return (
+        <div className={cn(
+            "relative p-4 rounded-[32px] border transition-all duration-300 flex flex-col gap-4",
+            isActive 
+                ? "bg-white border-indigo-100 shadow-xl shadow-indigo-50" 
+                : "bg-slate-50/50 border-slate-100 opacity-80"
+        )}>
+            {/* Indikator Pojok Kanan Atas */}
+            <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5 z-20">
+                <CountdownDisplay 
+                    startTimeStr={item.start_time} 
+                    endTimeStr={item.end_time} 
+                    now={now} 
+                />
+            </div>
+
+            <div className="flex items-center">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className={cn(
+                        "py-3 px-3 rounded-[24px] flex flex-col items-center justify-center min-w-[65px] sm:min-w-[80px] shadow-lg shrink-0",
+                        isActive ? "bg-indigo-600 text-white shadow-indigo-100" : 
+                        isPast ? "bg-rose-100 text-rose-600 shadow-none border border-rose-200" :
+                        "bg-slate-200 text-slate-600 shadow-none"
+                    )}>
+                        <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(item.start_time)}</span>
+                        <div className={cn("w-4 h-0.5 my-2 rounded-full", isActive ? "bg-white/30" : "bg-current/10")} />
+                        <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(item.end_time)}</span>
+                    </div>
+                    <div className="flex flex-col gap-1 min-w-0 pr-4">
+                        <Badge variant="secondary" className="w-fit bg-indigo-50 text-indigo-700 border-indigo-100 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg mb-0.5">
+                            {item.class}
+                        </Badge>
+                        <h4 className="font-black text-slate-900 tracking-tight text-base sm:text-lg leading-tight break-words">
+                            {item.subject}
+                        </h4>
+                        <div className="flex items-center gap-1.5 text-slate-400 mt-0.5">
+                            <MapPin className="h-3 w-3" />
+                            <span className="text-[9px] font-black uppercase tracking-widest">RUANG KELAS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-3 border-t border-slate-200/50">
+                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1.5" asChild>
+                    <Link href={`/dashboard/attendance?classId=${item.class_id}&subjectId=${item.subject_id}`}>
+                        <ClipboardCheck className="w-4 h-4" />
+                        Absen
+                    </Link>
+                </Button>
+                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 hover:text-blue-700 gap-1.5" asChild>
+                    <Link href={`/dashboard/grades?classId=${item.class_id}&subjectId=${item.subject_id}`}>
+                        <ClipboardEdit className="w-4 h-4" />
+                        Nilai
+                    </Link>
+                </Button>
+                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-purple-600 hover:bg-purple-50 hover:text-purple-700 gap-1.5" asChild>
+                    <Link href={`/dashboard/journal?classId=${item.class_id}&subjectId=${item.subject_id}&openDialog=true`}>
+                        <BookText className="w-4 h-4" />
+                        Jurnal
+                    </Link>
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 export default function DashboardClientPage({ 
     todaySchedule, 
     agendas,
@@ -117,6 +202,7 @@ export default function DashboardClientPage({
     profileName = "Bapak/Ibu Guru"
 }: DashboardPageProps) {
     const [now, setNow] = React.useState<Date>(new Date());
+    const [showAll, setShowAll] = React.useState(false);
 
     React.useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -130,10 +216,11 @@ export default function DashboardClientPage({
     const upcomingClass = React.useMemo(() => {
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
+        // Cari yang sedang berlangsung atau yang akan datang
         return sortedSchedule.find(item => {
             const [endH, endM] = item.end_time.split(':').map(Number);
             return currentHour < endH || (currentHour === endH && currentMinute < endM);
-        });
+        }) || sortedSchedule[0]; // Fallback ke jam pertama jika semua sudah selesai
     }, [sortedSchedule, now]);
 
     const dayName = format(now, 'EEEE', { locale: id });
@@ -209,76 +296,53 @@ export default function DashboardClientPage({
                             <span className="text-indigo-600">{dayName.toUpperCase()}</span>
                         </CardTitle>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-indigo-600 font-bold text-xs p-0 h-auto hover:bg-transparent" asChild>
-                        <Link href="/dashboard/schedule" className="flex items-center">
-                            Lihat Semua <ChevronRight className="h-4 w-4 ml-1" />
-                        </Link>
-                    </Button>
+                    <button 
+                        onClick={() => setShowAll(!showAll)}
+                        className="flex items-center text-indigo-600 font-bold text-xs p-0 h-auto hover:bg-transparent transition-all"
+                    >
+                        {showAll ? 'Sembunyikan Daftar' : 'Lihat Semua Jadwal'} 
+                        <ChevronRight className={cn("h-4 w-4 ml-1 transition-transform duration-300", showAll && "rotate-90")} />
+                    </button>
                 </CardHeader>
                 <CardContent className="px-6 pb-6 pt-2">
-                    {upcomingClass ? (
-                        <div className="relative bg-slate-50/50 p-4 rounded-[32px] border border-slate-100 flex flex-col gap-4 group hover:bg-slate-100/50 transition-all duration-300">
-                            {/* Indikator Aktif & Countdown */}
-                            <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5 z-20">
-                                <div className="flex h-2 w-2 relative">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                </div>
-                                <CountdownDisplay 
-                                    startTimeStr={upcomingClass.start_time} 
-                                    endTimeStr={upcomingClass.end_time} 
-                                    now={now} 
-                                />
-                            </div>
-
-                            <div className="flex items-center">
-                                <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    <div className="bg-indigo-600 text-white py-3 px-3 rounded-[24px] flex flex-col items-center justify-center min-w-[65px] sm:min-w-[80px] shadow-lg shadow-indigo-100 shrink-0">
-                                        <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.start_time)}</span>
-                                        <div className="w-4 h-0.5 bg-white/30 my-2 rounded-full" />
-                                        <span className="text-[11px] sm:text-xs font-black leading-none">{formatTime(upcomingClass.end_time)}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1 min-w-0 pr-4">
-                                        <Badge variant="secondary" className="w-fit bg-indigo-50 text-indigo-700 border-indigo-100 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg mb-0.5">
-                                            {upcomingClass.class}
-                                        </Badge>
-                                        <h4 className="font-black text-slate-900 tracking-tight text-base sm:text-lg leading-tight break-words">
-                                            {upcomingClass.subject}
-                                        </h4>
-                                        <div className="flex items-center gap-1.5 text-slate-400 mt-0.5">
-                                            <MapPin className="h-3 w-3" />
-                                            <span className="text-[9px] font-black uppercase tracking-widest">RUANG KELAS</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 pt-3 border-t border-slate-200/50">
-                                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1.5" asChild>
-                                    <Link href={`/dashboard/attendance?classId=${upcomingClass.class_id}&subjectId=${upcomingClass.subject_id}`}>
-                                        <ClipboardCheck className="w-4 h-4" />
-                                        Absen
-                                    </Link>
-                                </Button>
-                                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 hover:text-blue-700 gap-1.5" asChild>
-                                    <Link href={`/dashboard/grades?classId=${upcomingClass.class_id}&subjectId=${upcomingClass.subject_id}`}>
-                                        <ClipboardEdit className="w-4 h-4" />
-                                        Nilai
-                                    </Link>
-                                </Button>
-                                <Button variant="ghost" size="sm" className="flex-1 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-purple-600 hover:bg-purple-50 hover:text-purple-700 gap-1.5" asChild>
-                                    <Link href={`/dashboard/journal?classId=${upcomingClass.class_id}&subjectId=${upcomingClass.subject_id}&openDialog=true`}>
-                                        <BookText className="w-4 h-4" />
-                                        Jurnal
-                                    </Link>
-                                </Button>
-                            </div>
+                    {todayHoliday ? (
+                        <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200">
+                            <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3 opacity-50" />
+                            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Hari Libur</p>
+                            <p className="text-[10px] text-slate-400 font-bold mt-1">{todayHoliday.description}</p>
+                        </div>
+                    ) : sortedSchedule.length > 0 ? (
+                        <div className="space-y-4">
+                            <AnimatePresence mode="wait">
+                                {!showAll ? (
+                                    <motion.div
+                                        key="highlight"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                    >
+                                        {upcomingClass && <ScheduleItemCard item={upcomingClass} now={now} isProminent />}
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="list"
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="space-y-4"
+                                    >
+                                        {sortedSchedule.map((item) => (
+                                            <ScheduleItemCard key={item.id} item={item} now={now} />
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     ) : (
                         <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200">
-                            <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3 opacity-50" />
-                            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Kelas Selesai</p>
-                            <p className="text-[10px] text-slate-400 font-bold mt-1">Anda telah menyelesaikan tugas hari ini.</p>
+                            <CalendarDays className="h-12 w-12 text-slate-300 mx-auto mb-3 opacity-50" />
+                            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Tidak Ada Jadwal</p>
+                            <p className="text-[10px] text-slate-400 font-bold mt-1">Anda tidak memiliki jam mengajar hari ini.</p>
                         </div>
                     )}
                 </CardContent>
