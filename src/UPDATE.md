@@ -1,17 +1,17 @@
 
 # Log Pembaruan LakuKelas
 
-## V12.0: Kunci Orientasi Layar PWA (TERBARU)
-Mengunci orientasi aplikasi agar selalu dalam mode potrait untuk konsistensi UI.
+## V12.1: Pembebasan Orientasi Layar PWA (TERBARU)
+Mengembalikan fleksibilitas rotasi layar agar mengikuti pengaturan sistem perangkat pengguna.
 
 ### 1. Perubahan Manifest
-- **Orientation Lock**: Mengubah `orientation` dari `any` menjadi `portrait-primary` di `manifest.json`.
-- **Hasil**: Aplikasi tidak akan lagi berputar secara otomatis saat HP diputar, menjaga tata letak Dashboard dan Tabel tetap presisi sesuai desain aslinya.
+- **Orientation Removed**: Menghapus baris `"orientation": "portrait-primary"` dari `manifest.json`.
+- **Hasil**: Aplikasi sekarang mendukung mode landscape (mendatar), memudahkan guru saat melihat laporan tabel yang panjang atau grafik yang detail.
 
 ---
 
-## V11.9: Optimalisasi Rotasi PWA (DEPRECATED)
-*(Fitur ini telah digantikan oleh V12.0 demi konsistensi tampilan)*
+## V12.0: Kunci Orientasi Layar PWA (DEPRECATED)
+*(Fitur ini telah dihapus di V12.1 untuk mendukung fleksibilitas tampilan)*
 
 ---
 

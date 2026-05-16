@@ -1,21 +1,20 @@
 {
-  "name": "LakuKelas - Sistem Manajemen Kelas Modern",
+  "name": "LakuKelas",
   "short_name": "LakuKelas",
-  "description": "Platform manajemen kelas digital yang dirancang khusus untuk guru Indonesia. Kelola absensi, nilai, jurnal, dan agenda kelas dengan mudah dan efisien.",
+  "description": "Sistem Manajemen Kelas Modern untuk Guru Indonesia",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
-  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
   "icons": [
     {
-      "src": "/icons-192x192.png",
+      "src": "https://picsum.photos/seed/app-icon/192/192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons-512x512.png",
+      "src": "https://picsum.photos/seed/app-icon/512/512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
