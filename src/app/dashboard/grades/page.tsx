@@ -1,16 +1,21 @@
 
-import { getClasses, getSubjects, getGradeHistory, getActiveStudents, getUserProfile, getActiveSchoolYearName } from "@/lib/data";
+import { getGradesPageData } from "@/lib/data";
 import GradesPageComponent from "./grades-page-component";
+import { redirect } from "next/navigation";
 
 export default async function GradesPage() {
-    const [classes, subjects, history, allStudents, profile, activeSchoolYearName] = await Promise.all([
-        getClasses(),
-        getSubjects(),
-        getGradeHistory(),
-        getActiveStudents(),
-        getUserProfile(),
-        getActiveSchoolYearName()
-    ]);
+    // Optimized bulk fetcher for Grades page.
+    const data = await getGradesPageData();
 
-    return <GradesPageComponent classes={classes} subjects={subjects} initialHistory={history} allStudents={allStudents} activeSchoolYearName={activeSchoolYearName} />;
+    if (!data) {
+        redirect('/login');
+    }
+
+    return <GradesPageComponent 
+        classes={data.classes} 
+        subjects={data.subjects} 
+        initialHistory={data.history} 
+        allStudents={data.allStudents} 
+        activeSchoolYearName={data.activeSchoolYearName} 
+    />;
 }

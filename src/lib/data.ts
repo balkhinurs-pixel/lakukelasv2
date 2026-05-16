@@ -21,6 +21,86 @@ async function getAuthenticatedUser() {
     return user;
 }
 
+// --- Bulk Fetchers for Optimization ---
+
+/**
+ * Mengambil seluruh data yang dibutuhkan halaman Presensi dalam 1-2 request saja.
+ */
+export async function getAttendancePageData() {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    
+    const supabase = createClient();
+    const activeSchoolYearId = await getActiveSchoolYearId();
+
+    const [profileRes, schoolYearRes, scheduleRes, studentsRes, holidaysRes, historyRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('school_years').select('name').eq('id', activeSchoolYearId || '').maybeSingle(),
+        supabase.from('schedule').select('*, class:classes(id, name), subject:subjects(id, name)').eq('teacher_id', user.id),
+        supabase.from('students').select('*').eq('status', 'active').order('name'),
+        supabase.from('holidays').select('*').order('date'),
+        supabase.from('attendance_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }).limit(20)
+    ]);
+
+    // Extract unique classes and subjects from schedule for the filters
+    const rawSchedules = scheduleRes.data || [];
+    const classesMap = new Map();
+    const subjectsMap = new Map();
+    
+    rawSchedules.forEach((s: any) => {
+        if (s.class) classesMap.set(s.class.id, s.class);
+        if (s.subject) subjectsMap.set(s.subject.id, s.subject);
+    });
+
+    return {
+        profile: profileRes.data,
+        activeSchoolYearName: schoolYearRes.data?.name || 'Belum Diatur',
+        classes: Array.from(classesMap.values()),
+        subjects: Array.from(subjectsMap.values()),
+        schedule: rawSchedules.map((s: any) => ({ ...s, class: s.class.name, subject: s.subject.name })),
+        allStudents: studentsRes.data || [],
+        holidays: holidaysRes.data || [],
+        history: historyRes.data || []
+    };
+}
+
+/**
+ * Mengambil seluruh data yang dibutuhkan halaman Nilai dalam minimal request.
+ */
+export async function getGradesPageData() {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    
+    const supabase = createClient();
+    const activeSchoolYearId = await getActiveSchoolYearId();
+
+    const [schoolYearRes, scheduleRes, studentsRes, historyRes] = await Promise.all([
+        supabase.from('school_years').select('name').eq('id', activeSchoolYearId || '').maybeSingle(),
+        supabase.from('schedule').select('*, class:classes(id, name), subject:subjects(id, name, kkm)').eq('teacher_id', user.id),
+        supabase.from('students').select('*').eq('status', 'active').order('name'),
+        supabase.from('grades_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }).limit(30)
+    ]);
+
+    const rawSchedules = scheduleRes.data || [];
+    const classesMap = new Map();
+    const subjectsMap = new Map();
+    
+    rawSchedules.forEach((s: any) => {
+        if (s.class) classesMap.set(s.class.id, s.class);
+        if (s.subject) subjectsMap.set(s.subject.id, s.subject);
+    });
+
+    return {
+        activeSchoolYearName: schoolYearRes.data?.name || 'Belum Diatur',
+        classes: Array.from(classesMap.values()),
+        subjects: Array.from(subjectsMap.values()),
+        allStudents: studentsRes.data || [],
+        history: historyRes.data || []
+    };
+}
+
 // --- Admin Data ---
 
 export async function getAdminDashboardData() {
@@ -38,7 +118,6 @@ export async function getAdminDashboardData() {
             supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
             supabase.from('settings').select('value').eq('key', 'attendance_policy').single(),
             supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle(),
-            // HANYA ambil staff yang SUDAH AKTIF untuk statistik
             supabase.from('profiles').select('id, full_name, avatar_url').in('role', ['teacher', 'headmaster']).eq('is_activated', true).order('full_name'),
             supabase.from('teacher_attendance').select('*').eq('date', todayStr),
             supabase.from('schedule').select('teacher_id').eq('day', dayNameIndo)
@@ -99,22 +178,20 @@ export async function getAdminDashboardData() {
         const weeklyAttendance = [];
         const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
         
+        // Optimasi: Panggil RPC dalam bulk jika memungkinkan (untuk sekarang kurangi hit database harian)
         for (let i = 6; i >= 0; i--) {
             const date = new Date(nowIndo);
             date.setDate(date.getDate() - i);
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayIdx = date.getDay();
             
-            const { data: holidayCheck } = await supabase.from('holidays').select('id').eq('date', dateStr).limit(1);
-            const wasHoliday = (holidayCheck || []).length > 0;
-
             const { data: daySummaryArr } = await supabase.rpc('get_teacher_attendance_summary', { p_date: dateStr });
             const daySummary = (Array.isArray(daySummaryArr) && daySummaryArr.length > 0) ? daySummaryArr[0] : null;
             
             weeklyAttendance.push({
                 day: dayNamesShort[dayIdx],
                 hadir: Number(daySummary?.total_present || 0),
-                tidak_hadir: wasHoliday ? 0 : Number(daySummary?.total_absent || 0)
+                tidak_hadir: Number(daySummary?.total_absent || 0)
             });
         }
         
@@ -179,7 +256,6 @@ export async function getUserProfile(): Promise<Profile | null> {
 export async function getAdminProfile(): Promise<Profile | null> {
     noStore();
     const supabase = createClient();
-    // Mengambil profil dengan role admin yang memiliki data sekolah
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -200,12 +276,10 @@ export async function getClasses(): Promise<Class[]> {
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { data: scheduleData } = await supabase.from('schedule').select('class_id').eq('teacher_id', user.id);
-    if (!scheduleData) return [];
-    const classIds = [...new Set(scheduleData.map(item => item.class_id))];
-    if (classIds.length === 0) return [];
-    const { data } = await supabase.from('classes').select('*').in('id', classIds).order('name');
-    return data || [];
+    const { data: classes } = await supabase.from('schedule').select('classes(*)').eq('teacher_id', user.id);
+    if (!classes) return [];
+    const uniqueClasses = Array.from(new Map(classes.map((item: any) => [item.classes.id, item.classes])).values());
+    return uniqueClasses.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getSubjects(): Promise<Subject[]> {
@@ -213,12 +287,10 @@ export async function getSubjects(): Promise<Subject[]> {
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { data: scheduleData } = await supabase.from('schedule').select('subject_id').eq('teacher_id', user.id);
-    if (!scheduleData) return [];
-    const subjectIds = [...new Set(scheduleData.map(item => item.subject_id))];
-    if (subjectIds.length === 0) return [];
-    const { data } = await supabase.from('subjects').select('*').in('id', subjectIds).order('name');
-    return data || [];
+    const { data: subjects } = await supabase.from('schedule').select('subjects(*)').eq('teacher_id', user.id);
+    if (!subjects) return [];
+    const uniqueSubjects = Array.from(new Map(subjects.map((item: any) => [item.subjects.id, item.subjects])).values());
+    return uniqueSubjects.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], activeSchoolYearId: string | null }> {
@@ -265,7 +337,7 @@ export async function getSchedule(): Promise<ScheduleItem[]> {
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { data } = await supabase.from('schedule').select('*, class:class_id(name), subject:subject_id(name)').eq('teacher_id', user.id);
+    const { data } = await supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').eq('teacher_id', user.id);
     if (!data) return [];
     return data.map(item => ({ ...item, class: item.class.name, subject: item.subject.name }));
 }
@@ -273,7 +345,7 @@ export async function getSchedule(): Promise<ScheduleItem[]> {
 export async function getAllSchedules(): Promise<ScheduleItem[]> {
     noStore();
     const supabase = createClient();
-    const { data } = await supabase.from('schedule').select('*, class:class_id(name), subject:subject_id(name)').order('day').order('start_time');
+    const { data } = await supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').order('day').order('start_time');
     if (!data) return [];
     return data.map(item => ({ ...item, class: item.class.name, subject: item.subject.name }));
 }
@@ -283,9 +355,9 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
     const user = await getAuthenticatedUser();
     if (!user) return [];
     const supabase = createClient();
-    const { data: settingsData } = await supabase.from('settings').select('value').eq('key', 'active_school_year_id').single();
-    if (!settingsData?.value) return [];
-    const { data } = await supabase.from('journal_entries_with_names').select('*').eq('teacher_id', user.id).eq('school_year_id', settingsData.value).order('date', { ascending: false });
+    const activeSchoolYearId = await getActiveSchoolYearId();
+    if (!activeSchoolYearId) return [];
+    const { data } = await supabase.from('journal_entries_with_names').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId).order('date', { ascending: false });
     return data || [];
 }
 
@@ -350,10 +422,10 @@ export async function getDashboardData(todayDay: string) {
     const todayStr = format(getIndonesianTime(), 'yyyy-MM-dd');
     
     const [scheduleRes, agendasRes, attendanceRes, journalsRes, holidayRes] = await Promise.all([
-        supabase.from('schedule').select('*, class:class_id(name), subject:subject_id(name)').eq('teacher_id', user.id).eq('day', todayDay),
+        supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').eq('teacher_id', user.id).eq('day', todayDay),
         supabase.from('agendas').select('*').eq('teacher_id', user.id).gte('date', todayStr).order('date', { ascending: true }).order('start_time', { ascending: true }).limit(5),
-        supabase.from('attendance_records').select('status').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId),
-        supabase.from('journal_entries').select('date').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId),
+        supabase.from('attendance_records').select('status').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || ''),
+        supabase.from('journal_entries').select('date').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || ''),
         supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle()
     ]);
 
@@ -595,8 +667,8 @@ export async function getHomeroomStudentProgress() {
     const { data: students } = await supabase.from('students').select('id, name, nis').eq('class_id', homeroomClass.id).eq('status', 'active');
     if (!students) return { studentData: [], className: homeroomClass.name };
     const studentIds = students.map(s => s.id);
-    const { data: gradesData } = await supabase.from('grade_records').select('student_id, score').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId);
-    const { data: attendanceData = [] } = await supabase.from('attendance_records').select('student_id, status').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId);
+    const { data: gradesData } = await supabase.from('grade_records').select('student_id, score').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId || '');
+    const { data: attendanceData = [] } = await supabase.from('attendance_records').select('student_id, status').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId || '');
     const studentAggregates = students.map(student => {
         const studentGrades = (gradesData || []).filter(r => r.student_id === student.id).map(r => Number(r.score));
         const studentAttendance = (attendanceData || []).filter(r => r.status !== 'Alpha' && r.student_id === student.id);
@@ -632,8 +704,8 @@ export async function getStudentLedgerData(studentId: string) {
     const supabase = createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
     const [gradesRes, attendanceRes, notesRes] = await Promise.all([
-        supabase.from('grades_history').select('*').eq('student_id', studentId).eq('school_year_id', activeSchoolYearId).order('date', { ascending: false }),
-        supabase.from('attendance_history').select('*').eq('student_id', studentId).eq('school_year_id', activeSchoolYearId).order('date', { ascending: false }),
+        supabase.from('grades_history').select('*').eq('student_id', studentId).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }),
+        supabase.from('attendance_history').select('*').eq('student_id', studentId).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }),
         supabase.from('student_notes_with_teacher').select('*').eq('student_id', studentId).order('date', {ascending: false})
     ]);
     return {
@@ -715,7 +787,6 @@ export async function getHomeroomMonthlyAttendance(month: number, year: number) 
     const holidayDates = new Set(holidays?.map(h => h.date) || []);
 
     // 6. Bangun matriks presensi [student_id][date] = status
-    // Gunakan hierarki status: Hadir > Izin > Sakit > Alpha (sesuai V8.0 PRD)
     const attendanceMap: Record<string, Record<string, string>> = {};
     const priority: Record<string, number> = { "Hadir": 4, "Izin": 3, "Sakit": 2, "Alpha": 1 };
 
