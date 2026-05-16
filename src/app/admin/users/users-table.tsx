@@ -151,9 +151,9 @@ const EditStaffDialog = ({ user, open, onOpenChange }: { user: Profile, open: bo
                         <Button type="submit" disabled={loading} className="w-full rounded-xl h-11">
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan Perubahan
                         </Button>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
         </Dialog>
     )
 }
@@ -228,7 +228,14 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
             <TabsContent value="active" className="space-y-4">
                 <div className="hidden md:block overflow-x-auto rounded-xl border">
                     <Table>
-                        <TableHeader className="bg-slate-50"><TableRow><TableHead>Nama</TableHead><TableHead>Email</TableHead><TableHead>Peran</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow></TableHeader>
+                        <TableHeader className="bg-slate-50">
+                          <TableRow>
+                            <TableHead>Nama</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Peran</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                          </TableRow>
+                        </TableHeader>
                         <TableBody>
                             {activeUsers.map((u) => (
                                 <TableRow key={u.id} className="hover:bg-slate-50">
@@ -255,13 +262,13 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
             <TabsContent value="pending" className="space-y-4">
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-700 flex items-start gap-3">
                     <Info className="h-5 w-5 shrink-0 mt-0.5" />
-                    <p>Akun-akun di bawah ini baru saja mendaftar dan **belum disetujui**. Klik tombol "Setujui" untuk memberikan akses ke Dashboard Guru.</p>
+                    <p>Akun-akun di bawah ini baru saja mendaftar dan <strong>belum disetujui</strong>. Klik tombol "Setujui" untuk memberikan akses ke Dashboard Guru.</p>
                 </div>
                 {pendingUsers.map((u) => (
                     <Card key={u.id} className="p-5 border-blue-100 bg-white rounded-2xl shadow-sm">
                         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-blue-50 rounded-2xl text-blue-600 font-black">{u.full_name?.charAt(0) || 'U'}</div>
+                                <div className="p-3 bg-blue-50 rounded-2xl text-blue-600 font-black uppercase">{u.full_name?.charAt(0) || 'U'}</div>
                                 <div>
                                     <p className="font-bold text-slate-900 leading-tight">{u.full_name || 'User Baru'}</p>
                                     <p className="text-xs text-slate-400 font-medium">{u.email}</p>
@@ -291,11 +298,11 @@ function AdminUserActions({ user, loading, onEdit, onRoleChange, onDelete }: any
             <DropdownMenu>
                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={loading} className="rounded-full">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}</Button></DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="rounded-2xl shadow-2xl border-0 p-2 w-56">
-                    <DropdownMenuItem onClick={onEdit} className="rounded-xl h-11 font-bold gap-2"><Edit className="h-4 w-4" /> Ubah Profil</DropdownMenuItem>
+                    <DropdownMenuItem onClick={onEdit} className="rounded-xl h-11 font-bold gap-2 text-slate-700"><Edit className="h-4 w-4 text-blue-500" /> Ubah Profil</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => onRoleChange(user.id, 'admin')} className="text-purple-600 font-bold rounded-xl h-11 gap-2"><ShieldAlert className="h-4 w-4" /> Jadikan Admin</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'headmaster')} className="rounded-xl h-11 font-bold gap-2"><GraduationCap className="h-4 w-4" /> Jadikan Kepsek</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'teacher')} className="rounded-xl h-11 font-bold gap-2"><User className="h-4 w-4" /> Jadikan Guru</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'headmaster')} className="rounded-xl h-11 font-bold gap-2 text-slate-700"><GraduationCap className="h-4 w-4 text-amber-500" /> Jadikan Kepsek</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'teacher')} className="rounded-xl h-11 font-bold gap-2 text-slate-700"><User className="h-4 w-4 text-emerald-500" /> Jadikan Guru</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <AlertDialogTrigger asChild><DropdownMenuItem className="text-red-600 focus:bg-red-50 font-bold rounded-xl h-11 gap-2"><Trash2 className="h-4 w-4" /> Hapus Akun</DropdownMenuItem></AlertDialogTrigger>
                 </DropdownMenuContent>
