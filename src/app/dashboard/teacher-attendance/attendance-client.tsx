@@ -1,10 +1,11 @@
+
 "use client";
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Flag, School, ChevronRight, Calendar as CalendarIcon, Filter, Clock, Briefcase, Coffee, CheckCircle2 } from "lucide-react";
+import { Loader2, Flag, School, ChevronRight, Calendar as CalendarIcon, Filter, Clock, Briefcase, Coffee, CheckCircle2, Moon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { recordTeacherAttendance } from "@/lib/actions";
 import { format, parseISO } from "date-fns";
@@ -168,6 +169,24 @@ export default function TeacherAttendanceClient({
 
     const getInfoCardContent = () => {
         if (todayHoliday) {
+            if (todayHoliday.id === 'no-schedule') {
+                return {
+                    title: "Bebas Tugas Hari Ini",
+                    subtitle: todayHoliday.description,
+                    icon: Moon,
+                    iconBg: "bg-slate-700",
+                    isLottie: false
+                };
+            }
+            if (todayHoliday.id === 'sunday') {
+                return {
+                    title: "Hari Minggu",
+                    subtitle: todayHoliday.description,
+                    icon: Coffee,
+                    iconBg: "bg-amber-500",
+                    isLottie: false
+                };
+            }
             return {
                 title: todayHoliday.description,
                 subtitle: "Informasi Hari Libur",
@@ -176,17 +195,6 @@ export default function TeacherAttendanceClient({
             };
         }
         
-        const day = new Date().getDay();
-        if (day === 0) {
-            return {
-                title: "Hari Minggu",
-                subtitle: "Waktunya Istirahat - Libur Rutin",
-                icon: Coffee,
-                iconBg: "bg-amber-500",
-                isLottie: false
-            };
-        }
-
         return {
             title: "Silakan Melakukan Presensi",
             subtitle: todayRecord ? "Status: " + todayRecord.status : "Jangan lupa absen masuk & pulang tepat waktu",
@@ -216,10 +224,12 @@ export default function TeacherAttendanceClient({
                         <div className="pt-2">
                           {todayHoliday ? (
                             <Badge className={cn(
-                              "text-[10px] font-black uppercase tracking-[0.1em] border-0 px-3 py-1",
+                              "text-[10px] font-black uppercase tracking-[0.1em] border-0 px-3 py-1 shadow-lg",
+                              todayHoliday.id === 'no-schedule' ? "bg-slate-800 text-white" :
                               todayHoliday.type === 'national' ? "bg-red-500 text-white" : "bg-indigo-500 text-white"
                             )}>
-                              {todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
+                              {todayHoliday.id === 'no-schedule' ? 'Off-Duty' : 
+                               todayHoliday.type === 'national' ? 'Libur Nasional' : 'Libur Sekolah'}
                             </Badge>
                           ) : todayRecord ? (
                             <Badge className="bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.1em] border-0 px-3 py-1 shadow-lg shadow-green-500/20">
@@ -263,7 +273,7 @@ export default function TeacherAttendanceClient({
                             <div className="min-w-0 flex-1">
                                 <h4 className={cn(
                                     "font-black text-lg leading-tight break-words tracking-tight",
-                                    todayHoliday ? (todayHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600") : "text-slate-900"
+                                    todayHoliday ? (todayHoliday.id === 'no-schedule' ? "text-slate-700" : todayHoliday.type === 'national' ? "text-rose-600" : "text-indigo-600") : "text-slate-900"
                                 )}>
                                     {info.title}
                                 </h4>
