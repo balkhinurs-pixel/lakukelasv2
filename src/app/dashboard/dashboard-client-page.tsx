@@ -110,22 +110,24 @@ export default function DashboardClientPage({
 
     return (
         <div className="space-y-6 pb-24">
-            {/* 1. Hero Welcome Section */}
-            <div className="relative overflow-hidden bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="space-y-4 flex-1 text-center md:text-left">
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-center md:justify-start gap-2 text-slate-400 text-sm font-bold uppercase tracking-widest">
+            {/* 1. Hero Welcome Section - Updated to flex-row and text-left for mobile */}
+            <div className="relative overflow-hidden bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-row items-center justify-between gap-4">
+                <div className="space-y-3 flex-1 text-left">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-slate-400 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]">
                             <span>👋</span>
                             <span>Selamat Datang</span>
                         </div>
-                        <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight truncate max-w-[200px] sm:max-w-none">
                             {profileName}
                         </h1>
-                        <p className="text-slate-400 text-base font-medium max-w-md">Semangat mengabdi dan mendidik generasi bangsa hari ini!</p>
+                        <p className="text-slate-400 text-[11px] sm:text-sm font-bold leading-relaxed max-w-[220px] sm:max-w-md">
+                            Semangat mengabdi dan mendidik generasi bangsa hari ini!
+                        </p>
                     </div>
                 </div>
-                <div className="w-40 h-40 shrink-0 relative hidden sm:block">
-                     <div className="absolute inset-0 bg-indigo-100/40 rounded-full blur-3xl animate-pulse" />
+                <div className="w-24 h-24 sm:w-40 sm:h-40 shrink-0 relative">
+                     <div className="absolute inset-0 bg-indigo-100/40 rounded-full blur-2xl animate-pulse" />
                      <LottieWelcome />
                 </div>
             </div>
