@@ -179,8 +179,19 @@ export async function getUserProfile(): Promise<Profile | null> {
 export async function getAdminProfile(): Promise<Profile | null> {
     noStore();
     const supabase = createClient();
-    const { data, error } = await supabase.from('profiles').select('*').eq('role', 'admin').limit(1).single();
-    if (error) return null;
+    // Mengambil profil dengan role admin yang memiliki data sekolah
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'admin')
+        .not('school_name', 'is', null)
+        .limit(1)
+        .maybeSingle();
+        
+    if (error) {
+        console.error("Error fetching admin profile:", error);
+        return null;
+    }
     return data;
 }
 

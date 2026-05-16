@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react";
@@ -117,14 +118,19 @@ export default function ReportsPageComponent({
         const margin = 14;
 
         const generatePDFContent = (head: any[][], body: any[][], title: string) => {
-            if (schoolProfile) {
-                doc.setFontSize(16).setFont('helvetica', 'bold');
-                doc.text((schoolProfile.school_name || "LAKUKELAS").toUpperCase(), margin + 25, margin + 8);
-                doc.setFontSize(10).setFont('helvetica', 'normal');
-                doc.text(schoolProfile.school_address || "Alamat Sekolah", margin + 25, margin + 14);
-                doc.setLineWidth(0.5);
-                doc.line(margin, margin + 22, pageWidth - margin, margin + 22);
-            }
+            const schoolData = {
+                name: schoolProfile?.school_name || "LAKUKELAS",
+                address: schoolProfile?.school_address || "Alamat Sekolah Belum Diatur",
+                headmaster: schoolProfile?.headmaster_name || "Nama Kepala Sekolah",
+                nip: schoolProfile?.headmaster_nip || "-",
+            };
+
+            doc.setFontSize(16).setFont('helvetica', 'bold');
+            doc.text(schoolData.name.toUpperCase(), margin + 25, margin + 8);
+            doc.setFontSize(10).setFont('helvetica', 'normal');
+            doc.text(schoolData.address, margin + 25, margin + 14);
+            doc.setLineWidth(0.5);
+            doc.line(margin, margin + 22, pageWidth - margin, margin + 22);
 
             doc.setFontSize(12).setFont('helvetica', 'bold');
             doc.text(title, pageWidth / 2, margin + 32, { align: 'center' });
@@ -158,7 +164,7 @@ export default function ReportsPageComponent({
             if (finalY > pageHeight - 60) { doc.addPage(); finalY = margin + 20; }
 
             const today = format(new Date(), 'dd MMMM yyyy', { locale: id });
-            const city = schoolProfile?.school_address?.split(',')[1]?.trim() || "Kota";
+            const city = schoolData.address.split(',')[1]?.trim() || "Kota";
 
             doc.setFontSize(10);
             doc.text(`${city}, ${today}`, pageWidth - margin - 60, finalY - 5);
@@ -168,11 +174,11 @@ export default function ReportsPageComponent({
             doc.text("Guru Mata Pelajaran,", pageWidth - margin - 60, finalY + 6);
 
             doc.setFont('helvetica', 'bold');
-            doc.text(schoolProfile?.headmaster_name || "(...........................)", margin + 20, finalY + 32);
+            doc.text(schoolData.headmaster, margin + 20, finalY + 32);
             doc.text(profile.full_name, pageWidth - margin - 60, finalY + 32);
             
             doc.setFont('helvetica', 'normal').setFontSize(9);
-            doc.text(`NIP. ${schoolProfile?.headmaster_nip || "-"}`, margin + 20, finalY + 37);
+            doc.text(`NIP. ${schoolData.nip}`, margin + 20, finalY + 37);
             doc.text(`NIP. ${profile.nip || "-"}`, pageWidth - margin - 60, finalY + 37);
 
             doc.save(`Laporan_${type}_${format(new Date(), 'yyyyMMdd')}.pdf`);
