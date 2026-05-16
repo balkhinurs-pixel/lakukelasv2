@@ -314,15 +314,15 @@ export default function DashboardClientPage({
                             <p className="text-[10px] text-slate-400 font-bold mt-1">{todayHoliday.description}</p>
                         </div>
                     ) : sortedSchedule.length > 0 ? (
-                        <div className="relative overflow-hidden">
+                        <div className="relative">
                             <AnimatePresence initial={false} mode="wait">
                                 {!showAll ? (
                                     <motion.div
                                         key="highlight"
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
                                     >
                                         {upcomingClass && <ScheduleItemCard item={upcomingClass} now={now} isProminent />}
                                     </motion.div>
@@ -333,7 +333,6 @@ export default function DashboardClientPage({
                                         animate={{ height: "auto", opacity: 1 }}
                                         exit={{ height: 0, opacity: 0 }}
                                         transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
-                                        className="overflow-hidden"
                                     >
                                         <div className="space-y-4 pt-2">
                                             {sortedSchedule.map((item) => (
