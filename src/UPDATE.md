@@ -1,18 +1,17 @@
 
 # Log Pembaruan LakuKelas
 
-## V11.9: Optimalisasi Rotasi PWA (PENYEDERHANAAN)
-Menyesuaikan perilaku rotasi layar agar sepenuhnya mengikuti pengaturan sistem HP pengguna.
+## V12.0: Kunci Orientasi Layar PWA (TERBARU)
+Mengunci orientasi aplikasi agar selalu dalam mode potrait untuk konsistensi UI.
 
-### 1. Perubahan Logika Rotasi
-- **Hapus Lock Manual**: Menghapus fitur penguncian rotasi manual dari menu Pengaturan karena dianggap membingungkan dan terkadang konflik dengan sistem OS.
-- **Manifest Auto**: Mengatur `orientation: any` di `manifest.json`.
-- **Hasil**: Jika "Auto-Rotate" di HP aktif, aplikasi akan ikut berputar. Jika dimatikan, aplikasi akan tetap terkunci sesuai preferensi sistem pengguna. Lebih ringkas dan stabil.
+### 1. Perubahan Manifest
+- **Orientation Lock**: Mengubah `orientation` dari `any` menjadi `portrait-primary` di `manifest.json`.
+- **Hasil**: Aplikasi tidak akan lagi berputar secara otomatis saat HP diputar, menjaga tata letak Dashboard dan Tabel tetap presisi sesuai desain aslinya.
 
 ---
 
-## V11.8: Kontrol Orientasi PWA (DEPRECATED)
-*(Fitur ini telah digantikan oleh V11.9 demi kemudahan penggunaan)*
+## V11.9: Optimalisasi Rotasi PWA (DEPRECATED)
+*(Fitur ini telah digantikan oleh V12.0 demi konsistensi tampilan)*
 
 ---
 
