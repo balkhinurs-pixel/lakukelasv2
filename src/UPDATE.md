@@ -1,6 +1,19 @@
 
 # Log Pembaruan LakuKelas
 
+## V11.1: Optimalisasi Statistik & Laporan (TERBARU)
+Penyempurnaan sistem setelah implementasi Approval untuk memastikan data akurat dan laporan profesional.
+
+### 1. Perbaikan Visibilitas Laporan
+- **Akses Identitas**: Memperbarui kebijakan RLS agar Guru dapat membaca data profil Admin terbatas pada informasi sekolah (Nama, Alamat, Logo) untuk kebutuhan kop surat laporan.
+- **Placeholder Profesional**: Menambahkan data fallback otomatis pada laporan jika Admin belum sempat mengisi profil sekolah.
+
+### 2. Akurasi Aktivitas Guru
+- **Sesi Unik**: Memperbarui logika penghitungan aktivitas guru agar menghitung "Jumlah Sesi" (Pertemuan/Set Nilai) bukan jumlah baris siswa, sehingga angka beban kerja lebih realistis.
+- **Filter Approval**: Statistik kini 100% hanya menghitung staf yang sudah disetujui (Active) oleh Admin.
+
+---
+
 ## V11.0: Sistem Approval & Pembersihan Token (FINAL)
 Peralihan total dari sistem token manual ke sistem persetujuan (approval) oleh Admin untuk keamanan dan kemudahan penggunaan.
 
@@ -12,19 +25,9 @@ Peralihan total dari sistem token manual ke sistem persetujuan (approval) oleh A
 
 ### 2. Penghapusan Fitur Token
 - Menghapus menu **Token Aktivasi** dari seluruh navigasi.
-- Menghapus fungsi *generate*, *share*, dan *copy* token.
 - Menyederhanakan proses *onboarding* guru agar lebih cepat dan efisien.
-
-### 3. Keamanan & Kebersihan Data
-- **Middleware Protection**: Menambahkan proteksi ketat sehingga user belum aktif hanya bisa melihat halaman tunggu, mencegah akses ke Dashboard tanpa izin.
-- **Penyaringan Statistik**: Seluruh statistik Dashboard dan Monitoring kini hanya menghitung pengguna yang sudah disetujui (aktif).
-- **Tab Pending**: Admin memiliki daftar khusus untuk akun "asing" atau belum disetujui untuk segera disetujui atau dihapus agar administrasi tetap bersih.
 
 ---
 
 ## V10.0: Privilese Admin & Bypass Aktivasi
-Menyempurnakan alur pendaftaran untuk administrator.
-
-### 1. Alur Khusus Admin
-- **Bypass Aktivasi**: Pengguna dengan peran `admin` kini secara otomatis melewati layar aktivasi token. 
-- **Auto-Admin First User**: Pendaftar pertama pada database baru 100% diatur sebagai Admin Aktif.
+Menyempurnakan alur pendaftaran untuk administrator agar tidak terkunci pada instalasi baru.
