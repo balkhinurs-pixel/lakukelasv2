@@ -13,6 +13,7 @@ import { id } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import type { Holiday } from "@/lib/types";
 
 const DAYS_OF_WEEK = [
   { key: "mon", label: "Sen" },
@@ -24,7 +25,11 @@ const DAYS_OF_WEEK = [
   { key: "sun", label: "Min" },
 ];
 
-export const MiniCalendar: React.FC = () => {
+interface MiniCalendarProps {
+    holidays?: Holiday[];
+}
+
+export const MiniCalendar: React.FC<MiniCalendarProps> = ({ holidays = [] }) => {
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
   const [currentWeek, setCurrentWeek] = React.useState<Date>(new Date());
 
@@ -69,25 +74,39 @@ export const MiniCalendar: React.FC = () => {
           </div>
         ))}
         {weekDays.map((day) => {
-          const isSelected =
-            format(day, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
+          const dateStr = format(day, "yyyy-MM-dd");
+          const isSelected = dateStr === format(selectedDate, "yyyy-MM-dd");
+          const holiday = holidays.find(h => h.date === dateStr);
+          const isSunday = day.getDay() === 0;
 
           return (
-            <Button
-              key={day.toString()}
-              variant={isSelected ? "default" : "ghost"}
-              className={cn(
-                "aspect-square h-auto w-full p-0 font-black text-xs transition-all duration-300 rounded-xl",
-                isSelected 
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 scale-105" 
-                  : "text-slate-600 hover:bg-indigo-50"
-              )}
-              onClick={() => setSelectedDate(day)}
-            >
-              <time dateTime={format(day, "yyyy-MM-dd")}>
-                {format(day, "d")}
-              </time>
-            </Button>
+            <div key={day.toString()} className="relative flex flex-col items-center">
+                <Button
+                    variant={isSelected ? "default" : "ghost"}
+                    className={cn(
+                        "aspect-square h-auto w-full p-0 font-black text-xs transition-all duration-300 rounded-xl relative z-10",
+                        isSelected 
+                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 scale-105" 
+                        : cn(
+                            "text-slate-600 hover:bg-indigo-50",
+                            holiday?.type === 'national' || isSunday ? "text-rose-500" : 
+                            holiday?.type === 'school' ? "text-indigo-500" : ""
+                        )
+                    )}
+                    onClick={() => setSelectedDate(day)}
+                    title={holiday?.description}
+                >
+                    <time dateTime={dateStr}>
+                        {format(day, "d")}
+                    </time>
+                </Button>
+                {holiday && (
+                    <div className={cn(
+                        "absolute -bottom-1 w-1 h-1 rounded-full",
+                        isSelected ? "bg-white" : (holiday.type === 'national' ? "bg-rose-500" : "bg-indigo-500")
+                    )} />
+                )}
+            </div>
           );
         })}
       </div>

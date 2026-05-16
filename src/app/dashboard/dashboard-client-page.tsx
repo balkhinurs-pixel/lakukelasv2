@@ -37,6 +37,7 @@ type DashboardPageProps = {
   initialAttendancePercentage: number;
   initialUnfilledJournalsCount: number;
   todayHoliday: Holiday | null;
+  allHolidays?: Holiday[];
   profileName?: string;
 }
 
@@ -81,6 +82,7 @@ export default function DashboardClientPage({
     initialAttendancePercentage,
     initialUnfilledJournalsCount,
     todayHoliday,
+    allHolidays = [],
     profileName = "Bapak/Ibu Guru"
 }: DashboardPageProps) {
     const [now, setNow] = React.useState<Date>(new Date());
@@ -275,7 +277,7 @@ export default function DashboardClientPage({
                             <CardTitle className="text-base font-black text-slate-800 uppercase tracking-tight">Kalender</CardTitle>
                         </div>
                     </div>
-                    <MiniCalendar />
+                    <MiniCalendar holidays={allHolidays} />
                 </Card>
             </div>
 

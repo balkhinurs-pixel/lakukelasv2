@@ -1,7 +1,6 @@
-
 'use client'
 
-import { getDashboardData, getUserProfile } from '@/lib/data';
+import { getDashboardData, getUserProfile, getHolidays } from '@/lib/data';
 import DashboardClientPage from './dashboard-client-page';
 import type { ScheduleItem, Agenda, Holiday, Profile } from "@/lib/types";
 import * as React from 'react';
@@ -16,6 +15,7 @@ type DashboardData = {
     attendancePercentage: number;
     unfilledJournalsCount: number;
     todayHoliday: Holiday | null;
+    allHolidays: Holiday[];
     profile: Profile | null;
 };
 
@@ -41,13 +41,15 @@ export default function DashboardPage() {
         const fetchDashboardData = async () => {
             try {
                 const indonesianDayName = getIndonesianDayName();
-                const [dashboardData, profile] = await Promise.all([
+                const [dashboardData, profile, holidays] = await Promise.all([
                     getDashboardData(indonesianDayName),
-                    getUserProfile()
+                    getUserProfile(),
+                    getHolidays()
                 ]);
                 
                 setData({
                     ...(dashboardData as any),
+                    allHolidays: holidays,
                     profile
                 });
             } catch (error) {
@@ -71,6 +73,7 @@ export default function DashboardPage() {
             initialAttendancePercentage={data.attendancePercentage}
             initialUnfilledJournalsCount={data.unfilledJournalsCount}
             todayHoliday={data.todayHoliday}
+            allHolidays={data.allHolidays}
             profileName={data.profile?.full_name}
         />
     );
