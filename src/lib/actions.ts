@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -17,6 +18,32 @@ export async function getActiveSchoolYearId(): Promise<string | null> {
         .eq('key', 'active_school_year_id')
         .single();
     return data?.value || null;
+}
+
+/**
+ * Melengkapi profil awal bagi pengguna baru sebelum masuk ke antrean approval.
+ */
+export async function completeInitialProfile(data: { fullName: string, nip: string, phoneNumber: string }) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            full_name: data.fullName,
+            nip: data.nip,
+            phone_number: data.phoneNumber
+        })
+        .eq('id', user.id);
+
+    if (error) {
+        console.error("Error completing profile:", error);
+        return { success: false, error: "Gagal menyimpan data profil." };
+    }
+
+    revalidatePath('/', 'layout');
+    return { success: true };
 }
 
 export async function activateAccount(token: string) {
@@ -745,7 +772,7 @@ export async function recordTeacherAttendance(formData: FormData) {
             status: status
         };
     } catch (error) {
-        return { success: false, error: "Terjadi kesalahan saat menyimpan absensi." };
+        return { success: false, error: "Terjadi kesalahan saat menyimpang absensi." };
     }
 }
 

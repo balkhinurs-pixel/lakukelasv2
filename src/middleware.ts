@@ -1,3 +1,4 @@
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -40,14 +41,14 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
 
-  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring') || pathname === '/waiting-approval')) {
+  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring') || pathname === '/waiting-approval' || pathname === '/complete-profile')) {
       return NextResponse.redirect(new URL('/login', request.url));
   }
   
   if (user) {
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role, is_activated')
+        .select('role, is_activated, full_name')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -55,15 +56,28 @@ export async function middleware(request: NextRequest) {
     const role = profile?.role || 'teacher';
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
+    
+    // Deteksi apakah user sudah mengisi data diri (bukan nama default)
+    const hasFilledProfile = profile?.full_name && profile.full_name !== 'User LakuKelas';
 
-    // Rute Tunggu: Jika sudah aktif, jangan boleh ke halaman waiting
-    if (pathname === '/waiting-approval' && (isActivated || isAdmin)) {
+    // Rute Tunggu & Lengkapi Profil: Jika sudah aktif atau Admin, jangan boleh ke sana
+    if ((pathname === '/waiting-approval' || pathname === '/complete-profile') && (isActivated || isAdmin)) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // Gatekeeper Approval: Hanya untuk non-Admin. 
-    if (!isAdmin && !isActivated && pathname !== '/waiting-approval' && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
-        return NextResponse.redirect(new URL('/waiting-approval', request.url));
+    // Gatekeeper Approval: Hanya untuk non-Admin & non-Aktif
+    if (!isAdmin && !isActivated && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
+        // 1. Jika belum isi data diri, paksa ke /complete-profile
+        if (!hasFilledProfile && pathname !== '/complete-profile') {
+            return NextResponse.redirect(new URL('/complete-profile', request.url));
+        }
+        // 2. Jika sudah isi data diri tapi belum disetujui, paksa ke /waiting-approval
+        if (hasFilledProfile && pathname !== '/waiting-approval' && pathname === '/complete-profile') {
+             return NextResponse.redirect(new URL('/waiting-approval', request.url));
+        }
+        if (hasFilledProfile && pathname !== '/waiting-approval') {
+            return NextResponse.redirect(new URL('/waiting-approval', request.url));
+        }
     }
 
     // Rute akar: Redirect berdasarkan role

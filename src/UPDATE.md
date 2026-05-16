@@ -1,6 +1,17 @@
 
 # Log Pembaruan LakuKelas
 
+## V11.5: Alur Verifikasi Staf Baru (PENINGKATAN)
+Menambahkan langkah wajib pengisian data diri bagi guru baru untuk memudahkan Admin saat melakukan persetujuan akses.
+
+### 1. Alur Pendaftaran Diperbarui
+- **Langkah 1**: Login via Google.
+- **Langkah 2 (Baru)**: Halaman `Lengkapi Profil`. Guru wajib mengisi Nama Lengkap, NIP, dan WhatsApp.
+- **Langkah 3**: Halaman `Menunggu Persetujuan`. Data guru sudah muncul di Panel Admin secara lengkap.
+- **Auto-Bypass**: Admin (pendaftar pertama) tetap langsung aktif tanpa melewati proses ini.
+
+---
+
 ## V11.2: Blueprint Database Komprehensif (TERBARU)
 Penyempurnaan total pada `schema.sql` untuk memastikan kemudahan setup pada proyek baru.
 
