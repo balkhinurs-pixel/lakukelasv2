@@ -1,25 +1,36 @@
-
 {
-  "name": "LakuKelas - Manajemen Kelas Modern",
+  "name": "LakuKelas",
   "short_name": "LakuKelas",
-  "description": "Platform manajemen kelas digital untuk guru Indonesia",
-  "start_url": "/",
+  "description": "Sistem Manajemen Kelas Modern untuk Guru Indonesia",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#f8fafc",
-  "theme_color": "#6366f1",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/laku1/192/192",
+      "src": "/icons-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://picsum.photos/seed/laku2/512/512",
+      "src": "/icons-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "orientation": "any",
+  "shortcuts": [
+    {
+      "name": "Presensi Siswa",
+      "url": "/dashboard/attendance",
+      "icons": [{ "src": "/icons-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Jurnal Mengajar",
+      "url": "/dashboard/journal",
+      "icons": [{ "src": "/icons-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

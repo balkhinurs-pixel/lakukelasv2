@@ -1,13 +1,18 @@
 
 # Log Pembaruan LakuKelas
 
-## V11.8: Kontrol Orientasi PWA (BARU)
-Memberikan kemampuan bagi pengguna untuk mengunci rotasi layar secara manual melalui aplikasi.
+## V11.9: Optimalisasi Rotasi PWA (PENYEDERHANAAN)
+Menyesuaikan perilaku rotasi layar agar sepenuhnya mengikuti pengaturan sistem HP pengguna.
 
-### 1. Fitur Rotasi Manual
-- **Pilihan Pengguna**: Menambahkan opsi "Otomatis", "Vertikal", dan "Horisontal" di menu Pengaturan.
-- **Implementasi API**: Menggunakan Screen Orientation API untuk mengunci (`lock`) atau melepas (`unlock`) rotasi layar.
-- **Konfigurasi Manifest**: Mengatur `orientation: any` di `manifest.json` agar kontrol sepenuhnya berada di tangan kode JS aplikasi dan preferensi user.
+### 1. Perubahan Logika Rotasi
+- **Hapus Lock Manual**: Menghapus fitur penguncian rotasi manual dari menu Pengaturan karena dianggap membingungkan dan terkadang konflik dengan sistem OS.
+- **Manifest Auto**: Mengatur `orientation: any` di `manifest.json`.
+- **Hasil**: Jika "Auto-Rotate" di HP aktif, aplikasi akan ikut berputar. Jika dimatikan, aplikasi akan tetap terkunci sesuai preferensi sistem pengguna. Lebih ringkas dan stabil.
+
+---
+
+## V11.8: Kontrol Orientasi PWA (DEPRECATED)
+*(Fitur ini telah digantikan oleh V11.9 demi kemudahan penggunaan)*
 
 ---
 
@@ -24,21 +29,10 @@ Menyempurnakan transisi otomatis dari pengisian data diri ke halaman tunggu pers
 ## V11.5: Alur Verifikasi Staf Baru (PENINGKATAN)
 Menambahkan langkah wajib pengisian data diri bagi guru baru untuk memudahkan Admin saat melakukan persetujuan akses.
 
-### 1. Alur Pendaftaran Diperbarui
-- **Langkah 1**: Login via Google.
-- **Langkah 2 (Baru)**: Halaman `Lengkapi Profil`. Guru wajib mengisi Nama Lengkap, NIP, dan WhatsApp.
-- **Langkah 3**: Halaman `Menunggu Persetujuan`. Data guru sudah muncul di Panel Admin secara lengkap.
-- **Auto-Bypass**: Admin (pendaftar pertama) tetap langsung aktif tanpa melewati proses ini.
-
 ---
 
 ## V11.2: Blueprint Database Komprehensif (TERBARU)
 Penyempurnaan total pada `schema.sql` untuk memastikan kemudahan setup pada proyek baru.
-
-### 1. Keamanan RLS (Row Level Security) Terintegrasi
-- **Struktur RLS**: Menambahkan aturan kebijakan untuk seluruh tabel.
-- **Hak Akses Admin/Kepsek**: Dipastikan dapat melihat seluruh jurnal, nilai, dan absensi guru untuk keperluan monitoring.
-- **Hak Akses Guru**: Dibatasi hanya dapat mengelola (Insert/Update/Delete) data milik mereka sendiri.
 
 ---
 
