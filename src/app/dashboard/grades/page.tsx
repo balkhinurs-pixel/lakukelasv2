@@ -1,5 +1,5 @@
 
-import { getClasses, getSubjects, getGradeHistory, getAllStudents, getUserProfile, getActiveSchoolYearName } from "@/lib/data";
+import { getClasses, getSubjects, getGradeHistory, getActiveStudents, getUserProfile, getActiveSchoolYearName } from "@/lib/data";
 import GradesPageComponent from "./grades-page-component";
 
 export default async function GradesPage() {
@@ -7,7 +7,7 @@ export default async function GradesPage() {
         getClasses(),
         getSubjects(),
         getGradeHistory(),
-        getAllStudents(),
+        getActiveStudents(),
         getUserProfile(),
         getActiveSchoolYearName()
     ]);

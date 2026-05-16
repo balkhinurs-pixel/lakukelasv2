@@ -337,7 +337,7 @@ export async function getAlumni(): Promise<Student[]> {
 export async function getAllStudents(): Promise<Student[]> {
     noStore();
     const supabase = createClient();
-    const { data = [] } = await supabase.from('students').select('id, name, nis').eq('status', 'active').order('name');
+    const { data = [] } = await supabase.from('students').select('id, name, nis, class_id').eq('status', 'active').order('name');
     return data || [];
 }
 
