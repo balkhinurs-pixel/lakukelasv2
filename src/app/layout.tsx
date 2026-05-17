@@ -20,6 +20,13 @@ export const metadata: Metadata = {
   publisher: 'LakuKelas',
   metadataBase: new URL('https://app.lakukelas.my.id'),
   
+  // Apple PWA Specific
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'LakuKelas',
+  },
+
   // Open Graph untuk WhatsApp, Facebook, dll
   openGraph: {
     type: 'website',
@@ -27,7 +34,7 @@ export const metadata: Metadata = {
     url: 'https://app.lakukelas.my.id',
     siteName: 'LakuKelas',
     title: 'LakuKelas - Sistem Manajemen Kelas Modern untuk Guru Indonesia',
-    description: 'Platform digital terdepan untuk manajemen kelas yang membantu guru Indonesia mengelola absensi, nilai, jurnal pembelajaran, dan agenda kelas secara efisien. Bergabunglah dengan ribuan guru yang telah merasakan kemudahan mengajar dengan teknologi modern.',
+    description: 'Platform digital terdepan untuk manajemen kelas yang membantu guru Indonesia mengelola absensi, nilai, jurnal pembelajaran, dan agenda kelas secara efisien.',
     images: [
       {
         url: '/login.png',
@@ -52,7 +59,7 @@ export const metadata: Metadata = {
     site: '@lakukelas',
     creator: '@lakukelas',
     title: 'LakuKelas - Sistem Manajemen Kelas Modern',
-    description: 'Platform digital untuk guru Indonesia. Kelola kelas dengan mudah: absensi, nilai, jurnal, dan agenda dalam satu aplikasi modern.',
+    description: 'Platform digital untuk guru Indonesia. Kelola kelas dengan mudah dalam satu aplikasi modern.',
     images: ['/login.png'],
   },
   
@@ -60,16 +67,8 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
   
-  // App specific
   applicationName: 'LakuKelas',
   category: 'Education',
 };
@@ -83,7 +82,12 @@ export default function RootLayout({
     <html lang="id" className={cn(plusJakartaSans.variable, "antialiased")} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <meta name="theme-color" content="#3b82f6" />
+        {/* Warna tema Indigo-600 untuk Splash Screen dan UI browser */}
+        <meta name="theme-color" content="#4f46e5" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/icons-192x192.png" />
         <link rel="canonical" href="https://app.lakukelas.my.id" />
         
         {/* Structured Data untuk SEO */}
@@ -98,15 +102,6 @@ export default function RootLayout({
               "url": "https://app.lakukelas.my.id",
               "applicationCategory": "EducationalApplication",
               "operatingSystem": "Web Browser",
-              "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "IDR"
-              },
-              "creator": {
-                "@type": "Organization",
-                "name": "LakuKelas Team"
-              }
             })
           }}
         />

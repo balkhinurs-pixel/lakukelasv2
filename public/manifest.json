@@ -1,23 +1,30 @@
 {
-  "name": "LakuKelas",
+  "name": "LakuKelas - Manajemen Kelas Guru",
   "short_name": "LakuKelas",
-  "description": "Sistem Manajemen Kelas Modern untuk Guru Indonesia",
-  "start_url": "/",
+  "description": "Platform manajemen kelas digital tercanggih untuk guru Indonesia.",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "background_color": "#4f46e5",
   "theme_color": "#4f46e5",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/app-icon/192/192",
+      "src": "/icons-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://picsum.photos/seed/app-icon/512/512",
+      "src": "/icons-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
-  ]
+  ],
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "lang": "id-ID",
+  "dir": "ltr"
 }
