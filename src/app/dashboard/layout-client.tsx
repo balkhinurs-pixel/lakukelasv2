@@ -410,9 +410,9 @@ export default function DashboardLayoutClient({
                     <Home className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">Dasbor</span>
                 </Link>
-                <Link href="/dashboard/ai-pembelajaran/generate-soal" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/ai-pembelajaran") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
-                    <Sparkles className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">AI Guru</span>
+                <Link href="/dashboard/teacher-attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/teacher-attendance") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                    <MapPin className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium text-center leading-tight">Absensi Guru</span>
                 </Link>
                 
                 <div className="flex justify-center h-full items-center">
@@ -443,7 +443,7 @@ export default function DashboardLayoutClient({
 
                 <Link href="/dashboard/attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/attendance") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
                     <ClipboardCheck className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Presensi</span>
+                    <span className="text-[10px] mt-1 font-medium text-center leading-tight">Presensi Siswa</span>
                 </Link>
                 <Link href="/dashboard/settings" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/settings" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
                     <Settings className="w-5 h-5" />
