@@ -23,19 +23,26 @@ function AuthForm() {
     const handleGoogleSignIn = async () => {
         if (!supabase) return;
         setLoading(true);
-        await supabase.auth.signInWithOAuth({
+        const { error } = await supabase.delegate.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
-                // Adding Google Drive scopes for the future integration
-                scopes: "openid email profile https://www.googleapis.com/auth/drive.file",
+                scopes: "https://www.googleapis.com/auth/drive.file",
                 queryParams: {
                     access_type: "offline",
                     prompt: "consent",
                 },
             },
         });
-        setLoading(false);
+
+        if (error) {
+            toast({
+                title: "Gagal Login Google",
+                description: "Pastikan Google Drive API sudah diaktifkan di Google Cloud Console.",
+                variant: "destructive"
+            });
+            setLoading(false);
+        }
     };
 
     const handleAuthAction = async (event: React.FormEvent<HTMLFormElement>, action: 'sign_in' | 'sign_up') => {

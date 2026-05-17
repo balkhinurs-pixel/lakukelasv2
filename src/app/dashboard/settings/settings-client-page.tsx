@@ -1,3 +1,4 @@
+
 "use client"
 import * as React from "react";
 import {
@@ -19,7 +20,7 @@ import type { Profile, GoogleDriveIntegration } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
 import { disconnectGoogleDrive, setupGoogleDriveFolder, createTestDocument } from "@/lib/actions/google-drive";
-import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText } from "lucide-react";
+import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -126,7 +127,7 @@ export default function SettingsClientPage({
     const handleConnectDrive = async () => {
         setDriveLoading(true);
         
-        // Coba setup folder dulu (siapa tahu token sudah ada di sesi)
+        // 1. Coba inisialisasi folder (kasus jika token sudah ada di sesi)
         const setupResult = await setupGoogleDriveFolder();
         
         if (setupResult.success) {
@@ -136,19 +137,30 @@ export default function SettingsClientPage({
             return;
         }
 
-        // Jika gagal karena token tidak ada, baru arahkan ke Google OAuth
+        // 2. Jika gagal karena token tidak ada, arahkan ke Google OAuth
+        // Gunakan scope minimal untuk menghindari error 500 jika API belum aktif
         if (!supabase) return;
-        await supabase.auth.signInWithOAuth({
+        
+        const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
-                scopes: "openid email profile https://www.googleapis.com/auth/drive.file",
+                scopes: "https://www.googleapis.com/auth/drive.file",
                 queryParams: {
                     access_type: "offline",
                     prompt: "consent",
                 },
             },
         });
+
+        if (error) {
+            toast({ 
+                title: "Gagal Menghubungkan", 
+                description: "Pastikan Google Drive API sudah diaktifkan di Google Cloud Console.",
+                variant: "destructive"
+            });
+            setDriveLoading(false);
+        }
     }
 
     const handleSetupFolder = async () => {
@@ -158,7 +170,14 @@ export default function SettingsClientPage({
             toast({ title: "Sukses", description: result.message || "Folder Drive siap digunakan." });
             router.refresh();
         } else {
-            toast({ title: "Gagal Setup", description: result.error, variant: "destructive" });
+            toast({ 
+                title: "Gagal Setup", 
+                description: result.error, 
+                variant: "destructive",
+                action: (
+                    <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Muat Ulang</Button>
+                )
+            });
         }
         setDriveLoading(false);
     }
@@ -459,14 +478,20 @@ export default function SettingsClientPage({
                                         Aplikasi membutuhkan izin untuk membuat folder dan file dokumen AI di Drive Anda.
                                     </p>
                                 </div>
-                                <Button 
-                                    onClick={handleConnectDrive} 
-                                    disabled={driveLoading}
-                                    className="h-14 px-10 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-xl shadow-indigo-200 font-bold text-lg"
-                                >
-                                    {driveLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
-                                    Hubungkan & Inisialisasi
-                                </Button>
+                                <div className="flex flex-col items-center gap-4">
+                                    <Button 
+                                        onClick={handleConnectDrive} 
+                                        disabled={driveLoading}
+                                        className="h-14 px-10 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-xl shadow-indigo-200 font-bold text-lg"
+                                    >
+                                        {driveLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
+                                        Hubungkan & Inisialisasi
+                                    </Button>
+                                    <p className="text-xs text-amber-600 font-medium flex items-center gap-1.5 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                                        <AlertTriangle className="h-3.5 w-3.5" />
+                                        Penting: Pastikan Google Drive API sudah diaktifkan di GCP Anda.
+                                    </p>
+                                </div>
                             </div>
                         )}
                         

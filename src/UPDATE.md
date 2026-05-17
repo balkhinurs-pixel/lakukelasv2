@@ -17,6 +17,10 @@ Menyelesaikan tahap awal integrasi penyimpanan awan untuk dokumen AI.
 - Implementasi fungsi `createTestDocument` untuk memverifikasi izin tulis ke folder aplikasi.
 - Pencatatan metadata file ke tabel `ai_documents`.
 
+### 4. Tahap Debugging (Progres)
+- Perbaikan error 500 Google OAuth dengan menyederhanakan permintaan scope.
+- Menambahkan pesan edukasi untuk aktivasi API Google Drive di GCP.
+
 ---
 
 ## V14.0: Optimasi Performa & Kapasitas
