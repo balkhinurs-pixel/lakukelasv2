@@ -280,7 +280,7 @@ export default function DashboardLayoutClient({
                 className="rounded-t-[40px] border-t-0 p-0 overflow-hidden bg-white/95 backdrop-blur-xl h-[85vh] z-[40] animate-in slide-in-from-bottom duration-300"
               >
                 <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4" />
-                <ScrollArea className="h-full px-6 pt-2 pb-10">
+                <ScrollArea className="h-full px-6 pt-2 pb-32">
                     <div className="space-y-6">
                         <div className="flex items-center gap-4 p-2">
                             <Avatar className="h-14 w-14 border-2 border-indigo-100 shadow-md">
