@@ -215,13 +215,31 @@ export default function AdminLayoutClient({
                      <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20 rounded-xl" />
                      <div className="flex flex-col">
                         <span className="text-xs font-black uppercase opacity-70 tracking-widest">Administrator</span>
-                        <h1 className="text-sm font-bold tracking-tight">LakuKelas Master Panel</h1>
+                        <h1 className="text-sm font-bold tracking-tight">Panel Admin</h1>
                      </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" asChild className="text-white hover:bg-white/20 font-bold rounded-xl h-10 px-4">
-                        <Link href="/dashboard">Panel Guru</Link>
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
+                        <Bell className="h-5 w-5" />
                     </Button>
+                    <div className="h-8 w-px bg-white/20 mx-2" />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-colors rounded-full">
+                              <LogOut className="h-5 w-5" />
+                          </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Keluar Sesi?</AlertDialogTitle>
+                              <AlertDialogDescription>Anda perlu login kembali untuk mengakses data.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="flex flex-row gap-2 pt-4">
+                              <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-xl h-12 bg-red-600 font-bold">Keluar</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
         </header>

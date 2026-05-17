@@ -73,7 +73,7 @@ const InviteTeacherDialog = ({ onInviteSuccess }: { onInviteSuccess: () => void 
     return (
          <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="rounded-xl shadow-lg"><UserPlus className="mr-2 h-4 w-4" /> Tambah Staf</Button>
+                <Button className="w-full sm:w-auto rounded-xl shadow-lg h-12 font-bold"><UserPlus className="mr-2 h-4 w-4" /> Tambah Staf</Button>
             </DialogTrigger>
             <DialogContent className="rounded-3xl">
                 <form onSubmit={handleSubmit}>
@@ -199,7 +199,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         setLoading(userId);
         const result = await updateUserRole(userId, newRole);
         if (result.success) {
-            toast({ title: "Role Diperbarui" });
+            toast({ title: "Peran Diperbarui" });
             router.refresh();
         }
         setLoading(false);
@@ -210,41 +210,41 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="relative w-full sm:w-auto flex-grow max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input placeholder="Cari staf..." className="pl-10 rounded-xl" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Input placeholder="Cari staf..." className="pl-10 h-12 rounded-xl bg-slate-50 border-0" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <InviteTeacherDialog onInviteSuccess={() => router.refresh()} />
         </div>
 
         <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1 rounded-xl mb-6">
-                <TabsTrigger value="active" className="rounded-lg gap-2">
-                    <CheckCircle2 className="h-4 w-4" /> Staf Aktif ({activeUsers.length})
+            <TabsList className="grid w-full max-w-sm grid-cols-2 bg-slate-100 p-1 rounded-xl mb-6 h-12">
+                <TabsTrigger value="active" className="rounded-lg gap-2 font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <CheckCircle2 className="h-4 w-4" /> Aktif ({activeUsers.length})
                 </TabsTrigger>
-                <TabsTrigger value="pending" className="rounded-lg gap-2">
+                <TabsTrigger value="pending" className="rounded-lg gap-2 font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">
                     <AlertCircle className="h-4 w-4" /> Menunggu ({pendingUsers.length})
                 </TabsTrigger>
             </TabsList>
 
             <TabsContent value="active" className="space-y-4">
-                <div className="hidden md:block overflow-x-auto rounded-xl border">
+                <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-100">
                     <Table>
                         <TableHeader className="bg-slate-50">
                           <TableRow>
-                            <TableHead>Nama</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Peran</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
+                            <TableHead className="font-bold">Nama</TableHead>
+                            <TableHead className="font-bold">Email</TableHead>
+                            <TableHead className="font-bold">Peran</TableHead>
+                            <TableHead className="text-right font-bold">Aksi</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                             {activeUsers.map((u) => (
-                                <TableRow key={u.id} className="hover:bg-slate-50">
-                                    <TableCell className="font-semibold text-slate-900">{u.full_name || 'N/A'}</TableCell>
-                                    <TableCell className="text-slate-500 text-xs">{u.email}</TableCell>
+                                <TableRow key={u.id} className="hover:bg-slate-50 transition-colors">
+                                    <TableCell className="font-bold text-slate-900">{u.full_name || 'N/A'}</TableCell>
+                                    <TableCell className="text-slate-500 text-xs font-medium">{u.email}</TableCell>
                                     <TableCell>
-                                        {u.role === 'admin' && <Badge className="bg-purple-600">Admin</Badge>}
-                                        {u.role === 'headmaster' && <Badge className="bg-amber-600">Kepsek</Badge>}
-                                        {u.role === 'teacher' && <Badge variant="outline">Guru</Badge>}
+                                        {u.role === 'admin' && <Badge className="bg-purple-600 font-bold uppercase text-[9px] tracking-wider">Admin</Badge>}
+                                        {u.role === 'headmaster' && <Badge className="bg-amber-600 font-bold uppercase text-[9px] tracking-wider">Kepala</Badge>}
+                                        {u.role === 'teacher' && <Badge variant="outline" className="border-slate-200 text-slate-600 font-bold uppercase text-[9px] tracking-wider">Guru</Badge>}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <AdminUserActions user={u} loading={loading === u.id} onEdit={() => setEditingUser(u)} onRoleChange={handleRoleChange} onDelete={() => handleDeleteUser(u.id)} />
@@ -260,30 +260,30 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
             </TabsContent>
 
             <TabsContent value="pending" className="space-y-4">
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-700 flex items-start gap-3">
-                    <Info className="h-5 w-5 shrink-0 mt-0.5" />
-                    <p>Akun-akun di bawah ini baru saja mendaftar dan <strong>belum disetujui</strong>. Klik tombol "Setujui" untuk memberikan akses ke Dashboard Guru.</p>
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-[11px] text-blue-700 flex items-start gap-3 font-medium leading-relaxed">
+                    <Info className="h-5 w-5 shrink-0 mt-0.5 text-blue-500" />
+                    <p>Klik <strong>Setujui</strong> untuk memberikan akses penuh ke Dashboard Guru bagi akun-akun yang baru mendaftar.</p>
                 </div>
                 {pendingUsers.map((u) => (
-                    <Card key={u.id} className="p-5 border-blue-100 bg-white rounded-2xl shadow-sm">
+                    <Card key={u.id} className="p-5 border-blue-100 bg-white rounded-3xl shadow-sm">
                         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-blue-50 rounded-2xl text-blue-600 font-black uppercase">{u.full_name?.charAt(0) || 'U'}</div>
+                                <div className="p-3 bg-blue-50 rounded-2xl text-blue-600 font-black uppercase shadow-inner">{u.full_name?.charAt(0) || 'U'}</div>
                                 <div>
-                                    <p className="font-bold text-slate-900 leading-tight">{u.full_name || 'User Baru'}</p>
-                                    <p className="text-xs text-slate-400 font-medium">{u.email}</p>
+                                    <p className="font-bold text-slate-900 leading-tight uppercase tracking-tight">{u.full_name || 'User Baru'}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{u.email}</p>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
-                                <Button onClick={() => handleApprove(u.id)} disabled={loading === u.id} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl h-11 px-6 font-bold shadow-lg shadow-emerald-200">
-                                    {loading === u.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCheck className="h-4 w-4 mr-2" />} Setujui Akses
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <Button onClick={() => handleApprove(u.id)} disabled={loading === u.id} className="flex-1 bg-emerald-600 hover:bg-emerald-700 rounded-xl h-11 px-6 font-bold shadow-lg shadow-emerald-100">
+                                    {loading === u.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCheck className="h-4 w-4 mr-2" />} Setujui
                                 </Button>
                                 <Button onClick={() => handleDeleteUser(u.id)} disabled={loading === u.id} variant="ghost" className="text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl h-11 font-bold">Tolak</Button>
                             </div>
                         </div>
                     </Card>
                 ))}
-                {pendingUsers.length === 0 && <div className="text-center py-20 text-slate-400 font-medium">Tidak ada permohonan akses baru.</div>}
+                {pendingUsers.length === 0 && <div className="text-center py-20 text-slate-300 font-black uppercase tracking-widest text-xs">Belum ada antrean baru.</div>}
             </TabsContent>
         </Tabs>
 
@@ -296,22 +296,22 @@ function AdminUserActions({ user, loading, onEdit, onRoleChange, onDelete }: any
     return (
         <AlertDialog>
             <DropdownMenu>
-                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={loading} className="rounded-full">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}</Button></DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={loading} className="rounded-full hover:bg-slate-100 h-10 w-10">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-5 w-5 text-slate-400" />}</Button></DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="rounded-2xl shadow-2xl border-0 p-2 w-56">
-                    <DropdownMenuItem onClick={onEdit} className="rounded-xl h-11 font-bold gap-2 text-slate-700"><Edit className="h-4 w-4 text-blue-500" /> Ubah Profil</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'admin')} className="text-purple-600 font-bold rounded-xl h-11 gap-2"><ShieldAlert className="h-4 w-4" /> Jadikan Admin</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'headmaster')} className="rounded-xl h-11 font-bold gap-2 text-slate-700"><GraduationCap className="h-4 w-4 text-amber-500" /> Jadikan Kepsek</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'teacher')} className="rounded-xl h-11 font-bold gap-2 text-slate-700"><User className="h-4 w-4 text-emerald-500" /> Jadikan Guru</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-red-600 focus:bg-red-50 font-bold rounded-xl h-11 gap-2"><Trash2 className="h-4 w-4" /> Hapus Akun</DropdownMenuItem></AlertDialogTrigger>
+                    <DropdownMenuItem onClick={onEdit} className="rounded-xl h-11 font-bold gap-3 text-slate-700"><Edit className="h-4 w-4 text-blue-500" /> Ubah Profil</DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1 mx-2" />
+                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'admin')} className="text-purple-600 font-bold rounded-xl h-11 gap-3"><ShieldAlert className="h-4 w-4" /> Jadikan Admin</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'headmaster')} className="rounded-xl h-11 font-bold gap-3 text-slate-700"><GraduationCap className="h-4 w-4 text-amber-500" /> Jadikan Kepala</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onRoleChange(user.id, 'teacher')} className="rounded-xl h-11 font-bold gap-3 text-slate-700"><User className="h-4 w-4 text-emerald-500" /> Jadikan Guru</DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1 mx-2" />
+                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-red-600 focus:bg-red-50 font-bold rounded-xl h-11 gap-3"><Trash2 className="h-4 w-4" /> Hapus Akun</DropdownMenuItem></AlertDialogTrigger>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
-                <AlertDialogHeader><AlertDialogTitle className="text-2xl font-black">Hapus Akun?</AlertDialogTitle><AlertDialogDescription>Akses staf ini akan dihentikan secara permanen.</AlertDialogDescription></AlertDialogHeader>
-                <AlertDialogFooter className="pt-4 gap-2 flex flex-row">
-                    <AlertDialogCancel className="flex-1 rounded-xl h-12 font-bold">Batal</AlertDialogCancel>
-                    <AlertDialogAction onClick={onDelete} className="flex-1 rounded-xl h-12 bg-red-600 font-bold">Hapus</AlertDialogAction>
+            <AlertDialogContent className="rounded-3xl border-0 shadow-2xl p-8">
+                <AlertDialogHeader><AlertDialogTitle className="text-2xl font-black tracking-tight">Hapus Akun?</AlertDialogTitle><AlertDialogDescription className="font-medium">Akses staf ini akan dihentikan secara permanen dari sistem LakuKelas.</AlertDialogDescription></AlertDialogHeader>
+                <AlertDialogFooter className="pt-6 gap-3 flex flex-row">
+                    <AlertDialogCancel className="flex-1 rounded-xl h-12 font-bold border-slate-200">Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDelete} className="flex-1 rounded-xl h-12 bg-red-600 font-bold shadow-lg shadow-red-100 hover:bg-red-700">Ya, Hapus</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -319,17 +319,24 @@ function AdminUserActions({ user, loading, onEdit, onRoleChange, onDelete }: any
 }
 
 function UserMobileCard({ user, onEdit, onRoleChange, onDelete }: any) {
+    const roleLabel = user.role === 'admin' ? "Admin" : user.role === 'headmaster' ? "Kepala" : "Guru";
+    
     return (
-        <Card className="p-4 border-slate-100 shadow-sm rounded-2xl">
-            <div className="flex justify-between items-start mb-3">
-                <div className="min-w-0">
-                    <p className="font-bold truncate text-slate-900">{user.full_name || 'N/A'}</p>
-                    <p className="text-[10px] text-slate-400 font-bold">{user.email}</p>
+        <Card className="p-5 border-slate-100 shadow-sm rounded-3xl bg-white hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4 gap-3">
+                <div className="min-w-0 flex-1">
+                    <p className="font-black truncate text-slate-900 leading-tight text-lg uppercase tracking-tight">{user.full_name || 'N/A'}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{user.email}</p>
                 </div>
-                <Badge className={cn(user.role === 'admin' ? "bg-purple-600" : user.role === 'headmaster' ? "bg-amber-600" : "bg-slate-500", "text-[8px] uppercase px-2 py-0.5")}>{user.role}</Badge>
+                <Badge className={cn(
+                    user.role === 'admin' ? "bg-purple-600" : user.role === 'headmaster' ? "bg-amber-600" : "bg-slate-500", 
+                    "text-[10px] font-black uppercase px-3 py-1 rounded-lg border-0 shadow-sm shrink-0"
+                )}>
+                    {roleLabel}
+                </Badge>
             </div>
-            <div className="flex gap-2 border-t pt-3 mt-3">
-                <Button variant="outline" size="sm" className="flex-1 rounded-xl font-bold h-10" onClick={onEdit}>Ubah</Button>
+            <div className="flex gap-2 pt-4 border-t border-slate-50">
+                <Button variant="outline" size="sm" className="flex-1 rounded-xl font-bold h-11 bg-slate-50 border-0 hover:bg-slate-100 text-slate-700 shadow-inner" onClick={onEdit}>Ubah Data</Button>
                 <AdminUserActions user={user} loading={false} onEdit={onEdit} onRoleChange={onRoleChange} onDelete={onDelete} />
             </div>
         </Card>
