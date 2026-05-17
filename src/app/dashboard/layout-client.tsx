@@ -281,7 +281,7 @@ export default function DashboardLayoutClient({
               >
                 <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4" />
                 <ScrollArea className="h-full px-6 pt-2 pb-10">
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                         <div className="flex items-center gap-4 p-2">
                             <Avatar className="h-14 w-14 border-2 border-indigo-100 shadow-md">
                                 <AvatarImage src={profile?.avatar_url} />
@@ -294,8 +294,8 @@ export default function DashboardLayoutClient({
                         </div>
 
                         {(isHeadmaster || isAdmin) && (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between px-2">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between px-1">
                                 <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em]">Monitoring Kepala</p>
                                 <button 
                                     onClick={() => setIsMonitoringExpanded(!isMonitoringExpanded)}
@@ -325,8 +325,8 @@ export default function DashboardLayoutClient({
                         )}
 
                         {isHomeroom && (
-                          <div className="space-y-2">
-                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] px-2">Menu Wali Kelas</p>
+                          <div className="space-y-3">
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] px-1">Menu Wali Kelas</p>
                             <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 {[
                                   { href: '/dashboard/homeroom/student-ledger', icon: ClipboardEdit, label: 'Leger', color: 'bg-emerald-500' },
@@ -344,8 +344,8 @@ export default function DashboardLayoutClient({
                           </div>
                         )}
 
-                        <div className="space-y-2">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Dashboard Guru</p>
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Dashboard Guru</p>
                             <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 {[
                                   { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
@@ -369,8 +369,8 @@ export default function DashboardLayoutClient({
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-2 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                              {[
                                 { href: '/dashboard/ai-pembelajaran/bank-soal', icon: Database, label: 'Bank Soal', color: 'bg-indigo-600' },
@@ -389,13 +389,13 @@ export default function DashboardLayoutClient({
                         </div>
 
                         {isAdmin && (
-                          <div className="space-y-2">
-                            <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-2">Panel Admin</p>
-                            <Link href="/admin/users" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-4 bg-purple-600 text-white rounded-[2rem] shadow-xl shadow-purple-200 active:scale-95 transition-all">
-                                <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-sm"><ShieldCheck className="w-6 h-6" /></div>
+                          <div className="space-y-2 pt-2">
+                            <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Panel Admin</p>
+                            <Link href="/admin/users" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-3.5 bg-purple-600 text-white rounded-2xl shadow-xl shadow-purple-200 active:scale-95 transition-all">
+                                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm"><ShieldCheck className="w-5 h-5" /></div>
                                 <div className="flex flex-col flex-1">
-                                    <span className="font-black text-base tracking-tight leading-none">Buka Panel Admin Utama</span>
-                                    <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest mt-1">Manajemen & Pengaturan Sistem</span>
+                                    <span className="font-black text-sm tracking-tight leading-none">Buka Panel Admin Utama</span>
+                                    <span className="text-[8px] font-bold text-white/70 uppercase tracking-widest mt-1">Manajemen Sistem</span>
                                 </div>
                             </Link>
                           </div>

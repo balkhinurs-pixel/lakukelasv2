@@ -253,8 +253,8 @@ export default function AdminLayoutClient({
                         </div>
 
                         {/* 1. Monitoring Section (Collapsible) */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between px-2">
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between px-1">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Monitoring Kepala</p>
                                 <button onClick={() => setIsMonitoringExpanded(!isMonitoringExpanded)} className="text-[10px] font-black text-purple-600 uppercase flex items-center gap-1">
                                     {isMonitoringExpanded ? 'Sembunyikan' : 'Tampilkan'}
@@ -271,17 +271,17 @@ export default function AdminLayoutClient({
                         </div>
 
                         {/* 2. Admin Menus (Always Grid) */}
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-2">Manajemen Staf</p>
+                        <div className="space-y-5">
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Manajemen Staf</p>
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                     <MobileGridItem href="/admin/codes" icon={Ticket} label="Token" color="bg-purple-600" />
                                     <MobileGridItem href="/admin/users" icon={Users} label="Approval" color="bg-purple-600" />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-2">Data Master Rombel</p>
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Data Master Rombel</p>
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                     <MobileGridItem href="/admin/roster/school-year" icon={CalendarCheck} label="Tahun Ajaran" color="bg-purple-600" />
                                     <MobileGridItem href="/admin/roster/classes" icon={School} label="Kelas" color="bg-purple-600" />
@@ -292,8 +292,8 @@ export default function AdminLayoutClient({
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-2">Pengaturan Sistem</p>
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Pengaturan Sistem</p>
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                     <MobileGridItem href="/admin/settings/school" icon={Building} label="Sekolah" color="bg-purple-600" />
                                     <MobileGridItem href="/admin/settings/location" icon={MapPin} label="Lokasi" color="bg-purple-600" />
@@ -305,13 +305,13 @@ export default function AdminLayoutClient({
                         </div>
 
                         {/* 3. Panel Switcher */}
-                        <div className="space-y-2 pt-4 border-t border-slate-100">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Navigasi Panel</p>
-                            <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-4 bg-slate-900 text-white rounded-[2rem] shadow-xl shadow-slate-200 active:scale-95 transition-all">
-                                <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-sm"><ChevronLeft className="w-6 h-6" /></div>
+                        <div className="space-y-2 pt-2 border-t border-slate-100">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Navigasi Panel</p>
+                            <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-3.5 bg-slate-900 text-white rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-all">
+                                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm"><ChevronLeft className="w-5 h-5" /></div>
                                 <div className="flex flex-col flex-1">
-                                    <span className="font-black text-base tracking-tight leading-none">Kembali ke Panel Guru</span>
-                                    <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest mt-1">Sistem Administrasi Guru</span>
+                                    <span className="font-black text-sm tracking-tight leading-none">Kembali ke Panel Guru</span>
+                                    <span className="text-[8px] font-bold text-white/70 uppercase tracking-widest mt-1">Sistem Administrasi Guru</span>
                                 </div>
                             </Link>
                         </div>
