@@ -1,12 +1,11 @@
 
-
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import SettingsClientPage from './settings-client-page';
 import type { Profile } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { getUserProfile } from '@/lib/data';
+import { getUserProfile, getGoogleDriveIntegration } from '@/lib/data';
 
 export default async function SettingsPage() {
     const supabase = createClient();
@@ -16,10 +15,12 @@ export default async function SettingsPage() {
         redirect('/');
     }
 
-    const userProfile = await getUserProfile();
+    const [userProfile, driveIntegration] = await Promise.all([
+        getUserProfile(),
+        getGoogleDriveIntegration()
+    ]);
     
     if (!userProfile) {
-        // This case should be rare, but as a fallback, we can show an error.
         return (
              <div className="space-y-6">
                  <div>
@@ -37,5 +38,5 @@ export default async function SettingsPage() {
         )
     }
 
-    return <SettingsClientPage user={user} profile={userProfile} />;
+    return <SettingsClientPage user={user} profile={userProfile} driveIntegration={driveIntegration} />;
 }

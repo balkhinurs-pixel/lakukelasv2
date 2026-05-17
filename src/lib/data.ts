@@ -2,7 +2,7 @@
 'use server';
 
 import { createClient } from './supabase/server';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday, GoogleDriveIntegration } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -807,4 +807,17 @@ export async function getHomeroomMonthlyAttendance(month: number, year: number) 
         month,
         year
     };
+}
+
+export async function getGoogleDriveIntegration(): Promise<GoogleDriveIntegration | null> {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    const supabase = createClient();
+    const { data, error } = await supabase.from('google_drive_integrations').select('*').eq('user_id', user.id).maybeSingle();
+    if (error) {
+        console.error("Error fetching drive integration:", error);
+        return null;
+    }
+    return data as GoogleDriveIntegration | null;
 }

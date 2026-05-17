@@ -149,6 +149,38 @@ export interface Holiday {
   type: 'national' | 'school';
 }
 
+// --- Google Drive Integration Types ---
+export interface GoogleDriveIntegration {
+  id: string;
+  user_id: string;
+  provider: string;
+  drive_email?: string | null;
+  folder_id?: string | null;
+  folder_url?: string | null;
+  folder_name?: string | null;
+  status: 'connected' | 'disconnected' | 'error';
+  connected_at: string;
+  disconnected_at?: string | null;
+}
+
+export interface AiDocument {
+  id: string;
+  user_id: string;
+  document_type: string;
+  title: string;
+  subject?: string | null;
+  class_level?: string | null;
+  semester?: string | null;
+  drive_file_id?: string | null;
+  drive_file_url?: string | null;
+  drive_folder_id?: string | null;
+  mime_type?: string | null;
+  is_public: boolean;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- History Types ---
 // These types now represent the structure of the views we created
 export interface AttendanceHistoryEntry {

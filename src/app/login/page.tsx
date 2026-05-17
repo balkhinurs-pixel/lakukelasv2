@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -26,6 +27,12 @@ function AuthForm() {
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
+                // Adding Google Drive scopes for the future integration
+                scopes: "openid email profile https://www.googleapis.com/auth/drive.file",
+                queryParams: {
+                    access_type: "offline",
+                    prompt: "consent",
+                },
             },
         });
         setLoading(false);

@@ -1,3 +1,4 @@
+
 "use client"
 import * as React from "react";
 import {
@@ -14,18 +15,30 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import type { Profile } from "@/lib/types";
+import type { Profile, GoogleDriveIntegration } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
-import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck } from "lucide-react";
+import { disconnectGoogleDrive } from "@/lib/actions/google-drive";
+import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
-export default function SettingsClientPage({ user, profile }: { user: User, profile: Profile }) {
+export default function SettingsClientPage({ 
+    user, 
+    profile, 
+    driveIntegration 
+}: { 
+    user: User, 
+    profile: Profile,
+    driveIntegration: GoogleDriveIntegration | null
+}) {
     const { toast } = useToast();
     const router = useRouter();
+    const supabase = createClient();
     const [loading, setLoading] = React.useState(false);
     const [uploading, setUploading] = React.useState(false);
+    const [driveLoading, setDriveLoading] = React.useState(false);
 
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
     
@@ -109,6 +122,34 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
         }
     }
 
+    const handleConnectDrive = async () => {
+        if (!supabase) return;
+        setDriveLoading(true);
+        await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+                scopes: "openid email profile https://www.googleapis.com/auth/drive.file",
+                queryParams: {
+                    access_type: "offline",
+                    prompt: "consent",
+                },
+            },
+        });
+    }
+
+    const handleDisconnectDrive = async () => {
+        setDriveLoading(true);
+        const result = await disconnectGoogleDrive();
+        if (result.success) {
+            toast({ title: "Terputus", description: "Integrasi Google Drive telah dinonaktifkan." });
+            router.refresh();
+        } else {
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        }
+        setDriveLoading(false);
+    }
+
     const getAvatarFallback = (name: string | null) => {
         if (!name || typeof name !== 'string' || name.trim() === '') return 'G';
         const parts = name.split(' ');
@@ -133,15 +174,16 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                 <UserIcon className="h-6 w-6" />
             </div>
             <div>
-                <h1 className="text-3xl font-bold font-headline text-slate-900 tracking-tight">Pengaturan Profil</h1>
-                <p className="text-slate-500 mt-1">Kelola identitas diri dan informasi akun Anda.</p>
+                <h1 className="text-3xl font-bold font-headline text-slate-900 tracking-tight">Pengaturan</h1>
+                <p className="text-slate-500 mt-1">Kelola identitas, akun, dan integrasi Anda.</p>
             </div>
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1 rounded-xl">
-                <TabsTrigger value="profile" className="rounded-lg data-[state=active]:shadow-sm">Identitas Diri</TabsTrigger>
-                <TabsTrigger value="account" className="rounded-lg data-[state=active]:shadow-sm">Informasi Akun</TabsTrigger>
+            <TabsList className="grid w-full max-w-md grid-cols-3 bg-slate-100 p-1 rounded-xl">
+                <TabsTrigger value="profile" className="rounded-lg data-[state=active]:shadow-sm">Profil</TabsTrigger>
+                <TabsTrigger value="integrations" className="rounded-lg data-[state=active]:shadow-sm">Integrasi</TabsTrigger>
+                <TabsTrigger value="account" className="rounded-lg data-[state=active]:shadow-sm">Akun</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile" className="mt-8 space-y-6">
@@ -256,6 +298,109 @@ export default function SettingsClientPage({ user, profile }: { user: User, prof
                            </Button>
                         </CardFooter>
                     </form>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="integrations" className="mt-8 space-y-6">
+                <Card className="border-0 shadow-xl shadow-slate-200/50 overflow-hidden">
+                    <CardHeader className="bg-slate-50/50 border-b p-8">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center">
+                                        <svg viewBox="0 0 24 24" className="h-6 w-6">
+                                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                        </svg>
+                                    </div>
+                                    <CardTitle className="text-2xl font-bold">Google Drive</CardTitle>
+                                </div>
+                                <CardDescription className="max-w-md">
+                                    Hubungkan penyimpanan Google Drive Anda untuk menyimpan dokumen hasil AI Pembelajaran secara otomatis.
+                                </CardDescription>
+                            </div>
+                            <div>
+                                {driveIntegration?.status === 'connected' ? (
+                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[10px]">
+                                        Terhubung
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="outline" className="text-slate-400 border-slate-200 px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[10px]">
+                                        Belum Terhubung
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-8 space-y-8">
+                        {driveIntegration?.status === 'connected' ? (
+                            <div className="space-y-6 animate-in fade-in duration-500">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Akun Terhubung</span>
+                                        <p className="font-bold text-slate-700">{user.email}</p>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Folder Penyimpanan</span>
+                                        <p className="font-bold text-slate-700">{driveIntegration.folder_name || 'LakuKelas AI'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <Button variant="outline" className="flex-1 rounded-xl h-12 font-bold" asChild>
+                                        <a href={driveIntegration.folder_url || "#"} target="_blank" rel="noopener noreferrer">
+                                            <Globe className="mr-2 h-4 w-4" /> Buka Folder Drive
+                                        </a>
+                                    </Button>
+                                    <Button 
+                                        variant="ghost" 
+                                        className="flex-1 rounded-xl h-12 font-bold text-red-500 hover:bg-red-50"
+                                        onClick={handleDisconnectDrive}
+                                        disabled={driveLoading}
+                                    >
+                                        {driveLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+                                        Putuskan Integrasi
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-10 space-y-6">
+                                <div className="mx-auto w-20 h-20 rounded-[2rem] bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
+                                    <Database className="h-10 w-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className="text-lg font-bold text-slate-900">Mulai Integrasi Google Drive</h4>
+                                    <p className="text-sm text-slate-500 max-w-xs mx-auto">
+                                        Aplikasi membutuhkan izin untuk membuat folder dan file dokumen AI di Drive Anda.
+                                    </p>
+                                </div>
+                                <Button 
+                                    onClick={handleConnectDrive} 
+                                    disabled={driveLoading}
+                                    className="h-14 px-10 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-xl shadow-indigo-200 font-bold text-lg"
+                                >
+                                    {driveLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
+                                    Hubungkan Google Drive
+                                </Button>
+                            </div>
+                        )}
+                        
+                        <div className="pt-6 border-t border-slate-100">
+                            <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4">Informasi Keamanan & Privasi</h5>
+                            <ul className="space-y-3">
+                                <li className="flex items-start gap-3 text-xs text-slate-500 leading-relaxed">
+                                    <div className="p-1 rounded-full bg-blue-100 text-blue-600 mt-0.5"><Share2 className="h-3 w-3" /></div>
+                                    <span>Kami hanya menggunakan izin <strong>drive.file</strong> yang hanya mengizinkan aplikasi membaca file yang dibuat oleh aplikasi ini sendiri.</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-xs text-slate-500 leading-relaxed">
+                                    <div className="p-1 rounded-full bg-blue-100 text-blue-600 mt-0.5"><Database className="h-3 w-3" /></div>
+                                    <span>Data login dan file pribadi Anda di luar folder LakuKelas tetap aman dan tidak dapat diakses oleh sistem.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </CardContent>
                 </Card>
             </TabsContent>
             
