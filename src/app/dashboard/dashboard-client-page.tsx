@@ -26,10 +26,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import type { ScheduleItem, Agenda, Holiday } from "@/lib/types";
+import type { ScheduleItem, Agenda, Holiday, GoogleDriveIntegration } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 import { MiniCalendar } from "@/components/ui/mini-calendar";
 import { motion, AnimatePresence } from "framer-motion";
+import { setupGoogleDriveFolder } from "@/lib/actions/google-drive";
+import { createClient } from "@/lib/supabase/client";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -39,6 +41,7 @@ type DashboardPageProps = {
   todayHoliday: Holiday | null;
   allHolidays?: Holiday[];
   profileName?: string;
+  driveIntegration?: GoogleDriveIntegration | null;
 }
 
 // Komponen Pembantu untuk Hitung Mundur Sisa Waktu Mengajar
@@ -200,15 +203,36 @@ export default function DashboardClientPage({
     initialUnfilledJournalsCount,
     todayHoliday,
     allHolidays = [],
-    profileName = "Bapak/Ibu Guru"
+    profileName = "Bapak/Ibu Guru",
+    driveIntegration
 }: DashboardPageProps) {
     const [now, setNow] = React.useState<Date>(new Date());
     const [showAll, setShowAll] = React.useState(false);
+    const supabase = createClient();
 
+    // 1. Timer Jam
     React.useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // 2. Auto-Initialize Google Drive (Hanya jika login via Google)
+    React.useEffect(() => {
+        const checkAndSetupDrive = async () => {
+            if (!supabase) return;
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            // Hanya jalankan jika:
+            // - Login via Google
+            // - Belum ada data integrasi atau belum ada folder_id
+            if (user?.app_metadata?.provider === 'google' && (!driveIntegration || !driveIntegration.folder_id)) {
+                console.log("[AUTO-DRIVE] Initializing Google Drive folder in background...");
+                await setupGoogleDriveFolder();
+            }
+        };
+
+        checkAndSetupDrive();
+    }, [driveIntegration, supabase]);
 
     const sortedSchedule = React.useMemo(() => {
         return [...todaySchedule].sort((a,b) => a.start_time.localeCompare(b.start_time));

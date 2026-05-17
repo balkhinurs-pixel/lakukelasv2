@@ -2,7 +2,7 @@
 
 import { getDashboardData, getUserProfile, getHolidays } from '@/lib/data';
 import DashboardClientPage from './dashboard-client-page';
-import type { ScheduleItem, Agenda, Holiday, Profile } from "@/lib/types";
+import type { ScheduleItem, Agenda, Holiday, Profile, GoogleDriveIntegration } from "@/lib/types";
 import * as React from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -17,6 +17,7 @@ type DashboardData = {
     todayHoliday: Holiday | null;
     allHolidays: Holiday[];
     profile: Profile | null;
+    driveIntegration: GoogleDriveIntegration | null;
 };
 
 function DashboardLoadingSkeleton() {
@@ -75,6 +76,7 @@ export default function DashboardPage() {
             todayHoliday={data.todayHoliday}
             allHolidays={data.allHolidays}
             profileName={data.profile?.full_name}
+            driveIntegration={data.driveIntegration}
         />
     );
 }

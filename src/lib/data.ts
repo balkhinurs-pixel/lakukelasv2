@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from './supabase/server';
@@ -416,17 +415,18 @@ export async function getAllStudents(): Promise<Student[]> {
 export async function getDashboardData(todayDay: string) {
     noStore();
     const user = await getAuthenticatedUser();
-    if (!user) return { todaySchedule: [], agendas: [], attendancePercentage: 0, unfilledJournalsCount: 0, todayHoliday: null };
+    if (!user) return { todaySchedule: [], agendas: [], attendancePercentage: 0, unfilledJournalsCount: 0, todayHoliday: null, driveIntegration: null };
     const supabase = createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
     const todayStr = format(getIndonesianTime(), 'yyyy-MM-dd');
     
-    const [scheduleRes, agendasRes, attendanceRes, journalsRes, holidayRes] = await Promise.all([
+    const [scheduleRes, agendasRes, attendanceRes, journalsRes, holidayRes, driveRes] = await Promise.all([
         supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').eq('teacher_id', user.id).eq('day', todayDay),
         supabase.from('agendas').select('*').eq('teacher_id', user.id).gte('date', todayStr).order('date', { ascending: true }).order('start_time', { ascending: true }).limit(5),
         supabase.from('attendance_records').select('status').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || ''),
         supabase.from('journal_entries').select('date').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || ''),
-        supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle()
+        supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle(),
+        supabase.from('google_drive_integrations').select('*').eq('user_id', user.id).maybeSingle()
     ]);
 
     const todayScheduleData = scheduleRes.data?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
@@ -434,7 +434,7 @@ export async function getDashboardData(todayDay: string) {
     
     const totalRecords = attendanceRes.data?.length || 0;
     const hadirRecords = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
-    const attendancePercentage = totalRecords > 0 ? Math.round((hadirRecords / totalRecords) * 100) : 0;
+    const attendancePercentage = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
     
     const unfilledJournalsCount = todayScheduleData.length - (journalsRes.data?.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === todayStr).length || 0);
 
@@ -443,7 +443,8 @@ export async function getDashboardData(todayDay: string) {
         agendas: agendasData, 
         attendancePercentage, 
         unfilledJournalsCount,
-        todayHoliday: holidayRes.data || null
+        todayHoliday: holidayRes.data || null,
+        driveIntegration: driveRes.data || null
     };
 }
 

@@ -17,9 +17,9 @@ Menyelesaikan tahap awal integrasi penyimpanan awan untuk dokumen AI.
 - Implementasi fungsi `createTestDocument` untuk memverifikasi izin tulis ke folder aplikasi.
 - Pencatatan metadata file ke tabel `ai_documents`.
 
-### 4. Tahap Debugging (Progres)
-- Perbaikan error 500 Google OAuth dengan menyederhanakan permintaan scope.
-- Menambahkan pesan edukasi untuk aktivasi API Google Drive di GCP.
+### 4. Tahap 4: Inisialisasi Otomatis (Selesai)
+- Menambahkan sistem pengecekan otomatis di Dashboard.
+- Guru yang login via Google kini akan langsung mendapatkan folder "LakuKelas AI" secara otomatis saat membuka aplikasi tanpa harus melakukan setup manual di pengaturan.
 
 ---
 
