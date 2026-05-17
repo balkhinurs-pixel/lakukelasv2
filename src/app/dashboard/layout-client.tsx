@@ -18,7 +18,11 @@ import {
   Link2,
   MapPin,
   Sparkles,
-  ChevronLeft
+  ChevronLeft,
+  FileText,
+  PlusCircle,
+  Database,
+  ChevronDown
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -56,6 +60,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export default function DashboardLayoutClient({ 
   children,
@@ -125,12 +134,67 @@ export default function DashboardLayoutClient({
                     </SidebarGroup>
                 )}
 
+                {/* AI Pembelajaran Group */}
+                <SidebarGroup className="p-4 pt-2">
+                    <SidebarGroupLabel className="text-indigo-600 font-bold text-[10px] tracking-[0.2em] uppercase mb-4 flex items-center gap-2">
+                      <Sparkles className="w-3 h-3" /> AI Pembelajaran
+                    </SidebarGroupLabel>
+                    <SidebarMenu className="gap-2">
+                      <Collapsible defaultOpen={pathname.startsWith('/dashboard/ai-pembelajaran')}>
+                        <SidebarMenuItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton className="rounded-xl font-bold text-indigo-700 hover:bg-indigo-50">
+                                <Sparkles className="w-4 h-4 mr-2" />
+                                <span>Asisten AI</span>
+                                <ChevronDown className="ml-auto w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenu className="mt-2 pl-4 border-l-2 border-indigo-100 ml-4 gap-1">
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/ai-pembelajaran/bank-soal'} className="rounded-lg h-9">
+                                        <Link href="/dashboard/ai-pembelajaran/bank-soal">
+                                            <Database className="w-3.5 h-3.5 mr-2" />
+                                            <span>Bank Soal AI</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/ai-pembelajaran/modul-ajar'} className="rounded-lg h-9">
+                                        <Link href="/dashboard/ai-pembelajaran/modul-ajar">
+                                            <FileText className="w-3.5 h-3.5 mr-2" />
+                                            <span>Modul Ajar</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/ai-pembelajaran/lkpd'} className="rounded-lg h-9">
+                                        <Link href="/dashboard/ai-pembelajaran/lkpd">
+                                            <ClipboardEdit className="w-3.5 h-3.5 mr-2" />
+                                            <span>Pembuatan LKPD</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/ai-pembelajaran/generate-soal'} className="rounded-lg h-9">
+                                        <Link href="/dashboard/ai-pembelajaran/generate-soal">
+                                            <PlusCircle className="w-3.5 h-3.5 mr-2" />
+                                            <span>Generate Soal</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                          </CollapsibleContent>
+                        </SidebarMenuItem>
+                      </Collapsible>
+                    </SidebarMenu>
+                </SidebarGroup>
+
                 <SidebarGroup className="p-4">
                     <SidebarGroupLabel className="text-slate-400 font-bold text-[10px] tracking-[0.2em] uppercase mb-4">Aplikasi</SidebarGroupLabel>
                     <SidebarMenu className="gap-2">
                       {[
                         { href: '/dashboard', icon: Home, label: 'Dasbor' },
-                        { href: '/dashboard/ai-pembelajaran', icon: Sparkles, label: 'AI Pembelajaran', isNew: true },
                         { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen Guru' },
                         { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
                         { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi Siswa' },
@@ -154,7 +218,6 @@ export default function DashboardLayoutClient({
                               <Link href={item.href}>
                                 <item.icon className="w-4 h-4 mr-2" />
                                 <span>{item.label}</span>
-                                {item.isNew && <Badge className="ml-auto bg-amber-500 text-[8px] h-4 px-1.5 animate-pulse">NEW</Badge>}
                               </Link>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
@@ -253,7 +316,7 @@ export default function DashboardLayoutClient({
                     <div className="grid grid-cols-4 gap-y-8 gap-x-2">
                         {[
                           { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
-                          { href: '/dashboard/ai-pembelajaran', icon: Sparkles, label: 'AI Guru', color: 'bg-amber-500' },
+                          { href: '/dashboard/ai-pembelajaran/generate-soal', icon: Sparkles, label: 'AI Guru', color: 'bg-amber-500' },
                           { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen', color: 'bg-rose-500' },
                           { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda', color: 'bg-amber-500' },
                           { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi', color: 'bg-emerald-500' },
@@ -307,7 +370,7 @@ export default function DashboardLayoutClient({
                     <Home className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">Dasbor</span>
                 </Link>
-                <Link href="/dashboard/ai-pembelajaran" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/ai-pembelajaran" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                <Link href="/dashboard/ai-pembelajaran/generate-soal" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/ai-pembelajaran") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
                     <Sparkles className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">AI Guru</span>
                 </Link>
