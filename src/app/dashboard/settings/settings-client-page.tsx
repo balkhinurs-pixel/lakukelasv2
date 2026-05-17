@@ -1,4 +1,3 @@
-
 "use client"
 import * as React from "react";
 import {
@@ -18,8 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile, GoogleDriveIntegration } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
-import { disconnectGoogleDrive, setupGoogleDriveFolder } from "@/lib/actions/google-drive";
-import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle } from "lucide-react";
+import { disconnectGoogleDrive, setupGoogleDriveFolder, createTestDocument } from "@/lib/actions/google-drive";
+import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -39,6 +38,7 @@ export default function SettingsClientPage({
     const [loading, setLoading] = React.useState(false);
     const [uploading, setUploading] = React.useState(false);
     const [driveLoading, setDriveLoading] = React.useState(false);
+    const [testLoading, setTestLoading] = React.useState(false);
 
     const avatarInputRef = React.useRef<HTMLInputElement>(null);
     
@@ -148,6 +148,25 @@ export default function SettingsClientPage({
             toast({ title: "Gagal Setup", description: result.error, variant: "destructive" });
         }
         setDriveLoading(false);
+    }
+
+    const handleTestUpload = async () => {
+        setTestLoading(true);
+        const result = await createTestDocument();
+        if (result.success) {
+            toast({ 
+                title: "Uji Coba Sukses", 
+                description: result.message,
+                action: result.file_url ? (
+                    <Button variant="outline" size="sm" asChild>
+                        <a href={result.file_url} target="_blank" rel="noopener noreferrer">Buka File</a>
+                    </Button>
+                ) : undefined
+            });
+        } else {
+            toast({ title: "Uji Coba Gagal", description: result.error, variant: "destructive" });
+        }
+        setTestLoading(false);
     }
 
     const handleDisconnectDrive = async () => {
@@ -367,11 +386,22 @@ export default function SettingsClientPage({
 
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     {driveIntegration.folder_id ? (
-                                        <Button variant="outline" className="flex-1 rounded-xl h-12 font-bold" asChild>
-                                            <a href={driveIntegration.folder_url || "#"} target="_blank" rel="noopener noreferrer">
-                                                <Globe className="mr-2 h-4 w-4" /> Buka Folder Drive
-                                            </a>
-                                        </Button>
+                                        <>
+                                            <Button variant="outline" className="flex-1 rounded-xl h-12 font-bold border-indigo-200 text-indigo-700" asChild>
+                                                <a href={driveIntegration.folder_url || "#"} target="_blank" rel="noopener noreferrer">
+                                                    <Globe className="mr-2 h-4 w-4" /> Buka Folder Drive
+                                                </a>
+                                            </Button>
+                                            <Button 
+                                                onClick={handleTestUpload} 
+                                                disabled={testLoading}
+                                                variant="secondary"
+                                                className="flex-1 rounded-xl h-12 font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                            >
+                                                {testLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                                                Kirim File Uji Coba
+                                            </Button>
+                                        </>
                                     ) : (
                                         <Button 
                                             onClick={handleSetupFolder} 

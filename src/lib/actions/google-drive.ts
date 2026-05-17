@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -98,6 +97,80 @@ export async function setupGoogleDriveFolder() {
     } catch (error: any) {
         console.error("Setup Drive Error:", error);
         return { success: false, error: "Terjadi kesalahan sistem saat menghubungi Google Drive." };
+    }
+}
+
+/**
+ * Membuat dokumen uji coba (Google Doc) untuk memverifikasi izin tulis.
+ */
+export async function createTestDocument() {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session || !session.provider_token) {
+        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang." };
+    }
+
+    const userId = session.user.id;
+    const providerToken = session.provider_token;
+
+    try {
+        // 1. Ambil folder_id dari database
+        const { data: integration } = await supabase
+            .from('google_drive_integrations')
+            .select('folder_id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!integration?.folder_id) {
+            return { success: false, error: "Folder LakuKelas AI belum dibuat." };
+        }
+
+        const fileName = `Tes Koneksi - ${new Date().toLocaleTimeString('id-ID')}`;
+        
+        // 2. Buat file di Google Drive (Tipe: Google Doc)
+        const driveResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${providerToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: fileName,
+                mimeType: 'application/vnd.google-apps.document',
+                parents: [integration.folder_id],
+                description: 'File uji coba integrasi LakuKelas.'
+            }),
+        });
+
+        if (!driveResponse.ok) {
+            const err = await driveResponse.json();
+            return { success: false, error: err.error?.message || "Gagal membuat file." };
+        }
+
+        const fileData = await driveResponse.json();
+
+        // 3. Simpan metadata ke ai_documents
+        await supabase.from('ai_documents').insert({
+            user_id: userId,
+            document_type: 'test',
+            title: fileName,
+            drive_file_id: fileData.id,
+            drive_file_url: `https://docs.google.com/document/d/${fileData.id}/edit`,
+            drive_folder_id: integration.folder_id,
+            status: 'created'
+        });
+
+        revalidatePath('/dashboard/settings');
+        return { 
+            success: true, 
+            message: "File uji coba berhasil dibuat di Drive!",
+            file_url: `https://docs.google.com/document/d/${fileData.id}/edit`
+        };
+
+    } catch (error: any) {
+        console.error("Test Document Error:", error);
+        return { success: false, error: "Terjadi kesalahan sistem." };
     }
 }
 
