@@ -392,17 +392,21 @@ export default function DashboardLayoutClient({
               </SheetContent>
             </Sheet>
 
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
-                <Link href="/dashboard" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
-                    <Home className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Dasbor</span>
-                </Link>
-                <Link href="/dashboard/teacher-attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/teacher-attendance") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
-                    <MapPin className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium text-center leading-tight">Absensi Guru</span>
-                </Link>
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t flex items-center h-16 pb-safe">
+                <div className="flex-1 flex justify-center">
+                    <Link href="/dashboard" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                        <Home className="w-5 h-5" />
+                        <span className="text-[10px] mt-1 font-medium">Dasbor</span>
+                    </Link>
+                </div>
+                <div className="flex-1 flex justify-center">
+                    <Link href="/dashboard/teacher-attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/teacher-attendance") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                        <MapPin className="w-5 h-5" />
+                        <span className="text-[10px] mt-1 font-medium text-center leading-tight">Absen Guru</span>
+                    </Link>
+                </div>
                 
-                <div className="flex justify-center h-full items-center">
+                <div className="flex-1 flex justify-center items-center">
                     <button 
                       onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
                       className="group flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-indigo-600 to-blue-600 text-white shadow-lg border-4 border-background transition-all active:scale-95"
@@ -428,14 +432,18 @@ export default function DashboardLayoutClient({
                     </button>
                 </div>
 
-                <Link href="/dashboard/reports" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/reports") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
-                    <BarChart3 className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium text-center leading-tight">Laporan</span>
-                </Link>
-                <Link href="/dashboard/settings" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/settings" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
-                    <Settings className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Profil</span>
-                </Link>
+                <div className="flex-1 flex justify-center">
+                    <Link href="/dashboard/reports" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/reports") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                        <BarChart3 className="w-5 h-5" />
+                        <span className="text-[10px] mt-1 font-medium text-center leading-tight">Laporan</span>
+                    </Link>
+                </div>
+                <div className="flex-1 flex justify-center">
+                    <Link href="/dashboard/settings" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/settings" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                        <Settings className="w-5 h-5" />
+                        <span className="text-[10px] mt-1 font-medium">Profil</span>
+                    </Link>
+                </div>
             </div>
           </>
       )}

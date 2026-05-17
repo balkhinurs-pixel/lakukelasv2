@@ -320,13 +320,15 @@ export default function AdminLayoutClient({
               </SheetContent>
             </Sheet>
 
-            {/* Bottom Nav Mobile */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 backdrop-blur-xl border-t p-2 flex justify-around items-center h-16 pb-safe">
-                <Link href="/admin/users" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/users") ? "text-purple-600 bg-purple-50" : "text-muted-foreground")}>
-                    <Users className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Staf</span>
-                </Link>
-                <div className="flex justify-center h-full items-center">
+            {/* Bottom Nav Mobile - Fixed to be perfectly centered */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 backdrop-blur-xl border-t flex items-center h-16 pb-safe">
+                <div className="flex-1 flex justify-center">
+                    <Link href="/admin/users" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/users") ? "text-purple-600 bg-purple-50" : "text-muted-foreground")}>
+                        <Users className="w-5 h-5" />
+                        <span className="text-[10px] mt-1 font-medium">Staf</span>
+                    </Link>
+                </div>
+                <div className="flex-1 flex justify-center items-center">
                     <button 
                       onClick={() => setIsMobileMenuOpen((prev) => !prev)} 
                       className="group flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-700 to-purple-500 text-white shadow-lg border-4 border-background transition-all active:scale-95"
@@ -338,10 +340,12 @@ export default function AdminLayoutClient({
                         </svg>
                     </button>
                 </div>
-                <Link href="/admin/settings/school" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/settings") ? "text-purple-600 bg-purple-50" : "text-muted-foreground")}>
-                    <Settings className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Sistem</span>
-                </Link>
+                <div className="flex-1 flex justify-center">
+                    <Link href="/admin/settings/school" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/settings") ? "text-purple-600 bg-purple-50" : "text-muted-foreground")}>
+                        <Settings className="w-5 h-5" />
+                        <span className="text-[10px] mt-1 font-medium">Sistem</span>
+                    </Link>
+                </div>
             </div>
           </>
       )}
