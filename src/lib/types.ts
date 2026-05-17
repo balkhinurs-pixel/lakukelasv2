@@ -202,6 +202,8 @@ export interface QuestionGenerationInput {
   assessment_purpose: string;
   topic: string;
   subtopic?: string;
+  cognitive_level?: string;
+  mode?: string;
   instruction?: string;
   question_type: 'multiple_choice' | 'essay';
   count: number;

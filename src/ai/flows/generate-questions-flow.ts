@@ -29,6 +29,8 @@ const GenerateQuestionsInputSchema = z.object({
   assessment_purpose: z.string(),
   topic: z.string(),
   subtopic: z.string().optional(),
+  cognitive_level: z.string().optional(),
+  mode: z.string().optional(),
   instruction: z.string().optional(),
   question_type: z.enum(['multiple_choice', 'essay']),
   count: z.number().default(5),
@@ -75,10 +77,14 @@ Tugas Anda:
 Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilihan Ganda' : 'Esai'} untuk:
 - Jenjang: ${input.jenjang}
 - Kelas: ${input.kelas}
+- Semester: ${input.semester || 'Tidak ditentukan'}
 - Mata Pelajaran: ${input.subject}
-- Topik: ${input.topic} ${input.subtopic ? `(${input.subtopic})` : ''}
-- Tujuan: ${input.assessment_purpose}
-- Kesulitan: ${input.difficulty}
+- Topik Utama: ${input.topic}
+- Sub-topik: ${input.subtopic || 'Umum'}
+- Tujuan Asesmen: ${input.assessment_purpose}
+- Tingkat Kesulitan: ${input.difficulty}
+- Level Kognitif: ${input.cognitive_level || 'Variatif'}
+- Mode Soal: ${input.mode || 'Reguler'}
 - Instruksi Tambahan: ${input.instruction || 'Tidak ada'}
 
 Aturan Penting:
