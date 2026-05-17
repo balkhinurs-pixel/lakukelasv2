@@ -18,8 +18,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile, GoogleDriveIntegration } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
-import { disconnectGoogleDrive } from "@/lib/actions/google-drive";
-import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw } from "lucide-react";
+import { disconnectGoogleDrive, setupGoogleDriveFolder } from "@/lib/actions/google-drive";
+import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -136,6 +136,18 @@ export default function SettingsClientPage({
                 },
             },
         });
+    }
+
+    const handleSetupFolder = async () => {
+        setDriveLoading(true);
+        const result = await setupGoogleDriveFolder();
+        if (result.success) {
+            toast({ title: "Sukses", description: result.message || "Folder Drive siap digunakan." });
+            router.refresh();
+        } else {
+            toast({ title: "Gagal Setup", description: result.error, variant: "destructive" });
+        }
+        setDriveLoading(false);
     }
 
     const handleDisconnectDrive = async () => {
@@ -344,16 +356,32 @@ export default function SettingsClientPage({
                                     </div>
                                     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Folder Penyimpanan</span>
-                                        <p className="font-bold text-slate-700">{driveIntegration.folder_name || 'LakuKelas AI'}</p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-bold text-slate-700">{driveIntegration.folder_name || 'LakuKelas AI'}</p>
+                                            {!driveIntegration.folder_id && (
+                                                <Badge variant="destructive" className="text-[8px] px-1.5">Belum Diatur</Badge>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-3">
-                                    <Button variant="outline" className="flex-1 rounded-xl h-12 font-bold" asChild>
-                                        <a href={driveIntegration.folder_url || "#"} target="_blank" rel="noopener noreferrer">
-                                            <Globe className="mr-2 h-4 w-4" /> Buka Folder Drive
-                                        </a>
-                                    </Button>
+                                    {driveIntegration.folder_id ? (
+                                        <Button variant="outline" className="flex-1 rounded-xl h-12 font-bold" asChild>
+                                            <a href={driveIntegration.folder_url || "#"} target="_blank" rel="noopener noreferrer">
+                                                <Globe className="mr-2 h-4 w-4" /> Buka Folder Drive
+                                            </a>
+                                        </Button>
+                                    ) : (
+                                        <Button 
+                                            onClick={handleSetupFolder} 
+                                            disabled={driveLoading}
+                                            className="flex-1 rounded-xl h-12 font-bold bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100"
+                                        >
+                                            {driveLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FolderPlus className="mr-2 h-4 w-4" />}
+                                            Buat Folder Aplikasi
+                                        </Button>
+                                    )}
                                     <Button 
                                         variant="ghost" 
                                         className="flex-1 rounded-xl h-12 font-bold text-red-500 hover:bg-red-50"
@@ -364,6 +392,18 @@ export default function SettingsClientPage({
                                         Putuskan Integrasi
                                     </Button>
                                 </div>
+                                
+                                {driveIntegration.folder_id && (
+                                    <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                        <div className="p-2 bg-emerald-500 text-white rounded-lg">
+                                            <CheckCircle className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-emerald-900 leading-tight">Folder Aktif</p>
+                                            <p className="text-xs text-emerald-700">Aplikasi siap menyimpan dokumen AI ke Google Drive Anda.</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="text-center py-10 space-y-6">
