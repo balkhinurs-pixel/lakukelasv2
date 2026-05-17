@@ -19,7 +19,7 @@ import type { Profile, GoogleDriveIntegration } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
 import { disconnectGoogleDrive, setupGoogleDriveFolder, createTestDocument } from "@/lib/actions/google-drive";
-import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText, ExternalLink } from "lucide-react";
+import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -124,8 +124,20 @@ export default function SettingsClientPage({
     }
 
     const handleConnectDrive = async () => {
-        if (!supabase) return;
         setDriveLoading(true);
+        
+        // Coba setup folder dulu (siapa tahu token sudah ada di sesi)
+        const setupResult = await setupGoogleDriveFolder();
+        
+        if (setupResult.success) {
+            toast({ title: "Berhasil Terhubung", description: "Integrasi Google Drive telah diaktifkan." });
+            router.refresh();
+            setDriveLoading(false);
+            return;
+        }
+
+        // Jika gagal karena token tidak ada, baru arahkan ke Google OAuth
+        if (!supabase) return;
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -285,7 +297,7 @@ export default function SettingsClientPage({
                                         id="pangkat" 
                                         name="pangkat" 
                                         value={profileData.pangkat} 
-                                        onChange={handleProfileChange}
+                                        onChange={handleProfileChange} 
                                         className="h-12 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-xl"
                                         placeholder="Penata Muda / III.a"
                                     />
@@ -296,7 +308,7 @@ export default function SettingsClientPage({
                                         id="jabatan" 
                                         name="jabatan" 
                                         value={profileData.jabatan} 
-                                        onChange={handleProfileChange}
+                                        onChange={handleProfileChange} 
                                         className="h-12 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-xl"
                                         placeholder="Guru Madya"
                                     />
@@ -325,7 +337,7 @@ export default function SettingsClientPage({
                             disabled={loading} 
                             className="w-full sm:w-auto h-12 px-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200"
                            >
-                                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
+                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
                                 Simpan Perubahan Profil
                            </Button>
                         </CardFooter>
@@ -453,7 +465,7 @@ export default function SettingsClientPage({
                                     className="h-14 px-10 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-xl shadow-indigo-200 font-bold text-lg"
                                 >
                                     {driveLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
-                                    Hubungkan Google Drive
+                                    Hubungkan & Inisialisasi
                                 </Button>
                             </div>
                         )}
