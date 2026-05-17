@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   Link2,
   MapPin,
-  LayoutGrid,
+  Sparkles,
   ChevronLeft
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -56,13 +56,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Dasbor' },
-  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen' },
-  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan' },
-  { href: '/dashboard/settings', icon: Settings, label: 'Profil' },
-];
 
 export default function DashboardLayoutClient({ 
   children,
@@ -137,6 +130,7 @@ export default function DashboardLayoutClient({
                     <SidebarMenu className="gap-2">
                       {[
                         { href: '/dashboard', icon: Home, label: 'Dasbor' },
+                        { href: '/dashboard/ai-pembelajaran', icon: Sparkles, label: 'AI Pembelajaran', isNew: true },
                         { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen Guru' },
                         { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda' },
                         { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi Siswa' },
@@ -160,6 +154,7 @@ export default function DashboardLayoutClient({
                               <Link href={item.href}>
                                 <item.icon className="w-4 h-4 mr-2" />
                                 <span>{item.label}</span>
+                                {item.isNew && <Badge className="ml-auto bg-amber-500 text-[8px] h-4 px-1.5 animate-pulse">NEW</Badge>}
                               </Link>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
@@ -258,6 +253,7 @@ export default function DashboardLayoutClient({
                     <div className="grid grid-cols-4 gap-y-8 gap-x-2">
                         {[
                           { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
+                          { href: '/dashboard/ai-pembelajaran', icon: Sparkles, label: 'AI Guru', color: 'bg-amber-500' },
                           { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen', color: 'bg-rose-500' },
                           { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda', color: 'bg-amber-500' },
                           { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi', color: 'bg-emerald-500' },
@@ -311,9 +307,9 @@ export default function DashboardLayoutClient({
                     <Home className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">Dasbor</span>
                 </Link>
-                <Link href="/dashboard/teacher-attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/teacher-attendance" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
-                    <MapPin className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Absen</span>
+                <Link href="/dashboard/ai-pembelajaran" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/ai-pembelajaran" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                    <Sparkles className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">AI Guru</span>
                 </Link>
                 
                 <div className="flex justify-center h-full items-center">
@@ -342,9 +338,9 @@ export default function DashboardLayoutClient({
                     </button>
                 </div>
 
-                <Link href="/dashboard/reports" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/reports") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
-                    <BarChart3 className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">Laporan</span>
+                <Link href="/dashboard/attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/attendance") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                    <ClipboardCheck className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">Presensi</span>
                 </Link>
                 <Link href="/dashboard/settings" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/settings" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
                     <Settings className="w-5 h-5" />

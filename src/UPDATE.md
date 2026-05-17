@@ -21,6 +21,12 @@ Menyelesaikan tahap awal integrasi penyimpanan awan untuk dokumen AI.
 - Menambahkan sistem pengecekan otomatis di Dashboard.
 - Guru yang login via Google kini akan langsung mendapatkan folder "LakuKelas AI" secara otomatis saat membuka aplikasi tanpa harus melakukan setup manual di pengaturan.
 
+### 5. Tahap 5: AI Pembelajaran - Generator RPP & Soal (Selesai)
+- Implementasi Genkit Flow `generateEducationContent` untuk membuat draf RPP dan Soal.
+- Membuat halaman dashboard AI Pembelajaran yang interaktif.
+- Integrasi sistem simpan dokumen otomatis ke Google Drive dalam format Google Doc.
+- Penambahan fitur review/preview konten AI sebelum disimpan.
+
 ---
 
 ## V14.0: Optimasi Performa & Kapasitas
@@ -37,7 +43,7 @@ Meningkatkan efisiensi aplikasi secara drastis untuk memaksimalkan kuota Free Ti
 Menyelesaikan masalah krusial pada deteksi siswa dan menyempurnakan fitur "Smart Katrol".
 
 ### 1. Backend & Data Fix
-- **Class ID Mapping**: Memperbaiki fungsi `getAllStudents` di `src/lib/data.ts` dengan menyertakan kolom `class_id`.
+- **Class ID Mapping**: Memperbaiki fungsi `getAllStudents` di `src/lib/data.ts` with menyertakan kolom `class_id`.
 - **Smart Logic**: Memastikan fitur pencarian dan tombol Katrol tetap muncul secara stabil di menu Penilaian setelah pemilihan kelas dilakukan.
 
 ---
