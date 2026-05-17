@@ -1,4 +1,3 @@
-
 export interface Profile {
   id: string;
   created_at: string;
@@ -73,7 +72,6 @@ export interface GradeRecord {
   teacher_id: string;
   school_year_id: string;
 }
-
 
 export interface JournalEntry {
   id: string;
@@ -182,8 +180,35 @@ export interface AiDocument {
   updated_at: string;
 }
 
+// --- AI Questions Types ---
+export interface GeneratedQuestion {
+  sort_order: number;
+  type: 'multiple_choice' | 'essay';
+  question: string;
+  options?: Record<string, string>; // e.g., { "A": "...", "B": "..." }
+  answer: string;
+  explanation: string;
+  difficulty: 'mudah' | 'sedang' | 'sulit';
+  cognitive_level?: string; // C1-C6
+  language_direction?: 'ltr' | 'rtl';
+}
+
+export interface QuestionGenerationInput {
+  jenjang: string;
+  kelas: string;
+  semester?: string;
+  subject: string;
+  curriculum: string;
+  assessment_purpose: string;
+  topic: string;
+  subtopic?: string;
+  instruction?: string;
+  question_type: 'multiple_choice' | 'essay';
+  count: number;
+  difficulty: 'mudah' | 'sedang' | 'sulit';
+}
+
 // --- History Types ---
-// These types now represent the structure of the views we created
 export interface AttendanceHistoryEntry {
   id: string;
   date: string;
