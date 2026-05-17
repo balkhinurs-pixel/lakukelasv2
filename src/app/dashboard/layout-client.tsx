@@ -18,10 +18,6 @@ import {
   Link2,
   MapPin,
   Sparkles,
-  ChevronLeft,
-  FileText,
-  PlusCircle,
-  Database,
   ChevronDown,
   LayoutDashboard,
   Activity,
@@ -39,7 +35,12 @@ import {
   Building,
   CalendarOff,
   MessageSquare,
-  Search
+  Search,
+  ChevronUp,
+  Settings2,
+  Database,
+  PlusCircle,
+  FileText
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -99,6 +100,7 @@ export default function DashboardLayoutClient({
   const router = useRouter();
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isMonitoringExpanded, setIsMonitoringExpanded] = React.useState(true);
   
   const isHeadmaster = profile?.role === 'headmaster';
   const isAdmin = profile?.role === 'admin';
@@ -133,43 +135,12 @@ export default function DashboardLayoutClient({
     );
   };
 
-  const CollapsibleGroup = ({ title, icon: Icon, items, defaultOpen = false, accentColor = "text-indigo-600" }: any) => {
-    const isAnyActive = items.some((item: any) => pathname.startsWith(item.href));
-    return (
-      <Collapsible defaultOpen={defaultOpen || isAnyActive} className="group/collapsible w-full">
-        <SidebarMenuItem>
-          <CollapsibleTrigger asChild>
-            <SidebarMenuButton className="rounded-xl font-bold hover:bg-slate-100">
-              <Icon className={cn("w-4 h-4 mr-2", accentColor)} />
-              <span>{title}</span>
-              <ChevronDown className="ml-auto w-4 h-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-            </SidebarMenuButton>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <SidebarMenuSub className="mt-1 border-l-2 border-slate-100 ml-4 pl-2 gap-1">
-              {items.map((item: any) => (
-                <SidebarMenuSubItem key={item.href}>
-                  <SidebarMenuSubButton asChild isActive={pathname === item.href} className="rounded-lg h-9">
-                    <Link href={item.href} className="flex items-center gap-2">
-                      <item.icon className={cn("w-3.5 h-3.5", pathname === item.href ? "text-white" : "text-slate-400")} />
-                      <span className={cn("text-xs font-bold", pathname === item.href ? "text-white" : "text-slate-600")}>{item.label}</span>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              ))}
-            </SidebarMenuSub>
-          </CollapsibleContent>
-        </SidebarMenuItem>
-      </Collapsible>
-    );
-  };
-
   const ProfileHeader = () => (
     <SidebarHeader className="p-0 text-background">
       <div className="relative flex flex-col items-center gap-2 bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden overflow-hidden">
           <div className="absolute inset-0 bg-white/[0.05] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
           
-          <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 transition-transform duration-300 hover:scale-105 hover:border-white/50 relative z-10">
+          <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 relative z-10">
             <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} />
             <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
           </Avatar>
@@ -177,7 +148,7 @@ export default function DashboardLayoutClient({
             <p className="text-lg font-bold text-white drop-shadow-sm line-clamp-1">{profile?.full_name || 'Guru'}</p>
             <div className="mt-2">
               <Badge variant={'outline'} className="text-[10px] font-black uppercase tracking-wider backdrop-blur-sm border-white/30 bg-green-500/20 text-green-100">
-                PRO ACTIVE
+                {profile?.role?.toUpperCase() || 'TEACHER'}
               </Badge>
             </div>
           </div>
@@ -191,21 +162,14 @@ export default function DashboardLayoutClient({
           <ProfileHeader />
           <SidebarContent className="p-0 bg-slate-50">
             <ScrollArea className="flex-1">
-                {/* 1. Monitoring Group */}
+                {/* 1. Monitoring Group (Desktop List) */}
                 {(isHeadmaster || isAdmin) && (
                     <SidebarGroup className="p-4 pb-2">
                         <SidebarGroupLabel className="text-teal-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Monitoring Kepala</SidebarGroupLabel>
-                        <SidebarMenu>
-                          <CollapsibleGroup 
-                            title="Panel Monitoring" 
-                            icon={ShieldCheck} 
-                            accentColor="text-teal-600"
-                            items={[
-                              { href: '/monitoring', icon: LayoutDashboard, label: 'Statistik' },
-                              { href: '/monitoring/teacher-attendance', icon: UserCheck, label: 'Absensi Guru' },
-                              { href: '/monitoring/teacher-activity', icon: Activity, label: 'Aktivitas Staf' },
-                            ]}
-                          />
+                        <SidebarMenu className="gap-1">
+                          <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-teal-600" />
+                          <NavItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="text-teal-600" />
+                          <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas Staf" color="text-teal-600" />
                         </SidebarMenu>
                     </SidebarGroup>
                 )}
@@ -214,17 +178,10 @@ export default function DashboardLayoutClient({
                 {isHomeroom && (
                   <SidebarGroup className="p-4 py-2">
                       <SidebarGroupLabel className="text-emerald-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Menu Wali Kelas</SidebarGroupLabel>
-                      <SidebarMenu>
-                        <CollapsibleGroup 
-                          title="Perwalian" 
-                          icon={Users2} 
-                          accentColor="text-emerald-600"
-                          items={[
-                            { href: '/dashboard/homeroom/student-ledger', icon: ClipboardList, label: 'Leger & Catatan' },
-                            { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Progres Siswa' },
-                            { href: '/dashboard/homeroom/reports', icon: TableIcon, label: 'Laporan Bulanan' },
-                          ]}
-                        />
+                      <SidebarMenu className="gap-1">
+                        <NavItem href="/dashboard/homeroom/student-ledger" icon={ClipboardEdit} label="Leger & Catatan" color="text-emerald-600" />
+                        <NavItem href="/dashboard/homeroom/student-progress" icon={TrendingUp} label="Progres Siswa" color="text-emerald-600" />
+                        <NavItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Laporan Bulanan" color="text-emerald-600" />
                       </SidebarMenu>
                   </SidebarGroup>
                 )}
@@ -248,49 +205,28 @@ export default function DashboardLayoutClient({
 
                 {/* 4. AI Pembelajaran Group */}
                 <SidebarGroup className="p-4 py-2">
-                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
-                      <Sparkles className="w-3 h-3" /> AI Pembelajaran
-                    </SidebarGroupLabel>
-                    <SidebarMenu>
-                      <CollapsibleGroup 
-                        title="Asisten AI" 
-                        icon={Sparkles} 
-                        accentColor="text-indigo-600"
-                        items={[
-                          { href: '/dashboard/ai-pembelajaran/bank-soal', icon: Database, label: 'Bank Soal AI' },
-                          { href: '/dashboard/ai-pembelajaran/modul-ajar', icon: FileText, label: 'Modul Ajar' },
-                          { href: '/dashboard/ai-pembelajaran/lkpd', icon: ClipboardEdit, label: 'Pembuatan LKPD' },
-                          { href: '/dashboard/ai-pembelajaran/generate-soal', icon: PlusCircle, label: 'Generate Soal' },
-                        ]}
-                      />
+                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Asisten AI</SidebarGroupLabel>
+                    <SidebarMenu className="gap-1">
+                      <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
+                      <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul Ajar" color="text-indigo-600" />
+                      <NavItem href="/dashboard/ai-pembelajaran/lkpd" icon={ClipboardEdit} label="Pembuatan LKPD" color="text-indigo-600" />
+                      <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
                     </SidebarMenu>
                 </SidebarGroup>
 
-                {/* 5. Panel Admin Group */}
+                {/* 5. Panel Admin (Single Link) */}
                 {isAdmin && (
                   <SidebarGroup className="p-4 pt-2">
                       <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Panel Admin</SidebarGroupLabel>
                       <SidebarMenu>
-                        <CollapsibleGroup 
-                          title="Manajemen Sistem" 
-                          icon={ShieldCheck} 
-                          accentColor="text-purple-600"
-                          items={[
-                            { href: '/admin/codes', icon: Ticket, label: 'Token Aktivasi' },
-                            { href: '/admin/users', icon: Users, label: 'Staf & Approval' },
-                            { href: '/admin/roster/school-year', icon: CalendarCheck, label: 'Tahun Ajaran' },
-                            { href: '/admin/roster/classes', icon: School, label: 'Data Kelas' },
-                            { href: '/admin/roster/subjects', icon: BookOpen, label: 'Data Mapel' },
-                            { href: '/admin/roster/students', icon: Users2, label: 'Data Siswa' },
-                            { href: '/admin/roster/promotion', icon: ArrowRightLeft, label: 'Promosi Siswa' },
-                            { href: '/admin/roster/alumni', icon: GraduationCap, label: 'Arsip Alumni' },
-                            { href: '/admin/settings/school', icon: Building, label: 'Data Sekolah' },
-                            { href: '/admin/settings/location', icon: MapPin, label: 'Setelan Lokasi' },
-                            { href: '/admin/settings/whatsapp', icon: MessageSquare, label: 'WhatsApp API' },
-                            { href: '/admin/settings/schedule', icon: CalendarClock, label: 'Master Jadwal' },
-                            { href: '/admin/settings/holidays', icon: CalendarOff, label: 'Hari Libur' },
-                          ]}
-                        />
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-black h-12 rounded-xl border border-purple-100 shadow-sm">
+                                <Link href="/admin/users">
+                                    <ShieldCheck className="w-5 h-5 mr-2" />
+                                    <span>Buka Panel Admin</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
                       </SidebarMenu>
                   </SidebarGroup>
                 )}
@@ -380,51 +316,71 @@ export default function DashboardLayoutClient({
                             </Avatar>
                             <div className="min-w-0 flex-1">
                                 <h3 className="text-xl font-black text-slate-900 leading-tight truncate">{profile?.full_name}</h3>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{profile?.role === 'admin' ? 'Administrator' : 'Guru Profesional'}</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{profile?.role?.toUpperCase()}</p>
                             </div>
                         </div>
 
-                        {/* 1. Monitoring (Mobile Dropdown) */}
+                        {/* 1. Monitoring Kepala (Model Android Grid - Collapsible) */}
                         {(isHeadmaster || isAdmin) && (
                           <div className="space-y-3">
-                            <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest pl-2">Monitoring Kepala</p>
-                            <div className="grid grid-cols-1 gap-2">
-                              {[
-                                { href: '/monitoring', icon: LayoutDashboard, label: 'Statistik Data', color: 'bg-teal-500' },
-                                { href: '/monitoring/teacher-attendance', icon: UserCheck, label: 'Absensi Guru', color: 'bg-teal-500' },
-                                { href: '/monitoring/teacher-activity', icon: Activity, label: 'Aktivitas Staf', color: 'bg-teal-500' },
-                              ].map(item => (
-                                <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl active:scale-95 transition-all">
-                                  <div className={cn("p-2 rounded-xl text-white", item.color)}><item.icon className="w-5 h-5" /></div>
-                                  <span className="font-bold text-slate-700">{item.label}</span>
-                                </Link>
-                              ))}
+                            <div className="flex items-center justify-between px-2">
+                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em]">Monitoring Kepala</p>
+                                <button 
+                                    onClick={() => setIsMonitoringExpanded(!isMonitoringExpanded)}
+                                    className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1"
+                                >
+                                    {isMonitoringExpanded ? 'Sembunyikan' : 'Tampilkan'}
+                                    {isMonitoringExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                </button>
                             </div>
+                            {isMonitoringExpanded && (
+                                <div className="grid grid-cols-4 gap-y-6 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    {[
+                                      { href: '/monitoring', icon: LayoutDashboard, label: 'Statistik', color: 'bg-teal-500' },
+                                      { href: '/monitoring/teacher-attendance', icon: UserCheck, label: 'Absensi', color: 'bg-teal-500' },
+                                      { href: '/monitoring/teacher-activity', icon: Activity, label: 'Aktivitas', color: 'bg-teal-500' },
+                                    ].map((item) => (
+                                        <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-2 transition-transform active:scale-90">
+                                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
+                                                <item.icon className="w-6 h-6" />
+                                            </div>
+                                            <span className="text-[10px] font-black text-center leading-tight uppercase tracking-wider text-slate-600">{item.label}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                            {!isMonitoringExpanded && (
+                                <div className="p-4 bg-teal-50/50 rounded-2xl border border-teal-100 flex items-center justify-center">
+                                    <p className="text-[10px] font-bold text-teal-600/70 italic">Sistem Monitoring Aktif</p>
+                                </div>
+                            )}
                           </div>
                         )}
 
-                        {/* 2. Wali Kelas (Mobile Dropdown) */}
+                        {/* 2. Wali Kelas (Grid Style) */}
                         {isHomeroom && (
                           <div className="space-y-3">
-                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest pl-2">Menu Wali Kelas</p>
-                            <div className="grid grid-cols-1 gap-2">
-                              {[
-                                { href: '/dashboard/homeroom/student-ledger', icon: ClipboardList, label: 'Leger & Catatan', color: 'bg-emerald-500' },
-                                { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Progres Belajar', color: 'bg-emerald-500' },
-                                { href: '/dashboard/homeroom/reports', icon: TableIcon, label: 'Laporan Bulanan', color: 'bg-emerald-500' },
-                              ].map(item => (
-                                <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl active:scale-95 transition-all">
-                                  <div className={cn("p-2 rounded-xl text-white", item.color)}><item.icon className="w-5 h-5" /></div>
-                                  <span className="font-bold text-slate-700">{item.label}</span>
-                                </Link>
-                              ))}
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] px-2">Menu Wali Kelas</p>
+                            <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                                {[
+                                  { href: '/dashboard/homeroom/student-ledger', icon: ClipboardEdit, label: 'Leger', color: 'bg-emerald-500' },
+                                  { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Progres', color: 'bg-emerald-500' },
+                                  { href: '/dashboard/homeroom/reports', icon: TableIcon, label: 'Bulanan', color: 'bg-emerald-500' },
+                                ].map((item) => (
+                                    <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-2 transition-transform active:scale-90">
+                                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
+                                            <item.icon className="w-6 h-6" />
+                                        </div>
+                                        <span className="text-[10px] font-black text-center leading-tight uppercase tracking-wider text-slate-600">{item.label}</span>
+                                    </Link>
+                                ))}
                             </div>
                           </div>
                         )}
 
-                        {/* 3. Dashboard Guru (Icons Grid) */}
+                        {/* 3. Dashboard Guru (Icons Grid - Model Android) */}
                         <div className="space-y-4">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Dashboard Guru</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Dashboard Guru</p>
                             <div className="grid grid-cols-4 gap-y-6 gap-x-2">
                                 {[
                                   { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
@@ -448,38 +404,37 @@ export default function DashboardLayoutClient({
                             </div>
                         </div>
 
-                        {/* 4. AI Pembelajaran (Mobile Dropdown) */}
+                        {/* 4. AI Pembelajaran (Sub Grid) */}
                         <div className="space-y-3">
-                          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest pl-2 flex items-center gap-2"><Sparkles className="w-3 h-3" /> AI Pembelajaran</p>
-                          <div className="grid grid-cols-2 gap-2">
+                          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-2 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
+                          <div className="grid grid-cols-4 gap-y-6 gap-x-2">
                              {[
-                                { href: '/dashboard/ai-pembelajaran/bank-soal', icon: Database, label: 'Bank Soal' },
-                                { href: '/dashboard/ai-pembelajaran/modul-ajar', icon: FileText, label: 'Modul Ajar' },
-                                { href: '/dashboard/ai-pembelajaran/lkpd', icon: ClipboardEdit, label: 'LKPD' },
-                                { href: '/dashboard/ai-pembelajaran/generate-soal', icon: PlusCircle, label: 'Gen Soal' },
+                                { href: '/dashboard/ai-pembelajaran/bank-soal', icon: Database, label: 'Bank Soal', color: 'bg-indigo-600' },
+                                { href: '/dashboard/ai-pembelajaran/modul-ajar', icon: FileText, label: 'Modul', color: 'bg-indigo-600' },
+                                { href: '/dashboard/ai-pembelajaran/lkpd', icon: ClipboardEdit, label: 'LKPD', color: 'bg-indigo-600' },
+                                { href: '/dashboard/ai-pembelajaran/generate-soal', icon: PlusCircle, label: 'Gen Soal', color: 'bg-indigo-600' },
                              ].map(item => (
-                               <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-2xl active:scale-95 transition-all">
-                                 <div className="p-1.5 rounded-lg bg-indigo-600 text-white"><item.icon className="w-3.5 h-3.5" /></div>
-                                 <span className="font-bold text-indigo-700 text-[10px] uppercase tracking-tight">{item.label}</span>
-                               </Link>
+                                <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-2 transition-transform active:scale-90">
+                                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
+                                        <item.icon className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-[10px] font-black text-center leading-tight uppercase tracking-wider text-slate-600">{item.label}</span>
+                                </Link>
                              ))}
                           </div>
                         </div>
 
-                        {/* 5. Panel Admin (Mobile Dropdown) */}
+                        {/* 5. Panel Admin (Single Button Style) */}
                         {isAdmin && (
                           <div className="space-y-3">
-                            <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest pl-2">Panel Admin Utama</p>
-                            <div className="grid grid-cols-1 gap-2">
-                              <Link href="/admin/users" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-4 bg-purple-50 border border-purple-100 rounded-2xl active:scale-95 transition-all">
-                                <div className="p-2 rounded-xl bg-purple-600 text-white"><Users className="w-5 h-5" /></div>
-                                <span className="font-bold text-purple-700">Kelola Staf & Approval</span>
-                              </Link>
-                              <Link href="/admin/roster/students" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-4 bg-purple-50 border border-purple-100 rounded-2xl active:scale-95 transition-all">
-                                <div className="p-2 rounded-xl bg-purple-600 text-white"><Users2 className="w-5 h-5" /></div>
-                                <span className="font-bold text-purple-700">Data Master Rombel</span>
-                              </Link>
-                            </div>
+                            <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-2">Panel Admin</p>
+                            <Link href="/admin/users" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-5 bg-purple-600 text-white rounded-[2rem] shadow-xl shadow-purple-200 active:scale-95 transition-all">
+                                <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-sm"><ShieldCheck className="w-6 h-6" /></div>
+                                <div className="flex flex-col flex-1">
+                                    <span className="font-black text-lg tracking-tight leading-none">Buka Panel Admin Utama</span>
+                                    <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest mt-1">Manajemen & Pengaturan Sistem</span>
+                                </div>
+                            </Link>
                           </div>
                         )}
                         
