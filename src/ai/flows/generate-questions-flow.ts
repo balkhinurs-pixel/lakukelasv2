@@ -71,7 +71,7 @@ export async function generateQuestions(input: GenerateQuestionsInput): Promise<
 
   const response = await ai.generate({
     output: { schema: GenerateQuestionsOutputSchema },
-    prompt: `Anda adalah asisten guru profesional di Indonesia yang ahli dalam membuat soal ${input.curriculum}.
+    prompt: `Anda adalah asisten guru profesional di Indonesia yang ahli dalam kurikulum ${input.curriculum}.
     
 Tugas Anda:
 Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilihan Ganda' : 'Esai'} untuk:
@@ -90,9 +90,10 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 Aturan Penting:
 1. Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
 2. Rumus Matematika: Gunakan LaTeX valid (contoh: \\(x^2 + 2x + 1 = 0\\)).
-3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl'.
-4. Pastikan soal berkualitas, tidak ambigu, dan sesuai level siswa.
+3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl' jika ada teks Arab.
+4. Pastikan soal berkualitas, tidak ambigu, dan sesuai level siswa kelas ${input.kelas}.
 5. Berikan pembahasan (explanation) yang ringkas namun jelas.
+${input.curriculum.includes('KBC') ? 'Gunakan pendekatan Kurikulum Berbasis Capaian (KBC) Kemenag yang menekankan pada nilai-nilai moderasi beragama jika relevan.' : ''}
 
 Output harus berupa JSON valid sesuai skema yang diminta.`,
   });

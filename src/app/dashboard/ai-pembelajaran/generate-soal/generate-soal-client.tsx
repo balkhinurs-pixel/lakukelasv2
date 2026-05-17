@@ -4,19 +4,14 @@ import * as React from "react";
 import { 
     Wand2, 
     Sparkles, 
-    Layers, 
     Loader2, 
     BrainCircuit, 
     CheckCircle2, 
     Save, 
-    FileText,
-    Target,
-    Zap,
-    BookOpen,
-    GraduationCap,
+    Target, 
+    Zap, 
     ArrowRight,
-    Search,
-    ChevronDown
+    AlertTriangle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,12 +20,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { generateQuestionsAction } from "@/lib/actions/ai";
+import { generateQuestionsAction, saveQuestionsAction } from "@/lib/actions/ai";
 import type { Class, Subject, GeneratedQuestion, QuestionGenerationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
+import { useRouter } from "next/navigation";
 
 export default function GenerateSoalClient({ 
     classes, 
@@ -40,12 +36,14 @@ export default function GenerateSoalClient({
     subjects: Subject[] 
 }) {
     const { toast } = useToast();
+    const router = useRouter();
     const [loading, setLoading] = React.useState(false);
+    const [saving, setSaving] = React.useState(false);
     const [questions, setQuestions] = React.useState<GeneratedQuestion[]>([]);
 
     const [form, setForm] = React.useState<QuestionGenerationInput>({
         jenjang: 'SMP/MTs',
-        kelas: '',
+        kelas: '7',
         semester: 'Ganjil',
         subject: '',
         curriculum: 'Kurikulum Merdeka',
@@ -59,6 +57,23 @@ export default function GenerateSoalClient({
         count: 5,
         difficulty: 'sedang'
     });
+
+    // Mapping Kelas berdasarkan Jenjang sesuai PRD
+    const getClassOptions = (jenjang: string) => {
+        if (jenjang === 'SD/MI') return ['1', '2', '3', '4', '5', '6'];
+        if (jenjang === 'SMP/MTs') return ['7', '8', '9'];
+        if (jenjang === 'SMA/MA' || jenjang === 'SMK/MAK') return ['10', '11', '12'];
+        return [];
+    };
+
+    const handleJenjangChange = (val: string) => {
+        const options = getClassOptions(val);
+        setForm({
+            ...form,
+            jenjang: val,
+            kelas: options[0] || ''
+        });
+    };
 
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -79,6 +94,22 @@ export default function GenerateSoalClient({
         setLoading(false);
     };
 
+    const handleSaveToBankSoal = async () => {
+        if (questions.length === 0) return;
+        
+        setSaving(true);
+        const result = await saveQuestionsAction(form, questions);
+        
+        if (result.success) {
+            toast({ title: "Tersimpan!", description: "Soal-soal telah berhasil disimpan ke Bank Soal." });
+            setQuestions([]); // Kosongkan draft setelah simpan
+            router.push('/dashboard/ai-pembelajaran/bank-soal');
+        } else {
+            toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
+        }
+        setSaving(false);
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-1">
             {/* Sidebar Form Config */}
@@ -94,8 +125,8 @@ export default function GenerateSoalClient({
                         {/* Row 1: Jenjang & Kurikulum */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang Pendidikan</Label>
-                                <Select value={form.jenjang} onValueChange={(v) => setForm({...form, jenjang: v})}>
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
+                                <Select value={form.jenjang} onValueChange={handleJenjangChange}>
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="SD/MI" className="font-bold">SD / MI</SelectItem>
@@ -111,14 +142,14 @@ export default function GenerateSoalClient({
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="Kurikulum Merdeka" className="font-bold">Merdeka</SelectItem>
+                                        <SelectItem value="Kurikulum Merdeka (KBC)" className="font-bold text-indigo-600">Kemenag (KBC)</SelectItem>
                                         <SelectItem value="K-13" className="font-bold">K-13</SelectItem>
-                                        <SelectItem value="Kurikulum Kemenag" className="font-bold">Kemenag</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
 
-                        {/* Row 2: Mapel & Kelas */}
+                        {/* Row 2: Mapel & Kelas (Angka saja) */}
                         <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
@@ -131,12 +162,14 @@ export default function GenerateSoalClient({
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                <Input 
-                                    placeholder="e.g. 7, 8, 9, atau 10-A" 
-                                    className="rounded-xl bg-slate-50 border-0 h-11 font-bold"
-                                    value={form.kelas}
-                                    onChange={(e) => setForm({...form, kelas: e.target.value})}
-                                />
+                                <Select value={form.kelas} onValueChange={(v) => setForm({...form, kelas: v})}>
+                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {getClassOptions(form.jenjang).map(k => (
+                                            <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
 
@@ -167,19 +200,18 @@ export default function GenerateSoalClient({
                             </div>
                         </div>
 
-                        {/* Row 4: Topik & Sub-topik */}
                         <div className="space-y-4 pt-2 border-t border-slate-50">
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label>
                                 <Input 
-                                    placeholder="Contoh: Persamaan Linear Satu Variabel" 
+                                    placeholder="Contoh: Persamaan Linear" 
                                     className="rounded-xl bg-slate-50 border-0 h-11 font-bold"
                                     value={form.topic}
                                     onChange={(e) => setForm({...form, topic: e.target.value})}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sub-topik / Spesifik (Opsional)</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sub-topik (Opsional)</Label>
                                 <Input 
                                     placeholder="Contoh: Metode Eliminasi" 
                                     className="rounded-xl bg-slate-50 border-0 h-11 font-bold"
@@ -189,7 +221,6 @@ export default function GenerateSoalClient({
                             </div>
                         </div>
 
-                        {/* Row 5: Kognitif & Mode */}
                         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Level Kognitif</Label>
@@ -197,12 +228,12 @@ export default function GenerateSoalClient({
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="Variatif" className="font-bold">Campuran</SelectItem>
-                                        <SelectItem value="C1 - Mengingat" className="font-bold">C1 - Mengingat</SelectItem>
-                                        <SelectItem value="C2 - Memahami" className="font-bold">C2 - Memahami</SelectItem>
-                                        <SelectItem value="C3 - Menerapkan" className="font-bold">C3 - Menerapkan</SelectItem>
-                                        <SelectItem value="C4 - Menganalisis" className="font-bold">C4 - Menganalisis</SelectItem>
-                                        <SelectItem value="C5 - Mengevaluasi" className="font-bold">C5 - Mengevaluasi</SelectItem>
-                                        <SelectItem value="C6 - Mencipta" className="font-bold">C6 - Mencipta</SelectItem>
+                                        <SelectItem value="C1 - Mengingat" className="font-bold">C1</SelectItem>
+                                        <SelectItem value="C2 - Memahami" className="font-bold">C2</SelectItem>
+                                        <SelectItem value="C3 - Menerapkan" className="font-bold">C3</SelectItem>
+                                        <SelectItem value="C4 - Menganalisis" className="font-bold">C4</SelectItem>
+                                        <SelectItem value="C5 - Mengevaluasi" className="font-bold">C5</SelectItem>
+                                        <SelectItem value="C6 - Mencipta" className="font-bold">C6</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -212,28 +243,27 @@ export default function GenerateSoalClient({
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="Reguler" className="font-bold">Reguler</SelectItem>
-                                        <SelectItem value="HOTS" className="font-bold">HOTS (Berpikir Kritis)</SelectItem>
-                                        <SelectItem value="Remedial" className="font-bold">Sederhana (Remedial)</SelectItem>
+                                        <SelectItem value="HOTS" className="font-bold">HOTS</SelectItem>
+                                        <SelectItem value="Remedial" className="font-bold">Remedial</SelectItem>
                                         <SelectItem value="Pengayaan" className="font-bold">Pengayaan</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
 
-                        {/* Row 6: Jenis & Kesulitan */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Soal</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis</Label>
                                 <Select value={form.question_type} onValueChange={(v: any) => setForm({...form, question_type: v})}>
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="multiple_choice" className="font-bold">Pilihan Ganda</SelectItem>
-                                        <SelectItem value="essay" className="font-bold">Esai / Uraian</SelectItem>
+                                        <SelectItem value="essay" className="font-bold">Esai</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tingkat Kesulitan</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kesulitan</Label>
                                 <Select value={form.difficulty} onValueChange={(v: any) => setForm({...form, difficulty: v})}>
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
@@ -246,10 +276,10 @@ export default function GenerateSoalClient({
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Ringkasan Materi / Instruksi Khusus</Label>
+                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Instruksi Khusus (Opsional)</Label>
                             <Textarea 
-                                placeholder="Masukkan ringkasan materi atau instruksi khusus untuk AI (maks 2.000 karakter)..." 
-                                className="rounded-2xl bg-slate-50 border-0 min-h-[100px] font-medium resize-none focus:ring-2 focus:ring-indigo-500/20"
+                                placeholder="Misal: Buat soal dengan teks Bahasa Arab..." 
+                                className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none"
                                 value={form.instruction}
                                 onChange={(e) => setForm({...form, instruction: e.target.value})}
                             />
@@ -279,16 +309,19 @@ export default function GenerateSoalClient({
                             <div>
                                 <CardTitle className="text-xl font-black">Pratinjau Hasil</CardTitle>
                                 {questions.length > 0 && (
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Dihasilkan dalam format terstruktur</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Berhasil Dibuat (Draft)</p>
                                 )}
                             </div>
                         </div>
                         {questions.length > 0 && (
-                            <div className="flex gap-2">
-                                <Button className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100">
-                                    <Save className="h-4 w-4" /> Simpan ke Bank Soal
-                                </Button>
-                            </div>
+                            <Button 
+                                onClick={handleSaveToBankSoal}
+                                disabled={saving}
+                                className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100"
+                            >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                Simpan ke Bank Soal
+                            </Button>
                         )}
                     </CardHeader>
                     <CardContent className="flex-grow p-6 relative">
@@ -303,17 +336,17 @@ export default function GenerateSoalClient({
                                         <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest flex items-center gap-2">
                                             <AlertTriangle className="h-3 w-3" /> Status: Perlu Review
                                         </p>
-                                        <p className="text-xs text-amber-700 mt-1 font-medium">Hasil AI wajib diperiksa guru sebelum disimpan ke Bank Soal.</p>
+                                        <p className="text-xs text-amber-700 mt-1 font-medium">Klik simpan jika sudah sesuai.</p>
                                     </div>
 
                                     {questions.map((q, idx) => (
-                                        <div key={idx} className="p-8 rounded-[2rem] border border-slate-100 bg-white hover:border-indigo-100 transition-all shadow-sm group">
+                                        <div key={idx} className="p-6 rounded-[2rem] border border-slate-100 bg-white hover:border-indigo-100 transition-all shadow-sm">
                                             <div className="flex items-start gap-5">
-                                                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black shrink-0 shadow-inner group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black shrink-0 shadow-inner">
                                                     {q.sort_order}
                                                 </div>
-                                                <div className="flex-1 space-y-6">
-                                                    <div className="font-bold text-slate-900 text-xl leading-relaxed">
+                                                <div className="flex-1 space-y-4">
+                                                    <div className="font-bold text-slate-900 text-lg leading-relaxed">
                                                         {q.question.includes('\\(') || q.question.includes('\\[') ? (
                                                             <div className="math-container">
                                                                 {q.question.split(/(\\\[.*?\\\]|\\\(.*?\\\))/g).map((part, i) => {
@@ -328,17 +361,17 @@ export default function GenerateSoalClient({
                                                     </div>
 
                                                     {q.type === 'multiple_choice' && q.options && (
-                                                        <div className="grid grid-cols-1 gap-3 pl-2">
+                                                        <div className="grid grid-cols-1 gap-2 pl-2">
                                                             {Object.entries(q.options).sort().map(([key, val]) => (
                                                                 <div key={key} className={cn(
-                                                                    "p-4 rounded-2xl border flex items-center gap-4 transition-all",
-                                                                    q.answer === key ? "bg-emerald-50 border-emerald-200 shadow-sm" : "bg-slate-50/50 border-slate-100 hover:bg-slate-50"
+                                                                    "p-3 rounded-xl border flex items-center gap-4",
+                                                                    q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100"
                                                                 )}>
                                                                     <span className={cn(
-                                                                        "w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shadow-sm",
+                                                                        "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shadow-sm",
                                                                         q.answer === key ? "bg-emerald-500 text-white" : "bg-white text-slate-400 border border-slate-100"
                                                                     )}>{key}</span>
-                                                                    <span className="text-base font-semibold text-slate-700">
+                                                                    <span className="text-sm font-semibold text-slate-700">
                                                                         {val.includes('\\(') ? <InlineMath math={val.replace(/\\\(|\\\)/g, '')} /> : val}
                                                                     </span>
                                                                 </div>
@@ -346,27 +379,22 @@ export default function GenerateSoalClient({
                                                         </div>
                                                     )}
 
-                                                    <div className="mt-8 space-y-4">
+                                                    <div className="mt-4 pt-4 border-t border-slate-50 space-y-3">
                                                         <div className="flex flex-wrap gap-2">
                                                             <Badge variant="outline" className="rounded-lg bg-indigo-50 text-indigo-700 border-indigo-100 font-bold uppercase text-[9px] tracking-widest">{q.cognitive_level}</Badge>
                                                             <Badge variant="outline" className="rounded-lg bg-slate-50 text-slate-600 border-slate-100 font-bold uppercase text-[9px] tracking-widest">{q.difficulty}</Badge>
                                                         </div>
-                                                        
-                                                        <div className="p-6 rounded-[1.5rem] bg-indigo-50/30 border border-indigo-100/50 space-y-3">
-                                                            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-indigo-400 tracking-[0.2em]">
-                                                                <Target className="h-3.5 w-3.5" /> Kunci & Pembahasan
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <p className="text-sm font-black text-indigo-700">Kunci Jawaban: {q.answer}</p>
-                                                                <p className="text-sm text-slate-600 font-medium leading-relaxed italic">{q.explanation}</p>
-                                                            </div>
+                                                        <div className="p-4 rounded-xl bg-slate-50/50 border border-slate-100 space-y-1">
+                                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Kunci Jawaban</p>
+                                                            <p className="text-sm font-bold text-slate-700">{q.answer}</p>
+                                                            <p className="text-xs text-slate-500 italic mt-2 leading-relaxed">{q.explanation}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
-                                    <div className="pt-10 flex justify-center">
+                                    <div className="pt-6 flex justify-center">
                                          <Button variant="outline" className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest border-slate-200" onClick={handleGenerate}>
                                              <Sparkles className="mr-2 h-4 w-4 text-indigo-600" />
                                              Generate 5 Soal Lagi
@@ -376,43 +404,23 @@ export default function GenerateSoalClient({
                             ) : (
                                 <div className="h-full flex flex-col items-center justify-center text-center py-24 px-10">
                                     <div className="p-12 rounded-[4rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-500">
-                                        <Wand2 className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 group-hover:scale-110 transition-all duration-500" />
+                                        <Wand2 className="h-20 w-20 text-slate-200 group-hover:text-indigo-200 transition-all duration-500" />
                                     </div>
-                                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Siap Menyusun Soal</h3>
-                                    <p className="text-base font-bold text-slate-400 mt-3 max-w-sm leading-relaxed">
-                                        Lengkapi parameter di samping untuk membuat soal otomatis sesuai standar Kurikulum Merdeka.
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">AI Siap Bekerja</h3>
+                                    <p className="text-sm font-bold text-slate-400 mt-3 max-w-sm leading-relaxed">
+                                        Atur parameter kurikulum dan materi, lalu klik Generate untuk menyusun bank soal otomatis.
                                     </p>
-                                    <div className="mt-12 flex items-center gap-6 opacity-30 select-none grayscale">
-                                         <div className="flex flex-col items-center gap-3">
-                                             <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center font-black">1</div>
-                                             <span className="text-[10px] font-black uppercase tracking-widest">Konfigurasi</span>
-                                         </div>
-                                         <ArrowRight className="h-5 w-5" />
-                                         <div className="flex flex-col items-center gap-3">
-                                             <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center font-black">2</div>
-                                             <span className="text-[10px] font-black uppercase tracking-widest">Review AI</span>
-                                         </div>
-                                         <ArrowRight className="h-5 w-5" />
-                                         <div className="flex flex-col items-center gap-3">
-                                             <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-black">3</div>
-                                             <span className="text-[10px] font-black uppercase tracking-widest">Bank Soal</span>
-                                         </div>
-                                    </div>
                                 </div>
                             )}
                         </AnimatePresence>
 
                         {loading && (
-                            <div className="absolute inset-0 bg-white/90 backdrop-blur-md z-30 flex flex-col items-center justify-center gap-6 p-10 text-center animate-in fade-in duration-300">
+                            <div className="absolute inset-0 bg-white/90 backdrop-blur-md z-30 flex flex-col items-center justify-center gap-6 p-10 text-center">
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
                                     <Loader2 className="h-16 w-16 animate-spin text-indigo-600 relative z-10" />
                                 </div>
-                                <div className="space-y-2 relative z-10">
-                                    <p className="text-2xl font-black uppercase tracking-tight text-slate-900">Menyusun Pertanyaan...</p>
-                                    <p className="text-sm text-slate-500 font-bold uppercase tracking-[0.2em]">Menggunakan Model Gemini 2.5 Flash</p>
-                                    <p className="text-xs text-indigo-600/70 font-medium italic mt-4">“Tunggu sejenak, asisten AI sedang memproses parameter kurikulum Anda.”</p>
-                                </div>
+                                <p className="text-xl font-black uppercase tracking-tight text-slate-900">Menyusun Draft Soal...</p>
                             </div>
                         )}
                     </CardContent>
@@ -430,14 +438,8 @@ export default function GenerateSoalClient({
                     background: #e2e8f0;
                     border-radius: 10px;
                 }
-                .math-container {
-                    line-height: 1.8;
-                }
                 .math-container .katex-display {
-                    margin: 1em 0;
-                    padding: 1em;
-                    background: #f8fafc;
-                    border-radius: 1rem;
+                    margin: 0.5em 0;
                     overflow-x: auto;
                     overflow-y: hidden;
                 }
