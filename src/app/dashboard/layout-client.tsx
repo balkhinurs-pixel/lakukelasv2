@@ -24,23 +24,11 @@ import {
   UserCheck,
   TrendingUp,
   Table as TableIcon,
-  Users2,
-  Ticket,
   Users,
-  CalendarCheck,
-  School,
-  BookOpen,
-  ArrowRightLeft,
-  GraduationCap,
-  Building,
-  CalendarOff,
-  MessageSquare,
-  Search,
-  ChevronUp,
-  Settings2,
-  Database,
   PlusCircle,
-  FileText
+  FileText,
+  Database,
+  ChevronUp
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -56,10 +44,6 @@ import {
   SidebarTrigger,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarSeparator,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -81,11 +65,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 export default function DashboardLayoutClient({ 
   children,
@@ -162,7 +141,6 @@ export default function DashboardLayoutClient({
           <ProfileHeader />
           <SidebarContent className="p-0 bg-slate-50">
             <ScrollArea className="flex-1">
-                {/* 1. Monitoring Group (Desktop List) */}
                 {(isHeadmaster || isAdmin) && (
                     <SidebarGroup className="p-4 pb-2">
                         <SidebarGroupLabel className="text-teal-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Monitoring Kepala</SidebarGroupLabel>
@@ -174,7 +152,6 @@ export default function DashboardLayoutClient({
                     </SidebarGroup>
                 )}
 
-                {/* 2. Wali Kelas Group */}
                 {isHomeroom && (
                   <SidebarGroup className="p-4 py-2">
                       <SidebarGroupLabel className="text-emerald-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Menu Wali Kelas</SidebarGroupLabel>
@@ -186,7 +163,6 @@ export default function DashboardLayoutClient({
                   </SidebarGroup>
                 )}
 
-                {/* 3. Dashboard Guru (Main) */}
                 <SidebarGroup className="p-4 py-2">
                     <SidebarGroupLabel className="text-slate-400 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Dashboard Guru</SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
@@ -203,7 +179,6 @@ export default function DashboardLayoutClient({
                     </SidebarMenu>
                 </SidebarGroup>
 
-                {/* 4. AI Pembelajaran Group */}
                 <SidebarGroup className="p-4 py-2">
                     <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Asisten AI</SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
@@ -214,7 +189,6 @@ export default function DashboardLayoutClient({
                     </SidebarMenu>
                 </SidebarGroup>
 
-                {/* 5. Panel Admin (Single Link) */}
                 {isAdmin && (
                   <SidebarGroup className="p-4 pt-2">
                       <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Panel Admin</SidebarGroupLabel>
@@ -306,9 +280,8 @@ export default function DashboardLayoutClient({
                 className="rounded-t-[40px] border-t-0 p-0 overflow-hidden bg-white/95 backdrop-blur-xl h-[85vh] z-[40] animate-in slide-in-from-bottom duration-300"
               >
                 <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4" />
-                <ScrollArea className="h-full px-6 pt-4 pb-20">
-                    <div className="space-y-8 pb-32">
-                        {/* Mobile User Profile */}
+                <ScrollArea className="h-full px-6 pt-2 pb-10">
+                    <div className="space-y-5">
                         <div className="flex items-center gap-4 p-2">
                             <Avatar className="h-14 w-14 border-2 border-indigo-100 shadow-md">
                                 <AvatarImage src={profile?.avatar_url} />
@@ -320,9 +293,8 @@ export default function DashboardLayoutClient({
                             </div>
                         </div>
 
-                        {/* 1. Monitoring Kepala (Model Android Grid - Collapsible) */}
                         {(isHeadmaster || isAdmin) && (
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             <div className="flex items-center justify-between px-2">
                                 <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em]">Monitoring Kepala</p>
                                 <button 
@@ -334,7 +306,7 @@ export default function DashboardLayoutClient({
                                 </button>
                             </div>
                             {isMonitoringExpanded && (
-                                <div className="grid grid-cols-4 gap-y-6 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
                                     {[
                                       { href: '/monitoring', icon: LayoutDashboard, label: 'Statistik', color: 'bg-teal-500' },
                                       { href: '/monitoring/teacher-attendance', icon: UserCheck, label: 'Absensi', color: 'bg-teal-500' },
@@ -349,19 +321,13 @@ export default function DashboardLayoutClient({
                                     ))}
                                 </div>
                             )}
-                            {!isMonitoringExpanded && (
-                                <div className="p-4 bg-teal-50/50 rounded-2xl border border-teal-100 flex items-center justify-center">
-                                    <p className="text-[10px] font-bold text-teal-600/70 italic">Sistem Monitoring Aktif</p>
-                                </div>
-                            )}
                           </div>
                         )}
 
-                        {/* 2. Wali Kelas (Grid Style) */}
                         {isHomeroom && (
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] px-2">Menu Wali Kelas</p>
-                            <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                            <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 {[
                                   { href: '/dashboard/homeroom/student-ledger', icon: ClipboardEdit, label: 'Leger', color: 'bg-emerald-500' },
                                   { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Progres', color: 'bg-emerald-500' },
@@ -378,10 +344,9 @@ export default function DashboardLayoutClient({
                           </div>
                         )}
 
-                        {/* 3. Dashboard Guru (Icons Grid - Model Android) */}
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Dashboard Guru</p>
-                            <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                            <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 {[
                                   { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
                                   { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen', color: 'bg-rose-500' },
@@ -404,10 +369,9 @@ export default function DashboardLayoutClient({
                             </div>
                         </div>
 
-                        {/* 4. AI Pembelajaran (Sub Grid) */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-2 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
-                          <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                          <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                              {[
                                 { href: '/dashboard/ai-pembelajaran/bank-soal', icon: Database, label: 'Bank Soal', color: 'bg-indigo-600' },
                                 { href: '/dashboard/ai-pembelajaran/modul-ajar', icon: FileText, label: 'Modul', color: 'bg-indigo-600' },
@@ -424,25 +388,18 @@ export default function DashboardLayoutClient({
                           </div>
                         </div>
 
-                        {/* 5. Panel Admin (Single Button Style) */}
                         {isAdmin && (
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-2">Panel Admin</p>
-                            <Link href="/admin/users" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-5 bg-purple-600 text-white rounded-[2rem] shadow-xl shadow-purple-200 active:scale-95 transition-all">
+                            <Link href="/admin/users" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-4 bg-purple-600 text-white rounded-[2rem] shadow-xl shadow-purple-200 active:scale-95 transition-all">
                                 <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-sm"><ShieldCheck className="w-6 h-6" /></div>
                                 <div className="flex flex-col flex-1">
-                                    <span className="font-black text-lg tracking-tight leading-none">Buka Panel Admin Utama</span>
-                                    <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest mt-1">Manajemen & Pengaturan Sistem</span>
+                                    <span className="font-black text-base tracking-tight leading-none">Buka Panel Admin Utama</span>
+                                    <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest mt-1">Manajemen & Pengaturan Sistem</span>
                                 </div>
                             </Link>
                           </div>
                         )}
-                        
-                        <div className="pt-6 border-t pb-20">
-                            <Button variant="ghost" className="w-full h-14 rounded-2xl text-red-500 font-black tracking-widest uppercase text-xs hover:bg-red-50" onClick={handleLogout}>
-                                <LogOut className="w-5 h-5 mr-3" /> Keluar Sesi
-                            </Button>
-                        </div>
                     </div>
                 </ScrollArea>
               </SheetContent>
