@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -211,7 +210,7 @@ export default function TeacherAttendanceClient({
 
     return (
         <div className="flex flex-col h-full bg-[#f8fafc]">
-            <div className="bg-gradient-to-br from-purple-700 via-purple-600 to-blue-500 text-white pt-10 pb-16 px-6 rounded-b-[3.5rem] shadow-2xl relative">
+            <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 text-white pt-10 pb-16 px-6 rounded-b-[3.5rem] shadow-2xl relative">
                 <div className="flex flex-col items-center gap-4 mb-8">
                     <Avatar className="h-24 w-24 border-4 border-white/20 shadow-xl">
                         <AvatarImage src={profile?.avatar_url || ""} />
