@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { generateQuestionsAction, saveQuestionsAction } from "@/lib/actions/ai";
 import type { Class, Subject, GeneratedQuestion, QuestionGenerationInput } from "@/lib/types";
@@ -319,7 +320,7 @@ export default function GenerateSoalClient({
                                 disabled={saving}
                                 className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100"
                             >
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                                 Simpan ke Bank Soal
                             </Button>
                         )}
