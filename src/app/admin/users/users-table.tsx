@@ -43,7 +43,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MoreHorizontal, Trash2, Loader2, Search, UserPlus, GraduationCap, Edit, User, ShieldAlert, AlertCircle, CheckCircle2, UserCheck, Info } from "lucide-react";
+import { MoreHorizontal, Trash2, Loader2, Search, UserPlus, GraduationCap, Edit, User, ShieldAlert, AlertCircle, CheckCircle2, UserCheck, Info, ShieldX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@/lib/types";
 import { deleteUser, inviteTeacher, updateUserRole, updateStaffProfile, approveUser } from "@/lib/actions/admin";
@@ -255,13 +255,22 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                     </Table>
                 </div>
                 <div className="md:hidden space-y-4">
-                    {activeUsers.map(u => <UserMobileCard key={u.id} user={u} onEdit={() => setEditingUser(u)} />)}
+                    {activeUsers.map(u => (
+                        <UserMobileCard 
+                            key={u.id} 
+                            user={u} 
+                            onEdit={() => setEditingUser(u)}
+                            loading={loading === u.id}
+                            onRoleChange={handleRoleChange}
+                            onDelete={() => handleDeleteUser(u.id)}
+                        />
+                    ))}
                 </div>
             </TabsContent>
 
             <TabsContent value="pending" className="space-y-4">
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-[11px] text-blue-700 flex items-start gap-3 font-medium leading-relaxed">
-                    <Info className="h-5 w-5 shrink-0 mt-0.5 text-blue-500" />
+                    <span className="p-1.5 bg-blue-100 rounded-lg"><Info className="h-4 w-4 text-blue-600" /></span>
                     <p>Klik <strong>Setujui</strong> untuk memberikan akses penuh ke Dashboard Guru bagi akun-akun yang baru mendaftar.</p>
                 </div>
                 {pendingUsers.map((u) => (
@@ -292,11 +301,22 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
   );
 }
 
-function AdminUserActions({ user, loading, onEdit, onRoleChange, onDelete }: any) {
+function AdminUserActions({ user, loading, onEdit, onRoleChange, onDelete, trigger }: any) {
+    const [confirmText, setConfirmText] = React.useState("");
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+
+    const isConfirmed = confirmText.toLowerCase() === "hapus akun";
+
     return (
-        <AlertDialog>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <DropdownMenu>
-                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={loading} className="rounded-full hover:bg-slate-100 h-10 w-10">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-5 w-5 text-slate-400" />}</Button></DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild>
+                    {trigger || (
+                        <Button variant="ghost" size="icon" disabled={loading} className="rounded-full hover:bg-slate-100 h-10 w-10">
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-5 w-5 text-slate-400" />}
+                        </Button>
+                    )}
+                </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="rounded-2xl shadow-2xl border-0 p-2 w-56">
                     <DropdownMenuItem onClick={onEdit} className="rounded-xl h-11 font-bold gap-3 text-slate-700"><Edit className="h-4 w-4 text-blue-500" /> Ubah Profil</DropdownMenuItem>
                     <DropdownMenuSeparator className="my-1 mx-2" />
@@ -304,28 +324,83 @@ function AdminUserActions({ user, loading, onEdit, onRoleChange, onDelete }: any
                     <DropdownMenuItem onClick={() => onRoleChange(user.id, 'headmaster')} className="rounded-xl h-11 font-bold gap-3 text-slate-700"><GraduationCap className="h-4 w-4 text-amber-500" /> Jadikan Kepala</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onRoleChange(user.id, 'teacher')} className="rounded-xl h-11 font-bold gap-3 text-slate-700"><User className="h-4 w-4 text-emerald-500" /> Jadikan Guru</DropdownMenuItem>
                     <DropdownMenuSeparator className="my-1 mx-2" />
-                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-red-600 focus:bg-red-50 font-bold rounded-xl h-11 gap-3"><Trash2 className="h-4 w-4" /> Hapus Akun</DropdownMenuItem></AlertDialogTrigger>
+                    <AlertDialogTrigger asChild>
+                        <DropdownMenuItem className="text-red-600 focus:bg-red-50 font-bold rounded-xl h-11 gap-3">
+                            <Trash2 className="h-4 w-4" /> Hapus Akun
+                        </DropdownMenuItem>
+                    </AlertDialogTrigger>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <AlertDialogContent className="rounded-3xl border-0 shadow-2xl p-8">
-                <AlertDialogHeader><AlertDialogTitle className="text-2xl font-black tracking-tight">Hapus Akun?</AlertDialogTitle><AlertDialogDescription className="font-medium">Akses staf ini akan dihentikan secara permanen dari sistem LakuKelas.</AlertDialogDescription></AlertDialogHeader>
+            
+            <AlertDialogContent className="rounded-3xl border-0 shadow-2xl p-8 max-w-md">
+                <AlertDialogHeader className="space-y-4">
+                    <div className="mx-auto w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center">
+                        <ShieldX className="h-10 w-10" />
+                    </div>
+                    <AlertDialogTitle className="text-2xl font-black tracking-tight text-center">Hapus Akun Staf?</AlertDialogTitle>
+                    
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1">
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Identitas Akun</p>
+                        <p className="font-bold text-slate-900 leading-tight">{user.full_name}</p>
+                        <p className="text-xs text-slate-500">{user.email}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium text-slate-600 text-center">
+                            Ketik <span className="font-black text-red-600 uppercase">&quot;hapus akun&quot;</span> di bawah ini untuk mengonfirmasi penghapusan permanen.
+                        </p>
+                        <Input 
+                            value={confirmText} 
+                            onChange={(e) => setConfirmText(e.target.value)}
+                            placeholder="Ketik di sini..."
+                            className="h-12 rounded-xl text-center font-bold border-red-100 focus:border-red-500 focus:ring-red-500/10"
+                        />
+                    </div>
+                </AlertDialogHeader>
                 <AlertDialogFooter className="pt-6 gap-3 flex flex-row">
-                    <AlertDialogCancel className="flex-1 rounded-xl h-12 font-bold border-slate-200">Batal</AlertDialogCancel>
-                    <AlertDialogAction onClick={onDelete} className="flex-1 rounded-xl h-12 bg-red-600 font-bold shadow-lg shadow-red-100 hover:bg-red-700">Ya, Hapus</AlertDialogAction>
+                    <AlertDialogCancel 
+                        className="flex-1 rounded-xl h-12 font-bold border-slate-200"
+                        onClick={() => setConfirmText("")}
+                    >
+                        Batal
+                    </AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={() => {
+                            if (isConfirmed) {
+                                onDelete();
+                                setConfirmText("");
+                            }
+                        }} 
+                        disabled={!isConfirmed}
+                        className="flex-1 rounded-xl h-12 bg-red-600 font-bold shadow-lg shadow-red-100 hover:bg-red-700 disabled:opacity-30"
+                    >
+                        Ya, Hapus
+                    </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
     );
 }
 
-function UserMobileCard({ user, onEdit }: { user: Profile, onEdit: () => void }) {
+function UserMobileCard({ user, onEdit, loading, onRoleChange, onDelete }: any) {
     const roleLabel = user.role === 'admin' ? "Admin" : user.role === 'headmaster' ? "Kepala" : "Guru";
     
     return (
-        <Card className="p-5 border-slate-100 shadow-sm rounded-3xl bg-white hover:shadow-md transition-shadow">
+        <Card className="p-5 border-slate-100 shadow-sm rounded-3xl bg-white hover:shadow-md transition-shadow relative">
+            {/* Tiga Titik di Pojok Kanan Atas */}
+            <div className="absolute top-4 right-4">
+                <AdminUserActions 
+                    user={user} 
+                    loading={loading} 
+                    onEdit={onEdit} 
+                    onRoleChange={onRoleChange} 
+                    onDelete={onDelete} 
+                />
+            </div>
+
             <div className="flex justify-between items-start mb-4 gap-3">
                 <div className="min-w-0 flex-1">
-                    <p className="font-black text-slate-900 leading-tight text-lg uppercase tracking-tight break-words whitespace-normal">
+                    <p className="font-black text-slate-900 leading-tight text-lg uppercase tracking-tight break-words whitespace-normal pr-8">
                         {user.full_name || 'N/A'}
                     </p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{user.email}</p>
