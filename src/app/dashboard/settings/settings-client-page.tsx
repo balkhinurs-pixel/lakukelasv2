@@ -1,4 +1,3 @@
-
 "use client"
 import * as React from "react";
 import {
@@ -145,7 +144,8 @@ export default function SettingsClientPage({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
-                scopes: "https://www.googleapis.com/auth/drive.file",
+                // Gunakan scope lengkap untuk menghindari error 502/500 di sisi Google
+                scopes: "openid email profile https://www.googleapis.com/auth/drive.file",
                 queryParams: {
                     access_type: "offline",
                     prompt: "consent",

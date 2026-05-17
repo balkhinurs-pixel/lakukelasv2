@@ -26,7 +26,8 @@ function AuthForm() {
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
-                scopes: "https://www.googleapis.com/auth/drive.file",
+                // Gunakan scope lengkap untuk menghindari error 502/500 di sisi Google
+                scopes: "openid email profile https://www.googleapis.com/auth/drive.file",
                 queryParams: {
                     access_type: "offline",
                     prompt: "consent",
@@ -37,7 +38,7 @@ function AuthForm() {
         if (error) {
             toast({
                 title: "Gagal Login Google",
-                description: "Pastikan Google Drive API sudah diaktifkan di Google Cloud Console.",
+                description: "Terjadi kesalahan saat memulai autentikasi.",
                 variant: "destructive"
             });
             setLoading(false);

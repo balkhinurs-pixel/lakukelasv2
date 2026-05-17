@@ -43,3 +43,4 @@ Menyelesaikan tahap awal integrasi penyimpanan awan untuk dokumen AI.
 - Menambahkan field `gemini_api_key` di profil Supabase.
 - Menyediakan UI input API Key di Pengaturan > Integrasi dengan panduan Google AI Studio.
 - Melakukan isolasi proses AI agar menggunakan Key unik masing-masing guru untuk efisiensi biaya.
+- Memperbaiki string scope OAuth untuk menyertakan openid/email/profile guna stabilitas koneksi Google.
