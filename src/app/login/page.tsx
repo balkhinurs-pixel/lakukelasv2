@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -23,7 +22,7 @@ function AuthForm() {
     const handleGoogleSignIn = async () => {
         if (!supabase) return;
         setLoading(true);
-        const { error } = await supabase.delegate.auth.signInWithOAuth({
+        const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
