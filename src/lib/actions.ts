@@ -197,7 +197,7 @@ export async function saveAgenda(formData: FormData) {
         const { error: updateError } = await supabase.from('agendas').update(agendaData).eq('id', agendaData.id);
         error = updateError;
     } else {
-        const { error: insertError } = await supabase.from('agendas').insert(agendaData);
+        const { error: insertError = null } = await supabase.from('agendas').insert(agendaData);
         error = insertError;
     }
     
@@ -353,7 +353,7 @@ export async function saveGrades(formData: FormData) {
 }
 
 
-export async function updateProfile(profileData: { fullName: string, nip: string, pangkat: string, jabatan: string, phoneNumber: string }) {
+export async function updateProfile(profileData: { fullName: string, nip: string, pangkat: string, jabatan: string, phoneNumber: string, geminiApiKey?: string }) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
@@ -363,7 +363,8 @@ export async function updateProfile(profileData: { fullName: string, nip: string
         nip: profileData.nip,
         pangkat: profileData.pangkat,
         jabatan: profileData.jabatan,
-        phone_number: profileData.phoneNumber
+        phone_number: profileData.phoneNumber,
+        gemini_api_key: profileData.geminiApiKey
     }).eq('id', user.id);
 
     if (error) {

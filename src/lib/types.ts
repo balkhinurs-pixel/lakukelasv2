@@ -17,6 +17,7 @@ export interface Profile {
   email?: string;
   active_school_year_id?: string | null;
   is_homeroom_teacher?: boolean;
+  gemini_api_key?: string;
 }
 
 export interface Student {

@@ -27,6 +27,12 @@ Menyelesaikan tahap awal integrasi penyimpanan awan untuk dokumen AI.
 - Integrasi sistem simpan dokumen otomatis ke Google Drive dalam format Google Doc.
 - Penambahan fitur review/preview konten AI sebelum disimpan.
 
+### 6. Tahap 6: API Key Mandiri Per Guru (Selesai)
+- Memindahkan tanggung jawab API Key Gemini dari server ke pengguna.
+- Menambahkan field `gemini_api_key` di profil Supabase.
+- Menyediakan UI input API Key di Pengaturan > Integrasi dengan panduan Google AI Studio.
+- Melakukan isolasi proses AI agar menggunakan Key unik masing-masing guru untuk efisiensi biaya.
+
 ---
 
 ## V14.0: Optimasi Performa & Kapasitas

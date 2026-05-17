@@ -1,9 +1,13 @@
+
 'use server';
 /**
  * @fileOverview Flow Genkit untuk pembuatan konten pendidikan (RPP & Soal).
+ * Menggunakan API Key pribadi milik guru yang disimpan di profil database.
  */
 
-import { ai, z } from '@/ai/genkit';
+import { z, genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
+import { createClient } from '@/lib/supabase/server';
 
 const EducationContentInputSchema = z.object({
   type: z.enum(['rpp', 'soal']).describe('Jenis dokumen yang ingin dibuat'),
@@ -23,19 +27,40 @@ const EducationContentOutputSchema = z.object({
 
 export type EducationContentOutput = z.infer<typeof EducationContentOutputSchema>;
 
-const prompt = ai.definePrompt({
-  name: 'educationContentPrompt',
-  input: { schema: EducationContentInputSchema },
-  output: { schema: EducationContentOutputSchema },
-  prompt: `Anda adalah asisten AI guru profesional di Indonesia. 
+export async function generateEducationContent(input: EducationContentInput): Promise<EducationContentOutput> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("Sesi login berakhir. Harap masuk kembali.");
+
+  // Ambil API Key dari profil guru
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('gemini_api_key')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.gemini_api_key) {
+    throw new Error("API Key Gemini belum diatur. Harap isi di menu Pengaturan > Integrasi.");
+  }
+
+  // Inisialisasi instance Genkit lokal dengan API Key milik guru tersebut
+  const ai = genkit({
+    plugins: [googleAI({ apiKey: profile.gemini_api_key })],
+    model: googleAI.model('gemini-2.0-flash'),
+  });
+
+  const response = await ai.generate({
+    output: { schema: EducationContentOutputSchema },
+    prompt: `Anda adalah asisten AI guru profesional di Indonesia. 
 Tugas Anda adalah membantu guru membuat dokumen pembelajaran berkualitas tinggi.
 
-{{#if (eq type 'rpp')}}
+${input.type === 'rpp' ? `
 Buatlah RPP (Rencana Pelaksanaan Pembelajaran) yang lengkap dan inspiratif untuk:
-- Mata Pelajaran: {{{subject}}}
-- Kelas: {{{classLevel}}}
-- Materi: {{{topic}}}
-- Info Tambahan: {{{additionalInfo}}}
+- Mata Pelajaran: ${input.subject}
+- Kelas: ${input.classLevel}
+- Materi: ${input.topic}
+- Info Tambahan: ${input.additionalInfo || 'Tidak ada'}
 
 Struktur RPP harus mencakup:
 1. Identitas (Sekolah, Mapel, Kelas, Semester)
@@ -44,24 +69,21 @@ Struktur RPP harus mencakup:
 4. Media & Sumber Belajar
 5. Penilaian (Asesmen)
 
-Gunakan bahasa yang formal, edukatif, dan sesuai Kurikulum Merdeka.
-{{else}}
+Gunakan bahasa yang formal, edukatif, dan sesuai Kurikulum Merdeka.` : `
 Buatlah Bank Soal yang komprehensif untuk:
-- Mata Pelajaran: {{{subject}}}
-- Kelas: {{{classLevel}}}
-- Materi: {{{topic}}}
-- Jumlah Soal: {{{count}}} soal
-- Info Tambahan: {{{additionalInfo}}}
+- Mata Pelajaran: ${input.subject}
+- Kelas: ${input.classLevel}
+- Materi: ${input.topic}
+- Jumlah Soal: ${input.count || 10} soal
+- Info Tambahan: ${input.additionalInfo || 'Tidak ada'}
 
 Sediakan soal dalam bentuk Pilihan Ganda (beserta kunci jawaban) dan beberapa soal Esai (beserta pedoman penskoran).
-Pastikan soal mencakup berbagai level kognitif (C1-C6).
-{{/if}}
+Pastikan soal mencakup berbagai level kognitif (C1-C6).`}
 
 Format output harus dalam Markdown yang rapi.`,
-});
+  });
 
-export async function generateEducationContent(input: EducationContentInput): Promise<EducationContentOutput> {
-  const { output } = await prompt(input);
-  if (!output) throw new Error("Gagal menghasilkan konten AI.");
-  return output;
+  const result = response.output;
+  if (!result) throw new Error("Gagal menghasilkan konten AI. Pastikan API Key Anda valid.");
+  return result;
 }

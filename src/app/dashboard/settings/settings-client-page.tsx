@@ -20,7 +20,7 @@ import type { Profile, GoogleDriveIntegration } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
 import { disconnectGoogleDrive, setupGoogleDriveFolder, createTestDocument } from "@/lib/actions/google-drive";
-import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText, AlertTriangle } from "lucide-react";
+import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText, AlertTriangle, Key, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -52,6 +52,7 @@ export default function SettingsClientPage({
         pangkat: profile.pangkat || '',
         jabatan: profile.jabatan || '',
         phoneNumber: profile.phone_number || '',
+        geminiApiKey: profile.gemini_api_key || '',
     });
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,7 +139,6 @@ export default function SettingsClientPage({
         }
 
         // 2. Jika gagal karena token tidak ada, arahkan ke Google OAuth
-        // Gunakan scope minimal untuk menghindari error 500 jika API belum aktif
         if (!supabase) return;
         
         const { error } = await supabase.auth.signInWithOAuth({
@@ -156,7 +156,7 @@ export default function SettingsClientPage({
         if (error) {
             toast({ 
                 title: "Gagal Menghubungkan", 
-                description: "Pastikan Google Drive API sudah diaktifkan di Google Cloud Console.",
+                description: "Terjadi kesalahan saat menghubungkan akun Google.",
                 variant: "destructive"
             });
             setDriveLoading(false);
@@ -244,9 +244,9 @@ export default function SettingsClientPage({
 
         <Tabs defaultValue="profile" className="w-full">
             <TabsList className="grid w-full max-w-md grid-cols-3 bg-slate-100 p-1 rounded-xl">
-                <TabsTrigger value="profile" className="rounded-lg data-[state=active]:shadow-sm">Profil</TabsTrigger>
-                <TabsTrigger value="integrations" className="rounded-lg data-[state=active]:shadow-sm">Integrasi</TabsTrigger>
-                <TabsTrigger value="account" className="rounded-lg data-[state=active]:shadow-sm">Akun</TabsTrigger>
+                <TabsTrigger value="profile" className="rounded-lg data-[state=active]:shadow-sm font-bold">Profil</TabsTrigger>
+                <TabsTrigger value="integrations" className="rounded-lg data-[state=active]:shadow-sm font-bold">Integrasi</TabsTrigger>
+                <TabsTrigger value="account" className="rounded-lg data-[state=active]:shadow-sm font-bold">Akun</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile" className="mt-8 space-y-6">
@@ -354,7 +354,7 @@ export default function SettingsClientPage({
                            <Button 
                             type="submit" 
                             disabled={loading} 
-                            className="w-full sm:w-auto h-12 px-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200"
+                            className="w-full sm:w-auto h-12 px-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 font-bold"
                            >
                                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
                                 Simpan Perubahan Profil
@@ -365,6 +365,7 @@ export default function SettingsClientPage({
             </TabsContent>
 
             <TabsContent value="integrations" className="mt-8 space-y-6">
+                {/* 1. Google Drive Card */}
                 <Card className="border-0 shadow-xl shadow-slate-200/50 overflow-hidden">
                     <CardHeader className="bg-slate-50/50 border-b p-8">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -381,7 +382,7 @@ export default function SettingsClientPage({
                                     <CardTitle className="text-2xl font-bold">Google Drive</CardTitle>
                                 </div>
                                 <CardDescription className="max-w-md">
-                                    Hubungkan penyimpanan Google Drive Anda untuk menyimpan dokumen hasil AI Pembelajaran secara otomatis.
+                                    Simpan dokumen hasil AI Pembelajaran secara otomatis ke Google Drive Anda.
                                 </CardDescription>
                             </div>
                             <div>
@@ -454,18 +455,6 @@ export default function SettingsClientPage({
                                         Putuskan Integrasi
                                     </Button>
                                 </div>
-                                
-                                {driveIntegration.folder_id && (
-                                    <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                                        <div className="p-2 bg-emerald-500 text-white rounded-lg">
-                                            <CheckCircle className="h-4 w-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-emerald-900 leading-tight">Folder Aktif</p>
-                                            <p className="text-xs text-emerald-700">Aplikasi siap menyimpan dokumen AI ke Google Drive Anda.</p>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             <div className="text-center py-10 space-y-6">
@@ -475,40 +464,96 @@ export default function SettingsClientPage({
                                 <div className="space-y-2">
                                     <h4 className="text-lg font-bold text-slate-900">Mulai Integrasi Google Drive</h4>
                                     <p className="text-sm text-slate-500 max-w-xs mx-auto">
-                                        Aplikasi membutuhkan izin untuk membuat folder dan file dokumen AI di Drive Anda.
+                                        Hubungkan akun Google Anda untuk mengaktifkan fitur simpan otomatis dokumen AI.
                                     </p>
                                 </div>
-                                <div className="flex flex-col items-center gap-4">
-                                    <Button 
-                                        onClick={handleConnectDrive} 
-                                        disabled={driveLoading}
-                                        className="h-14 px-10 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-xl shadow-indigo-200 font-bold text-lg"
-                                    >
-                                        {driveLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
-                                        Hubungkan & Inisialisasi
-                                    </Button>
-                                    <p className="text-xs text-amber-600 font-medium flex items-center gap-1.5 bg-amber-50 p-2 rounded-lg border border-amber-100">
-                                        <AlertTriangle className="h-3.5 w-3.5" />
-                                        Penting: Pastikan Google Drive API sudah diaktifkan di GCP Anda.
-                                    </p>
-                                </div>
+                                <Button 
+                                    onClick={handleConnectDrive} 
+                                    disabled={driveLoading}
+                                    className="h-14 px-10 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-xl shadow-indigo-200 font-bold text-lg"
+                                >
+                                    {driveLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
+                                    Hubungkan Akun Google
+                                </Button>
                             </div>
                         )}
-                        
-                        <div className="pt-6 border-t border-slate-100">
-                            <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4">Informasi Keamanan & Privasi</h5>
-                            <ul className="space-y-3">
-                                <li className="flex items-start gap-3 text-xs text-slate-500 leading-relaxed">
-                                    <div className="p-1 rounded-full bg-blue-100 text-blue-600 mt-0.5"><Share2 className="h-3 w-3" /></div>
-                                    <span>Kami hanya menggunakan izin <strong>drive.file</strong> yang hanya mengizinkan aplikasi membaca file yang dibuat oleh aplikasi ini sendiri.</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-xs text-slate-500 leading-relaxed">
-                                    <div className="p-1 rounded-full bg-blue-100 text-blue-600 mt-0.5"><Database className="h-3 w-3" /></div>
-                                    <span>Data login dan file pribadi Anda di luar folder LakuKelas tetap aman dan tidak dapat diakses oleh sistem.</span>
-                                </li>
-                            </ul>
-                        </div>
                     </CardContent>
+                </Card>
+
+                {/* 2. Gemini API Card */}
+                <Card className="border-0 shadow-xl shadow-slate-200/50 overflow-hidden">
+                    <form onSubmit={handleProfileSave}>
+                        <CardHeader className="bg-slate-50/50 border-b p-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm flex items-center justify-center">
+                                            <Key className="h-6 w-6" />
+                                        </div>
+                                        <CardTitle className="text-2xl font-bold">Google Gemini AI</CardTitle>
+                                    </div>
+                                    <CardDescription className="max-w-md">
+                                        Gunakan kunci API Anda sendiri untuk menjalankan fitur AI Pembelajaran. Ini memastikan Anda memiliki kontrol penuh atas penggunaan AI.
+                                    </CardDescription>
+                                </div>
+                                {profileData.geminiApiKey ? (
+                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[10px]">
+                                        Tersimpan
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="destructive" className="px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[10px]">
+                                        Belum Ada Key
+                                    </Badge>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="geminiApiKey" className="text-slate-700 font-bold flex items-center gap-2">
+                                        API Key Gemini
+                                    </Label>
+                                    <div className="relative">
+                                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                        <Input 
+                                            id="geminiApiKey" 
+                                            name="geminiApiKey" 
+                                            type="password"
+                                            value={profileData.geminiApiKey} 
+                                            onChange={handleProfileChange} 
+                                            className="h-12 pl-12 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-xl font-mono"
+                                            placeholder="Masukkan API Key Anda..."
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="p-5 rounded-2xl bg-amber-50 border border-amber-100 space-y-3">
+                                    <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
+                                        <AlertTriangle className="h-5 w-5 text-amber-600" />
+                                        <span>Cara Mendapatkan API Key</span>
+                                    </div>
+                                    <p className="text-sm text-amber-800 leading-relaxed">
+                                        Kunjungi Google AI Studio untuk membuat API Key secara gratis. Salin kunci yang Anda dapatkan dan tempelkan di atas.
+                                    </p>
+                                    <Button variant="outline" className="w-full bg-white border-amber-200 text-amber-700 font-bold hover:bg-amber-100 h-11 rounded-xl shadow-sm" asChild>
+                                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">
+                                            Buka Google AI Studio <ExternalLink className="ml-2 h-4 w-4" />
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter className="bg-slate-50/50 border-t p-8">
+                            <Button 
+                                type="submit" 
+                                disabled={loading} 
+                                className="w-full sm:w-auto h-12 px-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 font-bold"
+                            >
+                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
+                                Simpan API Key
+                            </Button>
+                        </CardFooter>
+                    </form>
                 </Card>
             </TabsContent>
             
@@ -528,30 +573,11 @@ export default function SettingsClientPage({
                                 disabled 
                                 className="h-12 bg-slate-50 border-slate-100 rounded-xl cursor-not-allowed"
                             />
-                            <p className="text-xs text-amber-600 font-medium bg-amber-50 p-3 rounded-lg border border-amber-100 mt-2">
+                            <p className="text-xs text-amber-600 font-medium bg-amber-50 p-3 rounded-lg border border-amber-100 mt-2 font-bold">
                                 💡 Hubungi administrator jika Anda perlu mengubah alamat email terdaftar.
                             </p>
                         </div>
-
-                        <div className="pt-4 border-t border-slate-100 opacity-50 select-none">
-                            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Ubah Kata Sandi</h4>
-                            <div className="grid gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-slate-400">Kata Sandi Baru</Label>
-                                    <Input type="password" disabled className="h-12 border-slate-100 rounded-xl" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-400">Konfirmasi Kata Sandi Baru</Label>
-                                    <Input type="password" disabled className="h-12 border-slate-100 rounded-xl" />
-                                </div>
-                            </div>
-                        </div>
                     </CardContent>
-                    <CardFooter className="bg-slate-50/50 border-t p-8">
-                       <Button disabled className="w-full sm:w-auto h-12 px-10 rounded-xl opacity-50">
-                           Perbarui Akun
-                       </Button>
-                    </CardFooter>
                 </Card>
             </TabsContent>
         </Tabs>
