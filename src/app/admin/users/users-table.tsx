@@ -255,7 +255,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                     </Table>
                 </div>
                 <div className="md:hidden space-y-4">
-                    {activeUsers.map(u => <UserMobileCard key={u.id} user={u} onEdit={() => setEditingUser(u)} onRoleChange={handleRoleChange} onDelete={() => handleDeleteUser(u.id)} />)}
+                    {activeUsers.map(u => <UserMobileCard key={u.id} user={u} onEdit={() => setEditingUser(u)} />)}
                 </div>
             </TabsContent>
 
@@ -270,7 +270,7 @@ export function UsersTable({ initialUsers }: { initialUsers: Profile[] }) {
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-blue-50 rounded-2xl text-blue-600 font-black uppercase shadow-inner">{u.full_name?.charAt(0) || 'U'}</div>
                                 <div>
-                                    <p className="font-bold text-slate-900 leading-tight uppercase tracking-tight">{u.full_name || 'User Baru'}</p>
+                                    <p className="font-bold text-slate-900 leading-tight uppercase tracking-tight break-words whitespace-normal">{u.full_name || 'User Baru'}</p>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{u.email}</p>
                                 </div>
                             </div>
@@ -318,26 +318,36 @@ function AdminUserActions({ user, loading, onEdit, onRoleChange, onDelete }: any
     );
 }
 
-function UserMobileCard({ user, onEdit, onRoleChange, onDelete }: any) {
+function UserMobileCard({ user, onEdit }: { user: Profile, onEdit: () => void }) {
     const roleLabel = user.role === 'admin' ? "Admin" : user.role === 'headmaster' ? "Kepala" : "Guru";
     
     return (
         <Card className="p-5 border-slate-100 shadow-sm rounded-3xl bg-white hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4 gap-3">
                 <div className="min-w-0 flex-1">
-                    <p className="font-black truncate text-slate-900 leading-tight text-lg uppercase tracking-tight">{user.full_name || 'N/A'}</p>
+                    <p className="font-black text-slate-900 leading-tight text-lg uppercase tracking-tight break-words whitespace-normal">
+                        {user.full_name || 'N/A'}
+                    </p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{user.email}</p>
+                    <div className="mt-2">
+                        <Badge className={cn(
+                            user.role === 'admin' ? "bg-purple-600" : user.role === 'headmaster' ? "bg-amber-600" : "bg-slate-500", 
+                            "text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border-0 shadow-sm"
+                        )}>
+                            {roleLabel}
+                        </Badge>
+                    </div>
                 </div>
-                <Badge className={cn(
-                    user.role === 'admin' ? "bg-purple-600" : user.role === 'headmaster' ? "bg-amber-600" : "bg-slate-500", 
-                    "text-[10px] font-black uppercase px-3 py-1 rounded-lg border-0 shadow-sm shrink-0"
-                )}>
-                    {roleLabel}
-                </Badge>
             </div>
-            <div className="flex gap-2 pt-4 border-t border-slate-50">
-                <Button variant="outline" size="sm" className="flex-1 rounded-xl font-bold h-11 bg-slate-50 border-0 hover:bg-slate-100 text-slate-700 shadow-inner" onClick={onEdit}>Ubah Data</Button>
-                <AdminUserActions user={user} loading={false} onEdit={onEdit} onRoleChange={onRoleChange} onDelete={onDelete} />
+            <div className="pt-4 border-t border-slate-50">
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full rounded-xl font-bold h-11 bg-slate-50 border-0 hover:bg-slate-100 text-slate-700 shadow-inner" 
+                    onClick={onEdit}
+                >
+                    Ubah Data
+                </Button>
             </div>
         </Card>
     );
