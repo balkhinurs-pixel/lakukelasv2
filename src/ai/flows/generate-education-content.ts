@@ -1,13 +1,12 @@
-
 'use server';
 /**
  * @fileOverview Flow Genkit untuk pembuatan konten pendidikan (RPP & Soal).
  * Menggunakan API Key pribadi milik guru yang disimpan di profil database.
- * Menggunakan model Gemini 1.5 Flash untuk efisiensi kuota free tier.
+ * Menggunakan model Gemini 2.5 Flash (Terbaru & Mendukung Free Tier).
  */
 
 import { z, genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/google-genai';
 import { createClient } from '@/lib/supabase/server';
 
 const EducationContentInputSchema = z.object({
@@ -45,10 +44,10 @@ export async function generateEducationContent(input: EducationContentInput): Pr
     throw new Error("API Key Gemini belum diatur. Harap isi di menu Pengaturan > Integrasi.");
   }
 
-  // Inisialisasi instance Genkit lokal dengan model 1.5 Flash agar hemat kuota
+  // Inisialisasi instance Genkit lokal dengan model 2.5 Flash
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
-    model: googleAI.model('gemini-1.5-flash'),
+    model: googleAI.model('gemini-2.5-flash'),
   });
 
   const response = await ai.generate({
