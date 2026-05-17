@@ -28,7 +28,8 @@ import {
   PlusCircle,
   FileText,
   Database,
-  ChevronUp
+  ChevronUp,
+  ChevronLeft
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -111,6 +112,28 @@ export default function DashboardLayoutClient({
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
+    );
+  };
+
+  const MobileGridItem = ({ href, icon: Icon, label, color }: any) => {
+    const isActive = pathname === href || pathname.startsWith(href + '/');
+    return (
+        <Link 
+            href={href} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+            className="flex flex-col items-center gap-1.5 transition-transform active:scale-90"
+        >
+            <div className={cn(
+                "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-all",
+                color,
+                isActive && "ring-2 ring-offset-2 ring-indigo-600 scale-105"
+            )}>
+                <Icon className="w-5 h-5" />
+            </div>
+            <span className="text-[9px] font-black text-center leading-tight uppercase tracking-wider text-slate-600 line-clamp-2 px-1">
+                {label}
+            </span>
+        </Link>
     );
   };
 
@@ -285,7 +308,7 @@ export default function DashboardLayoutClient({
                         <div className="flex items-center gap-4 p-2">
                             <Avatar className="h-14 w-14 border-2 border-indigo-100 shadow-md">
                                 <AvatarImage src={profile?.avatar_url} />
-                                <AvatarFallback>{profile?.full_name?.charAt(0)}</AvatarFallback>
+                                <AvatarFallback className="bg-indigo-600 text-white font-bold">{profile?.full_name?.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="min-w-0 flex-1">
                                 <h3 className="text-xl font-black text-slate-900 leading-tight truncate">{profile?.full_name}</h3>
@@ -307,18 +330,9 @@ export default function DashboardLayoutClient({
                             </div>
                             {isMonitoringExpanded && (
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    {[
-                                      { href: '/monitoring', icon: LayoutDashboard, label: 'Statistik', color: 'bg-teal-500' },
-                                      { href: '/monitoring/teacher-attendance', icon: UserCheck, label: 'Absensi', color: 'bg-teal-500' },
-                                      { href: '/monitoring/teacher-activity', icon: Activity, label: 'Aktivitas', color: 'bg-teal-500' },
-                                    ].map((item) => (
-                                        <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-2 transition-transform active:scale-90">
-                                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
-                                                <item.icon className="w-6 h-6" />
-                                            </div>
-                                            <span className="text-[10px] font-black text-center leading-tight uppercase tracking-wider text-slate-600">{item.label}</span>
-                                        </Link>
-                                    ))}
+                                    <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-rose-500" />
+                                    <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi" color="bg-amber-500" />
+                                    <MobileGridItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="bg-emerald-500" />
                                 </div>
                             )}
                           </div>
@@ -328,18 +342,9 @@ export default function DashboardLayoutClient({
                           <div className="space-y-3">
                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] px-1">Menu Wali Kelas</p>
                             <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                {[
-                                  { href: '/dashboard/homeroom/student-ledger', icon: ClipboardEdit, label: 'Leger', color: 'bg-emerald-500' },
-                                  { href: '/dashboard/homeroom/student-progress', icon: TrendingUp, label: 'Progres', color: 'bg-emerald-500' },
-                                  { href: '/dashboard/homeroom/reports', icon: TableIcon, label: 'Bulanan', color: 'bg-emerald-500' },
-                                ].map((item) => (
-                                    <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-2 transition-transform active:scale-90">
-                                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
-                                            <item.icon className="w-6 h-6" />
-                                        </div>
-                                        <span className="text-[10px] font-black text-center leading-tight uppercase tracking-wider text-slate-600">{item.label}</span>
-                                    </Link>
-                                ))}
+                                <MobileGridItem href="/dashboard/homeroom/student-ledger" icon={ClipboardEdit} label="Leger" color="bg-blue-500" />
+                                <MobileGridItem href="/dashboard/homeroom/student-progress" icon={TrendingUp} label="Progres" color="bg-indigo-500" />
+                                <MobileGridItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Bulanan" color="bg-purple-500" />
                             </div>
                           </div>
                         )}
@@ -347,44 +352,26 @@ export default function DashboardLayoutClient({
                         <div className="space-y-3">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Dashboard Guru</p>
                             <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                {[
-                                  { href: '/dashboard', icon: Home, label: 'Dasbor', color: 'bg-blue-500' },
-                                  { href: '/dashboard/teacher-attendance', icon: MapPin, label: 'Absen', color: 'bg-rose-500' },
-                                  { href: '/dashboard/agenda', icon: CalendarDays, label: 'Agenda', color: 'bg-amber-500' },
-                                  { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Presensi', color: 'bg-emerald-500' },
-                                  { href: '/dashboard/grades', icon: ClipboardEdit, label: 'Nilai', color: 'bg-cyan-500' },
-                                  { href: '/dashboard/journal', icon: BookText, label: 'Jurnal', color: 'bg-indigo-500' },
-                                  { href: '/dashboard/materials', icon: Link2, label: 'Materi', color: 'bg-purple-500' },
-                                  { href: '/dashboard/reports', icon: BarChart3, label: 'Laporan', color: 'bg-orange-500' },
-                                  { href: '/dashboard/schedule', icon: CalendarClock, label: 'Jadwal', color: 'bg-slate-500' },
-                                  { href: '/dashboard/settings', icon: Settings, label: 'Setelan', color: 'bg-slate-400' },
-                                ].map((item) => (
-                                    <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-2 transition-transform active:scale-90">
-                                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
-                                            <item.icon className="w-6 h-6" />
-                                        </div>
-                                        <span className="text-[10px] font-black text-center leading-tight uppercase tracking-wider text-slate-600">{item.label}</span>
-                                    </Link>
-                                ))}
+                                <MobileGridItem href="/dashboard" icon={Home} label="Dasbor" color="bg-pink-500" />
+                                <MobileGridItem href="/dashboard/teacher-attendance" icon={MapPin} label="Absen" color="bg-rose-600" />
+                                <MobileGridItem href="/dashboard/agenda" icon={CalendarDays} label="Agenda" color="bg-amber-600" />
+                                <MobileGridItem href="/dashboard/attendance" icon={ClipboardCheck} label="Presensi" color="bg-emerald-600" />
+                                <MobileGridItem href="/dashboard/grades" icon={ClipboardEdit} label="Nilai" color="bg-cyan-500" />
+                                <MobileGridItem href="/dashboard/journal" icon={BookText} label="Jurnal" color="bg-indigo-600" />
+                                <MobileGridItem href="/dashboard/materials" icon={Link2} label="Materi" color="bg-purple-600" />
+                                <MobileGridItem href="/dashboard/reports" icon={BarChart3} label="Laporan" color="bg-orange-500" />
+                                <MobileGridItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal" color="bg-slate-600" />
+                                <MobileGridItem href="/dashboard/settings" icon={Settings} label="Setelan" color="bg-slate-400" />
                             </div>
                         </div>
 
                         <div className="space-y-3">
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                             {[
-                                { href: '/dashboard/ai-pembelajaran/bank-soal', icon: Database, label: 'Bank Soal', color: 'bg-indigo-600' },
-                                { href: '/dashboard/ai-pembelajaran/modul-ajar', icon: FileText, label: 'Modul', color: 'bg-indigo-600' },
-                                { href: '/dashboard/ai-pembelajaran/lkpd', icon: ClipboardEdit, label: 'LKPD', color: 'bg-indigo-600' },
-                                { href: '/dashboard/ai-pembelajaran/generate-soal', icon: PlusCircle, label: 'Gen Soal', color: 'bg-indigo-600' },
-                             ].map(item => (
-                                <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-2 transition-transform active:scale-90">
-                                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
-                                        <item.icon className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-[10px] font-black text-center leading-tight uppercase tracking-wider text-slate-600">{item.label}</span>
-                                </Link>
-                             ))}
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul" color="bg-blue-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/lkpd" icon={ClipboardEdit} label="LKPD" color="bg-teal-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
                           </div>
                         </div>
 
@@ -441,9 +428,9 @@ export default function DashboardLayoutClient({
                     </button>
                 </div>
 
-                <Link href="/dashboard/attendance" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/attendance") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
-                    <ClipboardCheck className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium text-center leading-tight">Presensi Siswa</span>
+                <Link href="/dashboard/reports" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/dashboard/reports") ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
+                    <BarChart3 className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium text-center leading-tight">Laporan</span>
                 </Link>
                 <Link href="/dashboard/settings" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname === "/dashboard/settings" ? "text-indigo-600 bg-indigo-500/10" : "text-muted-foreground")}>
                     <Settings className="w-5 h-5" />

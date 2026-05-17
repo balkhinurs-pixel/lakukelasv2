@@ -263,8 +263,8 @@ export default function AdminLayoutClient({
                             </div>
                             {isMonitoringExpanded && (
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-teal-500" />
-                                    <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi" color="bg-teal-500" />
+                                    <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-rose-500" />
+                                    <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi" color="bg-amber-500" />
                                     <MobileGridItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="bg-teal-500" />
                                 </div>
                             )}
@@ -276,30 +276,30 @@ export default function AdminLayoutClient({
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Manajemen Staf</p>
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                     <MobileGridItem href="/admin/codes" icon={Ticket} label="Token" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/users" icon={Users} label="Approval" color="bg-purple-600" />
+                                    <MobileGridItem href="/admin/users" icon={Users} label="Approval" color="bg-blue-600" />
                                 </div>
                             </div>
 
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Data Master Rombel</p>
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                    <MobileGridItem href="/admin/roster/school-year" icon={CalendarCheck} label="Tahun Ajaran" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/roster/classes" icon={School} label="Kelas" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/roster/subjects" icon={BookOpen} label="Mapel" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/roster/students" icon={Users2} label="Siswa" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/roster/promotion" icon={ArrowRightLeft} label="Promosi" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/roster/alumni" icon={GraduationCap} label="Alumni" color="bg-purple-600" />
+                                    <MobileGridItem href="/admin/roster/school-year" icon={CalendarCheck} label="Tahun Ajaran" color="bg-pink-500" />
+                                    <MobileGridItem href="/admin/roster/classes" icon={School} label="Kelas" color="bg-indigo-500" />
+                                    <MobileGridItem href="/admin/roster/subjects" icon={BookOpen} label="Mapel" color="bg-cyan-500" />
+                                    <MobileGridItem href="/admin/roster/students" icon={Users2} label="Siswa" color="bg-emerald-500" />
+                                    <MobileGridItem href="/admin/roster/promotion" icon={ArrowRightLeft} label="Promosi" color="bg-orange-500" />
+                                    <MobileGridItem href="/admin/roster/alumni" icon={GraduationCap} label="Alumni" color="bg-slate-600" />
                                 </div>
                             </div>
 
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Pengaturan Sistem</p>
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                    <MobileGridItem href="/admin/settings/school" icon={Building} label="Sekolah" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/settings/location" icon={MapPin} label="Lokasi" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/settings/whatsapp" icon={MessageSquare} label="WhatsApp" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/settings/schedule" icon={CalendarClock} label="Jadwal" color="bg-purple-600" />
-                                    <MobileGridItem href="/admin/settings/holidays" icon={CalendarOff} label="Libur" color="bg-purple-600" />
+                                    <MobileGridItem href="/admin/settings/school" icon={Building} label="Sekolah" color="bg-red-500" />
+                                    <MobileGridItem href="/admin/settings/location" icon={MapPin} label="Lokasi" color="bg-amber-600" />
+                                    <MobileGridItem href="/admin/settings/whatsapp" icon={MessageSquare} label="WhatsApp" color="bg-green-600" />
+                                    <MobileGridItem href="/admin/settings/schedule" icon={CalendarClock} label="Jadwal" color="bg-blue-700" />
+                                    <MobileGridItem href="/admin/settings/holidays" icon={CalendarOff} label="Libur" color="bg-rose-700" />
                                 </div>
                             </div>
                         </div>
