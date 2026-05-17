@@ -1,7 +1,25 @@
 
 # Log Pembaruan LakuKelas
 
-## V14.0: Optimasi Performa & Kapasitas (TERBARU)
+## V15.0: Fondasi Integrasi Google Drive (PROGRES)
+Menyelesaikan tahap awal integrasi penyimpanan awan untuk dokumen AI.
+
+### 1. Tahap 1: OAuth & UI (Selesai)
+- Menambahkan scope `drive.file` pada proses login Google.
+- Membuat tab "Integrasi" di halaman Pengaturan.
+- Implementasi sistem pemutusan akses (Disconnect).
+
+### 2. Tahap 2: Manajemen Folder (Selesai)
+- Implementasi Server Action `setupGoogleDriveFolder` untuk membuat folder "LakuKelas AI" secara otomatis.
+- Penyimpanan `folder_id` ke database Supabase untuk mencegah duplikasi.
+
+### 3. Tahap 3: Uji Coba Tulis (Selesai)
+- Implementasi fungsi `createTestDocument` untuk memverifikasi izin tulis ke folder aplikasi.
+- Pencatatan metadata file ke tabel `ai_documents`.
+
+---
+
+## V14.0: Optimasi Performa & Kapasitas
 Meningkatkan efisiensi aplikasi secara drastis untuk memaksimalkan kuota Free Tier.
 
 ### 1. Database Query Optimization
@@ -27,5 +45,3 @@ Menerapkan bahasa desain yang konsisten di seluruh modul utama aplikasi.
 - **Indigo Gradient Header**: Mengganti header standar dengan desain kartu gradien indigo premium.
 - **Lottie Integration**: Menambahkan ilustrasi interaktif pada header.
 - **Mobile HSIA Optimization**: Tombol status (H, S, I, A) kini tersusun dalam satu baris horizontal di mobile.
-
-... (sisanya tetap)
