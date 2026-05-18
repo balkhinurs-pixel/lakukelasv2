@@ -28,7 +28,8 @@ import {
     FileText,
     School,
     Download,
-    Clock
+    Clock,
+    Hash
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
+import type { Profile } from "@/lib/types";
 
 // --- MathText Component ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
@@ -211,7 +213,9 @@ export default function BankSoalClient({
     
     const [currentPage, setCurrentPage] = React.useState(1);
     const [expandedQuestions, setExpandedQuestions] = React.useState<Set<string>>(new Set());
-    const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+    
+    // Menggunakan array untuk melacak urutan seleksi (V24.5 Update)
+    const [selectedOrderedIds, setSelectedOrderedIds] = React.useState<string[]>([]);
     
     const [exporting, setExporting] = React.useState(false);
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
@@ -250,12 +254,18 @@ export default function BankSoalClient({
     const totalPages = Math.ceil(filteredQuestions.length / ITEMS_PER_PAGE);
 
     const toggleSelect = (id: string) => {
-        setSelectedIds(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
+        setSelectedOrderedIds(prev => {
+            if (prev.includes(id)) {
+                return prev.filter(item => item !== id);
+            } else {
+                return [...prev, id];
+            }
         });
+    };
+
+    const getSelectionIndex = (id: string) => {
+        const index = selectedOrderedIds.indexOf(id);
+        return index !== -1 ? index + 1 : null;
     };
 
     const toggleDiscussion = (id: string) => {
@@ -315,7 +325,7 @@ export default function BankSoalClient({
     };
 
     const handleCreateNaskah = async () => {
-        if (selectedIds.size === 0) return;
+        if (selectedOrderedIds.length === 0) return;
         if (!naskahConfig.title) {
             toast({ title: "Judul Wajib Diisi", description: "Harap masukkan nama file naskah Anda.", variant: "destructive" });
             return;
@@ -324,7 +334,8 @@ export default function BankSoalClient({
         setExporting(true);
         
         try {
-            const selectedQuestionsData = initialQuestions.filter(q => selectedIds.has(q.id));
+            // Urutan soal disesuaikan dengan urutan seleksi (bukan urutan database)
+            const selectedQuestionsData = selectedOrderedIds.map(id => initialQuestions.find(q => q.id === id)).filter(Boolean);
             const sampleQ = selectedQuestionsData[0];
             const metadata = {
                 class: sampleQ?.kelas || "X",
@@ -341,7 +352,7 @@ export default function BankSoalClient({
 
             const result = await createNaskahUjianAction(
                 naskahConfig.title, 
-                Array.from(selectedIds), 
+                selectedOrderedIds, 
                 metadata, 
                 naskahConfig.format,
                 binaryPdf
@@ -373,7 +384,7 @@ export default function BankSoalClient({
                 });
                 
                 setIsExportDialogOpen(false);
-                setSelectedIds(new Set());
+                setSelectedOrderedIds([]);
                 setNaskahConfig(prev => ({ ...prev, title: "" }));
                 router.refresh();
             } else {
@@ -390,7 +401,7 @@ export default function BankSoalClient({
         <div className="space-y-6">
             {isExportDialogOpen && (
                 <NaskahPrintTemplate 
-                    questions={initialQuestions.filter(q => selectedIds.has(q.id))} 
+                    questions={selectedOrderedIds.map(id => initialQuestions.find(q => q.id === id)).filter(Boolean)} 
                     config={naskahConfig} 
                 />
             )}
@@ -407,14 +418,14 @@ export default function BankSoalClient({
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <AnimatePresence>
-                        {selectedIds.size > 0 && (
+                        {selectedOrderedIds.length > 0 && (
                             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                                 <Button 
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl gap-2 font-bold px-6 shadow-lg shadow-emerald-100 h-12"
                                     onClick={() => setIsExportDialogOpen(true)}
                                 >
                                     <Printer className="h-5 w-5" />
-                                    Susun Naskah ({selectedIds.size})
+                                    Susun Naskah ({selectedOrderedIds.length})
                                 </Button>
                             </motion.div>
                         )}
@@ -450,56 +461,75 @@ export default function BankSoalClient({
             </Card>
 
             <div className="space-y-4">
-                {paginatedQuestions.map((q) => (
-                    <Card key={q.id} className={cn(
-                        "border-0 shadow-sm rounded-[2rem] bg-white overflow-hidden transition-all border-2",
-                        selectedIds.has(q.id) ? "border-indigo-500 bg-indigo-50/30" : "border-transparent"
-                    )}>
-                        <div className="p-6 flex flex-col md:flex-row gap-6">
-                            <div className="flex items-start gap-4 shrink-0">
-                                <Checkbox 
-                                    checked={selectedIds.has(q.id)} 
-                                    onCheckedChange={() => toggleSelect(q.id)}
-                                    className="h-6 w-6 rounded-lg mt-1"
-                                />
-                                <div className="space-y-3 md:w-32">
-                                    <Badge className={cn(
-                                        "font-black text-[9px] uppercase tracking-widest",
-                                        q.difficulty === 'sulit' ? "bg-rose-500" : "bg-emerald-500"
-                                    )}>{q.difficulty}</Badge>
-                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelas {q.kelas}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 space-y-4">
-                                <div className="text-slate-800 font-bold leading-relaxed">
-                                    <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-xl' : ''} />
-                                </div>
-                                {q.options_json && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                            <div key={k} className="p-3 rounded-2xl border border-slate-100 bg-white text-xs font-semibold flex gap-2 hover:border-indigo-200 transition-colors">
-                                                <span className="text-indigo-600 font-black">{k}.</span>
-                                                <MathText content={v} />
-                                            </div>
-                                        ))}
+                {paginatedQuestions.map((q) => {
+                    const selectionIdx = getSelectionIndex(q.id);
+                    const isSelected = selectionIdx !== null;
+                    
+                    return (
+                        <Card key={q.id} className={cn(
+                            "border-0 shadow-sm rounded-[2rem] bg-white overflow-hidden transition-all border-2",
+                            isSelected ? "border-indigo-500 bg-indigo-50/30" : "border-transparent"
+                        )}>
+                            <div className="p-6 flex flex-col md:flex-row gap-6">
+                                <div className="flex items-start gap-4 shrink-0">
+                                    <div className="relative">
+                                        <Checkbox 
+                                            checked={isSelected} 
+                                            onCheckedChange={() => toggleSelect(q.id)}
+                                            className="h-7 w-7 rounded-xl mt-1 border-slate-200"
+                                        />
+                                        <AnimatePresence>
+                                            {isSelected && (
+                                                <motion.div 
+                                                    initial={{ scale: 0 }} 
+                                                    animate={{ scale: 1 }} 
+                                                    exit={{ scale: 0 }}
+                                                    className="absolute -top-2 -right-2 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-md z-10"
+                                                >
+                                                    {selectionIdx}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
-                                )}
-                                <div className="pt-4 flex justify-between items-center border-t border-slate-50">
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg">KUNCI: {q.correct_answer}</p>
-                                    <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
-                                        {expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
-                                    </Button>
+                                    <div className="space-y-3 md:w-32">
+                                        <Badge className={cn(
+                                            "font-black text-[9px] uppercase tracking-widest",
+                                            q.difficulty === 'sulit' ? "bg-rose-500" : "bg-emerald-500"
+                                        )}>{q.difficulty}</Badge>
+                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelas {q.kelas}</p>
+                                    </div>
                                 </div>
-                                {expandedQuestions.has(q.id) && (
-                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="p-5 rounded-2xl bg-slate-50 text-xs italic text-slate-600 border border-slate-100 leading-relaxed">
-                                        <MathText content={q.explanation} />
-                                    </motion.div>
-                                )}
+
+                                <div className="flex-1 space-y-4">
+                                    <div className="text-slate-800 font-bold leading-relaxed">
+                                        <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-xl' : ''} />
+                                    </div>
+                                    {q.options_json && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
+                                                <div key={k} className="p-3 rounded-2xl border border-slate-100 bg-white text-xs font-semibold flex gap-2 hover:border-indigo-200 transition-colors">
+                                                    <span className="text-indigo-600 font-black">{k}.</span>
+                                                    <MathText content={v} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="pt-4 flex justify-between items-center border-t border-slate-50">
+                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg">KUNCI: {q.correct_answer}</p>
+                                        <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
+                                            {expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
+                                        </Button>
+                                    </div>
+                                    {expandedQuestions.has(q.id) && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="p-5 rounded-2xl bg-slate-50 text-xs italic text-slate-600 border border-slate-100 leading-relaxed">
+                                            <MathText content={q.explanation} />
+                                        </motion.div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </Card>
-                ))}
+                        </Card>
+                    );
+                })}
             </div>
 
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
