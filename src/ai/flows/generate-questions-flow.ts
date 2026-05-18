@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
@@ -16,7 +17,7 @@ const QuestionSchema = z.object({
   options: z.record(z.string(), z.string()).optional().describe('Pilihan jawaban A-D/E'),
   answer: z.string().describe('Kunci jawaban (huruf opsi atau teks esai)'),
   explanation: z.string().describe('Pembahasan soal'),
-  difficulty: z.enum(['mudah', 'sedang', 'sulit']).describe('Tingkat kesulitan'),
+  difficulty: z.enum(['mudah', 'sedang', 'sulit', 'campuran']).describe('Tingkat kesulitan'),
   cognitive_level: z.string().optional().describe('Level kognitif C1-C6'),
   language_direction: z.enum(['ltr', 'rtl']).default('ltr').describe('Arah teks'),
   image_prompt: z.string().optional().describe('Detailed English description for an educational image or diagram related to this question. Be specific about the visual elements.'),
@@ -36,7 +37,7 @@ const GenerateQuestionsInputSchema = z.object({
   instruction: z.string().optional(),
   question_type: z.enum(['multiple_choice', 'essay']),
   count: z.number().default(5),
-  difficulty: z.enum(['mudah', 'sedang', 'sulit']),
+  difficulty: z.enum(['mudah', 'sedang', 'sulit', 'campuran']),
 });
 
 export type GenerateQuestionsInput = z.infer<typeof GenerateQuestionsInputSchema>;
@@ -84,7 +85,7 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 - Topik Utama: ${input.topic}
 - Sub-topik: ${input.subtopic || 'Umum'}
 - Tujuan Asesmen: ${input.assessment_purpose}
-- Tingkat Kesulitan: ${input.difficulty}
+- Tingkat Kesulitan: ${input.difficulty === 'campuran' ? 'Campuran (HOTS, Sedang, Mudah)' : input.difficulty}
 - Level Kognitif: ${input.cognitive_level || 'Variatif'}
 - Mode Soal: ${input.mode || 'Reguler'}
 - Instruksi Tambahan: ${input.instruction || 'Tidak ada'}
@@ -92,9 +93,10 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 Aturan Penting:
 1. Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
 2. Rumus Matematika: Gunakan LaTeX valid (contoh: \\(x^2 + 2x + 1 = 0\\)).
-3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl' jika ada teks Arab.
+3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl' jika ada teks Arab. Khusus untuk Kurikulum Kemenag (KBC), pastikan konten religius sesuai standar moderasi beragama.
 4. Pastikan soal berkualitas, tidak ambigu, dan sesuai level siswa kelas ${input.kelas}.
-5. ILUSTRASI: Jika soal membutuhkan gambaran visual (seperti grafik, organ tubuh, peta, benda, atau percobaan sains), Anda WAJIB memberikan "image_prompt" dalam bahasa Inggris yang mendetail untuk dihasilkan oleh AI pembuat gambar. Jika soal murni tekstual, biarkan kosong.
+5. Jika Kesulitan adalah 'campuran', distribusikan ${input.count} soal tersebut menjadi: 1 soal HOTS (sulit), 2-3 soal sedang, dan sisanya mudah.
+6. ILUSTRASI: Jika soal membutuhkan gambaran visual (seperti grafik, organ tubuh, peta, benda, atau percobaan sains), Anda WAJIB memberikan "image_prompt" dalam bahasa Inggris yang mendetail untuk dihasilkan oleh AI pembuat gambar. Jika soal murni tekstual, biarkan kosong.
 
 Output harus berupa JSON valid sesuai skema yang diminta.`,
   });

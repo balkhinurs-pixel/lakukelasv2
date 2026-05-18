@@ -188,7 +188,7 @@ export interface GeneratedQuestion {
   options?: Record<string, string>; // e.g., { "A": "...", "B": "..." }
   answer: string;
   explanation: string;
-  difficulty: 'mudah' | 'sedang' | 'sulit';
+  difficulty: 'mudah' | 'sedang' | 'sulit' | 'campuran';
   cognitive_level?: string; // C1-C6
   language_direction?: 'ltr' | 'rtl';
   image_prompt?: string;
@@ -209,7 +209,7 @@ export interface QuestionGenerationInput {
   instruction?: string;
   question_type: 'multiple_choice' | 'essay';
   count: number;
-  difficulty: 'mudah' | 'sedang' | 'sulit';
+  difficulty: 'mudah' | 'sedang' | 'sulit' | 'campuran';
 }
 
 // --- History Types ---

@@ -76,6 +76,14 @@ const MathText = ({ content, className }: { content: string, className?: string 
   );
 };
 
+// Mapping Mata Pelajaran berdasarkan Jenjang
+const mapelByJenjang: Record<string, string[]> = {
+    'SD/MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
+    'SMP/MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
+    'SMA/MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
+    'SMK/MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+};
+
 export default function GenerateSoalClient({ 
     classes, 
     subjects 
@@ -115,12 +123,18 @@ export default function GenerateSoalClient({
         return [];
     };
 
+    const getMapelOptions = (jenjang: string) => {
+        return mapelByJenjang[jenjang] || [];
+    };
+
     const handleJenjangChange = (val: string) => {
-        const options = getClassOptions(val);
+        const classOpts = getClassOptions(val);
+        const mapelOpts = getMapelOptions(val);
         setForm({
             ...form,
             jenjang: val,
-            kelas: options[0] || ''
+            kelas: classOpts[0] || '',
+            subject: mapelOpts[0] || '' // Otomatis pilih mapel pertama
         });
     };
 
@@ -232,9 +246,17 @@ export default function GenerateSoalClient({
                                     <Select value={form.subject} onValueChange={(v) => setForm({...form, subject: v})}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {subjects.map(s => <SelectItem key={s.id} value={s.name} className="font-bold">{s.name}</SelectItem>)}
+                                            {getMapelOptions(form.jenjang).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                            <SelectItem value="Lainnya" className="font-bold italic text-slate-400 border-t">Tulis Manual...</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    {form.subject === 'Lainnya' && (
+                                        <Input 
+                                            placeholder="Tulis mapel..." 
+                                            className="mt-2 rounded-xl bg-slate-50 border-0 h-10 font-bold"
+                                            onChange={(e) => setForm({...form, subject: e.target.value})}
+                                        />
+                                    )}
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
@@ -342,6 +364,7 @@ export default function GenerateSoalClient({
                                     <Select value={form.difficulty} onValueChange={(v: any) => setForm({...form, difficulty: v})}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectItem value="campuran" className="font-bold text-indigo-600">Campuran (HOTS-LOTS)</SelectItem>
                                             <SelectItem value="mudah" className="font-bold text-emerald-600">Mudah</SelectItem>
                                             <SelectItem value="sedang" className="font-bold text-blue-600">Sedang</SelectItem>
                                             <SelectItem value="sulit" className="font-bold text-rose-600">Sulit</SelectItem>
@@ -596,7 +619,7 @@ export default function GenerateSoalClient({
                                     disabled={saving}
                                     className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100 transition-all active:scale-[0.98]"
                                 >
-                                    {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                                    {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                                     Simpan ke Bank Soal
                                 </Button>
                             </div>
