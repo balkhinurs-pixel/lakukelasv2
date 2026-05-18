@@ -10,6 +10,8 @@ Penggabungan seluruh fitur inti dengan infrastruktur AI dan Cloud Storage.
 - **Tabel `ai_documents`**: Mencatat riwayat dokumen (RPP/Soal) yang telah diekspor ke Google Drive.
 - **RLS AI**: Memastikan soal dan dokumen bersifat pribadi (hanya guru pembuat yang bisa melihat), namun Admin/Kepala Sekolah memiliki izin `SELECT` untuk keperluan monitoring kualitas.
 - **Fix Gemini Key**: Menambahkan kolom `gemini_api_key` langsung di tabel `profiles` untuk memudahkan akses fitur AI Mandiri.
+- **Auto-Admin Fix**: Memperbaiki fungsi `handle_new_user` agar pendaftar pertama pada database kosong otomatis menjadi `admin` dan berstatus `is_activated = true`.
+- **Explicit Grants**: Menambahkan perintah `GRANT` untuk memastikan tidak ada error "permission denied" pada proyek baru.
 
 ## V19.5: Perbaikan RLS Master Data & Izin Admin - SELESAI
 Mengatasi error "new row violates row-level security policy" saat Admin melakukan konfigurasi sistem.
