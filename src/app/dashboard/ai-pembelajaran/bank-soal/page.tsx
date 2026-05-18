@@ -1,6 +1,6 @@
 
 import { createClient } from "@/lib/supabase/server";
-import { getAdminProfile } from "@/lib/data";
+import { getAdminProfile, getActiveSchoolYearName } from "@/lib/data";
 import BankSoalClient from "./bank-soal-client";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
@@ -10,14 +10,15 @@ export default async function BankSoalPage() {
 
     if (!user) return <div>Akses ditolak.</div>;
 
-    // Ambil data soal milik guru tersebut dan profil sekolah untuk Kop Surat
-    const [questionsRes, schoolProfile] = await Promise.all([
+    // Ambil data soal, profil sekolah, dan tahun ajaran aktif secara bersamaan
+    const [questionsRes, schoolProfile, activeYearName] = await Promise.all([
         supabase
             .from('questions')
             .select('*')
             .eq('created_by', user.id)
             .order('created_at', { ascending: false }),
-        getAdminProfile()
+        getAdminProfile(),
+        getActiveSchoolYearName()
     ]);
 
     const qList = questionsRes.data || [];
@@ -55,6 +56,7 @@ export default async function BankSoalPage() {
                 uniqueClasses={classes}
                 uniqueTopics={topics}
                 schoolProfile={schoolProfile}
+                activeSchoolYearName={activeYearName}
             />
         </div>
     );

@@ -139,7 +139,7 @@ const NaskahPrintTemplate = ({
 
                 <div className="text-center mb-6">
                     <h2 className="text-[12pt] font-bold uppercase underline" style={{ margin: 0 }}>
-                        {config.examType || "PENILAIAN HARIAN"} TAHUN PELAJARAN 2024/2025
+                        {config.examType || "PENILAIAN HARIAN"} TAHUN PELAJARAN {config.activeSchoolYearName || '2024/2025'}
                     </h2>
                 </div>
 
@@ -216,13 +216,15 @@ export default function BankSoalClient({
     uniqueSubjects,
     uniqueClasses,
     uniqueTopics,
-    schoolProfile
+    schoolProfile,
+    activeSchoolYearName
 }: { 
     initialQuestions: any[],
     uniqueSubjects: string[],
     uniqueClasses: string[],
     uniqueTopics: string[],
-    schoolProfile: Profile | null
+    schoolProfile: Profile | null,
+    activeSchoolYearName: string
 }) {
     const { toast } = useToast();
     const router = useRouter();
@@ -254,7 +256,8 @@ export default function BankSoalClient({
         examType: "Penilaian Harian",
         date: "",
         duration: "90 Menit",
-        format: "pdf" as "pdf" | "doc"
+        format: "pdf" as "pdf" | "doc",
+        activeSchoolYearName: activeSchoolYearName
     });
 
     React.useEffect(() => {
