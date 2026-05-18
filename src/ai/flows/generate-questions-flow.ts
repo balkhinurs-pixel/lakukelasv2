@@ -3,6 +3,7 @@
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
  * Menggunakan API Key pribadi milik guru.
  * Kini dilengkapi dengan dukungan Media (PDF/Foto) untuk ekstraksi materi.
+ * Dioptimalkan untuk LaTeX (Matematika) dan Unicode Arab.
  */
 
 import { z, genkit } from 'genkit';
@@ -12,14 +13,14 @@ import { createClient } from '@/lib/supabase/server';
 const QuestionSchema = z.object({
   sort_order: z.number().describe('Urutan soal'),
   type: z.enum(['multiple_choice', 'essay']).describe('Tipe soal'),
-  question: z.string().describe('Teks pertanyaan (bisa berisi LaTeX)'),
-  options: z.record(z.string(), z.string()).optional().describe('Pilihan jawaban A-D/E'),
+  question: z.string().describe('Teks pertanyaan (WAJIB menggunakan LaTeX \(...\) untuk rumus)'),
+  options: z.record(z.string(), z.string()).optional().describe('Pilihan jawaban A-D/E (Gunakan LaTeX untuk rumus)'),
   answer: z.string().describe('Kunci jawaban (huruf opsi atau teks esai)'),
-  explanation: z.string().describe('Pembahasan soal'),
+  explanation: z.string().describe('Pembahasan soal (Gunakan LaTeX untuk rumus)'),
   difficulty: z.enum(['mudah', 'sedang', 'sulit', 'campuran']).describe('Tingkat kesulitan'),
   cognitive_level: z.string().optional().describe('Level kognitif C1-C6'),
   language_direction: z.enum(['ltr', 'rtl']).default('ltr').describe('Arah teks'),
-  image_prompt: z.string().optional().describe('Detailed English description for an educational image or diagram related to this question. Be specific about the visual elements.'),
+  image_prompt: z.string().optional().describe('Detailed English description for an educational image related to this question.'),
 });
 
 const GenerateQuestionsInputSchema = z.object({
@@ -95,15 +96,22 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
 
-Aturan Penting:
-1. Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
-2. Rumus Matematika: Gunakan LaTeX valid (contoh: \\(x^2 + 2x + 1 = 0\\)).
-3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl' jika ada teks Arab.
-4. Pastikan soal berkualitas, tidak ambigu, dan sesuai level siswa kelas ${input.kelas}.
-5. Jika Kesulitan adalah 'campuran', distribusikan soal menjadi kombinasi HOTS, sedang, dan mudah.
-6. ILUSTRASI: Jika soal membutuhkan gambaran visual, berikan "image_prompt" dalam bahasa Inggris.
+ATURAN PENULISAN RUMUS (PENTING):
+1. MATEMATIKA/SAINS: WAJIB menggunakan LaTeX valid.
+   - Pembungkus Inline: Gunakan \\( ... \\). Contoh: \\( x^2 + y^2 = r^2 \\).
+   - Pembungkus Blok: Gunakan \\[ ... \\]. Contoh: \\[ \frac{-b \pm \sqrt{b^2-4ac}}{2a} \\].
+   - JANGAN gunakan simbol unicode mentah untuk akar, pangkat, atau pecahan kompleks.
 
-Output harus berupa JSON valid sesuai skema yang diminta.` }
+2. BAHASA ARAB: WAJIB menggunakan Unicode asli Arab.
+   - Jika mata pelajaran adalah Bahasa Arab atau PAI, set field "language_direction" ke "rtl".
+   - Gunakan harakat yang lengkap untuk jenjang SD/SMP agar mudah dibaca.
+
+3. KUALITAS SOAL:
+   - Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
+   - Pastikan kunci jawaban (answer) tepat sesuai salah satu key di "options".
+   - Berikan pembahasan (explanation) yang logis dan edukatif.
+
+Output harus berupa JSON valid sesuai skema.` }
     ]
   });
 

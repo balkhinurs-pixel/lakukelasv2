@@ -60,6 +60,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
+  // Regex cerdas untuk mendeteksi pembungkus LaTeX \[ \] dan \( \)
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   return (
     <div className={cn("math-text-render", className)}>
@@ -542,7 +543,7 @@ export default function GenerateSoalClient({
                         <div className="p-6 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0">
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2"><ArrowLeft className="h-4 w-4" /> Edit Parameter</Button>
                             <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100">
-                                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Konfirmasi & Simpan ke Bank Soal
+                                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} Konfirmasi & Simpan ke Bank Soal
                             </Button>
                         </div>
                     </div>
