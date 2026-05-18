@@ -56,31 +56,31 @@ import { ScrollArea } from "@/components/ui/scroll-area";
  */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-
-  // Regex untuk memisahkan teks biasa dengan blok LaTeX \( ... \) atau \[ ... \]
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
-
   return (
     <div className={cn("math-text-render", className)}>
       {parts.map((part, i) => {
-        if (part.startsWith('\\[')) {
-          return <BlockMath key={i} math={part.slice(2, -2)} />;
-        }
-        if (part.startsWith('\\(')) {
-          return <InlineMath key={i} math={part.slice(2, -2)} />;
-        }
+        if (part.startsWith('\\[')) return <BlockMath key={i} math={part.slice(2, -2)} />;
+        if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         return <span key={i} className="whitespace-pre-wrap">{part}</span>;
       })}
     </div>
   );
 };
 
-// Mapping Mata Pelajaran berdasarkan Jenjang
+// Data Statis untuk Opsi
 const mapelByJenjang: Record<string, string[]> = {
-    'SD/MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
-    'SMP/MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
-    'SMA/MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
-    'SMK/MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
+    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
+    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+};
+
+const getClassOptions = (jenjang: string) => {
+    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
+    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
+    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
+    return [];
 };
 
 export default function GenerateSoalClient({ 
@@ -99,7 +99,7 @@ export default function GenerateSoalClient({
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
 
     const [form, setForm] = React.useState<QuestionGenerationInput>({
-        jenjang: 'SMP/MTs',
+        jenjang: 'SMP / MTs',
         kelas: '7',
         semester: 'Ganjil',
         subject: 'Bahasa Indonesia',
@@ -115,25 +115,16 @@ export default function GenerateSoalClient({
         difficulty: 'sedang'
     });
 
-    const getClassOptions = (jenjang: string) => {
-        if (jenjang === 'SD/MI') return ['1', '2', '3', '4', '5', '6'];
-        if (jenjang === 'SMP/MTs') return ['7', '8', '9'];
-        if (jenjang === 'SMA/MA' || jenjang === 'SMK/MAK') return ['10', '11', '12'];
-        return [];
-    };
-
-    const getMapelOptions = (jenjang: string) => {
-        return mapelByJenjang[jenjang] || [];
-    };
-
+    // Handle Jenjang Change - Cascading Update
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
-        const mapelOpts = getMapelOptions(val);
+        const mapelOpts = mapelByJenjang[val] || [];
+        
         setForm(prev => ({
             ...prev,
             jenjang: val,
-            kelas: classOpts[0] || '',
-            subject: mapelOpts[0] || ''
+            kelas: classOpts[0] || prev.kelas,
+            subject: mapelOpts[0] || prev.subject
         }));
     };
 
@@ -163,9 +154,7 @@ export default function GenerateSoalClient({
             return;
         }
         setImageLoadingIdx(idx);
-        
         const result = await generateQuestionImageAction(prompt);
-        
         if (result.success && result.url) {
             const updatedQuestions = [...questions];
             updatedQuestions[idx].image_url = result.url;
@@ -185,10 +174,8 @@ export default function GenerateSoalClient({
 
     const handleSaveToBankSoal = async () => {
         if (questions.length === 0) return;
-        
         setSaving(true);
         const result = await saveQuestionsAction(form, questions);
-        
         if (result.success) {
             toast({ title: "Tersimpan!", description: "Soal-soal telah berhasil disimpan ke Bank Soal." });
             setQuestions([]);
@@ -216,15 +203,19 @@ export default function GenerateSoalClient({
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
-                                    <Select value={form.jenjang} onValueChange={handleJenjangChange}>
+                                    <Select 
+                                        key={form.jenjang} 
+                                        value={form.jenjang} 
+                                        onValueChange={handleJenjangChange}
+                                    >
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11">
                                             <SelectValue placeholder="Pilih Jenjang" />
                                         </SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="SD/MI" className="font-bold">SD / MI</SelectItem>
-                                            <SelectItem value="SMP/MTs" className="font-bold">SMP / MTs</SelectItem>
-                                            <SelectItem value="SMA/MA" className="font-bold">SMA / MA</SelectItem>
-                                            <SelectItem value="SMK/MAK" className="font-bold">SMK / MAK</SelectItem>
+                                            <SelectItem value="SD / MI" className="font-bold">SD / MI</SelectItem>
+                                            <SelectItem value="SMP / MTs" className="font-bold">SMP / MTs</SelectItem>
+                                            <SelectItem value="SMA / MA" className="font-bold">SMA / MA</SelectItem>
+                                            <SelectItem value="SMK / MAK" className="font-bold">SMK / MAK</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -244,24 +235,25 @@ export default function GenerateSoalClient({
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
-                                    <Select value={form.subject} onValueChange={(v) => setForm({...form, subject: v})}>
+                                    <Select 
+                                        key={form.jenjang + '-subject'} 
+                                        value={form.subject} 
+                                        onValueChange={(v) => setForm({...form, subject: v})}
+                                    >
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {getMapelOptions(form.jenjang).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                            {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                             <SelectItem value="Lainnya" className="font-bold italic text-slate-400 border-t">Tulis Manual...</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    {form.subject === 'Lainnya' && (
-                                        <Input 
-                                            placeholder="Tulis mapel..." 
-                                            className="mt-2 rounded-xl bg-slate-50 border-0 h-10 font-bold"
-                                            onChange={(e) => setForm({...form, subject: e.target.value})}
-                                        />
-                                    )}
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                    <Select value={form.kelas} onValueChange={(v) => setForm({...form, kelas: v})}>
+                                    <Select 
+                                        key={form.jenjang + '-class'} 
+                                        value={form.kelas} 
+                                        onValueChange={(v) => setForm({...form, kelas: v})}
+                                    >
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {getClassOptions(form.jenjang).map(k => (
@@ -436,7 +428,6 @@ export default function GenerateSoalClient({
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl bg-[#F8FAFF]">
                     <div className="flex flex-col h-[90vh]">
-                        {/* Header Indigo Gradient */}
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white relative">
                             <button 
                                 onClick={() => setIsPreviewOpen(false)}
@@ -457,7 +448,6 @@ export default function GenerateSoalClient({
                             </div>
                         </div>
 
-                        {/* Badges Summary */}
                         <div className="p-6 pb-2 flex flex-wrap items-center gap-3">
                             <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 px-4 py-2 rounded-2xl font-bold gap-2 shadow-sm">
                                 <ClipboardCheck className="h-3.5 w-3.5" />
@@ -467,13 +457,8 @@ export default function GenerateSoalClient({
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 {questions.length} akan disimpan
                             </Badge>
-                            <Badge variant="outline" className="bg-blue-50 border-blue-100 text-blue-700 px-4 py-2 rounded-2xl font-bold gap-2 shadow-sm">
-                                <Bot className="h-3.5 w-3.5" />
-                                via POLLINATIONS AI
-                            </Badge>
                         </div>
 
-                        {/* Content Scrollable */}
                         <ScrollArea className="flex-1 p-6">
                             <div className="space-y-8">
                                 {questions.map((q, idx) => (
@@ -487,18 +472,9 @@ export default function GenerateSoalClient({
                                                     {q.type === 'multiple_choice' ? 'pilgan' : 'esai'}
                                                 </Badge>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <Button variant="ghost" size="sm" className="h-9 rounded-xl text-blue-600 font-bold gap-2 hover:bg-blue-50">
-                                                    <Edit3 className="h-4 w-4" /> Edit
-                                                </Button>
-                                                <Button variant="ghost" size="sm" className="h-9 rounded-xl text-rose-500 font-bold gap-2 hover:bg-rose-50">
-                                                    <Trash2 className="h-4 w-4" /> Hapus
-                                                </Button>
-                                            </div>
                                         </div>
 
                                         <div className="space-y-6">
-                                            {/* Gambar Ilustrasi - Muncul Otomatis jika URL tersedia */}
                                             {q.image_url && (
                                                 <motion.div 
                                                     initial={{ opacity: 0, scale: 0.95 }}
@@ -519,13 +495,11 @@ export default function GenerateSoalClient({
                                                 <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
                                             </div>
 
-                                            {/* Media & Ilustrasi Section */}
                                             <div className="p-5 rounded-3xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
                                                 <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest">
                                                     <FileImage className="h-4 w-4" />
                                                     <span>Media & Ilustrasi (Free & Unlimited)</span>
                                                 </div>
-                                                
                                                 <div className="flex flex-col gap-3">
                                                     <div className="relative">
                                                         <PencilLine className="absolute left-3 top-3 h-4 w-4 text-indigo-300" />
@@ -536,17 +510,12 @@ export default function GenerateSoalClient({
                                                             onChange={(e) => handleUpdatePrompt(idx, e.target.value)}
                                                         />
                                                     </div>
-                                                    
                                                     <Button 
                                                         onClick={() => handleGenerateImage(idx, q.image_prompt || "")}
                                                         disabled={imageLoadingIdx === idx || (!q.image_prompt)}
                                                         className="w-full rounded-2xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
                                                     >
-                                                        {imageLoadingIdx === idx ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                        ) : (
-                                                            <Sparkles className="h-4 w-4" />
-                                                        )}
+                                                        {imageLoadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                                                         {q.image_url ? "Ganti Gambar (Seed Baru)" : "Generate Ilustrasi AI"}
                                                     </Button>
                                                 </div>
@@ -583,13 +552,9 @@ export default function GenerateSoalClient({
                                                     </div>
                                                     <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">Jawaban: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
                                                 </div>
-                                                
                                                 <div className="relative p-6 rounded-3xl bg-slate-50 border border-slate-100 overflow-hidden group/pembahasan">
                                                     <div className="absolute top-0 right-0 p-3 opacity-10 group-hover/pembahasan:opacity-20 transition-opacity">
                                                         <Lightbulb className="h-12 w-12 text-indigo-600" />
-                                                    </div>
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 text-[9px] font-black uppercase tracking-widest px-2 py-0.5">Pembahasan</Badge>
                                                     </div>
                                                     <div className="text-sm text-slate-600 font-medium leading-relaxed italic relative z-10">
                                                         <MathText content={q.explanation} />
@@ -602,11 +567,7 @@ export default function GenerateSoalClient({
                             </div>
                         </ScrollArea>
 
-                        {/* Footer Buttons */}
                         <div className="p-6 bg-white border-t shadow-[0_-8px_30px_-10px_rgba(0,0,0,0.05)] space-y-4">
-                            <p className="text-center font-bold text-slate-500 text-sm">
-                                <span className="text-indigo-600">{questions.length}</span> soal akan disimpan ke Bank Soal
-                            </p>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <Button 
                                     variant="outline" 
@@ -630,26 +591,10 @@ export default function GenerateSoalClient({
             </Dialog>
             
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 4px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #e2e8f0;
-                    border-radius: 10px;
-                }
-                .math-container .katex-display {
-                    margin: 0.5em 0;
-                    overflow-x: auto;
-                    overflow-y: hidden;
-                }
-                .math-text-render .katex-display {
-                    margin: 0.5em 0;
-                    overflow-x: auto;
-                    overflow-y: hidden;
-                }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                .math-text-render .katex-display { margin: 0.5em 0; overflow-x: auto; overflow-y: hidden; }
             `}</style>
         </div>
     );
