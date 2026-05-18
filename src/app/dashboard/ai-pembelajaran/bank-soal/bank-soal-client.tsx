@@ -49,7 +49,7 @@ import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
 
-// --- MathText Component with Automatic Spacing for LaTeX ---
+// --- MathText Component ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
@@ -58,7 +58,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
   return (
     <div className={cn(
         "math-text-render inline-block w-full", 
-        hasMath ? "py-1.5" : "", // Beri ruang jika ada rumus agar tidak menumpuk
+        hasMath ? "py-1.5" : "", 
         className
     )}>
       {parts.map((part, i) => {
@@ -70,7 +70,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
   );
 };
 
-// --- Komponen Template Print Sesuai Referensi Gambar User ---
+// --- Komponen Template Print ---
 const NaskahPrintTemplate = ({ 
     questions, 
     config 
@@ -87,51 +87,50 @@ const NaskahPrintTemplate = ({
                 left: '-9999px', 
                 top: 0,
                 width: '210mm',
-                padding: '20mm 16mm', // Padding kuat di atas dan bawah (2cm)
+                padding: '0', // Kita akan handle padding per elemen
                 boxSizing: 'border-box',
                 fontFamily: '"Times New Roman", Times, serif',
                 lineHeight: '1.45',
                 fontSize: '11pt',
-                color: '#111',
-                minHeight: '297mm'
+                color: '#111'
             }}
         >
-            {/* Header Naskah Formal */}
-            <div className="text-center mb-6">
-                <h1 className="text-[13pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
-                    {config.schoolName || "SEKOLAH LAKUKELAS"}
-                </h1>
-                <h2 className="text-[12pt] font-bold uppercase leading-tight" style={{ borderBottom: '1.5pt solid black', paddingBottom: '4px', display: 'inline-block', width: '100%' }}>
-                    {config.examType || "PENILAIAN HARIAN"} TAHUN PELAJARAN 2024/2025
-                </h2>
-            </div>
-
-            {/* Grid Metadata Persis Gambar */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '20px', paddingLeft: '40px', paddingRight: '40px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
-                    <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{questions[0]?.subject || "-"}</span>
-                    <span className="font-bold">Kelas/Semester</span><span>:</span><span>{questions[0]?.kelas || "-"} / Ganjil</span>
+            {/* Header Naskah - Diproses Terpisah */}
+            <div id="print-header" style={{ padding: '18mm 16mm 10mm 16mm' }}>
+                <div className="text-center mb-6">
+                    <h1 className="text-[13pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
+                        {config.schoolName || "SEKOLAH LAKUKELAS"}
+                    </h1>
+                    <h2 className="text-[12pt] font-bold uppercase leading-tight" style={{ borderBottom: '1.5pt solid black', paddingBottom: '4px', display: 'inline-block', width: '100%' }}>
+                        {config.examType || "PENILAIAN HARIAN"} TAHUN PELAJARAN 2024/2025
+                    </h2>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
-                    <span className="font-bold">Hari dan Tanggal</span><span>:</span><span>{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</span>
-                    <span className="font-bold">Waktu</span><span>:</span><span>07.30 - 09.30 WIB</span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '20px', paddingLeft: '20px', paddingRight: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
+                        <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{questions[0]?.subject || "-"}</span>
+                        <span className="font-bold">Kelas/Semester</span><span>:</span><span>{questions[0]?.kelas || "-"} / Ganjil</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
+                        <span className="font-bold">Hari dan Tanggal</span><span>:</span><span>{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</span>
+                        <span className="font-bold">Waktu</span><span>:</span><span>07.30 - 09.30 WIB</span>
+                    </div>
+                </div>
+
+                <div className="mb-4">
+                    <p className="font-bold uppercase">I. PILIHAN GANDA</p>
+                    <p className="text-[10pt] italic">Pilihlah salah satu jawaban yang paling tepat dengan memberi tanda silang (X) pada huruf A, B, C, D atau E!</p>
                 </div>
             </div>
 
-            {/* Instruction Title */}
-            <div className="mb-4">
-                <p className="font-bold uppercase">I. PILIHAN GANDA</p>
-                <p className="text-[10pt] italic">Pilihlah salah satu jawaban yang paling tepat dengan memberi tanda silang (X) pada huruf A, B, C, atau D!</p>
-            </div>
-
-            {/* Daftar Soal */}
-            <div className="space-y-6">
+            {/* Container Soal - Tiap soal akan di-render satu per satu */}
+            <div id="questions-list">
                 {questions.map((q, idx) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                     const isSma = options.length > 4;
 
                     return (
-                        <div key={q.id} className="question-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                        <div key={q.id} className="print-question-block" style={{ padding: '4px 16mm', marginBottom: '8px' }}>
                             <div className="flex gap-2 mb-2">
                                 <span className="font-bold min-w-[22px]">{idx + 1}.</span>
                                 <div className={cn("flex-1 text-justify", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
@@ -148,11 +147,11 @@ const NaskahPrintTemplate = ({
                                         gridAutoFlow: 'column',
                                         gridTemplateRows: isSma ? 'repeat(3, auto)' : 'repeat(2, auto)',
                                         columnGap: '40px',
-                                        rowGap: '8px'
+                                        rowGap: '6px'
                                     }}
                                 >
                                     {options.map(([k, v]) => (
-                                        <div key={k} className="flex gap-2 items-start" style={{ minHeight: '26px' }}>
+                                        <div key={k} className="flex gap-2 items-start" style={{ minHeight: '24px' }}>
                                             <span className="font-bold min-w-[18px]">{k}.</span>
                                             <div className="flex-1 leading-normal overflow-wrap-break-word">
                                                 <MathText content={v} />
@@ -166,8 +165,7 @@ const NaskahPrintTemplate = ({
                 })}
             </div>
 
-            {/* Catatan: Tanda tangan dihilangkan untuk naskah soal */}
-            <div className="mt-12 text-center text-[9pt] italic text-slate-400" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+            <div id="print-footer" style={{ padding: '20mm 16mm', textAlign: 'center', fontSize: '9pt', italic: 'true', color: '#888' }}>
                 <p>-- Selamat Mengerjakan --</p>
             </div>
         </div>
@@ -249,46 +247,56 @@ export default function BankSoalClient({
     };
 
     /**
-     * Algoritma Rendering PDF "Anti-Duplikasi" V23.8
-     * Membagi canvas panjang menjadi potongan A4 presisi tanpa overlap.
+     * Algoritma "Smart Slicing" V24.0
+     * Merender setiap elemen satu per satu ke PDF untuk mencegah pemotongan paksa di tengah baris.
      */
     const generateHighQualityPdf = async (): Promise<string> => {
-        const element = document.getElementById('naskah-print-container');
-        if (!element) throw new Error("Renderer area not found");
+        const headerEl = document.getElementById('print-header');
+        const footerEl = document.getElementById('print-footer');
+        const questionElements = document.querySelectorAll('.print-question-block');
 
-        const canvas = await html2canvas(element, {
-            scale: 2, 
-            useCORS: true,
-            logging: false,
-            backgroundColor: "#ffffff",
-            width: element.offsetWidth,
-            height: element.scrollHeight,
-            windowWidth: element.offsetWidth,
-            windowHeight: element.scrollHeight
-        });
+        if (!headerEl || questionElements.length === 0) throw new Error("Renderer area not found");
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
         const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const bottomMargin = 18; // Margin aman bawah dalam mm
         
-        const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
-        const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
-        
-        const imgProps = pdf.getImageProperties(imgData);
-        const imgHeightInPdf = (imgProps.height * pageWidth) / imgProps.width;
+        let currentY = 0;
 
-        let heightLeft = imgHeightInPdf;
-        let position = 0; // Top position relative to current page
+        // Fungsi helper render elemen ke PDF
+        const renderElementToPdf = async (el: HTMLElement, yOffset: number) => {
+            const canvas = await html2canvas(el, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#ffffff",
+                logging: false
+            });
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+            
+            // Cek apakah elemen muat di halaman saat ini
+            if (yOffset + imgHeight > pageHeight - bottomMargin) {
+                pdf.addPage();
+                yOffset = 18; // Mulai dari margin atas halaman baru (18mm)
+            }
+            
+            pdf.addImage(imgData, 'JPEG', 0, yOffset, pageWidth, imgHeight);
+            return yOffset + imgHeight;
+        };
 
-        // Halaman Pertama
-        pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeightInPdf);
-        heightLeft -= pageHeight;
+        // 1. Render Header
+        currentY = await renderElementToPdf(headerEl as HTMLElement, 0);
 
-        // Halaman Berikutnya (Slicing tanpa duplikasi)
-        while (heightLeft > 0) {
-            position -= pageHeight; // Geser tepat satu tinggi halaman penuh
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeightInPdf);
-            heightLeft -= pageHeight;
+        // 2. Render Setiap Soal Satu per Satu (Smart Break)
+        for (let i = 0; i < questionElements.length; i++) {
+            currentY = await renderElementToPdf(questionElements[i] as HTMLElement, currentY);
+        }
+
+        // 3. Render Footer (Penutup)
+        if (footerEl) {
+            await renderElementToPdf(footerEl as HTMLElement, currentY);
         }
 
         return pdf.output('datauristring').split(',')[1];
@@ -316,7 +324,7 @@ export default function BankSoalClient({
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
                 // Beri waktu sejenak agar KaTeX selesai merender di DOM sebelum capture
-                await new Promise(r => setTimeout(r, 1500)); 
+                await new Promise(r => setTimeout(r, 2000)); 
                 binaryPdf = await generateHighQualityPdf();
             }
 
