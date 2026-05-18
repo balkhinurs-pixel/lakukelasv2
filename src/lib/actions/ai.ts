@@ -2,6 +2,7 @@
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
 import { generateQuestions, type GenerateQuestionsInput, type GenerateQuestionsOutput } from '@/ai/flows/generate-questions-flow';
+import { ai } from '@/ai/genkit';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
@@ -33,6 +34,22 @@ export async function generateQuestionsAction(input: QuestionGenerationInput) {
 }
 
 /**
+ * Server Action untuk generate gambar ilustrasi berdasarkan prompt AI.
+ */
+export async function generateQuestionImageAction(prompt: string) {
+    try {
+        const { media } = await ai.generate({
+            model: 'googleai/imagen-4.0-fast-generate-001',
+            prompt: prompt,
+        });
+        return { success: true, url: media.url };
+    } catch (error: any) {
+        console.error("Image Generation Error:", error);
+        return { success: false, error: "Gagal menghasilkan gambar ilustrasi." };
+    }
+}
+
+/**
  * Server Action untuk menyimpan kumpulan soal ke database Bank Soal.
  */
 export async function saveQuestionsAction(config: QuestionGenerationInput, questions: GeneratedQuestion[]) {
@@ -42,13 +59,6 @@ export async function saveQuestionsAction(config: QuestionGenerationInput, quest
     if (!user) return { success: false, error: "Tidak terautentikasi." };
 
     try {
-        // Ambil school_id
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('school_name') // Dalam demo school_id disimulasikan dari profil
-            .eq('id', user.id)
-            .single();
-
         const groupId = crypto.randomUUID();
         
         // Mapped data sesuai struktur tabel 'questions' di PRD
@@ -56,7 +66,7 @@ export async function saveQuestionsAction(config: QuestionGenerationInput, quest
             created_by: user.id,
             generation_group_id: groupId,
             jenjang: config.jenjang,
-            kelas: config.kelas, // Hanya angka tingkat (misal: 7)
+            kelas: config.kelas,
             semester: config.semester,
             subject: config.subject,
             curriculum: config.curriculum,

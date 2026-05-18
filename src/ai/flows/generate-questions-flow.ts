@@ -2,6 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
  * Menggunakan API Key pribadi milik guru.
+ * Kini dilengkapi dengan image_prompt untuk ilustrasi soal.
  */
 
 import { z, genkit } from 'genkit';
@@ -18,6 +19,7 @@ const QuestionSchema = z.object({
   difficulty: z.enum(['mudah', 'sedang', 'sulit']).describe('Tingkat kesulitan'),
   cognitive_level: z.string().optional().describe('Level kognitif C1-C6'),
   language_direction: z.enum(['ltr', 'rtl']).default('ltr').describe('Arah teks'),
+  image_prompt: z.string().optional().describe('Descriptive English prompt for an educational illustration related to this question. Only provide if the question would benefit significantly from a visual aid.'),
 });
 
 const GenerateQuestionsInputSchema = z.object({
@@ -93,6 +95,7 @@ Aturan Penting:
 3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl' jika ada teks Arab.
 4. Pastikan soal berkualitas, tidak ambigu, dan sesuai level siswa kelas ${input.kelas}.
 5. Berikan pembahasan (explanation) yang ringkas namun jelas.
+6. Berikan image_prompt dalam bahasa Inggris yang mendetail jika soal tersebut bersifat visual atau akan lebih baik jika ada ilustrasinya (misal: grafik, anatomi, peta, atau diagram). Jika tidak perlu gambar, kosongkan saja.
 ${input.curriculum.includes('KBC') ? 'Gunakan pendekatan Kurikulum Berbasis Capaian (KBC) Kemenag yang menekankan pada nilai-nilai moderasi beragama jika relevan.' : ''}
 
 Output harus berupa JSON valid sesuai skema yang diminta.`,

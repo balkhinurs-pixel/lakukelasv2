@@ -16,7 +16,11 @@ import {
     X,
     Trash2,
     Edit3,
-    Bot
+    Bot,
+    Image as ImageIcon,
+    ClipboardCheck,
+    HelpCircle,
+    Lightbulb
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,13 +30,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { generateQuestionsAction, saveQuestionsAction } from "@/lib/actions/ai";
+import { generateQuestionsAction, saveQuestionsAction, generateQuestionImageAction } from "@/lib/actions/ai";
 import type { Class, Subject, GeneratedQuestion, QuestionGenerationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
     Dialog,
     DialogContent,
@@ -42,6 +47,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function GenerateSoalClient({ 
     classes, 
@@ -54,6 +60,7 @@ export default function GenerateSoalClient({
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
+    const [imageLoadingIdx, setImageLoadingIdx] = React.useState<number | null>(null);
     const [questions, setQuestions] = React.useState<GeneratedQuestion[]>([]);
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
 
@@ -108,6 +115,20 @@ export default function GenerateSoalClient({
             toast({ title: "Gagal", description: result.error, variant: "destructive" });
         }
         setLoading(false);
+    };
+
+    const handleGenerateImage = async (idx: number, prompt: string) => {
+        setImageLoadingIdx(idx);
+        const result = await generateQuestionImageAction(prompt);
+        if (result.success && result.url) {
+            const updatedQuestions = [...questions];
+            updatedQuestions[idx].image_url = result.url;
+            setQuestions(updatedQuestions);
+            toast({ title: "Gambar Berhasil Dibuat", description: "Ilustrasi telah ditambahkan ke soal." });
+        } else {
+            toast({ title: "Gagal Generate Gambar", description: result.error, variant: "destructive" });
+        }
+        setImageLoadingIdx(null);
     };
 
     const handleSaveToBankSoal = async () => {
@@ -348,9 +369,9 @@ export default function GenerateSoalClient({
                 )}
             </AnimatePresence>
 
-            {/* Dialog Preview Soal (Sesuai Referensi Gambar) */}
+            {/* Dialog Preview Soal */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-[95vw] sm:max-w-3xl p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl bg-[#F8FAFF]">
+                <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl bg-[#F8FAFF]">
                     <div className="flex flex-col h-[90vh]">
                         {/* Header Indigo Gradient */}
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white relative">
@@ -367,14 +388,14 @@ export default function GenerateSoalClient({
                                 <div>
                                     <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight">Preview Soal</DialogTitle>
                                     <DialogDescription className="text-indigo-100 font-bold text-sm sm:text-base mt-1">
-                                        {form.subject} — {form.topic} — {form.difficulty.charAt(0).toUpperCase() + form.difficulty.slice(1)}
+                                        {form.subject} — Kelas {form.kelas} — {form.difficulty.charAt(0).toUpperCase() + form.difficulty.slice(1)}
                                     </DialogDescription>
                                 </div>
                             </div>
                         </div>
 
                         {/* Badges Summary */}
-                        <div className="p-6 pb-0 flex flex-wrap items-center gap-3">
+                        <div className="p-6 pb-2 flex flex-wrap items-center gap-3">
                             <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 px-4 py-2 rounded-2xl font-bold gap-2 shadow-sm">
                                 <ClipboardCheck className="h-3.5 w-3.5" />
                                 {questions.length} soal total
@@ -391,9 +412,9 @@ export default function GenerateSoalClient({
 
                         {/* Content Scrollable */}
                         <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                                 {questions.map((q, idx) => (
-                                    <Card key={idx} className="border-0 shadow-sm rounded-[2rem] bg-white p-6 sm:p-8 hover:shadow-md transition-all border border-slate-100/50">
+                                    <Card key={idx} className="border-0 shadow-sm rounded-[2rem] bg-white p-6 sm:p-8 hover:shadow-md transition-all border border-slate-100/50 relative overflow-hidden">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-100">
@@ -414,6 +435,19 @@ export default function GenerateSoalClient({
                                         </div>
 
                                         <div className="space-y-6">
+                                            {/* Gambar Ilustrasi */}
+                                            {q.image_url && (
+                                                <div className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-inner border border-slate-100 mb-4 bg-slate-50">
+                                                    <Image 
+                                                        src={q.image_url} 
+                                                        alt="Ilustrasi Soal" 
+                                                        fill 
+                                                        className="object-contain"
+                                                        data-ai-hint="educational illustration"
+                                                    />
+                                                </div>
+                                            )}
+
                                             <div className="text-slate-800 font-bold text-lg sm:text-xl leading-relaxed">
                                                 {q.question.includes('\\(') || q.question.includes('\\[') ? (
                                                     <div className="math-container">
@@ -427,6 +461,37 @@ export default function GenerateSoalClient({
                                                     <p className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>{q.question}</p>
                                                 )}
                                             </div>
+
+                                            {/* Button Generate Gambar (Jika ada prompt tapi belum ada URL) */}
+                                            {q.image_prompt && !q.image_url && (
+                                                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-dashed border-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <ImageIcon className="h-5 w-5 text-indigo-500" />
+                                                        <div className="text-left">
+                                                            <p className="text-xs font-black text-indigo-900 uppercase tracking-tight">Ilustrasi Tersedia</p>
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <button className="text-[10px] text-indigo-400 font-bold underline">Lihat Deskripsi Visual</button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="max-w-xs p-3 rounded-xl bg-indigo-900 text-white border-0">
+                                                                        <p className="text-xs italic">"{q.image_prompt}"</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        </div>
+                                                    </div>
+                                                    <Button 
+                                                        onClick={() => handleGenerateImage(idx, q.image_prompt!)}
+                                                        disabled={imageLoadingIdx === idx}
+                                                        size="sm"
+                                                        className="rounded-xl h-9 bg-indigo-600 text-white font-bold gap-2 px-4 shadow-md shadow-indigo-100"
+                                                    >
+                                                        {imageLoadingIdx === idx ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                                                        Generate Gambar
+                                                    </Button>
+                                                </div>
+                                            )}
 
                                             {q.type === 'multiple_choice' && q.options && (
                                                 <div className="grid grid-cols-1 gap-3 pl-2">
@@ -452,16 +517,22 @@ export default function GenerateSoalClient({
                                                 </div>
                                             )}
 
-                                            <div className="mt-8 space-y-3">
+                                            <div className="mt-8 space-y-4">
                                                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-3">
                                                     <div className="p-1.5 rounded-full bg-emerald-500 text-white shadow-sm">
                                                         <CheckCircle2 className="h-3.5 w-3.5" />
                                                     </div>
                                                     <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">Jawaban: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
                                                 </div>
-                                                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Pembahasan</p>
-                                                    <p className="text-sm text-slate-600 font-medium leading-relaxed italic">{q.explanation}</p>
+                                                
+                                                <div className="relative p-6 rounded-3xl bg-slate-50 border border-slate-100 overflow-hidden group/pembahasan">
+                                                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover/pembahasan:opacity-20 transition-opacity">
+                                                        <Lightbulb className="h-12 w-12 text-indigo-600" />
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 text-[9px] font-black uppercase tracking-widest px-2 py-0.5">Pembahasan</Badge>
+                                                    </div>
+                                                    <p className="text-sm text-slate-600 font-medium leading-relaxed italic relative z-10">{q.explanation}</p>
                                                 </div>
                                             </div>
                                         </div>

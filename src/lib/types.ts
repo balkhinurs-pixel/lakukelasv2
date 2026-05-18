@@ -191,6 +191,8 @@ export interface GeneratedQuestion {
   difficulty: 'mudah' | 'sedang' | 'sulit';
   cognitive_level?: string; // C1-C6
   language_direction?: 'ltr' | 'rtl';
+  image_prompt?: string;
+  image_url?: string;
 }
 
 export interface QuestionGenerationInput {
