@@ -1,6 +1,16 @@
 
 # Log Pembaruan LakuKelas
 
+## V18.6: Solusi Admin Pertama (Database Baru)
+Pembaruan pada logika pendaftaran untuk menangani instalasi pada database kosong.
+
+### 1. Logika Auto-Admin
+- **Smart Assignment**: Fungsi `handle_new_user` sekarang menghitung jumlah user yang ada.
+- **First User Privilege**: Jika pendaftar adalah orang pertama, sistem otomatis memberikan role `admin` dan status `is_activated = true`.
+- **Security**: Pendaftar kedua dan seterusnya tetap mendapatkan role `teacher` dan wajib menunggu persetujuan dari Admin pertama.
+
+---
+
 ## V18.5: Integrasi Auth Sync Otomatis
 Pembaruan kritikal pada blueprint database untuk menangani sinkronisasi profil pengguna baru secara otomatis saat login pertama kali.
 
