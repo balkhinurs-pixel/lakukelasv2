@@ -121,6 +121,7 @@ const NaskahPrintTemplate = ({
             {/* Instruction Title */}
             <div className="mb-4">
                 <p className="font-bold uppercase">I. PILIHAN GANDA</p>
+                <p className="text-[10pt] italic">Pilihlah salah satu jawaban yang paling tepat dengan memberi tanda silang (X) pada huruf A, B, C, atau D!</p>
             </div>
 
             {/* Daftar Soal */}
@@ -165,22 +166,9 @@ const NaskahPrintTemplate = ({
                 })}
             </div>
 
-            {/* Footer / Signature Area */}
-            <div className="mt-20 flex justify-between text-center text-[10pt]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                <div className="space-y-16">
-                    <p>Mengetahui,<br />Kepala Sekolah</p>
-                    <div className="space-y-1">
-                        <p className="font-bold underline">..................................................</p>
-                        <p className="text-[8.5pt]">NIP. ..........................................</p>
-                    </div>
-                </div>
-                <div className="space-y-16">
-                    <p>{config.schoolLocation || "Kota"}, {format(new Date(), 'd MMMM yyyy', { locale: id })}<br />Guru Mata Pelajaran</p>
-                    <div className="space-y-1">
-                        <p className="font-bold underline">..................................................</p>
-                        <p className="text-[8.5pt]">NIP. ..........................................</p>
-                    </div>
-                </div>
+            {/* Catatan: Tanda tangan dihilangkan untuk naskah soal */}
+            <div className="mt-12 text-center text-[9pt] italic text-slate-400" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                <p>-- Selamat Mengerjakan --</p>
             </div>
         </div>
     );
@@ -557,6 +545,7 @@ export default function BankSoalClient({
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                .math-text-render .katex-display { margin: 0.5em 0; overflow-x: auto; overflow-y: hidden; }
             `}</style>
         </div>
     );
