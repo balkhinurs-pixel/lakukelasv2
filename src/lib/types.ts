@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   created_at: string;
@@ -9,6 +10,9 @@ export interface Profile {
   phone_number?: string;
   school_name?: string;
   school_address?: string;
+  npsn?: string;
+  school_email?: string;
+  school_website?: string;
   headmaster_name?: string;
   headmaster_nip?: string;
   school_logo_url?: string;
