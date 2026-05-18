@@ -52,7 +52,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   return (
-    <div className={cn("math-text-render", className)}>
+    <div className={cn("math-text-render inline", className)}>
       {parts.map((part, i) => {
         if (part.startsWith('\\[')) return <BlockMath key={i} math={part.slice(2, -2)} />;
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
@@ -62,7 +62,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
   );
 };
 
-// --- Komponen Template Print Berdasarkan Referensi User ---
+// --- Komponen Template Print Berdasarkan Safe Setting User ---
 const NaskahPrintTemplate = ({ 
     questions, 
     config 
@@ -79,42 +79,42 @@ const NaskahPrintTemplate = ({
                 left: '-9999px', 
                 top: 0,
                 width: '210mm',
-                padding: '0mm 16mm 18mm 16mm', // Top 0 karena margin diatur di jsPDF
+                padding: '18mm 16mm', // Margin ditangani oleh padding kontainer
                 boxSizing: 'border-box',
                 fontFamily: '"Times New Roman", Times, serif',
-                lineHeight: '1.35',
+                lineHeight: '1.45',
                 fontSize: '11pt',
                 color: '#111'
             }}
         >
             {/* Header Naskah */}
-            <div className="text-center border-b border-black pb-1.5 mb-2.5">
-                <h1 className="text-[13pt] font-bold uppercase" style={{ margin: 0 }}>{config.schoolName || "SEKOLAH LAKUKELAS"}</h1>
-                <h2 className="text-[12pt] font-bold uppercase" style={{ margin: '2px 0' }}>{config.examType || "PENILAIAN HARIAN"}</h2>
-                <p className="text-[9pt] italic opacity-60" style={{ margin: 0 }}>Sistem Administrasi LakuKelas AI</p>
+            <div className="text-center border-b-[1.5pt] border-black pb-2 mb-3">
+                <h1 className="text-[13pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>{config.schoolName || "SEKOLAH LAKUKELAS"}</h1>
+                <h2 className="text-[12pt] font-bold uppercase leading-tight" style={{ margin: '2px 0' }}>{config.examType || "PENILAIAN HARIAN"}</h2>
+                <p className="text-[9pt] italic opacity-70" style={{ margin: 0 }}>Sistem Administrasi LakuKelas AI</p>
             </div>
 
-            {/* Metadata Info Table */}
-            <table className="w-full text-[9.5pt] mb-2.5 border-collapse">
-                <tbody>
-                    <tr>
-                        <td className="w-32 py-0.5" style={{ paddingLeft: 0 }}>Mata Pelajaran</td>
-                        <td className="py-0.5">: <strong>{questions[0]?.subject || "-"}</strong></td>
-                        <td className="text-right py-0.5">Hari, Tanggal</td>
-                        <td className="text-right py-0.5 w-48" style={{ paddingRight: 0 }}>: <strong>{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</strong></td>
-                    </tr>
-                    <tr>
-                        <td className="py-0.5" style={{ paddingLeft: 0 }}>Kelas / Jenjang</td>
-                        <td className="py-0.5">: <strong>{questions[0]?.kelas || "-"} / {questions[0]?.jenjang || "-"}</strong></td>
-                        <td className="text-right py-0.5">Alokasi Waktu</td>
-                        <td className="text-right py-0.5" style={{ paddingRight: 0 }}>: <strong>90 Menit</strong></td>
-                    </tr>
-                </tbody>
-            </table>
+            {/* Metadata Info Grid */}
+            <div className="grid grid-cols-2 gap-4 text-[9.5pt] mb-3 pb-2">
+                <div className="space-y-0.5">
+                    <div className="flex">
+                        <span className="w-32">Mata Pelajaran</span>
+                        <span>: <strong>{questions[0]?.subject || "-"}</strong></span>
+                    </div>
+                    <div className="flex">
+                        <span className="w-32">Kelas / Jenjang</span>
+                        <span>: <strong>{questions[0]?.kelas || "-"} / {questions[0]?.jenjang || "-"}</strong></span>
+                    </div>
+                </div>
+                <div className="space-y-0.5 text-right">
+                    <p>Hari, Tanggal : <strong>{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</strong></p>
+                    <p>Alokasi Waktu : <strong>90 Menit</strong></p>
+                </div>
+            </div>
 
             {/* Instruction Box */}
-            <div className="mb-3 px-2.5 py-2 bg-[#f5f5f5] border border-[#ddd] text-[9.5pt]">
-                <p className="font-bold uppercase mb-1" style={{ margin: 0 }}>Petunjuk Umum:</p>
+            <div className="mb-4 px-3 py-2 bg-[#f5f5f5] border border-[#ddd] text-[9.5pt] rounded-sm">
+                <p className="font-bold uppercase mb-1">Petunjuk Umum:</p>
                 <ol className="list-decimal ml-4 space-y-0.5">
                     <li>Berdoalah sebelum mengerjakan soal.</li>
                     <li>Tuliskan identitas Anda pada lembar jawaban yang tersedia.</li>
@@ -124,14 +124,14 @@ const NaskahPrintTemplate = ({
             </div>
 
             {/* Daftar Soal */}
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {questions.map((q, idx) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                     const isSma = options.length > 4;
 
                     return (
-                        <div key={q.id} className="mb-3" style={{ pageBreakInside: 'avoid' }}>
-                            <div className="flex gap-2">
+                        <div key={q.id} className="question-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                            <div className="flex gap-2 mb-1.5">
                                 <span className="font-bold min-w-[22px]">{idx + 1}.</span>
                                 <div className={cn("flex-1 text-justify", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
                                     <MathText content={q.question_text} />
@@ -140,19 +140,20 @@ const NaskahPrintTemplate = ({
                             
                             {options.length > 0 && (
                                 <div 
-                                    className="ml-[22px] mt-1.5"
+                                    className="ml-[22px]"
                                     style={{
                                         display: 'grid',
                                         gridTemplateColumns: '1fr 1fr',
-                                        gridTemplateRows: isSma ? 'repeat(3, auto)' : 'repeat(2, auto)',
                                         gridAutoFlow: 'column',
-                                        gap: '4px 32px'
+                                        gridTemplateRows: isSma ? 'repeat(3, auto)' : 'repeat(2, auto)',
+                                        columnGap: '36px',
+                                        rowGap: '6px'
                                     }}
                                 >
                                     {options.map(([k, v]) => (
-                                        <div key={k} className="flex gap-2 items-start">
+                                        <div key={k} className="flex gap-2 items-start" style={{ minHeight: '24px' }}>
                                             <span className="font-bold min-w-[18px]">{k}.</span>
-                                            <div className="flex-1">
+                                            <div className="flex-1 leading-relaxed">
                                                 <MathText content={v} />
                                             </div>
                                         </div>
@@ -165,19 +166,19 @@ const NaskahPrintTemplate = ({
             </div>
 
             {/* Signature Section */}
-            <div className="mt-10 flex justify-between text-center text-[9.5pt]" style={{ pageBreakInside: 'avoid' }}>
+            <div className="mt-12 flex justify-between text-center text-[9.5pt]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <div className="space-y-16">
-                    <p style={{ margin: 0 }}>Mengetahui,<br />Kepala Sekolah</p>
+                    <p>Mengetahui,<br />Kepala Sekolah</p>
                     <div className="space-y-1">
-                        <p className="font-bold underline" style={{ margin: 0 }}>..................................................</p>
-                        <p className="text-[8pt]" style={{ margin: 0 }}>NIP. ..........................................</p>
+                        <p className="font-bold underline">..................................................</p>
+                        <p className="text-[8pt]">NIP. ..........................................</p>
                     </div>
                 </div>
                 <div className="space-y-16">
-                    <p style={{ margin: 0 }}>{config.schoolLocation || "Kota"}, {format(new Date(), 'd MMMM yyyy', { locale: id })}<br />Guru Mata Pelajaran</p>
+                    <p>{config.schoolLocation || "Kota"}, {format(new Date(), 'd MMMM yyyy', { locale: id })}<br />Guru Mata Pelajaran</p>
                     <div className="space-y-1">
-                        <p className="font-bold underline" style={{ margin: 0 }}>..................................................</p>
-                        <p className="text-[8pt]" style={{ margin: 0 }}>NIP. ..........................................</p>
+                        <p className="font-bold underline">..................................................</p>
+                        <p className="text-[8pt]">NIP. ..........................................</p>
                     </div>
                 </div>
             </div>
@@ -261,8 +262,8 @@ export default function BankSoalClient({
     };
 
     /**
-     * Menghasilkan PDF naskah soal dengan referensi user: 18mm top/bottom, 16mm side.
-     * Fix duplikasi: Menggunakan perhitungan per halaman yang lebih presisi.
+     * Algoritma Slicing Tanpa Duplikasi:
+     * Memotong canvas panjang menjadi potongan A4 presisi tanpa tumpang tindih.
      */
     const generateHighQualityPdf = async (selectedQuestions: any[]): Promise<string> => {
         const element = document.getElementById('naskah-print-container');
@@ -282,32 +283,22 @@ export default function BankSoalClient({
         const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
         const pdfPageHeight = pdf.internal.pageSize.getHeight(); // 297mm
         
-        // Aturan Margin Referensi User
-        const topMargin = 18; 
-        const sideMargin = 16;
-        const bottomMargin = 18;
-
-        const contentWidth = pdfWidth - (sideMargin * 2); 
-        const contentHeightLimit = pdfPageHeight - topMargin - bottomMargin; 
-
+        // Aturan Margin Referensi User - Karena padding sudah ada di HTML, margin PDF diset 0
         const imgProps = pdf.getImageProperties(imgData);
-        const imgHeightInPdf = (imgProps.height * contentWidth) / imgProps.width;
+        const imgHeightInPdf = (imgProps.height * pdfWidth) / imgProps.width;
 
         let heightLeft = imgHeightInPdf;
-        let pageIndex = 0;
+        let position = 0; // Posisi vertikal gambar
 
         while (heightLeft > 0) {
-            // Jika bukan halaman pertama, tambah halaman baru
-            if (pageIndex > 0) pdf.addPage();
+            // Tambahkan potongan gambar ke halaman saat ini
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInPdf);
             
-            // Masukkan gambar dengan posisi Y digeser berdasarkan index halaman
-            // Kita tidak pakai 'position' dinamis untuk menghindari overlap elemen HTML yang terpotong
-            const sourceY = -(pageIndex * contentHeightLimit);
-            
-            pdf.addImage(imgData, 'JPEG', sideMargin, sourceY + topMargin, contentWidth, imgHeightInPdf);
-            
-            heightLeft -= contentHeightLimit;
-            pageIndex++;
+            heightLeft -= pdfPageHeight;
+            if (heightLeft > 0) {
+                pdf.addPage();
+                position -= pdfPageHeight; // Geser gambar ke atas untuk halaman berikutnya
+            }
         }
 
         return pdf.output('datauristring').split(',')[1];
@@ -334,8 +325,8 @@ export default function BankSoalClient({
 
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
-                // Menambah waktu tunggu agar rendering KaTeX selesai sempurna
-                await new Promise(r => setTimeout(r, 1500)); 
+                // Beri jeda agar KaTeX selesai me-render simbol kompleks
+                await new Promise(r => setTimeout(r, 1000)); 
                 binaryPdf = await generateHighQualityPdf(selectedQuestionsData);
             }
 
@@ -363,11 +354,11 @@ export default function BankSoalClient({
                 }
 
                 toast({ 
-                    title: "Naskah Berhasil Dibuat!", 
-                    description: "File telah dikirim ke Drive & otomatis terunduh.",
+                    title: "Naskah Berhasil!", 
+                    description: "File dikirim ke Drive & otomatis terunduh.",
                     action: (
                         <Button variant="outline" size="sm" asChild>
-                            <a href={result.file_url || "#"} target="_blank">Lihat di Drive</a>
+                            <a href={result.file_url || "#"} target="_blank">Cek Drive</a>
                         </Button>
                     )
                 });
@@ -377,10 +368,10 @@ export default function BankSoalClient({
                 setNaskahConfig(prev => ({ ...prev, title: "" }));
                 router.refresh();
             } else {
-                toast({ title: "Gagal Membuat Naskah", description: result.error || "Gagal memproses permintaan.", variant: "destructive" });
+                toast({ title: "Gagal", description: result.error || "Gagal memproses dokumen.", variant: "destructive" });
             }
         } catch (e: any) {
-            toast({ title: "Kesalahan Sistem", description: e.message || "Terjadi kesalahan saat memproses dokumen.", variant: "destructive" });
+            toast({ title: "Error", description: e.message || "Terjadi kesalahan sistem.", variant: "destructive" });
         } finally {
             setExporting(false);
         }
@@ -388,7 +379,7 @@ export default function BankSoalClient({
 
     return (
         <div className="space-y-6">
-            {/* Renderer Hidden Area */}
+            {/* Renderer Hidden Area - Menggunakan @page margin 0 agar slicing presisi */}
             {isExportDialogOpen && (
                 <NaskahPrintTemplate 
                     questions={initialQuestions.filter(q => selectedIds.has(q.id))} 
