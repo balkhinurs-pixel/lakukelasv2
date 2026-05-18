@@ -16,9 +16,12 @@ export default async function BankSoalPage() {
         .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
+    const qList = questions || [];
+
     // Ambil daftar unik untuk filter
-    const subjects = Array.from(new Set((questions || []).map(q => q.subject))).sort();
-    const classes = Array.from(new Set((questions || []).map(q => q.kelas))).sort((a,b) => Number(a) - Number(b));
+    const subjects = Array.from(new Set(qList.map(q => q.subject))).sort();
+    const classes = Array.from(new Set(qList.map(q => q.kelas))).sort((a,b) => Number(a) - Number(b));
+    const topics = Array.from(new Set(qList.map(q => q.topic))).sort();
 
     return (
         <div className="space-y-8 p-1">
@@ -29,9 +32,10 @@ export default async function BankSoalPage() {
             />
 
             <BankSoalClient 
-                initialQuestions={questions || []} 
+                initialQuestions={qList} 
                 uniqueSubjects={subjects}
                 uniqueClasses={classes}
+                uniqueTopics={topics}
             />
         </div>
     );
