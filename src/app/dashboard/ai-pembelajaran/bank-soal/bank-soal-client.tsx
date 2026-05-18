@@ -26,7 +26,8 @@ import {
     Printer,
     FileText,
     School,
-    Download
+    Download,
+    Clock
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,11 +49,18 @@ import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
 
+// --- MathText Component with Automatic Spacing for LaTeX ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  const hasMath = content.includes('\\(') || content.includes('\\[');
+
   return (
-    <div className={cn("math-text-render inline", className)}>
+    <div className={cn(
+        "math-text-render inline-block w-full", 
+        hasMath ? "py-1.5" : "", // Beri ruang jika ada rumus
+        className
+    )}>
       {parts.map((part, i) => {
         if (part.startsWith('\\[')) return <BlockMath key={i} math={part.slice(2, -2)} />;
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
@@ -62,7 +70,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
   );
 };
 
-// --- Komponen Template Print Berdasarkan Safe Setting User ---
+// --- Komponen Template Print Sesuai Referensi Gambar User ---
 const NaskahPrintTemplate = ({ 
     questions, 
     config 
@@ -79,7 +87,7 @@ const NaskahPrintTemplate = ({
                 left: '-9999px', 
                 top: 0,
                 width: '210mm',
-                padding: '18mm 16mm', // Margin ditangani oleh padding kontainer
+                padding: '18mm 16mm',
                 boxSizing: 'border-box',
                 fontFamily: '"Times New Roman", Times, serif',
                 lineHeight: '1.45',
@@ -87,51 +95,42 @@ const NaskahPrintTemplate = ({
                 color: '#111'
             }}
         >
-            {/* Header Naskah */}
-            <div className="text-center border-b-[1.5pt] border-black pb-2 mb-3">
-                <h1 className="text-[13pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>{config.schoolName || "SEKOLAH LAKUKELAS"}</h1>
-                <h2 className="text-[12pt] font-bold uppercase leading-tight" style={{ margin: '2px 0' }}>{config.examType || "PENILAIAN HARIAN"}</h2>
-                <p className="text-[9pt] italic opacity-70" style={{ margin: 0 }}>Sistem Administrasi LakuKelas AI</p>
+            {/* Header Naskah Formal */}
+            <div className="text-center mb-4">
+                <h1 className="text-[13pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
+                    {config.schoolName || "SEKOLAH LAKUKELAS"}
+                </h1>
+                <h2 className="text-[12pt] font-bold uppercase leading-tight" style={{ borderBottom: '1.5pt solid black', paddingBottom: '4px', display: 'inline-block', width: '100%' }}>
+                    {config.examType || "PENILAIAN HARIAN"} TAHUN PELAJARAN 2024/2025
+                </h2>
             </div>
 
-            {/* Metadata Info Grid */}
-            <div className="grid grid-cols-2 gap-4 text-[9.5pt] mb-3 pb-2">
-                <div className="space-y-0.5">
-                    <div className="flex">
-                        <span className="w-32">Mata Pelajaran</span>
-                        <span>: <strong>{questions[0]?.subject || "-"}</strong></span>
-                    </div>
-                    <div className="flex">
-                        <span className="w-32">Kelas / Jenjang</span>
-                        <span>: <strong>{questions[0]?.kelas || "-"} / {questions[0]?.jenjang || "-"}</strong></span>
-                    </div>
+            {/* Grid Metadata Persis Gambar */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '15px', paddingLeft: '40px', paddingRight: '40px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
+                    <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{questions[0]?.subject || "-"}</span>
+                    <span className="font-bold">Kelas/Semester</span><span>:</span><span>{questions[0]?.kelas || "-"} / Ganjil</span>
                 </div>
-                <div className="space-y-0.5 text-right">
-                    <p>Hari, Tanggal : <strong>{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</strong></p>
-                    <p>Alokasi Waktu : <strong>90 Menit</strong></p>
+                <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
+                    <span className="font-bold">Hari dan Tanggal</span><span>:</span><span>{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</span>
+                    <span className="font-bold">Waktu</span><span>:</span><span>07.30 - 09.30 WIB</span>
                 </div>
             </div>
 
-            {/* Instruction Box */}
-            <div className="mb-4 px-3 py-2 bg-[#f5f5f5] border border-[#ddd] text-[9.5pt] rounded-sm">
-                <p className="font-bold uppercase mb-1">Petunjuk Umum:</p>
-                <ol className="list-decimal ml-4 space-y-0.5">
-                    <li>Berdoalah sebelum mengerjakan soal.</li>
-                    <li>Tuliskan identitas Anda pada lembar jawaban yang tersedia.</li>
-                    <li>Periksa dan bacalah soal-soal dengan teliti sebelum menjawab.</li>
-                    <li>Dahulukan menjawab soal-soal yang Anda anggap mudah.</li>
-                </ol>
+            {/* Instruction Title */}
+            <div className="mb-4">
+                <p className="font-bold uppercase">I. PILIHAN GANDA</p>
             </div>
 
             {/* Daftar Soal */}
-            <div className="space-y-4">
+            <div className="space-y-5">
                 {questions.map((q, idx) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                     const isSma = options.length > 4;
 
                     return (
                         <div key={q.id} className="question-block" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                            <div className="flex gap-2 mb-1.5">
+                            <div className="flex gap-2 mb-2">
                                 <span className="font-bold min-w-[22px]">{idx + 1}.</span>
                                 <div className={cn("flex-1 text-justify", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
                                     <MathText content={q.question_text} />
@@ -146,14 +145,14 @@ const NaskahPrintTemplate = ({
                                         gridTemplateColumns: '1fr 1fr',
                                         gridAutoFlow: 'column',
                                         gridTemplateRows: isSma ? 'repeat(3, auto)' : 'repeat(2, auto)',
-                                        columnGap: '36px',
+                                        columnGap: '40px',
                                         rowGap: '6px'
                                     }}
                                 >
                                     {options.map(([k, v]) => (
                                         <div key={k} className="flex gap-2 items-start" style={{ minHeight: '24px' }}>
                                             <span className="font-bold min-w-[18px]">{k}.</span>
-                                            <div className="flex-1 leading-relaxed">
+                                            <div className="flex-1 leading-normal overflow-wrap-break-word">
                                                 <MathText content={v} />
                                             </div>
                                         </div>
@@ -165,22 +164,27 @@ const NaskahPrintTemplate = ({
                 })}
             </div>
 
-            {/* Signature Section */}
-            <div className="mt-12 flex justify-between text-center text-[9.5pt]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+            {/* Footer / Signature Area */}
+            <div className="mt-16 flex justify-between text-center text-[10pt]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <div className="space-y-16">
                     <p>Mengetahui,<br />Kepala Sekolah</p>
                     <div className="space-y-1">
                         <p className="font-bold underline">..................................................</p>
-                        <p className="text-[8pt]">NIP. ..........................................</p>
+                        <p className="text-[8.5pt]">NIP. ..........................................</p>
                     </div>
                 </div>
                 <div className="space-y-16">
                     <p>{config.schoolLocation || "Kota"}, {format(new Date(), 'd MMMM yyyy', { locale: id })}<br />Guru Mata Pelajaran</p>
                     <div className="space-y-1">
                         <p className="font-bold underline">..................................................</p>
-                        <p className="text-[8pt]">NIP. ..........................................</p>
+                        <p className="text-[8.5pt]">NIP. ..........................................</p>
                     </div>
                 </div>
+            </div>
+
+            {/* Page Number Placeholder */}
+            <div className="mt-8 text-center text-[9pt] italic opacity-50">
+                1
             </div>
         </div>
     );
@@ -261,10 +265,6 @@ export default function BankSoalClient({
         });
     };
 
-    /**
-     * Algoritma Slicing Tanpa Duplikasi:
-     * Memotong canvas panjang menjadi potongan A4 presisi tanpa tumpang tindih.
-     */
     const generateHighQualityPdf = async (selectedQuestions: any[]): Promise<string> => {
         const element = document.getElementById('naskah-print-container');
         if (!element) throw new Error("Renderer area not found");
@@ -280,24 +280,21 @@ export default function BankSoalClient({
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const pdf = new jsPDF('p', 'mm', 'a4');
         
-        const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
-        const pdfPageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfPageHeight = pdf.internal.pageSize.getHeight();
         
-        // Aturan Margin Referensi User - Karena padding sudah ada di HTML, margin PDF diset 0
         const imgProps = pdf.getImageProperties(imgData);
         const imgHeightInPdf = (imgProps.height * pdfWidth) / imgProps.width;
 
         let heightLeft = imgHeightInPdf;
-        let position = 0; // Posisi vertikal gambar
+        let position = 0;
 
         while (heightLeft > 0) {
-            // Tambahkan potongan gambar ke halaman saat ini
             pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInPdf);
-            
             heightLeft -= pdfPageHeight;
             if (heightLeft > 0) {
                 pdf.addPage();
-                position -= pdfPageHeight; // Geser gambar ke atas untuk halaman berikutnya
+                position -= pdfPageHeight;
             }
         }
 
@@ -325,8 +322,7 @@ export default function BankSoalClient({
 
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
-                // Beri jeda agar KaTeX selesai me-render simbol kompleks
-                await new Promise(r => setTimeout(r, 1000)); 
+                await new Promise(r => setTimeout(r, 1200)); // More time for KaTeX
                 binaryPdf = await generateHighQualityPdf(selectedQuestionsData);
             }
 
@@ -379,7 +375,6 @@ export default function BankSoalClient({
 
     return (
         <div className="space-y-6">
-            {/* Renderer Hidden Area - Menggunakan @page margin 0 agar slicing presisi */}
             {isExportDialogOpen && (
                 <NaskahPrintTemplate 
                     questions={initialQuestions.filter(q => selectedIds.has(q.id))} 
