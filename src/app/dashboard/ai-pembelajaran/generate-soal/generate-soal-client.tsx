@@ -149,14 +149,17 @@ export default function GenerateSoalClient({
             return;
         }
         setImageLoadingIdx(idx);
+        
+        // Memanggil Server Action yang baru (menggunakan Pollinations)
         const result = await generateQuestionImageAction(prompt);
+        
         if (result.success && result.url) {
             const updatedQuestions = [...questions];
             updatedQuestions[idx].image_url = result.url;
             setQuestions(updatedQuestions);
-            toast({ title: "Gambar Berhasil Dibuat", description: "Ilustrasi telah ditambahkan ke soal." });
+            toast({ title: "Ilustrasi Terpasang", description: "Link ilustrasi AI berhasil ditambahkan ke soal." });
         } else {
-            toast({ title: "Gagal Generate Gambar", description: result.error, variant: "destructive" });
+            toast({ title: "Gagal Menghubungkan Ilustrasi", description: result.error, variant: "destructive" });
         }
         setImageLoadingIdx(null);
     };
@@ -442,7 +445,7 @@ export default function GenerateSoalClient({
                             </Badge>
                             <Badge variant="outline" className="bg-blue-50 border-blue-100 text-blue-700 px-4 py-2 rounded-2xl font-bold gap-2 shadow-sm">
                                 <Bot className="h-3.5 w-3.5" />
-                                via GEMINI
+                                via POLLINATIONS AI
                             </Badge>
                         </div>
 
@@ -479,7 +482,7 @@ export default function GenerateSoalClient({
                                                         alt="Ilustrasi Soal" 
                                                         fill 
                                                         className="object-contain"
-                                                        data-ai-hint="educational illustration"
+                                                        unoptimized
                                                     />
                                                 </div>
                                             )}
@@ -492,7 +495,7 @@ export default function GenerateSoalClient({
                                             <div className="p-5 rounded-3xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
                                                 <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest">
                                                     <FileImage className="h-4 w-4" />
-                                                    <span>Media & Ilustrasi</span>
+                                                    <span>Media & Ilustrasi (Free & Unlimited)</span>
                                                 </div>
                                                 
                                                 <div className="flex flex-col gap-3">
@@ -516,15 +519,9 @@ export default function GenerateSoalClient({
                                                         ) : (
                                                             <Sparkles className="h-4 w-4" />
                                                         )}
-                                                        {q.image_url ? "Regenerate Gambar" : "Generate Ilustrasi AI"}
+                                                        {q.image_url ? "Ganti Gambar (Seed Baru)" : "Generate Ilustrasi AI"}
                                                     </Button>
                                                 </div>
-                                                
-                                                {!q.image_prompt && (
-                                                    <p className="text-[9px] text-indigo-400 font-bold italic text-center">
-                                                        💡 Tulis instruksi di atas jika Anda ingin menambahkan gambar ke soal ini.
-                                                    </p>
-                                                )}
                                             </div>
 
                                             {q.type === 'multiple_choice' && q.options && (

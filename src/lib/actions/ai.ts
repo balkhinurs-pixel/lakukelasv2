@@ -2,7 +2,6 @@
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
 import { generateQuestions, type GenerateQuestionsInput, type GenerateQuestionsOutput } from '@/ai/flows/generate-questions-flow';
-import { ai } from '@/ai/genkit';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
@@ -34,32 +33,24 @@ export async function generateQuestionsAction(input: QuestionGenerationInput) {
 }
 
 /**
- * Server Action untuk generate gambar ilustrasi berdasarkan prompt AI.
- * Menggunakan model Imagen 4.0 Fast.
+ * Server Action untuk generate gambar menggunakan Pollinations.ai.
+ * Keuntungan: Gratis, tanpa API Key, dan hanya berupa link (hemat DB).
  */
 export async function generateQuestionImageAction(prompt: string) {
     try {
-        const { media } = await ai.generate({
-            model: 'googleai/imagen-4.0-fast-generate-001',
-            prompt: prompt,
-        });
-        return { success: true, url: media.url };
+        // Membersihkan prompt dan menjadikannya URL Safe
+        const sanitizedPrompt = prompt.replace(/[\n\r]/g, " ").trim();
+        const encodedPrompt = encodeURIComponent(sanitizedPrompt);
+        
+        // Menggunakan Pollinations AI dengan model flux untuk kualitas edukasi yang baik
+        // Ditambahkan seed acak agar gambar selalu bervariasi jika di-regenerate
+        const seed = Math.floor(Math.random() * 1000000);
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=768&nologo=true&model=flux&seed=${seed}`;
+        
+        return { success: true, url: imageUrl };
     } catch (error: any) {
         console.error("Image Generation Error:", error);
-        
-        // Memberikan pesan error yang lebih manusiawi berdasarkan respon API
-        let errorMessage = "Gagal menghasilkan gambar ilustrasi.";
-        
-        const errorStr = String(error).toLowerCase();
-        if (errorStr.includes('quota') || errorStr.includes('429') || errorStr.includes('limit')) {
-            errorMessage = "Kuota gambar harian di API Key Anda telah habis. Silakan coba lagi besok.";
-        } else if (errorStr.includes('not found') || errorStr.includes('permission') || errorStr.includes('403')) {
-            errorMessage = "Model Imagen 4 belum diaktifkan atau tidak tersedia untuk API Key Anda.";
-        } else if (errorStr.includes('safety')) {
-            errorMessage = "Gambar tidak dapat dibuat karena terdeteksi melanggar kebijakan keamanan konten Google.";
-        }
-
-        return { success: false, error: errorMessage };
+        return { success: false, error: "Gagal merumuskan link gambar ilustrasi." };
     }
 }
 
@@ -97,7 +88,10 @@ export async function saveQuestionsAction(config: QuestionGenerationInput, quest
             cognitive_level: q.cognitive_level,
             language_direction: q.language_direction || 'ltr',
             status: 'draft',
-            needs_review: true
+            needs_review: true,
+            // Kita simpan URL gambar (Pollinations link) di kolom baru atau metadata jika tersedia
+            // Di sini kita asumsikan skema database mendukung image_url
+            image_url: q.image_url || null
         }));
 
         const { error } = await supabase
