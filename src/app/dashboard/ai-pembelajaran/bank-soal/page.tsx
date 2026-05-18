@@ -18,10 +18,27 @@ export default async function BankSoalPage() {
 
     const qList = questions || [];
 
-    // Ambil daftar unik untuk filter
-    const subjects = Array.from(new Set(qList.map(q => q.subject))).sort();
+    // --- Helper Normalisasi untuk Filter ---
+    const getUniqueNormalized = (arr: string[]) => {
+        const uniqueMap = new Map<string, string>();
+        arr.forEach(val => {
+            if (!val) return;
+            const trimmed = val.trim();
+            const lower = trimmed.toLowerCase();
+            if (!uniqueMap.has(lower)) {
+                // Simpan versi "cantik" (huruf depan kapital) untuk tampilan UI
+                const pretty = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+                uniqueMap.set(lower, pretty);
+            }
+        });
+        return Array.from(uniqueMap.values()).sort();
+    };
+
+    const subjects = getUniqueNormalized(qList.map(q => q.subject));
+    const topics = getUniqueNormalized(qList.map(q => q.topic));
+    
+    // Kelas biasanya angka, kita urutkan secara numerik
     const classes = Array.from(new Set(qList.map(q => q.kelas))).sort((a,b) => Number(a) - Number(b));
-    const topics = Array.from(new Set(qList.map(q => q.topic))).sort();
 
     return (
         <div className="space-y-8 p-1">

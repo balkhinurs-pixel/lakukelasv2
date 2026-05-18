@@ -89,8 +89,14 @@ export default function BankSoalClient({
             const matchesSearch = q.question_text.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                 q.topic.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesClass = filterClass === "all" || q.kelas === filterClass;
-            const matchesSubject = filterSubject === "all" || q.subject === filterSubject;
-            const matchesTopic = filterTopic === "all" || q.topic === filterTopic;
+            
+            // Pencocokan cerdas (case-insensitive & trim)
+            const matchesSubject = filterSubject === "all" || 
+                                 q.subject.trim().toLowerCase() === filterSubject.toLowerCase();
+            
+            const matchesTopic = filterTopic === "all" || 
+                                q.topic.trim().toLowerCase() === filterTopic.toLowerCase();
+            
             return matchesSearch && matchesClass && matchesSubject && matchesTopic;
         });
     }, [initialQuestions, searchTerm, filterClass, filterSubject, filterTopic]);
