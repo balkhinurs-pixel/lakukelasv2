@@ -50,7 +50,6 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
  * Komponen pembantu untuk merender teks yang bercampur dengan LaTeX
@@ -103,7 +102,7 @@ export default function GenerateSoalClient({
         jenjang: 'SMP/MTs',
         kelas: '7',
         semester: 'Ganjil',
-        subject: '',
+        subject: 'Bahasa Indonesia',
         curriculum: 'Kurikulum Merdeka',
         assessment_purpose: 'Ulangan Harian',
         topic: '',
@@ -130,12 +129,12 @@ export default function GenerateSoalClient({
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = getMapelOptions(val);
-        setForm({
-            ...form,
+        setForm(prev => ({
+            ...prev,
             jenjang: val,
             kelas: classOpts[0] || '',
-            subject: mapelOpts[0] || '' // Otomatis pilih mapel pertama
-        });
+            subject: mapelOpts[0] || ''
+        }));
     };
 
     const handleGenerate = async (e: React.FormEvent) => {
@@ -218,7 +217,9 @@ export default function GenerateSoalClient({
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
                                     <Select value={form.jenjang} onValueChange={handleJenjangChange}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11">
+                                            <SelectValue placeholder="Pilih Jenjang" />
+                                        </SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             <SelectItem value="SD/MI" className="font-bold">SD / MI</SelectItem>
                                             <SelectItem value="SMP/MTs" className="font-bold">SMP / MTs</SelectItem>
