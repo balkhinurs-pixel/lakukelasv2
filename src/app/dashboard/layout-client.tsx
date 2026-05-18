@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -29,7 +30,8 @@ import {
   FileText,
   Database,
   ChevronUp,
-  ChevronLeft
+  ChevronLeft,
+  FileSearch
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -206,8 +208,8 @@ export default function DashboardLayoutClient({
                     <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Asisten AI</SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
                       <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
+                      <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Daftar Naskah Soal" color="text-indigo-600" />
                       <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul Ajar" color="text-indigo-600" />
-                      <NavItem href="/dashboard/ai-pembelajaran/lkpd" icon={ClipboardEdit} label="Pembuatan LKPD" color="text-indigo-600" />
                       <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
                     </SidebarMenu>
                 </SidebarGroup>
@@ -369,8 +371,8 @@ export default function DashboardLayoutClient({
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-blue-700" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul" color="bg-blue-700" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/lkpd" icon={ClipboardEdit} label="LKPD" color="bg-teal-700" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
                           </div>
                         </div>

@@ -1,0 +1,52 @@
+
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "Profil pengguna (Guru/Admin/Kepala Sekolah)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "full_name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "teacher", "headmaster"] },
+        "is_activated": { "type": "boolean" },
+        "school_name": { "type": "string" },
+        "school_address": { "type": "string" },
+        "headmaster_name": { "type": "string" },
+        "headmaster_nip": { "type": "string" },
+        "school_logo_url": { "type": "string" },
+        "gemini_api_key": { "type": "string" }
+      }
+    },
+    "AiDocument": {
+      "title": "AI Document",
+      "description": "Metadata dokumen yang disimpan di Google Drive",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "user_id": { "type": "string", "format": "uuid" },
+        "document_type": { "type": "string", "enum": ["rpp", "soal", "naskah_ujian"] },
+        "title": { "type": "string" },
+        "class_level": { "type": "string" },
+        "subject": { "type": "string" },
+        "drive_file_id": { "type": "string" },
+        "drive_file_url": { "type": "string" },
+        "drive_folder_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["google", "email"]
+  },
+  "firestore": {
+    "/profiles/{userId}": {
+      "schema": "#/backend/entities/Profile",
+      "description": "Data profil pengguna"
+    },
+    "/ai_documents/{docId}": {
+      "schema": "#/backend/entities/AiDocument",
+      "description": "Data dokumen AI di Drive"
+    }
+  }
+}

@@ -5,35 +5,41 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 /**
- * Mendapatkan atau membuat sub-folder di dalam folder utama LakuKelas AI.
+ * Mendapatkan atau membuat sub-folder secara rekursif.
+ * Memungkinkan struktur: LakuKelas AI / Bank Soal / Kelas 10 / Matematika
  */
-async function getOrCreateSubfolder(providerToken: string, parentId: string, subfolderName: string) {
-    // 1. Cari apakah subfolder sudah ada
-    const query = `name = '${subfolderName}' and '${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-    const searchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id)`, {
-        headers: { 'Authorization': `Bearer ${providerToken}` }
-    });
-    const searchData = await searchResponse.json();
+async function getOrCreateRecursiveFolder(providerToken: string, parentId: string, pathParts: string[]): Promise<string> {
+    let currentParentId = parentId;
 
-    if (searchData.files && searchData.files.length > 0) {
-        return searchData.files[0].id;
+    for (const part of pathParts) {
+        const query = `name = '${part.replace(/'/g, "\\'")}' and '${currentParentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+        const searchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id)`, {
+            headers: { 'Authorization': `Bearer ${providerToken}` }
+        });
+        const searchData = await searchResponse.json();
+
+        if (searchData.files && searchData.files.length > 0) {
+            currentParentId = searchData.files[0].id;
+        } else {
+            const createResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${providerToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: part,
+                    mimeType: 'application/vnd.google-apps.folder',
+                    parents: [currentParentId]
+                }),
+            });
+            const createData = await createResponse.json();
+            if (!createData.id) throw new Error(`Gagal membuat folder: ${part}`);
+            currentParentId = createData.id;
+        }
     }
 
-    // 2. Jika tidak ada, buat baru
-    const createResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${providerToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            name: subfolderName,
-            mimeType: 'application/vnd.google-apps.folder',
-            parents: [parentId]
-        }),
-    });
-    const createData = await createResponse.json();
-    return createData.id;
+    return currentParentId;
 }
 
 /**
@@ -41,9 +47,9 @@ async function getOrCreateSubfolder(providerToken: string, parentId: string, sub
  */
 export async function setupGoogleDriveFolder() {
     const supabase = createClient();
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     
-    if (sessionError || !session || !session.provider_token) {
+    if (!session || !session.provider_token) {
         return { success: false, error: "Token akses Google tidak ditemukan. Silakan login ulang." };
     }
 
@@ -98,10 +104,9 @@ export async function setupGoogleDriveFolder() {
 }
 
 /**
- * Menyimpan konten Markdown ke Google Drive sebagai dokumen Google Doc.
- * Mendukung penyimpanan ke sub-folder berdasarkan tipe dokumen.
+ * Menyimpan Naskah ke Google Drive dengan struktur folder rapi.
  */
-export async function saveAiDocumentToDrive(title: string, content: string, type: string) {
+export async function saveNaskahToDrive(title: string, content: string, metadata: { class: string, subject: string }) {
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -126,25 +131,25 @@ export async function saveAiDocumentToDrive(title: string, content: string, type
             integration = { folder_id: setup.folder_id! };
         }
 
-        // 2. Tentukan & Dapatkan Sub-folder ID (misal: "Bank Soal", "RPP", dll)
-        const subfolderName = type === 'soal' ? 'Bank Soal' : (type === 'rpp' ? 'Modul Ajar' : 'Lainnya');
-        const subfolderId = await getOrCreateSubfolder(providerToken, integration.folder_id!, subfolderName);
+        // 2. Buat Deep Nesting Path: Bank Soal / Kelas X / Mapel
+        const path = ['Bank Soal', `Kelas ${metadata.class}`, metadata.subject];
+        const targetFolderId = await getOrCreateRecursiveFolder(providerToken, integration.folder_id!, path);
 
-        // 3. Buat File di Google Drive (Multipart Upload)
-        const metadata = {
+        // 3. Buat File di Google Drive (Markdown to Google Doc Conversion)
+        const fileMetadata = {
             name: title,
-            mimeType: 'application/vnd.google-apps.document', // Konversi otomatis ke Google Doc (Editable)
-            parents: [subfolderId]
+            mimeType: 'application/vnd.google-apps.document',
+            parents: [targetFolderId]
         };
 
-        const boundary = '-------314159265358979323846';
+        const boundary = '-------LakuKelasBoundary';
         const delimiter = "\r\n--" + boundary + "\r\n";
         const close_delim = "\r\n--" + boundary + "--";
 
         const multipartBody = 
             delimiter +
             'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-            JSON.stringify(metadata) +
+            JSON.stringify(fileMetadata) +
             delimiter +
             'Content-Type: text/markdown\r\n\r\n' +
             content +
@@ -159,35 +164,28 @@ export async function saveAiDocumentToDrive(title: string, content: string, type
             body: multipartBody,
         });
 
-        if (!driveResponse.ok) {
-            const err = await driveResponse.json();
-            return { success: false, error: err.error?.message || "Gagal simpan ke Drive." };
-        }
-
         const fileData = await driveResponse.json();
 
-        // 4. Simpan metadata ke Supabase
+        // 4. Simpan metadata ke tabel repository (ai_documents)
         await supabase.from('ai_documents').insert({
             user_id: userId,
-            document_type: type,
+            document_type: 'naskah_ujian',
             title: title,
+            class_level: metadata.class,
+            subject: metadata.subject,
             drive_file_id: fileData.id,
             drive_file_url: `https://docs.google.com/document/d/${fileData.id}/edit`,
-            drive_folder_id: subfolderId,
+            drive_folder_id: targetFolderId,
             status: 'created'
         });
 
-        revalidatePath('/dashboard/ai-pembelajaran');
+        revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
         return { success: true, file_url: `https://docs.google.com/document/d/${fileData.id}/edit` };
 
     } catch (error: any) {
-        console.error("[DRIVE_SAVE_ERR]", error);
-        return { success: false, error: "Terjadi kesalahan sistem saat menyimpan ke Drive." };
+        console.error("[DRIVE_NASKAH_ERR]", error);
+        return { success: false, error: "Gagal menyimpan naskah ke Drive." };
     }
-}
-
-export async function createTestDocument() {
-    return saveAiDocumentToDrive(`Tes Koneksi - ${new Date().toLocaleTimeString()}`, "Ini adalah file uji coba.", "test");
 }
 
 export async function disconnectGoogleDrive() {
