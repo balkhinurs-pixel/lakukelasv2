@@ -29,7 +29,9 @@ import {
     School,
     Download,
     Clock,
-    Hash
+    Hash,
+    X,
+    Timer
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,22 @@ import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/lib/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+// --- Static Options ---
+const mapelByJenjang: Record<string, string[]> = {
+    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
+    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
+    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+};
+
+const getClassOptions = (jenjang: string) => {
+    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
+    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
+    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
+    return [];
+};
 
 // --- MathText Component ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
@@ -81,6 +99,8 @@ const NaskahPrintTemplate = ({
     questions: any[], 
     config: any 
 }) => {
+    const displayDate = config.date ? format(new Date(config.date), 'EEEE, d MMMM yyyy', { locale: id }) : format(new Date(), 'EEEE, d MMMM yyyy', { locale: id });
+
     return (
         <div 
             id="naskah-print-container" 
@@ -99,7 +119,7 @@ const NaskahPrintTemplate = ({
             }}
         >
             {/* Header Naskah - Professional Standard */}
-            <div id="print-header" style={{ padding: '18mm 16mm 10mm 16mm' }}>
+            <div id="print-header" style={{ padding: '15mm 16mm 10mm 16mm' }}>
                 <div className="text-center mb-4">
                     <h1 className="text-[14pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
                         {config.schoolName || "SEKOLAH LAKUKELAS"}
@@ -125,12 +145,12 @@ const NaskahPrintTemplate = ({
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '20px', paddingLeft: '10px', paddingRight: '10px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
-                        <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{questions[0]?.subject || "-"}</span>
-                        <span className="font-bold">Kelas/Semester</span><span>:</span><span>{questions[0]?.kelas || "-"} / Ganjil</span>
+                        <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{config.subject || "-"}</span>
+                        <span className="font-bold">Kelas/Semester</span><span>:</span><span>{config.kelas || "-"} / {config.semester || 'Ganjil'}</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
-                        <span className="font-bold">Hari dan Tanggal</span><span>:</span><span>{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</span>
-                        <span className="font-bold">Waktu</span><span>:</span><span>90 Menit</span>
+                        <span className="font-bold">Hari dan Tanggal</span><span>:</span><span>{displayDate}</span>
+                        <span className="font-bold">Waktu</span><span>:</span><span>{config.duration || "90 Menit"}</span>
                     </div>
                 </div>
 
@@ -214,7 +234,7 @@ export default function BankSoalClient({
     const [currentPage, setCurrentPage] = React.useState(1);
     const [expandedQuestions, setExpandedQuestions] = React.useState<Set<string>>(new Set());
     
-    // Menggunakan array untuk melacak urutan seleksi (V24.5 Update)
+    // Menggunakan array untuk melacak urutan seleksi
     const [selectedOrderedIds, setSelectedOrderedIds] = React.useState<string[]>([]);
     
     const [exporting, setExporting] = React.useState(false);
@@ -227,13 +247,31 @@ export default function BankSoalClient({
         schoolAddress: schoolProfile?.school_address || "",
         schoolEmail: schoolProfile?.school_email || "",
         schoolWebsite: schoolProfile?.school_website || "",
+        jenjang: 'SMP / MTs',
+        kelas: '7',
+        semester: 'Ganjil',
+        subject: 'Bahasa Indonesia',
         examType: "Penilaian Harian",
+        date: "",
+        duration: "90 Menit",
         format: "pdf" as "pdf" | "doc"
     });
 
     React.useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, filterClass, filterSubject, filterTopic]);
+
+    // Update kelas & mapel saat jenjang berubah di dialog
+    const handleJenjangChange = (val: string) => {
+        const classOpts = getClassOptions(val);
+        const mapelOpts = mapelByJenjang[val] || [];
+        setNaskahConfig(prev => ({
+            ...prev,
+            jenjang: val,
+            kelas: classOpts[0] || '1',
+            subject: mapelOpts[0] || 'Bahasa Indonesia'
+        }));
+    };
 
     const filteredQuestions = React.useMemo(() => {
         return initialQuestions.filter(q => {
@@ -304,7 +342,7 @@ export default function BankSoalClient({
             
             if (yOffset + imgHeight > pageHeight - bottomMargin) {
                 pdf.addPage();
-                yOffset = 18;
+                yOffset = 15; // Jarak atas halaman baru
             }
             
             pdf.addImage(imgData, 'JPEG', 0, yOffset, pageWidth, imgHeight);
@@ -334,12 +372,10 @@ export default function BankSoalClient({
         setExporting(true);
         
         try {
-            // Urutan soal disesuaikan dengan urutan seleksi (bukan urutan database)
-            const selectedQuestionsData = selectedOrderedIds.map(id => initialQuestions.find(q => q.id === id)).filter(Boolean);
-            const sampleQ = selectedQuestionsData[0];
             const metadata = {
-                class: sampleQ?.kelas || "X",
-                subject: sampleQ?.subject || "Umum",
+                jenjang: naskahConfig.jenjang,
+                class: naskahConfig.kelas,
+                subject: naskahConfig.subject,
                 schoolName: naskahConfig.schoolName || "Sekolah LakuKelas",
                 examType: naskahConfig.examType
             };
@@ -533,52 +569,100 @@ export default function BankSoalClient({
             </div>
 
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-                <DialogContent className="rounded-[2.5rem] p-8 max-w-md border-0 shadow-2xl">
-                    <DialogHeader>
-                        <div className="mx-auto p-4 bg-indigo-50 text-indigo-600 rounded-3xl mb-4 shadow-inner"><Printer className="h-8 w-8" /></div>
-                        <DialogTitle className="text-2xl font-black text-center tracking-tight">Susun Naskah Ujian</DialogTitle>
-                        <DialogDescription className="text-center font-medium">Lengkapi detail naskah sebelum dikirim ke Drive.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-5 py-4">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Judul Naskah (Nama File)</Label>
-                            <Input placeholder="e.g. UAS Matematika Kelas 10" value={naskahConfig.title} onChange={e => setNaskahConfig({...naskahConfig, title: e.target.value})} className="h-12 rounded-xl bg-slate-50 border-0 focus:ring-2 font-bold" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Instansi</Label>
-                            <Input placeholder="e.g. SMAN 1 Jakarta" value={naskahConfig.schoolName} onChange={e => setNaskahConfig({...naskahConfig, schoolName: e.target.value})} className="h-12 rounded-xl bg-slate-50 border-0 focus:ring-2 font-bold" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Asesmen</Label>
-                                <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-0 shadow-sm font-bold text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        <SelectItem value="Penilaian Harian" className="font-bold">Harian (UH)</SelectItem>
-                                        <SelectItem value="Sumatif Akhir Semester" className="font-bold">SAS / UAS</SelectItem>
-                                        <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
-                                        <SelectItem value="Latihan Mandiri" className="font-bold">Latihan</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Format File</Label>
-                                <Select value={naskahConfig.format} onValueChange={(v: any) => setNaskahConfig({...naskahConfig, format: v})}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-0 shadow-sm font-bold text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        <SelectItem value="pdf" className="font-bold text-rose-600">PDF Document</SelectItem>
-                                        <SelectItem value="doc" className="font-bold text-blue-600">Google Doc</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                <DialogContent className="rounded-[2.5rem] p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF]">
+                    <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
+                        <button onClick={() => setIsExportDialogOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
+                        <div className="flex items-center gap-4">
+                            <div className="p-4 bg-white/20 backdrop-blur-sm rounded-3xl border border-white/20"><Printer className="h-8 w-8" /></div>
+                            <div>
+                                <DialogTitle className="text-2xl font-black tracking-tight text-white">Susun Naskah Ujian</DialogTitle>
+                                <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest mt-1">Konfigurasi Metadata Akhir</p>
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
+
+                    <ScrollArea className="max-h-[60vh] p-8">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Judul Naskah (Nama File)</Label>
+                                <Input placeholder="e.g. UAS Matematika Kelas 10" value={naskahConfig.title} onChange={e => setNaskahConfig({...naskahConfig, title: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 focus:ring-2 font-bold" />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang Sekolah</Label>
+                                    <Select value={naskahConfig.jenjang} onValueChange={handleJenjangChange}>
+                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tingkat Kelas</Label>
+                                    <Select value={naskahConfig.kelas} onValueChange={v => setNaskahConfig({...naskahConfig, kelas: v})}>
+                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            {getClassOptions(naskahConfig.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
+                                <Select value={naskahConfig.subject} onValueChange={v => setNaskahConfig({...naskahConfig, subject: v})}>
+                                    <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {(mapelByJenjang[naskahConfig.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Calendar className="h-3 w-3" /> Tanggal Ujian</Label>
+                                    <Input type="date" value={naskahConfig.date} onChange={e => setNaskahConfig({...naskahConfig, date: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Timer className="h-3 w-3" /> Durasi (Waktu)</Label>
+                                    <Input placeholder="e.g. 90 Menit" value={naskahConfig.duration} onChange={e => setNaskahConfig({...naskahConfig, duration: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Asesmen</Label>
+                                    <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
+                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectItem value="Penilaian Harian" className="font-bold">Harian (UH)</SelectItem>
+                                            <SelectItem value="Sumatif Akhir Semester" className="font-bold">SAS / UAS</SelectItem>
+                                            <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
+                                            <SelectItem value="Latihan Mandiri" className="font-bold">Latihan</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Format File</Label>
+                                    <Select value={naskahConfig.format} onValueChange={(v: any) => setNaskahConfig({...naskahConfig, format: v})}>
+                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectItem value="pdf" className="font-bold text-rose-600">PDF Document</SelectItem>
+                                            <SelectItem value="doc" className="font-bold text-blue-600">Google Doc</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                    </ScrollArea>
+
+                    <div className="p-8 bg-white border-t">
                         <Button onClick={handleCreateNaskah} disabled={exporting || !naskahConfig.title} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
                             {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : (naskahConfig.format === 'pdf' ? <Download className="h-6 w-6" /> : <CloudIcon className="h-6 w-6" />)}
-                            Generate & Simpan
+                            Generate & Simpan ke Drive
                         </Button>
-                    </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
 

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -5,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 
 /**
  * Mendapatkan atau membuat sub-folder secara rekursif.
- * Memungkinkan struktur: LakuKelas AI / Bank Soal / Kelas 10 / Matematika
+ * Memungkinkan struktur: LakuKelas AI / Bank Soal / [Jenjang] / Kelas [Angka] / [Mapel]
  */
 async function getOrCreateRecursiveFolder(providerToken: string, parentId: string, pathParts: string[]): Promise<string> {
     let currentParentId = parentId;
@@ -112,14 +113,11 @@ export async function setupGoogleDriveFolder() {
 
 /**
  * Server Action untuk menyimpan naskah ke Google Drive dengan dukungan format PDF atau Google Doc.
- * @param title Judul file
- * @param content Isi file (Markdown untuk Doc, Base64 untuk PDF)
- * @param format 'pdf' | 'doc'
  */
 export async function saveNaskahToDrive(
     title: string, 
     content: string, 
-    metadata: { class: string, subject: string },
+    metadata: { jenjang: string, class: string, subject: string },
     format: 'pdf' | 'doc' = 'doc'
 ) {
     const supabase = createClient();
@@ -148,13 +146,10 @@ export async function saveNaskahToDrive(
             integration = { folder_id: setup.folder_id! };
         }
 
-        // Tentukan path folder
-        const path = ['Bank Soal', `Kelas ${metadata.class}`, metadata.subject];
+        // Tentukan path folder berjenjang sesuai PRD V2.2
+        const path = ['Bank Soal', metadata.jenjang, `Kelas ${metadata.class}`, metadata.subject];
         const targetFolderId = await getOrCreateRecursiveFolder(providerToken, integration.folder_id!, path);
 
-        // Konfigurasi MimeType
-        // Jika 'doc', Google Drive akan otomatis konversi Markdown ke Google Doc editable
-        // Jika 'pdf', simpan sebagai file PDF statis
         const mimeType = format === 'doc' ? 'application/vnd.google-apps.document' : 'application/pdf';
         const fileExtension = format === 'doc' ? '' : '.pdf';
         
@@ -168,10 +163,8 @@ export async function saveNaskahToDrive(
         const delimiter = "\r\n--" + boundary + "\r\n";
         const close_delim = "\r\n--" + boundary + "--";
 
-        // Handle Body berdasarkan format
         let body;
         if (format === 'pdf') {
-            // Content adalah string Base64 dari client
             body = 
                 delimiter +
                 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
@@ -182,7 +175,6 @@ export async function saveNaskahToDrive(
                 content +
                 close_delim;
         } else {
-            // Content adalah Markdown string
             body = 
                 delimiter +
                 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
@@ -301,6 +293,5 @@ export async function createTestDocument() {
 }
 
 export async function saveAiDocumentToDrive(title: string, content: string, type: string) {
-    // Fungsi fallback untuk RPP/Soal dari menu AI Pembelajaran utama
-    return saveNaskahToDrive(title, content, { class: 'Umum', subject: 'Dokumen AI' }, 'doc');
+    return saveNaskahToDrive(title, content, { jenjang: 'Umum', class: 'Umum', subject: 'Dokumen AI' }, 'doc');
 }

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
@@ -112,35 +113,32 @@ export async function deleteQuestionsAction(ids: string[]) {
 
 /**
  * Server Action untuk menyusun naskah ujian.
- * @param title Judul file
- * @param selectedQuestionIds Daftar ID soal
- * @param metadata Informasi tambahan
- * @param format Format keluaran ('doc' atau 'pdf')
- * @param binaryData Data biner Base64 jika formatnya PDF (dikirim dari client)
  */
 export async function createNaskahUjianAction(
     title: string, 
     selectedQuestionIds: string[], 
-    metadata: { class: string, subject: string, schoolName: string, examType: string },
+    metadata: { jenjang: string, class: string, subject: string, schoolName: string, examType: string },
     format: 'pdf' | 'doc' = 'doc',
     binaryData?: string
 ) {
     const supabase = createClient();
     
-    // Jika format adalah PDF, kita hanya butuh datanya untuk diunggah ke Drive
+    // Jika format adalah PDF, unggah data biner ke Drive
     if (format === 'pdf' && binaryData) {
         const result = await saveNaskahToDrive(title, binaryData, metadata, 'pdf');
         return { ...result, format: 'pdf' };
     }
 
-    // Jika format adalah DOC, kita ambil data dari DB dan susun Markdown
+    // Jika format adalah DOC, ambil data soal dan susun Markdown
     const { data: questions, error: fetchError } = await supabase
         .from('questions')
         .select('*')
-        .in('id', selectedQuestionIds)
-        .order('sort_order', { ascending: true });
+        .in('id', selectedQuestionIds);
 
-    if (fetchError || !questions || questions.length === 0) {
+    // Pastikan soal diurutkan sesuai urutan input array IDs
+    const orderedQuestions = selectedQuestionIds.map(id => questions?.find(q => q.id === id)).filter(Boolean);
+
+    if (fetchError || orderedQuestions.length === 0) {
         return { success: false, error: "Gagal mengambil data soal terpilih." };
     }
 
@@ -149,18 +147,15 @@ export async function createNaskahUjianAction(
 ${metadata.schoolName.toUpperCase()}
 ${metadata.examType.toUpperCase()}
 ==========================================
+Jenjang        : ${metadata.jenjang}
 Mata Pelajaran : ${metadata.subject}
 Kelas          : ${metadata.class}
 Tanggal        : ${new Date().toLocaleDateString('id-ID')}
-Alokasi Waktu  : 90 Menit
 ==========================================
-
-PETUNJUK:
-Jawablah pertanyaan di bawah ini dengan memilih jawaban yang paling benar!
 
 `;
 
-    questions.forEach((q, idx) => {
+    orderedQuestions.forEach((q, idx) => {
         content += `${idx + 1}. ${q.question_text}\n`;
         if (q.options_json) {
             Object.entries(q.options_json as Record<string, string>).sort().forEach(([key, val]) => {
@@ -170,12 +165,6 @@ Jawablah pertanyaan di bawah ini dengan memilih jawaban yang paling benar!
         content += `\n`;
     });
 
-    content += `\n--- KUNCI JAWABAN ---\n`;
-    questions.forEach((q, idx) => {
-        content += `${idx + 1}. ${q.correct_answer}\n`;
-    });
-
-    // Simpan ke Google Drive sebagai Google Doc (Otomatis konversi oleh API Drive)
     const result = await saveNaskahToDrive(title, content, metadata, 'doc');
     
     return { 
