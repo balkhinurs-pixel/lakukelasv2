@@ -198,6 +198,7 @@ export default function DashboardLayoutClient({
                       <NavItem href="/dashboard/grades" icon={ClipboardEdit} label="Input Nilai" color="text-cyan-500" />
                       <NavItem href="/dashboard/journal" icon={BookText} label="Jurnal" color="text-indigo-500" />
                       <NavItem href="/dashboard/materials" icon={Link2} label="Materi" color="text-purple-500" />
+                      <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah Soal" color="text-indigo-600" />
                       <NavItem href="/dashboard/reports" icon={BarChart3} label="Laporan" color="text-orange-500" />
                       <NavItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal" color="text-slate-500" />
                       <NavItem href="/dashboard/settings" icon={Settings} label="Setelan" color="text-slate-400" />
@@ -208,7 +209,6 @@ export default function DashboardLayoutClient({
                     <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Asisten AI</SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
                       <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
-                      <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Daftar Naskah Soal" color="text-indigo-600" />
                       <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul Ajar" color="text-indigo-600" />
                       <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
                     </SidebarMenu>
@@ -361,6 +361,7 @@ export default function DashboardLayoutClient({
                                 <MobileGridItem href="/dashboard/grades" icon={ClipboardEdit} label="Nilai" color="bg-cyan-500" />
                                 <MobileGridItem href="/dashboard/journal" icon={BookText} label="Jurnal" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/materials" icon={Link2} label="Materi" color="bg-purple-600" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/reports" icon={BarChart3} label="Laporan" color="bg-orange-500" />
                                 <MobileGridItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal" color="bg-slate-600" />
                                 <MobileGridItem href="/dashboard/settings" icon={Settings} label="Setelan" color="bg-slate-400" />
@@ -371,7 +372,6 @@ export default function DashboardLayoutClient({
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-blue-700" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul" color="bg-blue-700" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
                           </div>
