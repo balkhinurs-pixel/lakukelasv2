@@ -113,7 +113,6 @@ export async function deleteQuestionsAction(ids: string[]) {
 
 /**
  * Server Action untuk menyusun naskah ujian dari daftar soal terpilih.
- * Mendukung konversi Markdown ke format profesional untuk Drive.
  */
 export async function createNaskahUjianAction(title: string, selectedQuestionIds: string[], metadata: { class: string, subject: string, schoolName: string, examType: string }) {
     const supabase = createClient();
@@ -127,41 +126,42 @@ export async function createNaskahUjianAction(title: string, selectedQuestionIds
         return { success: false, error: "Gagal mengambil data soal terpilih." };
     }
 
-    // 1. Bangun Konten Markdown untuk Naskah
-    let content = `# ${metadata.schoolName.toUpperCase()}\n`;
-    content += `## ${metadata.examType.toUpperCase()}\n\n`;
-    content += `**Mata Pelajaran:** ${metadata.subject}\n`;
-    content += `**Kelas:** ${metadata.class}\n`;
-    content += `**Tanggal:** ${new Date().toLocaleDateString('id-ID')}\n`;
-    content += `**Waktu:** 90 Menit\n`;
-    content += `\n---\n\n`;
+    // 1. Bangun Konten Naskah Formal (Markdown style)
+    let content = `
+${metadata.schoolName.toUpperCase()}
+${metadata.examType.toUpperCase()}
+==========================================
+Mata Pelajaran : ${metadata.subject}
+Kelas          : ${metadata.class}
+Tanggal        : ${new Date().toLocaleDateString('id-ID')}
+Alokasi Waktu  : 90 Menit
+==========================================
 
-    content += `### PETUNJUK PENGERJAAN:\n`;
-    content += `1. Berdoalah sebelum mengerjakan.\n`;
-    content += `2. Tuliskan identitas Anda pada lembar jawab.\n`;
-    content += `3. Jawablah pertanyaan dengan jujur dan teliti.\n\n`;
+PETUNJUK:
+Jawablah pertanyaan di bawah ini dengan memilih jawaban yang paling benar!
+
+`;
 
     questions.forEach((q, idx) => {
-        content += `**${idx + 1}. ${q.question_text}**\n\n`;
+        content += `${idx + 1}. ${q.question_text}\n`;
         if (q.options_json) {
             Object.entries(q.options_json as Record<string, string>).sort().forEach(([key, val]) => {
-                content += `${key}. ${val}\n`;
+                content += `   ${key}. ${val}\n`;
             });
         }
         content += `\n`;
     });
 
-    content += `\n\n--- KUNCI JAWABAN (LAMPIRAN TERPISAH) ---\n\n`;
+    content += `\n--- KUNCI JAWABAN ---\n`;
     questions.forEach((q, idx) => {
-        content += `${idx + 1}. Kunci: ${q.correct_answer}\n`;
+        content += `${idx + 1}. ${q.correct_answer}\n`;
     });
 
-    // 2. Simpan ke Google Drive (Deep Nesting)
+    // 2. Simpan ke Google Drive (Struktur Folder Deep Nesting)
     const result = await saveNaskahToDrive(title, content, metadata);
     
-    // 3. Return data agar bisa di-download di client
     return { 
         ...result, 
-        markdown: content // Untuk pemicu download lokal
+        markdown: content 
     };
 }

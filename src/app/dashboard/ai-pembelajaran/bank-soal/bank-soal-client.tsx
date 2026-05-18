@@ -86,6 +86,7 @@ export default function BankSoalClient({
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
     
     const [naskahConfig, setNaskahConfig] = React.useState({
+        title: "",
         schoolName: "",
         examType: "Penilaian Harian",
     });
@@ -142,6 +143,11 @@ export default function BankSoalClient({
 
     const handleCreateNaskah = async () => {
         if (selectedIds.size === 0) return;
+        if (!naskahConfig.title) {
+            toast({ title: "Judul Wajib Diisi", description: "Harap masukkan nama file naskah Anda.", variant: "destructive" });
+            return;
+        }
+
         setExporting(true);
         
         try {
@@ -153,14 +159,12 @@ export default function BankSoalClient({
                 examType: naskahConfig.examType
             };
 
-            const title = `Naskah_${metadata.subject}_${metadata.class}_${format(new Date(), 'yyyyMMdd')}`;
-            
-            const result = await createNaskahUjianAction(title, Array.from(selectedIds), metadata);
+            const result = await createNaskahUjianAction(naskahConfig.title, Array.from(selectedIds), metadata);
 
             if (result.success) {
-                // 1. Auto Download Lokal (Word doc-like Markdown)
-                const blob = new Blob([result.markdown || ""], { type: 'text/markdown;charset=utf-8' });
-                saveAs(blob, `${title}.doc`);
+                // 1. Auto Download Lokal (Word doc-like format)
+                const blob = new Blob([result.markdown || ""], { type: 'application/msword;charset=utf-8' });
+                saveAs(blob, `${naskahConfig.title}.doc`);
 
                 toast({ 
                     title: "Naskah Berhasil Dibuat!", 
@@ -173,6 +177,8 @@ export default function BankSoalClient({
                 });
                 setIsExportDialogOpen(false);
                 setSelectedIds(new Set());
+                setNaskahConfig(prev => ({ ...prev, title: "" }));
+                router.refresh();
             } else {
                 toast({ title: "Gagal", description: result.error, variant: "destructive" });
             }
@@ -185,13 +191,12 @@ export default function BankSoalClient({
 
     return (
         <div className="space-y-6">
-            {/* Action Bar */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
                     <Input 
                         placeholder="Cari materi..." 
-                        className="pl-12 h-12 rounded-2xl border-slate-200 bg-white" 
+                        className="pl-12 h-12 rounded-2xl border-slate-200 bg-white shadow-sm" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -205,12 +210,12 @@ export default function BankSoalClient({
                                     onClick={() => setIsExportDialogOpen(true)}
                                 >
                                     <Printer className="h-5 w-5" />
-                                    Cetak Naskah ({selectedIds.size})
+                                    Susun Naskah ({selectedIds.size})
                                 </Button>
                             </motion.div>
                         )}
                     </AnimatePresence>
-                    <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-bold px-6" asChild>
+                    <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-bold px-6 shadow-lg shadow-indigo-100" asChild>
                         <Link href="/dashboard/ai-pembelajaran/generate-soal">
                             <PlusCircle className="h-5 w-5" />
                             Generate Baru
@@ -219,7 +224,6 @@ export default function BankSoalClient({
                 </div>
             </div>
 
-            {/* Filter Bar */}
             <Card className="border-0 shadow-sm rounded-3xl bg-slate-50/50 p-4">
                 <div className="flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
                     <Filter className="h-4 w-4" />
@@ -237,11 +241,10 @@ export default function BankSoalClient({
                             {uniqueSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                    <Badge className="ml-auto bg-indigo-50 text-indigo-700 border-indigo-100">{filteredQuestions.length} SOAL TERSEDIA</Badge>
+                    <Badge className="ml-auto bg-indigo-50 text-indigo-700 border-indigo-100 shadow-sm">{filteredQuestions.length} SOAL TERSEDIA</Badge>
                 </div>
             </Card>
 
-            {/* List */}
             <div className="space-y-4">
                 {paginatedQuestions.map((q) => (
                     <Card key={q.id} className={cn(
@@ -257,35 +260,35 @@ export default function BankSoalClient({
                                 />
                                 <div className="space-y-3 md:w-32">
                                     <Badge className={cn(
-                                        "font-black text-[9px] uppercase",
+                                        "font-black text-[9px] uppercase tracking-widest",
                                         q.difficulty === 'sulit' ? "bg-rose-500" : "bg-emerald-500"
                                     )}>{q.difficulty}</Badge>
-                                    <p className="text-[10px] font-black uppercase text-slate-400">Kelas {q.kelas}</p>
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelas {q.kelas}</p>
                                 </div>
                             </div>
 
                             <div className="flex-1 space-y-4">
                                 <div className="text-slate-800 font-bold leading-relaxed">
-                                    <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right' : ''} />
+                                    <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-xl' : ''} />
                                 </div>
                                 {q.options_json && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                            <div key={k} className="p-2.5 rounded-xl border border-slate-100 bg-white text-xs font-semibold flex gap-2">
+                                            <div key={k} className="p-3 rounded-2xl border border-slate-100 bg-white text-xs font-semibold flex gap-2 hover:border-indigo-200 transition-colors">
                                                 <span className="text-indigo-600 font-black">{k}.</span>
                                                 <MathText content={v} />
                                             </div>
                                         ))}
                                     </div>
                                 )}
-                                <div className="pt-2 flex justify-between items-center border-t border-slate-50">
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase">KUNCI: {q.correct_answer}</p>
-                                    <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600">
+                                <div className="pt-4 flex justify-between items-center border-t border-slate-50">
+                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg">KUNCI: {q.correct_answer}</p>
+                                    <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
                                         {expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
                                     </Button>
                                 </div>
                                 {expandedQuestions.has(q.id) && (
-                                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} className="p-4 rounded-xl bg-slate-50 text-xs italic text-slate-500 border border-slate-100">
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="p-5 rounded-2xl bg-slate-50 text-xs italic text-slate-600 border border-slate-100 leading-relaxed">
                                         <MathText content={q.explanation} />
                                     </motion.div>
                                 )}
@@ -295,47 +298,49 @@ export default function BankSoalClient({
                 ))}
             </div>
 
-            {/* Dialog Ekspor */}
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-                <DialogContent className="rounded-[2rem] p-8 max-w-md">
+                <DialogContent className="rounded-[2.5rem] p-8 max-w-md border-0 shadow-2xl">
                     <DialogHeader>
-                        <div className="mx-auto p-4 bg-indigo-50 text-indigo-600 rounded-3xl mb-4"><Printer className="h-8 w-8" /></div>
-                        <DialogTitle className="text-2xl font-black text-center">Susun Naskah Ujian</DialogTitle>
-                        <DialogDescription className="text-center font-medium">Lengkapi detail kop surat untuk naskah profesional Anda.</DialogDescription>
+                        <div className="mx-auto p-4 bg-indigo-50 text-indigo-600 rounded-3xl mb-4 shadow-inner"><Printer className="h-8 w-8" /></div>
+                        <DialogTitle className="text-2xl font-black text-center tracking-tight">Susun Naskah Ujian</DialogTitle>
+                        <DialogDescription className="text-center font-medium">Lengkapi detail naskah sebelum dikirim ke Drive.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-5 py-4">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400">Nama Sekolah</Label>
-                            <Input placeholder="e.g. SMAN 1 Jakarta" value={naskahConfig.schoolName} onChange={e => setNaskahConfig({...naskahConfig, schoolName: e.target.value})} className="h-12 rounded-xl" />
+                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Judul Naskah (Nama File)</Label>
+                            <Input placeholder="e.g. UAS Matematika Kelas 10" value={naskahConfig.title} onChange={e => setNaskahConfig({...naskahConfig, title: e.target.value})} className="h-12 rounded-xl bg-slate-50 border-0 focus:ring-2 font-bold" />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400">Jenis Asesmen</Label>
+                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Instansi</Label>
+                            <Input placeholder="e.g. SMAN 1 Jakarta" value={naskahConfig.schoolName} onChange={e => setNaskahConfig({...naskahConfig, schoolName: e.target.value})} className="h-12 rounded-xl bg-slate-50 border-0 focus:ring-2 font-bold" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Asesmen</Label>
                             <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
-                                <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-2xl">
-                                    <SelectItem value="Penilaian Harian">Penilaian Harian</SelectItem>
-                                    <SelectItem value="Sumatif Akhir Semester">Sumatif Akhir Semester</SelectItem>
-                                    <SelectItem value="Ujian Sekolah">Ujian Sekolah</SelectItem>
-                                    <SelectItem value="Latihan Soal Mandiri">Latihan Soal Mandiri</SelectItem>
+                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-0 shadow-sm font-bold"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                    <SelectItem value="Penilaian Harian" className="font-bold">Penilaian Harian</SelectItem>
+                                    <SelectItem value="Sumatif Akhir Semester" className="font-bold">Sumatif Akhir Semester</SelectItem>
+                                    <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
+                                    <SelectItem value="Latihan Mandiri" className="font-bold">Latihan Mandiri</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button onClick={handleCreateNaskah} disabled={exporting} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2">
-                            {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <CloudIcon className="h-5 w-5" />}
+                        <Button onClick={handleCreateNaskah} disabled={exporting || !naskahConfig.title} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
+                            {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : <CloudIcon className="h-6 w-6" />}
                             Kirim ke Drive & Download
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Pagination */}
             {totalPages > 1 && (
                 <div className="flex justify-center gap-2 pt-6">
-                    <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="rounded-xl"><ChevronLeft className="h-4 w-4" /></Button>
-                    <div className="flex items-center px-4 font-black text-sm">{currentPage} / {totalPages}</div>
-                    <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="rounded-xl"><ChevronRight className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="rounded-xl h-10 w-10"><ChevronLeft className="h-4 w-4" /></Button>
+                    <div className="flex items-center px-4 font-black text-sm text-slate-400 bg-slate-100 rounded-xl">{currentPage} / {totalPages}</div>
+                    <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="rounded-xl h-10 w-10"><ChevronRight className="h-4 w-4" /></Button>
                 </div>
             )}
         </div>
