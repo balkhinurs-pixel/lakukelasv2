@@ -11,26 +11,19 @@ import {
     Target, 
     Zap, 
     ArrowLeft,
-    AlertTriangle,
-    Eye,
     X,
     Trash2,
     Edit3,
     Bot,
     Image as ImageIcon,
     ClipboardCheck,
-    HelpCircle,
-    Lightbulb,
     FileImage,
-    PencilLine,
-    Upload,
     FileText,
     FileUp,
     Settings2,
-    BookOpen,
     Layers,
-    Activity,
-    ChevronDown
+    ChevronDown,
+    Eye
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,14 +47,12 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
-    DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // --- MathText Component for LaTeX & Arabic Rendering ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-  // Regex to detect LaTeX patterns \[ ... \] and \( ... \)
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   return (
     <div className={cn("math-text-render", className)}>
@@ -119,11 +110,10 @@ export default function GenerateSoalClient({
         mode: 'Reguler',
         instruction: '',
         question_type: 'multiple_choice',
-        count: 5,
+        count: 5, // Locked to 5 for stability
         difficulty: 'sedang'
     });
 
-    // Fix bug: Ensure Jenjang change updates related fields correctly and atomic
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
@@ -139,13 +129,26 @@ export default function GenerateSoalClient({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) {
-            toast({ title: "File Terlalu Besar", description: "Maksimal ukuran file adalah 10MB.", variant: "destructive" });
+        
+        // 3MB Limit for Vercel Free Tier stability (Base64 adds overhead)
+        const MAX_FILE_SIZE = 3 * 1024 * 1024; 
+        if (file.size > MAX_FILE_SIZE) {
+            toast({ 
+                title: "File Terlalu Besar", 
+                description: "Maksimal ukuran file adalah 3MB agar proses generate tetap stabil.", 
+                variant: "destructive" 
+            });
+            if (fileInputRef.current) fileInputRef.current.value = "";
             return;
         }
+
         const reader = new FileReader();
         reader.onload = (event) => {
-            setUploadedFile({ name: file.name, uri: event.target?.result as string, mime: file.type });
+            setUploadedFile({ 
+                name: file.name, 
+                uri: event.target?.result as string, 
+                mime: file.type 
+            });
             toast({ title: "Materi Terunggah", description: `${file.name} siap diproses oleh AI.` });
         };
         reader.readAsDataURL(file);
@@ -159,8 +162,10 @@ export default function GenerateSoalClient({
         }
         setLoading(true);
         try {
+            // Force count to 5 regardless of any previous state
             const result = await generateQuestionsAction({ 
                 ...form, 
+                count: 5,
                 mediaDataUri: uploadedFile?.uri, 
                 mediaMimeType: uploadedFile?.mime 
             });
@@ -168,7 +173,7 @@ export default function GenerateSoalClient({
             if (result.success && result.data) {
                 setQuestions(result.data.questions);
                 setIsPreviewOpen(true);
-                toast({ title: "Berhasil", description: `${result.data.questions.length} soal telah dihasilkan.` });
+                toast({ title: "Berhasil", description: `5 butir soal telah dihasilkan.` });
             } else {
                 toast({ title: "Gagal Generate", description: result.error, variant: "destructive" });
             }
@@ -181,7 +186,7 @@ export default function GenerateSoalClient({
 
     const handleGenerateImage = async (idx: number, prompt: string) => {
         if (!prompt) {
-            toast({ title: "Prompt Kosong", description: "Tuliskan deskripsi gambar yang ingin dibuat oleh AI.", variant: "destructive" });
+            toast({ title: "Prompt Kosong", description: "Tuliskan deskripsi gambar yang ingin dibuat.", variant: "destructive" });
             return;
         }
         setImageLoadingIdx(idx);
@@ -248,7 +253,7 @@ export default function GenerateSoalClient({
                                     <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full p-6 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-2 hover:border-indigo-400 hover:bg-indigo-50 transition-all text-slate-400 hover:text-indigo-600 group">
                                         <FileUp className="h-8 w-8 opacity-40 group-hover:opacity-100 transition-opacity" />
                                         <p className="text-[10px] font-black uppercase tracking-widest">Unggah PDF / Foto Buku</p>
-                                        <p className="text-[9px] font-medium opacity-60">AI akan membaca materi Anda</p>
+                                        <p className="text-[9px] font-medium opacity-60">Max 3MB • AI akan membaca materi Anda</p>
                                     </button>
                                 )}
                             </div>
@@ -394,13 +399,9 @@ export default function GenerateSoalClient({
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Soal</Label>
-                                        <Select value={String(form.count)} onValueChange={(v) => setForm({...form, count: Number(v)})}>
-                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                                <SelectItem value="5" className="font-bold">5 Soal</SelectItem>
-                                                <SelectItem value="10" className="font-bold">10 Soal</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="h-11 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-500 border border-slate-200">
+                                            5 Butir (Locked)
+                                        </div>
                                     </div>
                                 </div>
 
@@ -431,7 +432,7 @@ export default function GenerateSoalClient({
                     </div>
                     <h3 className="text-3xl font-black text-slate-900 tracking-tight">Asisten AI Siap Membantu</h3>
                     <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">
-                        Pilih jenis soal dan topik di samping. AI akan merumuskan butir soal berkualitas tinggi sesuai kurikulum Indonesia dalam hitungan detik.
+                        Pilih jenis soal dan topik di samping. AI akan merumuskan 5 butir soal berkualitas tinggi dalam hitungan detik.
                     </p>
                     <div className="mt-10 flex gap-4">
                         <Badge variant="outline" className="px-4 py-2 rounded-xl border-slate-100 text-slate-400 font-bold">
@@ -453,7 +454,7 @@ export default function GenerateSoalClient({
                             <div className="relative z-10 p-10 rounded-[3rem] bg-white shadow-2xl border border-indigo-50">
                                 <Loader2 className="h-20 w-20 animate-spin text-indigo-600 mx-auto" />
                                 <div className="mt-8 space-y-2">
-                                    <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Merumuskan Butir Soal...</p>
+                                    <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Merumuskan 5 Butir Soal...</p>
                                     <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{form.subject} — Kelas {form.kelas}</p>
                                 </div>
                             </div>
@@ -472,7 +473,7 @@ export default function GenerateSoalClient({
                                 <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl"><Eye className="h-8 w-8" /></div>
                                 <div>
                                     <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight">Review Hasil AI</DialogTitle>
-                                    <DialogDescription className="text-indigo-100 font-bold text-sm sm:text-base mt-1">{form.assessment_purpose} — {form.subject} Kelas {form.kelas}</DialogDescription>
+                                    <p className="text-indigo-100 font-bold text-sm sm:text-base mt-1">{form.assessment_purpose} — {form.subject} Kelas {form.kelas}</p>
                                 </div>
                             </div>
                         </div>
@@ -521,7 +522,6 @@ export default function GenerateSoalClient({
                                                 <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 text-sm text-slate-600 font-medium italic"><MathText content={q.explanation} /></div>
                                             </div>
 
-                                            {/* AI Image Tools per Soal */}
                                             <div className="p-5 rounded-3xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
                                                 <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest"><FileImage className="h-4 w-4" /><span>Kebutuhan Media</span></div>
                                                 <div className="flex flex-col gap-3">
