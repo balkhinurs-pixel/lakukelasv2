@@ -3,6 +3,7 @@
 import * as React from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import html2canvas from "html2canvas";
 import { 
     Database, 
     Search, 
@@ -47,11 +48,6 @@ import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
 
-// Extend jsPDF with autoTable for TS
-interface jsPDFWithAutoTable extends jsPDF {
-    autoTable: (options: any) => jsPDF;
-}
-
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
@@ -64,6 +60,82 @@ const MathText = ({ content, className }: { content: string, className?: string 
       })}
     </div>
   );
+};
+
+// --- Komponen Template Print (Hidden) ---
+const NaskahPrintTemplate = ({ 
+    questions, 
+    config 
+}: { 
+    questions: any[], 
+    config: any 
+}) => {
+    return (
+        <div id="naskah-print-container" className="bg-white p-12 text-slate-900 w-[800px]" style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+            {/* Kop Surat */}
+            <div className="text-center border-b-4 border-double border-slate-900 pb-4 mb-6">
+                <h1 className="text-2xl font-bold uppercase">{config.schoolName || "SEKOLAH LAKUKELAS"}</h1>
+                <h2 className="text-lg font-bold uppercase tracking-widest">{config.examType || "PENILAIAN HARIAN"}</h2>
+                <p className="text-sm mt-1">Sistem Administrasi Guru Digital - LakuKelas AI</p>
+            </div>
+
+            {/* Metadata */}
+            <div className="grid grid-cols-2 gap-4 text-sm mb-6 border-b border-slate-200 pb-4">
+                <div className="space-y-1">
+                    <p><span className="inline-block w-32">Mata Pelajaran</span>: <span className="font-bold">{questions[0]?.subject || "-"}</span></p>
+                    <p><span className="inline-block w-32">Kelas</span>: <span className="font-bold">{questions[0]?.kelas || "-"}</span></p>
+                </div>
+                <div className="space-y-1 text-right">
+                    <p>Tanggal : {format(new Date(), 'dd MMMM yyyy', { locale: id })}</p>
+                    <p>Waktu : 90 Menit</p>
+                </div>
+            </div>
+
+            {/* Petunjuk */}
+            <div className="mb-8 p-4 bg-slate-50 border rounded-lg text-xs italic">
+                <strong>PETUNJUK:</strong> Jawablah pertanyaan di bawah ini dengan memilih satu jawaban yang paling tepat pada lembar jawaban yang tersedia.
+            </div>
+
+            {/* Daftar Soal */}
+            <div className="space-y-8">
+                {questions.map((q, idx) => (
+                    <div key={q.id} className="space-y-4">
+                        <div className="flex gap-4">
+                            <span className="font-bold text-lg min-w-[24px]">{idx + 1}.</span>
+                            <div className={cn("flex-1 text-lg leading-relaxed", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
+                                <MathText content={q.question_text} />
+                            </div>
+                        </div>
+                        
+                        {q.options_json && (
+                            <div className="ml-10 grid grid-cols-1 gap-2">
+                                {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
+                                    <div key={k} className="flex gap-3 text-base">
+                                        <span className="font-bold">{k}.</span>
+                                        <MathText content={v} />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {/* Footer Signatures */}
+            <div className="mt-20 grid grid-cols-2 text-center text-sm">
+                <div>
+                    <p>Mengetahui,</p>
+                    <p className="mb-20">Kepala Sekolah</p>
+                    <p className="font-bold underline">..................................................</p>
+                </div>
+                <div>
+                    <p>Dicetak pada: {format(new Date(), 'dd/MM/yyyy')}</p>
+                    <p className="mb-20">Guru Mata Pelajaran</p>
+                    <p className="font-bold underline">..................................................</p>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const ITEMS_PER_PAGE = 5;
@@ -142,61 +214,42 @@ export default function BankSoalClient({
     };
 
     /**
-     * Menghasilkan PDF naskah soal di sisi klien menggunakan jsPDF.
-     * Hasilnya dikembalikan sebagai Base64 untuk dikirim ke server.
+     * Menghasilkan PDF naskah soal dengan rendering visual berkualitas tinggi.
      */
-    const generateClientPdf = (selectedQuestions: any[]): string => {
-        const doc = new jsPDF() as jsPDFWithAutoTable;
-        const margin = 15;
-        const pageWidth = doc.internal.pageSize.getWidth();
+    const generateHighQualityPdf = async (selectedQuestions: any[]): Promise<string> => {
+        const element = document.getElementById('naskah-print-container');
+        if (!element) throw new Error("Renderer area not found");
 
-        // 1. Kop Surat
-        doc.setFontSize(16).setFont("helvetica", "bold");
-        doc.text(naskahConfig.schoolName.toUpperCase(), pageWidth / 2, 20, { align: "center" });
-        doc.setFontSize(12).setFont("helvetica", "normal");
-        doc.text(naskahConfig.examType.toUpperCase(), pageWidth / 2, 27, { align: "center" });
-        
-        doc.setLineWidth(0.5);
-        doc.line(margin, 32, pageWidth - margin, 32);
-
-        // 2. Metadata
-        doc.setFontSize(10);
-        const sampleQ = selectedQuestions[0];
-        doc.text(`Mata Pelajaran : ${sampleQ?.subject || "-"}`, margin, 42);
-        doc.text(`Kelas          : ${sampleQ?.kelas || "-"}`, margin, 47);
-        doc.text(`Tanggal        : ${format(new Date(), 'dd/MM/yyyy')}`, pageWidth - margin - 50, 42);
-        doc.text(`Waktu          : 90 Menit`, pageWidth - margin - 50, 47);
-
-        doc.line(margin, 52, pageWidth - margin, 52);
-
-        // 3. Body Soal (Tabel agar rapi)
-        const tableBody = selectedQuestions.map((q, idx) => {
-            let qText = q.question_text.replace(/\\\(|\\\)|\\\[|\\\]/g, ""); // Bersihkan tag LaTeX untuk PDF dasar
-            if (q.options_json) {
-                const opts = Object.entries(q.options_json as Record<string, string>)
-                    .sort()
-                    .map(([k, v]) => `${k}. ${v.replace(/\\\(|\\\)|\\\[|\\\]/g, "")}`)
-                    .join("\n");
-                return [idx + 1, `${qText}\n\n${opts}`];
-            }
-            return [idx + 1, qText];
+        // Gunakan html2canvas untuk menangkap tampilan visual (termasuk LaTeX)
+        const canvas = await html2canvas(element, {
+            scale: 2, // Kualitas tinggi
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff"
         });
 
-        doc.autoTable({
-            startY: 60,
-            head: [['No', 'Pertanyaan']],
-            body: tableBody,
-            theme: 'plain',
-            styles: { fontSize: 10, cellPadding: 3 },
-            columnStyles: {
-                0: { cellWidth: 10, fontStyle: 'bold' },
-                1: { cellWidth: 'auto' }
-            },
-            headStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold' }
-        });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-        // Simpan sebagai Base64
-        return doc.output('datauristring').split(',')[1];
+        // Tambahkan gambar ke PDF (bisa diatur multi-page jika perlu, namun untuk prototype kita gunakan satu flow panjang)
+        let heightLeft = pdfHeight;
+        let position = 0;
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+            position = heightLeft - pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pageHeight;
+        }
+
+        return pdf.output('datauristring').split(',')[1];
     };
 
     const handleCreateNaskah = async () => {
@@ -220,7 +273,9 @@ export default function BankSoalClient({
 
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
-                binaryPdf = generateClientPdf(selectedQuestionsData);
+                // Tunggu render DOM selesai sebentar
+                await new Promise(r => setTimeout(r, 500));
+                binaryPdf = await generateHighQualityPdf(selectedQuestionsData);
             }
 
             const result = await createNaskahUjianAction(
@@ -234,7 +289,6 @@ export default function BankSoalClient({
             if (result.success) {
                 // AUTO DOWNLOAD
                 if (naskahConfig.format === 'pdf' && binaryPdf) {
-                    // Download PDF lokal
                     const byteCharacters = atob(binaryPdf);
                     const byteNumbers = new Array(byteCharacters.length);
                     for (let i = 0; i < byteCharacters.length; i++) {
@@ -244,7 +298,6 @@ export default function BankSoalClient({
                     const blob = new Blob([byteArray], { type: 'application/pdf' });
                     saveAs(blob, `${naskahConfig.title}.pdf`);
                 } else if (result.markdown) {
-                    // Download Word-like (.doc) lokal
                     const blob = new Blob([result.markdown], { type: 'application/msword;charset=utf-8' });
                     saveAs(blob, `${naskahConfig.title}.doc`);
                 }
@@ -275,6 +328,14 @@ export default function BankSoalClient({
 
     return (
         <div className="space-y-6">
+            {/* Renderer Hidden Area */}
+            {isExportDialogOpen && (
+                <NaskahPrintTemplate 
+                    questions={initialQuestions.filter(q => selectedIds.has(q.id))} 
+                    config={naskahConfig} 
+                />
+            )}
+
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
