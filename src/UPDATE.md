@@ -1,7 +1,22 @@
 
 # Log Pembaruan LakuKelas
 
-## V18.1: Optimalisasi Bank Soal & Blueprint SQL (Terbaru)
+## V18.2: Finalisasi Blueprint Database & Keamanan RLS (Terbaru)
+Konsolidasi seluruh struktur database ke dalam satu blueprint utama untuk kemudahan deployment baru.
+
+### 1. Blueprint Database (schema.sql)
+- **Cetak Biru Tunggal**: Penggabungan seluruh skema tabel dari sistem inti hingga modul AI dan Google Drive ke file `schema.sql`.
+- **Relasi & Integritas**: Penambahan *foreign key constraints* yang lebih ketat untuk mencegah data yatim (*orphaned data*).
+- **Fungsi Pintar (RPC)**: Penambahan fungsi `get_teacher_attendance_summary` untuk monitoring cepat di sisi admin/kepala sekolah.
+- **RLS Multi-Modul**: Implementasi *Row Level Security* pada tabel `questions`, `google_drive_integrations`, dan `ai_documents` untuk memastikan privasi guru terjaga.
+
+### 2. Optimalisasi Performa
+- **Indeks Filter**: Penambahan indeks pada kolom yang sering difilter seperti `topic`, `subject`, dan `date`.
+- **View Terpusat**: Pembuatan view `attendance_history` dan `grades_history` untuk mempercepat query laporan.
+
+---
+
+## V18.1: Optimalisasi Bank Soal & Paginasi
 Pembaruan fungsionalitas pada Bank Soal dan standarisasi database sesuai Blueprint.
 
 ### 1. Optimalisasi Bank Soal
@@ -9,10 +24,6 @@ Pembaruan fungsionalitas pada Bank Soal dan standarisasi database sesuai Bluepri
 - **Filter Materi Pintar**: Penambahan filter berdasarkan Topik/Materi yang dinormalisasi (case-insensitive).
 - **Pembahasan Interaktif**: Perbaikan fitur buka-tutup pembahasan soal dengan animasi halus.
 - **Render LaTeX & Gambar**: Konsistensi tampilan rumus matematika dan ilustrasi AI di seluruh halaman.
-
-### 2. Standarisasi Database (Blueprint)
-- Pembuatan file `schema_ai.sql` sebagai panduan tunggal instalasi modul AI.
-- Penambahan indeks pada kolom `topic` dan `subject` untuk mempercepat pencarian soal.
 
 ---
 
