@@ -1,6 +1,17 @@
 
 # Log Pembaruan LakuKelas
 
+## V18.0: Integrasi Ekspor & Google Drive (Selesai)
+Tahap 3 dari fitur AI Pembelajaran: Menghubungkan aset digital dengan penyimpanan cloud guru.
+
+### 1. Tahap 3: Ekspor & Cloud Storage (Selesai)
+- Implementasi sistem sub-folder otomatis di Google Drive (Folder: `LakuKelas AI/Bank Soal`).
+- Fitur ekspor naskah soal dari Bank Soal ke Google Doc secara kolektif.
+- Integrasi metadata dokumen; menyimpan link Drive hasil ekspor ke database Supabase.
+- Penataan naskah ekspor otomatis (mencakup Pertanyaan, Opsi A-E, Kunci, dan Pembahasan).
+
+---
+
 ## V17.0: Implementasi Bank Soal AI (Selesai)
 Menyelesaikan siklus hidup fitur Generate Soal dari pembuatan hingga manajemen arsip.
 
@@ -20,9 +31,3 @@ Menyelesaikan siklus hidup fitur Generate Soal dari pembuatan hingga manajemen a
 
 ## V16.0: Restrukturisasi AI Pembelajaran (Selesai)
 Mengubah modul AI menjadi sistem manajemen konten yang lebih terstruktur.
-
-### 1. Tahap 1: Arsitektur Menu (Selesai)
-- Melakukan pemisahan fitur AI Pembelajaran menjadi 4 sub-menu utama: Bank Soal, Modul Ajar, LKPD, dan Generate Soal.
-- Memperbarui Sidebar dengan sistem *collapsible* (lipat) untuk kategori AI.
-- Menyiapkan PRD V2.0 sebagai panduan pengembangan jangka panjang.
-- Membuat halaman *placeholder* dengan desain indigo premium untuk konsistensi UI.

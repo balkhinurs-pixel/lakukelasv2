@@ -1,7 +1,40 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+
+/**
+ * Mendapatkan atau membuat sub-folder di dalam folder utama LakuKelas AI.
+ */
+async function getOrCreateSubfolder(providerToken: string, parentId: string, subfolderName: string) {
+    // 1. Cari apakah subfolder sudah ada
+    const query = `name = '${subfolderName}' and '${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    const searchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id)`, {
+        headers: { 'Authorization': `Bearer ${providerToken}` }
+    });
+    const searchData = await searchResponse.json();
+
+    if (searchData.files && searchData.files.length > 0) {
+        return searchData.files[0].id;
+    }
+
+    // 2. Jika tidak ada, buat baru
+    const createResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${providerToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: subfolderName,
+            mimeType: 'application/vnd.google-apps.folder',
+            parents: [parentId]
+        }),
+    });
+    const createData = await createResponse.json();
+    return createData.id;
+}
 
 /**
  * Setup folder utama "LakuKelas AI" di Google Drive guru.
@@ -66,6 +99,7 @@ export async function setupGoogleDriveFolder() {
 
 /**
  * Menyimpan konten Markdown ke Google Drive sebagai dokumen Google Doc.
+ * Mendukung penyimpanan ke sub-folder berdasarkan tipe dokumen.
  */
 export async function saveAiDocumentToDrive(title: string, content: string, type: string) {
     const supabase = createClient();
@@ -79,8 +113,8 @@ export async function saveAiDocumentToDrive(title: string, content: string, type
     const userId = session.user.id;
 
     try {
-        // 1. Ambil folder_id
-        const { data: integration } = await supabase
+        // 1. Ambil Root Folder ID
+        let { data: integration } = await supabase
             .from('google_drive_integrations')
             .select('folder_id')
             .eq('user_id', userId)
@@ -89,16 +123,18 @@ export async function saveAiDocumentToDrive(title: string, content: string, type
         if (!integration?.folder_id) {
             const setup = await setupGoogleDriveFolder();
             if (!setup.success) return setup;
-            integration!.folder_id = setup.folder_id!;
+            integration = { folder_id: setup.folder_id! };
         }
 
-        // 2. Buat File di Google Drive
-        // Karena v3 sederhana tidak mendukung content langsung dalam JSON, 
-        // kita menggunakan multipart/related untuk mengirim metadata dan konten
+        // 2. Tentukan & Dapatkan Sub-folder ID (misal: "Bank Soal", "RPP", dll)
+        const subfolderName = type === 'soal' ? 'Bank Soal' : (type === 'rpp' ? 'Modul Ajar' : 'Lainnya');
+        const subfolderId = await getOrCreateSubfolder(providerToken, integration.folder_id!, subfolderName);
+
+        // 3. Buat File di Google Drive (Multipart Upload)
         const metadata = {
             name: title,
-            mimeType: 'application/vnd.google-apps.document',
-            parents: [integration.folder_id]
+            mimeType: 'application/vnd.google-apps.document', // Konversi otomatis ke Google Doc (Editable)
+            parents: [subfolderId]
         };
 
         const boundary = '-------314159265358979323846';
@@ -130,14 +166,14 @@ export async function saveAiDocumentToDrive(title: string, content: string, type
 
         const fileData = await driveResponse.json();
 
-        // 3. Simpan metadata ke Supabase
+        // 4. Simpan metadata ke Supabase
         await supabase.from('ai_documents').insert({
             user_id: userId,
             document_type: type,
             title: title,
             drive_file_id: fileData.id,
             drive_file_url: `https://docs.google.com/document/d/${fileData.id}/edit`,
-            drive_folder_id: integration.folder_id,
+            drive_folder_id: subfolderId,
             status: 'created'
         });
 
@@ -145,6 +181,7 @@ export async function saveAiDocumentToDrive(title: string, content: string, type
         return { success: true, file_url: `https://docs.google.com/document/d/${fileData.id}/edit` };
 
     } catch (error: any) {
+        console.error("[DRIVE_SAVE_ERR]", error);
         return { success: false, error: "Terjadi kesalahan sistem saat menyimpan ke Drive." };
     }
 }

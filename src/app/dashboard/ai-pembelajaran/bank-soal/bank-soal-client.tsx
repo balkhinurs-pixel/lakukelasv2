@@ -17,7 +17,11 @@ import {
     Users,
     AlertCircle,
     CheckCircle2,
-    Loader2
+    Loader2,
+    Printer,
+    Save,
+    Share2,
+    CloudIcon
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { deleteQuestionsAction } from "@/lib/actions/ai";
+import { saveAiDocumentToDrive } from "@/lib/actions/google-drive";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -34,7 +39,6 @@ import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { cn } from "@/lib/utils";
 
-// Komponen MathText sama seperti di generator untuk konsistensi render
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
@@ -63,6 +67,7 @@ export default function BankSoalClient({
     const [filterClass, setFilterClass] = React.useState("all");
     const [filterSubject, setFilterSubject] = React.useState("all");
     const [loading, setLoading] = React.useState<string | null>(null);
+    const [exporting, setExporting] = React.useState(false);
 
     const filteredQuestions = React.useMemo(() => {
         return initialQuestions.filter(q => {
@@ -87,6 +92,60 @@ export default function BankSoalClient({
         setLoading(null);
     };
 
+    /**
+     * Menggabungkan soal-soal terpilih menjadi satu naskah Markdown untuk diekspor ke Drive.
+     */
+    const handleExportToDrive = async () => {
+        if (filteredQuestions.length === 0) {
+            toast({ title: "Tidak ada soal", description: "Silakan filter soal yang ingin diekspor.", variant: "destructive" });
+            return;
+        }
+
+        setExporting(true);
+        
+        // Buat naskah Markdown
+        let content = `# BANK SOAL LAKUKELAS\n\n`;
+        content += `**Mata Pelajaran:** ${filterSubject !== 'all' ? filterSubject : 'Campuran'}\n`;
+        content += `**Kelas:** ${filterClass !== 'all' ? filterClass : 'Campuran'}\n`;
+        content += `**Tanggal Ekspor:** ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}\n\n`;
+        content += `---\n\n`;
+
+        filteredQuestions.forEach((q, idx) => {
+            content += `### Soal Nomor ${idx + 1}\n`;
+            content += `${q.question_text}\n\n`;
+            
+            if (q.options_json) {
+                Object.entries(q.options_json as Record<string, string>).sort().forEach(([key, val]) => {
+                    content += `- **${key}.** ${val}\n`;
+                });
+                content += `\n`;
+            }
+
+            content += `> **Kunci Jawaban:** ${q.correct_answer}\n\n`;
+            content += `**Pembahasan:**\n${q.explanation}\n\n`;
+            content += `---\n\n`;
+        });
+
+        const title = `BankSoal_${filterSubject !== 'all' ? filterSubject : 'Mixed'}_Kelas${filterClass !== 'all' ? filterClass : 'All'}_${format(new Date(), 'yyyyMMdd')}`;
+
+        const result = await saveAiDocumentToDrive(title, content, 'soal');
+
+        if (result.success) {
+            toast({ 
+                title: "Berhasil Ekspor", 
+                description: "Naskah soal telah disimpan ke folder 'Bank Soal' di Google Drive.",
+                action: (
+                    <Button variant="outline" size="sm" asChild>
+                        <a href={result.file_url || "#"} target="_blank" rel="noopener noreferrer">Buka File</a>
+                    </Button>
+                )
+            });
+        } else {
+            toast({ title: "Gagal Ekspor", description: result.error, variant: "destructive" });
+        }
+        setExporting(false);
+    };
+
     return (
         <div className="space-y-6">
             {/* Header Actions */}
@@ -100,12 +159,23 @@ export default function BankSoalClient({
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button className="w-full md:w-auto h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 shadow-xl shadow-indigo-100 font-bold px-6" asChild>
-                    <Link href="/dashboard/ai-pembelajaran/generate-soal">
-                        <PlusCircle className="h-5 w-5" />
-                        Generate Soal Baru
-                    </Link>
-                </Button>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Button 
+                        variant="outline"
+                        className="flex-1 md:flex-none h-12 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-2xl gap-2 font-bold px-6 shadow-sm"
+                        onClick={handleExportToDrive}
+                        disabled={exporting || filteredQuestions.length === 0}
+                    >
+                        {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <CloudIcon className="h-5 w-5" />}
+                        Simpan ke Drive
+                    </Button>
+                    <Button className="flex-1 md:flex-none h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 shadow-xl shadow-indigo-100 font-bold px-6" asChild>
+                        <Link href="/dashboard/ai-pembelajaran/generate-soal">
+                            <PlusCircle className="h-5 w-5" />
+                            Generate Baru
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Filter Bar */}
