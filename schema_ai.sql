@@ -1,105 +1,85 @@
+-- 1. Tambahkan kolom API Key ke tabel Profiles
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS gemini_api_key TEXT;
 
--- 1. Tambahkan kolom gemini_api_key ke tabel profiles jika belum ada
-do $$ 
-begin 
-  if not exists (select 1 from information_schema.columns where table_name='profiles' and column_name='gemini_api_key') then
-    alter table public.profiles add column gemini_api_key text;
-  end if;
-end $$;
+-- 2. Tabel Bank Soal (Questions)
+CREATE TABLE IF NOT EXISTS public.questions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_by uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  generation_group_id uuid DEFAULT gen_random_uuid(),
+  
+  jenjang text NOT NULL,
+  kelas text NOT NULL,
+  semester text,
+  subject text NOT NULL,
+  curriculum text,
+  assessment_purpose text,
+  topic text NOT NULL,
+  subtopic text,
 
--- 2. Tabel untuk menyimpan integrasi Google Drive per guru
-create table if not exists public.google_drive_integrations (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  provider text not null default 'google',
-  drive_email text,
-  folder_id text,
-  folder_url text,
-  folder_name text default 'LakuKelas AI',
-  status text not null default 'connected',
-  connected_at timestamptz default now(),
-  disconnected_at timestamptz,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  unique(user_id)
+  sort_order int NOT NULL,
+  question_type text NOT NULL, -- 'multiple_choice' atau 'essay'
+  question_text text NOT NULL,
+  options_json jsonb, -- Menyimpan opsi A, B, C, D, E
+  correct_answer text,
+  explanation text,
+
+  difficulty text, -- 'mudah', 'sedang', 'sulit'
+  cognitive_level text, -- 'C1' - 'C6'
+  language_direction text DEFAULT 'ltr',
+  image_url text, -- Link dari Pollinations atau lainnya
+
+  needs_review boolean DEFAULT true,
+  status text DEFAULT 'draft', -- 'draft', 'published'
+
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
--- 3. Tabel untuk menyimpan metadata dokumen yang tersimpan di Drive
-create table if not exists public.ai_documents (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  document_type text not null,
-  title text not null,
-  subject text,
-  class_level text,
-  semester text,
+-- 3. Tabel Integrasi Google Drive
+CREATE TABLE IF NOT EXISTS public.google_drive_integrations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+  folder_id text,
+  folder_url text,
+  folder_name text DEFAULT 'LakuKelas AI',
+  status text NOT NULL DEFAULT 'connected',
+  connected_at timestamptz DEFAULT now(),
+  disconnected_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- 4. Tabel Metadata Dokumen AI (Link Hasil Ekspor)
+CREATE TABLE IF NOT EXISTS public.ai_documents (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  document_type text NOT NULL, -- 'rpp', 'soal', 'lkpd'
+  title text NOT NULL,
   drive_file_id text,
   drive_file_url text,
   drive_folder_id text,
-  mime_type text,
-  is_public boolean default false,
-  status text default 'created',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  status text DEFAULT 'created',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
--- 4. Tabel utama Bank Soal (Questions)
-create table if not exists public.questions (
-  id uuid primary key default gen_random_uuid(),
-  created_by uuid not null references auth.users(id) on delete cascade,
-  generation_group_id uuid default gen_random_uuid(),
-  
-  jenjang text not null,
-  kelas text not null,
-  semester text,
-  subject text not null,
-  curriculum text,
-  assessment_purpose text,
-  topic text not null,
-  subtopic text,
-
-  sort_order int not null,
-  question_type text not null,
-  question_text text not null,
-  options_json jsonb,
-  correct_answer text,
-  explanation text,
-  
-  difficulty text,
-  cognitive_level text,
-  language_direction text default 'ltr',
-  image_url text,
-
-  needs_review boolean default true,
-  status text default 'draft',
-
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
--- 5. Aktifkan RLS (Row Level Security)
-alter table public.google_drive_integrations enable row level security;
-alter table public.ai_documents enable row level security;
-alter table public.questions enable row level security;
+-- 5. Aktifkan Row Level Security (RLS)
+ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.google_drive_integrations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_documents ENABLE ROW LEVEL SECURITY;
 
 -- 6. Kebijakan Keamanan (Policies)
+-- Users hanya bisa melihat/mengelola data mereka sendiri
+
+-- Questions
+CREATE POLICY "Users can manage own questions" ON public.questions
+    FOR ALL USING (auth.uid() = created_by);
 
 -- Google Drive Integrations
-create policy "Users can manage own drive integration"
-  on public.google_drive_integrations for all
-  using (auth.uid() = user_id);
+CREATE POLICY "Users can manage own drive integration" ON public.google_drive_integrations
+    FOR ALL USING (auth.uid() = user_id);
 
 -- AI Documents
-create policy "Users can manage own AI documents"
-  on public.ai_documents for all
-  using (auth.uid() = user_id);
-
--- Questions (Bank Soal)
-create policy "Users can manage own questions"
-  on public.questions for all
-  using (auth.uid() = created_by);
-
--- 7. Grant access to authenticated users
-grant all on public.google_drive_integrations to authenticated;
-grant all on public.ai_documents to authenticated;
-grant all on public.questions to authenticated;
+CREATE POLICY "Users can manage own AI documents" ON public.ai_documents
+    FOR ALL USING (auth.uid() = user_id);
