@@ -19,7 +19,7 @@ const QuestionSchema = z.object({
   difficulty: z.enum(['mudah', 'sedang', 'sulit']).describe('Tingkat kesulitan'),
   cognitive_level: z.string().optional().describe('Level kognitif C1-C6'),
   language_direction: z.enum(['ltr', 'rtl']).default('ltr').describe('Arah teks'),
-  image_prompt: z.string().optional().describe('Descriptive English prompt for an educational illustration related to this question. Only provide if the question would benefit significantly from a visual aid.'),
+  image_prompt: z.string().optional().describe('Detailed English description for an educational image or diagram related to this question. Be specific about the visual elements.'),
 });
 
 const GenerateQuestionsInputSchema = z.object({
@@ -94,9 +94,7 @@ Aturan Penting:
 2. Rumus Matematika: Gunakan LaTeX valid (contoh: \\(x^2 + 2x + 1 = 0\\)).
 3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl' jika ada teks Arab.
 4. Pastikan soal berkualitas, tidak ambigu, dan sesuai level siswa kelas ${input.kelas}.
-5. Berikan pembahasan (explanation) yang ringkas namun jelas.
-6. Berikan image_prompt dalam bahasa Inggris yang mendetail jika soal tersebut bersifat visual atau akan lebih baik jika ada ilustrasinya (misal: grafik, anatomi, peta, atau diagram). Jika tidak perlu gambar, kosongkan saja.
-${input.curriculum.includes('KBC') ? 'Gunakan pendekatan Kurikulum Berbasis Capaian (KBC) Kemenag yang menekankan pada nilai-nilai moderasi beragama jika relevan.' : ''}
+5. ILUSTRASI: Jika soal membutuhkan gambaran visual (seperti grafik, organ tubuh, peta, benda, atau percobaan sains), Anda WAJIB memberikan "image_prompt" dalam bahasa Inggris yang mendetail untuk dihasilkan oleh AI pembuat gambar. Jika soal murni tekstual, biarkan kosong.
 
 Output harus berupa JSON valid sesuai skema yang diminta.`,
   });

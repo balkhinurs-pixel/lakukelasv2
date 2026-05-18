@@ -20,7 +20,9 @@ import {
     Image as ImageIcon,
     ClipboardCheck,
     HelpCircle,
-    Lightbulb
+    Lightbulb,
+    FileImage,
+    PencilLine
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -142,6 +144,10 @@ export default function GenerateSoalClient({
     };
 
     const handleGenerateImage = async (idx: number, prompt: string) => {
+        if (!prompt) {
+            toast({ title: "Prompt Kosong", description: "Silakan masukkan deskripsi gambar terlebih dahulu.", variant: "destructive" });
+            return;
+        }
         setImageLoadingIdx(idx);
         const result = await generateQuestionImageAction(prompt);
         if (result.success && result.url) {
@@ -153,6 +159,12 @@ export default function GenerateSoalClient({
             toast({ title: "Gagal Generate Gambar", description: result.error, variant: "destructive" });
         }
         setImageLoadingIdx(null);
+    };
+
+    const handleUpdatePrompt = (idx: number, newPrompt: string) => {
+        const updatedQuestions = [...questions];
+        updatedQuestions[idx].image_prompt = newPrompt;
+        setQuestions(updatedQuestions);
     };
 
     const handleSaveToBankSoal = async () => {
@@ -476,36 +488,44 @@ export default function GenerateSoalClient({
                                                 <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
                                             </div>
 
-                                            {/* Button Generate Gambar (Jika ada prompt tapi belum ada URL) */}
-                                            {q.image_prompt && !q.image_url && (
-                                                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-dashed border-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <ImageIcon className="h-5 w-5 text-indigo-500" />
-                                                        <div className="text-left">
-                                                            <p className="text-xs font-black text-indigo-900 uppercase tracking-tight">Ilustrasi Tersedia</p>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <button className="text-[10px] text-indigo-400 font-bold underline">Lihat Deskripsi Visual</button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent className="max-w-xs p-3 rounded-xl bg-indigo-900 text-white border-0">
-                                                                        <p className="text-xs italic">"{q.image_prompt}"</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
+                                            {/* Media & Ilustrasi Section */}
+                                            <div className="p-5 rounded-3xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
+                                                <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest">
+                                                    <FileImage className="h-4 w-4" />
+                                                    <span>Media & Ilustrasi</span>
+                                                </div>
+                                                
+                                                <div className="flex flex-col gap-3">
+                                                    <div className="relative">
+                                                        <PencilLine className="absolute left-3 top-3 h-4 w-4 text-indigo-300" />
+                                                        <Textarea 
+                                                            placeholder="Deskripsikan gambar yang diinginkan..."
+                                                            className="pl-10 rounded-2xl bg-white border-indigo-100 text-xs font-medium min-h-[60px] resize-none focus:ring-indigo-500/20 shadow-sm"
+                                                            value={q.image_prompt || ""}
+                                                            onChange={(e) => handleUpdatePrompt(idx, e.target.value)}
+                                                        />
                                                     </div>
+                                                    
                                                     <Button 
-                                                        onClick={() => handleGenerateImage(idx, q.image_prompt!)}
-                                                        disabled={imageLoadingIdx === idx}
-                                                        size="sm"
-                                                        className="rounded-xl h-9 bg-indigo-600 text-white font-bold gap-2 px-4 shadow-md shadow-indigo-100"
+                                                        onClick={() => handleGenerateImage(idx, q.image_prompt || "")}
+                                                        disabled={imageLoadingIdx === idx || (!q.image_prompt)}
+                                                        className="w-full rounded-2xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
                                                     >
-                                                        {imageLoadingIdx === idx ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                                                        Generate Gambar
+                                                        {imageLoadingIdx === idx ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Sparkles className="h-4 w-4" />
+                                                        )}
+                                                        {q.image_url ? "Regenerate Gambar" : "Generate Ilustrasi AI"}
                                                     </Button>
                                                 </div>
-                                            )}
+                                                
+                                                {!q.image_prompt && (
+                                                    <p className="text-[9px] text-indigo-400 font-bold italic text-center">
+                                                        💡 Tulis instruksi di atas jika Anda ingin menambahkan gambar ke soal ini.
+                                                    </p>
+                                                )}
+                                            </div>
 
                                             {q.type === 'multiple_choice' && q.options && (
                                                 <div className="grid grid-cols-1 gap-3 pl-2">
@@ -571,9 +591,9 @@ export default function GenerateSoalClient({
                                     <ArrowLeft className="h-4 w-4" /> Kembali
                                 </Button>
                                 <Button 
-                                    onClick={handleSaveToBankSoal}
+                                    onClick={handleSaveToBankSoal} 
                                     disabled={saving}
-                                    className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100"
+                                    className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100 transition-all active:scale-[0.98]"
                                 >
                                     {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                                     Simpan ke Bank Soal
