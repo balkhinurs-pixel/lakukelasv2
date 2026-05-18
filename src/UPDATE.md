@@ -1,14 +1,21 @@
 
 # Log Pembaruan LakuKelas
 
-## V23.0: Smart Export & Repository Soal - PLANNED
-Rencana implementasi alur kerja profesional untuk pengelolaan naskah ujian guru.
+## V23.0: Smart Export & Repository Soal - SELESAI
+Implementasi alur kerja profesional untuk pengelolaan naskah ujian dengan kualitas cetak tinggi dan pengorganisasian otomatis.
 
-### 1. Fitur Baru
-- **Deep Nesting Drive**: Otomatisasi pembuatan sub-folder `Kelas/Mapel` di Google Drive.
-- **Repository Soal**: Menu baru untuk menyimpan link dokumen yang sudah diekspor (seperti menu Materi).
-- **Auto-Download Flow**: File otomatis terunduh ke komputer guru setelah proses simpan ke Drive selesai.
-- **Professional DOCX**: Ekspor naskah soal lengkap dengan Kop Surat sekolah otomatis.
+### 1. Fitur Ekspor Naskah Profesional
+- **Visual PDF Rendering**: Menggunakan engine html2canvas untuk merender rumus LaTeX (KaTeX) dan teks Arab menjadi objek visual tajam di dalam dokumen PDF.
+- **Equation Support**: Rumus matematika kini tampil sempurna sebagai objek simbolik profesional, siap cetak tanpa risiko format berantakan.
+- **Deep Nesting Drive**: Otomatisasi pembuatan struktur folder rekursif di Google Drive: `LakuKelas AI > Bank Soal > Kelas [X] > [Nama Mata Pelajaran]`.
+- **Repository Naskah**: Menu baru "Naskah Soal" di Dashboard Guru sebagai pusat akses cepat link dokumen yang telah tersimpan di Drive.
+- **Auto-Download Flow**: Mekanisme unduhan instan ke perangkat lokal yang terpicu otomatis setelah proses sinkronisasi ke cloud selesai.
+- **Custom Naskah Config**: Penambahan input judul file manual dan pilihan jenis asesmen sebelum naskah disusun.
+
+### 2. Keamanan & Stabilitas Sesi
+- **Auth Security Fix**: Migrasi total ke `getUser()` untuk validasi identitas yang lebih ketat guna menghindari peringatan keamanan sesi Supabase.
+- **Binary Multipart Upload**: Implementasi pengiriman data biner Base64 untuk memastikan file PDF kompleks terkirim utuh ke API Google Drive.
+- **UTF-8 Encoding Persistence**: Memastikan karakter khusus dan simbol matematika tetap konsisten dalam proses transfer data antar server.
 
 ---
 
