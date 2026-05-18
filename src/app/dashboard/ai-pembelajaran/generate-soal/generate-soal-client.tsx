@@ -58,9 +58,10 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// --- MathText Component for LaTeX & Arabic Rendering ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-  // Regex cerdas untuk mendeteksi pembungkus LaTeX \[ \] dan \( \)
+  // Regex to detect LaTeX patterns \[ ... \] and \( ... \)
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   return (
     <div className={cn("math-text-render", className)}>
@@ -122,14 +123,16 @@ export default function GenerateSoalClient({
         difficulty: 'sedang'
     });
 
+    // Fix bug: Ensure Jenjang change updates related fields correctly and atomic
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
+        
         setForm(prev => ({
             ...prev,
             jenjang: val,
-            kelas: classOpts[0] || '1',
-            subject: mapelOpts[0] || 'Bahasa Indonesia'
+            kelas: classOpts[0] || prev.kelas,
+            subject: mapelOpts[0] || prev.subject
         }));
     };
 
@@ -178,7 +181,7 @@ export default function GenerateSoalClient({
 
     const handleGenerateImage = async (idx: number, prompt: string) => {
         if (!prompt) {
-            toast({ title: "Prompt Kosong", description: "Tuliskan deskripsi gambar yang diinginkan.", variant: "destructive" });
+            toast({ title: "Prompt Kosong", description: "Tuliskan deskripsi gambar yang ingin dibuat oleh AI.", variant: "destructive" });
             return;
         }
         setImageLoadingIdx(idx);
@@ -229,7 +232,7 @@ export default function GenerateSoalClient({
                         </CardHeader>
                         <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
                             
-                            {/* Opsi: Materi Sendiri */}
+                            {/* Opsi: Materi Sendiri (Multimodal) */}
                             <div className="space-y-3">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pendukung (Opsional)</Label>
                                 <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf, image/*" onChange={handleFileChange} />
@@ -255,9 +258,13 @@ export default function GenerateSoalClient({
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang Sekolah</Label>
                                     <Select value={form.jenjang} onValueChange={handleJenjangChange}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
+                                            <SelectValue placeholder="Pilih Jenjang" />
+                                        </SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
+                                            {Object.keys(mapelByJenjang).map(j => (
+                                                <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
