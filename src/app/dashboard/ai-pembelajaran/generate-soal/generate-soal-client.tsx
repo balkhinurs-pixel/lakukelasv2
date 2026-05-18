@@ -8,21 +8,14 @@ import {
     BrainCircuit, 
     CheckCircle2, 
     Save, 
-    Target, 
-    Zap, 
     ArrowLeft,
     X,
     Trash2,
-    Edit3,
     Bot,
     Image as ImageIcon,
     ClipboardCheck,
-    FileImage,
-    FileText,
     FileUp,
-    Settings2,
-    Layers,
-    ChevronDown,
+    FileText,
     Eye
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -46,7 +39,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -80,8 +72,8 @@ const getClassOptions = (jenjang: string) => {
 };
 
 export default function GenerateSoalClient({ 
-    classes, 
-    subjects 
+    classes: _classes, 
+    subjects: _subjects 
 }: { 
     classes: Class[], 
     subjects: Subject[] 
@@ -110,10 +102,11 @@ export default function GenerateSoalClient({
         mode: 'Reguler',
         instruction: '',
         question_type: 'multiple_choice',
-        count: 5, // Locked to 5 for stability
+        count: 5, 
         difficulty: 'sedang'
     });
 
+    // Fix: Handle Jenjang change with proper state cleanup for Kelas and Mapel
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
@@ -121,8 +114,8 @@ export default function GenerateSoalClient({
         setForm(prev => ({
             ...prev,
             jenjang: val,
-            kelas: classOpts[0] || prev.kelas,
-            subject: mapelOpts[0] || prev.subject
+            kelas: classOpts[0] || '1',
+            subject: mapelOpts[0] || 'Bahasa Indonesia'
         }));
     };
 
@@ -130,7 +123,6 @@ export default function GenerateSoalClient({
         const file = e.target.files?.[0];
         if (!file) return;
         
-        // 3MB Limit for Vercel Free Tier stability (Base64 adds overhead)
         const MAX_FILE_SIZE = 3 * 1024 * 1024; 
         if (file.size > MAX_FILE_SIZE) {
             toast({ 
@@ -162,7 +154,6 @@ export default function GenerateSoalClient({
         }
         setLoading(true);
         try {
-            // Force count to 5 regardless of any previous state
             const result = await generateQuestionsAction({ 
                 ...form, 
                 count: 5,
@@ -275,7 +266,7 @@ export default function GenerateSoalClient({
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Semester</Label>
-                                    <Select value={form.semester} onValueChange={(v) => setForm({...form, semester: v})}>
+                                    <Select value={form.semester} onValueChange={(v) => setForm(prev => ({...prev, semester: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             <SelectItem value="Ganjil" className="font-bold">Ganjil</SelectItem>
@@ -289,7 +280,7 @@ export default function GenerateSoalClient({
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
-                                    <Select value={form.subject} onValueChange={(v) => setForm({...form, subject: v})}>
+                                    <Select value={form.subject} onValueChange={(v) => setForm(prev => ({...prev, subject: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
@@ -298,7 +289,7 @@ export default function GenerateSoalClient({
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                    <Select value={form.kelas} onValueChange={(v) => setForm({...form, kelas: v})}>
+                                    <Select value={form.kelas} onValueChange={(v) => setForm(prev => ({...prev, kelas: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
@@ -311,7 +302,7 @@ export default function GenerateSoalClient({
                             <div className="space-y-4 pt-2 border-t border-slate-50">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kurikulum</Label>
-                                    <Select value={form.curriculum} onValueChange={(v) => setForm({...form, curriculum: v})}>
+                                    <Select value={form.curriculum} onValueChange={(v) => setForm(prev => ({...prev, curriculum: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             <SelectItem value="Kurikulum Merdeka" className="font-bold">Kurikulum Merdeka</SelectItem>
@@ -322,7 +313,7 @@ export default function GenerateSoalClient({
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tujuan Asesmen</Label>
-                                    <Select value={form.assessment_purpose} onValueChange={(v) => setForm({...form, assessment_purpose: v})}>
+                                    <Select value={form.assessment_purpose} onValueChange={(v) => setForm(prev => ({...prev, assessment_purpose: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             <SelectItem value="Ulangan Harian" className="font-bold">Ulangan Harian (UH)</SelectItem>
@@ -343,7 +334,7 @@ export default function GenerateSoalClient({
                                         placeholder="Misal: Sistem Tata Surya" 
                                         className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" 
                                         value={form.topic} 
-                                        onChange={(e) => setForm({...form, topic: e.target.value})} 
+                                        onChange={(e) => setForm(prev => ({...prev, topic: e.target.value}))} 
                                         required
                                     />
                                 </div>
@@ -352,8 +343,8 @@ export default function GenerateSoalClient({
                                     <Input 
                                         placeholder="Misal: Karakteristik Planet" 
                                         className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" 
-                                        value={form.subtopic} 
-                                        onChange={(e) => setForm({...form, subtopic: e.target.value})} 
+                                        value={form.subtopic || ''} 
+                                        onChange={(e) => setForm(prev => ({...prev, subtopic: e.target.value}))} 
                                     />
                                 </div>
                             </div>
@@ -363,7 +354,7 @@ export default function GenerateSoalClient({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Level Kognitif</Label>
-                                        <Select value={form.cognitive_level} onValueChange={(v) => setForm({...form, cognitive_level: v})}>
+                                        <Select value={form.cognitive_level} onValueChange={(v) => setForm(prev => ({...prev, cognitive_level: v}))}>
                                             <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                                 <SelectItem value="Variatif" className="font-bold">Variatif</SelectItem>
@@ -374,7 +365,7 @@ export default function GenerateSoalClient({
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kesulitan</Label>
-                                        <Select value={form.difficulty} onValueChange={(v: any) => setForm({...form, difficulty: v})}>
+                                        <Select value={form.difficulty} onValueChange={(v: any) => setForm(prev => ({...prev, difficulty: v}))}>
                                             <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                                 <SelectItem value="mudah" className="font-bold text-emerald-600">Mudah</SelectItem>
@@ -389,7 +380,7 @@ export default function GenerateSoalClient({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Soal</Label>
-                                        <Select value={form.question_type} onValueChange={(v: any) => setForm({...form, question_type: v})}>
+                                        <Select value={form.question_type} onValueChange={(v: any) => setForm(prev => ({...prev, question_type: v}))}>
                                             <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                                 <SelectItem value="multiple_choice" className="font-bold">Pilihan Ganda</SelectItem>
@@ -399,7 +390,7 @@ export default function GenerateSoalClient({
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Soal</Label>
-                                        <div className="h-11 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-500 border border-slate-200">
+                                        <div className="h-11 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-500 border border-slate-200 text-xs">
                                             5 Butir (Locked)
                                         </div>
                                     </div>
@@ -410,15 +401,15 @@ export default function GenerateSoalClient({
                                     <Textarea 
                                         placeholder="Misal: Berikan soal yang berbasis lingkungan, gunakan bahasa santun..." 
                                         className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner" 
-                                        value={form.instruction} 
-                                        onChange={(e) => setForm({...form, instruction: e.target.value})} 
+                                        value={form.instruction || ''} 
+                                        onChange={(e) => setForm(prev => ({...prev, instruction: e.target.value}))} 
                                     />
                                 </div>
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/50 p-6 border-t">
                             <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 text-lg font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
-                                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6" />}
+                                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}
                                 Generate Sekarang
                             </Button>
                         </CardFooter>
@@ -428,11 +419,11 @@ export default function GenerateSoalClient({
                 {/* 2. Placeholder Content / Tampilan Utama */}
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col items-center justify-center text-center px-10">
                     <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
-                        <Wand2 className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
+                        <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
                     <h3 className="text-3xl font-black text-slate-900 tracking-tight">Asisten AI Siap Membantu</h3>
                     <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">
-                        Pilih jenis soal dan topik di samping. AI akan merumuskan 5 butir soal berkualitas tinggi dalam hitungan detik.
+                        Pilih jenjang dan topik di samping. AI akan merumuskan 5 butir soal berkualitas tinggi dalam hitungan detik.
                     </p>
                     <div className="mt-10 flex gap-4">
                         <Badge variant="outline" className="px-4 py-2 rounded-xl border-slate-100 text-slate-400 font-bold">
@@ -472,7 +463,9 @@ export default function GenerateSoalClient({
                             <div className="flex items-center gap-5">
                                 <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl"><Eye className="h-8 w-8" /></div>
                                 <div>
-                                    <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight">Review Hasil AI</DialogTitle>
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight text-white">Review Hasil AI</DialogTitle>
+                                    </DialogHeader>
                                     <p className="text-indigo-100 font-bold text-sm sm:text-base mt-1">{form.assessment_purpose} — {form.subject} Kelas {form.kelas}</p>
                                 </div>
                             </div>
@@ -523,7 +516,7 @@ export default function GenerateSoalClient({
                                             </div>
 
                                             <div className="p-5 rounded-3xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
-                                                <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest"><FileImage className="h-4 w-4" /><span>Kebutuhan Media</span></div>
+                                                <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest"><ImageIcon className="h-4 w-4" /><span>Kebutuhan Media</span></div>
                                                 <div className="flex flex-col gap-3">
                                                     <Textarea 
                                                         placeholder="Deskripsikan gambar pendukung yang ingin dibuat oleh AI..." 
