@@ -29,7 +29,8 @@ import {
     Settings2,
     BookOpen,
     Layers,
-    Activity
+    Activity,
+    ChevronDown
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,8 +127,8 @@ export default function GenerateSoalClient({
         setForm(prev => ({
             ...prev,
             jenjang: val,
-            kelas: classOpts[0] || prev.kelas,
-            subject: mapelOpts[0] || prev.subject
+            kelas: classOpts[0] || '1',
+            subject: mapelOpts[0] || 'Bahasa Indonesia'
         }));
     };
 
@@ -149,24 +150,34 @@ export default function GenerateSoalClient({
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.topic || !form.subject || !form.kelas) {
-            toast({ title: "Data Belum Lengkap", description: "Mohon lengkapi parameter soal.", variant: "destructive" });
+            toast({ title: "Data Belum Lengkap", description: "Mohon isi Topik, Mapel, dan Kelas.", variant: "destructive" });
             return;
         }
         setLoading(true);
-        const result = await generateQuestionsAction({ ...form, mediaDataUri: uploadedFile?.uri, mediaMimeType: uploadedFile?.mime });
-        if (result.success && result.data) {
-            setQuestions(result.data.questions);
-            setIsPreviewOpen(true);
-            toast({ title: "Soal Berhasil Dibuat", description: `${result.data.questions.length} soal baru telah dihasilkan.` });
-        } else {
-            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        try {
+            const result = await generateQuestionsAction({ 
+                ...form, 
+                mediaDataUri: uploadedFile?.uri, 
+                mediaMimeType: uploadedFile?.mime 
+            });
+            
+            if (result.success && result.data) {
+                setQuestions(result.data.questions);
+                setIsPreviewOpen(true);
+                toast({ title: "Berhasil", description: `${result.data.questions.length} soal telah dihasilkan.` });
+            } else {
+                toast({ title: "Gagal Generate", description: result.error, variant: "destructive" });
+            }
+        } catch (err: any) {
+            toast({ title: "Error", description: "Terjadi kesalahan sistem.", variant: "destructive" });
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleGenerateImage = async (idx: number, prompt: string) => {
         if (!prompt) {
-            toast({ title: "Prompt Kosong", description: "Silakan masukkan deskripsi gambar terlebih dahulu.", variant: "destructive" });
+            toast({ title: "Prompt Kosong", description: "Tuliskan deskripsi gambar yang diinginkan.", variant: "destructive" });
             return;
         }
         setImageLoadingIdx(idx);
@@ -175,9 +186,9 @@ export default function GenerateSoalClient({
             const updatedQuestions = [...questions];
             updatedQuestions[idx].image_url = result.url;
             setQuestions(updatedQuestions);
-            toast({ title: "Ilustrasi Terpasang", description: "Link ilustrasi AI berhasil ditambahkan ke soal." });
+            toast({ title: "Gambar Siap", description: "Ilustrasi AI telah ditambahkan." });
         } else {
-            toast({ title: "Gagal Menghubungkan Ilustrasi", description: result.error, variant: "destructive" });
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
         }
         setImageLoadingIdx(null);
     };
@@ -193,7 +204,7 @@ export default function GenerateSoalClient({
         setSaving(true);
         const result = await saveQuestionsAction(form, questions);
         if (result.success) {
-            toast({ title: "Tersimpan!", description: "Soal-soal telah berhasil disimpan ke Bank Soal." });
+            toast({ title: "Berhasil Disimpan", description: "Soal-soal telah masuk ke Bank Soal Anda." });
             setQuestions([]);
             setIsPreviewOpen(false);
             router.push('/dashboard/ai-pembelajaran/bank-soal');
@@ -206,79 +217,67 @@ export default function GenerateSoalClient({
     return (
         <div className="relative">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-1">
-                {/* Konfigurasi Sidebar */}
-                <Card className="lg:col-span-2 border-0 shadow-xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
+                {/* 1. Sidebar Konfigurasi */}
+                <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
                     <form onSubmit={handleGenerate}>
                         <CardHeader className="bg-slate-50/50 border-b p-6">
                             <CardTitle className="text-xl font-black flex items-center gap-2">
                                 <BrainCircuit className="h-5 w-5 text-indigo-600" />
-                                Parameter Lengkap
+                                Konfigurasi Soal
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
-                            {/* Section: Sumber Materi */}
+                            
+                            {/* Opsi: Materi Sendiri */}
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sumber Materi (PDF/Foto)</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pendukung (Opsional)</Label>
                                 <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf, image/*" onChange={handleFileChange} />
                                 {uploadedFile ? (
-                                    <div className="p-4 rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-between group animate-in zoom-in-95 duration-200">
+                                    <div className="p-4 rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-between group animate-in zoom-in-95 duration-200 shadow-inner">
                                         <div className="flex items-center gap-3 min-w-0">
                                             {uploadedFile.mime.includes('pdf') ? <FileText className="h-5 w-5 text-indigo-600" /> : <ImageIcon className="h-5 w-5 text-indigo-600" />}
-                                            <p className="text-xs font-bold text-indigo-700 truncate">{uploadedFile.name}</p>
+                                            <p className="text-xs font-black text-indigo-700 truncate">{uploadedFile.name}</p>
                                         </div>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50" onClick={() => setUploadedFile(null)}><X className="h-4 w-4" /></Button>
                                     </div>
                                 ) : (
                                     <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full p-6 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-2 hover:border-indigo-400 hover:bg-indigo-50 transition-all text-slate-400 hover:text-indigo-600 group">
                                         <FileUp className="h-8 w-8 opacity-40 group-hover:opacity-100 transition-opacity" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest">Gunakan Materi Sendiri</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Unggah PDF / Foto Buku</p>
+                                        <p className="text-[9px] font-medium opacity-60">AI akan membaca materi Anda</p>
                                     </button>
                                 )}
                             </div>
 
-                            {/* Section: Identitas & Kurikulum */}
-                            <div className="pt-4 border-t border-slate-50 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
-                                        <Select value={form.jenjang} onValueChange={handleJenjangChange}>
-                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                                {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Semester</Label>
-                                        <Select value={form.semester} onValueChange={(v) => setForm({...form, semester: v})}>
-                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                                <SelectItem value="Ganjil" className="font-bold">Ganjil</SelectItem>
-                                                <SelectItem value="Genap" className="font-bold">Genap</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
+                            {/* Section: Jenjang & Semester */}
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kurikulum</Label>
-                                    <Select value={form.curriculum} onValueChange={(v) => setForm({...form, curriculum: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang Sekolah</Label>
+                                    <Select value={form.jenjang} onValueChange={handleJenjangChange}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="Kurikulum Merdeka" className="font-bold">Merdeka</SelectItem>
-                                            <SelectItem value="Kurikulum Merdeka (KBC)" className="font-bold text-indigo-600">Kemenag (KBC)</SelectItem>
-                                            <SelectItem value="K-13" className="font-bold">K-13</SelectItem>
+                                            {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Semester</Label>
+                                    <Select value={form.semester} onValueChange={(v) => setForm({...form, semester: v})}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectItem value="Ganjil" className="font-bold">Ganjil</SelectItem>
+                                            <SelectItem value="Genap" className="font-bold">Genap</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
 
-                            {/* Section: Mata Pelajaran & Kelas */}
+                            {/* Section: Mapel & Kelas */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
                                     <Select value={form.subject} onValueChange={(v) => setForm({...form, subject: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                         </SelectContent>
@@ -287,7 +286,7 @@ export default function GenerateSoalClient({
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
                                     <Select value={form.kelas} onValueChange={(v) => setForm({...form, kelas: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
                                         </SelectContent>
@@ -295,30 +294,54 @@ export default function GenerateSoalClient({
                                 </div>
                             </div>
 
-                            {/* Section: Tujuan & Topik */}
+                            {/* Section: Kurikulum & Tujuan */}
                             <div className="space-y-4 pt-2 border-t border-slate-50">
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tujuan Soal</Label>
-                                    <Select value={form.assessment_purpose} onValueChange={(v) => setForm({...form, assessment_purpose: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kurikulum</Label>
+                                    <Select value={form.curriculum} onValueChange={(v) => setForm({...form, curriculum: v})}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="Latihan" className="font-bold">Latihan</SelectItem>
-                                            <SelectItem value="PR" className="font-bold">Pekerjaan Rumah (PR)</SelectItem>
-                                            <SelectItem value="Ulangan Harian" className="font-bold text-indigo-600">Ulangan Harian (UH)</SelectItem>
-                                            <SelectItem value="PTS" className="font-bold">PTS (Tengah Semester)</SelectItem>
-                                            <SelectItem value="PAS/UAS" className="font-bold">PAS / UAS</SelectItem>
-                                            <SelectItem value="Remedial" className="font-bold text-rose-600">Remedial</SelectItem>
-                                            <SelectItem value="Pengayaan" className="font-bold text-emerald-600">Pengayaan</SelectItem>
+                                            <SelectItem value="Kurikulum Merdeka" className="font-bold">Kurikulum Merdeka</SelectItem>
+                                            <SelectItem value="K-13" className="font-bold">K-13 (2013)</SelectItem>
+                                            <SelectItem value="Kurikulum Kemenag" className="font-bold text-indigo-600">Kurikulum Kemenag</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label>
-                                    <Input placeholder="Contoh: Persamaan Linear" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" value={form.topic} onChange={(e) => setForm({...form, topic: e.target.value})} />
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tujuan Asesmen</Label>
+                                    <Select value={form.assessment_purpose} onValueChange={(v) => setForm({...form, assessment_purpose: v})}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectItem value="Ulangan Harian" className="font-bold">Ulangan Harian (UH)</SelectItem>
+                                            <SelectItem value="PTS" className="font-bold">PTS (Tengah Semester)</SelectItem>
+                                            <SelectItem value="PAS/UAS" className="font-bold">PAS / UAS</SelectItem>
+                                            <SelectItem value="Latihan" className="font-bold">Latihan Soal</SelectItem>
+                                            <SelectItem value="Remedial" className="font-bold text-rose-500">Remedial</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Section: Materi Pokok */}
+                            <div className="space-y-4 pt-2 border-t border-slate-50">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Topik / Materi Pokok</Label>
+                                    <Input 
+                                        placeholder="Misal: Sistem Tata Surya" 
+                                        className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" 
+                                        value={form.topic} 
+                                        onChange={(e) => setForm({...form, topic: e.target.value})} 
+                                        required
+                                    />
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sub-topik (Opsional)</Label>
-                                    <Input placeholder="Contoh: Variabel tunggal" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" value={form.subtopic} onChange={(e) => setForm({...form, subtopic: e.target.value})} />
+                                    <Input 
+                                        placeholder="Misal: Karakteristik Planet" 
+                                        className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" 
+                                        value={form.subtopic} 
+                                        onChange={(e) => setForm({...form, subtopic: e.target.value})} 
+                                    />
                                 </div>
                             </div>
 
@@ -328,27 +351,23 @@ export default function GenerateSoalClient({
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Level Kognitif</Label>
                                         <Select value={form.cognitive_level} onValueChange={(v) => setForm({...form, cognitive_level: v})}>
-                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                                 <SelectItem value="Variatif" className="font-bold">Variatif</SelectItem>
-                                                <SelectItem value="C1 - Mengingat" className="font-bold">C1 - Mengingat</SelectItem>
-                                                <SelectItem value="C2 - Memahami" className="font-bold">C2 - Memahami</SelectItem>
-                                                <SelectItem value="C3 - Menerapkan" className="font-bold">C3 - Menerapkan</SelectItem>
-                                                <SelectItem value="C4 - Menganalisis" className="font-bold text-indigo-600">C4 - Menganalisis (HOTS)</SelectItem>
-                                                <SelectItem value="C5 - Mengevaluasi" className="font-bold text-indigo-600">C5 - Mengevaluasi (HOTS)</SelectItem>
-                                                <SelectItem value="C6 - Mencipta" className="font-bold text-indigo-600">C6 - Mencipta (HOTS)</SelectItem>
+                                                <SelectItem value="C1-C3 (Dasar)" className="font-bold">C1-C3 (Dasar)</SelectItem>
+                                                <SelectItem value="C4-C6 (HOTS)" className="font-bold text-indigo-600">C4-C6 (HOTS)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mode Soal</Label>
-                                        <Select value={form.mode} onValueChange={(v) => setForm({...form, mode: v})}>
-                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kesulitan</Label>
+                                        <Select value={form.difficulty} onValueChange={(v: any) => setForm({...form, difficulty: v})}>
+                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                                <SelectItem value="Reguler" className="font-bold">Reguler</SelectItem>
-                                                <SelectItem value="HOTS" className="font-bold text-indigo-600">Full HOTS</SelectItem>
-                                                <SelectItem value="Remedial" className="font-bold text-rose-500">Sangat Mudah</SelectItem>
-                                                <SelectItem value="Literasi" className="font-bold">Literasi & AKM</SelectItem>
+                                                <SelectItem value="mudah" className="font-bold text-emerald-600">Mudah</SelectItem>
+                                                <SelectItem value="sedang" className="font-bold text-blue-600">Sedang</SelectItem>
+                                                <SelectItem value="sulit" className="font-bold text-rose-600">Sulit / HOTS</SelectItem>
+                                                <SelectItem value="campuran" className="font-bold">Campuran</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -358,7 +377,7 @@ export default function GenerateSoalClient({
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Soal</Label>
                                         <Select value={form.question_type} onValueChange={(v: any) => setForm({...form, question_type: v})}>
-                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                                 <SelectItem value="multiple_choice" className="font-bold">Pilihan Ganda</SelectItem>
                                                 <SelectItem value="essay" className="font-bold">Esai / Uraian</SelectItem>
@@ -366,43 +385,54 @@ export default function GenerateSoalClient({
                                         </Select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kesulitan</Label>
-                                        <Select value={form.difficulty} onValueChange={(v: any) => setForm({...form, difficulty: v})}>
-                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Soal</Label>
+                                        <Select value={String(form.count)} onValueChange={(v) => setForm({...form, count: Number(v)})}>
+                                            <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                                <SelectItem value="campuran" className="font-bold">Campuran</SelectItem>
-                                                <SelectItem value="mudah" className="font-bold text-emerald-600">Mudah</SelectItem>
-                                                <SelectItem value="sedang" className="font-bold text-blue-600">Sedang</SelectItem>
-                                                <SelectItem value="sulit" className="font-bold text-rose-600">Sulit</SelectItem>
+                                                <SelectItem value="5" className="font-bold">5 Soal</SelectItem>
+                                                <SelectItem value="10" className="font-bold">10 Soal</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Instruksi Khusus</Label>
-                                    <Textarea placeholder="Misal: Gunakan bahasa santun, fokus pada kehidupan sehari-hari..." className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner" value={form.instruction} onChange={(e) => setForm({...form, instruction: e.target.value})} />
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Instruksi Khusus (Opsional)</Label>
+                                    <Textarea 
+                                        placeholder="Misal: Berikan soal yang berbasis lingkungan, gunakan bahasa santun..." 
+                                        className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner" 
+                                        value={form.instruction} 
+                                        onChange={(e) => setForm({...form, instruction: e.target.value})} 
+                                    />
                                 </div>
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/50 p-6 border-t">
                             <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 text-lg font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
                                 {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6" />}
-                                Generate 5 Soal
+                                Generate Sekarang
                             </Button>
                         </CardFooter>
                     </form>
                 </Card>
 
-                {/* Placeholder Content */}
+                {/* 2. Placeholder Content / Tampilan Utama */}
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col items-center justify-center text-center px-10">
                     <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
                         <Wand2 className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Guru LakuKelas</h3>
+                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">Asisten AI Siap Membantu</h3>
                     <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">
-                        Pilih jenjang, mapel, dan level kognitif di samping. AI akan menyesuaikan butir soal dengan standar Kurikulum Merdeka atau K-13 secara otomatis.
+                        Pilih jenis soal dan topik di samping. AI akan merumuskan butir soal berkualitas tinggi sesuai kurikulum Indonesia dalam hitungan detik.
                     </p>
+                    <div className="mt-10 flex gap-4">
+                        <Badge variant="outline" className="px-4 py-2 rounded-xl border-slate-100 text-slate-400 font-bold">
+                            <ClipboardCheck className="w-3 h-3 mr-2" /> Mandiri
+                        </Badge>
+                        <Badge variant="outline" className="px-4 py-2 rounded-xl border-indigo-100 text-indigo-400 font-bold">
+                            <Bot className="w-3 h-3 mr-2" /> AI Intelligence
+                        </Badge>
+                    </div>
                 </Card>
             </div>
 
@@ -416,7 +446,7 @@ export default function GenerateSoalClient({
                                 <Loader2 className="h-20 w-20 animate-spin text-indigo-600 mx-auto" />
                                 <div className="mt-8 space-y-2">
                                     <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Merumuskan Butir Soal...</p>
-                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Kognitif {form.cognitive_level}</p>
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{form.subject} — Kelas {form.kelas}</p>
                                 </div>
                             </div>
                         </div>
@@ -428,7 +458,7 @@ export default function GenerateSoalClient({
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl bg-[#F8FAFF]">
                     <div className="flex flex-col h-[90vh]">
-                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white relative">
+                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white relative shrink-0">
                             <button onClick={() => setIsPreviewOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
                             <div className="flex items-center gap-5">
                                 <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl"><Eye className="h-8 w-8" /></div>
@@ -440,7 +470,7 @@ export default function GenerateSoalClient({
                         </div>
 
                         <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-8">
+                            <div className="space-y-8 pb-10">
                                 {questions.map((q, idx) => (
                                     <Card key={idx} className="border-0 shadow-sm rounded-[2rem] bg-white p-6 sm:p-8 hover:shadow-md transition-all border border-slate-100/50">
                                         <div className="flex items-center justify-between mb-6">
@@ -483,12 +513,23 @@ export default function GenerateSoalClient({
                                                 <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 text-sm text-slate-600 font-medium italic"><MathText content={q.explanation} /></div>
                                             </div>
 
+                                            {/* AI Image Tools per Soal */}
                                             <div className="p-5 rounded-3xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
                                                 <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest"><FileImage className="h-4 w-4" /><span>Kebutuhan Media</span></div>
                                                 <div className="flex flex-col gap-3">
-                                                    <Textarea placeholder="Deskripsikan gambar pendukung..." className="rounded-2xl bg-white border-indigo-100 text-xs font-medium min-h-[60px] resize-none" value={q.image_prompt || ""} onChange={(e) => handleUpdatePrompt(idx, e.target.value)} />
-                                                    <Button onClick={() => handleGenerateImage(idx, q.image_prompt || "")} disabled={imageLoadingIdx === idx || (!q.image_prompt)} className="w-full rounded-2xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2">
-                                                        {imageLoadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Generate Gambar AI
+                                                    <Textarea 
+                                                        placeholder="Deskripsikan gambar pendukung yang ingin dibuat oleh AI..." 
+                                                        className="rounded-2xl bg-white border-indigo-100 text-xs font-medium min-h-[60px] resize-none focus:ring-2 focus:ring-indigo-500/20" 
+                                                        value={q.image_prompt || ""} 
+                                                        onChange={(e) => handleUpdatePrompt(idx, e.target.value)} 
+                                                    />
+                                                    <Button 
+                                                        onClick={() => handleGenerateImage(idx, q.image_prompt || "")} 
+                                                        disabled={imageLoadingIdx === idx || (!q.image_prompt)} 
+                                                        className="w-full rounded-2xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-indigo-100"
+                                                    >
+                                                        {imageLoadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} 
+                                                        Generate Gambar AI
                                                     </Button>
                                                 </div>
                                             </div>
@@ -498,7 +539,7 @@ export default function GenerateSoalClient({
                             </div>
                         </ScrollArea>
 
-                        <div className="p-6 bg-white border-t flex flex-col sm:flex-row gap-3">
+                        <div className="p-6 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0">
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2"><ArrowLeft className="h-4 w-4" /> Edit Parameter</Button>
                             <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100">
                                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Konfirmasi & Simpan ke Bank Soal
