@@ -60,9 +60,16 @@ export async function middleware(request: NextRequest) {
     // Deteksi apakah user sudah mengisi data diri
     const hasFilledProfile = profile?.full_name && profile.full_name !== 'User LakuKelas';
 
+    // Rute akar: Redirect berdasarkan role (Utamakan Admin ke Panel Admin)
+    if (pathname === '/') {
+        if (isAdmin) return NextResponse.redirect(new URL('/admin/users', request.url));
+        if (isHeadmaster) return NextResponse.redirect(new URL('/monitoring', request.url));
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
     // Rute Tunggu & Lengkapi Profil: Jika sudah aktif atau Admin, jangan boleh ke sana
     if ((pathname === '/waiting-approval' || pathname === '/complete-profile') && (isActivated || isAdmin)) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        return NextResponse.redirect(new URL(isAdmin ? '/admin/users' : '/dashboard', request.url));
     }
 
     // Gatekeeper Approval: Hanya untuk non-Admin & non-Aktif
@@ -75,13 +82,6 @@ export async function middleware(request: NextRequest) {
         if (hasFilledProfile && pathname !== '/waiting-approval') {
             return NextResponse.redirect(new URL('/waiting-approval', request.url));
         }
-    }
-
-    // Rute akar: Redirect berdasarkan role
-    if (pathname === '/') {
-        if (isAdmin) return NextResponse.redirect(new URL('/admin', request.url));
-        if (isHeadmaster) return NextResponse.redirect(new URL('/monitoring', request.url));
-        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
     // Proteksi rute Admin
