@@ -1,20 +1,27 @@
 
 # Log Pembaruan LakuKelas
 
-## V20.0: Master Blueprint Database (Final Ultimate) - SELESAI
-Restrukturisasi total infrastruktur database untuk mendukung instalasi bersih, fitur Admin otomatis, dan fitur AI Pembelajaran.
+## V21.0: Master Blueprint Ultimate (Final Gold) - SELESAI
+Konsolidasi total seluruh skema database ke dalam satu file `schema.sql` untuk memudahkan instalasi bersih dan sinkronisasi fitur.
 
-### 1. Perubahan SQL & Keamanan
-- **Auto-Admin Logic**: Pendaftar pertama pada database kosong kini 100% dijamin menjadi `admin` dan berstatus `is_activated = true`.
-- **Global Admin Privileges**: Admin sekarang memiliki izin `ALL` pada seluruh tabel master (`school_years`, `classes`, `subjects`, `students`) tanpa terhalang `teacher_id`.
-- **Monitoring Read-Only**: Kepala Sekolah (`headmaster`) diberikan hak akses `SELECT` pada seluruh data guru untuk pemantauan.
-- **Wali Kelas Integration**: Izin akses khusus ditambahkan agar Wali Kelas dapat melihat Leger (nilai/absen) siswanya meskipun data diinput oleh guru lain.
-- **Explicit Grants**: Menambahkan perintah `GRANT ALL` di akhir skrip untuk memastikan Middleware Vercel tidak mengalami error "permission denied".
-- **Holidays Table**: Menambahkan tabel `holidays` untuk manajemen hari libur nasional dan sekolah.
-- **Bank Soal AI**: Tabel `questions` mendukung LaTeX, Image Prompt, dan status review soal.
-- **Google Drive**: Tabel `google_drive_integrations` dan `ai_documents` untuk sinkronisasi penyimpanan dokumen AI.
+### 1. Struktur Database
+- **Tabel Profiles**: Mendukung penyimpanan `gemini_api_key` dan metadata sekolah dalam satu tempat.
+- **Tabel AI & Drive**: Integrasi `questions` (Bank Soal), `google_drive_integrations`, dan `ai_documents` siap pakai.
+- **Tabel Holidays**: Sistem libur nasional dan sekolah untuk otomasi absensi guru.
+- **Tabel Settings**: Konfigurasi global (Year ID, WA Token, Koordinat GPS).
 
-### 2. Alur Pengguna Baru
-- Login Google -> Deteksi Database Kosong -> User 1 Jadi Admin Aktif.
-- Login Google -> Database Ada Isinya -> User Berikutnya Jadi Guru (Pending Approval).
-- Admin masuk ke `/admin/users` untuk menyetujui Guru.
+### 2. Logika RLS & Keamanan (Lengkap)
+- **Admin**: Akses `ALL` tanpa syarat ke tabel master (`school_years`, `classes`, `students`, dll).
+- **Kepala Sekolah**: Akses `SELECT` global ke seluruh aktivitas guru untuk monitoring.
+- **Wali Kelas**: Akses `SELECT` cerdas ke nilai dan absen siswa di kelas perwaliannya (mendukung Leger lintas Mapel).
+- **Guru**: Akses penuh ke data miliknya sendiri.
+
+### 3. Otomasi & Fail-Safe
+- **Auto-Admin**: Trigger `handle_new_user` menjamin pendaftar pertama pada database kosong menjadi Admin aktif.
+- **Explicit Grants**: Perintah `GRANT ALL` menyeluruh untuk mencegah error "permission denied" pada Vercel Middleware.
+- **Rich Views**: View `attendance_history` dan `grades_history` untuk performa tampilan tabel yang cepat.
+
+### 4. Instruksi Instalasi
+1. Hapus seluruh tabel di database Supabase (Project Settings > General > Reset Database atau hapus manual di SQL Editor).
+2. Jalankan `schema.sql` V21.0.
+3. Login sebagai user pertama untuk mendapatkan hak Admin secara otomatis.
