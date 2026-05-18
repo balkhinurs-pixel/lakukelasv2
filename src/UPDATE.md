@@ -1,6 +1,19 @@
 
 # Log Pembaruan LakuKelas
 
+## V19.0: Solusi Permanen Redirect Admin Pertama
+Perbaikan fundamental pada alur navigasi aplikasi untuk memastikan Admin langsung masuk ke Panel Kontrol.
+
+### 1. Perubahan Middleware (Kritikal)
+- **Admin Priority Logic**: Middleware sekarang menempatkan deteksi Admin di posisi teratas. Jika pengguna memiliki peran `admin` di database, sistem akan mengabaikan seluruh pengecekan kelengkapan profil dan langsung mengarahkan ke `/admin/users`.
+- **Bypass Persyaratan**: Admin tidak lagi dipaksa masuk ke halaman `/complete-profile` atau `/waiting-approval`.
+
+### 2. Perbaikan Database (V19.0)
+- **RLS Transparency**: Kebijakan RLS pada tabel `profiles` dibuat lebih transparan untuk operasi `SELECT`, memastikan middleware dapat membaca peran pengguna tanpa hambatan keamanan internal.
+- **Trigger Stability**: Memastikan pendaftar pertama (Admin) mendapatkan nama profil default 'Administrator LakuKelas' agar tidak terdeteksi sebagai profil kosong oleh logika aplikasi.
+
+---
+
 ## V18.9: Solusi Total Redirect Admin & Sesi RLS
 Pembaruan kritikal untuk memastikan Admin pertama tidak terjebak di halaman persetujuan profil.
 
@@ -11,21 +24,3 @@ Pembaruan kritikal untuk memastikan Admin pertama tidak terjebak di halaman pers
 ### 2. Optimasi Middleware
 - **Admin-First Priority**: Middleware sekarang memprioritaskan deteksi Admin. Jika user terdeteksi sebagai Admin, sistem akan langsung mengalihkan ke `/admin/users`, melewati seluruh blok pengecekan profil pendaftar baru.
 - **Resilient Redirect**: Memperbaiki alur navigasi dari `/` agar lebih cerdas dalam membagi akses antara Admin, Kepala Sekolah, dan Guru.
-
----
-
-## V18.8: Perbaikan Error Sintaks Blueprint
-Perbaikan kritikal pada skrip SQL untuk menangani error saat instalasi database baru.
-
-### 1. Perbaikan Bug SQL
-- **Syntax Correction**: Menghapus duplikasi kata kunci `uuid primary_id` pada definisi tabel `questions`. Sekarang menggunakan standar `id uuid primary key`.
-- **Integritas Skema**: Memastikan urutan pembuatan tabel AI diletakkan dengan benar di dalam skrip `schema.sql`.
-
----
-
-## V18.7: Solusi RLS Recursion & Middleware Admin
-Pembaruan untuk mengatasi masalah Admin yang terjebak di halaman persetujuan.
-
-### 1. Perbaikan Keamanan Database
-- **RLS Anti-Recursion**: Menyederhanakan kebijakan (policy) RLS pada tabel `profiles`. Sebelumnya terjadi loop pengecekan role yang menyebabkan data profil gagal dibaca.
-- **Admin Access Bypass**: Memastikan Admin dapat membaca profil mereka sendiri tanpa terhalang kebijakan keamanan yang kompleks.

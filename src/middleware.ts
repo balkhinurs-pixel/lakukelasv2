@@ -38,11 +38,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Gunakan getUser() untuk validasi sesi yang lebih aman di server
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl
 
-  // 1. Proteksi Sesi: Jika tidak login, paksa ke /login
+  // 1. Jika tidak login, paksa ke /login
   if (!user && (
     pathname.startsWith('/dashboard') || 
     pathname.startsWith('/admin') || 
@@ -54,50 +53,61 @@ export async function middleware(request: NextRequest) {
   }
   
   if (user) {
-    // Ambil profil dengan kebijakan bypass RLS jika memungkinkan atau pastikan query bersih
+    // Ambil data profil dasar
     const { data: profile } = await supabase
         .from('profiles')
         .select('role, is_activated, full_name')
         .eq('id', user.id)
         .maybeSingle();
 
-    const isActivated = profile?.is_activated ?? false;
     const role = profile?.role || 'teacher';
     const isAdmin = role === 'admin';
     const isHeadmaster = role === 'headmaster';
-    
-    // Deteksi apakah user sudah mengisi data diri
-    const hasFilledProfile = profile?.full_name && profile.full_name !== 'User LakuKelas';
+    const isActivated = profile?.is_activated ?? false;
+    const hasFilledProfile = profile?.full_name && profile.full_name !== 'User LakuKelas' && profile.full_name !== 'Administrator LakuKelas';
 
-    // A. LOGIKA REDIRECT ADMIN & AKTIF (Meninggalkan rute persiapan)
-    if ((pathname === '/waiting-approval' || pathname === '/complete-profile' || pathname === '/login' || pathname === '/')) {
-        if (isAdmin) return NextResponse.redirect(new URL('/admin/users', request.url));
-        if (isActivated) {
-            if (isHeadmaster) return NextResponse.redirect(new URL('/monitoring', request.url));
-            return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
+    // ==========================================================
+    // A. LOGIKA PRIORITAS ADMIN (SOLUSI TOTAL)
+    // ==========================================================
+    if (isAdmin) {
+      // Jika Admin mencoba akses halaman publik, login, atau halaman "persiapan", 
+      // langsung lempar ke dashboard admin.
+      if (pathname === '/' || pathname === '/login' || pathname === '/complete-profile' || pathname === '/waiting-approval') {
+        return NextResponse.redirect(new URL('/admin/users', request.url));
+      }
+      // Izinkan Admin mengakses semua rute /admin/*
+      return response;
     }
 
-    // B. LOGIKA REDIRECT ROOT (/)
+    // ==========================================================
+    // B. LOGIKA GURU & KEPALA SEKOLAH
+    // ==========================================================
+    
+    // 1. Jika sudah aktif, jangan biarkan kembali ke halaman persiapan
+    if (isActivated && (pathname === '/waiting-approval' || pathname === '/complete-profile' || pathname === '/login' || pathname === '/')) {
+        if (isHeadmaster) return NextResponse.redirect(new URL('/monitoring', request.url));
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // 2. Proteksi rute root (/)
     if (pathname === '/') {
-        if (isAdmin) return NextResponse.redirect(new URL('/admin/users', request.url));
         if (isHeadmaster && isActivated) return NextResponse.redirect(new URL('/monitoring', request.url));
         if (isActivated) return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // C. GATEKEEPER APPROVAL: Hanya untuk non-Admin & non-Aktif
-    if (!isAdmin && !isActivated && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
-        // 1. Jika belum isi data diri, paksa ke /complete-profile
+    // 3. Gatekeeper untuk yang belum aktif (Hanya untuk non-Admin)
+    if (!isActivated && !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/login') {
+        // Belum isi data diri -> paksa isi
         if (!hasFilledProfile && pathname !== '/complete-profile') {
             return NextResponse.redirect(new URL('/complete-profile', request.url));
         }
-        // 2. Jika sudah isi data diri tapi belum disetujui, paksa ke /waiting-approval
+        // Sudah isi data tapi belum disetujui -> paksa tunggu
         if (hasFilledProfile && pathname !== '/waiting-approval') {
             return NextResponse.redirect(new URL('/waiting-approval', request.url));
         }
     }
 
-    // D. PROTEKSI RUTE BERBASIS ROLE
+    // 4. Proteksi Hak Akses Folder
     if (pathname.startsWith('/admin') && !isAdmin) {
         return NextResponse.redirect(new URL(isHeadmaster ? '/monitoring' : '/dashboard', request.url));
     }
