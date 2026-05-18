@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -150,7 +151,6 @@ export default function GenerateSoalClient({
         }
         setImageLoadingIdx(idx);
         
-        // Memanggil Server Action yang baru (menggunakan Pollinations)
         const result = await generateQuestionImageAction(prompt);
         
         if (result.success && result.url) {
@@ -474,9 +474,13 @@ export default function GenerateSoalClient({
                                         </div>
 
                                         <div className="space-y-6">
-                                            {/* Gambar Ilustrasi */}
+                                            {/* Gambar Ilustrasi - Muncul Otomatis jika URL tersedia */}
                                             {q.image_url && (
-                                                <div className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-inner border border-slate-100 mb-4 bg-slate-50">
+                                                <motion.div 
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-inner border border-slate-100 mb-4 bg-slate-50"
+                                                >
                                                     <Image 
                                                         src={q.image_url} 
                                                         alt="Ilustrasi Soal" 
@@ -484,7 +488,7 @@ export default function GenerateSoalClient({
                                                         className="object-contain"
                                                         unoptimized
                                                     />
-                                                </div>
+                                                </motion.div>
                                             )}
 
                                             <div className="text-slate-800 font-bold text-lg sm:text-xl leading-relaxed">
