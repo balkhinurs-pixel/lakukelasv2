@@ -210,6 +210,8 @@ export interface QuestionGenerationInput {
   question_type: 'multiple_choice' | 'essay';
   count: number;
   difficulty: 'mudah' | 'sedang' | 'sulit' | 'campuran';
+  mediaDataUri?: string;
+  mediaMimeType?: string;
 }
 
 // --- History Types ---

@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
  * Menggunakan API Key pribadi milik guru.
- * Kini dilengkapi dengan image_prompt untuk ilustrasi soal.
+ * Kini dilengkapi dengan dukungan Media (PDF/Foto) untuk ekstraksi materi.
  */
 
 import { z, genkit } from 'genkit';
@@ -38,6 +37,8 @@ const GenerateQuestionsInputSchema = z.object({
   question_type: z.enum(['multiple_choice', 'essay']),
   count: z.number().default(5),
   difficulty: z.enum(['mudah', 'sedang', 'sulit', 'campuran']),
+  mediaDataUri: z.string().optional().describe('Materi dalam format Data URI (Base64)'),
+  mediaMimeType: z.string().optional(),
 });
 
 export type GenerateQuestionsInput = z.infer<typeof GenerateQuestionsInputSchema>;
@@ -74,7 +75,9 @@ export async function generateQuestions(input: GenerateQuestionsInput): Promise<
 
   const response = await ai.generate({
     output: { schema: GenerateQuestionsOutputSchema },
-    prompt: `Anda adalah asisten guru profesional di Indonesia yang ahli dalam kurikulum ${input.curriculum}.
+    prompt: [
+        ...(input.mediaDataUri ? [{ media: { url: input.mediaDataUri, contentType: input.mediaMimeType } }] : []),
+        { text: `Anda adalah asisten guru profesional di Indonesia yang ahli dalam kurikulum ${input.curriculum}.
     
 Tugas Anda:
 Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilihan Ganda' : 'Esai'} untuk:
@@ -90,15 +93,18 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 - Mode Soal: ${input.mode || 'Reguler'}
 - Instruksi Tambahan: ${input.instruction || 'Tidak ada'}
 
+${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
+
 Aturan Penting:
 1. Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
 2. Rumus Matematika: Gunakan LaTeX valid (contoh: \\(x^2 + 2x + 1 = 0\\)).
-3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl' jika ada teks Arab. Khusus untuk Kurikulum Kemenag (KBC), pastikan konten religius sesuai standar moderasi beragama.
+3. Bahasa Arab: Gunakan Unicode asli dan set language_direction: 'rtl' jika ada teks Arab.
 4. Pastikan soal berkualitas, tidak ambigu, dan sesuai level siswa kelas ${input.kelas}.
-5. Jika Kesulitan adalah 'campuran', distribusikan ${input.count} soal tersebut menjadi: 1 soal HOTS (sulit), 2-3 soal sedang, dan sisanya mudah.
-6. ILUSTRASI: Jika soal membutuhkan gambaran visual (seperti grafik, organ tubuh, peta, benda, atau percobaan sains), Anda WAJIB memberikan "image_prompt" dalam bahasa Inggris yang mendetail untuk dihasilkan oleh AI pembuat gambar. Jika soal murni tekstual, biarkan kosong.
+5. Jika Kesulitan adalah 'campuran', distribusikan soal menjadi kombinasi HOTS, sedang, dan mudah.
+6. ILUSTRASI: Jika soal membutuhkan gambaran visual, berikan "image_prompt" dalam bahasa Inggris.
 
-Output harus berupa JSON valid sesuai skema yang diminta.`,
+Output harus berupa JSON valid sesuai skema yang diminta.` }
+    ]
   });
 
   const result = response.output;

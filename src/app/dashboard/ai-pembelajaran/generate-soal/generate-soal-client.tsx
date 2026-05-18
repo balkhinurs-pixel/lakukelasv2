@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -23,7 +22,10 @@ import {
     HelpCircle,
     Lightbulb,
     FileImage,
-    PencilLine
+    PencilLine,
+    Upload,
+    FileText,
+    FileUp
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,9 +53,6 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-/**
- * Komponen pembantu untuk merender teks yang bercampur dengan LaTeX
- */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
@@ -68,7 +67,6 @@ const MathText = ({ content, className }: { content: string, className?: string 
   );
 };
 
-// Data Statis untuk Opsi
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
@@ -97,6 +95,10 @@ export default function GenerateSoalClient({
     const [imageLoadingIdx, setImageLoadingIdx] = React.useState<number | null>(null);
     const [questions, setQuestions] = React.useState<GeneratedQuestion[]>([]);
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
+    
+    // File State
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [uploadedFile, setUploadedFile] = React.useState<{ name: string, uri: string, mime: string } | null>(null);
 
     const [form, setForm] = React.useState<QuestionGenerationInput>({
         jenjang: 'SMP / MTs',
@@ -115,17 +117,36 @@ export default function GenerateSoalClient({
         difficulty: 'sedang'
     });
 
-    // Handle Jenjang Change - Cascading Update
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
-        
         setForm(prev => ({
             ...prev,
             jenjang: val,
             kelas: classOpts[0] || prev.kelas,
             subject: mapelOpts[0] || prev.subject
         }));
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast({ title: "File Terlalu Besar", description: "Maksimal ukuran file adalah 10MB.", variant: "destructive" });
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setUploadedFile({
+                name: file.name,
+                uri: event.target?.result as string,
+                mime: file.type
+            });
+            toast({ title: "Materi Terunggah", description: `${file.name} siap diproses oleh AI.` });
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleGenerate = async (e: React.FormEvent) => {
@@ -136,7 +157,11 @@ export default function GenerateSoalClient({
         }
 
         setLoading(true);
-        const result = await generateQuestionsAction(form);
+        const result = await generateQuestionsAction({
+            ...form,
+            mediaDataUri: uploadedFile?.uri,
+            mediaMimeType: uploadedFile?.mime
+        });
 
         if (result.success && result.data) {
             setQuestions(result.data.questions);
@@ -190,7 +215,6 @@ export default function GenerateSoalClient({
     return (
         <div className="relative">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-1">
-                {/* Sidebar Form Config */}
                 <Card className="lg:col-span-2 border-0 shadow-xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
                     <form onSubmit={handleGenerate}>
                         <CardHeader className="bg-slate-50/50 border-b p-6">
@@ -200,22 +224,40 @@ export default function GenerateSoalClient({
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar pr-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Sumber Materi Upload */}
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sumber Materi (Opsional)</Label>
+                                <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf, image/*" onChange={handleFileChange} />
+                                {uploadedFile ? (
+                                    <div className="p-4 rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-between group animate-in zoom-in-95 duration-200">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            {uploadedFile.mime.includes('pdf') ? <FileText className="h-5 w-5 text-indigo-600" /> : <ImageIcon className="h-5 w-5 text-indigo-600" />}
+                                            <p className="text-xs font-bold text-indigo-700 truncate">{uploadedFile.name}</p>
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50" onClick={() => setUploadedFile(null)}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <button 
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="w-full p-6 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-2 hover:border-indigo-400 hover:bg-indigo-50 transition-all text-slate-400 hover:text-indigo-600 group"
+                                    >
+                                        <FileUp className="h-8 w-8 opacity-40 group-hover:opacity-100 transition-opacity" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Unggah PDF atau Foto Buku</p>
+                                    </button>
+                                )}
+                                <p className="text-[8px] text-slate-400 font-bold uppercase text-center">AI akan mengekstraksi soal langsung dari materi Anda.</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
-                                    <Select 
-                                        key={form.jenjang} 
-                                        value={form.jenjang} 
-                                        onValueChange={handleJenjangChange}
-                                    >
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11">
-                                            <SelectValue placeholder="Pilih Jenjang" />
-                                        </SelectTrigger>
+                                    <Select value={form.jenjang} onValueChange={handleJenjangChange}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="SD / MI" className="font-bold">SD / MI</SelectItem>
-                                            <SelectItem value="SMP / MTs" className="font-bold">SMP / MTs</SelectItem>
-                                            <SelectItem value="SMA / MA" className="font-bold">SMA / MA</SelectItem>
-                                            <SelectItem value="SMK / MAK" className="font-bold">SMK / MAK</SelectItem>
+                                            {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -235,56 +277,19 @@ export default function GenerateSoalClient({
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
-                                    <Select 
-                                        key={form.jenjang + '-subject'} 
-                                        value={form.subject} 
-                                        onValueChange={(v) => setForm({...form, subject: v})}
-                                    >
+                                    <Select value={form.subject} onValueChange={(v) => setForm({...form, subject: v})}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
-                                            <SelectItem value="Lainnya" className="font-bold italic text-slate-400 border-t">Tulis Manual...</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                    <Select 
-                                        key={form.jenjang + '-class'} 
-                                        value={form.kelas} 
-                                        onValueChange={(v) => setForm({...form, kelas: v})}
-                                    >
+                                    <Select value={form.kelas} onValueChange={(v) => setForm({...form, kelas: v})}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {getClassOptions(form.jenjang).map(k => (
-                                                <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Semester</Label>
-                                    <Select value={form.semester} onValueChange={(v) => setForm({...form, semester: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="Ganjil" className="font-bold">Ganjil</SelectItem>
-                                            <SelectItem value="Genap" className="font-bold">Genap</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tujuan Soal</Label>
-                                    <Select value={form.assessment_purpose} onValueChange={(v) => setForm({...form, assessment_purpose: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="Latihan / PR" className="font-bold">Latihan / PR</SelectItem>
-                                            <SelectItem value="Ulangan Harian" className="font-bold">Ulangan Harian</SelectItem>
-                                            <SelectItem value="PTS / STS" className="font-bold">PTS / STS</SelectItem>
-                                            <SelectItem value="PAS / SAS" className="font-bold">PAS / SAS</SelectItem>
-                                            <SelectItem value="Remedial" className="font-bold">Remedial</SelectItem>
+                                            {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -301,43 +306,13 @@ export default function GenerateSoalClient({
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sub-topik (Opsional)</Label>
-                                    <Input 
-                                        placeholder="Contoh: Metode Eliminasi" 
-                                        className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
-                                        value={form.subtopic}
-                                        onChange={(e) => setForm({...form, subtopic: e.target.value})}
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Instruksi Khusus (Opsional)</Label>
+                                    <Textarea 
+                                        placeholder="Misal: Gunakan bahasa santun..." 
+                                        className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner"
+                                        value={form.instruction}
+                                        onChange={(e) => setForm({...form, instruction: e.target.value})}
                                     />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Level Kognitif</Label>
-                                    <Select value={form.cognitive_level} onValueChange={(v) => setForm({...form, cognitive_level: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="Variatif" className="font-bold">Campuran</SelectItem>
-                                            <SelectItem value="C1 - Mengingat" className="font-bold">C1</SelectItem>
-                                            <SelectItem value="C2 - Memahami" className="font-bold">C2</SelectItem>
-                                            <SelectItem value="C3 - Menerapkan" className="font-bold">C3</SelectItem>
-                                            <SelectItem value="C4 - Menganalisis" className="font-bold">C4</SelectItem>
-                                            <SelectItem value="C5 - Mengevaluasi" className="font-bold">C5</SelectItem>
-                                            <SelectItem value="C6 - Mencipta" className="font-bold">C6</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mode Soal</Label>
-                                    <Select value={form.mode} onValueChange={(v) => setForm({...form, mode: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="Reguler" className="font-bold">Reguler</SelectItem>
-                                            <SelectItem value="HOTS" className="font-bold">HOTS</SelectItem>
-                                            <SelectItem value="Remedial" className="font-bold">Remedial</SelectItem>
-                                            <SelectItem value="Pengayaan" className="font-bold">Pengayaan</SelectItem>
-                                        </SelectContent>
-                                    </Select>
                                 </div>
                             </div>
 
@@ -357,23 +332,13 @@ export default function GenerateSoalClient({
                                     <Select value={form.difficulty} onValueChange={(v: any) => setForm({...form, difficulty: v})}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="campuran" className="font-bold text-indigo-600">Campuran (HOTS-LOTS)</SelectItem>
+                                            <SelectItem value="campuran" className="font-bold">Campuran</SelectItem>
                                             <SelectItem value="mudah" className="font-bold text-emerald-600">Mudah</SelectItem>
                                             <SelectItem value="sedang" className="font-bold text-blue-600">Sedang</SelectItem>
                                             <SelectItem value="sulit" className="font-bold text-rose-600">Sulit</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Instruksi Khusus (Opsional)</Label>
-                                <Textarea 
-                                    placeholder="Misal: Buat soal dengan teks Bahasa Arab..." 
-                                    className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner"
-                                    value={form.instruction}
-                                    onChange={(e) => setForm({...form, instruction: e.target.value})}
-                                />
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/50 p-6 border-t">
@@ -389,19 +354,17 @@ export default function GenerateSoalClient({
                     </form>
                 </Card>
 
-                {/* Empty State / Initial View */}
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col items-center justify-center text-center px-10">
                     <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
                         <Wand2 className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
                     <h3 className="text-3xl font-black text-slate-900 tracking-tight">Generate Soal Otomatis</h3>
                     <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">
-                        Lengkapi parameter kurikulum di samping, lalu AI akan menyusun soal-soal berkualitas tinggi untuk Anda tinjau.
+                        Lengkapi parameter kurikulum di samping atau unggah materi (PDF/Foto), lalu AI akan menyusun soal berkualitas untuk Anda.
                     </p>
                 </Card>
             </div>
 
-            {/* Loading Overlay */}
             <AnimatePresence>
                 {loading && (
                     <motion.div 
@@ -424,71 +387,36 @@ export default function GenerateSoalClient({
                 )}
             </AnimatePresence>
 
-            {/* Dialog Preview Soal */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl bg-[#F8FAFF]">
                     <div className="flex flex-col h-[90vh]">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white relative">
-                            <button 
-                                onClick={() => setIsPreviewOpen(false)}
-                                className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
+                            <button onClick={() => setIsPreviewOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
                             <div className="flex items-center gap-5">
-                                <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl">
-                                    <Eye className="h-8 w-8" />
-                                </div>
+                                <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl"><Eye className="h-8 w-8" /></div>
                                 <div>
                                     <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight">Preview Soal</DialogTitle>
-                                    <DialogDescription className="text-indigo-100 font-bold text-sm sm:text-base mt-1">
-                                        {form.subject} — Kelas {form.kelas} — {form.difficulty.charAt(0).toUpperCase() + form.difficulty.slice(1)}
-                                    </DialogDescription>
+                                    <DialogDescription className="text-indigo-100 font-bold text-sm sm:text-base mt-1">{form.subject} — Kelas {form.kelas}</DialogDescription>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="p-6 pb-2 flex flex-wrap items-center gap-3">
-                            <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 px-4 py-2 rounded-2xl font-bold gap-2 shadow-sm">
-                                <ClipboardCheck className="h-3.5 w-3.5" />
-                                {questions.length} soal total
-                            </Badge>
-                            <Badge variant="outline" className="bg-emerald-50 border-emerald-100 text-emerald-700 px-4 py-2 rounded-2xl font-bold gap-2 shadow-sm">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                {questions.length} akan disimpan
-                            </Badge>
                         </div>
 
                         <ScrollArea className="flex-1 p-6">
                             <div className="space-y-8">
                                 {questions.map((q, idx) => (
-                                    <Card key={idx} className="border-0 shadow-sm rounded-[2rem] bg-white p-6 sm:p-8 hover:shadow-md transition-all border border-slate-100/50 relative overflow-hidden">
+                                    <Card key={idx} className="border-0 shadow-sm rounded-[2rem] bg-white p-6 sm:p-8 hover:shadow-md transition-all border border-slate-100/50">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-100">
-                                                    {q.sort_order}
-                                                </div>
-                                                <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">
-                                                    {q.type === 'multiple_choice' ? 'pilgan' : 'esai'}
-                                                </Badge>
+                                                <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-100">{q.sort_order}</div>
+                                                <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{q.type}</Badge>
                                             </div>
                                         </div>
 
                                         <div className="space-y-6">
                                             {q.image_url && (
-                                                <motion.div 
-                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-inner border border-slate-100 mb-4 bg-slate-50"
-                                                >
-                                                    <Image 
-                                                        src={q.image_url} 
-                                                        alt="Ilustrasi Soal" 
-                                                        fill 
-                                                        className="object-contain"
-                                                        unoptimized
-                                                    />
-                                                </motion.div>
+                                                <div className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-inner border border-slate-100 mb-4 bg-slate-50">
+                                                    <Image src={q.image_url} alt="Ilustrasi" fill className="object-contain" unoptimized />
+                                                </div>
                                             )}
 
                                             <div className="text-slate-800 font-bold text-lg sm:text-xl leading-relaxed">
@@ -496,50 +424,27 @@ export default function GenerateSoalClient({
                                             </div>
 
                                             <div className="p-5 rounded-3xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
-                                                <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest">
-                                                    <FileImage className="h-4 w-4" />
-                                                    <span>Media & Ilustrasi (Free & Unlimited)</span>
-                                                </div>
+                                                <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest"><FileImage className="h-4 w-4" /><span>Media & Ilustrasi (Free)</span></div>
                                                 <div className="flex flex-col gap-3">
-                                                    <div className="relative">
-                                                        <PencilLine className="absolute left-3 top-3 h-4 w-4 text-indigo-300" />
-                                                        <Textarea 
-                                                            placeholder="Deskripsikan gambar yang diinginkan..."
-                                                            className="pl-10 rounded-2xl bg-white border-indigo-100 text-xs font-medium min-h-[60px] resize-none focus:ring-indigo-500/20 shadow-sm"
-                                                            value={q.image_prompt || ""}
-                                                            onChange={(e) => handleUpdatePrompt(idx, e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <Button 
-                                                        onClick={() => handleGenerateImage(idx, q.image_prompt || "")}
-                                                        disabled={imageLoadingIdx === idx || (!q.image_prompt)}
-                                                        className="w-full rounded-2xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
-                                                    >
+                                                    <Textarea 
+                                                        placeholder="Deskripsikan gambar..."
+                                                        className="rounded-2xl bg-white border-indigo-100 text-xs font-medium min-h-[60px] resize-none"
+                                                        value={q.image_prompt || ""}
+                                                        onChange={(e) => handleUpdatePrompt(idx, e.target.value)}
+                                                    />
+                                                    <Button onClick={() => handleGenerateImage(idx, q.image_prompt || "")} disabled={imageLoadingIdx === idx || (!q.image_prompt)} className="w-full rounded-2xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 transition-all active:scale-[0.98]">
                                                         {imageLoadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                                                        {q.image_url ? "Ganti Gambar (Seed Baru)" : "Generate Ilustrasi AI"}
+                                                        Generate Ilustrasi AI
                                                     </Button>
                                                 </div>
                                             </div>
 
                                             {q.type === 'multiple_choice' && q.options && (
-                                                <div className="grid grid-cols-1 gap-3 pl-2">
+                                                <div className="grid grid-cols-1 gap-3">
                                                     {Object.entries(q.options).sort().map(([key, val]) => (
-                                                        <div key={key} className={cn(
-                                                            "p-4 rounded-2xl border transition-all flex items-center gap-4 group",
-                                                            q.answer === key 
-                                                                ? "bg-emerald-50 border-emerald-200 ring-2 ring-emerald-500/10 shadow-sm" 
-                                                                : "bg-slate-50/30 border-slate-100 hover:border-indigo-100"
-                                                        )}>
-                                                            <span className={cn(
-                                                                "w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shadow-sm shrink-0",
-                                                                q.answer === key ? "bg-emerald-500 text-white" : "bg-white text-slate-400 border border-slate-100 group-hover:border-indigo-200 group-hover:text-indigo-600"
-                                                            )}>{key}</span>
-                                                            <div className={cn(
-                                                                "text-sm sm:text-base font-semibold",
-                                                                q.answer === key ? "text-emerald-800" : "text-slate-600"
-                                                            )}>
-                                                                <MathText content={val} />
-                                                            </div>
+                                                        <div key={key} className={cn("p-4 rounded-2xl border flex items-center gap-4 group", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
+                                                            <span className={cn("w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black", q.answer === key ? "bg-emerald-500 text-white" : "bg-white text-slate-400")}>{key}</span>
+                                                            <div className="text-sm font-semibold"><MathText content={val} /></div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -547,19 +452,9 @@ export default function GenerateSoalClient({
 
                                             <div className="mt-8 space-y-4">
                                                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-3">
-                                                    <div className="p-1.5 rounded-full bg-emerald-500 text-white shadow-sm">
-                                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                                    </div>
                                                     <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">Jawaban: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
                                                 </div>
-                                                <div className="relative p-6 rounded-3xl bg-slate-50 border border-slate-100 overflow-hidden group/pembahasan">
-                                                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover/pembahasan:opacity-20 transition-opacity">
-                                                        <Lightbulb className="h-12 w-12 text-indigo-600" />
-                                                    </div>
-                                                    <div className="text-sm text-slate-600 font-medium leading-relaxed italic relative z-10">
-                                                        <MathText content={q.explanation} />
-                                                    </div>
-                                                </div>
+                                                <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 text-sm text-slate-600 font-medium italic"><MathText content={q.explanation} /></div>
                                             </div>
                                         </div>
                                     </Card>
@@ -567,24 +462,11 @@ export default function GenerateSoalClient({
                             </div>
                         </ScrollArea>
 
-                        <div className="p-6 bg-white border-t shadow-[0_-8px_30px_-10px_rgba(0,0,0,0.05)] space-y-4">
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <Button 
-                                    variant="outline" 
-                                    onClick={() => setIsPreviewOpen(false)}
-                                    className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2 shadow-sm"
-                                >
-                                    <ArrowLeft className="h-4 w-4" /> Kembali
-                                </Button>
-                                <Button 
-                                    onClick={handleSaveToBankSoal} 
-                                    disabled={saving}
-                                    className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100 transition-all active:scale-[0.98]"
-                                >
-                                    {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                                    Simpan ke Bank Soal
-                                </Button>
-                            </div>
+                        <div className="p-6 bg-white border-t flex flex-col sm:flex-row gap-3">
+                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2"><ArrowLeft className="h-4 w-4" /> Kembali</Button>
+                            <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100 transition-all active:scale-[0.98]">
+                                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Simpan ke Bank Soal
+                            </Button>
                         </div>
                     </div>
                 </DialogContent>
