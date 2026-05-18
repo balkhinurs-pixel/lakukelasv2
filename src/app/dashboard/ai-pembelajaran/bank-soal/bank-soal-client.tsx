@@ -71,30 +71,42 @@ const NaskahPrintTemplate = ({
     config: any 
 }) => {
     return (
-        <div id="naskah-print-container" className="bg-white p-16 pb-32 text-slate-900 w-[800px]" style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+        <div 
+            id="naskah-print-container" 
+            className="bg-white text-slate-900" 
+            style={{ 
+                position: 'fixed', 
+                left: '-9999px', 
+                top: 0,
+                width: '210mm',
+                padding: '10mm 20mm 25mm 20mm', // Top 10, Side 20, Bottom 25 (extra for safety)
+                boxSizing: 'border-box',
+                fontFamily: 'serif'
+            }}
+        >
             {/* Kop Surat */}
-            <div className="text-center border-b-4 border-double border-slate-900 pb-4 mb-8">
-                <h1 className="text-2xl font-bold uppercase tracking-tight">{config.schoolName || "SEKOLAH LAKUKELAS"}</h1>
+            <div className="text-center border-b-4 border-double border-slate-900 pb-2 mb-6">
+                <h1 className="text-2xl font-bold uppercase tracking-tight leading-tight">{config.schoolName || "SEKOLAH LAKUKELAS"}</h1>
                 <h2 className="text-lg font-bold uppercase tracking-widest mt-1">{config.examType || "PENILAIAN HARIAN"}</h2>
-                <p className="text-xs mt-2 italic">Dicetak secara otomatis melalui Sistem Administrasi LakuKelas AI</p>
+                <p className="text-[10px] mt-1 italic opacity-60">Dicetak secara otomatis melalui Sistem Administrasi LakuKelas AI</p>
             </div>
 
-            {/* Metadata */}
-            <div className="grid grid-cols-2 gap-4 text-sm mb-8 border-b border-slate-200 pb-6">
-                <div className="space-y-2">
-                    <p className="flex"><span className="inline-block w-36">Mata Pelajaran</span>: <span className="font-bold ml-2">{questions[0]?.subject || "-"}</span></p>
-                    <p className="flex"><span className="inline-block w-36">Kelas / Jenjang</span>: <span className="font-bold ml-2">{questions[0]?.kelas || "-"} / {questions[0]?.jenjang || "-"}</span></p>
+            {/* Metadata Table-style */}
+            <div className="grid grid-cols-2 gap-4 text-sm mb-6 border-b border-slate-200 pb-4">
+                <div className="space-y-1">
+                    <div className="flex"><span className="w-32">Mata Pelajaran</span><span>: <strong>{questions[0]?.subject || "-"}</strong></span></div>
+                    <div className="flex"><span className="w-32">Kelas / Jenjang</span><span>: <strong>{questions[0]?.kelas || "-"} / {questions[0]?.jenjang || "-"}</strong></span></div>
                 </div>
-                <div className="space-y-2 text-right">
-                    <p>Hari, Tanggal : <span className="font-bold">{format(new Date(), 'EEEE, dd MMMM yyyy', { locale: id })}</span></p>
-                    <p>Alokasi Waktu : <span className="font-bold">90 Menit</span></p>
+                <div className="space-y-1 text-right">
+                    <p>Hari, Tanggal : <strong>{format(new Date(), 'EEEE, dd MMMM yyyy', { locale: id })}</strong></p>
+                    <p>Alokasi Waktu : <strong>90 Menit</strong></p>
                 </div>
             </div>
 
             {/* Petunjuk */}
-            <div className="mb-10 p-5 bg-slate-50 border-l-4 border-slate-900 rounded-r-lg text-xs leading-relaxed">
+            <div className="mb-8 p-4 bg-slate-50 border-l-4 border-slate-900 rounded-r-lg text-[11px] leading-relaxed">
                 <p className="font-bold uppercase mb-1">Petunjuk Umum:</p>
-                <ol className="list-decimal ml-4 space-y-1">
+                <ol className="list-decimal ml-4 space-y-0.5">
                     <li>Berdoalah sebelum mengerjakan soal.</li>
                     <li>Tuliskan identitas Anda pada lembar jawaban yang tersedia.</li>
                     <li>Periksa dan bacalah soal-soal dengan teliti sebelum menjawab.</li>
@@ -103,21 +115,21 @@ const NaskahPrintTemplate = ({
             </div>
 
             {/* Daftar Soal */}
-            <div className="space-y-10">
+            <div className="space-y-8">
                 {questions.map((q, idx) => (
-                    <div key={q.id} className="space-y-5" style={{ pageBreakInside: 'avoid' }}>
-                        <div className="flex gap-4">
-                            <span className="font-bold text-lg min-w-[28px]">{idx + 1}.</span>
-                            <div className={cn("flex-1 text-lg leading-relaxed", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : 'text-justify')}>
+                    <div key={q.id} className="space-y-4" style={{ pageBreakInside: 'avoid' }}>
+                        <div className="flex gap-3">
+                            <span className="font-bold text-base min-w-[24px]">{idx + 1}.</span>
+                            <div className={cn("flex-1 text-[15px] leading-relaxed", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : 'text-justify')}>
                                 <MathText content={q.question_text} />
                             </div>
                         </div>
                         
                         {q.options_json && (
-                            <div className="ml-10 grid grid-cols-1 gap-3">
+                            <div className="ml-9 grid grid-cols-2 gap-x-12 gap-y-1.5">
                                 {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                    <div key={k} className="flex gap-4 text-base items-start">
-                                        <span className="font-bold min-w-[20px]">{k}.</span>
+                                    <div key={k} className="flex gap-3 text-[14px] items-start">
+                                        <span className="font-bold min-w-[18px]">{k}.</span>
                                         <div className="flex-1">
                                             <MathText content={v} />
                                         </div>
@@ -130,19 +142,19 @@ const NaskahPrintTemplate = ({
             </div>
 
             {/* Footer Signatures */}
-            <div className="mt-24 grid grid-cols-2 text-center text-sm gap-20">
-                <div className="space-y-20">
+            <div className="mt-20 grid grid-cols-2 text-center text-sm gap-20">
+                <div className="space-y-16">
                     <p>Mengetahui,<br />Kepala Sekolah</p>
                     <div className="space-y-1">
                         <p className="font-bold underline">..................................................</p>
-                        <p>NIP. ..........................................</p>
+                        <p className="text-xs">NIP. ..........................................</p>
                     </div>
                 </div>
-                <div className="space-y-20">
+                <div className="space-y-16">
                     <p>{config.schoolLocation || "Kota"}, {format(new Date(), 'dd MMMM yyyy', { locale: id })}<br />Guru Mata Pelajaran</p>
                     <div className="space-y-1">
                         <p className="font-bold underline">..................................................</p>
-                        <p>NIP. ..........................................</p>
+                        <p className="text-xs">NIP. ..........................................</p>
                     </div>
                 </div>
             </div>
@@ -227,6 +239,7 @@ export default function BankSoalClient({
 
     /**
      * Menghasilkan PDF naskah soal dengan rendering visual berkualitas tinggi dan margin halaman yang rapi.
+     * Mengikuti permintaan user: Top 10mm, Sides 20mm, Bottom 20mm.
      */
     const generateHighQualityPdf = async (selectedQuestions: any[]): Promise<string> => {
         const element = document.getElementById('naskah-print-container');
@@ -236,35 +249,39 @@ export default function BankSoalClient({
             scale: 2, // Kualitas tajam untuk rumus matematika
             useCORS: true,
             logging: false,
-            backgroundColor: "#ffffff"
+            backgroundColor: "#ffffff",
+            width: element.offsetWidth
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const pdf = new jsPDF('p', 'mm', 'a4');
         
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfPageHeight = pdf.internal.pageSize.getHeight();
+        const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
+        const pdfPageHeight = pdf.internal.pageSize.getHeight(); // 297mm
         
-        // Aturan Margin: 15mm (sekitar 0.6 inch) untuk semua sisi
-        const margin = 15; 
-        const contentWidth = pdfWidth - (margin * 2);
-        const contentHeightLimit = pdfPageHeight - (margin * 2);
+        // Aturan Margin Sesuai Permintaan
+        const topMargin = 10; 
+        const sideMargin = 20;
+        const bottomMargin = 20;
+
+        const contentWidth = pdfWidth - (sideMargin * 2); // 170mm
+        const contentHeightLimit = pdfPageHeight - topMargin - bottomMargin; // 267mm
 
         const imgProps = pdf.getImageProperties(imgData);
         const imgHeightInPdf = (imgProps.height * contentWidth) / imgProps.width;
 
         let heightLeft = imgHeightInPdf;
-        let position = margin; // Mulai dari margin atas
+        let position = topMargin; 
 
         // Halaman Pertama
-        pdf.addImage(imgData, 'JPEG', margin, position, contentWidth, imgHeightInPdf);
+        pdf.addImage(imgData, 'JPEG', sideMargin, position, contentWidth, imgHeightInPdf);
         heightLeft -= contentHeightLimit;
 
-        // Tambahkan halaman baru jika konten masih ada
+        // Tambahkan halaman baru jika konten masih ada (Slicing logic)
         while (heightLeft > 0) {
-            position = (heightLeft - imgHeightInPdf) + margin; 
+            position = (heightLeft - imgHeightInPdf) + topMargin; 
             pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', margin, position, contentWidth, imgHeightInPdf);
+            pdf.addImage(imgData, 'JPEG', sideMargin, position, contentWidth, imgHeightInPdf);
             heightLeft -= contentHeightLimit;
         }
 
@@ -293,7 +310,7 @@ export default function BankSoalClient({
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
                 // Beri waktu sebentar untuk template print merender MathText
-                await new Promise(r => setTimeout(r, 800));
+                await new Promise(r => setTimeout(r, 1000));
                 binaryPdf = await generateHighQualityPdf(selectedQuestionsData);
             }
 
