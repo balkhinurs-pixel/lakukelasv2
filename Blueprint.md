@@ -1,0 +1,2 @@
+setiap kali saya minta pembaruan scheme sql kamu harus update yang terbaru karena scheme sql adalah blueprint untuk pembuatan database baru, masukan semua tabel,rls,relasi,view,indexes,function (rps),triger,auth &storage jika ada,realtime,extention jika ada
+dan masukan update ke berapa dan fitur apa yang di update ke update.md

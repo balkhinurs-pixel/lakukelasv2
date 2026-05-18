@@ -1,6 +1,21 @@
 
 # Log Pembaruan LakuKelas
 
+## V18.1: Optimalisasi Bank Soal & Blueprint SQL (Terbaru)
+Pembaruan fungsionalitas pada Bank Soal dan standarisasi database sesuai Blueprint.
+
+### 1. Optimalisasi Bank Soal
+- **Sistem Paginasi**: Implementasi paginasi (5 soal per halaman) untuk performa memuat data yang lebih ringan.
+- **Filter Materi Pintar**: Penambahan filter berdasarkan Topik/Materi yang dinormalisasi (case-insensitive).
+- **Pembahasan Interaktif**: Perbaikan fitur buka-tutup pembahasan soal dengan animasi halus.
+- **Render LaTeX & Gambar**: Konsistensi tampilan rumus matematika dan ilustrasi AI di seluruh halaman.
+
+### 2. Standarisasi Database (Blueprint)
+- Pembuatan file `schema_ai.sql` sebagai panduan tunggal instalasi modul AI.
+- Penambahan indeks pada kolom `topic` dan `subject` untuk mempercepat pencarian soal.
+
+---
+
 ## V18.0: Integrasi Ekspor & Google Drive (Selesai)
 Tahap 3 dari fitur AI Pembelajaran: Menghubungkan aset digital dengan penyimpanan cloud guru.
 
@@ -14,20 +29,3 @@ Tahap 3 dari fitur AI Pembelajaran: Menghubungkan aset digital dengan penyimpana
 
 ## V17.0: Implementasi Bank Soal AI (Selesai)
 Menyelesaikan siklus hidup fitur Generate Soal dari pembuatan hingga manajemen arsip.
-
-### 1. Tahap 1: Generator & Pratinjau (Selesai)
-- Implementasi AI Generate Soal berbasis parameter pedagogis (C1-C6, Kurikulum Merdeka/KBC).
-- Fitur render otomatis rumus matematika (LaTeX) di pratinjau.
-- Integrasi generator gambar edukasi berbasis Pollinations.ai (Gratis & Unlimited).
-- Desain dialog pratinjau premium sesuai referensi guru.
-
-### 2. Tahap 2: Persistensi & Bank Soal (Selesai)
-- Implementasi sistem penyimpanan soal ke database Supabase (Status: Draft & Perlu Review).
-- Pembuatan antarmuka Bank Soal dengan fitur filter multi-dimensi.
-- Standarisasi data kelas (hanya tingkat 7, 8, 9, dsb) untuk kemudahan manajemen arsip.
-- Fitur hapus soal secara kolektif atau individual dari Bank Soal.
-
----
-
-## V16.0: Restrukturisasi AI Pembelajaran (Selesai)
-Mengubah modul AI menjadi sistem manajemen konten yang lebih terstruktur.
