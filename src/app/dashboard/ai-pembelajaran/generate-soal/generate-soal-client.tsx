@@ -10,7 +10,6 @@ import {
     Save, 
     ArrowLeft,
     X,
-    Trash2,
     Bot,
     Image as ImageIcon,
     ClipboardCheck,
@@ -106,7 +105,7 @@ export default function GenerateSoalClient({
         difficulty: 'sedang'
     });
 
-    // Fix: Handle Jenjang change with proper state cleanup for Kelas and Mapel
+    // Fix: Perbaikan logika pemilihan jenjang agar atomik dan tidak stuck
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
@@ -123,11 +122,11 @@ export default function GenerateSoalClient({
         const file = e.target.files?.[0];
         if (!file) return;
         
-        const MAX_FILE_SIZE = 3 * 1024 * 1024; 
+        const MAX_FILE_SIZE = 3 * 1024 * 1024; // Batasan 3MB sesuai diskusi
         if (file.size > MAX_FILE_SIZE) {
             toast({ 
                 title: "File Terlalu Besar", 
-                description: "Maksimal ukuran file adalah 3MB agar proses generate tetap stabil.", 
+                description: "Maksimal ukuran file adalah 3MB agar proses tetap stabil di Vercel.", 
                 variant: "destructive" 
             });
             if (fileInputRef.current) fileInputRef.current.value = "";
@@ -154,6 +153,7 @@ export default function GenerateSoalClient({
         }
         setLoading(true);
         try {
+            // Selalu kunci di 5 soal untuk stabilitas
             const result = await generateQuestionsAction({ 
                 ...form, 
                 count: 5,
@@ -238,7 +238,7 @@ export default function GenerateSoalClient({
                                             {uploadedFile.mime.includes('pdf') ? <FileText className="h-5 w-5 text-indigo-600" /> : <ImageIcon className="h-5 w-5 text-indigo-600" />}
                                             <p className="text-xs font-black text-indigo-700 truncate">{uploadedFile.name}</p>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50" onClick={() => setUploadedFile(null)}><X className="h-4 w-4" /></Button>
+                                        <button type="button" className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors" onClick={() => setUploadedFile(null)}><X className="h-4 w-4" /></button>
                                     </div>
                                 ) : (
                                     <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full p-6 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-2 hover:border-indigo-400 hover:bg-indigo-50 transition-all text-slate-400 hover:text-indigo-600 group">
@@ -391,7 +391,7 @@ export default function GenerateSoalClient({
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Soal</Label>
                                         <div className="h-11 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-500 border border-slate-200 text-xs">
-                                            5 Butir (Locked)
+                                            5 Butir (Stabil)
                                         </div>
                                     </div>
                                 </div>
@@ -541,9 +541,9 @@ export default function GenerateSoalClient({
                         </ScrollArea>
 
                         <div className="p-6 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0">
-                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2"><ArrowLeft className="h-4 w-4" /> Edit Parameter</Button>
+                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2"><ArrowLeft className="h-4 w-4" /> Edit</Button>
                             <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100">
-                                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} Konfirmasi & Simpan ke Bank Soal
+                                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} Simpan ke Bank Soal
                             </Button>
                         </div>
                     </div>
