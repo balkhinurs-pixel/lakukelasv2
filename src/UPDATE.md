@@ -1,6 +1,19 @@
 
 # Log Pembaruan LakuKelas
 
+## V18.9: Solusi Total Redirect Admin & Sesi RLS
+Pembaruan kritikal untuk memastikan Admin pertama tidak terjebak di halaman persetujuan profil.
+
+### 1. Perbaikan Keamanan Database
+- **RLS Recursion Fix**: Menyederhanakan kebijakan RLS pada tabel `profiles`. Admin sekarang dapat memvalidasi peran mereka sendiri tanpa menyebabkan loop rekursif yang membuat data profil gagal terbaca di middleware.
+- **Admin Select Policy**: Menambahkan kebijakan eksplisit agar Admin dapat melihat seluruh data profil staf untuk keperluan approval.
+
+### 2. Optimasi Middleware
+- **Admin-First Priority**: Middleware sekarang memprioritaskan deteksi Admin. Jika user terdeteksi sebagai Admin, sistem akan langsung mengalihkan ke `/admin/users`, melewati seluruh blok pengecekan profil pendaftar baru.
+- **Resilient Redirect**: Memperbaiki alur navigasi dari `/` agar lebih cerdas dalam membagi akses antara Admin, Kepala Sekolah, dan Guru.
+
+---
+
 ## V18.8: Perbaikan Error Sintaks Blueprint
 Perbaikan kritikal pada skrip SQL untuk menangani error saat instalasi database baru.
 
@@ -16,13 +29,3 @@ Pembaruan untuk mengatasi masalah Admin yang terjebak di halaman persetujuan.
 ### 1. Perbaikan Keamanan Database
 - **RLS Anti-Recursion**: Menyederhanakan kebijakan (policy) RLS pada tabel `profiles`. Sebelumnya terjadi loop pengecekan role yang menyebabkan data profil gagal dibaca.
 - **Admin Access Bypass**: Memastikan Admin dapat membaca profil mereka sendiri tanpa terhalang kebijakan keamanan yang kompleks.
-
----
-
-## V18.6: Solusi Admin Pertama (Database Baru)
-Pembaruan pada logika pendaftaran untuk menangani instalasi pada database kosong.
-
-### 1. Logika Auto-Admin
-- **Smart Assignment**: Fungsi `handle_new_user` sekarang menghitung jumlah user yang ada.
-- **First User Privilege**: Jika pendaftar adalah orang pertama, sistem otomatis memberikan role `admin` and status `is_activated = true`.
-- **Security**: Pendaftar kedua dan seterusnya tetap mendapatkan role `teacher` dan wajib menunggu persetujuan dari Admin pertama.
