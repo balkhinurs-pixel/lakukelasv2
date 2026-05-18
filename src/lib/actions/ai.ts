@@ -1,3 +1,4 @@
+
 'use server';
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
@@ -43,7 +44,6 @@ export async function generateQuestionImageAction(prompt: string) {
         const encodedPrompt = encodeURIComponent(sanitizedPrompt);
         
         // Menggunakan Pollinations AI dengan model flux untuk kualitas edukasi yang baik
-        // Ditambahkan seed acak agar gambar selalu bervariasi jika di-regenerate
         const seed = Math.floor(Math.random() * 1000000);
         const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=768&nologo=true&model=flux&seed=${seed}`;
         
@@ -89,8 +89,6 @@ export async function saveQuestionsAction(config: QuestionGenerationInput, quest
             language_direction: q.language_direction || 'ltr',
             status: 'draft',
             needs_review: true,
-            // Kita simpan URL gambar (Pollinations link) di kolom baru atau metadata jika tersedia
-            // Di sini kita asumsikan skema database mendukung image_url
             image_url: q.image_url || null
         }));
 
@@ -106,5 +104,29 @@ export async function saveQuestionsAction(config: QuestionGenerationInput, quest
     } catch (error: any) {
         console.error("Save Questions Error:", error);
         return { success: false, error: "Gagal menyimpan ke database." };
+    }
+}
+
+/**
+ * Server Action untuk menghapus satu atau lebih soal dari Bank Soal.
+ */
+export async function deleteQuestionsAction(ids: string[]) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi." };
+
+    try {
+        const { error } = await supabase
+            .from('questions')
+            .delete()
+            .in('id', ids)
+            .eq('created_by', user.id); // Security check: only own questions
+
+        if (error) throw error;
+
+        revalidatePath('/dashboard/ai-pembelajaran/bank-soal');
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: "Gagal menghapus data soal." };
     }
 }
