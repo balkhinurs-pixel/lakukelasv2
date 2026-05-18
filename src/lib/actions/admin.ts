@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -239,16 +240,31 @@ export async function saveAttendanceSettings(formData: FormData) {
 /**
  * Update informasi dasar sekolah.
  */
-export async function updateSchoolData(data: { schoolName: string, schoolAddress: string, headmasterName: string, headmasterNip: string }) {
+export async function updateSchoolData(data: { 
+    schoolName: string, 
+    npsn: string,
+    schoolAddress: string, 
+    schoolEmail: string,
+    schoolWebsite: string,
+    headmasterName: string, 
+    headmasterNip: string 
+}) {
     const supabase = createClient();
     const { data: admin } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single();
     if (!admin) return { success: false, error: "Admin tidak ditemukan." };
-    await supabase.from('profiles').update({
+    
+    const { error } = await supabase.from('profiles').update({
         school_name: data.schoolName,
+        npsn: data.npsn,
         school_address: data.schoolAddress,
+        school_email: data.schoolEmail,
+        school_website: data.schoolWebsite,
         headmaster_name: data.headmasterName,
         headmaster_nip: data.headmasterNip,
     }).eq('id', admin.id);
+
+    if (error) return { success: false, error: "Gagal memperbarui data sekolah." };
+
     revalidatePath('/admin/settings/school');
     return { success: true };
 }

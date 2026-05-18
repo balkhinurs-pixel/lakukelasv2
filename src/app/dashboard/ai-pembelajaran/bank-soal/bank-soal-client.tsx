@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -87,7 +88,7 @@ const NaskahPrintTemplate = ({
                 left: '-9999px', 
                 top: 0,
                 width: '210mm',
-                padding: '0', // Kita akan handle padding per elemen
+                padding: '0',
                 boxSizing: 'border-box',
                 fontFamily: '"Times New Roman", Times, serif',
                 lineHeight: '1.45',
@@ -95,25 +96,39 @@ const NaskahPrintTemplate = ({
                 color: '#111'
             }}
         >
-            {/* Header Naskah - Diproses Terpisah */}
+            {/* Header Naskah - Professional Standard */}
             <div id="print-header" style={{ padding: '18mm 16mm 10mm 16mm' }}>
-                <div className="text-center mb-6">
-                    <h1 className="text-[13pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
+                <div className="text-center mb-4">
+                    <h1 className="text-[14pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
                         {config.schoolName || "SEKOLAH LAKUKELAS"}
                     </h1>
-                    <h2 className="text-[12pt] font-bold uppercase leading-tight" style={{ borderBottom: '1.5pt solid black', paddingBottom: '4px', display: 'inline-block', width: '100%' }}>
+                    {config.schoolNpsn && (
+                        <p className="text-[9pt] font-medium" style={{ margin: 0 }}>NPSN: {config.schoolNpsn}</p>
+                    )}
+                    <p className="text-[9pt] italic" style={{ margin: '2px 0' }}>
+                        {config.schoolAddress || "Alamat belum diatur"}
+                    </p>
+                    <p className="text-[9pt] italic" style={{ margin: 0 }}>
+                        {config.schoolEmail ? `Email: ${config.schoolEmail}` : ''} 
+                        {config.schoolWebsite ? ` | Website: ${config.schoolWebsite}` : ''}
+                    </p>
+                    <div style={{ borderBottom: '2.5pt double black', marginTop: '6px', width: '100%' }} />
+                </div>
+
+                <div className="text-center mb-6">
+                    <h2 className="text-[12pt] font-bold uppercase underline" style={{ margin: 0 }}>
                         {config.examType || "PENILAIAN HARIAN"} TAHUN PELAJARAN 2024/2025
                     </h2>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '20px', paddingLeft: '20px', paddingRight: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '20px', paddingLeft: '10px', paddingRight: '10px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
                         <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{questions[0]?.subject || "-"}</span>
                         <span className="font-bold">Kelas/Semester</span><span>:</span><span>{questions[0]?.kelas || "-"} / Ganjil</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
                         <span className="font-bold">Hari dan Tanggal</span><span>:</span><span>{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</span>
-                        <span className="font-bold">Waktu</span><span>:</span><span>07.30 - 09.30 WIB</span>
+                        <span className="font-bold">Waktu</span><span>:</span><span>90 Menit</span>
                     </div>
                 </div>
 
@@ -123,7 +138,7 @@ const NaskahPrintTemplate = ({
                 </div>
             </div>
 
-            {/* Container Soal - Tiap soal akan di-render satu per satu */}
+            {/* Container Soal */}
             <div id="questions-list">
                 {questions.map((q, idx) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
@@ -165,7 +180,7 @@ const NaskahPrintTemplate = ({
                 })}
             </div>
 
-            <div id="print-footer" style={{ padding: '20mm 16mm', textAlign: 'center', fontSize: '9pt', italic: 'true', color: '#888' }}>
+            <div id="print-footer" style={{ padding: '20mm 16mm', textAlign: 'center', fontSize: '9pt', fontStyle: 'italic', color: '#888' }}>
                 <p>-- Selamat Mengerjakan --</p>
             </div>
         </div>
@@ -178,12 +193,14 @@ export default function BankSoalClient({
     initialQuestions,
     uniqueSubjects,
     uniqueClasses,
-    uniqueTopics
+    uniqueTopics,
+    schoolProfile
 }: { 
     initialQuestions: any[],
     uniqueSubjects: string[],
     uniqueClasses: string[],
-    uniqueTopics: string[]
+    uniqueTopics: string[],
+    schoolProfile: Profile | null
 }) {
     const { toast } = useToast();
     const router = useRouter();
@@ -201,7 +218,11 @@ export default function BankSoalClient({
     
     const [naskahConfig, setNaskahConfig] = React.useState({
         title: "",
-        schoolName: "",
+        schoolName: schoolProfile?.school_name || "",
+        schoolNpsn: schoolProfile?.npsn || "",
+        schoolAddress: schoolProfile?.school_address || "",
+        schoolEmail: schoolProfile?.school_email || "",
+        schoolWebsite: schoolProfile?.school_website || "",
         examType: "Penilaian Harian",
         format: "pdf" as "pdf" | "doc"
     });
@@ -246,10 +267,6 @@ export default function BankSoalClient({
         });
     };
 
-    /**
-     * Algoritma "Smart Slicing" V24.0
-     * Merender setiap elemen satu per satu ke PDF untuk mencegah pemotongan paksa di tengah baris.
-     */
     const generateHighQualityPdf = async (): Promise<string> => {
         const headerEl = document.getElementById('print-header');
         const footerEl = document.getElementById('print-footer');
@@ -260,11 +277,10 @@ export default function BankSoalClient({
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
-        const bottomMargin = 18; // Margin aman bawah dalam mm
+        const bottomMargin = 18;
         
         let currentY = 0;
 
-        // Fungsi helper render elemen ke PDF
         const renderElementToPdf = async (el: HTMLElement, yOffset: number) => {
             const canvas = await html2canvas(el, {
                 scale: 2,
@@ -276,25 +292,21 @@ export default function BankSoalClient({
             const imgProps = pdf.getImageProperties(imgData);
             const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
             
-            // Cek apakah elemen muat di halaman saat ini
             if (yOffset + imgHeight > pageHeight - bottomMargin) {
                 pdf.addPage();
-                yOffset = 18; // Mulai dari margin atas halaman baru (18mm)
+                yOffset = 18;
             }
             
             pdf.addImage(imgData, 'JPEG', 0, yOffset, pageWidth, imgHeight);
             return yOffset + imgHeight;
         };
 
-        // 1. Render Header
         currentY = await renderElementToPdf(headerEl as HTMLElement, 0);
 
-        // 2. Render Setiap Soal Satu per Satu (Smart Break)
         for (let i = 0; i < questionElements.length; i++) {
             currentY = await renderElementToPdf(questionElements[i] as HTMLElement, currentY);
         }
 
-        // 3. Render Footer (Penutup)
         if (footerEl) {
             await renderElementToPdf(footerEl as HTMLElement, currentY);
         }
@@ -323,7 +335,6 @@ export default function BankSoalClient({
 
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
-                // Beri waktu sejenak agar KaTeX selesai merender di DOM sebelum capture
                 await new Promise(r => setTimeout(r, 2000)); 
                 binaryPdf = await generateHighQualityPdf();
             }

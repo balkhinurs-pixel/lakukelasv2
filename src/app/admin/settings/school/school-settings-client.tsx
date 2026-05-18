@@ -1,3 +1,4 @@
+
 "use client"
 import * as React from "react";
 import {
@@ -15,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile } from "@/lib/types";
 import { updateSchoolData, uploadProfileImage } from "@/lib/actions/admin";
-import { Loader2, Building, Camera, MapPin, User, ShieldCheck } from "lucide-react";
+import { Loader2, Building, Camera, MapPin, User, ShieldCheck, Mail, Globe, Fingerprint } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +32,10 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
     
     const [schoolData, setSchoolData] = React.useState({
         schoolName: profile.school_name || '',
+        npsn: profile.npsn || '',
         schoolAddress: profile.school_address || '',
+        schoolEmail: profile.school_email || '',
+        schoolWebsite: profile.school_website || '',
         headmasterName: profile.headmaster_name || '',
         headmasterNip: profile.headmaster_nip || '',
     })
@@ -101,7 +105,7 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
     }
 
     return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto pb-20">
         <input 
             type="file" 
             ref={logoInputRef} 
@@ -115,8 +119,8 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
                 <Building className="h-6 w-6" />
             </div>
             <div>
-                <h1 className="text-3xl font-bold font-headline text-slate-900 tracking-tight">Data Sekolah</h1>
-                <p className="text-slate-500 mt-1">Konfigurasi informasi institusi untuk kop surat laporan.</p>
+                <h1 className="text-3xl font-bold font-headline text-slate-900 tracking-tight">Identitas Sekolah</h1>
+                <p className="text-slate-500 mt-1">Konfigurasi informasi institusi untuk profil dan kop surat resmi.</p>
             </div>
         </div>
         
@@ -151,26 +155,42 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
                         </div>
                         <div className="text-center md:text-left flex-1">
                             <CardTitle className="text-2xl font-bold">Logo Institusi</CardTitle>
-                            <CardDescription className="max-w-md mt-2">
-                                Logo ini akan tampil pada setiap laporan PDF yang diunduh (Leger, Presensi, Rapor). Disarankan gunakan gambar transparan berformat PNG.
+                            <CardDescription className="max-w-md mt-2 leading-relaxed">
+                                Logo ini akan tampil pada setiap laporan PDF yang diunduh. Disarankan gunakan gambar transparan berformat PNG ukuran kotak.
                             </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 
                 <CardContent className="space-y-8 p-8 pt-10">
-                    <div className="space-y-2">
-                        <Label htmlFor="schoolName" className="text-slate-700 font-semibold flex items-center gap-2">
-                            <Building className="h-4 w-4 text-slate-400" /> Nama Sekolah
-                        </Label>
-                        <Input 
-                            id="schoolName" 
-                            name="schoolName" 
-                            value={schoolData.schoolName} 
-                            onChange={handleSchoolDataChange} 
-                            placeholder="e.g. SMAN 1 Jakarta"
-                            className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10 rounded-xl"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="schoolName" className="text-slate-700 font-semibold flex items-center gap-2">
+                                <Building className="h-4 w-4 text-slate-400" /> Nama Sekolah
+                            </Label>
+                            <Input 
+                                id="schoolName" 
+                                name="schoolName" 
+                                value={schoolData.schoolName} 
+                                onChange={handleSchoolDataChange} 
+                                placeholder="e.g. SMAN 1 Jakarta"
+                                className="h-12 border-slate-200 focus:border-emerald-500 rounded-xl"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="npsn" className="text-slate-700 font-semibold flex items-center gap-2">
+                                <Fingerprint className="h-4 w-4 text-slate-400" /> NPSN
+                            </Label>
+                            <Input 
+                                id="npsn" 
+                                name="npsn" 
+                                value={schoolData.npsn} 
+                                onChange={handleSchoolDataChange} 
+                                placeholder="8 digit angka"
+                                className="h-12 border-slate-200 focus:border-emerald-500 rounded-xl"
+                            />
+                        </div>
                     </div>
                     
                     <div className="space-y-2">
@@ -182,12 +202,43 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
                             name="schoolAddress" 
                             value={schoolData.schoolAddress} 
                             onChange={handleSchoolDataChange} 
-                            placeholder="e.g. Jl. Merdeka No. 123, Jakarta Pusat"
-                            className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10 rounded-xl"
+                            placeholder="Jl. Merdeka No. 123, Jakarta Pusat"
+                            className="h-12 border-slate-200 focus:border-emerald-500 rounded-xl"
+                            required
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-2">
+                            <Label htmlFor="schoolEmail" className="text-slate-700 font-semibold flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-slate-400" /> Email Sekolah
+                            </Label>
+                            <Input 
+                                id="schoolEmail" 
+                                name="schoolEmail" 
+                                type="email"
+                                value={schoolData.schoolEmail} 
+                                onChange={handleSchoolDataChange} 
+                                placeholder="info@sman1jakarta.sch.id"
+                                className="h-12 border-slate-200 focus:border-emerald-500 rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="schoolWebsite" className="text-slate-700 font-semibold flex items-center gap-2">
+                                <Globe className="h-4 w-4 text-slate-400" /> Website
+                            </Label>
+                            <Input 
+                                id="schoolWebsite" 
+                                name="schoolWebsite" 
+                                value={schoolData.schoolWebsite} 
+                                onChange={handleSchoolDataChange} 
+                                placeholder="www.sman1jakarta.sch.id"
+                                className="h-12 border-slate-200 focus:border-emerald-500 rounded-xl"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-2">
                             <Label htmlFor="headmasterName" className="text-slate-700 font-semibold flex items-center gap-2">
                                 <User className="h-4 w-4 text-slate-400" /> Nama Kepala Sekolah
@@ -198,7 +249,7 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
                                 value={schoolData.headmasterName} 
                                 onChange={handleSchoolDataChange} 
                                 placeholder="Nama Beserta Gelar"
-                                className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10 rounded-xl"
+                                className="h-12 border-slate-200 focus:border-emerald-500 rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
@@ -211,7 +262,7 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
                                 value={schoolData.headmasterNip} 
                                 onChange={handleSchoolDataChange} 
                                 placeholder="1980XXXXXXXXX"
-                                className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10 rounded-xl"
+                                className="h-12 border-slate-200 focus:border-emerald-500 rounded-xl"
                             />
                         </div>
                     </div>
@@ -221,10 +272,10 @@ export default function SchoolSettingsClientPage({ profile }: { profile: Profile
                    <Button 
                     type="submit" 
                     disabled={loading}
-                    className="w-full sm:w-auto h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-200"
+                    className="w-full sm:w-auto h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-200 font-bold"
                    >
                         {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                        Simpan Seluruh Data Sekolah
+                        Simpan Identitas Sekolah
                    </Button>
                 </CardFooter>
             </form>

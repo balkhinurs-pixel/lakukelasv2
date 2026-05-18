@@ -1,5 +1,6 @@
 
 import { createClient } from "@/lib/supabase/server";
+import { getAdminProfile } from "@/lib/data";
 import BankSoalClient from "./bank-soal-client";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
@@ -9,14 +10,17 @@ export default async function BankSoalPage() {
 
     if (!user) return <div>Akses ditolak.</div>;
 
-    // Ambil data soal milik guru tersebut
-    const { data: questions } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('created_by', user.id)
-        .order('created_at', { ascending: false });
+    // Ambil data soal milik guru tersebut dan profil sekolah untuk Kop Surat
+    const [questionsRes, schoolProfile] = await Promise.all([
+        supabase
+            .from('questions')
+            .select('*')
+            .eq('created_by', user.id)
+            .order('created_at', { ascending: false }),
+        getAdminProfile()
+    ]);
 
-    const qList = questions || [];
+    const qList = questionsRes.data || [];
 
     // --- Helper Normalisasi untuk Filter ---
     const getUniqueNormalized = (arr: string[]) => {
@@ -26,7 +30,6 @@ export default async function BankSoalPage() {
             const trimmed = val.trim();
             const lower = trimmed.toLowerCase();
             if (!uniqueMap.has(lower)) {
-                // Simpan versi "cantik" (huruf depan kapital) untuk tampilan UI
                 const pretty = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
                 uniqueMap.set(lower, pretty);
             }
@@ -36,8 +39,6 @@ export default async function BankSoalPage() {
 
     const subjects = getUniqueNormalized(qList.map(q => q.subject));
     const topics = getUniqueNormalized(qList.map(q => q.topic));
-    
-    // Kelas biasanya angka, kita urutkan secara numerik
     const classes = Array.from(new Set(qList.map(q => q.kelas))).sort((a,b) => Number(a) - Number(b));
 
     return (
@@ -53,6 +54,7 @@ export default async function BankSoalPage() {
                 uniqueSubjects={subjects}
                 uniqueClasses={classes}
                 uniqueTopics={topics}
+                schoolProfile={schoolProfile}
             />
         </div>
     );
