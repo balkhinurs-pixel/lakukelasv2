@@ -49,6 +49,30 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+/**
+ * Komponen pembantu untuk merender teks yang bercampur dengan LaTeX
+ */
+const MathText = ({ content, className }: { content: string, className?: string }) => {
+  if (!content) return null;
+
+  // Regex untuk memisahkan teks biasa dengan blok LaTeX \( ... \) atau \[ ... \]
+  const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+
+  return (
+    <div className={cn("math-text-render", className)}>
+      {parts.map((part, i) => {
+        if (part.startsWith('\\[')) {
+          return <BlockMath key={i} math={part.slice(2, -2)} />;
+        }
+        if (part.startsWith('\\(')) {
+          return <InlineMath key={i} math={part.slice(2, -2)} />;
+        }
+        return <span key={i} className="whitespace-pre-wrap">{part}</span>;
+      })}
+    </div>
+  );
+};
+
 export default function GenerateSoalClient({ 
     classes, 
     subjects 
@@ -449,17 +473,7 @@ export default function GenerateSoalClient({
                                             )}
 
                                             <div className="text-slate-800 font-bold text-lg sm:text-xl leading-relaxed">
-                                                {q.question.includes('\\(') || q.question.includes('\\[') ? (
-                                                    <div className="math-container">
-                                                        {q.question.split(/(\\\[.*?\\\]|\\\(.*?\\\))/g).map((part, i) => {
-                                                            if (part.startsWith('\\[')) return <BlockMath key={i} math={part.slice(2, -2)} />;
-                                                            if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
-                                                            return <span key={i}>{part}</span>;
-                                                        })}
-                                                    </div>
-                                                ) : (
-                                                    <p className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>{q.question}</p>
-                                                )}
+                                                <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
                                             </div>
 
                                             {/* Button Generate Gambar (Jika ada prompt tapi belum ada URL) */}
@@ -506,12 +520,12 @@ export default function GenerateSoalClient({
                                                                 "w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shadow-sm shrink-0",
                                                                 q.answer === key ? "bg-emerald-500 text-white" : "bg-white text-slate-400 border border-slate-100 group-hover:border-indigo-200 group-hover:text-indigo-600"
                                                             )}>{key}</span>
-                                                            <span className={cn(
+                                                            <div className={cn(
                                                                 "text-sm sm:text-base font-semibold",
                                                                 q.answer === key ? "text-emerald-800" : "text-slate-600"
                                                             )}>
-                                                                {val.includes('\\(') ? <InlineMath math={val.replace(/\\\(|\\\)/g, '')} /> : val}
-                                                            </span>
+                                                                <MathText content={val} />
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -532,7 +546,9 @@ export default function GenerateSoalClient({
                                                     <div className="flex items-center gap-2 mb-3">
                                                         <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 text-[9px] font-black uppercase tracking-widest px-2 py-0.5">Pembahasan</Badge>
                                                     </div>
-                                                    <p className="text-sm text-slate-600 font-medium leading-relaxed italic relative z-10">{q.explanation}</p>
+                                                    <div className="text-sm text-slate-600 font-medium leading-relaxed italic relative z-10">
+                                                        <MathText content={q.explanation} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -580,6 +596,11 @@ export default function GenerateSoalClient({
                     border-radius: 10px;
                 }
                 .math-container .katex-display {
+                    margin: 0.5em 0;
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                }
+                .math-text-render .katex-display {
                     margin: 0.5em 0;
                     overflow-x: auto;
                     overflow-y: hidden;
