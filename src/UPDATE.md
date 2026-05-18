@@ -1,27 +1,25 @@
 
 # Log Pembaruan LakuKelas
 
-## V21.0: Master Blueprint Ultimate (Final Gold) - SELESAI
-Konsolidasi total seluruh skema database ke dalam satu file `schema.sql` untuk memudahkan instalasi bersih dan sinkronisasi fitur.
+## V21.0: Master Blueprint Ultimate (Restored & Complete) - SELESAI
+Restorasi total seluruh skema database ke dalam satu file `schema.sql` V21.0. Menghilangkan ketergantungan pada file-file fix lainnya dan memastikan semua fitur (Guru, Wali Kelas, Kepala Sekolah, Admin, AI, Drive) memiliki fondasi data yang lengkap.
 
-### 1. Struktur Database
-- **Tabel Profiles**: Mendukung penyimpanan `gemini_api_key` dan metadata sekolah dalam satu tempat.
-- **Tabel AI & Drive**: Integrasi `questions` (Bank Soal), `google_drive_integrations`, dan `ai_documents` siap pakai.
-- **Tabel Holidays**: Sistem libur nasional dan sekolah untuk otomasi absensi guru.
-- **Tabel Settings**: Konfigurasi global (Year ID, WA Token, Koordinat GPS).
+### 1. Perbaikan Kritis & Restorasi
+- **Struktur Tabel**: Mengembalikan seluruh 18+ tabel inti tanpa ada yang tertinggal.
+- **Relasi Foreign Key**: Memastikan `profiles(id)` terhubung langsung ke `auth.users(id)` untuk stabilitas login & Middleware.
+- **Fungsi RLS Cerdas**: Restorasi fungsi `is_homeroom_teacher` agar Wali Kelas bisa melihat leger siswa secara otomatis.
+- **Monitoring Global**: Memulihkan hak akses Kepala Sekolah (`headmaster`) untuk melihat aktivitas dan absensi seluruh staf.
 
-### 2. Logika RLS & Keamanan (Lengkap)
-- **Admin**: Akses `ALL` tanpa syarat ke tabel master (`school_years`, `classes`, `students`, dll).
-- **Kepala Sekolah**: Akses `SELECT` global ke seluruh aktivitas guru untuk monitoring.
-- **Wali Kelas**: Akses `SELECT` cerdas ke nilai dan absen siswa di kelas perwaliannya (mendukung Leger lintas Mapel).
-- **Guru**: Akses penuh ke data miliknya sendiri.
+### 2. Fitur AI & Cloud (Finalized)
+- **Bank Soal AI**: Tabel `questions` lengkap dengan dukungan LaTeX, status review, dan media AI.
+- **Integrasi Google Drive**: Infrastruktur tabel `google_drive_integrations` dan `ai_documents` siap pakai.
 
 ### 3. Otomasi & Fail-Safe
-- **Auto-Admin**: Trigger `handle_new_user` menjamin pendaftar pertama pada database kosong menjadi Admin aktif.
-- **Explicit Grants**: Perintah `GRANT ALL` menyeluruh untuk mencegah error "permission denied" pada Vercel Middleware.
-- **Rich Views**: View `attendance_history` dan `grades_history` untuk performa tampilan tabel yang cepat.
+- **Auto-Admin Trigger**: Menjamin pendaftar pertama pada database kosong menjadi Admin aktif dengan izin penuh.
+- **Explicit PostgreSQL Grants**: Menambahkan perintah `GRANT ALL` menyeluruh untuk mencegah error "permission denied" pada Vercel Middleware yang sering muncul di proyek baru.
+- **Semester Logic**: Semua data transaksional (nilai, absen, jurnal) kini terikat pada `school_year_id` aktif.
 
-### 4. Instruksi Instalasi
-1. Hapus seluruh tabel di database Supabase (Project Settings > General > Reset Database atau hapus manual di SQL Editor).
+### 4. Instruksi Instalasi Bersih
+1. Hapus seluruh tabel di database Supabase melalui SQL Editor: `DROP TABLE IF EXISTS ... CASCADE;` (atau Reset Database di Settings).
 2. Jalankan `schema.sql` V21.0.
-3. Login sebagai user pertama untuk mendapatkan hak Admin secara otomatis.
+3. Login sebagai user pertama untuk mendapatkan hak Admin otomatis.
