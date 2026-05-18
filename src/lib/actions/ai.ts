@@ -35,6 +35,7 @@ export async function generateQuestionsAction(input: QuestionGenerationInput) {
 
 /**
  * Server Action untuk generate gambar ilustrasi berdasarkan prompt AI.
+ * Menggunakan model Imagen 4.0 Fast.
  */
 export async function generateQuestionImageAction(prompt: string) {
     try {
@@ -45,7 +46,20 @@ export async function generateQuestionImageAction(prompt: string) {
         return { success: true, url: media.url };
     } catch (error: any) {
         console.error("Image Generation Error:", error);
-        return { success: false, error: "Gagal menghasilkan gambar ilustrasi." };
+        
+        // Memberikan pesan error yang lebih manusiawi berdasarkan respon API
+        let errorMessage = "Gagal menghasilkan gambar ilustrasi.";
+        
+        const errorStr = String(error).toLowerCase();
+        if (errorStr.includes('quota') || errorStr.includes('429') || errorStr.includes('limit')) {
+            errorMessage = "Kuota gambar harian di API Key Anda telah habis. Silakan coba lagi besok.";
+        } else if (errorStr.includes('not found') || errorStr.includes('permission') || errorStr.includes('403')) {
+            errorMessage = "Model Imagen 4 belum diaktifkan atau tidak tersedia untuk API Key Anda.";
+        } else if (errorStr.includes('safety')) {
+            errorMessage = "Gambar tidak dapat dibuat karena terdeteksi melanggar kebijakan keamanan konten Google.";
+        }
+
+        return { success: false, error: errorMessage };
     }
 }
 
