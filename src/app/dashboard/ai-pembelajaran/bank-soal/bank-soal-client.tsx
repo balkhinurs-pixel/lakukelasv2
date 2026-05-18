@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -43,6 +42,7 @@ import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
+import { useRouter } from "next/navigation";
 
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
@@ -72,6 +72,7 @@ export default function BankSoalClient({
     uniqueTopics: string[]
 }) {
     const { toast } = useToast();
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = React.useState("");
     const [filterClass, setFilterClass] = React.useState("all");
     const [filterSubject, setFilterSubject] = React.useState("all");
@@ -180,10 +181,11 @@ export default function BankSoalClient({
                 setNaskahConfig(prev => ({ ...prev, title: "" }));
                 router.refresh();
             } else {
-                toast({ title: "Gagal", description: result.error, variant: "destructive" });
+                toast({ title: "Gagal Membuat Naskah", description: result.error || "Gagal memproses permintaan.", variant: "destructive" });
             }
-        } catch (e) {
-            toast({ title: "Error", description: "Terjadi kesalahan sistem.", variant: "destructive" });
+        } catch (e: any) {
+            console.error(e);
+            toast({ title: "Kesalahan Sistem", description: e.message || "Terjadi kesalahan saat menghubungi server.", variant: "destructive" });
         } finally {
             setExporting(false);
         }
