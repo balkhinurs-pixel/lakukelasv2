@@ -1,24 +1,21 @@
 
 # Log Pembaruan LakuKelas
 
-## V19.6: Integrasi AI & Google Drive (Blueprint Ultimate) - SELESAI
-Penggabungan seluruh fitur inti dengan infrastruktur AI dan Cloud Storage.
+## V19.7: Master Blueprint Database (Ultimate) - SELESAI
+Restrukturisasi total infrastruktur database untuk mendukung instalasi bersih dan fitur Admin otomatis.
 
-### 1. Perubahan SQL
-- **Tabel `questions`**: Menampung data Bank Soal AI lengkap dengan metadata kurikulum, tingkat kesulitan, rumus LaTeX, dan link ilustrasi AI.
-- **Tabel `google_drive_integrations`**: Menyimpan status koneksi OAuth Google Drive dan Folder ID aplikasi per guru.
-- **Tabel `ai_documents`**: Mencatat riwayat dokumen (RPP/Soal) yang telah diekspor ke Google Drive.
-- **RLS AI**: Memastikan soal dan dokumen bersifat pribadi (hanya guru pembuat yang bisa melihat), namun Admin/Kepala Sekolah memiliki izin `SELECT` untuk keperluan monitoring kualitas.
-- **Fix Gemini Key**: Menambahkan kolom `gemini_api_key` langsung di tabel `profiles` untuk memudahkan akses fitur AI Mandiri.
-- **Auto-Admin Fix**: Memperbaiki fungsi `handle_new_user` agar pendaftar pertama pada database kosong otomatis menjadi `admin` dan berstatus `is_activated = true`.
-- **Explicit Grants**: Menambahkan perintah `GRANT` untuk memastikan tidak ada error "permission denied" pada proyek baru.
+### 1. Perubahan SQL & Keamanan
+- **Auto-Admin Logic**: Pendaftar pertama pada database kosong kini 100% dijamin menjadi `admin` dan berstatus `is_activated = true`.
+- **Global Admin Privileges**: Admin sekarang memiliki izin `ALL` pada seluruh tabel master (`school_years`, `classes`, `subjects`, `students`) tanpa terhalang `teacher_id`.
+- **Monitoring Read-Only**: Kepala Sekolah (`headmaster`) diberikan hak akses `SELECT` pada seluruh data guru untuk pemantauan.
+- **Wali Kelas Integration**: Izin akses khusus ditambahkan agar Wali Kelas dapat melihat Leger (nilai/absen) siswanya meskipun data diinput oleh guru lain.
+- **Explicit Grants**: Menambahkan perintah `GRANT ALL` di akhir skrip untuk memastikan Middleware Vercel tidak mengalami error "permission denied".
+- **AI & Cloud Foundations**: Tabel `questions` dan `google_drive_integrations` diintegrasikan secara resmi.
+
+### 2. Alur Pengguna Baru
+- Login Google -> Deteksi Database Kosong -> User 1 Jadi Admin.
+- Login Google -> Database Sudah Ada Isinya -> User Berikutnya Jadi Guru (Pending Approval).
+- Admin masuk ke `/admin/users` untuk menyetujui Guru.
 
 ## V19.5: Perbaikan RLS Master Data & Izin Admin - SELESAI
 Mengatasi error "new row violates row-level security policy" saat Admin melakukan konfigurasi sistem.
-
-### 1. Perubahan SQL (Kritikal)
-- **Global Admin Access**: Memperbarui RLS pada tabel `school_years`, `classes`, `subjects`, `students`, `holidays`, dan `settings`. Sekarang, pengguna dengan role `admin` memiliki hak akses penuh (`ALL`) tanpa terikat pada kolom `teacher_id`.
-- **Inherited Privileges**: Memastikan `headmaster` tetap memiliki hak `SELECT` pada seluruh data monitoring.
-
-## V19.4: Finalisasi Blueprint Database & Akses Monitoring - SELESAI
-Penyempurnaan total skema SQL untuk mendukung seluruh skenario peran pengguna dan manajemen sekolah.

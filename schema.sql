@@ -1,80 +1,75 @@
 -- ==========================================
--- LAKUKELAS DATABASE BLUEPRINT V19.6 (ULTIMATE)
+-- LAKUKELAS MASTER BLUEPRINT V19.7 (ULTIMATE)
 -- ==========================================
+-- Skrip ini membangun seluruh infrastruktur database.
+-- Jalankan di SQL Editor Supabase.
 
--- 0. CLEANUP (Opsional: Aktifkan jika ingin reset total)
--- drop view if exists public.journal_entries_with_names;
--- drop view if exists public.attendance_history;
--- drop view if exists public.grades_history;
--- drop view if exists public.student_notes_with_teacher;
-
--- 1. EXTENSIONS
+-- 1. EKSTENSI & CLEANUP
 create extension if not exists "uuid-ossp";
 
--- 2. ENUMS
-do $$ begin
-    create type public.user_role as enum ('admin', 'teacher', 'headmaster');
-exception when duplicate_object then null; end $$;
+-- Hapus objek lama untuk menghindari konflik
+drop view if exists public.student_notes_with_teacher cascade;
+drop view if exists public.journal_entries_with_names cascade;
+drop view if exists public.attendance_history cascade;
+drop view if exists public.grades_history cascade;
 
-do $$ begin
-    create type public.attendance_status as enum ('Hadir', 'Sakit', 'Izin', 'Alpha');
-exception when duplicate_object then null; end $$;
-
--- 3. CORE TABLES
-create table if not exists public.profiles (
+-- 2. TABEL UTAMA (PROFIL & AUTH)
+create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  full_name text default 'User LakuKelas',
+  full_name text,
   avatar_url text,
   nip text,
   pangkat text,
   jabatan text,
   phone_number text,
-  school_name text,
-  school_address text,
-  headmaster_name text,
-  headmaster_nip text,
-  school_logo_url text,
-  role public.user_role default 'teacher',
+  role text check (role in ('admin', 'teacher', 'headmaster')) default 'teacher',
   is_activated boolean default false,
   is_homeroom_teacher boolean default false,
+  school_name text,
+  school_address text,
+  school_logo_url text,
+  headmaster_name text,
+  headmaster_nip text,
   gemini_api_key text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table if not exists public.school_years (
-  id uuid primary key default gen_random_uuid(),
-  name text not null, -- e.g. 2024/2025 - Ganjil
-  is_active boolean default false,
-  teacher_id uuid references public.profiles(id),
   created_at timestamptz default now()
 );
 
-create table if not exists public.classes (
+-- 3. TABEL MASTER DATA
+create table public.school_years (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  teacher_id uuid references public.profiles(id),
+  is_active boolean default false,
+  created_at timestamptz default now()
+);
+
+create table public.classes (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   teacher_id uuid references public.profiles(id), -- Wali Kelas
   created_at timestamptz default now()
 );
 
-create table if not exists public.subjects (
+create table public.subjects (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  kkm integer default 75,
+  kkm int default 75,
+  teacher_id uuid references public.profiles(id),
   created_at timestamptz default now()
 );
 
-create table if not exists public.students (
+create table public.students (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   nis text unique not null,
   gender text check (gender in ('Laki-laki', 'Perempuan')),
   class_id uuid references public.classes(id) on delete set null,
-  status text default 'active' check (status in ('active', 'graduated', 'dropout', 'inactive')),
+  status text check (status in ('active', 'graduated', 'dropout', 'inactive')) default 'active',
+  avatar_url text,
   created_at timestamptz default now()
 );
 
-create table if not exists public.schedule (
+create table public.schedule (
   id uuid primary key default gen_random_uuid(),
   day text not null,
   start_time time not null,
@@ -85,41 +80,53 @@ create table if not exists public.schedule (
   created_at timestamptz default now()
 );
 
--- 4. TRANSACTIONAL TABLES
-create table if not exists public.attendance_records (
+-- 4. TABEL TRANSAKSIONAL (ABSENSI, NILAI, JURNAL)
+create table public.teacher_attendance (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid references public.profiles(id) on delete cascade,
+  date date not null default current_date,
+  check_in time,
+  check_out time,
+  status text,
+  reason text,
+  created_at timestamptz default now(),
+  unique(teacher_id, date)
+);
+
+create table public.attendance_records (
   id uuid primary key default gen_random_uuid(),
   student_id uuid references public.students(id) on delete cascade,
-  subject_id uuid references public.subjects(id),
-  class_id uuid references public.classes(id),
-  teacher_id uuid references public.profiles(id),
-  school_year_id uuid references public.school_years(id),
+  class_id uuid references public.classes(id) on delete cascade,
+  subject_id uuid references public.subjects(id) on delete cascade,
+  teacher_id uuid references public.profiles(id) on delete cascade,
+  school_year_id uuid references public.school_years(id) on delete cascade,
   date date not null,
-  meeting_number integer,
-  status public.attendance_status not null,
+  meeting_number int not null,
+  status text check (status in ('Hadir', 'Sakit', 'Izin', 'Alpha')) not null,
   created_at timestamptz default now()
 );
 
-create table if not exists public.grade_records (
+create table public.grade_records (
   id uuid primary key default gen_random_uuid(),
   student_id uuid references public.students(id) on delete cascade,
-  subject_id uuid references public.subjects(id),
-  class_id uuid references public.classes(id),
-  teacher_id uuid references public.profiles(id),
-  school_year_id uuid references public.school_years(id),
+  class_id uuid references public.classes(id) on delete cascade,
+  subject_id uuid references public.subjects(id) on delete cascade,
+  teacher_id uuid references public.profiles(id) on delete cascade,
+  school_year_id uuid references public.school_years(id) on delete cascade,
   date date not null,
   assessment_type text not null,
   score numeric(5,2) not null,
   created_at timestamptz default now()
 );
 
-create table if not exists public.journal_entries (
+create table public.journal_entries (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid references public.profiles(id) on delete cascade,
-  class_id uuid references public.classes(id),
-  subject_id uuid references public.subjects(id),
-  school_year_id uuid references public.school_years(id),
-  date timestamptz default now(),
-  meeting_number integer,
+  class_id uuid references public.classes(id) on delete cascade,
+  subject_id uuid references public.subjects(id) on delete cascade,
+  school_year_id uuid references public.school_years(id) on delete cascade,
+  date timestamptz not null default now(),
+  meeting_number int,
   learning_objectives text not null,
   learning_activities text not null,
   assessment text,
@@ -127,7 +134,8 @@ create table if not exists public.journal_entries (
   created_at timestamptz default now()
 );
 
-create table if not exists public.agendas (
+-- 5. FITUR PRODUKTIVITAS & SISTEM
+create table public.agendas (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid references public.profiles(id) on delete cascade,
   date date not null,
@@ -140,65 +148,84 @@ create table if not exists public.agendas (
   created_at timestamptz default now()
 );
 
-create table if not exists public.materials (
+create table public.materials (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid references public.profiles(id) on delete cascade,
-  class_id uuid references public.classes(id),
-  subject_id uuid references public.subjects(id),
+  class_id uuid references public.classes(id) on delete cascade,
+  subject_id uuid references public.subjects(id) on delete cascade,
   title text not null,
   description text,
   link_url text not null,
   created_at timestamptz default now()
 );
 
-create table if not exists public.student_notes (
+create table public.student_notes (
   id uuid primary key default gen_random_uuid(),
   student_id uuid references public.students(id) on delete cascade,
-  teacher_id uuid references public.profiles(id),
-  note text not null,
-  type text default 'neutral', -- positive, improvement, neutral
-  date timestamptz default now()
-);
-
-create table if not exists public.teacher_attendance (
-  id uuid primary key default gen_random_uuid(),
   teacher_id uuid references public.profiles(id) on delete cascade,
-  date date not null,
-  check_in time,
-  check_out time,
-  status text not null, -- Tepat Waktu, Terlambat, Sakit, Izin, Tidak Hadir
-  reason text,
-  created_at timestamptz default now(),
-  unique(teacher_id, date)
-);
-
-create table if not exists public.holidays (
-  id uuid primary key default gen_random_uuid(),
-  date date unique not null,
-  description text not null,
-  type text default 'national', -- national, school
+  note text not null,
+  type text check (type in ('positive', 'improvement', 'neutral')) default 'neutral',
+  date timestamptz default now(),
   created_at timestamptz default now()
 );
 
-create table if not exists public.settings (
+create table public.holidays (
+  id uuid primary key default gen_random_uuid(),
+  date date unique not null,
+  description text not null,
+  type text check (type in ('national', 'school')) default 'school',
+  created_at timestamptz default now()
+);
+
+create table public.settings (
   key text primary key,
   value text,
   updated_at timestamptz default now()
 );
 
-create table if not exists public.activation_tokens (
-    id uuid primary key default gen_random_uuid(),
-    token text unique not null,
-    created_at timestamptz default now(),
-    used_by uuid references public.profiles(id),
-    used_at timestamptz
+create table public.activation_tokens (
+  id uuid primary key default gen_random_uuid(),
+  token text unique not null,
+  used_by uuid references public.profiles(id),
+  used_at timestamptz,
+  created_at timestamptz default now()
 );
 
--- 5. AI & INTEGRATION TABLES (V19.6 NEW)
-create table if not exists public.google_drive_integrations (
+-- 6. FITUR AI & GOOGLE DRIVE
+create table public.questions (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid, -- Reserved for future multi-school
+  created_by uuid references public.profiles(id) on delete cascade,
+  generation_group_id uuid,
+  jenjang text not null,
+  kelas text not null,
+  semester text,
+  subject text not null,
+  curriculum text,
+  assessment_purpose text,
+  topic text not null,
+  subtopic text,
+  sort_order int not null,
+  question_type text not null,
+  question_text text not null,
+  options_json jsonb,
+  correct_answer text,
+  explanation text,
+  difficulty text,
+  cognitive_level text,
+  language_direction text default 'ltr',
+  image_url text,
+  needs_review boolean default true,
+  status text default 'draft',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table public.google_drive_integrations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   provider text not null default 'google',
+  drive_email text,
   folder_id text,
   folder_url text,
   folder_name text default 'LakuKelas AI',
@@ -210,48 +237,25 @@ create table if not exists public.google_drive_integrations (
   unique(user_id)
 );
 
-create table if not exists public.ai_documents (
+create table public.ai_documents (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   document_type text not null,
   title text not null,
+  subject text,
+  class_level text,
+  semester text,
   drive_file_id text,
   drive_file_url text,
   drive_folder_id text,
+  mime_type text,
+  is_public boolean default false,
   status text default 'created',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
-create table if not exists public.questions (
-  id uuid primary key default gen_random_uuid(),
-  created_by uuid not null references public.profiles(id),
-  generation_group_id uuid,
-  jenjang text not null,
-  kelas text not null,
-  semester text,
-  subject text not null,
-  curriculum text,
-  assessment_purpose text,
-  topic text not null,
-  subtopic text,
-  sort_order integer not null,
-  question_type text not null, -- multiple_choice, essay
-  question_text text not null,
-  options_json jsonb, -- { "A": "...", "B": "..." }
-  correct_answer text,
-  explanation text,
-  difficulty text,
-  cognitive_level text,
-  language_direction text default 'ltr',
-  image_url text,
-  status text default 'draft',
-  needs_review boolean default true,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
--- 6. VIEWS
+-- 7. VIEW (DATA GABUNGAN)
 create or replace view public.journal_entries_with_names as
 select 
   j.*,
@@ -290,81 +294,12 @@ join public.profiles p on g.teacher_id = p.id;
 
 create or replace view public.student_notes_with_teacher as
 select 
-  n.*,
+  sn.*,
   p.full_name as teacher_name
-from public.student_notes n
-join public.profiles p on n.teacher_id = p.id;
+from public.student_notes sn
+join public.profiles p on sn.teacher_id = p.id;
 
--- 7. FUNCTIONS (RPC)
-create or replace function public.current_user_role()
-returns text
-language sql security definer set search_path = public
-as $$
-  select role::text from public.profiles where id = auth.uid();
-$$;
-
-create or replace function public.get_teacher_activity_counts()
-returns table (
-  id uuid,
-  attendance_count bigint,
-  grades_count bigint,
-  journal_count bigint,
-  classes_handled_count bigint
-) language sql security definer set search_path = public
-as $$
-  select 
-    p.id,
-    (select count(distinct date::text || class_id::text || subject_id::text || meeting_number::text) from public.attendance_records where teacher_id = p.id) as attendance_count,
-    (select count(distinct date::text || class_id::text || subject_id::text || assessment_type) from public.grade_records where teacher_id = p.id) as grades_count,
-    (select count(*) from public.journal_entries where teacher_id = p.id) as journal_count,
-    (select count(distinct class_id) from public.schedule where teacher_id = p.id) as classes_handled_count
-  from public.profiles p
-  where p.is_activated = true;
-$$;
-
-create or replace function public.get_teacher_attendance_summary(p_date date)
-returns table (
-  total_expected bigint,
-  total_present bigint,
-  total_late bigint,
-  total_absent bigint,
-  attendance_rate numeric
-) language plpgsql security definer set search_path = public
-as $$
-declare
-  v_policy text;
-  v_expected_ids uuid[];
-begin
-  select value into v_policy from public.settings where key = 'attendance_policy';
-  v_policy := coalesce(v_policy, 'schedule_based');
-
-  if v_policy = 'daily_based' then
-    select array_agg(id) into v_expected_ids from public.profiles where role in ('teacher', 'headmaster') and is_activated = true;
-  else
-    select array_agg(distinct teacher_id) into v_expected_ids from public.schedule where day = (
-      case extract(dow from p_date)
-        when 0 then 'Minggu' when 1 then 'Senin' when 2 then 'Selasa' when 3 then 'Rabu'
-        when 4 then 'Kamis' when 5 then 'Jumat' when 6 then 'Sabtu'
-      end
-    );
-  end if;
-
-  return query
-  select 
-    cardinality(v_expected_ids)::bigint as total_expected,
-    count(id) filter (where status in ('Tepat Waktu', 'Terlambat')) as total_present,
-    count(id) filter (where status = 'Terlambat') as total_late,
-    (cardinality(v_expected_ids) - count(id) filter (where status in ('Tepat Waktu', 'Terlambat', 'Sakit', 'Izin')))::bigint as total_absent,
-    case when cardinality(v_expected_ids) > 0 
-      then round((count(id) filter (where status in ('Tepat Waktu', 'Terlambat'))::numeric / cardinality(v_expected_ids)) * 100, 1)
-      else 100::numeric
-    end as attendance_rate
-  from public.teacher_attendance
-  where date = p_date and teacher_id = any(v_expected_ids);
-end;
-$$;
-
--- 8. AUTO ADMIN TRIGGER (V19.6)
+-- 8. FUNGSI & TRIGGER (AUTO ADMIN)
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -373,16 +308,31 @@ as $$
 declare
   is_first_user boolean;
 begin
+  -- Cek apakah ini user pertama kali di tabel profiles
   select not exists (select 1 from public.profiles) into is_first_user;
 
-  insert into public.profiles (id, full_name, avatar_url, role, is_activated)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', 'User LakuKelas'),
-    new.raw_user_meta_data->>'avatar_url',
-    case when is_first_user then 'admin'::public.user_role else 'teacher'::public.user_role end,
-    is_first_user -- Auto-activate if first user (admin)
-  );
+  if is_first_user then
+    -- Pendaftar pertama otomatis jadi Admin aktif
+    insert into public.profiles (id, full_name, avatar_url, role, is_activated)
+    values (
+      new.id,
+      coalesce(new.raw_user_meta_data->>'full_name', 'Administrator LakuKelas'),
+      new.raw_user_meta_data->>'avatar_url',
+      'admin',
+      true
+    );
+  else
+    -- Pendaftar selanjutnya jadi Guru pending
+    insert into public.profiles (id, full_name, avatar_url, role, is_activated)
+    values (
+      new.id,
+      coalesce(new.raw_user_meta_data->>'full_name', 'User LakuKelas'),
+      new.raw_user_meta_data->>'avatar_url',
+      'teacher',
+      false
+    );
+  end if;
+  
   return new;
 end;
 $$;
@@ -392,97 +342,124 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- 9. RLS POLICIES
+-- 9. FUNGSI ANALITIK (MONITORING)
+create or replace function public.get_teacher_activity_counts()
+returns table (
+    teacher_id uuid,
+    attendance_count bigint,
+    grades_count bigint,
+    journal_count bigint,
+    classes_handled_count bigint
+) language sql security definer as $$
+    select 
+        p.id as teacher_id,
+        (select count(distinct date::text || class_id::text || subject_id::text || meeting_number::text) from public.attendance_records where teacher_id = p.id) as attendance_count,
+        (select count(distinct date::text || class_id::text || subject_id::text || assessment_type) from public.grade_records where teacher_id = p.id) as grades_count,
+        (select count(*) from public.journal_entries where teacher_id = p.id) as journal_count,
+        (select count(distinct class_id) from public.schedule where teacher_id = p.id) as classes_handled_count
+    from public.profiles p
+    where p.is_activated = true;
+$$;
+
+create or replace function public.get_teacher_attendance_summary(p_date date)
+returns table (
+    total_expected bigint,
+    total_present bigint,
+    total_late bigint,
+    total_absent bigint,
+    attendance_rate numeric
+) language plpgsql security definer as $$
+declare
+    v_policy text;
+    v_expected_count bigint;
+    v_present_count bigint;
+    v_late_count bigint;
+    v_absent_count bigint;
+begin
+    -- 1. Ambil kebijakan absensi
+    select value into v_policy from public.settings where key = 'attendance_policy';
+    v_policy := coalesce(v_policy, 'schedule_based');
+
+    -- 2. Tentukan jumlah guru yang WAJIB hadir hari ini
+    if v_policy = 'daily_based' then
+        select count(*) into v_expected_count from public.profiles where role in ('teacher', 'headmaster') and is_activated = true;
+    else
+        select count(distinct teacher_id) into v_expected_count from public.schedule where day = (
+            select case extract(dow from p_date)
+                when 0 then 'Minggu' when 1 then 'Senin' when 2 then 'Selasa' when 3 then 'Rabu'
+                when 4 then 'Kamis' when 5 then 'Jumat' when 6 then 'Sabtu'
+            end
+        );
+    end if;
+
+    -- 3. Hitung yang sudah absen
+    select count(*) into v_present_count from public.teacher_attendance where date = p_date and check_in is not null;
+    select count(*) into v_late_count from public.teacher_attendance where date = p_date and status = 'Terlambat';
+    
+    v_absent_count := v_expected_count - v_present_count;
+    if v_absent_count < 0 then v_absent_count := 0; end if;
+
+    return query select 
+        v_expected_count, 
+        v_present_count, 
+        v_late_count, 
+        v_absent_count,
+        case when v_expected_count = 0 then 100.0 else round((v_present_count::numeric / v_expected_count::numeric) * 100, 2) end;
+end;
+$$;
+
+-- 10. KEAMANAN (RLS)
 alter table public.profiles enable row level security;
-create policy "public_read_profiles" on public.profiles for select using (true);
-create policy "admin_all_profiles" on public.profiles for all using (public.current_user_role() = 'admin');
-create policy "self_update_profiles" on public.profiles for update using (auth.uid() = id);
-
 alter table public.school_years enable row level security;
-create policy "anyone_read_school_years" on public.school_years for select using (true);
-create policy "admin_all_school_years" on public.school_years for all using (public.current_user_role() = 'admin');
-
 alter table public.classes enable row level security;
-create policy "anyone_read_classes" on public.classes for select using (true);
-create policy "admin_all_classes" on public.classes for all using (public.current_user_role() = 'admin');
-
 alter table public.subjects enable row level security;
-create policy "anyone_read_subjects" on public.subjects for select using (true);
-create policy "admin_all_subjects" on public.subjects for all using (public.current_user_role() = 'admin');
-
 alter table public.students enable row level security;
-create policy "anyone_read_students" on public.students for select using (true);
-create policy "admin_all_students" on public.students for all using (public.current_user_role() = 'admin');
-
-alter table public.schedule enable row level security;
-create policy "anyone_read_schedule" on public.schedule for select using (true);
-create policy "teacher_manage_own_schedule" on public.schedule for all using (auth.uid() = teacher_id or public.current_user_role() = 'admin');
-
 alter table public.attendance_records enable row level security;
-create policy "teachers_read_own_attendance" on public.attendance_records for select using (auth.uid() = teacher_id or public.current_user_role() in ('admin', 'headmaster'));
-create policy "teachers_insert_own_attendance" on public.attendance_records for insert with check (auth.uid() = teacher_id);
-create policy "teachers_update_own_attendance" on public.attendance_records for update using (auth.uid() = teacher_id);
-create policy "teachers_delete_own_attendance" on public.attendance_records for delete using (auth.uid() = teacher_id);
-
 alter table public.grade_records enable row level security;
-create policy "teachers_read_own_grades" on public.grade_records for select using (auth.uid() = teacher_id or public.current_user_role() in ('admin', 'headmaster'));
-create policy "teachers_insert_own_grades" on public.grade_records for insert with check (auth.uid() = teacher_id);
-create policy "teachers_update_own_grades" on public.grade_records for update using (auth.uid() = teacher_id);
-create policy "teachers_delete_own_grades" on public.grade_records for delete using (auth.uid() = teacher_id);
-
 alter table public.journal_entries enable row level security;
-create policy "teachers_read_own_journals" on public.journal_entries for select using (auth.uid() = teacher_id or public.current_user_role() in ('admin', 'headmaster'));
-create policy "teachers_all_own_journals" on public.journal_entries for all using (auth.uid() = teacher_id);
-
-alter table public.agendas enable row level security;
-create policy "teachers_all_own_agendas" on public.agendas for all using (auth.uid() = teacher_id);
-
-alter table public.materials enable row level security;
-create policy "anyone_read_materials" on public.materials for select using (true);
-create policy "teachers_all_own_materials" on public.materials for all using (auth.uid() = teacher_id);
-
-alter table public.student_notes enable row level security;
-create policy "homeroom_read_notes" on public.student_notes for select using (true);
-create policy "teachers_all_own_notes" on public.student_notes for all using (auth.uid() = teacher_id);
-
-alter table public.teacher_attendance enable row level security;
-create policy "anyone_read_teacher_attendance" on public.teacher_attendance for select using (true);
-create policy "teachers_insert_own_teacher_attendance" on public.teacher_attendance for insert with check (auth.uid() = teacher_id);
-create policy "teachers_update_own_teacher_attendance" on public.teacher_attendance for update using (auth.uid() = teacher_id);
-
-alter table public.holidays enable row level security;
-create policy "anyone_read_holidays" on public.holidays for select using (true);
-create policy "admin_all_holidays" on public.holidays for all using (public.current_user_role() = 'admin');
-
-alter table public.settings enable row level security;
-create policy "anyone_read_settings" on public.settings for select using (true);
-create policy "admin_all_settings" on public.settings for all using (public.current_user_role() = 'admin');
-
-alter table public.activation_tokens enable row level security;
-create policy "admin_all_activation_tokens" on public.activation_tokens for all using (public.current_user_role() = 'admin');
-
--- AI RLS (NEW V19.6)
-alter table public.google_drive_integrations enable row level security;
-create policy "users_all_own_drive" on public.google_drive_integrations for all using (auth.uid() = user_id);
-
-alter table public.ai_documents enable row level security;
-create policy "users_all_own_ai_docs" on public.ai_documents for all using (auth.uid() = user_id);
-
 alter table public.questions enable row level security;
-create policy "users_all_own_questions" on public.questions for all using (auth.uid() = created_by);
-create policy "monitoring_read_questions" on public.questions for select using (public.current_user_role() in ('admin', 'headmaster'));
 
--- 10. GRANTS
-grant usage on schema public to anon, authenticated;
-grant all on all tables in schema public to anon, authenticated;
-grant all on all sequences in schema public to anon, authenticated;
-grant all on all functions in schema public to anon, authenticated;
+-- Kebijakan Profil (Sangat Penting untuk Middleware)
+create policy "profile_select_all" on public.profiles for select using (true);
+create policy "profile_update_own" on public.profiles for update using (auth.uid() = id);
 
--- 11. INDEXES
-create index if not exists idx_profiles_role on public.profiles(role);
-create index if not exists idx_attendance_date on public.attendance_records(date);
-create index if not exists idx_attendance_student on public.attendance_records(student_id);
-create index if not exists idx_grades_student on public.grade_records(student_id);
-create index if not exists idx_schedule_teacher on public.schedule(teacher_id);
-create index if not exists idx_questions_creator on public.questions(created_by);
-create index if not exists idx_questions_topic on public.questions(topic);
+-- Kebijakan Master Data (Admin Power)
+create policy "master_admin_all" on public.school_years for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+create policy "master_teacher_select" on public.school_years for select using (true);
+
+create policy "classes_admin_all" on public.classes for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+create policy "classes_teacher_select" on public.classes for select using (true);
+
+create policy "subjects_admin_all" on public.subjects for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+create policy "subjects_teacher_select" on public.subjects for select using (true);
+
+-- Kebijakan Transaksional
+create policy "transaction_own_access" on public.attendance_records for all using (
+  teacher_id = auth.uid() or 
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'headmaster'))
+);
+
+create policy "transaction_grades_access" on public.grade_records for all using (
+  teacher_id = auth.uid() or 
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'headmaster'))
+);
+
+create policy "journal_access" on public.journal_entries for all using (
+  teacher_id = auth.uid() or 
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'headmaster'))
+);
+
+-- 11. IZIN AKHIR (GRANTS)
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant all on all functions in schema public to anon, authenticated, service_role;
+
+-- Pastikan RLS tidak memblokir service_role (Vercel/Internal)
+alter table public.profiles force row level security;
