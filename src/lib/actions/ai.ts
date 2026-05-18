@@ -1,4 +1,3 @@
-
 'use server';
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
@@ -112,10 +111,29 @@ export async function deleteQuestionsAction(ids: string[]) {
 }
 
 /**
- * Server Action untuk menyusun naskah ujian dari daftar soal terpilih.
+ * Server Action untuk menyusun naskah ujian.
+ * @param title Judul file
+ * @param selectedQuestionIds Daftar ID soal
+ * @param metadata Informasi tambahan
+ * @param format Format keluaran ('doc' atau 'pdf')
+ * @param binaryData Data biner Base64 jika formatnya PDF (dikirim dari client)
  */
-export async function createNaskahUjianAction(title: string, selectedQuestionIds: string[], metadata: { class: string, subject: string, schoolName: string, examType: string }) {
+export async function createNaskahUjianAction(
+    title: string, 
+    selectedQuestionIds: string[], 
+    metadata: { class: string, subject: string, schoolName: string, examType: string },
+    format: 'pdf' | 'doc' = 'doc',
+    binaryData?: string
+) {
     const supabase = createClient();
+    
+    // Jika format adalah PDF, kita hanya butuh datanya untuk diunggah ke Drive
+    if (format === 'pdf' && binaryData) {
+        const result = await saveNaskahToDrive(title, binaryData, metadata, 'pdf');
+        return { ...result, format: 'pdf' };
+    }
+
+    // Jika format adalah DOC, kita ambil data dari DB dan susun Markdown
     const { data: questions, error: fetchError } = await supabase
         .from('questions')
         .select('*')
@@ -126,7 +144,7 @@ export async function createNaskahUjianAction(title: string, selectedQuestionIds
         return { success: false, error: "Gagal mengambil data soal terpilih." };
     }
 
-    // 1. Bangun Konten Naskah Formal (Markdown style)
+    // Bangun Konten Naskah Formal (Markdown)
     let content = `
 ${metadata.schoolName.toUpperCase()}
 ${metadata.examType.toUpperCase()}
@@ -157,11 +175,12 @@ Jawablah pertanyaan di bawah ini dengan memilih jawaban yang paling benar!
         content += `${idx + 1}. ${q.correct_answer}\n`;
     });
 
-    // 2. Simpan ke Google Drive (Struktur Folder Deep Nesting)
-    const result = await saveNaskahToDrive(title, content, metadata);
+    // Simpan ke Google Drive sebagai Google Doc (Otomatis konversi oleh API Drive)
+    const result = await saveNaskahToDrive(title, content, metadata, 'doc');
     
     return { 
         ...result, 
-        markdown: content 
+        markdown: content,
+        format: 'doc'
     };
 }

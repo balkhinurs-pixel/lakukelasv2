@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import { 
     Database, 
     Search, 
@@ -22,7 +24,8 @@ import {
     Layout,
     Printer,
     FileText,
-    School
+    School,
+    Download
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +46,11 @@ import { InlineMath, BlockMath } from 'react-katex';
 import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
+
+// Extend jsPDF with autoTable for TS
+interface jsPDFWithAutoTable extends jsPDF {
+    autoTable: (options: any) => jsPDF;
+}
 
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
@@ -90,6 +98,7 @@ export default function BankSoalClient({
         title: "",
         schoolName: "",
         examType: "Penilaian Harian",
+        format: "pdf" as "pdf" | "doc"
     });
 
     React.useEffect(() => {
@@ -132,14 +141,62 @@ export default function BankSoalClient({
         });
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Hapus soal ini dari Bank Soal?")) return;
-        setLoading(id);
-        const result = await deleteQuestionsAction([id]);
-        if (result.success) {
-            toast({ title: "Terhapus", description: "Soal berhasil dihapus." });
-        }
-        setLoading(null);
+    /**
+     * Menghasilkan PDF naskah soal di sisi klien menggunakan jsPDF.
+     * Hasilnya dikembalikan sebagai Base64 untuk dikirim ke server.
+     */
+    const generateClientPdf = (selectedQuestions: any[]): string => {
+        const doc = new jsPDF() as jsPDFWithAutoTable;
+        const margin = 15;
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        // 1. Kop Surat
+        doc.setFontSize(16).setFont("helvetica", "bold");
+        doc.text(naskahConfig.schoolName.toUpperCase(), pageWidth / 2, 20, { align: "center" });
+        doc.setFontSize(12).setFont("helvetica", "normal");
+        doc.text(naskahConfig.examType.toUpperCase(), pageWidth / 2, 27, { align: "center" });
+        
+        doc.setLineWidth(0.5);
+        doc.line(margin, 32, pageWidth - margin, 32);
+
+        // 2. Metadata
+        doc.setFontSize(10);
+        const sampleQ = selectedQuestions[0];
+        doc.text(`Mata Pelajaran : ${sampleQ?.subject || "-"}`, margin, 42);
+        doc.text(`Kelas          : ${sampleQ?.kelas || "-"}`, margin, 47);
+        doc.text(`Tanggal        : ${format(new Date(), 'dd/MM/yyyy')}`, pageWidth - margin - 50, 42);
+        doc.text(`Waktu          : 90 Menit`, pageWidth - margin - 50, 47);
+
+        doc.line(margin, 52, pageWidth - margin, 52);
+
+        // 3. Body Soal (Tabel agar rapi)
+        const tableBody = selectedQuestions.map((q, idx) => {
+            let qText = q.question_text.replace(/\\\(|\\\)|\\\[|\\\]/g, ""); // Bersihkan tag LaTeX untuk PDF dasar
+            if (q.options_json) {
+                const opts = Object.entries(q.options_json as Record<string, string>)
+                    .sort()
+                    .map(([k, v]) => `${k}. ${v.replace(/\\\(|\\\)|\\\[|\\\]/g, "")}`)
+                    .join("\n");
+                return [idx + 1, `${qText}\n\n${opts}`];
+            }
+            return [idx + 1, qText];
+        });
+
+        doc.autoTable({
+            startY: 60,
+            head: [['No', 'Pertanyaan']],
+            body: tableBody,
+            theme: 'plain',
+            styles: { fontSize: 10, cellPadding: 3 },
+            columnStyles: {
+                0: { cellWidth: 10, fontStyle: 'bold' },
+                1: { cellWidth: 'auto' }
+            },
+            headStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold' }
+        });
+
+        // Simpan sebagai Base64
+        return doc.output('datauristring').split(',')[1];
     };
 
     const handleCreateNaskah = async () => {
@@ -152,7 +209,8 @@ export default function BankSoalClient({
         setExporting(true);
         
         try {
-            const sampleQ = initialQuestions.find(q => q.id === Array.from(selectedIds)[0]);
+            const selectedQuestionsData = initialQuestions.filter(q => selectedIds.has(q.id));
+            const sampleQ = selectedQuestionsData[0];
             const metadata = {
                 class: sampleQ?.kelas || "X",
                 subject: sampleQ?.subject || "Umum",
@@ -160,12 +218,36 @@ export default function BankSoalClient({
                 examType: naskahConfig.examType
             };
 
-            const result = await createNaskahUjianAction(naskahConfig.title, Array.from(selectedIds), metadata);
+            let binaryPdf: string | undefined;
+            if (naskahConfig.format === 'pdf') {
+                binaryPdf = generateClientPdf(selectedQuestionsData);
+            }
+
+            const result = await createNaskahUjianAction(
+                naskahConfig.title, 
+                Array.from(selectedIds), 
+                metadata, 
+                naskahConfig.format,
+                binaryPdf
+            );
 
             if (result.success) {
-                // 1. Auto Download Lokal (Word doc-like format)
-                const blob = new Blob([result.markdown || ""], { type: 'application/msword;charset=utf-8' });
-                saveAs(blob, `${naskahConfig.title}.doc`);
+                // AUTO DOWNLOAD
+                if (naskahConfig.format === 'pdf' && binaryPdf) {
+                    // Download PDF lokal
+                    const byteCharacters = atob(binaryPdf);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: 'application/pdf' });
+                    saveAs(blob, `${naskahConfig.title}.pdf`);
+                } else if (result.markdown) {
+                    // Download Word-like (.doc) lokal
+                    const blob = new Blob([result.markdown], { type: 'application/msword;charset=utf-8' });
+                    saveAs(blob, `${naskahConfig.title}.doc`);
+                }
 
                 toast({ 
                     title: "Naskah Berhasil Dibuat!", 
@@ -176,6 +258,7 @@ export default function BankSoalClient({
                         </Button>
                     )
                 });
+                
                 setIsExportDialogOpen(false);
                 setSelectedIds(new Set());
                 setNaskahConfig(prev => ({ ...prev, title: "" }));
@@ -184,8 +267,7 @@ export default function BankSoalClient({
                 toast({ title: "Gagal Membuat Naskah", description: result.error || "Gagal memproses permintaan.", variant: "destructive" });
             }
         } catch (e: any) {
-            console.error(e);
-            toast({ title: "Kesalahan Sistem", description: e.message || "Terjadi kesalahan saat menghubungi server.", variant: "destructive" });
+            toast({ title: "Kesalahan Sistem", description: e.message || "Terjadi kesalahan.", variant: "destructive" });
         } finally {
             setExporting(false);
         }
@@ -316,23 +398,35 @@ export default function BankSoalClient({
                             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Instansi</Label>
                             <Input placeholder="e.g. SMAN 1 Jakarta" value={naskahConfig.schoolName} onChange={e => setNaskahConfig({...naskahConfig, schoolName: e.target.value})} className="h-12 rounded-xl bg-slate-50 border-0 focus:ring-2 font-bold" />
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Asesmen</Label>
-                            <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
-                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-0 shadow-sm font-bold"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                    <SelectItem value="Penilaian Harian" className="font-bold">Penilaian Harian</SelectItem>
-                                    <SelectItem value="Sumatif Akhir Semester" className="font-bold">Sumatif Akhir Semester</SelectItem>
-                                    <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
-                                    <SelectItem value="Latihan Mandiri" className="font-bold">Latihan Mandiri</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Asesmen</Label>
+                                <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
+                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-0 shadow-sm font-bold text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectItem value="Penilaian Harian" className="font-bold">Harian (UH)</SelectItem>
+                                        <SelectItem value="Sumatif Akhir Semester" className="font-bold">SAS / UAS</SelectItem>
+                                        <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
+                                        <SelectItem value="Latihan Mandiri" className="font-bold">Latihan</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Format File</Label>
+                                <Select value={naskahConfig.format} onValueChange={(v: any) => setNaskahConfig({...naskahConfig, format: v})}>
+                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-0 shadow-sm font-bold text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectItem value="pdf" className="font-bold text-rose-600">PDF Document</SelectItem>
+                                        <SelectItem value="doc" className="font-bold text-blue-600">Google Doc</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
                     <DialogFooter>
                         <Button onClick={handleCreateNaskah} disabled={exporting || !naskahConfig.title} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
-                            {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : <CloudIcon className="h-6 w-6" />}
-                            Kirim ke Drive & Download
+                            {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : (naskahConfig.format === 'pdf' ? <Download className="h-6 w-6" /> : <CloudIcon className="h-6 w-6" />)}
+                            Generate & Simpan
                         </Button>
                     </DialogFooter>
                 </DialogContent>
