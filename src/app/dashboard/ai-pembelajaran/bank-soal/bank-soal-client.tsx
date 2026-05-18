@@ -58,7 +58,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
   return (
     <div className={cn(
         "math-text-render inline-block w-full", 
-        hasMath ? "py-1.5" : "", // Beri ruang jika ada rumus
+        hasMath ? "py-1.5" : "", // Beri ruang jika ada rumus agar tidak menumpuk
         className
     )}>
       {parts.map((part, i) => {
@@ -87,16 +87,17 @@ const NaskahPrintTemplate = ({
                 left: '-9999px', 
                 top: 0,
                 width: '210mm',
-                padding: '18mm 16mm',
+                padding: '20mm 16mm', // Padding kuat di atas dan bawah (2cm)
                 boxSizing: 'border-box',
                 fontFamily: '"Times New Roman", Times, serif',
                 lineHeight: '1.45',
                 fontSize: '11pt',
-                color: '#111'
+                color: '#111',
+                minHeight: '297mm'
             }}
         >
             {/* Header Naskah Formal */}
-            <div className="text-center mb-4">
+            <div className="text-center mb-6">
                 <h1 className="text-[13pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
                     {config.schoolName || "SEKOLAH LAKUKELAS"}
                 </h1>
@@ -106,7 +107,7 @@ const NaskahPrintTemplate = ({
             </div>
 
             {/* Grid Metadata Persis Gambar */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '15px', paddingLeft: '40px', paddingRight: '40px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '20px', paddingLeft: '40px', paddingRight: '40px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
                     <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{questions[0]?.subject || "-"}</span>
                     <span className="font-bold">Kelas/Semester</span><span>:</span><span>{questions[0]?.kelas || "-"} / Ganjil</span>
@@ -123,7 +124,7 @@ const NaskahPrintTemplate = ({
             </div>
 
             {/* Daftar Soal */}
-            <div className="space-y-5">
+            <div className="space-y-6">
                 {questions.map((q, idx) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                     const isSma = options.length > 4;
@@ -146,11 +147,11 @@ const NaskahPrintTemplate = ({
                                         gridAutoFlow: 'column',
                                         gridTemplateRows: isSma ? 'repeat(3, auto)' : 'repeat(2, auto)',
                                         columnGap: '40px',
-                                        rowGap: '6px'
+                                        rowGap: '8px'
                                     }}
                                 >
                                     {options.map(([k, v]) => (
-                                        <div key={k} className="flex gap-2 items-start" style={{ minHeight: '24px' }}>
+                                        <div key={k} className="flex gap-2 items-start" style={{ minHeight: '26px' }}>
                                             <span className="font-bold min-w-[18px]">{k}.</span>
                                             <div className="flex-1 leading-normal overflow-wrap-break-word">
                                                 <MathText content={v} />
@@ -165,7 +166,7 @@ const NaskahPrintTemplate = ({
             </div>
 
             {/* Footer / Signature Area */}
-            <div className="mt-16 flex justify-between text-center text-[10pt]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+            <div className="mt-20 flex justify-between text-center text-[10pt]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <div className="space-y-16">
                     <p>Mengetahui,<br />Kepala Sekolah</p>
                     <div className="space-y-1">
@@ -180,11 +181,6 @@ const NaskahPrintTemplate = ({
                         <p className="text-[8.5pt]">NIP. ..........................................</p>
                     </div>
                 </div>
-            </div>
-
-            {/* Page Number Placeholder */}
-            <div className="mt-8 text-center text-[9pt] italic opacity-50">
-                1
             </div>
         </div>
     );
@@ -214,7 +210,6 @@ export default function BankSoalClient({
     const [expandedQuestions, setExpandedQuestions] = React.useState<Set<string>>(new Set());
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
     
-    const [loading, setLoading] = React.useState<string | null>(null);
     const [exporting, setExporting] = React.useState(false);
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
     
@@ -265,7 +260,11 @@ export default function BankSoalClient({
         });
     };
 
-    const generateHighQualityPdf = async (selectedQuestions: any[]): Promise<string> => {
+    /**
+     * Algoritma Rendering PDF "Anti-Duplikasi" V23.8
+     * Membagi canvas panjang menjadi potongan A4 presisi tanpa overlap.
+     */
+    const generateHighQualityPdf = async (): Promise<string> => {
         const element = document.getElementById('naskah-print-container');
         if (!element) throw new Error("Renderer area not found");
 
@@ -274,28 +273,34 @@ export default function BankSoalClient({
             useCORS: true,
             logging: false,
             backgroundColor: "#ffffff",
-            width: element.offsetWidth
+            width: element.offsetWidth,
+            height: element.scrollHeight,
+            windowWidth: element.offsetWidth,
+            windowHeight: element.scrollHeight
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
         const pdf = new jsPDF('p', 'mm', 'a4');
         
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfPageHeight = pdf.internal.pageSize.getHeight();
+        const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+        const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
         
         const imgProps = pdf.getImageProperties(imgData);
-        const imgHeightInPdf = (imgProps.height * pdfWidth) / imgProps.width;
+        const imgHeightInPdf = (imgProps.height * pageWidth) / imgProps.width;
 
         let heightLeft = imgHeightInPdf;
-        let position = 0;
+        let position = 0; // Top position relative to current page
 
+        // Halaman Pertama
+        pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeightInPdf);
+        heightLeft -= pageHeight;
+
+        // Halaman Berikutnya (Slicing tanpa duplikasi)
         while (heightLeft > 0) {
-            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInPdf);
-            heightLeft -= pdfPageHeight;
-            if (heightLeft > 0) {
-                pdf.addPage();
-                position -= pdfPageHeight;
-            }
+            position -= pageHeight; // Geser tepat satu tinggi halaman penuh
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeightInPdf);
+            heightLeft -= pageHeight;
         }
 
         return pdf.output('datauristring').split(',')[1];
@@ -322,8 +327,9 @@ export default function BankSoalClient({
 
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
-                await new Promise(r => setTimeout(r, 1200)); // More time for KaTeX
-                binaryPdf = await generateHighQualityPdf(selectedQuestionsData);
+                // Beri waktu sejenak agar KaTeX selesai merender di DOM sebelum capture
+                await new Promise(r => setTimeout(r, 1500)); 
+                binaryPdf = await generateHighQualityPdf();
             }
 
             const result = await createNaskahUjianAction(
@@ -546,6 +552,12 @@ export default function BankSoalClient({
                     <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="rounded-xl h-10 w-10"><ChevronRight className="h-4 w-4" /></Button>
                 </div>
             )}
+            
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+            `}</style>
         </div>
     );
 }
