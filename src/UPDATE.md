@@ -1,25 +1,20 @@
 
 # Log Pembaruan LakuKelas
 
-## V19.2: Perbaikan Izin PostgreSQL (Grant Permissions) - SELESAI
-Solusi definitif untuk error `permission denied for table profiles` yang muncul pada log middleware di proyek database baru.
+## V19.3: Perbaikan Fundamental Relasi Profil & Redirect Admin - SELESAI
+Perbaikan pada struktur kunci primer tabel profil yang sebelumnya menyebabkan kegagalan deteksi peran oleh Middleware.
 
 ### 1. Perubahan SQL (Kritikal)
-- Menambahkan perintah `GRANT USAGE ON SCHEMA public` untuk peran `anon` dan `authenticated`.
-- Menambahkan `GRANT SELECT ON public.profiles` untuk memastikan Middleware selalu bisa memverifikasi Role pengguna.
-- Memastikan sistem database memberikan izin pembacaan teknis sebelum kebijakan RLS (Row Level Security) dievaluasi.
-
-### 2. Verifikasi Login Admin
-- Admin sekarang diprioritaskan di tingkat paling atas pada Middleware.
-- Bypass otomatis untuk Admin melewati form "Lengkapi Data Diri" dan "Menunggu Persetujuan".
+- Mengembalikan definisi `id` pada tabel `profiles` menjadi `primary key references auth.users(id)`. Ini memastikan ID di tabel profil sama persis dengan ID di sistem autentikasi Google.
+- Memastikan fungsi `handle_new_user` tetap memberikan peran **Admin** secara otomatis kepada pendaftar pertama di database baru.
+- Mempertahankan perintah `GRANT` untuk mencegah error `permission denied`.
+- Sinkronisasi Middleware untuk prioritas Admin tetap aktif.
 
 ---
 
-## V19.1: Middleware Debug Mode & RLS Open Policy
-Pembaruan untuk melacak penyebab kegagalan deteksi Admin melalui server log Vercel.
+## V19.2: Perbaikan Izin PostgreSQL (Grant Permissions) - SELESAI
+Solusi untuk error `permission denied for table profiles` pada log middleware.
 
-### 1. Debug Logs
-- Menambahkan `console.log` pada file `middleware.ts` untuk memonitor Role, Session, dan Alur Redirect secara real-time.
-
-### 2. Database V19.1 (Optimasi RLS)
-- **Profiles Table**: Kebijakan RLS disederhanakan menjadi `using (true)` untuk operasi `SELECT`. Ini menjamin middleware selalu mendapatkan data profil tanpa terhalang kebijakan keamanan yang berpotensi rekursif.
+### 1. Perubahan SQL
+- Menambahkan perintah `GRANT USAGE ON SCHEMA public` untuk peran `anon` dan `authenticated`.
+- Menambahkan `GRANT SELECT ON public.profiles` untuk memastikan Middleware selalu bisa memverifikasi Role pengguna.

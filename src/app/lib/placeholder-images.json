@@ -1,0 +1,11 @@
+
+{
+  "login_illustration": {
+    "url": "https://picsum.photos/seed/65/800/600",
+    "hint": "education illustration"
+  },
+  "dashboard_welcome": {
+    "url": "https://picsum.photos/seed/99/1200/400",
+    "hint": "school building"
+  }
+}
