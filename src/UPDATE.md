@@ -1,19 +1,21 @@
+
 # Log Pembaruan LakuKelas
 
-## V32.0: Ultimate SQL Blueprint with First User Auto-Admin - TERIMPLEMENTASI
-Penyempurnaan total blueprint database untuk menjamin kemudahan setup awal dan keamanan terpusat.
+## Update V33.0: Ultimate Master SQL Blueprint (Professional Standard) - TERIMPLEMENTASI
+Penyempurnaan infrastruktur database tingkat lanjut untuk stabilitas integrasi Cloud dan sistem manajemen sekolah mandiri.
 
-### 1. Perubahan Fundamental Blueprint (schema.sql)
-- **Auto-Admin First User**: Memperbarui trigger `handle_new_user`. Pendaftar pertama di sistem kini otomatis mendapatkan peran `admin` dan status `is_activated = true` tanpa perlu campur tangan manual di database.
-- **RLS Hari Libur**: Mengamankan tabel `holidays`. Seluruh staf dapat melihat jadwal libur, namun modifikasi data hanya dapat dilakukan oleh admin.
-- **Permission Grants**: Menambahkan instruksi `GRANT` eksplisit di akhir blueprint untuk memastikan fungsi RPC dan tabel dapat diakses sepenuhnya oleh aplikasi Next.js melalui peran `authenticated`.
+### 1. Perubahan Arsitektur Database (schema.sql)
+- **Otomatisasi Admin (First-User Logic)**: Pendaftar pertama di sistem kini otomatis mendapatkan peran `admin` dan status `is_activated = true`. Sangat memudahkan setup sekolah baru.
+- **Integrasi Cloud Storage**: Menambahkan tabel `google_drive_integrations` dan `ai_documents` untuk mendukung penyimpanan otomatis RPP/Soal ke Drive masing-masing guru.
+- **Isolasi Data RLS**: Menjamin privasi data antar guru sambil tetap memberikan akses monitoring bagi Admin dan Kepala Sekolah.
+- **RLS Hari Libur**: Seluruh staf dapat membaca jadwal libur, namun pengelolaannya dikunci khusus untuk Admin.
 
-### 2. Fitur Keamanan & Identitas:
-- **NPSN & Identitas Sekolah**: Mendukung penuh Kop Surat Profesional pada PDF.
-- **Isolasi Data**: Kebijakan RLS yang lebih presisi pada tabel Bank Soal AI dan Dokumen Drive.
-- **Reporting Engine**: Fungsi penghitung kehadiran guru harian yang optimal.
+### 2. Fitur Baru & Perbaikan UI (V26.0)
+- **Bank Soal Pro**: Menambahkan indikator nomor urut berurutan saat memilih soal untuk naskah ujian.
+- **Ekspor Cerdas**: Dialog ekspor naskah kini mendukung pengaturan Waktu (Durasi) dan Tanggal ujian yang dinamis pada Kop Surat.
+- **Identitas Sekolah Lengkap**: Mendukung penuh penyimpanan NPSN, Website, dan Email Resmi Sekolah pada profil institusi.
 
 ---
 
-## V31.0: Ultimate SQL Blueprint with Permission Grants - SELESAI
-Penyusunan awal struktur database komprehensif dengan hak akses eksplisit.
+## V32.0: Ultimate SQL Blueprint with First User Auto-Admin - TERIMPLEMENTASI
+Penyempurnaan total blueprint database untuk menjamin kemudahan setup awal dan keamanan terpusat.
