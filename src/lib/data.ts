@@ -153,14 +153,14 @@ export async function getAttendanceTrendData(range: string = "7") {
         supabase.from('teacher_attendance').select('date, status, teacher_id').gte('date', startDateStr).lte('date', endDateStr),
         supabase.from('holidays').select('date, description, type').gte('date', startDateStr).lte('date', endDateStr),
         supabase.from('schedule').select('teacher_id, day'),
-        supabase.from('settings').select('value').eq('key', 'attendance_policy').maybeSingle(),
+        supabase.from('settings').select('key, value').in('key', ['attendance_policy']),
         supabase.from('profiles').select('id').in('role', ['teacher', 'headmaster']).eq('is_activated', true)
     ]);
 
     const attendanceRecords = attendanceRes.data || [];
     const holidays = holidaysRes.data || [];
     const schedules = schedulesRes.data || [];
-    const attendancePolicy = settingsRes.data?.value || 'schedule_based';
+    const attendancePolicy = settingsRes.data?.find(s => s.key === 'attendance_policy')?.value || 'schedule_based';
     const totalStaffCount = staffRes.data?.length || 0;
 
     const scheduleByDay: Record<string, Set<string>> = {};
@@ -279,6 +279,38 @@ export async function getGradesPageData() {
         allStudents: studentsRes.data || [],
         history: historyRes.data || []
     };
+}
+
+// --- Settings & Configurations ---
+
+/**
+ * Mengambil pengaturan absensi yang dikonfigurasi admin.
+ */
+export async function getAttendanceSettings() {
+    noStore();
+    const supabase = createClient();
+    const { data } = await supabase
+        .from('settings')
+        .select('key, value')
+        .in('key', [
+            'attendance_latitude', 
+            'attendance_longitude', 
+            'attendance_radius', 
+            'attendance_check_in_start', 
+            'attendance_check_in_deadline',
+            'attendance_policy'
+        ]);
+    
+    const settings = {
+        latitude: data?.find(s => s.key === 'attendance_latitude')?.value || '',
+        longitude: data?.find(s => s.key === 'attendance_longitude')?.value || '',
+        radius: parseInt(data?.find(s => s.key === 'attendance_radius')?.value || '0'),
+        check_in_start: data?.find(s => s.key === 'attendance_check_in_start')?.value || '06:30',
+        check_in_deadline: data?.find(s => s.key === 'attendance_check_in_deadline')?.value || '07:15',
+        attendance_policy: data?.find(s => s.key === 'attendance_policy')?.value || 'schedule_based',
+    };
+    
+    return settings;
 }
 
 // --- Data Master ---
