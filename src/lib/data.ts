@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from './supabase/server';
@@ -177,20 +178,29 @@ export async function getAdminDashboardData() {
         const weeklyAttendance = [];
         const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
         
-        // Optimasi: Panggil RPC dalam bulk jika memungkinkan (untuk sekarang kurangi hit database harian)
         for (let i = 6; i >= 0; i--) {
             const date = new Date(nowIndo);
             date.setDate(date.getDate() - i);
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayIdx = date.getDay();
             
+            // Ambil Summary dari RPC
             const { data: daySummaryArr } = await supabase.rpc('get_teacher_attendance_summary', { p_date: dateStr });
             const daySummary = (Array.isArray(daySummaryArr) && daySummaryArr.length > 0) ? daySummaryArr[0] : null;
+
+            // Ambil Hitungan Sakit & Izin secara spesifik untuk grafik baris baru
+            const { count: izinSakitCount } = await supabase
+                .from('teacher_attendance')
+                .select('*', { count: 'exact', head: true })
+                .eq('date', dateStr)
+                .in('status', ['Sakit', 'Izin']);
             
             weeklyAttendance.push({
                 day: dayNamesShort[dayIdx],
-                hadir: Number(daySummary?.total_present || 0),
-                tidak_hadir: Number(daySummary?.total_absent || 0)
+                tanggal: format(date, 'dd/MM'),
+                berangkat: Number(daySummary?.total_present || 0),
+                tidakAbsen: Number(daySummary?.total_absent || 0),
+                izinSakit: Number(izinSakitCount || 0)
             });
         }
         
