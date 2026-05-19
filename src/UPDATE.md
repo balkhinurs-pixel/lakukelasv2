@@ -5,7 +5,7 @@
 Penyempurnaan infrastruktur database tingkat lanjut untuk stabilitas integrasi Cloud dan sistem manajemen sekolah mandiri.
 
 ### 1. Perubahan Arsitektur Database (schema.sql)
-- **Otomatisasi Admin (First-User Logic)**: Pendaftar pertama di sistem kini otomatis mendapatkan peran `admin` dan status `is_activated = true`. Sangat memudahkan setup sekolah baru.
+- **Otomatisasi Admin (First-User Logic)**: Pendaftar pertama di sistem kini otomatis mendapatkan peran `admin` and status `is_activated = true`. Sangat memudahkan setup sekolah baru.
 - **Integrasi Cloud Storage**: Menambahkan tabel `google_drive_integrations` dan `ai_documents` untuk mendukung penyimpanan otomatis RPP/Soal ke Drive masing-masing guru.
 - **Isolasi Data RLS**: Menjamin privasi data antar guru sambil tetap memberikan akses monitoring bagi Admin dan Kepala Sekolah.
 - **RLS Hari Libur**: Seluruh staf dapat membaca jadwal libur, namun pengelolaannya dikunci khusus untuk Admin.
