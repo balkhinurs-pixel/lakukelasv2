@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -31,7 +30,9 @@ import {
     Clock,
     Hash,
     X,
-    Timer
+    Timer,
+    ExternalLink,
+    ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ import type { Profile } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileCard, type FormatFileProps } from "@/components/ui/file-card-collections";
 import { AppLogo } from "@/components/icons";
+import { LottieSuccess } from "@/components/ui/lottie-success";
 
 // --- MathText Component ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
@@ -209,6 +211,20 @@ const NaskahPrintTemplate = ({
 
 const ITEMS_PER_PAGE = 5;
 
+const mapelByJenjang: Record<string, string[]> = {
+    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
+    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
+    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+};
+
+const getClassOptions = (jenjang: string) => {
+    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
+    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
+    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
+    return [];
+};
+
 export default function BankSoalClient({ 
     initialQuestions,
     uniqueSubjects,
@@ -239,6 +255,8 @@ export default function BankSoalClient({
     
     const [exporting, setExporting] = React.useState(false);
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
+    const [isSuccessDialogOpen, setIsSuccessDialogOpen] = React.useState(false);
+    const [successFileUrl, setSuccessFileUrl] = React.useState("");
     
     const [naskahConfig, setNaskahConfig] = React.useState({
         title: "",
@@ -411,17 +429,10 @@ export default function BankSoalClient({
                     saveAs(blob, `${naskahConfig.title}.doc`);
                 }
 
-                toast({ 
-                    title: "Naskah Berhasil!", 
-                    description: "File dikirim ke Drive & otomatis terunduh.",
-                    action: (
-                        <Button variant="outline" size="sm" asChild>
-                            <a href={result.file_url || "#"} target="_blank">Cek Drive</a>
-                        </Button>
-                    )
-                });
-                
+                setSuccessFileUrl(result.file_url || "#");
                 setIsExportDialogOpen(false);
+                setIsSuccessDialogOpen(true);
+                
                 setSelectedOrderedIds([]);
                 setNaskahConfig(prev => ({ ...prev, title: "" }));
                 router.refresh();
@@ -671,6 +682,30 @@ export default function BankSoalClient({
                             {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : (naskahConfig.format === 'pdf' ? <Download className="h-6 w-6" /> : <CloudIcon className="h-6 w-6" />)}
                             Generate & Simpan ke Drive
                         </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Success Dialog with Anim Asset */}
+            <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+                <DialogContent className="rounded-[2.5rem] p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
+                    <div className="p-10 flex flex-col items-center text-center">
+                        <LottieSuccess size={200} />
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-2">Naskah Berhasil!</h3>
+                        <p className="text-slate-500 font-bold text-sm mt-3 px-4 leading-relaxed">
+                            Dokumen telah berhasil disusun, dikirim ke Google Drive, dan otomatis terunduh ke perangkat Anda.
+                        </p>
+                        
+                        <div className="w-full space-y-3 mt-8">
+                            <Button asChild className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold gap-2">
+                                <a href={successFileUrl} target="_blank">
+                                    <ExternalLink className="h-4 w-4" /> Buka di Drive
+                                </a>
+                            </Button>
+                            <Button variant="ghost" onClick={() => setIsSuccessDialogOpen(false)} className="w-full h-12 text-slate-400 font-bold hover:bg-slate-50">
+                                Selesai
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
