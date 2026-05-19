@@ -1,11 +1,9 @@
-
 'use client';
 
 import * as React from 'react';
 import {
-  ComposedChart,
+  AreaChart,
   Area,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -30,11 +28,22 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
     return (
         <div className="w-full h-[300px] mt-4">
             <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
+                        {/* Gradient Hijau - Berangkat */}
                         <linearGradient id="colorBerangkat" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
                             <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                        {/* Gradient Merah - Alpha */}
+                        <linearGradient id="colorAlpha" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.15} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                        </linearGradient>
+                        {/* Gradient Oranye - Izin/Sakit */}
+                        <linearGradient id="colorIzinSakit" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.15} />
+                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                         </linearGradient>
                     </defs>
 
@@ -72,7 +81,7 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         cursor={{ stroke: '#f1f5f9', strokeWidth: 2 }}
                     />
 
-                    {/* Area: Berangkat */}
+                    {/* Area: Berangkat (Hijau) */}
                     <Area
                         type="monotone"
                         dataKey="berangkat"
@@ -81,32 +90,36 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         fill="url(#colorBerangkat)"
                         strokeWidth={3}
                         animationDuration={1500}
-                        dot={data.length < 31 ? { r: 4, fill: "#10b981", strokeWidth: 2, stroke: "#fff" } : false}
+                        dot={{ r: 4, fill: "#10b981", strokeWidth: 2, stroke: "#fff" }}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
 
-                    {/* Line: Tidak Absen (Alpha) */}
-                    <Line
+                    {/* Area: Tidak Absen (Alpha - Merah) */}
+                    <Area
                         type="monotone"
                         dataKey="tidakAbsen"
                         name="Alpha"
                         stroke="#ef4444"
-                        strokeWidth={2.5}
-                        dot={data.length < 31 ? { r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "#fff" } : false}
+                        fill="url(#colorAlpha)"
+                        strokeWidth={3}
+                        animationDuration={1500}
+                        dot={{ r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "#fff" }}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
 
-                    {/* Line: Izin / Sakit */}
-                    <Line
+                    {/* Area: Izin / Sakit (Oranye) */}
+                    <Area
                         type="monotone"
                         dataKey="izinSakit"
                         name="Izin/Sakit"
                         stroke="#f59e0b"
-                        strokeWidth={2.5}
-                        dot={data.length < 31 ? { r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" } : false}
+                        fill="url(#colorIzinSakit)"
+                        strokeWidth={3}
+                        animationDuration={1500}
+                        dot={{ r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
-                </ComposedChart>
+                </AreaChart>
             </ResponsiveContainer>
         </div>
     );
