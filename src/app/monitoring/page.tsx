@@ -11,12 +11,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, UserX, UserCheck, Calendar, RefreshCw, ShieldCheck, User as UserIcon, ListFilter } from "lucide-react";
-import WeeklyAttendanceChart from "../admin/weekly-attendance-chart";
+import { Clock, UserX, UserCheck, Calendar, ShieldCheck, User as UserIcon, ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const StatCard = ({
@@ -127,64 +125,49 @@ export default async function MonitoringDashboardPage() {
             />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-5">
-            <Card className="lg:col-span-2 border-0 shadow-lg">
+        <div className="grid gap-6 lg:grid-cols-1">
+            <Card className="border-0 shadow-lg">
                 <CardHeader className="bg-slate-50/50 border-b rounded-t-xl">
                     <div className="flex items-center gap-2">
                         <ListFilter className="h-5 w-5 text-teal-600" />
                         <div>
                             <CardTitle className="text-lg">Kehadiran Guru Hari Ini</CardTitle>
-                            <CardDescription className="text-xs">Guru yang masuk dalam kewajiban absen</CardDescription>
+                            <CardDescription className="text-xs">Daftar guru sesuai kewajiban absen hari ini</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <ScrollArea className="h-[450px]">
-                        <div className="p-4 sm:p-6 space-y-4">
+                    <ScrollArea className="h-[500px]">
+                        <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {todayAttendanceList.length > 0 ? (
                                 todayAttendanceList.map((item) => (
-                                    <div key={item.id} className="flex items-start justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all shadow-sm bg-white gap-3">
+                                    <div key={item.id} className="flex items-start justify-between p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 transition-all shadow-sm bg-white gap-3 group">
                                         <div className="flex items-start gap-3 min-w-0">
-                                            <Avatar className="h-10 w-10 border-2 border-slate-100 shadow-sm shrink-0">
+                                            <Avatar className="h-12 w-12 border-2 border-slate-100 shadow-sm shrink-0 transition-transform group-hover:scale-105">
                                                 <AvatarImage src={item.avatar_url || ""} />
-                                                <AvatarFallback className="bg-teal-50 text-teal-600 font-bold">{item.name.charAt(0)}</AvatarFallback>
+                                                <AvatarFallback className="bg-teal-50 text-teal-600 font-bold text-lg">{item.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-bold text-slate-900 leading-tight break-words">{item.name}</p>
-                                                <div className="flex items-center gap-1 mt-1">
-                                                    <Clock className="h-3 w-3 text-slate-400" />
-                                                    <p className="text-[11px] text-slate-500 font-mono">{item.time} WIB</p>
+                                                <p className="text-sm font-bold text-slate-900 leading-tight break-words uppercase tracking-tight">{item.name}</p>
+                                                <div className="flex items-center gap-1.5 mt-1.5">
+                                                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                                    <p className="text-[11px] text-slate-500 font-mono font-bold">{item.time} WIB</p>
                                                 </div>
                                             </div>
                                         </div>
-                                        <Badge variant="outline" className={cn("text-[10px] uppercase font-bold py-1 px-2.5 shrink-0", getStatusBadge(item.status))}>
+                                        <Badge variant="outline" className={cn("text-[9px] font-black uppercase tracking-widest py-1.5 px-3 shrink-0 rounded-xl border-0 shadow-sm", getStatusBadge(item.status))}>
                                             {item.status}
                                         </Badge>
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center py-20">
-                                    <UserIcon className="mx-auto h-12 w-12 text-slate-200 mb-4" />
-                                    <p className="text-sm text-slate-400 italic">Tidak ada guru wajib hadir hari ini.</p>
+                                <div className="col-span-full text-center py-32 opacity-30">
+                                    <UserIcon className="mx-auto h-16 w-16 text-slate-300 mb-4" />
+                                    <p className="text-lg font-black uppercase tracking-widest text-slate-400">Tidak ada guru wajib hadir</p>
                                 </div>
                             )}
                         </div>
                     </ScrollArea>
-                </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-3 border-0 shadow-lg">
-                <CardHeader className="bg-slate-50/50 border-b rounded-t-xl">
-                    <div className="flex items-center gap-2">
-                        <RefreshCw className="h-5 w-5 text-blue-600" />
-                        <div>
-                            <CardTitle className="text-lg">Statistik Kehadiran Seminggu</CardTitle>
-                            <CardDescription className="text-xs">Perbandingan kehadiran 7 hari terakhir</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <WeeklyAttendanceChart data={dashboardData.weeklyAttendance} />
                 </CardContent>
             </Card>
         </div>
