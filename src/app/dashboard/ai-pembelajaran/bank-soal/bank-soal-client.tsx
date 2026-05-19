@@ -68,7 +68,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
         if (part.startsWith('\\[')) return (
-            <div key={i} className="my-2 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2">
+            <div key={i} className="my-2 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible">
                 <BlockMath math={part.slice(2, -2)} />
             </div>
         );
@@ -469,7 +469,6 @@ export default function BankSoalClient({
                 setNaskahConfig(prev => ({ ...prev, title: "" }));
                 router.refresh();
             } else {
-                // Jika error adalah masalah token, munculkan dialog rekoneksi
                 if (result.error?.toLowerCase().includes('token') || result.error?.toLowerCase().includes('google')) {
                     setIsDriveAuthDialogOpen(true);
                 } else {
@@ -691,17 +690,13 @@ export default function BankSoalClient({
                     })}
                 </div>
 
-                {/* Dialog Ekspor Naskah */}
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                     <DialogContent className="rounded-xl p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/20 flex items-center justify-center shrink-0">
-                                    <Printer className="h-8 w-8" />
-                                </div>
+                            <div className="flex items-center justify-center text-center">
                                 <div>
-                                    <DialogTitle className="text-2xl font-black tracking-tight text-white">Susun Naskah</DialogTitle>
-                                    <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest mt-1">Ekspor ke Google Drive</p>
+                                    <DialogTitle className="text-2xl font-black tracking-tight text-white uppercase">Susun Naskah</DialogTitle>
+                                    <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mt-1">Ekspor ke Google Drive</p>
                                 </div>
                             </div>
                         </div>
@@ -791,7 +786,6 @@ export default function BankSoalClient({
                     </DialogContent>
                 </Dialog>
 
-                {/* Dialog Success */}
                 <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
                     <DialogContent className="rounded-xl p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
                         <div className="p-10 flex flex-col items-center text-center">
@@ -815,7 +809,6 @@ export default function BankSoalClient({
                     </DialogContent>
                 </Dialog>
 
-                {/* Dialog Re-Auth Google Drive */}
                 <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
                     <DialogContent className="rounded-xl p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
                         <div className="p-8 text-center space-y-6">
@@ -865,7 +858,20 @@ export default function BankSoalClient({
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-                .math-text-render .katex-display { margin: 0.5em 0; overflow-x: auto; overflow-y: hidden; }
+                .math-text-render .katex-display { 
+                    margin: 0.5em 0; 
+                    overflow-x: auto; 
+                    overflow-y: hidden;
+                    padding-bottom: 0.5em;
+                }
+                @media print {
+                    .math-text-render .katex-display {
+                        overflow-x: visible !important;
+                    }
+                }
+                .math-text-render .katex {
+                    white-space: nowrap;
+                }
             `}</style>
         </div>
     );

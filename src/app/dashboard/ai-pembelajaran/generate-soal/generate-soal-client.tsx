@@ -48,7 +48,11 @@ const MathText = ({ content, className }: { content: string, className?: string 
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
-        if (part.startsWith('\\[')) return <div key={i} className="my-2 overflow-x-auto overflow-y-hidden custom-scrollbar"><BlockMath math={part.slice(2, -2)} /></div>;
+        if (part.startsWith('\\[')) return (
+            <div key={i} className="my-2 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible">
+                <BlockMath math={part.slice(2, -2)} />
+            </div>
+        );
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         return <span key={i} className="whitespace-pre-wrap">{part}</span>;
       })}
@@ -214,7 +218,6 @@ export default function GenerateSoalClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
-            {/* Header Indigo Premium Style */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 blur-2xl rounded-full -ml-10 -mb-10" />
@@ -232,7 +235,6 @@ export default function GenerateSoalClient({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-4 sm:px-6 lg:px-10">
-                {/* 1. Sidebar Konfigurasi */}
                 <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
                     <form onSubmit={handleGenerate}>
                         <CardHeader className="bg-slate-50/50 border-b p-6">
@@ -242,8 +244,6 @@ export default function GenerateSoalClient({
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
-                            
-                            {/* Opsi: Materi Sendiri (Multimodal) */}
                             <div className="space-y-3">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pendukung (Opsional)</Label>
                                 <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf, image/*" onChange={handleFileChange} />
@@ -264,7 +264,6 @@ export default function GenerateSoalClient({
                                 )}
                             </div>
 
-                            {/* Section: Jenjang & Semester */}
                             <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang Sekolah</Label>
@@ -291,7 +290,6 @@ export default function GenerateSoalClient({
                                 </div>
                             </div>
 
-                            {/* Section: Mapel & Kelas */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
@@ -313,7 +311,6 @@ export default function GenerateSoalClient({
                                 </div>
                             </div>
 
-                            {/* Section: Kurikulum & Tujuan */}
                             <div className="space-y-4 pt-2 border-t border-slate-50">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kurikulum</Label>
@@ -341,7 +338,6 @@ export default function GenerateSoalClient({
                                 </div>
                             </div>
 
-                            {/* Section: Materi Pokok */}
                             <div className="space-y-4 pt-2 border-t border-slate-50">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Topik / Materi Pokok</Label>
@@ -364,7 +360,6 @@ export default function GenerateSoalClient({
                                 </div>
                             </div>
 
-                            {/* Section: Konfigurasi AI Lanjut */}
                             <div className="space-y-4 pt-2 border-t border-slate-50">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
@@ -431,7 +426,6 @@ export default function GenerateSoalClient({
                     </form>
                 </Card>
 
-                {/* 2. Placeholder Content / Tampilan Utama */}
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col items-center justify-center text-center px-10">
                     <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
                         <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
@@ -451,7 +445,6 @@ export default function GenerateSoalClient({
                 </Card>
             </div>
 
-            {/* Loading Overlay - Morphing Glass Screen */}
             <AnimatePresence>
                 {loading && (
                     <motion.div 
@@ -461,7 +454,6 @@ export default function GenerateSoalClient({
                         className="fixed inset-0 bg-white/40 dark:bg-slate-950/40 backdrop-blur-2xl z-[100] flex flex-col items-center justify-center text-center p-10"
                     >
                         <div className="relative flex flex-col items-center max-w-md w-full">
-                            {/* Visual Glow behind Lottie */}
                             <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-[100px] animate-pulse scale-150" />
                             
                             <div className="relative z-10">
@@ -476,8 +468,6 @@ export default function GenerateSoalClient({
                                     <p className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.3em] font-code">
                                         Merumuskan 5 Butir Soal
                                     </p>
-                                    
-                                    {/* Futuristic Progress Bar */}
                                     <div className="h-1 w-48 bg-slate-200/50 rounded-full overflow-hidden mt-4 border border-white/20">
                                         <motion.div 
                                             className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500"
@@ -496,28 +486,26 @@ export default function GenerateSoalClient({
                 )}
             </AnimatePresence>
 
-            {/* Preview Dialog */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                     <div className="flex flex-col h-[90vh]">
-                        {/* Improved & Clean Header */}
-                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-10 text-white relative shrink-0">
+                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 sm:p-12 text-white relative shrink-0">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full -mr-10 -mt-10" />
                             <div className="relative z-10 flex flex-col items-center text-center">
                                 <DialogHeader>
-                                    <DialogTitle className="text-xl sm:text-3xl font-black tracking-tight text-white uppercase">Review Hasil AI</DialogTitle>
+                                    <DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">Review Hasil AI</DialogTitle>
                                 </DialogHeader>
-                                <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-2 opacity-90">
-                                    {form.assessment_purpose} — {form.subject} Kelas {form.kelas}
+                                <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-3 opacity-90 max-w-lg leading-relaxed">
+                                    {form.assessment_purpose} — {form.subject} Kelas {form.kelas} ({form.topic})
                                 </p>
                             </div>
                         </div>
 
-                        <ScrollArea className="flex-1 p-4 sm:p-8">
-                            <div className="space-y-6 sm:space-y-10 pb-10">
+                        <ScrollArea className="flex-1 p-4 sm:p-10">
+                            <div className="space-y-6 sm:space-y-12 pb-10">
                                 {questions.map((q, idx) => (
-                                    <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-5 sm:p-10 hover:shadow-md transition-all border border-slate-100/50">
-                                        <div className="flex items-center justify-between mb-6">
+                                    <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 hover:shadow-md transition-all border border-slate-100/50">
+                                        <div className="flex items-center justify-between mb-8">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-100">{q.sort_order}</div>
                                                 <div className="flex flex-wrap gap-2">
@@ -527,14 +515,13 @@ export default function GenerateSoalClient({
                                             </div>
                                         </div>
 
-                                        <div className="space-y-6">
+                                        <div className="space-y-8">
                                             {q.image_url && (
-                                                <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-inner border border-slate-100 mb-4 bg-slate-50">
+                                                <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-inner border border-slate-100 mb-6 bg-slate-50">
                                                     <Image src={q.image_url} alt="Ilustrasi" fill className="object-contain" unoptimized />
                                                 </div>
                                             )}
 
-                                            {/* Responsive Question Text */}
                                             <div className="text-slate-800 font-bold text-base sm:text-xl leading-relaxed">
                                                 <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
                                             </div>
@@ -542,38 +529,45 @@ export default function GenerateSoalClient({
                                             {q.type === 'multiple_choice' && q.options && (
                                                 <div className="grid grid-cols-1 gap-3">
                                                     {Object.entries(q.options).sort().map(([key, val]) => (
-                                                        <div key={key} className={cn("p-4 rounded-xl border flex items-center gap-4 group", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
-                                                            <span className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black", q.answer === key ? "bg-emerald-500 text-white" : "bg-white text-slate-400")}>{key}</span>
-                                                            <div className="text-sm font-semibold flex-1"><MathText content={val} /></div>
+                                                        <div key={key} className={cn("p-5 rounded-xl border flex items-center gap-4 group transition-colors", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
+                                                            <span className={cn("w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black shrink-0", q.answer === key ? "bg-emerald-500 text-white shadow-lg shadow-emerald-100" : "bg-white text-slate-400 border border-slate-100")}>{key}</span>
+                                                            <div className="text-sm sm:text-base font-semibold flex-1 overflow-hidden">
+                                                                <MathText content={val} />
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             )}
 
-                                            <div className="mt-8 space-y-4">
-                                                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3">
-                                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                                    <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">Kunci: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
+                                            <div className="mt-10 space-y-5">
+                                                <div className="p-5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3">
+                                                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                                                    <p className="text-sm sm:text-base font-black text-emerald-800 uppercase tracking-tight">Kunci Jawaban: <span className="ml-2 text-emerald-600">{q.answer}</span></p>
                                                 </div>
-                                                <div className="p-6 rounded-xl bg-slate-50 border border-slate-100 text-sm text-slate-600 font-medium italic"><MathText content={q.explanation} /></div>
+                                                <div className="p-6 sm:p-8 rounded-xl bg-slate-50 border border-slate-100 text-sm sm:text-base text-slate-600 font-medium italic leading-relaxed">
+                                                    <MathText content={q.explanation} />
+                                                </div>
                                             </div>
 
-                                            <div className="p-5 rounded-xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
-                                                <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest"><ImageIcon className="h-4 w-4" /><span>Kebutuhan Media</span></div>
-                                                <div className="flex flex-col gap-3">
+                                            <div className="p-6 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 space-y-5">
+                                                <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-[0.2em]">
+                                                    <ImageIcon className="h-4 w-4" />
+                                                    <span>Media Ilustrasi AI</span>
+                                                </div>
+                                                <div className="flex flex-col gap-4">
                                                     <Textarea 
                                                         placeholder="Deskripsikan gambar pendukung yang ingin dibuat oleh AI..." 
-                                                        className="rounded-xl bg-white border-indigo-100 text-xs font-medium min-h-[60px] resize-none focus:ring-2 focus:ring-indigo-500/20" 
+                                                        className="rounded-xl bg-white border-indigo-100 text-sm font-medium min-h-[80px] resize-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm" 
                                                         value={q.image_prompt || ""} 
                                                         onChange={(e) => handleUpdatePrompt(idx, e.target.value)} 
                                                     />
                                                     <Button 
                                                         onClick={() => handleGenerateImage(idx, q.image_prompt || "")} 
                                                         disabled={imageLoadingIdx === idx || (!q.image_prompt)} 
-                                                        className="w-full rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-indigo-100"
+                                                        className="w-full rounded-xl h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-xs tracking-widest gap-2 shadow-lg shadow-indigo-100"
                                                     >
-                                                        {imageLoadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} 
-                                                        Generate Gambar AI
+                                                        {imageLoadingIdx === idx ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />} 
+                                                        Generate Gambar Ilustrasi
                                                     </Button>
                                                 </div>
                                             </div>
@@ -583,13 +577,12 @@ export default function GenerateSoalClient({
                             </div>
                         </ScrollArea>
 
-                        {/* Accessible & Ergonomic Footer */}
-                        <div className="p-6 sm:p-8 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe">
-                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2 shadow-sm transition-all active:scale-95">
-                                <ArrowLeft className="h-4 w-4" /> Edit Konfigurasi
+                        <div className="p-6 sm:p-10 bg-white border-t flex flex-col sm:flex-row gap-4 shrink-0 pb-safe">
+                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2 shadow-sm transition-all active:scale-95">
+                                <ArrowLeft className="h-5 w-5" /> Edit Input
                             </Button>
-                            <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100 transition-all active:scale-95">
-                                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} Simpan ke Bank Soal
+                            <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200 transition-all active:scale-95">
+                                {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal
                             </Button>
                         </div>
                     </div>
@@ -605,6 +598,11 @@ export default function GenerateSoalClient({
                     overflow-x: auto; 
                     overflow-y: hidden;
                     padding-bottom: 0.5em;
+                }
+                @media print {
+                    .math-text-render .katex-display {
+                        overflow-x: visible !important;
+                    }
                 }
                 .math-text-render .katex {
                     white-space: nowrap;
