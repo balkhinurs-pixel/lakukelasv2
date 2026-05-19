@@ -10,7 +10,8 @@ import {
     BookOpen, 
     Users,
     Trash2,
-    Clock
+    Clock,
+    ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import type { AiDocument } from "@/lib/types";
+import { FileCard } from "@/components/ui/file-card-collections";
+import { AppLogo } from "@/components/icons";
 
 export default function NaskahRepositoryClient({ initialDocuments }: { initialDocuments: AiDocument[] }) {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -46,12 +49,17 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
                         <Card key={doc.id} className="border-0 shadow-md rounded-[2.5rem] bg-white hover:shadow-xl transition-all duration-300 group overflow-hidden border border-slate-100">
                             <CardHeader className="pb-3">
                                 <div className="flex justify-between items-start">
-                                    <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600">
-                                        <FileText className="h-6 w-6" />
+                                    <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                                        <FileCard formatFile={doc.mime_type?.includes('pdf') ? 'pdf' : 'doc'} className="scale-90" />
                                     </div>
-                                    <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 border-emerald-100">
-                                        Tersimpan di Drive
-                                    </Badge>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 border-emerald-100">
+                                            Drive Storage
+                                        </Badge>
+                                        <div className="p-1.5 rounded-lg bg-indigo-50/50">
+                                            <div className="w-5 h-5 opacity-40"><AppLogo /></div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <CardTitle className="text-lg font-black text-slate-900 mt-4 leading-tight group-hover:text-indigo-600 transition-colors">
                                     {doc.title}
@@ -68,27 +76,30 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
                                         <span className="text-[10px] font-black uppercase truncate">{doc.subject || 'Umum'}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 text-slate-400">
+                                <div className="flex items-center gap-2 text-slate-400 pl-1">
                                     <Calendar className="h-3.5 w-3.5" />
                                     <span className="text-[10px] font-bold uppercase tracking-tight">
-                                        Dibuat: {format(parseISO(doc.created_at), 'dd MMMM yyyy', { locale: id })}
+                                        {format(parseISO(doc.created_at), 'dd MMM yyyy', { locale: id })}
                                     </span>
                                 </div>
                             </CardContent>
                             <CardFooter className="pt-0">
-                                <Button asChild className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-lg shadow-indigo-100">
+                                <Button asChild className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-lg shadow-indigo-100 transition-all active:scale-95 group/btn">
                                     <a href={doc.drive_file_url || "#"} target="_blank">
                                         <ExternalLink className="h-4 w-4" />
                                         Buka di Google Drive
+                                        <ArrowRight className="h-3.5 w-3.5 ml-auto opacity-0 group-hover/btn:opacity-100 transition-all group-hover/btn:translate-x-1" />
                                     </a>
                                 </Button>
                             </CardFooter>
                         </Card>
                     ))
                 ) : (
-                    <div className="col-span-full py-20 text-center flex flex-col items-center opacity-30">
-                        <FileText className="h-16 w-16 mb-4" />
-                        <p className="font-black uppercase tracking-widest text-sm">Belum ada naskah yang diekspor</p>
+                    <div className="col-span-full py-20 text-center flex flex-col items-center opacity-20 group">
+                        <div className="p-10 rounded-[3rem] bg-slate-50 mb-6 group-hover:bg-indigo-50 transition-colors">
+                            <FileText className="h-16 w-16" />
+                        </div>
+                        <p className="font-black uppercase tracking-[0.2em] text-sm">Belum ada naskah tersimpan</p>
                     </div>
                 )}
             </div>

@@ -54,21 +54,8 @@ import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-// --- Static Options ---
-const mapelByJenjang: Record<string, string[]> = {
-    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
-    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
-    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
-    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
-};
-
-const getClassOptions = (jenjang: string) => {
-    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
-    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
-    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
-    return [];
-};
+import { FileCard, type FormatFileProps } from "@/components/ui/file-card-collections";
+import { AppLogo } from "@/components/icons";
 
 // --- MathText Component ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
@@ -120,22 +107,33 @@ const NaskahPrintTemplate = ({
         >
             {/* Header Naskah - Professional Standard */}
             <div id="print-header" style={{ padding: '15mm 16mm 10mm 16mm' }}>
-                <div className="text-center mb-4">
-                    <h1 className="text-[14pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
-                        {config.schoolName || "SEKOLAH LAKUKELAS"}
-                    </h1>
-                    {config.schoolNpsn && (
-                        <p className="text-[9pt] font-medium" style={{ margin: 0 }}>NPSN: {config.schoolNpsn}</p>
-                    )}
-                    <p className="text-[9pt] italic" style={{ margin: '2px 0' }}>
-                        {config.schoolAddress || "Alamat belum diatur"}
-                    </p>
-                    <p className="text-[9pt] italic" style={{ margin: 0 }}>
-                        {config.schoolEmail ? `Email: ${config.schoolEmail}` : ''} 
-                        {config.schoolWebsite ? ` | Website: ${config.schoolWebsite}` : ''}
-                    </p>
-                    <div style={{ borderBottom: '2.5pt double black', marginTop: '6px', width: '100%' }} />
+                <div className="flex items-center gap-6 mb-4">
+                    {/* Logo Area */}
+                    <div className="w-[22mm] h-[22mm] flex items-center justify-center border border-slate-100 rounded-lg overflow-hidden shrink-0">
+                        {config.logoUrl ? (
+                             <img src={config.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        ) : (
+                            <div className="p-2 opacity-20"><AppLogo /></div>
+                        )}
+                    </div>
+
+                    <div className="flex-1 text-center pr-[22mm]">
+                        <h1 className="text-[14pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
+                            {config.schoolName || "SEKOLAH LAKUKELAS"}
+                        </h1>
+                        {config.schoolNpsn && (
+                            <p className="text-[9pt] font-medium" style={{ margin: 0 }}>NPSN: {config.schoolNpsn}</p>
+                        )}
+                        <p className="text-[9pt] italic" style={{ margin: '2px 0' }}>
+                            {config.schoolAddress || "Alamat belum diatur"}
+                        </p>
+                        <p className="text-[9pt] italic" style={{ margin: 0 }}>
+                            {config.schoolEmail ? `Email: ${config.schoolEmail}` : ''} 
+                            {config.schoolWebsite ? ` | Website: ${config.schoolWebsite}` : ''}
+                        </p>
+                    </div>
                 </div>
+                <div style={{ borderBottom: '2.5pt double black', width: '100%', marginBottom: '6px' }} />
 
                 <div className="text-center mb-6">
                     <h2 className="text-[12pt] font-bold uppercase underline" style={{ margin: 0 }}>
@@ -249,6 +247,7 @@ export default function BankSoalClient({
         schoolAddress: schoolProfile?.school_address || "",
         schoolEmail: schoolProfile?.school_email || "",
         schoolWebsite: schoolProfile?.school_website || "",
+        logoUrl: schoolProfile?.school_logo_url || "",
         jenjang: 'SMP / MTs',
         kelas: '7',
         semester: 'Ganjil',
@@ -530,12 +529,17 @@ export default function BankSoalClient({
                                             )}
                                         </AnimatePresence>
                                     </div>
-                                    <div className="space-y-3 md:w-32">
-                                        <Badge className={cn(
-                                            "font-black text-[9px] uppercase tracking-widest",
-                                            q.difficulty === 'sulit' ? "bg-rose-500" : "bg-emerald-500"
-                                        )}>{q.difficulty}</Badge>
-                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelas {q.kelas}</p>
+                                    <div className="space-y-3 md:w-32 flex flex-col items-center">
+                                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                                            <FileCard formatFile={q.question_type === 'essay' ? 'txt' : 'pdf'} className="scale-75" />
+                                        </div>
+                                        <div className="text-center space-y-1">
+                                            <Badge className={cn(
+                                                "font-black text-[9px] uppercase tracking-widest",
+                                                q.difficulty === 'sulit' ? "bg-rose-500" : "bg-emerald-500"
+                                            )}>{q.difficulty}</Badge>
+                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelas {q.kelas}</p>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -576,7 +580,9 @@ export default function BankSoalClient({
                     <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
                         <button onClick={() => setIsExportDialogOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
                         <div className="flex items-center gap-4">
-                            <div className="p-4 bg-white/20 backdrop-blur-sm rounded-3xl border border-white/20"><Printer className="h-8 w-8" /></div>
+                            <div className="p-4 bg-white/20 backdrop-blur-sm rounded-3xl border border-white/20 flex items-center justify-center shrink-0">
+                                <Printer className="h-8 w-8" />
+                            </div>
                             <div>
                                 <DialogTitle className="text-2xl font-black tracking-tight text-white">Susun Naskah Ujian</DialogTitle>
                                 <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest mt-1">Konfigurasi Metadata Akhir</p>
