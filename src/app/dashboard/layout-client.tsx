@@ -33,9 +33,14 @@ import {
   FileSearch,
   LineChart,
   User,
-  GraduationCap
+  GraduationCap,
+  PanelLeftClose,
+  PanelLeft,
+  HelpCircle,
+  LifeBuoy
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import {
   Sidebar,
@@ -46,9 +51,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarTrigger,
   SidebarGroup,
   SidebarGroupLabel,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -70,6 +75,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function DashboardLayoutClient({ 
   children,
@@ -99,20 +105,43 @@ export default function DashboardLayoutClient({
   };
 
   const NavItem = ({ href, icon: Icon, label, color = "" }: any) => {
+    const { state } = useSidebar();
     const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href) && href !== '/dashboard';
+    const isCollapsed = state === "collapsed";
+
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
           asChild
           isActive={isActive}
+          tooltip={label}
           className={cn(
-            "rounded-xl transition-all duration-200 h-10",
-            isActive ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "hover:bg-slate-100 text-slate-600"
+            "rounded-2xl transition-all duration-300 h-12 mb-1 group/item",
+            isActive 
+              ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100 scale-[1.02]" 
+              : "hover:bg-indigo-50 text-slate-500 hover:text-indigo-600"
           )}
         >
-          <Link href={href}>
-            <Icon className={cn("w-4 h-4 mr-2", !isActive && color)} />
-            <span className="font-bold">{label}</span>
+          <Link href={href} className="flex items-center overflow-hidden">
+            <Icon className={cn(
+                "w-5 h-5 shrink-0 transition-transform duration-300", 
+                !isActive && color,
+                !isActive && "group-hover/item:scale-110",
+                !isCollapsed && "mr-3"
+            )} />
+            <AnimatePresence mode="wait">
+              {!isCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="font-bold whitespace-nowrap overflow-hidden"
+                >
+                  {label}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -141,40 +170,77 @@ export default function DashboardLayoutClient({
     );
   };
 
+  // Custom Toggle Button for Sidebar
+  const SidebarToggle = () => {
+    const { toggleSidebar, state } = useSidebar();
+    return (
+        <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleSidebar}
+            className="hidden md:flex absolute -right-3 top-20 bg-white border shadow-md rounded-full z-50 h-6 w-6 hover:bg-slate-50"
+        >
+            {state === 'expanded' ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        </Button>
+    )
+  }
+
   return (
     <>
-       <Sidebar className="hidden md:flex border-r-indigo-100">
-          <SidebarHeader className="p-0">
-              <div className="bg-gradient-to-br from-indigo-800 to-indigo-600 p-6 text-white text-center space-y-4">
-                  <div className="mx-auto w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl">
-                      <GraduationCap className="w-10 h-10" />
-                  </div>
-                  <div>
-                      <h2 className="font-black text-lg tracking-tight">LakuKelas Guru</h2>
-                      <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-[9px] uppercase tracking-widest mt-1">Sistem Administrasi</Badge>
-                  </div>
+       <Sidebar 
+          collapsible="icon" 
+          className="hidden md:flex m-4 h-[calc(100vh-2rem)] rounded-[40px] border-0 shadow-2xl shadow-indigo-100/30 overflow-visible bg-white"
+       >
+          <SidebarHeader className="p-0 shrink-0">
+              <div className="p-6 pb-2">
+                 <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                        <GraduationCap className="w-6 h-6" />
+                    </div>
+                    <AnimatePresence>
+                        {pathname && (
+                             <motion.div 
+                                initial={{ opacity: 0, scale: 0.8 }} 
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="group-data-[collapsible=icon]:hidden overflow-hidden"
+                             >
+                                <h2 className="font-black text-lg tracking-tight text-slate-900 leading-none">LakuKelas</h2>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dashboard Guru</p>
+                             </motion.div>
+                        )}
+                    </AnimatePresence>
+                 </div>
               </div>
           </SidebarHeader>
           
-          <SidebarContent className="bg-slate-50">
+          <SidebarToggle />
+
+          <SidebarContent className="px-3">
             <ScrollArea className="flex-1">
-                <SidebarGroup className="p-4 pt-6">
+                <SidebarGroup className="p-2 pt-4">
                     {isAdmin && (
                         <SidebarMenu className="mb-6">
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild className="bg-slate-900 text-white hover:bg-slate-800 h-12 rounded-xl shadow-lg">
-                                    <Link href="/admin/users">
-                                        <ShieldCheck className="w-5 h-5 mr-2" />
-                                        <span className="font-black">Buka Master Admin</span>
-                                    </Link>
-                                </SidebarMenuButton>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <SidebarMenuButton asChild className="bg-slate-900 text-white hover:bg-slate-800 h-12 rounded-2xl shadow-lg group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
+                                                <Link href="/admin/users">
+                                                    <ShieldCheck className="w-5 h-5 shrink-0" />
+                                                    <span className="font-black group-data-[collapsible=icon]:hidden ml-2">Master Admin</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" className="md:hidden">Admin Panel</TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </SidebarMenuItem>
                         </SidebarMenu>
                     )}
 
                     {(isHeadmaster || isAdmin) && (
                         <>
-                            <SidebarGroupLabel className="text-teal-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Monitoring</SidebarGroupLabel>
+                            <SidebarGroupLabel className="text-teal-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden">Monitoring</SidebarGroupLabel>
                             <SidebarMenu className="gap-1 mb-6">
                                 <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-teal-600" />
                                 <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Tren" color="text-teal-600" />
@@ -186,18 +252,17 @@ export default function DashboardLayoutClient({
 
                     {isHomeroom && (
                         <>
-                            <SidebarGroupLabel className="text-emerald-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Wali Kelas</SidebarGroupLabel>
+                            <SidebarGroupLabel className="text-emerald-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden">Wali Kelas</SidebarGroupLabel>
                             <SidebarMenu className="gap-1 mb-6">
                                 <NavItem href="/dashboard/homeroom/student-ledger" icon={ClipboardEdit} label="Leger & Catatan" color="text-emerald-600" />
-                                <NavItem href="/dashboard/homeroom/student-progress" icon={TrendingUp} label="Progres Siswa" color="text-emerald-600" />
-                                <NavItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Lap. Bulanan" color="text-emerald-600" />
+                                <NavItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Laporan Bulanan" color="text-emerald-600" />
                             </SidebarMenu>
                         </>
                     )}
 
-                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Menu Utama</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden">Menu Utama</SidebarGroupLabel>
                     <SidebarMenu className="gap-1 mb-6">
-                        <NavItem href="/dashboard" icon={Home} label="Dasbor Guru" color="text-indigo-600" />
+                        <NavItem href="/dashboard" icon={Home} label="Dasbor" color="text-indigo-600" />
                         <NavItem href="/dashboard/teacher-attendance" icon={MapPin} label="Absen Guru" color="text-indigo-600" />
                         <NavItem href="/dashboard/agenda" icon={CalendarDays} label="Agenda Sekolah" color="text-indigo-600" />
                         <NavItem href="/dashboard/attendance" icon={ClipboardCheck} label="Presensi Siswa" color="text-indigo-600" />
@@ -209,40 +274,50 @@ export default function DashboardLayoutClient({
                         <NavItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal Mengajar" color="text-indigo-600" />
                     </SidebarMenu>
 
-                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
+                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2 px-3 group-data-[collapsible=icon]:hidden">
                         <Sparkles className="w-3 h-3" /> Asisten AI
                     </SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
                         <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul Ajar" color="text-indigo-600" />
                         <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
                     </SidebarMenu>
                 </SidebarGroup>
             </ScrollArea>
           </SidebarContent>
 
-          <SidebarFooter className="p-4 border-t bg-slate-50">
-                <div className="flex items-center gap-3 px-2 mb-4">
-                    <Avatar className="h-9 w-9 border-2 border-white shadow-md">
+          <SidebarFooter className="p-4 pt-0 shrink-0">
+                <SidebarMenu className="gap-2 mb-4 border-t pt-4">
+                    <NavItem href="/dashboard/settings" icon={Settings} label="Setelan Akun" color="text-slate-400" />
+                    <SidebarMenuItem>
+                         <SidebarMenuButton className="rounded-2xl h-12 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50">
+                            <LifeBuoy className="w-5 h-5 mr-3 shrink-0" />
+                            <span className="font-bold group-data-[collapsible=icon]:hidden">Pusat Bantuan</span>
+                         </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+
+                <div className="flex items-center gap-3 px-2 mb-4 group-data-[collapsible=icon]:justify-center">
+                    <Avatar className="h-9 w-9 border-2 border-indigo-100 shadow-sm shrink-0">
                         <AvatarImage src={profile?.avatar_url} />
                         <AvatarFallback className="bg-indigo-600 text-white font-bold">{profile?.full_name?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
                         <p className="text-xs font-black text-slate-900 truncate">{profile?.full_name?.split(',')[0]}</p>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{profile?.role}</p>
                     </div>
                 </div>
+
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 font-bold rounded-xl h-10">
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Keluar Sesi
+                        <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 font-bold rounded-2xl h-11 px-3 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
+                            <LogOut className="w-5 h-5 shrink-0" />
+                            <span className="group-data-[collapsible=icon]:hidden ml-3">Keluar</span>
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
                         <AlertDialogHeader>
                             <AlertDialogTitle>Keluar dari LakuKelas?</AlertDialogTitle>
-                            <AlertDialogDescription>Aktivitas mengajar Anda akan diakhiri secara aman.</AlertDialogDescription>
+                            <AlertDialogDescription>Sesi mengajar Anda akan diakhiri secara aman.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="flex flex-row gap-2 pt-4">
                             <AlertDialogCancel className="flex-1 rounded-xl">Batal</AlertDialogCancel>
@@ -253,24 +328,25 @@ export default function DashboardLayoutClient({
           </SidebarFooter>
        </Sidebar>
 
-      <SidebarInset className="bg-[#fcfaff]">
-        <header className="sticky top-0 z-40 w-full bg-indigo-700 text-white shadow-md">
-            <div className="flex items-center justify-between h-16 px-4">
-                 <div className="flex items-center gap-3">
-                     <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20 rounded-xl" />
+      <SidebarInset className="bg-transparent">
+        <header className="sticky top-0 z-40 w-full px-4 pt-4 md:pt-6">
+            <div className="flex items-center justify-between h-16 px-6 bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg rounded-[2rem] md:rounded-[24px]">
+                 <div className="flex items-center gap-4">
+                     <SidebarTrigger className="md:hidden text-indigo-600 hover:bg-indigo-50 rounded-xl" />
                      <div className="flex flex-col">
-                        <span className="text-xs font-black uppercase opacity-70 tracking-widest">Dashboard</span>
-                        <h1 className="text-sm font-bold tracking-tight">Administrasi Guru</h1>
+                        <span className="text-[10px] font-black uppercase text-indigo-600/60 tracking-widest leading-none">Dashboard</span>
+                        <h1 className="text-sm font-black text-slate-800 tracking-tight mt-0.5">LakuKelas Guru</h1>
                      </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full" asChild>
-                        <Link href="/dashboard/settings"><Settings className="h-5 w-5" /></Link>
+                <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors relative">
+                        <Bell className="h-5 w-5" />
+                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
                     </Button>
-                    <div className="h-8 w-px bg-white/20 mx-2" />
+                    <div className="h-8 w-px bg-slate-100 mx-1 hidden sm:block" />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 transition-colors rounded-full">
+                          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-full">
                               <LogOut className="h-5 w-5" />
                           </Button>
                       </AlertDialogTrigger>
@@ -340,7 +416,6 @@ export default function DashboardLayoutClient({
                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] px-1">Wali Kelas</p>
                             <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 <MobileGridItem href="/dashboard/homeroom/student-ledger" icon={ClipboardEdit} label="Leger" color="bg-blue-500" />
-                                <MobileGridItem href="/dashboard/homeroom/student-progress" icon={TrendingUp} label="Progres" color="bg-indigo-500" />
                                 <MobileGridItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Bulanan" color="bg-purple-500" />
                             </div>
                           </div>
@@ -366,7 +441,6 @@ export default function DashboardLayoutClient({
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul" color="bg-blue-700" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
                           </div>
                         </div>
