@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,7 +6,6 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import html2canvas from "html2canvas";
 import { 
-    Database, 
     Search, 
     Filter, 
     PlusCircle,
@@ -22,19 +22,15 @@ import {
     CloudIcon,
     ChevronLeft,
     ChevronRight,
-    Layout,
     Printer,
     FileText,
-    School,
     Download,
-    Clock,
-    Hash,
     X,
     Timer,
     ExternalLink,
     ArrowRight
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +51,7 @@ import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileCard, type FormatFileProps } from "@/components/ui/file-card-collections";
+import { FileCard } from "@/components/ui/file-card-collections";
 import { AppLogo } from "@/components/icons";
 import { LottieSuccess } from "@/components/ui/lottie-success";
 
@@ -447,276 +443,295 @@ export default function BankSoalClient({
     };
 
     return (
-        <div className="space-y-6">
-            {isExportDialogOpen && (
-                <NaskahPrintTemplate 
-                    questions={selectedOrderedIds.map(id => initialQuestions.find(q => q.id === id)).filter(Boolean)} 
-                    config={naskahConfig} 
-                />
-            )}
-
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative flex-1 w-full max-w-md group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
-                    <Input 
-                        placeholder="Cari materi..." 
-                        className="pl-12 h-12 rounded-2xl border-slate-200 bg-white shadow-sm" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <AnimatePresence>
-                        {selectedOrderedIds.length > 0 && (
-                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                                <Button 
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl gap-2 font-bold px-6 shadow-lg shadow-emerald-100 h-12"
-                                    onClick={() => setIsExportDialogOpen(true)}
-                                >
-                                    <Printer className="h-5 w-5" />
-                                    Susun Naskah ({selectedOrderedIds.length})
-                                </Button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                    <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-bold px-6 shadow-lg shadow-indigo-100" asChild>
-                        <Link href="/dashboard/ai-pembelajaran/generate-soal">
-                            <PlusCircle className="h-5 w-5" />
-                            Generate Baru
-                        </Link>
-                    </Button>
-                </div>
-            </div>
-
-            <Card className="border-0 shadow-sm rounded-3xl bg-slate-50/50 p-4">
-                <div className="flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
-                    <Filter className="h-4 w-4" />
-                    <Select value={filterClass} onValueChange={setFilterClass}>
-                        <SelectTrigger className="w-32 h-10 rounded-xl bg-white"><SelectValue placeholder="Kelas" /></SelectTrigger>
-                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                            <SelectItem value="all">Semua Kelas</SelectItem>
-                            {uniqueClasses.map(c => <SelectItem key={c} value={c}>Kelas {c}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                    <Select value={filterSubject} onValueChange={setFilterSubject}>
-                        <SelectTrigger className="w-44 h-10 rounded-xl bg-white"><SelectValue placeholder="Mapel" /></SelectTrigger>
-                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                            <SelectItem value="all">Semua Mapel</SelectItem>
-                            {uniqueSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                    <Badge className="ml-auto bg-indigo-50 text-indigo-700 border-indigo-100 shadow-sm">{filteredQuestions.length} SOAL TERSEDIA</Badge>
-                </div>
-            </Card>
-
-            <div className="space-y-4">
-                {paginatedQuestions.map((q) => {
-                    const selectionIdx = getSelectionIndex(q.id);
-                    const isSelected = selectionIdx !== null;
-                    
-                    return (
-                        <Card key={q.id} className={cn(
-                            "border-0 shadow-sm rounded-[2rem] bg-white overflow-hidden transition-all border-2",
-                            isSelected ? "border-indigo-500 bg-indigo-50/30" : "border-transparent"
-                        )}>
-                            <div className="p-6 flex flex-col md:flex-row gap-6">
-                                <div className="flex items-start gap-4 shrink-0">
-                                    <div className="relative">
-                                        <Checkbox 
-                                            checked={isSelected} 
-                                            onCheckedChange={() => toggleSelect(q.id)}
-                                            className="h-7 w-7 rounded-xl mt-1 border-slate-200"
-                                        />
-                                        <AnimatePresence>
-                                            {isSelected && (
-                                                <motion.div 
-                                                    initial={{ scale: 0 }} 
-                                                    animate={{ scale: 1 }} 
-                                                    exit={{ scale: 0 }}
-                                                    className="absolute -top-2 -right-2 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-md z-10"
-                                                >
-                                                    {selectionIdx}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                    <div className="space-y-3 md:w-32 flex flex-col items-center">
-                                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
-                                            <FileCard formatFile={q.question_type === 'essay' ? 'txt' : 'pdf'} className="scale-75" />
-                                        </div>
-                                        <div className="text-center space-y-1">
-                                            <Badge className={cn(
-                                                "font-black text-[9px] uppercase tracking-widest",
-                                                q.difficulty === 'sulit' ? "bg-rose-500" : "bg-emerald-500"
-                                            )}>{q.difficulty}</Badge>
-                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelas {q.kelas}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 space-y-4">
-                                    <div className="text-slate-800 font-bold leading-relaxed">
-                                        <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-xl' : ''} />
-                                    </div>
-                                    {q.options_json && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                                <div key={k} className="p-3 rounded-2xl border border-slate-100 bg-white text-xs font-semibold flex gap-2 hover:border-indigo-200 transition-colors">
-                                                    <span className="text-indigo-600 font-black">{k}.</span>
-                                                    <MathText content={v} />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                    <div className="pt-4 flex justify-between items-center border-t border-slate-50">
-                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg">KUNCI: {q.correct_answer}</p>
-                                        <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
-                                            {expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
-                                        </Button>
-                                    </div>
-                                    {expandedQuestions.has(q.id) && (
-                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="p-5 rounded-2xl bg-slate-50 text-xs italic text-slate-600 border border-slate-100 leading-relaxed">
-                                            <MathText content={q.explanation} />
-                                        </motion.div>
-                                    )}
-                                </div>
-                            </div>
-                        </Card>
-                    );
-                })}
-            </div>
-
-            <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-                <DialogContent className="rounded-[2.5rem] p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF]">
-                    <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
-                        <button onClick={() => setIsExportDialogOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
-                        <div className="flex items-center gap-4">
-                            <div className="p-4 bg-white/20 backdrop-blur-sm rounded-3xl border border-white/20 flex items-center justify-center shrink-0">
-                                <Printer className="h-8 w-8" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-2xl font-black tracking-tight text-white">Susun Naskah Ujian</DialogTitle>
-                                <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest mt-1">Konfigurasi Metadata Akhir</p>
-                            </div>
-                        </div>
+        <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
+            {/* Header Style Indigo Rounded */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 blur-2xl rounded-full -ml-10 -mb-10" />
+                
+                <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
+                    <div className="space-y-2">
+                        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
+                            Bank Soal AI
+                        </h1>
+                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">
+                            Question Repository
+                        </p>
                     </div>
+                </div>
+            </div>
 
-                    <ScrollArea className="max-h-[60vh] p-8">
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Judul Naskah (Nama File)</Label>
-                                <Input placeholder="e.g. UAS Matematika Kelas 10" value={naskahConfig.title} onChange={e => setNaskahConfig({...naskahConfig, title: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 focus:ring-2 font-bold" />
-                            </div>
+            <div className="px-4 sm:px-6 lg:px-10 space-y-6">
+                {isExportDialogOpen && (
+                    <NaskahPrintTemplate 
+                        questions={selectedOrderedIds.map(id => initialQuestions.find(q => q.id === id)).filter(Boolean)} 
+                        config={naskahConfig} 
+                    />
+                )}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang Sekolah</Label>
-                                    <Select value={naskahConfig.jenjang} onValueChange={handleJenjangChange}>
-                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tingkat Kelas</Label>
-                                    <Select value={naskahConfig.kelas} onValueChange={v => setNaskahConfig({...naskahConfig, kelas: v})}>
-                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {getClassOptions(naskahConfig.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
-                                <Select value={naskahConfig.subject} onValueChange={v => setNaskahConfig({...naskahConfig, subject: v})}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        {(mapelByJenjang[naskahConfig.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Calendar className="h-3 w-3" /> Tanggal Ujian</Label>
-                                    <Input type="date" value={naskahConfig.date} onChange={e => setNaskahConfig({...naskahConfig, date: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Timer className="h-3 w-3" /> Durasi (Waktu)</Label>
-                                    <Input placeholder="e.g. 90 Menit" value={naskahConfig.duration} onChange={e => setNaskahConfig({...naskahConfig, duration: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Asesmen</Label>
-                                    <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
-                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="Penilaian Harian" className="font-bold">Harian (UH)</SelectItem>
-                                            <SelectItem value="Sumatif Akhir Semester" className="font-bold">SAS / UAS</SelectItem>
-                                            <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
-                                            <SelectItem value="Latihan Mandiri" className="font-bold">Latihan</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Format File</Label>
-                                    <Select value={naskahConfig.format} onValueChange={(v: any) => setNaskahConfig({...naskahConfig, format: v})}>
-                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            <SelectItem value="pdf" className="font-bold text-rose-600">PDF Document</SelectItem>
-                                            <SelectItem value="doc" className="font-bold text-blue-600">Google Doc</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </div>
-                    </ScrollArea>
-
-                    <div className="p-8 bg-white border-t">
-                        <Button onClick={handleCreateNaskah} disabled={exporting || !naskahConfig.title} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
-                            {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : (naskahConfig.format === 'pdf' ? <Download className="h-6 w-6" /> : <CloudIcon className="h-6 w-6" />)}
-                            Generate & Simpan ke Drive
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="relative flex-1 w-full max-w-md group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
+                        <Input 
+                            placeholder="Cari materi..." 
+                            className="pl-12 h-12 rounded-2xl border-slate-200 bg-white shadow-sm" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <AnimatePresence>
+                            {selectedOrderedIds.length > 0 && (
+                                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                                    <Button 
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl gap-2 font-bold px-6 shadow-lg shadow-emerald-100 h-12"
+                                        onClick={() => setIsExportDialogOpen(true)}
+                                    >
+                                        <Printer className="h-5 w-5" />
+                                        Susun Naskah ({selectedOrderedIds.length})
+                                    </Button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-bold px-6 shadow-lg shadow-indigo-100" asChild>
+                            <Link href="/dashboard/ai-pembelajaran/generate-soal">
+                                <PlusCircle className="h-5 w-5" />
+                                Generate Baru
+                            </Link>
                         </Button>
                     </div>
-                </DialogContent>
-            </Dialog>
+                </div>
 
-            {/* Success Dialog with Anim Asset */}
-            <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
-                <DialogContent className="rounded-[2.5rem] p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
-                    <div className="p-10 flex flex-col items-center text-center">
-                        <LottieSuccess size={200} />
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-2">Naskah Berhasil!</h3>
-                        <p className="text-slate-500 font-bold text-sm mt-3 px-4 leading-relaxed">
-                            Dokumen telah berhasil disusun, dikirim ke Google Drive, dan otomatis terunduh ke perangkat Anda.
-                        </p>
+                <Card className="border-0 shadow-sm rounded-3xl bg-slate-50/50 p-4">
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+                        <Filter className="h-4 w-4" />
+                        <Select value={filterClass} onValueChange={setFilterClass}>
+                            <SelectTrigger className="w-32 h-10 rounded-xl bg-white"><SelectValue placeholder="Kelas" /></SelectTrigger>
+                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                <SelectItem value="all">Semua Kelas</SelectItem>
+                                {uniqueClasses.map(c => <SelectItem key={c} value={c}>Kelas {c}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={filterSubject} onValueChange={setFilterSubject}>
+                            <SelectTrigger className="w-44 h-10 rounded-xl bg-white"><SelectValue placeholder="Mapel" /></SelectTrigger>
+                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                <SelectItem value="all">Semua Mapel</SelectItem>
+                                {uniqueSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Badge className="ml-auto bg-indigo-50 text-indigo-700 border-indigo-100 shadow-sm">{filteredQuestions.length} SOAL TERSEDIA</Badge>
+                    </div>
+                </Card>
+
+                <div className="space-y-4">
+                    {paginatedQuestions.map((q) => {
+                        const selectionIdx = getSelectionIndex(q.id);
+                        const isSelected = selectionIdx !== null;
                         
-                        <div className="w-full space-y-3 mt-8">
-                            <Button asChild className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold gap-2">
-                                <a href={successFileUrl} target="_blank">
-                                    <ExternalLink className="h-4 w-4" /> Buka di Drive
-                                </a>
-                            </Button>
-                            <Button variant="ghost" onClick={() => setIsSuccessDialogOpen(false)} className="w-full h-12 text-slate-400 font-bold hover:bg-slate-50">
-                                Selesai
+                        return (
+                            <Card key={q.id} className={cn(
+                                "border-0 shadow-sm rounded-[2rem] bg-white overflow-hidden transition-all border-2",
+                                isSelected ? "border-indigo-500 bg-indigo-50/30" : "border-transparent"
+                            )}>
+                                <div className="p-6 flex flex-col md:flex-row gap-6">
+                                    <div className="flex items-start gap-4 shrink-0">
+                                        <div className="relative">
+                                            <Checkbox 
+                                                checked={isSelected} 
+                                                onCheckedChange={() => toggleSelect(q.id)}
+                                                className="h-7 w-7 rounded-xl mt-1 border-slate-200"
+                                            />
+                                            <AnimatePresence>
+                                                {isSelected && (
+                                                    <motion.div 
+                                                        initial={{ scale: 0 }} 
+                                                        animate={{ scale: 1 }} 
+                                                        exit={{ scale: 0 }}
+                                                        className="absolute -top-2 -right-2 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-md z-10"
+                                                    >
+                                                        {selectionIdx}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                        <div className="space-y-3 md:w-32 flex flex-col items-center">
+                                            <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                                                <FileCard formatFile={q.question_type === 'essay' ? 'txt' : 'pdf'} className="scale-75" />
+                                            </div>
+                                            <div className="text-center space-y-1">
+                                                <Badge className={cn(
+                                                    "font-black text-[9px] uppercase tracking-widest",
+                                                    q.difficulty === 'sulit' ? "bg-rose-500" : "bg-emerald-500"
+                                                )}>{q.difficulty}</Badge>
+                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelas {q.kelas}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 space-y-4">
+                                        <div className="text-slate-800 font-bold leading-relaxed">
+                                            <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-xl' : ''} />
+                                        </div>
+                                        {q.options_json && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
+                                                    <div key={k} className="p-3 rounded-2xl border border-slate-100 bg-white text-xs font-semibold flex gap-2 hover:border-indigo-200 transition-colors">
+                                                        <span className="text-indigo-600 font-black">{k}.</span>
+                                                        <MathText content={v} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="pt-4 flex justify-between items-center border-t border-slate-50">
+                                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg">KUNCI: {q.correct_answer}</p>
+                                            <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
+                                                {expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
+                                            </Button>
+                                        </div>
+                                        {expandedQuestions.has(q.id) && (
+                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="p-5 rounded-2xl bg-slate-50 text-xs italic text-slate-600 border border-slate-100 leading-relaxed">
+                                                <MathText content={q.explanation} />
+                                            </motion.div>
+                                        )}
+                                    </div>
+                                </div>
+                            </Card>
+                        );
+                    })}
+                </div>
+
+                <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                    <DialogContent className="rounded-[2.5rem] p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF]">
+                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
+                            <button onClick={() => setIsExportDialogOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
+                            <div className="flex items-center gap-4">
+                                <div className="p-4 bg-white/20 backdrop-blur-sm rounded-3xl border border-white/20 flex items-center justify-center shrink-0">
+                                    <Printer className="h-8 w-8" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-2xl font-black tracking-tight text-white">Susun Naskah Ujian</DialogTitle>
+                                    <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest mt-1">Konfigurasi Metadata Akhir</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <ScrollArea className="max-h-[60vh] p-8">
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Judul Naskah (Nama File)</Label>
+                                    <Input placeholder="e.g. UAS Matematika Kelas 10" value={naskahConfig.title} onChange={e => setNaskahConfig({...naskahConfig, title: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 focus:ring-2 font-bold" />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang Sekolah</Label>
+                                        <Select value={naskahConfig.jenjang} onValueChange={handleJenjangChange}>
+                                            <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                                {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tingkat Kelas</Label>
+                                        <Select value={naskahConfig.kelas} onValueChange={v => setNaskahConfig({...naskahConfig, kelas: v})}>
+                                            <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                                {getClassOptions(naskahConfig.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
+                                    <Select value={naskahConfig.subject} onValueChange={v => setNaskahConfig({...naskahConfig, subject: v})}>
+                                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            {(mapelByJenjang[naskahConfig.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Calendar className="h-3 w-3" /> Tanggal Ujian</Label>
+                                        <Input type="date" value={naskahConfig.date} onChange={e => setNaskahConfig({...naskahConfig, date: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Timer className="h-3 w-3" /> Durasi (Waktu)</Label>
+                                        <Input placeholder="e.g. 90 Menit" value={naskahConfig.duration} onChange={e => setNaskahConfig({...naskahConfig, duration: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Asesmen</Label>
+                                        <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
+                                            <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                                <SelectItem value="Penilaian Harian" className="font-bold">Harian (UH)</SelectItem>
+                                                <SelectItem value="Sumatif Akhir Semester" className="font-bold">SAS / UAS</SelectItem>
+                                                <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
+                                                <SelectItem value="Latihan Mandiri" className="font-bold">Latihan</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Format File</Label>
+                                        <Select value={naskahConfig.format} onValueChange={(v: any) => setNaskahConfig({...naskahConfig, format: v})}>
+                                            <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                                <SelectItem value="pdf" className="font-bold text-rose-600">PDF Document</SelectItem>
+                                                <SelectItem value="doc" className="font-bold text-blue-600">Google Doc</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+                        </ScrollArea>
+
+                        <div className="p-8 bg-white border-t">
+                            <Button onClick={handleCreateNaskah} disabled={exporting || !naskahConfig.title} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
+                                {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : (naskahConfig.format === 'pdf' ? <Download className="h-6 w-6" /> : <CloudIcon className="h-6 w-6" />)}
+                                Generate & Simpan ke Drive
                             </Button>
                         </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                    </DialogContent>
+                </Dialog>
 
-            {totalPages > 1 && (
-                <div className="flex justify-center gap-2 pt-6">
-                    <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="rounded-xl h-10 w-10"><ChevronLeft className="h-4 w-4" /></Button>
-                    <div className="flex items-center px-4 font-black text-sm text-slate-400 bg-slate-100 rounded-xl">{currentPage} / {totalPages}</div>
-                    <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="rounded-xl h-10 w-10"><ChevronRight className="h-4 w-4" /></Button>
-                </div>
-            )}
+                {/* Success Dialog with Anim Asset */}
+                <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+                    <DialogContent className="rounded-[2.5rem] p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
+                        <div className="p-10 flex flex-col items-center text-center">
+                            <LottieSuccess size={200} />
+                            <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-2">Naskah Berhasil!</h3>
+                            <p className="text-slate-500 font-bold text-sm mt-3 px-4 leading-relaxed">
+                                Dokumen telah berhasil disusun, dikirim ke Google Drive, dan otomatis terunduh ke perangkat Anda.
+                            </p>
+                            
+                            <div className="w-full space-y-3 mt-8">
+                                <Button asChild className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold gap-2">
+                                    <a href={successFileUrl} target="_blank">
+                                        <ExternalLink className="h-4 w-4" /> Buka di Drive
+                                    </a>
+                                </Button>
+                                <Button variant="ghost" onClick={() => setIsSuccessDialogOpen(false)} className="w-full h-12 text-slate-400 font-bold hover:bg-slate-50">
+                                    Selesai
+                                </Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                {totalPages > 1 && (
+                    <div className="flex justify-center gap-2 pt-6">
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="rounded-xl h-10 w-10"><ChevronLeft className="h-4 w-4" /></Button>
+                        <div className="flex items-center px-4 font-black text-sm text-slate-400 bg-slate-100 rounded-xl">{currentPage} / {totalPages}</div>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="rounded-xl h-10 w-10"><ChevronRight className="h-4 w-4" /></Button>
+                    </div>
+                )}
+            </div>
             
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }

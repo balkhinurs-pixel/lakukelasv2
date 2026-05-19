@@ -2,7 +2,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAdminProfile, getActiveSchoolYearName } from "@/lib/data";
 import BankSoalClient from "./bank-soal-client";
-import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
 export default async function BankSoalPage() {
     const supabase = createClient();
@@ -43,13 +42,7 @@ export default async function BankSoalPage() {
     const classes = Array.from(new Set(qList.map(q => q.kelas))).sort((a,b) => Number(a) - Number(b));
 
     return (
-        <div className="space-y-8 p-1">
-            <HandWrittenTitle 
-                title="Bank Soal AI" 
-                subtitle="Manajemen Aset"
-                className="py-4 md:py-6"
-            />
-
+        <div className="p-0">
             <BankSoalClient 
                 initialQuestions={qList} 
                 uniqueSubjects={subjects}
