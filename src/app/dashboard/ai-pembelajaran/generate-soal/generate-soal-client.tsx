@@ -452,17 +452,44 @@ export default function GenerateSoalClient({
                 </Card>
             </div>
 
-            {/* Loading Overlay */}
+            {/* Loading Overlay - Morphing Glass Screen */}
             <AnimatePresence>
                 {loading && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-white/90 backdrop-blur-md z-[100] flex flex-col items-center justify-center text-center p-10">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-3xl animate-pulse scale-150" />
-                            <div className="relative z-10 p-10 rounded-[3rem] bg-white shadow-2xl border border-indigo-50 flex flex-col items-center">
-                                <LottieAiProcess size={200} />
-                                <div className="mt-4 space-y-2">
-                                    <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Merumuskan 5 Butir Soal...</p>
-                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{form.subject} — Kelas {form.kelas}</p>
+                    <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }} 
+                        className="fixed inset-0 bg-white/40 dark:bg-slate-950/40 backdrop-blur-2xl z-[100] flex flex-col items-center justify-center text-center p-10"
+                    >
+                        <div className="relative flex flex-col items-center max-w-md w-full">
+                            {/* Visual Glow behind Lottie */}
+                            <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-[100px] animate-pulse scale-150" />
+                            
+                            <div className="relative z-10">
+                                <LottieAiProcess size={280} />
+                            </div>
+
+                            <div className="relative z-10 mt-8 space-y-3">
+                                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter font-code">
+                                    <span className="inline-block animate-pulse">SYSTEM.PROCESSING</span>
+                                </h2>
+                                <div className="flex flex-col items-center gap-1">
+                                    <p className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.3em] font-code">
+                                        Merumuskan 5 Butir Soal
+                                    </p>
+                                    
+                                    {/* Futuristic Progress Bar */}
+                                    <div className="h-1 w-48 bg-slate-200/50 rounded-full overflow-hidden mt-4 border border-white/20">
+                                        <motion.div 
+                                            className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500"
+                                            initial={{ x: "-100%" }}
+                                            animate={{ x: "100%" }}
+                                            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                                        />
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 opacity-60 font-code">
+                                        Please wait for neural synthesis
+                                    </p>
                                 </div>
                             </div>
                         </div>
