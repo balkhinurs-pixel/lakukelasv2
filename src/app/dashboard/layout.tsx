@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import * as React from 'react';
@@ -17,14 +16,28 @@ export default async function DashboardLayout({
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    redirect('/');
+    redirect('/login');
   }
 
+  // Ambil profil lengkap di sini (Single Fetch)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, avatar_url, is_homeroom_teacher, role')
+    .select('full_name, avatar_url, is_homeroom_teacher, role, is_activated')
     .eq('id', user.id)
     .single();
+
+  if (!profile) {
+      redirect('/complete-profile');
+  }
+
+  // Pindahkan logika pengalihan status dari middleware ke sini agar load awal lebih ringan
+  if (!profile.is_activated) {
+      redirect('/waiting-approval');
+  }
+
+  if (profile.role === 'headmaster') {
+      redirect('/monitoring');
+  }
 
   return (
     <SidebarProvider>

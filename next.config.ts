@@ -14,7 +14,7 @@ const withPWA = require('next-pwa')({
         cacheName: 'supabase-api-cache',
         expiration: {
           maxEntries: 200,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          maxAgeSeconds: 24 * 60 * 60, // 24 jam
         },
         cacheableResponse: {
           statuses: [0, 200],
@@ -28,7 +28,7 @@ const withPWA = require('next-pwa')({
         cacheName: 'image-cache',
         expiration: {
           maxEntries: 200,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 hari
         },
       },
     },
@@ -36,7 +36,6 @@ const withPWA = require('next-pwa')({
 })
 
 const nextConfig: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -63,6 +62,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'vpsvttosndivxlyfajio.supabase.co', // Storage domain
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 };

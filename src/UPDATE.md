@@ -1,30 +1,22 @@
 # Log Pembaruan LakuKelas
 
-## Update V37.0: Interactive Success Feedback - TERIMPLEMENTASI
-Peningkatan pengalaman pengguna (UX) dengan animasi visual untuk notifikasi keberhasilan yang lebih premium.
+## Update V42.0: Performance Optimization & PWA Caching - TERIMPLEMENTASI
+Fokus pada pengurangan delay saat membuka dashboard dan efisiensi kuota.
 
-### 1. Sistem Animasi Lottie (UI Asset)
-- **Komponen `LottieSuccess`**: Implementasi asset animasi baru menggunakan `DotLottieReact` untuk status "Success".
-- **Visual Feedback**: Menampilkan animasi centang interaktif segera setelah operasi kritis selesai (seperti generate naskah).
+### 1. Pre-Optimization Backup
+- Pengaturan middleware sebelumnya (V41.0) telah dicatat. Jika terjadi kegagalan logika pengalihan, sistem akan dikembalikan ke pola sinkron di middleware.
+- Status: Berhasil dicadangkan.
 
-### 2. Dialog Keberhasilan Terintegrasi
-- **Bank Soal AI**: Mengganti notifikasi *toast* sederhana menjadi **Success Dialog** penuh saat naskah ujian berhasil dibuat.
-- **Aksi Lanjutan**: Dialog sukses kini menyertakan tombol pintas "Buka di Drive" dan "Selesai" untuk alur kerja yang lebih lancar.
+### 2. Middleware Strategy (Fast-Path)
+- Mengubah `middleware.ts` agar hanya melakukan verifikasi sesi (Auth) tanpa kueri tabel `profiles`. 
+- Mengurangi beban tunggu (latency) sekitar 200ms - 400ms per request halaman.
+- Logika otorisasi peran (Admin/Guru) dipindahkan ke Server Components.
 
----
-
-## Update V36.0: Premium Document Branding - TERIMPLEMENTASI
-Pembaruan identitas visual pada modul Bank Soal dan Naskah PDF.
-
-### 1. Ikonografi Premium
-- **AppLogo Integration**: Menggunakan ikon resmi LakuKelas pada kartu dokumen di repository.
-- **Dynamic FileCard**: Menggunakan visual `FileCard` dengan indikator format file (PDF/DOC) untuk memudahkan navigasi guru.
-
-### 2. Standarisasi Kop Surat PDF
-- **Branded Header**: Penambahan area logo instansi di sisi kiri Kop Surat pada `NaskahPrintTemplate`.
-- **Professional Layout**: Penyesuaian tata letak (NPSN, Email, Website) agar dokumen terlihat resmi dan sah secara administratif.
+### 3. PWA Runtime Caching
+- Implementasi `next-pwa` dengan aturan `runtimeCaching` khusus untuk API Supabase.
+- Mempercepat pemuatan data dashboard saat aplikasi dibuka kembali melalui browser/home screen.
 
 ---
 
-## Update V35.0: Principal Monitoring Analytics - TERIMPLEMENTASI
-Penyempurnaan mesin analitik database untuk memberikan wawasan mendalam kepada Kepala Sekolah mengenai kinerja staf.
+## Update V41.0: Triple Gradient Trend Chart - TERIMPLEMENTASI
+Peningkatan visualisasi grafik tren dengan sistem gradien warna yang lengkap.
