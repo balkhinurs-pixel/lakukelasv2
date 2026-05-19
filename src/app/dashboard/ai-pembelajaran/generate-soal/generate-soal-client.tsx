@@ -498,24 +498,25 @@ export default function GenerateSoalClient({
 
             {/* Preview Dialog */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl bg-[#F8FAFF]">
+                <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                     <div className="flex flex-col h-[90vh]">
-                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white relative shrink-0">
-                            <div className="flex items-center gap-5">
-                                <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl"><FileText className="h-8 w-8" /></div>
-                                <div>
-                                    <DialogHeader>
-                                        <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight text-white">Review Hasil AI</DialogTitle>
-                                    </DialogHeader>
-                                    <p className="text-indigo-100 font-bold text-sm sm:text-base mt-1">{form.assessment_purpose} — {form.subject} Kelas {form.kelas}</p>
-                                </div>
+                        {/* Improved & Clean Header */}
+                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-10 text-white relative shrink-0">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full -mr-10 -mt-10" />
+                            <div className="relative z-10 flex flex-col items-center text-center">
+                                <DialogHeader>
+                                    <DialogTitle className="text-xl sm:text-3xl font-black tracking-tight text-white uppercase">Review Hasil AI</DialogTitle>
+                                </DialogHeader>
+                                <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-2 opacity-90">
+                                    {form.assessment_purpose} — {form.subject} Kelas {form.kelas}
+                                </p>
                             </div>
                         </div>
 
-                        <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-8 pb-10">
+                        <ScrollArea className="flex-1 p-4 sm:p-8">
+                            <div className="space-y-6 sm:space-y-10 pb-10">
                                 {questions.map((q, idx) => (
-                                    <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-8 hover:shadow-md transition-all border border-slate-100/50">
+                                    <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-5 sm:p-10 hover:shadow-md transition-all border border-slate-100/50">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-100">{q.sort_order}</div>
@@ -533,7 +534,8 @@ export default function GenerateSoalClient({
                                                 </div>
                                             )}
 
-                                            <div className="text-slate-800 font-bold text-lg sm:text-xl leading-relaxed">
+                                            {/* Responsive Question Text */}
+                                            <div className="text-slate-800 font-bold text-base sm:text-xl leading-relaxed">
                                                 <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
                                             </div>
 
@@ -581,9 +583,12 @@ export default function GenerateSoalClient({
                             </div>
                         </ScrollArea>
 
-                        <div className="p-6 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0">
-                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2"><ArrowLeft className="h-4 w-4" /> Edit</Button>
-                            <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100">
+                        {/* Accessible & Ergonomic Footer */}
+                        <div className="p-6 sm:p-8 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe">
+                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2 shadow-sm transition-all active:scale-95">
+                                <ArrowLeft className="h-4 w-4" /> Edit Konfigurasi
+                            </Button>
+                            <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-100 transition-all active:scale-95">
                                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} Simpan ke Bank Soal
                             </Button>
                         </div>
