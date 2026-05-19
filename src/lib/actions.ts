@@ -1,4 +1,3 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -21,29 +20,54 @@ export async function getActiveSchoolYearId(): Promise<string | null> {
 }
 
 /**
- * Melengkapi profil awal bagi pengguna baru sebelum masuk ke antrean approval.
+ * Melengkapi profil awal bagi pengguna baru.
+ * Dilengkapi logika "First Admin": User pertama yang setup profil otomatis jadi Admin Aktif.
  */
 export async function completeInitialProfile(data: { fullName: string, nip: string, phoneNumber: string }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase
-        .from('profiles')
-        .update({
-            full_name: data.fullName,
-            nip: data.nip,
-            phone_number: data.phoneNumber
-        })
-        .eq('id', user.id);
+    try {
+        // 1. Cek apakah sudah ada admin di sistem
+        const { data: anyAdmin } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('role', 'admin')
+            .limit(1)
+            .maybeSingle();
 
-    if (error) {
-        console.error("Error completing profile:", error);
-        return { success: false, error: "Gagal menyimpan data profil." };
+        // Jika belum ada admin, maka user ini adalah admin pertama
+        const isFirstAdmin = !anyAdmin;
+
+        // 2. Update profil dengan data identitas
+        // Jika admin pertama, langsung diaktifkan (is_activated: true)
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                full_name: data.fullName,
+                nip: data.nip,
+                phone_number: data.phoneNumber,
+                role: isFirstAdmin ? 'admin' : 'teacher',
+                is_activated: isFirstAdmin ? true : false
+            })
+            .eq('id', user.id);
+
+        if (error) {
+            console.error("Error completing profile:", error);
+            return { success: false, error: "Gagal menyimpan data profil." };
+        }
+
+        // Paksa revalidasi agar status aktivasi terbaru terbaca di Layout
+        revalidatePath('/', 'layout');
+        
+        return { 
+            success: true, 
+            isAutoActivated: isFirstAdmin 
+        };
+    } catch (err: any) {
+        return { success: false, error: "Terjadi kesalahan sistem saat memproses profil." };
     }
-
-    revalidatePath('/', 'layout');
-    return { success: true };
 }
 
 export async function saveJournal(formData: FormData) {
@@ -801,7 +825,7 @@ export async function deleteMaterial(materialId: string) {
     return { success: true };
 }
 
-// Token Activation Actions (Feature removed but stubs kept to prevent import errors)
+// Token Activation Actions (Fitur dihapus, stub tetap ada agar tidak error impor)
 export async function generateActivationToken() {
     return { success: true, token: "DEPRECATED" };
 }
