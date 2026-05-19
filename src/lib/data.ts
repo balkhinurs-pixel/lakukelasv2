@@ -1,10 +1,9 @@
-
 'use server';
 
 import { createClient } from './supabase/server';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday, GoogleDriveIntegration } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
-import { format, parseISO, startOfDay } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, getIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
@@ -197,6 +196,87 @@ export async function getAdminDashboardData() {
         return null;
     }
 }
+
+// --- Bulk Fetchers for Optimization ---
+
+/**
+ * Mengambil seluruh data yang dibutuhkan halaman Presensi dalam 1-2 request saja.
+ */
+export async function getAttendancePageData() {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    
+    const supabase = createClient();
+    const activeSchoolYearId = await getActiveSchoolYearId();
+
+    const [profileRes, schoolYearRes, scheduleRes, studentsRes, holidaysRes, historyRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('school_years').select('name').eq('id', activeSchoolYearId || '').maybeSingle(),
+        supabase.from('schedule').select('*, class:classes(id, name), subject:subjects(id, name)').eq('teacher_id', user.id),
+        supabase.from('students').select('*').eq('status', 'active').order('name'),
+        supabase.from('holidays').select('*').order('date'),
+        supabase.from('attendance_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }).limit(20)
+    ]);
+
+    const rawSchedules = scheduleRes.data || [];
+    const classesMap = new Map();
+    const subjectsMap = new Map();
+    
+    rawSchedules.forEach((s: any) => {
+        if (s.class) classesMap.set(s.class.id, s.class);
+        if (s.subject) subjectsMap.set(s.subject.id, s.subject);
+    });
+
+    return {
+        profile: profileRes.data,
+        activeSchoolYearName: schoolYearRes.data?.name || 'Belum Diatur',
+        classes: Array.from(classesMap.values()),
+        subjects: Array.from(subjectsMap.values()),
+        schedule: rawSchedules.map((s: any) => ({ ...s, class: s.class.name, subject: s.subject.name })),
+        allStudents: studentsRes.data || [],
+        holidays: holidaysRes.data || [],
+        history: historyRes.data || []
+    };
+}
+
+/**
+ * Mengambil seluruh data yang dibutuhkan halaman Nilai secara efisien.
+ */
+export async function getGradesPageData() {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    
+    const supabase = createClient();
+    const activeSchoolYearId = await getActiveSchoolYearId();
+
+    const [schoolYearRes, scheduleRes, studentsRes, historyRes] = await Promise.all([
+        supabase.from('school_years').select('name').eq('id', activeSchoolYearId || '').maybeSingle(),
+        supabase.from('schedule').select('*, class:classes(id, name), subject:subjects(id, name, kkm)').eq('teacher_id', user.id),
+        supabase.from('students').select('*').eq('status', 'active').order('name'),
+        supabase.from('grades_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }).limit(30)
+    ]);
+
+    const rawSchedules = scheduleRes.data || [];
+    const classesMap = new Map();
+    const subjectsMap = new Map();
+    
+    rawSchedules.forEach((s: any) => {
+        if (s.class) classesMap.set(s.class.id, s.class);
+        if (s.subject) subjectsMap.set(s.subject.id, s.subject);
+    });
+
+    return {
+        activeSchoolYearName: schoolYearRes.data?.name || 'Belum Diatur',
+        classes: Array.from(classesMap.values()),
+        subjects: Array.from(subjectsMap.values()),
+        allStudents: studentsRes.data || [],
+        history: historyRes.data || []
+    };
+}
+
+// --- Data Dasar ---
 
 export async function getAllUsers(): Promise<Profile[]> {
     noStore();
