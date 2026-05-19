@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -58,7 +59,9 @@ export async function approveUser(userId: string) {
 
     if (error) return { success: false, error: "Gagal menyetujui pengguna." };
 
-    revalidatePath('/admin/users');
+    // Paksa revalidasi seluruh layout agar pengguna yang disetujui 
+    // bisa langsung masuk ke dashboard tanpa stuck di halaman tunggu
+    revalidatePath('/', 'layout');
     return { success: true };
 }
 
@@ -146,6 +149,7 @@ export async function deleteUser(userId: string) {
     const { error } = await supabase.from('profiles').delete().eq('id', userId);
     if (error) return { success: false, error: "Gagal menghapus profil." };
     revalidatePath('/admin/users');
+    revalidatePath('/', 'layout');
     return { success: true };
 }
 
@@ -157,6 +161,7 @@ export async function updateUserRole(userId: string, newRole: 'teacher' | 'headm
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
     if (error) return { success: false, error: "Gagal memperbarui peran." };
     revalidatePath('/admin/users');
+    revalidatePath('/', 'layout');
     return { success: true };
 }
 
@@ -172,6 +177,7 @@ export async function updateStaffProfile(userId: string, data: { fullName: strin
     }).eq('id', userId);
     if (error) return { success: false, error: "Gagal memperbarui data." };
     revalidatePath('/admin/users');
+    revalidatePath('/', 'layout');
     return { success: true };
 }
 
@@ -195,6 +201,7 @@ export async function saveSchedule(formData: FormData) {
         await supabase.from('schedule').insert(scheduleData);
     }
     revalidatePath('/admin/settings/schedule');
+    revalidatePath('/dashboard', 'layout');
     return { success: true };
 }
 
@@ -206,6 +213,7 @@ export async function deleteSchedule(scheduleId: string) {
     const { error } = await supabase.from('schedule').delete().eq('id', scheduleId);
     if (error) return { success: false, error: 'Gagal menghapus.' };
     revalidatePath('/admin/settings/schedule');
+    revalidatePath('/dashboard', 'layout');
     return { success: true };
 }
 
@@ -219,6 +227,7 @@ export async function syncHomeroomTeacherStatus() {
     const ids = [...new Set(homeroomAssignments.map(c => c.teacher_id))];
     await supabase.from('profiles').update({ is_homeroom_teacher: false });
     if (ids.length > 0) await supabase.from('profiles').update({ is_homeroom_teacher: true }).in('id', ids);
+    revalidatePath('/', 'layout');
     return { success: true };
 }
 
@@ -273,6 +282,7 @@ export async function saveAttendanceSettings(formData: FormData) {
     ];
     for (const s of settings) await supabase.from('settings').upsert(s, { onConflict: 'key' });
     revalidatePath('/admin/settings/location');
+    revalidatePath('/dashboard/teacher-attendance');
     return { success: true };
 }
 
@@ -305,6 +315,7 @@ export async function updateSchoolData(data: {
     if (error) return { success: false, error: "Gagal memperbarui data sekolah." };
 
     revalidatePath('/admin/settings/school');
+    revalidatePath('/', 'layout');
     return { success: true };
 }
 
@@ -331,6 +342,7 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar' | 'l
     await supabase.from('profiles').update({ [col]: publicUrl }).eq('id', targetId);
     revalidatePath('/dashboard/settings');
     revalidatePath('/admin/settings/school');
+    revalidatePath('/', 'layout');
     return { success: true, url: publicUrl };
 }
 
@@ -341,6 +353,7 @@ export async function saveHoliday(h: { date: string, description: string, type: 
     const supabase = await createClient();
     await supabase.from('holidays').upsert(h, { onConflict: 'date' });
     revalidatePath('/admin/settings/holidays');
+    revalidatePath('/dashboard', 'layout');
     return { success: true };
 }
 
@@ -351,6 +364,7 @@ export async function deleteHoliday(id: string) {
     const supabase = await createClient();
     await supabase.from('holidays').delete().eq('id', id);
     revalidatePath('/admin/settings/holidays');
+    revalidatePath('/dashboard', 'layout');
     return { success: true };
 }
 
