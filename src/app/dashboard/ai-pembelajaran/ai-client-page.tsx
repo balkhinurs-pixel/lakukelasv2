@@ -30,6 +30,7 @@ import type { Class, Subject, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { LottieWelcome } from "@/components/ui/lottie-welcome";
+import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
 
 export default function AiPembelajaranClient({ 
     classes, 
@@ -318,13 +319,12 @@ export default function AiPembelajaranClient({
                         </AnimatePresence>
                         {loading && (
                             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-4">
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl animate-pulse" />
-                                    <Loader2 className="h-12 w-12 animate-spin text-indigo-600 relative z-10" />
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-lg font-black text-slate-900 tracking-tight uppercase">AI Sedang Merumuskan...</p>
-                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Mohon tunggu beberapa detik</p>
+                                <div className="relative flex flex-col items-center">
+                                    <LottieAiProcess size={120} />
+                                    <div className="text-center">
+                                        <p className="text-lg font-black text-slate-900 tracking-tight uppercase">AI Sedang Merumuskan...</p>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Mohon tunggu beberapa detik</p>
+                                    </div>
                                 </div>
                             </div>
                         )}

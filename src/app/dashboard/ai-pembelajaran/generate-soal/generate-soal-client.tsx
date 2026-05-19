@@ -40,6 +40,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
 
 // --- MathText Component for LaTeX & Arabic Rendering ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
@@ -457,9 +458,9 @@ export default function GenerateSoalClient({
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-white/90 backdrop-blur-md z-[100] flex flex-col items-center justify-center text-center p-10">
                         <div className="relative">
                             <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-3xl animate-pulse scale-150" />
-                            <div className="relative z-10 p-10 rounded-[3rem] bg-white shadow-2xl border border-indigo-50">
-                                <Loader2 className="h-20 w-20 animate-spin text-indigo-600 mx-auto" />
-                                <div className="mt-8 space-y-2">
+                            <div className="relative z-10 p-10 rounded-[3rem] bg-white shadow-2xl border border-indigo-50 flex flex-col items-center">
+                                <LottieAiProcess size={200} />
+                                <div className="mt-4 space-y-2">
                                     <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Merumuskan 5 Butir Soal...</p>
                                     <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{form.subject} — Kelas {form.kelas}</p>
                                 </div>
