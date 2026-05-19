@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getAdminDashboardData } from "@/lib/data";
+import { getAttendanceTrendData } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -24,19 +24,22 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-export default async function WeeklyChartPage() {
-    const dashboardData = await getAdminDashboardData();
+export default async function WeeklyChartPage({ 
+    searchParams 
+}: { 
+    searchParams: { range?: string } 
+}) {
+    const range = parseInt(searchParams.range || "7");
+    const trendData = await getAttendanceTrendData(range);
 
-    if (!dashboardData) {
+    if (!trendData) {
         return <div className="p-8 text-center text-muted-foreground">Gagal memuat data grafik.</div>;
     }
 
-    const { weeklyAttendance } = dashboardData;
-
-    // Kalkulasi Ringkasan dari Data 7 Hari
-    const totalBerangkat = weeklyAttendance.reduce((acc, curr) => acc + curr.berangkat, 0);
-    const totalAlpha = weeklyAttendance.reduce((acc, curr) => acc + curr.tidakAbsen, 0);
-    const totalIzinSakit = weeklyAttendance.reduce((acc, curr) => acc + curr.izinSakit, 0);
+    // Kalkulasi Ringkasan dari Data yang difetch
+    const totalBerangkat = trendData.reduce((acc, curr) => acc + curr.berangkat, 0);
+    const totalAlpha = trendData.reduce((acc, curr) => acc + curr.tidakAbsen, 0);
+    const totalIzinSakit = trendData.reduce((acc, curr) => acc + curr.izinSakit, 0);
     const totalStafAll = totalBerangkat + totalAlpha + totalIzinSakit;
 
     const getPercent = (val: number) => totalStafAll > 0 ? ((val / totalStafAll) * 100).toFixed(1) : "0";
@@ -54,6 +57,8 @@ export default async function WeeklyChartPage() {
         </div>
     );
 
+    const rangeLabel = range === 7 ? "7 Hari" : range === 30 ? "30 Hari" : "90 Hari";
+
     return (
         <div className="space-y-6 max-w-4xl mx-auto pb-20">
             {/* Header Area */}
@@ -62,9 +67,11 @@ export default async function WeeklyChartPage() {
                     <ArrowLeft className="h-6 w-6 text-slate-900" />
                 </Link>
                 <div className="text-center">
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight">Keberangkatan Guru</h1>
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight">Tren Keberangkatan Guru</h1>
                     <div className="flex items-center justify-center gap-1 mt-0.5 text-slate-400">
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Periode: {weeklyAttendance[0].tanggal} - {weeklyAttendance[6].tanggal} 2026</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                            Periode: {trendData[0]?.tanggal} - {trendData[trendData.length-1]?.tanggal}
+                        </span>
                         <ChevronDown className="h-3 w-3" />
                     </div>
                 </div>
@@ -73,17 +80,41 @@ export default async function WeeklyChartPage() {
                 </div>
             </div>
 
-            {/* Range Tabs */}
+            {/* Range Tabs Navigation */}
             <div className="bg-slate-100/80 p-1 rounded-2xl flex gap-1 mx-1">
-                <button className="flex-1 bg-white shadow-sm text-indigo-600 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest">7 Hari</button>
-                <button className="flex-1 text-slate-400 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:text-slate-600">30 Hari</button>
-                <button className="flex-1 text-slate-400 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:text-slate-600">90 Hari</button>
+                <Link 
+                    href="?range=7" 
+                    className={cn(
+                        "flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-all",
+                        range === 7 ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                    )}
+                >
+                    7 Hari
+                </Link>
+                <Link 
+                    href="?range=30" 
+                    className={cn(
+                        "flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-all",
+                        range === 30 ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                    )}
+                >
+                    30 Hari
+                </Link>
+                <Link 
+                    href="?range=90" 
+                    className={cn(
+                        "flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-all",
+                        range === 90 ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                    )}
+                >
+                    90 Hari
+                </Link>
             </div>
 
             {/* Section: Ringkasan */}
             <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-white overflow-hidden">
                 <CardHeader className="pb-4 pt-6">
-                    <CardTitle className="text-lg font-black text-slate-900">Ringkasan</CardTitle>
+                    <CardTitle className="text-lg font-black text-slate-900">Ringkasan {rangeLabel}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -109,7 +140,7 @@ export default async function WeeklyChartPage() {
                             color="bg-amber-50 text-amber-600" 
                         />
                         <SummaryCard 
-                            label="Total Guru" 
+                            label="Total Rekam" 
                             value={totalStafAll} 
                             percent="100" 
                             dotColor="bg-indigo-600" 
@@ -124,12 +155,12 @@ export default async function WeeklyChartPage() {
                 <CardHeader className="flex flex-row items-center justify-between pb-2 pt-8">
                     <div>
                         <CardTitle className="text-lg font-black text-slate-900 tracking-tight">Tren Keberangkatan Guru</CardTitle>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Perbandingan 7 Hari Terakhir</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Perbandingan {rangeLabel} Terakhir</p>
                     </div>
                     <div className="p-2 text-slate-300"><Info className="h-5 w-5" /></div>
                 </CardHeader>
                 <CardContent className="pb-8">
-                    <WeeklyAttendanceChart data={weeklyAttendance} />
+                    <WeeklyAttendanceChart data={trendData} />
                     
                     {/* Visual Legend */}
                     <div className="flex justify-center gap-6 mt-8">
@@ -139,11 +170,11 @@ export default async function WeeklyChartPage() {
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-rose-500" />
-                            <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Tidak Absen</span>
+                            <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Alpha</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-amber-500" />
-                            <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Izin / Sakit</span>
+                            <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Izin/Sakit</span>
                         </div>
                     </div>
 
@@ -156,7 +187,7 @@ export default async function WeeklyChartPage() {
                             <div>
                                 <p className="text-sm font-bold text-slate-700 leading-tight">
                                     Rata-rata keberangkatan guru <br/>
-                                    minggu ini <span className="text-emerald-600 font-black">{getPercent(totalBerangkat)}%</span>
+                                    {rangeLabel.toLowerCase()} ini <span className="text-emerald-600 font-black">{getPercent(totalBerangkat)}%</span>
                                 </p>
                             </div>
                         </div>
@@ -164,7 +195,7 @@ export default async function WeeklyChartPage() {
                              <Badge className="bg-emerald-100 text-emerald-700 border-0 font-black text-[10px] py-1 px-3 rounded-full shadow-sm">
                                 <TrendingUp className="h-3 w-3 mr-1" /> 5.2%
                              </Badge>
-                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1.5">dari minggu lalu</p>
+                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1.5">vs Periode Lalu</p>
                         </div>
                     </div>
                 </CardContent>

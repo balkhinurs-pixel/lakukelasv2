@@ -21,6 +21,93 @@ async function getAuthenticatedUser() {
     return user;
 }
 
+// --- Trend Data Fetcher ---
+
+/**
+ * Mengambil data tren kehadiran guru untuk rentang hari tertentu.
+ * Dioptimalkan untuk performa dengan batch query alih-alih looping RPC.
+ */
+export async function getAttendanceTrendData(days: number = 7) {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+    
+    const supabase = createClient();
+    const nowIndo = getIndonesianTime();
+    
+    // 1. Tentukan rentang tanggal
+    const endDate = nowIndo;
+    const startDate = new Date(nowIndo);
+    startDate.setDate(startDate.getDate() - (days - 1));
+    
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const endDateStr = format(endDate, 'yyyy-MM-dd');
+
+    // 2. Ambil semua data pendukung dalam satu shot
+    const [attendanceRes, holidaysRes, schedulesRes, settingsRes, staffRes] = await Promise.all([
+        supabase.from('teacher_attendance').select('date, status').gte('date', startDateStr).lte('date', endDateStr),
+        supabase.from('holidays').select('date, description, type').gte('date', startDateStr).lte('date', endDateStr),
+        supabase.from('schedule').select('teacher_id, day'),
+        supabase.from('settings').select('value').eq('key', 'attendance_policy').maybeSingle(),
+        supabase.from('profiles').select('id').in('role', ['teacher', 'headmaster']).eq('is_activated', true)
+    ]);
+
+    const attendanceRecords = attendanceRes.data || [];
+    const holidays = holidaysRes.data || [];
+    const schedules = schedulesRes.data || [];
+    const attendancePolicy = settingsRes.data?.value || 'schedule_based';
+    const totalStaffCount = staffRes.data?.length || 0;
+
+    // 3. Kalkulasi per hari
+    const trend = [];
+    const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const dayNamesFull = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(nowIndo);
+        d.setDate(d.getDate() - i);
+        const dStr = format(d, 'yyyy-MM-dd');
+        const dayIdx = d.getDay();
+        
+        // Cek Libur
+        const holiday = holidays.find(h => h.date === dStr);
+        const isHoliday = !!holiday || dayIdx === 0;
+
+        // Tentukan Target Kehadiran (Expected)
+        let expected = 0;
+        if (!isHoliday) {
+            if (attendancePolicy === 'daily_based') {
+                expected = totalStaffCount;
+            } else {
+                const dayName = dayNamesFull[dayIdx];
+                const scheduledTeachers = new Set(schedules.filter(s => s.day === dayName).map(s => s.teacher_id));
+                expected = scheduledTeachers.size;
+            }
+        }
+
+        // Hitung Realisasi
+        const dayRecords = attendanceRecords.filter(r => r.date === dStr);
+        const berangkat = dayRecords.filter(r => ['Tepat Waktu', 'Terlambat'].includes(r.status)).length;
+        const izinSakit = dayRecords.filter(r => ['Sakit', 'Izin'].includes(r.status)).length;
+        
+        // Alpha = Expected - (Hadir + Izin)
+        const tidakAbsen = expected > 0 ? Math.max(0, expected - berangkat - izinSakit) : 0;
+
+        trend.push({
+            day: dayNamesShort[dayIdx],
+            tanggal: format(d, 'dd/MM'),
+            full_date: dStr,
+            berangkat,
+            tidakAbsen,
+            izinSakit,
+            isHoliday,
+            holidayName: holiday?.description || (dayIdx === 0 ? 'Hari Minggu' : null)
+        });
+    }
+
+    return trend;
+}
+
 // --- Bulk Fetchers for Optimization ---
 
 /**

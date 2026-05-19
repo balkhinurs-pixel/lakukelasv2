@@ -24,6 +24,9 @@ type WeeklyAttendanceChartProps = {
 };
 
 export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartProps) {
+    // Tentukan interval label X-axis agar tidak menumpuk saat data banyak (30/90 hari)
+    const interval = data.length > 31 ? 13 : data.length > 10 ? 6 : 0;
+
     return (
         <div className="w-full h-[300px] mt-4">
             <ResponsiveContainer width="100%" height="100%">
@@ -45,6 +48,7 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         dy={10}
                         fontFamily="inherit"
                         fontWeight="bold"
+                        interval={interval}
                     />
                     <YAxis 
                         stroke="#94a3b8" 
@@ -77,7 +81,7 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         fill="url(#colorBerangkat)"
                         strokeWidth={3}
                         animationDuration={1500}
-                        dot={{ r: 4, fill: "#10b981", strokeWidth: 2, stroke: "#fff" }}
+                        dot={data.length < 31 ? { r: 4, fill: "#10b981", strokeWidth: 2, stroke: "#fff" } : false}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
 
@@ -85,10 +89,10 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                     <Line
                         type="monotone"
                         dataKey="tidakAbsen"
-                        name="Tidak Absen"
+                        name="Alpha"
                         stroke="#ef4444"
                         strokeWidth={2.5}
-                        dot={{ r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "#fff" }}
+                        dot={data.length < 31 ? { r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "#fff" } : false}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
 
@@ -96,10 +100,10 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                     <Line
                         type="monotone"
                         dataKey="izinSakit"
-                        name="Izin / Sakit"
+                        name="Izin/Sakit"
                         stroke="#f59e0b"
                         strokeWidth={2.5}
-                        dot={{ r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
+                        dot={data.length < 31 ? { r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" } : false}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
                 </ComposedChart>
