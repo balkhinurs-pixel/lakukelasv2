@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from './supabase/server';
@@ -20,11 +21,11 @@ async function getAuthenticatedUser() {
     return user;
 }
 
-// --- Trend Data Fetcher (OPTIMIZED) ---
+// --- Trend Data Fetcher (OPTIMIZED FOR FREE TIER) ---
 
 /**
- * Mengambil data tren kehadiran guru untuk rentang hari tertentu.
- * Dioptimalkan untuk Free Tier: Hanya melakukan 1 batch query untuk semua data.
+ * Mengambil data tren kehadiran guru untuk rentang hari tertentu (7, 30, atau 90 hari).
+ * Dioptimalkan: Hanya melakukan 1 BATCH request ke database untuk semua data hari.
  */
 export async function getAttendanceTrendData(days: number = 7) {
     noStore();
@@ -41,7 +42,7 @@ export async function getAttendanceTrendData(days: number = 7) {
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
 
-    // 1. Ambil semua data pendukung dalam SATU SHOT (Batch)
+    // Ambil semua data pendukung dalam SATU BATCH (Promise.all)
     const [attendanceRes, holidaysRes, schedulesRes, settingsRes, staffRes] = await Promise.all([
         supabase.from('teacher_attendance').select('date, status, teacher_id').gte('date', startDateStr).lte('date', endDateStr),
         supabase.from('holidays').select('date, description, type').gte('date', startDateStr).lte('date', endDateStr),
@@ -56,7 +57,7 @@ export async function getAttendanceTrendData(days: number = 7) {
     const attendancePolicy = settingsRes.data?.value || 'schedule_based';
     const totalStaffCount = staffRes.data?.length || 0;
 
-    // Pre-group schedules by day for performance
+    // Pre-group schedules by day in memory for performance
     const scheduleByDay: Record<string, Set<string>> = {};
     const dayNamesFull = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     dayNamesFull.forEach(day => {
@@ -64,10 +65,10 @@ export async function getAttendanceTrendData(days: number = 7) {
         scheduleByDay[day] = teachers;
     });
 
-    // 2. Kalkulasi di memori (Tanpa query tambahan di dalam loop)
     const trend = [];
     const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
+    // Loop dilakukan di memori SERVER, bukan di Database
     for (let i = days - 1; i >= 0; i--) {
         const d = new Date(nowIndo);
         d.setDate(d.getDate() - i);
@@ -75,11 +76,11 @@ export async function getAttendanceTrendData(days: number = 7) {
         const dayIdx = d.getDay();
         const dayName = dayNamesFull[dayIdx];
         
-        // Cek Libur
+        // Check Holiday
         const holiday = holidays.find(h => h.date === dStr);
         const isHoliday = !!holiday || dayIdx === 0;
 
-        // Tentukan Target Kehadiran (Expected)
+        // Determine Expected Attendance
         let expected = 0;
         if (!isHoliday) {
             if (attendancePolicy === 'daily_based') {
@@ -89,12 +90,9 @@ export async function getAttendanceTrendData(days: number = 7) {
             }
         }
 
-        // Ambil record spesifik hari ini dari hasil fetch batch di atas
         const dayRecords = attendanceRecords.filter(r => r.date === dStr);
         const berangkat = dayRecords.filter(r => ['Tepat Waktu', 'Terlambat'].includes(r.status)).length;
         const izinSakit = dayRecords.filter(r => ['Sakit', 'Izin'].includes(r.status)).length;
-        
-        // Alpha = Expected - (Hadir + Izin)
         const tidakAbsen = expected > 0 ? Math.max(0, expected - berangkat - izinSakit) : 0;
 
         trend.push({
@@ -112,83 +110,7 @@ export async function getAttendanceTrendData(days: number = 7) {
     return trend;
 }
 
-// --- Bulk Fetchers for Optimization ---
-
-/**
- * Mengambil seluruh data yang dibutuhkan halaman Presensi dalam 1-2 request saja.
- */
-export async function getAttendancePageData() {
-    noStore();
-    const user = await getAuthenticatedUser();
-    if (!user) return null;
-    
-    const supabase = createClient();
-    const activeSchoolYearId = await getActiveSchoolYearId();
-
-    const [profileRes, schoolYearRes, scheduleRes, studentsRes, holidaysRes, historyRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('school_years').select('name').eq('id', activeSchoolYearId || '').maybeSingle(),
-        supabase.from('schedule').select('*, class:classes(id, name), subject:subjects(id, name)').eq('teacher_id', user.id),
-        supabase.from('students').select('*').eq('status', 'active').order('name'),
-        supabase.from('holidays').select('*').order('date'),
-        supabase.from('attendance_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }).limit(20)
-    ]);
-
-    const rawSchedules = scheduleRes.data || [];
-    const classesMap = new Map();
-    const subjectsMap = new Map();
-    
-    rawSchedules.forEach((s: any) => {
-        if (s.class) classesMap.set(s.class.id, s.class);
-        if (s.subject) subjectsMap.set(s.subject.id, s.subject);
-    });
-
-    return {
-        profile: profileRes.data,
-        activeSchoolYearName: schoolYearRes.data?.name || 'Belum Diatur',
-        classes: Array.from(classesMap.values()),
-        subjects: Array.from(subjectsMap.values()),
-        schedule: rawSchedules.map((s: any) => ({ ...s, class: s.class.name, subject: s.subject.name })),
-        allStudents: studentsRes.data || [],
-        holidays: holidaysRes.data || [],
-        history: historyRes.data || []
-    };
-}
-
-export async function getGradesPageData() {
-    noStore();
-    const user = await getAuthenticatedUser();
-    if (!user) return null;
-    
-    const supabase = createClient();
-    const activeSchoolYearId = await getActiveSchoolYearId();
-
-    const [schoolYearRes, scheduleRes, studentsRes, historyRes] = await Promise.all([
-        supabase.from('school_years').select('name').eq('id', activeSchoolYearId || '').maybeSingle(),
-        supabase.from('schedule').select('*, class:classes(id, name), subject:subjects(id, name, kkm)').eq('teacher_id', user.id),
-        supabase.from('students').select('*').eq('status', 'active').order('name'),
-        supabase.from('grades_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }).limit(30)
-    ]);
-
-    const rawSchedules = scheduleRes.data || [];
-    const classesMap = new Map();
-    const subjectsMap = new Map();
-    
-    rawSchedules.forEach((s: any) => {
-        if (s.class) classesMap.set(s.class.id, s.class);
-        if (s.subject) subjectsMap.set(s.subject.id, s.subject);
-    });
-
-    return {
-        activeSchoolYearName: schoolYearRes.data?.name || 'Belum Diatur',
-        classes: Array.from(classesMap.values()),
-        subjects: Array.from(subjectsMap.values()),
-        allStudents: studentsRes.data || [],
-        history: historyRes.data || []
-    };
-}
-
-// --- Admin Data ---
+// --- Dashboard & Monitoring ---
 
 export async function getAdminDashboardData() {
     noStore();

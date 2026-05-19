@@ -29,6 +29,7 @@ export default async function WeeklyChartPage({
 }: { 
     searchParams: { range?: string } 
 }) {
+    // Range dibatasi ke 7, 30, atau 90 untuk efisiensi Free Tier
     const range = parseInt(searchParams.range || "7");
     const trendData = await getAttendanceTrendData(range);
 
@@ -36,7 +37,7 @@ export default async function WeeklyChartPage({
         return <div className="p-8 text-center text-muted-foreground">Gagal memuat data grafik.</div>;
     }
 
-    // Kalkulasi Ringkasan dari Data yang difetch
+    // Kalkulasi Ringkasan dari Data (Dilakukan di server)
     const totalBerangkat = trendData.reduce((acc, curr) => acc + curr.berangkat, 0);
     const totalAlpha = trendData.reduce((acc, curr) => acc + curr.tidakAbsen, 0);
     const totalIzinSakit = trendData.reduce((acc, curr) => acc + curr.izinSakit, 0);
