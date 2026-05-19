@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from './supabase/server';
@@ -114,7 +115,6 @@ export async function getAdminDashboardData() {
 
 /**
  * Mengambil data tren kehadiran guru untuk rentang hari tertentu.
- * Dioptimalkan: Menangani 'Future Dates' agar tidak muncul Alpha fiktif.
  */
 export async function getAttendanceTrendData(range: string = "7") {
     noStore();
@@ -183,7 +183,6 @@ export async function getAttendanceTrendData(range: string = "7") {
         const isHoliday = !!holiday || dayIdx === 0;
 
         let expected = 0;
-        // Jika hari ini libur ATAU hari ini adalah masa depan, maka tidak ada kewajiban absen (expected = 0)
         if (!isHoliday && !isFuture) {
             expected = attendancePolicy === 'daily_based' ? totalStaffCount : (scheduleByDay[dayName]?.size || 0);
         }
@@ -192,7 +191,6 @@ export async function getAttendanceTrendData(range: string = "7") {
         const berangkat = dayRecords.filter(r => ['Tepat Waktu', 'Terlambat'].includes(r.status)).length;
         const izinSakit = dayRecords.filter(r => ['Sakit', 'Izin'].includes(r.status)).length;
         
-        // Tidak Absen (Alpha) hanya dihitung untuk hari yang SUDAH LEWAT/SEDANG BERJALAN
         const tidakAbsen = (expected > 0 && !isFuture) ? Math.max(0, expected - berangkat - izinSakit) : 0;
 
         return {
@@ -210,11 +208,8 @@ export async function getAttendanceTrendData(range: string = "7") {
     });
 }
 
-// --- Bulk Fetchers for Optimization ---
+// --- Bulk Fetchers ---
 
-/**
- * Mengambil seluruh data yang dibutuhkan halaman Presensi dalam 1-2 request saja.
- */
 export async function getAttendancePageData() {
     noStore();
     const user = await getAuthenticatedUser();
@@ -286,7 +281,7 @@ export async function getGradesPageData() {
     };
 }
 
-// --- Data Master & Profil ---
+// --- Data Master ---
 
 export async function getAllUsers(): Promise<Profile[]> {
     noStore();
@@ -368,7 +363,7 @@ export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], act
     const supabase = createClient();
     const [yearsResult, settingsResult] = await Promise.all([
         supabase.from('school_years').select('*').order('name', { ascending: false }),
-        supabase.from('settings').select('value').eq('key', 'active_school_year_id').single()
+        supabase.from('settings').select('value').eq('key', 'active_school_year_id').maybeSingle()
     ]);
     return { schoolYears: yearsResult.data || [], activeSchoolYearId: settingsResult.data?.value || null };
 }
@@ -376,30 +371,10 @@ export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], act
 export async function getActiveSchoolYearName(): Promise<string> {
     noStore();
     const supabase = createClient();
-    const { data: settingsData } = await supabase.from('settings').select('value').eq('key', 'active_school_year_id').single();
+    const { data: settingsData } = await supabase.from('settings').select('value').eq('key', 'active_school_year_id').maybeSingle();
     if (!settingsData?.value) return 'Belum Diatur';
-    const { data: schoolYearData } = await supabase.from('school_years').select('name').eq('id', settingsData.value).single();
+    const { data: schoolYearData } = await supabase.from('school_years').select('name').eq('id', settingsData.value).maybeSingle();
     return schoolYearData?.name || 'Belum Diatur';
-}
-
-export async function getAttendanceSettings() {
-    noStore();
-    const supabase = createClient();
-    const { data } = await supabase.from('settings').select('key, value').in('key', ['attendance_latitude', 'attendance_longitude', 'attendance_radius', 'attendance_check_in_start', 'attendance_check_in_deadline', 'attendance_policy']);
-    if (!data) return { latitude: '', longitude: '', radius: 30, check_in_start: '06:30', check_in_deadline: '07:15', attendance_policy: 'schedule_based' };
-    const settings = data.reduce((acc, item) => {
-        const key = item.key.replace('attendance_', '');
-        acc[key] = item.value;
-        return acc;
-    }, {} as Record<string, string>);
-    return {
-        latitude: settings.latitude || '',
-        longitude: settings.longitude || '',
-        radius: parseInt(settings.radius) || 30,
-        check_in_start: settings.check_in_start || '06:30',
-        check_in_deadline: settings.check_in_deadline || '07:15',
-        attendance_policy: settings.attendance_policy || 'schedule_based'
-    };
 }
 
 export async function getSchedule(): Promise<ScheduleItem[]> {
@@ -476,13 +451,6 @@ export async function getAlumni(): Promise<Student[]> {
     return data || [];
 }
 
-export async function getAllStudents(): Promise<Student[]> {
-    noStore();
-    const supabase = createClient();
-    const { data = [] } = await supabase.from('students').select('id, name, nis, class_id').eq('status', 'active').order('name');
-    return data || [];
-}
-
 export async function getDashboardData(todayDay: string) {
     noStore();
     const user = await getAuthenticatedUser();
@@ -505,7 +473,7 @@ export async function getDashboardData(todayDay: string) {
     
     const totalRecords = attendanceRes.data?.length || 0;
     const hadirCount = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
-    const attendancePercentage = totalRecords > 0 ? Math.round((hadirCount / totalAttendance) * 100) : 0;
+    const attendancePercentage = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
     
     const unfilledJournalsCount = todayScheduleData.length - (journalsRes.data?.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === todayStr).length || 0);
 
