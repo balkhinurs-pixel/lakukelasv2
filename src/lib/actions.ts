@@ -1,9 +1,8 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from './supabase/server';
-import type { StudentNote, GradeRecord, AttendanceRecord, Material } from './types';
+import type { StudentNote, GradeRecord, AttendanceRecord, Material, Student } from './types';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -454,6 +453,47 @@ export async function importStudents(classId: string, students: StudentImport[])
     
     revalidatePath('/admin/roster/students');
     return { success: true, results: report };
+}
+
+/**
+ * Simpan data siswa baru.
+ */
+export async function saveStudent(formData: FormData) {
+    const supabase = await createClient();
+    const data = {
+        name: formData.get('name') as string,
+        nis: formData.get('nis') as string,
+        gender: formData.get('gender') as 'Laki-laki' | 'Perempuan',
+        class_id: formData.get('class_id') as string,
+        status: 'active' as const,
+    };
+
+    const { error } = await supabase.from('students').insert(data);
+    if (error) return { success: false, error: "Gagal menyimpan data siswa." };
+
+    revalidatePath('/admin/roster/students');
+    return { success: true };
+}
+
+/**
+ * Perbarui data siswa.
+ */
+export async function updateStudent(formData: FormData) {
+    const supabase = await createClient();
+    const id = formData.get('id') as string;
+    const data = {
+        name: formData.get('name') as string,
+        nis: formData.get('nis') as string,
+        gender: formData.get('gender') as 'Laki-laki' | 'Perempuan',
+        status: formData.get('status') as any,
+    };
+
+    const { error } = await supabase.from('students').update(data).eq('id', id);
+    if (error) return { success: false, error: "Gagal memperbarui data siswa." };
+
+    revalidatePath('/admin/roster/students');
+    revalidatePath('/admin/roster/alumni');
+    return { success: true };
 }
 
 export async function moveStudents(studentIds: string[], newClassId: string) {

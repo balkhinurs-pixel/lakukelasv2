@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from './supabase/server';
@@ -306,9 +305,6 @@ export async function getAllSubjects(): Promise<Subject[]> {
     return data;
 }
 
-/**
- * Mengambil seluruh data siswa (digunakan oleh Admin).
- */
 export async function getAllStudents(): Promise<Student[]> {
     noStore();
     const supabase = await createClient();
@@ -914,4 +910,37 @@ export async function getAttendanceSettings() {
     };
     
     return settings;
+}
+
+/**
+ * Mendapatkan data performa siswa untuk kelas tertentu (digunakan oleh wali kelas).
+ */
+export async function getHomeroomStudentProgress() {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return { studentData: [], className: "" };
+    
+    const supabase = await createClient();
+    
+    // Cari kelas di mana guru ini adalah wali kelas
+    const { data: homeroomClass } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('teacher_id', user.id)
+        .maybeSingle();
+
+    if (!homeroomClass) return { studentData: [], className: "" };
+
+    const { data, error } = await supabase
+        .rpc('get_student_performance_for_class', { p_class_id: homeroomClass.id });
+
+    if (error) {
+        console.error("Error calling get_student_performance_for_class:", error);
+        return { studentData: [], className: homeroomClass.name };
+    }
+
+    return {
+        studentData: data || [],
+        className: homeroomClass.name
+    };
 }

@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import {
   Card,
@@ -16,7 +15,7 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export default async function AdminCodesPage() {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Fetch activation tokens with join to profile to see who used it
     const { data: tokens } = await supabase
@@ -32,7 +31,7 @@ export default async function AdminCodesPage() {
         .from('settings')
         .select('value')
         .eq('key', 'app_url')
-        .single();
+        .maybeSingle();
     
     const appUrl = appUrlSetting?.value || 'https://app.lakukelas.my.id';
 
