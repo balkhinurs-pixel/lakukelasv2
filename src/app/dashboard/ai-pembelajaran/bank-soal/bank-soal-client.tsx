@@ -28,7 +28,8 @@ import {
     Timer,
     ExternalLink,
     ArrowRight,
-    Brain
+    Brain,
+    Layers
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -204,7 +205,7 @@ const NaskahPrintTemplate = ({
     );
 };
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 5; // Diubah menjadi 5 soal per halaman sesuai permintaan
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
@@ -502,15 +503,15 @@ export default function BankSoalClient({
                     </div>
                 </div>
 
-                {/* Filter Section - Optimized Layout */}
+                {/* Filter Section - Optimized Layout with Topic/Materi Filter */}
                 <Card className="border-0 shadow-lg rounded-[2.5rem] bg-white overflow-hidden mx-1">
                     <CardContent className="p-4 sm:p-6">
-                        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4">
-                            <div className="flex items-center gap-2 text-indigo-600 shrink-0 self-start sm:self-center">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-2 text-indigo-600">
                                 <Filter className="h-5 w-5" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Saring Soal</span>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 w-full">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
                                 <Select value={filterClass} onValueChange={setFilterClass}>
                                     <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold text-xs"><SelectValue placeholder="Kelas" /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
@@ -523,6 +524,19 @@ export default function BankSoalClient({
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="all" className="font-bold">Semua Mapel</SelectItem>
                                         {uniqueSubjects.map(s => <SelectItem key={s} value={s} className="font-bold">{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                {/* Filter Materi Baru */}
+                                <Select value={filterTopic} onValueChange={setFilterTopic}>
+                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold text-xs">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <Layers className="h-3 w-3 shrink-0" />
+                                            <SelectValue placeholder="Materi/Bab" />
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectItem value="all" className="font-bold">Semua Materi</SelectItem>
+                                        {uniqueTopics.map(t => <SelectItem key={t} value={t} className="font-bold">{t}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                                 <div className="hidden md:block">
