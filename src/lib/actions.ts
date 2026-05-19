@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -797,5 +798,14 @@ export async function deleteMaterial(materialId: string) {
         return { success: false, error: "Gagal menghapus materi." };
     }
     revalidatePath('/dashboard/materials');
+    return { success: true };
+}
+
+// Token Activation Actions (Feature removed but stubs kept to prevent import errors)
+export async function generateActivationToken() {
+    return { success: true, token: "DEPRECATED" };
+}
+
+export async function deleteActivationToken() {
     return { success: true };
 }
