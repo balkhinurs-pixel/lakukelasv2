@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -480,7 +479,6 @@ export default function BankSoalClient({
         } catch (e: any) {
             toast({ title: "Error", description: e.message || "Terjadi kesalahan sistem.", variant: "destructive" });
         } finally {
-            }
             setExporting(false);
         }
     };
