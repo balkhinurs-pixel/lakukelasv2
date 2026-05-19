@@ -14,8 +14,7 @@ import {
     Image as ImageIcon,
     ClipboardCheck,
     FileUp,
-    FileText,
-    Eye
+    FileText
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,9 +46,9 @@ const MathText = ({ content, className }: { content: string, className?: string 
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   return (
-    <div className={cn("math-text-render", className)}>
+    <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
-        if (part.startsWith('\\[')) return <BlockMath key={i} math={part.slice(2, -2)} />;
+        if (part.startsWith('\\[')) return <div key={i} className="my-2 overflow-x-auto overflow-y-hidden custom-scrollbar"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         return <span key={i} className="whitespace-pre-wrap">{part}</span>;
       })}
@@ -503,7 +502,7 @@ export default function GenerateSoalClient({
                     <div className="flex flex-col h-[90vh]">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white relative shrink-0">
                             <div className="flex items-center gap-5">
-                                <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl"><Eye className="h-8 w-8" /></div>
+                                <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl"><FileText className="h-8 w-8" /></div>
                                 <div>
                                     <DialogHeader>
                                         <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight text-white">Review Hasil AI</DialogTitle>
@@ -516,10 +515,10 @@ export default function GenerateSoalClient({
                         <ScrollArea className="flex-1 p-6">
                             <div className="space-y-8 pb-10">
                                 {questions.map((q, idx) => (
-                                    <Card key={idx} className="border-0 shadow-sm rounded-[2rem] bg-white p-6 sm:p-8 hover:shadow-md transition-all border border-slate-100/50">
+                                    <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-8 hover:shadow-md transition-all border border-slate-100/50">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-100">{q.sort_order}</div>
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-100">{q.sort_order}</div>
                                                 <div className="flex flex-wrap gap-2">
                                                     <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{q.type === 'multiple_choice' ? 'PG' : 'Esai'}</Badge>
                                                     <Badge variant="outline" className="border-slate-100 text-slate-400 font-bold text-[9px] uppercase">{q.cognitive_level || 'Kognitif'}</Badge>
@@ -529,7 +528,7 @@ export default function GenerateSoalClient({
 
                                         <div className="space-y-6">
                                             {q.image_url && (
-                                                <div className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-inner border border-slate-100 mb-4 bg-slate-50">
+                                                <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-inner border border-slate-100 mb-4 bg-slate-50">
                                                     <Image src={q.image_url} alt="Ilustrasi" fill className="object-contain" unoptimized />
                                                 </div>
                                             )}
@@ -541,35 +540,35 @@ export default function GenerateSoalClient({
                                             {q.type === 'multiple_choice' && q.options && (
                                                 <div className="grid grid-cols-1 gap-3">
                                                     {Object.entries(q.options).sort().map(([key, val]) => (
-                                                        <div key={key} className={cn("p-4 rounded-2xl border flex items-center gap-4 group", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
-                                                            <span className={cn("w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black", q.answer === key ? "bg-emerald-500 text-white" : "bg-white text-slate-400")}>{key}</span>
-                                                            <div className="text-sm font-semibold"><MathText content={val} /></div>
+                                                        <div key={key} className={cn("p-4 rounded-xl border flex items-center gap-4 group", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
+                                                            <span className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black", q.answer === key ? "bg-emerald-500 text-white" : "bg-white text-slate-400")}>{key}</span>
+                                                            <div className="text-sm font-semibold flex-1"><MathText content={val} /></div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             )}
 
                                             <div className="mt-8 space-y-4">
-                                                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-3">
+                                                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3">
                                                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                                                     <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">Kunci: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
                                                 </div>
-                                                <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 text-sm text-slate-600 font-medium italic"><MathText content={q.explanation} /></div>
+                                                <div className="p-6 rounded-xl bg-slate-50 border border-slate-100 text-sm text-slate-600 font-medium italic"><MathText content={q.explanation} /></div>
                                             </div>
 
-                                            <div className="p-5 rounded-3xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
+                                            <div className="p-5 rounded-xl bg-indigo-50/40 border border-indigo-100/50 space-y-4">
                                                 <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest"><ImageIcon className="h-4 w-4" /><span>Kebutuhan Media</span></div>
                                                 <div className="flex flex-col gap-3">
                                                     <Textarea 
                                                         placeholder="Deskripsikan gambar pendukung yang ingin dibuat oleh AI..." 
-                                                        className="rounded-2xl bg-white border-indigo-100 text-xs font-medium min-h-[60px] resize-none focus:ring-2 focus:ring-indigo-500/20" 
+                                                        className="rounded-xl bg-white border-indigo-100 text-xs font-medium min-h-[60px] resize-none focus:ring-2 focus:ring-indigo-500/20" 
                                                         value={q.image_prompt || ""} 
                                                         onChange={(e) => handleUpdatePrompt(idx, e.target.value)} 
                                                     />
                                                     <Button 
                                                         onClick={() => handleGenerateImage(idx, q.image_prompt || "")} 
                                                         disabled={imageLoadingIdx === idx || (!q.image_prompt)} 
-                                                        className="w-full rounded-2xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-indigo-100"
+                                                        className="w-full rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-indigo-100"
                                                     >
                                                         {imageLoadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} 
                                                         Generate Gambar AI
@@ -593,10 +592,18 @@ export default function GenerateSoalClient({
             </Dialog>
             
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-                .math-text-render .katex-display { margin: 0.5em 0; overflow-x: auto; overflow-y: hidden; }
+                .math-text-render .katex-display { 
+                    margin: 0.5em 0; 
+                    overflow-x: auto; 
+                    overflow-y: hidden;
+                    padding-bottom: 0.5em;
+                }
+                .math-text-render .katex {
+                    white-space: nowrap;
+                }
             `}</style>
         </div>
     );
