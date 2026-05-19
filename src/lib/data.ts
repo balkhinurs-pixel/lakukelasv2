@@ -21,11 +21,101 @@ async function getAuthenticatedUser() {
     return user;
 }
 
-// --- Trend Data Fetcher (OPTIMIZED FOR FREE TIER) ---
+// --- Dashboard & Monitoring ---
 
 /**
- * Mengambil data tren kehadiran guru untuk rentang hari tertentu (7, 30, 90, semester, atau bulan spesifik).
- * Dioptimalkan: Hanya melakukan 1 BATCH request ke database.
+ * Mengambil data untuk Dashboard Admin/Kepala Sekolah.
+ * Dioptimalkan untuk menampilkan ringkasan kehadiran hari ini secara akurat.
+ */
+export async function getAdminDashboardData() {
+    noStore();
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+    
+    const supabase = createClient();
+    const nowIndo = getIndonesianTime();
+    const todayStr = format(nowIndo, 'yyyy-MM-dd');
+    const dayNameIndo = getIndonesianDayName();
+
+    try {
+        const [summaryRes, settingsRes, holidaysRes, allStaffRes, todayAttendanceRes, todaySchedulesRes] = await Promise.all([
+            supabase.rpc('get_teacher_attendance_summary', { p_date: todayStr }),
+            supabase.from('settings').select('value').eq('key', 'attendance_policy').maybeSingle(),
+            supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle(),
+            supabase.from('profiles').select('id, full_name, avatar_url').in('role', ['teacher', 'headmaster']).eq('is_activated', true).order('full_name'),
+            supabase.from('teacher_attendance').select('*').eq('date', todayStr),
+            supabase.from('schedule').select('teacher_id').eq('day', dayNameIndo)
+        ]);
+
+        const rawData = summaryRes.data;
+        const todayHoliday = holidaysRes.data as Holiday | null;
+        const isTodayHoliday = !!todayHoliday;
+        
+        let summaryData = { 
+            total_expected: 0, 
+            total_present: 0, 
+            total_late: 0, 
+            total_absent: 0, 
+            attendance_rate: 0 
+        };
+
+        if (Array.isArray(rawData) && rawData.length > 0) {
+            const firstRow = rawData[0];
+            summaryData = {
+                total_expected: Number(firstRow.total_expected || 0),
+                total_present: Number(firstRow.total_present || 0),
+                total_late: Number(firstRow.total_late || 0),
+                total_absent: Number(firstRow.total_absent || 0),
+                attendance_rate: Number(firstRow.attendance_rate || 0)
+            };
+        }
+
+        if (isTodayHoliday) {
+            summaryData.total_expected = 0;
+            summaryData.total_absent = 0;
+            summaryData.attendance_rate = 100;
+        }
+
+        const activePolicy = settingsRes.data?.value || 'schedule_based';
+
+        const expectedTeacherIds = isTodayHoliday 
+            ? new Set<string>() 
+            : new Set(
+                activePolicy === 'daily_based' 
+                ? allStaffRes.data?.map(s => s.id) 
+                : todaySchedulesRes.data?.map(s => s.teacher_id)
+            );
+
+        const todayAttendanceList = (allStaffRes.data || [])
+            .filter(staff => expectedTeacherIds.has(staff.id))
+            .map(staff => {
+                const record = todayAttendanceRes.data?.find(a => a.teacher_id === staff.id);
+                return {
+                    id: staff.id,
+                    name: staff.full_name,
+                    avatar_url: staff.avatar_url,
+                    status: record ? record.status : 'Belum Absen',
+                    time: record?.check_in ? record.check_in.substring(0, 5) : '--:--',
+                };
+            });
+        
+        return {
+            summary: summaryData,
+            todayAttendanceList,
+            todayHoliday,
+            isTodayHoliday,
+            activePolicy
+        };
+        
+    } catch (error) {
+        console.error('Error fetching admin dashboard data:', error);
+        return null;
+    }
+}
+
+/**
+ * Mengambil data tren kehadiran guru untuk rentang hari tertentu.
+ * Dioptimalkan: Hanya melakukan 1 BATCH request ke database untuk efisiensi Free Tier.
  */
 export async function getAttendanceTrendData(range: string = "7") {
     noStore();
@@ -39,15 +129,10 @@ export async function getAttendanceTrendData(range: string = "7") {
     let endDate: Date = new Date(nowIndo);
 
     if (range.startsWith('month-')) {
-        // Mode: Filter Per Bulan Spesifik
         const monthNum = parseInt(range.split('-')[1]);
-        // Tentukan tahun: Jika bulan >= 7 dan sekarang Jan-Jun, berarti tahun lalu. 
-        // Tapi untuk simplisitas di monitoring aktif, kita pakai tahun berjalan.
         const targetYear = nowIndo.getFullYear();
         startDate = startOfMonth(new Date(targetYear, monthNum - 1));
         endDate = endOfMonth(new Date(targetYear, monthNum - 1));
-        
-        // Jangan tampilkan data masa depan melebihi hari ini jika bulannya adalah bulan sekarang
         if (monthNum === nowIndo.getMonth() + 1 && endDate > nowIndo) {
             endDate = new Date(nowIndo);
         }
@@ -194,7 +279,7 @@ export async function getGradesPageData() {
     };
 }
 
-// --- Admin Data ---
+// --- Data Master & Profil ---
 
 export async function getAllUsers(): Promise<Profile[]> {
     noStore();
@@ -421,7 +506,7 @@ export async function getDashboardData(todayDay: string) {
     
     const totalRecords = attendanceRes.data?.length || 0;
     const hadirRecords = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
-    const attendancePercentage = totalRecords > 0 ? Math.round((hadirRecords / totalRecords) * 100) : 0;
+    const attendancePercentage = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
     
     const unfilledJournalsCount = todayScheduleData.length - (journalsRes.data?.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === todayStr).length || 0);
 
