@@ -1,20 +1,19 @@
 # Log Pembaruan LakuKelas
 
-## V31.0: Ultimate SQL Blueprint with Permission Grants - TERIMPLEMENTASI
-Penyempurnaan total blueprint database untuk menjamin fungsionalitas penuh di lingkungan produksi Supabase.
+## V32.0: Ultimate SQL Blueprint with First User Auto-Admin - TERIMPLEMENTASI
+Penyempurnaan total blueprint database untuk menjamin kemudahan setup awal dan keamanan terpusat.
 
-### 1. Master SQL Blueprint (550+ Baris)
-- **Hak Akses Eksplisit (Grants)**: Menambahkan blok perintah `GRANT` untuk memastikan peran `authenticated` dan `anon` memiliki izin yang tepat untuk mengeksekusi tabel, fungsi, dan view. Ini memperbaiki masalah error "Permission Denied" pada beberapa fungsi RPC.
-- **RLS Presisi**: Memperkuat Row Level Security untuk pemisahan data antar guru yang lebih aman.
-- **Pembersihan Skema**: Menggabungkan seluruh logika dari `schema.sql` dan `schema_ai.sql` menjadi satu file tunggal `schema.sql` di root proyek sebagai *Single Source of Truth*.
+### 1. Perubahan Fundamental Blueprint (schema.sql)
+- **Auto-Admin First User**: Memperbarui trigger `handle_new_user`. Pendaftar pertama di sistem kini otomatis mendapatkan peran `admin` dan status `is_activated = true` tanpa perlu campur tangan manual di database.
+- **RLS Hari Libur**: Mengamankan tabel `holidays`. Seluruh staf dapat melihat jadwal libur, namun modifikasi data hanya dapat dilakukan oleh admin.
+- **Permission Grants**: Menambahkan instruksi `GRANT` eksplisit di akhir blueprint untuk memastikan fungsi RPC dan tabel dapat diakses sepenuhnya oleh aplikasi Next.js melalui peran `authenticated`.
 
-### 2. Fitur yang Tercakup:
-- **Identitas Sekolah Lengkap**: NPSN, Website, Email, dan Logo Sekolah.
-- **Otomatisasi**: Trigger registrasi pengguna dan sinkronisasi otomatis status Wali Kelas.
-- **Reporting Engine**: Fungsi RPC untuk rekap kehadiran dan keaktifan guru secara real-time.
-- **AI & Drive**: Skema penyimpanan Bank Soal AI dan metadata Google Drive yang rapi.
+### 2. Fitur Keamanan & Identitas:
+- **NPSN & Identitas Sekolah**: Mendukung penuh Kop Surat Profesional pada PDF.
+- **Isolasi Data**: Kebijakan RLS yang lebih presisi pada tabel Bank Soal AI dan Dokumen Drive.
+- **Reporting Engine**: Fungsi penghitung kehadiran guru harian yang optimal.
 
 ---
 
-## V30.0: Master SQL Blueprint Finalization - SELESAI
-Penyusunan awal struktur database komprehensif.
+## V31.0: Ultimate SQL Blueprint with Permission Grants - SELESAI
+Penyusunan awal struktur database komprehensif dengan hak akses eksplisit.
