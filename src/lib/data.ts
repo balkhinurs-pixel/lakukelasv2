@@ -2,7 +2,7 @@
 'use server';
 
 import { createClient } from './supabase/server';
-import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday, GoogleDriveIntegration } from './types';
+import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday, GoogleDriveIntegration, AiDocument } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
 import { format, parseISO, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -12,7 +12,7 @@ import { getActiveSchoolYearId } from './actions';
 // --- Helper Functions ---
 
 async function getAuthenticatedUser() {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
         console.error("Authentication error:", error);
@@ -25,14 +25,13 @@ async function getAuthenticatedUser() {
 
 /**
  * Mengambil data untuk Dashboard Admin/Kepala Sekolah.
- * Menampilkan ringkasan kehadiran hari ini secara akurat.
  */
 export async function getAdminDashboardData() {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return null;
     
-    const supabase = createClient();
+    const supabase = await createClient();
     const nowIndo = getIndonesianTime();
     const todayStr = format(nowIndo, 'yyyy-MM-dd');
     const dayNameIndo = getIndonesianDayName();
@@ -121,7 +120,7 @@ export async function getAttendanceTrendData(range: string = "7") {
     const user = await getAuthenticatedUser();
     if (!user) return [];
     
-    const supabase = createClient();
+    const supabase = await createClient();
     const nowIndo = getIndonesianTime();
     const todayDateOnly = new Date(nowIndo).setHours(0, 0, 0, 0);
     
@@ -215,7 +214,7 @@ export async function getAttendancePageData() {
     const user = await getAuthenticatedUser();
     if (!user) return null;
     
-    const supabase = createClient();
+    const supabase = await createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
 
     const [profileRes, schoolYearRes, scheduleRes, studentsRes, holidaysRes, historyRes] = await Promise.all([
@@ -253,7 +252,7 @@ export async function getGradesPageData() {
     const user = await getAuthenticatedUser();
     if (!user) return null;
     
-    const supabase = createClient();
+    const supabase = await createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
 
     const [schoolYearRes, scheduleRes, studentsRes, historyRes] = await Promise.all([
@@ -281,43 +280,11 @@ export async function getGradesPageData() {
     };
 }
 
-// --- Settings & Configurations ---
-
-/**
- * Mengambil pengaturan absensi yang dikonfigurasi admin.
- */
-export async function getAttendanceSettings() {
-    noStore();
-    const supabase = createClient();
-    const { data } = await supabase
-        .from('settings')
-        .select('key, value')
-        .in('key', [
-            'attendance_latitude', 
-            'attendance_longitude', 
-            'attendance_radius', 
-            'attendance_check_in_start', 
-            'attendance_check_in_deadline',
-            'attendance_policy'
-        ]);
-    
-    const settings = {
-        latitude: data?.find(s => s.key === 'attendance_latitude')?.value || '',
-        longitude: data?.find(s => s.key === 'attendance_longitude')?.value || '',
-        radius: parseInt(data?.find(s => s.key === 'attendance_radius')?.value || '0'),
-        check_in_start: data?.find(s => s.key === 'attendance_check_in_start')?.value || '06:30',
-        check_in_deadline: data?.find(s => s.key === 'attendance_check_in_deadline')?.value || '07:15',
-        attendance_policy: data?.find(s => s.key === 'attendance_policy')?.value || 'schedule_based',
-    };
-    
-    return settings;
-}
-
 // --- Data Master ---
 
 export async function getAllUsers(): Promise<Profile[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.from('profiles').select('*').order('full_name');
     if (error) return [];
     return data;
@@ -325,7 +292,7 @@ export async function getAllUsers(): Promise<Profile[]> {
 
 export async function getAllClasses(): Promise<Class[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.from('classes').select('*').order('name');
     if (error) return [];
     return data;
@@ -333,10 +300,21 @@ export async function getAllClasses(): Promise<Class[]> {
 
 export async function getAllSubjects(): Promise<Subject[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.from('subjects').select('*').order('name');
     if (error) return [];
     return data;
+}
+
+/**
+ * Mengambil seluruh data siswa (digunakan oleh Admin).
+ */
+export async function getAllStudents(): Promise<Student[]> {
+    noStore();
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('students').select('*').order('name');
+    if (error) return [];
+    return data || [];
 }
 
 export async function getUserProfile(): Promise<Profile | null> {
@@ -344,15 +322,15 @@ export async function getUserProfile(): Promise<Profile | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const supabase = createClient();
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) return null;
     return data;
 }
 
 export async function getAdminProfile(): Promise<Profile | null> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -372,7 +350,7 @@ export async function getClasses(): Promise<Class[]> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: classes } = await supabase.from('schedule').select('classes(*)').eq('teacher_id', user.id);
     if (!classes) return [];
     const uniqueClasses = Array.from(new Map(classes.map((item: any) => [item.classes.id, item.classes])).values());
@@ -383,7 +361,7 @@ export async function getSubjects(): Promise<Subject[]> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: subjects } = await supabase.from('schedule').select('subjects(*)').eq('teacher_id', user.id);
     if (!subjects) return [];
     const uniqueSubjects = Array.from(new Map(subjects.map((item: any) => [item.subjects.id, item.subjects])).values());
@@ -392,7 +370,7 @@ export async function getSubjects(): Promise<Subject[]> {
 
 export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], activeSchoolYearId: string | null }> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const [yearsResult, settingsResult] = await Promise.all([
         supabase.from('school_years').select('*').order('name', { ascending: false }),
         supabase.from('settings').select('value').eq('key', 'active_school_year_id').maybeSingle()
@@ -402,7 +380,7 @@ export async function getSchoolYears(): Promise<{ schoolYears: SchoolYear[], act
 
 export async function getActiveSchoolYearName(): Promise<string> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: settingsData } = await supabase.from('settings').select('value').eq('key', 'active_school_year_id').maybeSingle();
     if (!settingsData?.value) return 'Belum Diatur';
     const { data: schoolYearData } = await supabase.from('school_years').select('name').eq('id', settingsData.value).maybeSingle();
@@ -413,7 +391,7 @@ export async function getSchedule(): Promise<ScheduleItem[]> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').eq('teacher_id', user.id);
     if (!data) return [];
     return data.map(item => ({ ...item, class: item.class?.name || 'N/A', subject: item.subject?.name || 'N/A' }));
@@ -421,7 +399,7 @@ export async function getSchedule(): Promise<ScheduleItem[]> {
 
 export async function getAllSchedules(): Promise<ScheduleItem[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').order('day').order('start_time');
     if (!data) return [];
     return data.map(item => ({ ...item, class: item.class?.name || 'N/A', subject: item.subject?.name || 'N/A' }));
@@ -431,7 +409,7 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
     if (!activeSchoolYearId) return [];
     const { data } = await supabase.from('journal_entries_with_names').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId).order('date', { ascending: false });
@@ -442,7 +420,7 @@ export async function getAgendas(): Promise<Agenda[]> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data = [] } = await supabase.from('agendas').select('*').eq('teacher_id', user.id).order('date', { ascending: false });
     return data || [];
 }
@@ -451,7 +429,7 @@ export async function getAttendanceHistory(): Promise<AttendanceHistoryEntry[]> 
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
     if (!activeSchoolYearId) return [];
     const { data } = await supabase.from('attendance_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId).order('date', { ascending: false });
@@ -462,7 +440,7 @@ export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
     if (!activeSchoolYearId) return [];
     const { data } = await supabase.from('grades_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId).order('date', { ascending: false });
@@ -471,14 +449,14 @@ export async function getGradeHistory(): Promise<GradeHistoryEntry[]> {
 
 export async function getActiveStudents(): Promise<Student[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase.from('students').select('*').eq('status', 'active').order('name');
     return data || [];
 }
 
 export async function getAlumni(): Promise<Student[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.from('students').select('*').neq('status', 'active').order('name');
     return data || [];
 }
@@ -487,7 +465,7 @@ export async function getDashboardData(todayDay: string) {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return { todaySchedule: [], agendas: [], attendancePercentage: 0, unfilledJournalsCount: 0, todayHoliday: null, driveIntegration: null };
-    const supabase = createClient();
+    const supabase = await createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
     const todayStr = format(getIndonesianTime(), 'yyyy-MM-dd');
     
@@ -535,7 +513,7 @@ export async function getDashboardData(todayDay: string) {
 
 export async function getLatestClassPresence(classId: string, date: string): Promise<Record<string, 'Hadir' | 'Sakit' | 'Izin' | 'Alpha'>> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data } = await supabase
         .from('attendance_records')
@@ -561,7 +539,7 @@ export async function getReportsData(filters: { schoolYearId: string, classId?: 
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return null;
-    const supabase = createClient();
+    const supabase = await createClient();
     const { schoolYearId, classId, subjectId } = filters;
 
     const [activeSchoolYearName] = await Promise.all([
@@ -634,7 +612,7 @@ export async function getAttendanceSemesterMatrix(filters: { schoolYearId: strin
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return null;
-    const supabase = createClient();
+    const supabase = await createClient();
     const { schoolYearId, classId, subjectId } = filters;
 
     const { data: students } = await supabase
@@ -677,7 +655,7 @@ export async function getGradesReportList(filters: { schoolYearId: string, class
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const { schoolYearId, classId, subjectId, assessmentType } = filters;
 
     let query = supabase
@@ -715,7 +693,7 @@ export async function getJournalReportList(filters: { schoolYearId: string, clas
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const { schoolYearId, classId, subjectId } = filters;
 
     const { data, error } = await supabase
@@ -735,52 +713,109 @@ export async function getJournalReportList(filters: { schoolYearId: string, clas
     return data || [];
 }
 
-export async function getHomeroomStudentProgress() {
+export async function getHomeroomMonthlyAttendance(month: number, year: number, classId?: string) {
     noStore();
     const user = await getAuthenticatedUser();
-    if (!user) return { studentData: [], className: null };
-    const supabase = createClient();
-    const { data: homeroomClass } = await supabase.from('classes').select('*').eq('teacher_id', user.id).limit(1).single();
-    if (!homeroomClass) return { studentData: [], className: null };
-    const activeSchoolYearId = await getActiveSchoolYearId();
-    const { data: students } = await supabase.from('students').select('id, name, nis').eq('class_id', homeroomClass.id).eq('status', 'active');
-    if (!students) return { studentData: [], className: homeroomClass.name };
-    const studentIds = students.map(s => s.id);
-    const { data: gradesData } = await supabase.from('grade_records').select('student_id, score').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId || '');
-    const { data: attendanceData = [] } = await supabase.from('attendance_records').select('student_id, status').in('student_id', studentIds).eq('school_year_id', activeSchoolYearId || '');
-    const studentAggregates = students.map(student => {
-        const studentGrades = (gradesData || []).filter(r => r.student_id === student.id).map(r => Number(r.score));
-        const studentAttendance = (attendanceData || []).filter(r => r.status !== 'Alpha' && r.student_id === student.id);
-        const totalAttendancePossible = (attendanceData || []).filter(r => r.student_id === student.id).length;
-        const hadirCount = studentAttendance.length;
-        const average_grade = studentGrades.length > 0 ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length) : 0;
-        const attendance_percentage = totalAttendancePossible > 0 ? Math.round((hadirCount / totalAttendancePossible) * 100) : 0;
-        let status = "Stabil";
-        if (average_grade >= 85 && attendance_percentage >= 95) status = "Sangat Baik";
-        else if (average_grade < 70 && attendance_percentage < 85) status = "Berisiko";
-        else if (average_grade < 78 || attendance_percentage < 92) status = "Butuh Perhatian";
-        return { id: student.id, name: student.name, nis: student.nis, average_grade, attendance_percentage, status };
+    if (!user) return null;
+    const supabase = await createClient();
+
+    // Jika classId tidak diberikan, ambil kelas pertama di mana guru ini adalah wali kelasnya
+    let targetClassId = classId;
+    let className = "";
+
+    if (!targetClassId) {
+        const { data: homeroomClasses } = await supabase
+            .from('classes')
+            .select('id, name')
+            .eq('teacher_id', user.id);
+            
+        if (!homeroomClasses || homeroomClasses.length === 0) return null;
+        targetClassId = homeroomClasses[0].id;
+        className = homeroomClasses[0].name;
+    } else {
+        const { data: classData } = await supabase
+            .from('classes')
+            .select('name')
+            .eq('id', targetClassId)
+            .maybeSingle();
+        className = classData?.name || "";
+    }
+
+    const { data: students } = await supabase
+        .from('students')
+        .select('id, name, gender, nis')
+        .eq('class_id', targetClassId)
+        .eq('status', 'active')
+        .order('name');
+
+    if (!students) return null;
+
+    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
+
+    const { data: records } = await supabase
+        .from('attendance_records')
+        .select('student_id, date, status')
+        .eq('class_id', targetClassId)
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+    const { data: holidays } = await supabase.from('holidays').select('date').gte('date', startDate).lte('date', endDate);
+    const holidayDates = new Set(holidays?.map(h => h.date) || []);
+
+    const attendanceMap: Record<string, Record<string, string>> = {};
+    const priority: Record<string, number> = { "Hadir": 4, "Izin": 3, "Sakit": 2, "Alpha": 1 };
+
+    records?.forEach(r => {
+        if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
+        const currentStatus = attendanceMap[r.student_id][r.date];
+        if (!currentStatus || priority[r.status] > priority[currentStatus]) {
+            attendanceMap[r.student_id][r.date] = r.status;
+        }
     });
-    return { studentData: studentAggregates, className: homeroomClass.name };
+
+    return {
+        className,
+        students,
+        attendanceMap,
+        holidayDates,
+        daysInMonth: lastDay,
+        month,
+        year
+    };
 }
 
 export async function getHomeroomClassDetails() {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return null;
-    const supabase = createClient();
-    const { data: homeroomClass } = await supabase.from('classes').select('*').eq('teacher_id', user.id).limit(1).single();
-    if (!homeroomClass) return null;
+    const supabase = await createClient();
+
+    const { data: homeroomClasses } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('teacher_id', user.id);
+
+    if (!homeroomClasses || homeroomClasses.length === 0) return null;
+
+    const firstClass = homeroomClasses[0];
     const [studentsInClass, subjects] = await Promise.all([
-        getActiveStudents().then(students => students.filter(s => s.class_id === homeroomClass.id)),
+        getActiveStudents().then(students => students.filter(s => s.class_id === firstClass.id)),
         getSubjects()
     ]);
-    return { homeroomClass, studentsInClass, subjects };
+
+    return { 
+        homeroomClass: firstClass, 
+        homeroomClasses, // Kirimkan semua kelas jika wali kelas mengampu lebih dari satu
+        studentsInClass, 
+        subjects 
+    };
 }
 
 export async function getStudentLedgerData(studentId: string) {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
     const [gradesRes, attendanceRes, notesRes] = await Promise.all([
         supabase.from('grades_history').select('*').eq('student_id', studentId).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }),
@@ -796,7 +831,7 @@ export async function getStudentLedgerData(studentId: string) {
 
 export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase.from('teacher_attendance').select('*, teacherName:profiles(full_name)').order('date', { ascending: false });
     if (!data) return [];
     return data.map((item: any) => ({ id: item.id, teacherId: item.teacher_id, teacherName: item.teacherName?.full_name || 'Unknown', date: item.date, checkIn: item.check_in, checkOut: item.check_out, status: item.status, reason: item.reason }));
@@ -804,7 +839,7 @@ export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]
 
 export async function getTeacherActivityStats() {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: activityData } = await supabase.rpc('get_teacher_activity_counts');
     const { data: teachers } = await supabase.from('profiles').select('id, full_name').in('role', ['teacher', 'headmaster', 'admin']).eq('is_activated', true).order('full_name');
     if (!teachers) return [];
@@ -828,64 +863,16 @@ export async function getMaterials(): Promise<Material[]> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase.from('materials').select('*, className:classes(name), subjectName:subjects(name)').eq('teacher_id', user.id).order('created_at', { ascending: false });
     return data?.map(item => ({ ...item, className: item.className?.name, subjectName: item.subjectName?.name })) || [];
-}
-
-export async function getHomeroomMonthlyAttendance(month: number, year: number) {
-    noStore();
-    const user = await getAuthenticatedUser();
-    if (!user) return null;
-    const supabase = createClient();
-
-    const { data: homeroomClass } = await supabase.from('classes').select('id, name').eq('teacher_id', user.id).limit(1).single();
-    if (!homeroomClass) return null;
-
-    const { data: students } = await supabase.from('students').select('id, name, gender, nis').eq('class_id', homeroomClass.id).eq('status', 'active').order('name');
-    if (!students) return null;
-
-    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-    const lastDay = new Date(year, month, 0).getDate();
-    const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
-
-    const { data: records } = await supabase
-        .from('attendance_records')
-        .select('student_id, date, status')
-        .eq('class_id', homeroomClass.id)
-        .gte('date', startDate)
-        .lte('date', endDate);
-
-    const { data: holidays } = await supabase.from('holidays').select('date').gte('date', startDate).lte('date', endDate);
-    const holidayDates = new Set(holidays?.map(h => h.date) || []);
-
-    const attendanceMap: Record<string, Record<string, string>> = {};
-    const priority: Record<string, number> = { "Hadir": 4, "Izin": 3, "Sakit": 2, "Alpha": 1 };
-
-    records?.forEach(r => {
-        if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
-        const currentStatus = attendanceMap[r.student_id][r.date];
-        if (!currentStatus || priority[r.status] > priority[currentStatus]) {
-            attendanceMap[r.student_id][r.date] = r.status;
-        }
-    });
-
-    return {
-        className: homeroomClass.name,
-        students,
-        attendanceMap,
-        holidayDates,
-        daysInMonth: lastDay,
-        month,
-        year
-    };
 }
 
 export async function getGoogleDriveIntegration(): Promise<GoogleDriveIntegration | null> {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return null;
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.from('google_drive_integrations').select('*').eq('user_id', user.id).maybeSingle();
     if (error) {
         console.error("Error fetching drive integration:", error);
@@ -896,8 +883,35 @@ export async function getGoogleDriveIntegration(): Promise<GoogleDriveIntegratio
 
 export async function getHolidays(): Promise<Holiday[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.from('holidays').select('*').order('date');
     if (error) return [];
     return data || [];
+}
+
+export async function getAttendanceSettings() {
+    noStore();
+    const supabase = await createClient();
+    const { data } = await supabase
+        .from('settings')
+        .select('key, value')
+        .in('key', [
+            'attendance_latitude', 
+            'attendance_longitude', 
+            'attendance_radius', 
+            'attendance_check_in_start', 
+            'attendance_check_in_deadline',
+            'attendance_policy'
+        ]);
+    
+    const settings = {
+        latitude: data?.find(s => s.key === 'attendance_latitude')?.value || '',
+        longitude: data?.find(s => s.key === 'attendance_longitude')?.value || '',
+        radius: parseInt(data?.find(s => s.key === 'attendance_radius')?.value || '0'),
+        check_in_start: data?.find(s => s.key === 'attendance_check_in_start')?.value || '06:30',
+        check_in_deadline: data?.find(s => s.key === 'attendance_check_in_deadline')?.value || '07:15',
+        attendance_policy: data?.find(s => s.key === 'attendance_policy')?.value || 'schedule_based',
+    };
+    
+    return settings;
 }

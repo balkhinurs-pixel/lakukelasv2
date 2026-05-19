@@ -1,11 +1,14 @@
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export function createClient() {
-  const cookieStore = cookies()
+/**
+ * Supabase Server Client untuk Next.js 15.
+ * Fungsi cookies() sekarang bersifat asinkron (Promise).
+ */
+export async function createClient() {
+  const cookieStore = await cookies()
 
-  // Create a server-side client for Supabase.
-  // This is used in server components and server actions.
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,18 +21,14 @@ export function createClient() {
           try {
             cookieStore.set({ name, value, ...options })
           } catch (error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Pengabaian jika dipanggil dari Server Component
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
           } catch (error) {
-            // The `delete` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Pengabaian jika dipanggil dari Server Component
           }
         },
       },

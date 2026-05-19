@@ -11,12 +11,12 @@ import { getIndonesianTime, createIndonesianTimestamp } from './timezone';
 
 // Helper function to get active school year from global settings
 export async function getActiveSchoolYearId(): Promise<string | null> {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase
         .from('settings')
         .select('value')
         .eq('key', 'active_school_year_id')
-        .single();
+        .maybeSingle();
     return data?.value || null;
 }
 
@@ -24,7 +24,7 @@ export async function getActiveSchoolYearId(): Promise<string | null> {
  * Melengkapi profil awal bagi pengguna baru sebelum masuk ke antrean approval.
  */
 export async function completeInitialProfile(data: { fullName: string, nip: string, phoneNumber: string }) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -46,80 +46,8 @@ export async function completeInitialProfile(data: { fullName: string, nip: stri
     return { success: true };
 }
 
-export async function activateAccount(token: string) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Sesi tidak valid." };
-
-    const inputToken = token.trim().toUpperCase();
-
-    // 1. MASTER TOKEN FALLBACK (Admin-level privileges)
-    const MASTER_TOKEN = "LAKU2025";
-    if (inputToken === MASTER_TOKEN) {
-        // Master token automatically grants Admin role and sets activated to true
-        const { error: masterError } = await supabase
-            .from('profiles')
-            .upsert({ 
-                id: user.id,
-                full_name: user.user_metadata?.full_name || 'Administrator LakuKelas',
-                avatar_url: user.user_metadata?.avatar_url,
-                is_activated: true, 
-                role: 'admin' 
-            }, { onConflict: 'id' });
-
-        if (masterError) {
-            console.error("Master activation error:", masterError);
-            return { 
-                success: false, 
-                error: "Gagal membuat profil Admin via Master Token." 
-            };
-        }
-
-        revalidatePath('/', 'layout');
-        return { success: true };
-    }
-
-    // 2. DATABASE DRIVEN TOKEN (Standard logic for Teachers)
-    const { data: tokenData, error: tokenError } = await supabase
-        .from('activation_tokens')
-        .select('id')
-        .eq('token', inputToken)
-        .is('used_by', null)
-        .single();
-
-    if (tokenError || !tokenData) {
-        return { success: false, error: "Token tidak valid atau sudah pernah digunakan." };
-    }
-
-    // Claim the token
-    const { error: tokenUpdateError } = await supabase
-        .from('activation_tokens')
-        .update({ 
-            used_by: user.id, 
-            used_at: new Date().toISOString() 
-        })
-        .eq('id', tokenData.id);
-
-    if (tokenUpdateError) {
-        return { success: false, error: "Gagal memproses klaim token." };
-    }
-
-    // Activate the profile
-    const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ is_activated: true })
-        .eq('id', user.id);
-
-    if (profileError) {
-        return { success: false, error: "Gagal memperbarui status akun." };
-    }
-
-    revalidatePath('/', 'layout');
-    return { success: true };
-}
-
 export async function saveJournal(formData: FormData) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -161,7 +89,7 @@ export async function saveJournal(formData: FormData) {
 }
 
 export async function deleteJournal(journalId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -176,7 +104,7 @@ export async function deleteJournal(journalId: string) {
 }
 
 export async function saveAgenda(formData: FormData) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -211,7 +139,7 @@ export async function saveAgenda(formData: FormData) {
 }
 
 export async function deleteAgenda(agendaId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -226,7 +154,7 @@ export async function deleteAgenda(agendaId: string) {
 }
 
 export async function saveAttendance(formData: FormData) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
     
@@ -290,7 +218,7 @@ export async function saveAttendance(formData: FormData) {
 
 
 export async function saveGrades(formData: FormData) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -354,7 +282,7 @@ export async function saveGrades(formData: FormData) {
 
 
 export async function updateProfile(profileData: { fullName: string, nip: string, pangkat: string, jabatan: string, phoneNumber: string, geminiApiKey?: string }) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -378,7 +306,7 @@ export async function updateProfile(profileData: { fullName: string, nip: string
 }
 
 export async function uploadProfileImage(formData: FormData, type: 'avatar') {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -438,7 +366,7 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
 }
 
 export async function addStudentNote(data: { studentId: string; note: string; type: StudentNote['type'] }) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -471,7 +399,7 @@ type StudentImport = z.infer<typeof StudentSchema>;
 
 
 export async function importStudents(classId: string, students: StudentImport[]) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -529,7 +457,7 @@ export async function importStudents(classId: string, students: StudentImport[])
 }
 
 export async function moveStudents(studentIds: string[], newClassId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase
         .from('students')
         .update({ class_id: newClassId })
@@ -545,7 +473,7 @@ export async function moveStudents(studentIds: string[], newClassId: string) {
 }
 
 export async function graduateStudents(studentIds: string[]) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase
         .from('students')
         .update({ status: 'graduated' })
@@ -561,7 +489,7 @@ export async function graduateStudents(studentIds: string[]) {
 }
 
 export async function updateStudentsStatus(studentIds: string[], status: 'dropout' | 'inactive') {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     if (!['dropout', 'inactive'].includes(status)) {
         return { success: false, error: "Status tidak valid." };
@@ -583,7 +511,7 @@ export async function updateStudentsStatus(studentIds: string[], status: 'dropou
 }
 
 export async function createSchoolYear(startYear: number) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -604,7 +532,7 @@ export async function createSchoolYear(startYear: number) {
 }
 
 export async function setActiveSchoolYear(schoolYearId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase
         .from('settings')
         .upsert({ key: 'active_school_year_id', value: schoolYearId });
@@ -619,7 +547,7 @@ export async function setActiveSchoolYear(schoolYearId: string) {
 }
 
 export async function recordTeacherAttendance(formData: FormData) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -633,7 +561,7 @@ export async function recordTeacherAttendance(formData: FormData) {
         .select('id, check_in')
         .eq('teacher_id', user.id)
         .eq('date', today)
-        .single();
+        .maybeSingle();
     
     if (attendanceType === 'leave') {
         const leaveType = formData.get('leave_type') as 'Sakit' | 'Izin';
@@ -787,7 +715,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 export async function saveMaterial(formData: FormData) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -819,7 +747,7 @@ export async function saveMaterial(formData: FormData) {
 }
 
 export async function deleteMaterial(materialId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 

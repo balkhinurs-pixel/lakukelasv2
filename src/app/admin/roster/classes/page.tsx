@@ -3,6 +3,7 @@ import { ClassSettingsPageComponent } from "./class-settings-page";
 import { getAllClasses, getAllUsers, getAllStudents } from "@/lib/data";
 
 export default async function ClassSettingsPage() {
+    // Memanggil fungsi getAllStudents yang baru ditambahkan ke lib/data.ts
     const [classes, users, students] = await Promise.all([
         getAllClasses(),
         getAllUsers(),
