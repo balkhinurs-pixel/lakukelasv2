@@ -1,10 +1,9 @@
-
 'use server';
 
 import { createClient } from './supabase/server';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday, GoogleDriveIntegration } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, getIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
@@ -21,11 +20,11 @@ async function getAuthenticatedUser() {
     return user;
 }
 
-// --- Trend Data Fetcher ---
+// --- Trend Data Fetcher (OPTIMIZED) ---
 
 /**
  * Mengambil data tren kehadiran guru untuk rentang hari tertentu.
- * Dioptimalkan untuk performa dengan batch query alih-alih looping RPC.
+ * Dioptimalkan untuk Free Tier: Hanya melakukan 1 batch query untuk semua data.
  */
 export async function getAttendanceTrendData(days: number = 7) {
     noStore();
@@ -35,7 +34,6 @@ export async function getAttendanceTrendData(days: number = 7) {
     const supabase = createClient();
     const nowIndo = getIndonesianTime();
     
-    // 1. Tentukan rentang tanggal
     const endDate = nowIndo;
     const startDate = new Date(nowIndo);
     startDate.setDate(startDate.getDate() - (days - 1));
@@ -43,9 +41,9 @@ export async function getAttendanceTrendData(days: number = 7) {
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
 
-    // 2. Ambil semua data pendukung dalam satu shot
+    // 1. Ambil semua data pendukung dalam SATU SHOT (Batch)
     const [attendanceRes, holidaysRes, schedulesRes, settingsRes, staffRes] = await Promise.all([
-        supabase.from('teacher_attendance').select('date, status').gte('date', startDateStr).lte('date', endDateStr),
+        supabase.from('teacher_attendance').select('date, status, teacher_id').gte('date', startDateStr).lte('date', endDateStr),
         supabase.from('holidays').select('date, description, type').gte('date', startDateStr).lte('date', endDateStr),
         supabase.from('schedule').select('teacher_id, day'),
         supabase.from('settings').select('value').eq('key', 'attendance_policy').maybeSingle(),
@@ -58,16 +56,24 @@ export async function getAttendanceTrendData(days: number = 7) {
     const attendancePolicy = settingsRes.data?.value || 'schedule_based';
     const totalStaffCount = staffRes.data?.length || 0;
 
-    // 3. Kalkulasi per hari
+    // Pre-group schedules by day for performance
+    const scheduleByDay: Record<string, Set<string>> = {};
+    const dayNamesFull = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    dayNamesFull.forEach(day => {
+        const teachers = new Set(schedules.filter(s => s.day === day).map(s => s.teacher_id));
+        scheduleByDay[day] = teachers;
+    });
+
+    // 2. Kalkulasi di memori (Tanpa query tambahan di dalam loop)
     const trend = [];
     const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-    const dayNamesFull = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
     for (let i = days - 1; i >= 0; i--) {
         const d = new Date(nowIndo);
         d.setDate(d.getDate() - i);
         const dStr = format(d, 'yyyy-MM-dd');
         const dayIdx = d.getDay();
+        const dayName = dayNamesFull[dayIdx];
         
         // Cek Libur
         const holiday = holidays.find(h => h.date === dStr);
@@ -79,13 +85,11 @@ export async function getAttendanceTrendData(days: number = 7) {
             if (attendancePolicy === 'daily_based') {
                 expected = totalStaffCount;
             } else {
-                const dayName = dayNamesFull[dayIdx];
-                const scheduledTeachers = new Set(schedules.filter(s => s.day === dayName).map(s => s.teacher_id));
-                expected = scheduledTeachers.size;
+                expected = scheduleByDay[dayName]?.size || 0;
             }
         }
 
-        // Hitung Realisasi
+        // Ambil record spesifik hari ini dari hasil fetch batch di atas
         const dayRecords = attendanceRecords.filter(r => r.date === dStr);
         const berangkat = dayRecords.filter(r => ['Tepat Waktu', 'Terlambat'].includes(r.status)).length;
         const izinSakit = dayRecords.filter(r => ['Sakit', 'Izin'].includes(r.status)).length;
@@ -130,7 +134,6 @@ export async function getAttendancePageData() {
         supabase.from('attendance_history').select('*').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || '').order('date', { ascending: false }).limit(20)
     ]);
 
-    // Extract unique classes and subjects from schedule for the filters
     const rawSchedules = scheduleRes.data || [];
     const classesMap = new Map();
     const subjectsMap = new Map();
@@ -152,9 +155,6 @@ export async function getAttendancePageData() {
     };
 }
 
-/**
- * Mengambil seluruh data yang dibutuhkan halaman Nilai dalam minimal request.
- */
 export async function getGradesPageData() {
     noStore();
     const user = await getAuthenticatedUser();
@@ -262,38 +262,8 @@ export async function getAdminDashboardData() {
                 };
             });
         
-        const weeklyAttendance = [];
-        const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-        
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(nowIndo);
-            date.setDate(date.getDate() - i);
-            const dateStr = format(date, 'yyyy-MM-dd');
-            const dayIdx = date.getDay();
-            
-            // Ambil Summary dari RPC
-            const { data: daySummaryArr } = await supabase.rpc('get_teacher_attendance_summary', { p_date: dateStr });
-            const daySummary = (Array.isArray(daySummaryArr) && daySummaryArr.length > 0) ? daySummaryArr[0] : null;
-
-            // Ambil Hitungan Sakit & Izin secara spesifik untuk grafik baris baru
-            const { count: izinSakitCount } = await supabase
-                .from('teacher_attendance')
-                .select('*', { count: 'exact', head: true })
-                .eq('date', dateStr)
-                .in('status', ['Sakit', 'Izin']);
-            
-            weeklyAttendance.push({
-                day: dayNamesShort[dayIdx],
-                tanggal: format(date, 'dd/MM'),
-                berangkat: Number(daySummary?.total_present || 0),
-                tidakAbsen: Number(daySummary?.total_absent || 0),
-                izinSakit: Number(izinSakitCount || 0)
-            });
-        }
-        
         return {
             summary: summaryData,
-            weeklyAttendance,
             todayAttendanceList,
             todayHoliday,
             isTodayHoliday,
@@ -580,7 +550,6 @@ export async function getReportsData(filters: { schoolYearId: string, classId?: 
         getActiveSchoolYearName()
     ]);
 
-    // KPI Attendance (Semester-based)
     let attendanceKpiQuery = supabase
         .from('attendance_records')
         .select('status', { count: 'exact' })
@@ -594,7 +563,6 @@ export async function getReportsData(filters: { schoolYearId: string, classId?: 
     const hadirCount = attendanceData?.filter(r => r.status === 'Hadir').length || 0;
     const overallAttendanceRate = totalAttendance ? Math.round((hadirCount / totalAttendance) * 100) : 0;
 
-    // KPI Grades (Semester-based)
     let gradesKpiQuery = supabase
         .from('grade_records')
         .select('score')
@@ -610,7 +578,6 @@ export async function getReportsData(filters: { schoolYearId: string, classId?: 
         ? Math.round(gradesData!.reduce((a, b) => a + Number(b.score), 0) / totalGrades) 
         : 0;
 
-    // KPI Journal (Semester-based)
     let journalKpiQuery = supabase
         .from('journal_entries')
         .select('id', { count: 'exact', head: true })
@@ -622,7 +589,6 @@ export async function getReportsData(filters: { schoolYearId: string, classId?: 
 
     const { count: totalJournals } = await journalKpiQuery;
 
-    // Unique Assessments for the Filter
     let assessmentQuery = supabase
         .from('grade_records')
         .select('assessment_type')
@@ -653,7 +619,6 @@ export async function getAttendanceSemesterMatrix(filters: { schoolYearId: strin
     const supabase = createClient();
     const { schoolYearId, classId, subjectId } = filters;
 
-    // 1. Get all students in the class
     const { data: students } = await supabase
         .from('students')
         .select('id, name, gender, nis')
@@ -663,7 +628,6 @@ export async function getAttendanceSemesterMatrix(filters: { schoolYearId: strin
     
     if (!students) return null;
 
-    // 2. Get all attendance records for this subject/class/year
     const { data: records } = await supabase
         .from('attendance_records')
         .select('student_id, status, meeting_number')
@@ -675,7 +639,6 @@ export async function getAttendanceSemesterMatrix(filters: { schoolYearId: strin
 
     if (!records) return { students, attendanceMap: {}, maxMeeting: 0 };
 
-    // 3. Build a matrix: [student_id][meeting_number] = status
     const attendanceMap: Record<string, Record<number, string>> = {};
     let maxMeeting = 0;
 
@@ -828,7 +791,6 @@ export async function getTeacherActivityStats() {
     const { data: teachers } = await supabase.from('profiles').select('id, full_name').in('role', ['teacher', 'headmaster', 'admin']).eq('is_activated', true).order('full_name');
     if (!teachers) return [];
     
-    // Gunakan Map untuk mempercepat pencarian, tangani kemungkinan nama kolom id atau teacher_id
     const statsMap = new Map(activityData?.map((item: any) => [item.teacher_id || item.id, item]) || []);
     
     return teachers.map(teacher => {
@@ -859,20 +821,16 @@ export async function getHomeroomMonthlyAttendance(month: number, year: number) 
     if (!user) return null;
     const supabase = createClient();
 
-    // 1. Dapatkan kelas perwalian
     const { data: homeroomClass } = await supabase.from('classes').select('id, name').eq('teacher_id', user.id).limit(1).single();
     if (!homeroomClass) return null;
 
-    // 2. Dapatkan daftar siswa aktif di kelas tersebut
     const { data: students } = await supabase.from('students').select('id, name, gender, nis').eq('class_id', homeroomClass.id).eq('status', 'active').order('name');
     if (!students) return null;
 
-    // 3. Tentukan rentang tanggal bulan tersebut
     const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
 
-    // 4. Ambil data presensi
     const { data: records } = await supabase
         .from('attendance_records')
         .select('student_id, date, status')
@@ -880,11 +838,9 @@ export async function getHomeroomMonthlyAttendance(month: number, year: number) 
         .gte('date', startDate)
         .lte('date', endDate);
 
-    // 5. Ambil data libur
     const { data: holidays } = await supabase.from('holidays').select('date').gte('date', startDate).lte('date', endDate);
     const holidayDates = new Set(holidays?.map(h => h.date) || []);
 
-    // 6. Bangun matriks presensi [student_id][date] = status
     const attendanceMap: Record<string, Record<string, string>> = {};
     const priority: Record<string, number> = { "Hadir": 4, "Izin": 3, "Sakit": 2, "Alpha": 1 };
 
