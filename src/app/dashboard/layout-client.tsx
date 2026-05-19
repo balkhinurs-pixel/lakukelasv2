@@ -30,6 +30,7 @@ import {
   Database,
   ChevronUp,
   ChevronLeft,
+  ChevronRight,
   FileSearch,
   LineChart,
   User,
@@ -53,6 +54,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
