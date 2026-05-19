@@ -1,4 +1,3 @@
-
 'use server';
 
 import * as React from 'react';
@@ -12,7 +11,7 @@ export default async function MonitoringLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
@@ -23,7 +22,7 @@ export default async function MonitoringLayout({
     .from('profiles')
     .select('full_name, avatar_url, role, is_activated')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
       redirect('/complete-profile');

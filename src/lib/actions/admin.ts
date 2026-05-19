@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 /**
  * Membuat Token Aktivasi Baru (8 digit random).
+ * (Fungsi tetap ada untuk mencegah error impor, walau fitur dinonaktifkan)
  */
 export async function generateActivationToken() {
     const supabase = await createClient();
