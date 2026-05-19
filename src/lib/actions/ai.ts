@@ -2,6 +2,7 @@
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
 import { generateQuestions, type GenerateQuestionsInput, type GenerateQuestionsOutput } from '@/ai/flows/generate-questions-flow';
+import { generateModulAjar, type ModulAjarInput, type ModulAjarOutput } from '@/ai/flows/generate-modul-ajar-flow';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
@@ -17,6 +18,19 @@ export async function generateContentAction(input: EducationContentInput) {
     } catch (error: any) {
         console.error("AI Generation Error:", error);
         return { success: false, error: error.message || "Gagal menghubungi AI." };
+    }
+}
+
+/**
+ * Server Action khusus untuk Generate Modul Ajar (RPP) Profesional.
+ */
+export async function generateModulAjarAction(input: ModulAjarInput) {
+    try {
+        const result = await generateModulAjar(input);
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error("Modul Ajar Generation Error:", error);
+        return { success: false, error: error.message || "Gagal menghasilkan modul ajar." };
     }
 }
 

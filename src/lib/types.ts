@@ -218,6 +218,19 @@ export interface QuestionGenerationInput {
   mediaMimeType?: string;
 }
 
+export interface ModulAjarInput {
+  jenjang: string;
+  kelas: string;
+  semester?: string;
+  subject: string;
+  topic: string;
+  alokasiWaktu: string;
+  profilPancasila: string[];
+  modelPembelajaran: string;
+  saranaPrasarana?: string;
+  targetSiswa?: string;
+}
+
 // --- History Types ---
 export interface AttendanceHistoryEntry {
   id: string;
