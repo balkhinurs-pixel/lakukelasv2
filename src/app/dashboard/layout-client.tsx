@@ -172,7 +172,6 @@ export default function DashboardLayoutClient({
     );
   };
 
-  // Custom Toggle Button for Sidebar
   const SidebarToggle = () => {
     const { toggleSidebar, state } = useSidebar();
     return (
@@ -193,31 +192,21 @@ export default function DashboardLayoutClient({
           collapsible="icon" 
           className="hidden md:flex m-4 h-[calc(100vh-2rem)] rounded-[40px] border-0 shadow-2xl shadow-indigo-100/30 overflow-visible bg-white"
        >
-          <SidebarHeader className="p-0 shrink-0">
-              <div className="p-6 pb-2">
-                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                        <GraduationCap className="w-6 h-6" />
-                    </div>
-                    <AnimatePresence>
-                        {pathname && (
-                             <motion.div 
-                                initial={{ opacity: 0, scale: 0.8 }} 
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="group-data-[collapsible=icon]:hidden overflow-hidden"
-                             >
-                                <h2 className="font-black text-lg tracking-tight text-slate-900 leading-none">LakuKelas</h2>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dashboard Guru</p>
-                             </motion.div>
-                        )}
-                    </AnimatePresence>
-                 </div>
+          <SidebarHeader className="p-0 shrink-0 overflow-hidden rounded-t-[40px]">
+              <div className="bg-gradient-to-br from-indigo-800 to-indigo-600 p-6 text-white text-center space-y-4 group-data-[collapsible=icon]:p-4">
+                  <div className="mx-auto w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:rounded-lg">
+                      <GraduationCap className="w-8 h-8 group-data-[collapsible=icon]:w-5 group-data-[collapsible=icon]:h-5" />
+                  </div>
+                  <div className="group-data-[collapsible=icon]:hidden animate-in fade-in slide-in-from-top-1 duration-300">
+                      <h2 className="font-black text-lg tracking-tight">LakuKelas</h2>
+                      <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-[9px] uppercase tracking-widest mt-1">Dashboard Guru</Badge>
+                  </div>
               </div>
           </SidebarHeader>
           
           <SidebarToggle />
 
-          <SidebarContent className="px-3">
+          <SidebarContent className="px-3 bg-slate-50">
             <ScrollArea className="flex-1">
                 <SidebarGroup className="p-2 pt-4">
                     {isAdmin && (
@@ -287,8 +276,8 @@ export default function DashboardLayoutClient({
             </ScrollArea>
           </SidebarContent>
 
-          <SidebarFooter className="p-4 pt-0 shrink-0">
-                <SidebarMenu className="gap-2 mb-4 border-t pt-4">
+          <SidebarFooter className="p-4 pt-0 shrink-0 bg-slate-50 rounded-b-[40px] border-t">
+                <SidebarMenu className="gap-2 mb-4 pt-4">
                     <NavItem href="/dashboard/settings" icon={Settings} label="Setelan Akun" color="text-slate-400" />
                     <SidebarMenuItem>
                          <SidebarMenuButton className="rounded-2xl h-12 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50">
