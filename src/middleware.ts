@@ -1,12 +1,12 @@
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/request'
 
 /**
  * Optimized Middleware:
- * Fokus utama hanya pada proteksi Sesi Auth agar load halaman sangat cepat.
- * Logika detail profil (activated/role) dipindahkan ke Layout untuk menghindari 
- * database bottleneck di layer Edge.
+ * Hanya melakukan verifikasi Sesi Auth (Wajib Login).
+ * Logika detail profil (is_activated/role) dipindahkan ke Layout untuk 
+ * performa akses aset yang jauh lebih cepat.
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -60,7 +60,6 @@ export async function middleware(request: NextRequest) {
   
   // 2. Jika sudah login, jangan biarkan ke halaman login/welcome
   if (user && (pathname === '/login' || pathname === '/')) {
-      // Redirect ke dashboard, biarkan layout yang menentukan sub-destinasi berdasarkan role
       return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -69,7 +68,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Optimized matcher: Skip assets and only run on pages
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

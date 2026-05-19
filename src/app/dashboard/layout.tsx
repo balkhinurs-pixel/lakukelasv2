@@ -19,7 +19,7 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  // Ambil profil lengkap di sini (Single Fetch)
+  // Ambil profil lengkap (Single Fetch untuk seluruh subtree)
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, avatar_url, is_homeroom_teacher, role, is_activated')
@@ -30,11 +30,12 @@ export default async function DashboardLayout({
       redirect('/complete-profile');
   }
 
-  // Pindahkan logika pengalihan status dari middleware ke sini agar load awal lebih ringan
+  // Proteksi 1: Pengecekan Aktivasi Akun
   if (!profile.is_activated) {
       redirect('/waiting-approval');
   }
 
+  // Proteksi 2: Redirect Kepala Sekolah ke Monitoring
   if (profile.role === 'headmaster') {
       redirect('/monitoring');
   }

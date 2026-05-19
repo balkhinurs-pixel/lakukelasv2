@@ -1,3 +1,4 @@
+
 'use server';
 
 import * as React from 'react';
@@ -15,20 +16,25 @@ export default async function MonitoringLayout({
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    redirect('/');
+    redirect('/login');
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, avatar_url, role')
+    .select('full_name, avatar_url, role, is_activated')
     .eq('id', user.id)
     .single();
 
-  if (profileError || !profile) {
-      redirect('/dashboard');
+  if (!profile) {
+      redirect('/complete-profile');
   }
 
-  // Izinkan Admin DAN Kepala Sekolah untuk masuk ke layout monitoring
+  // Proteksi 1: Wajib Aktif
+  if (!profile.is_activated) {
+    redirect('/waiting-approval');
+  }
+
+  // Proteksi 2: Hanya Admin dan Kepala Sekolah yang boleh akses monitoring
   if (profile.role !== 'admin' && profile.role !== 'headmaster') {
     redirect('/dashboard');
   }
