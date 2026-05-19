@@ -10,34 +10,39 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { 
-    LineChart, 
     ArrowLeft, 
     ListFilter, 
     ChevronDown, 
     Info, 
     TrendingUp,
-    BarChart3
+    BarChart3,
+    CalendarDays
 } from "lucide-react";
 import Link from "next/link";
 import WeeklyAttendanceChart from "../../admin/weekly-attendance-chart";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { 
+    DropdownMenu, 
+    DropdownMenuContent, 
+    DropdownMenuItem, 
+    DropdownMenuLabel, 
+    DropdownMenuSeparator, 
+    DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 export default async function WeeklyChartPage({ 
     searchParams 
 }: { 
     searchParams: { range?: string } 
 }) {
-    // Range dibatasi ke 7, 30, atau 90 untuk efisiensi Free Tier
-    const range = parseInt(searchParams.range || "7");
+    const range = searchParams.range || "7";
     const trendData = await getAttendanceTrendData(range);
 
-    if (!trendData) {
-        return <div className="p-8 text-center text-muted-foreground">Gagal memuat data grafik.</div>;
+    if (!trendData || trendData.length === 0) {
+        return <div className="p-8 text-center text-muted-foreground">Gagal memuat data grafik. Silakan coba rentang waktu lain.</div>;
     }
 
-    // Kalkulasi Ringkasan dari Data (Dilakukan di server)
     const totalBerangkat = trendData.reduce((acc, curr) => acc + curr.berangkat, 0);
     const totalAlpha = trendData.reduce((acc, curr) => acc + curr.tidakAbsen, 0);
     const totalIzinSakit = trendData.reduce((acc, curr) => acc + curr.izinSakit, 0);
@@ -58,7 +63,9 @@ export default async function WeeklyChartPage({
         </div>
     );
 
-    const rangeLabel = range === 7 ? "7 Hari" : range === 30 ? "30 Hari" : "90 Hari";
+    const rangeLabel = range === '7' ? "7 Hari" : range === '30' ? "30 Hari" : range === '90' ? "90 Hari" : "Semester Ini";
+    const startDateDisplay = trendData[0]?.tanggal_full;
+    const endDateDisplay = trendData[trendData.length - 1]?.tanggal_full;
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto pb-20">
@@ -71,51 +78,65 @@ export default async function WeeklyChartPage({
                     <h1 className="text-xl font-black text-slate-900 tracking-tight">Tren Keberangkatan Guru</h1>
                     <div className="flex items-center justify-center gap-1 mt-0.5 text-slate-400">
                         <span className="text-[10px] font-bold uppercase tracking-wider">
-                            Periode: {trendData[0]?.tanggal} - {trendData[trendData.length-1]?.tanggal}
+                            PERIODE: {startDateDisplay} - {endDateDisplay}
                         </span>
                         <ChevronDown className="h-3 w-3" />
                     </div>
                 </div>
-                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-                    <ListFilter className="h-5 w-5" />
-                </div>
+                
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors">
+                            <ListFilter className="h-5 w-5" />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-2xl border-0 shadow-2xl p-2 w-48">
+                        <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2 py-1.5">Pilih Rentang</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild className="rounded-xl font-bold py-2.5 focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer">
+                            <Link href="?range=7">7 Hari Terakhir</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="rounded-xl font-bold py-2.5 focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer">
+                            <Link href="?range=30">30 Hari Terakhir</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="rounded-xl font-bold py-2.5 focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer">
+                            <Link href="?range=90">90 Hari Terakhir</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="rounded-xl font-bold py-2.5 focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer">
+                            <Link href="?range=semester" className="flex items-center gap-2">
+                                <CalendarDays className="h-4 w-4" />
+                                Semester Aktif
+                            </Link>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
 
             {/* Range Tabs Navigation */}
-            <div className="bg-slate-100/80 p-1 rounded-2xl flex gap-1 mx-1">
-                <Link 
-                    href="?range=7" 
-                    className={cn(
-                        "flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-all",
-                        range === 7 ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    7 Hari
-                </Link>
-                <Link 
-                    href="?range=30" 
-                    className={cn(
-                        "flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-all",
-                        range === 30 ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    30 Hari
-                </Link>
-                <Link 
-                    href="?range=90" 
-                    className={cn(
-                        "flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-all",
-                        range === 90 ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    90 Hari
-                </Link>
+            <div className="bg-slate-100/80 p-1 rounded-2xl flex gap-1 mx-1 overflow-x-auto scrollbar-none">
+                {[
+                    { id: '7', label: '7 HARI' },
+                    { id: '30', label: '30 HARI' },
+                    { id: '90', label: '90 HARI' },
+                    { id: 'semester', label: 'SEMESTER INI' }
+                ].map((tab) => (
+                    <Link 
+                        key={tab.id}
+                        href={`?range=${tab.id}`} 
+                        className={cn(
+                            "flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-all whitespace-nowrap",
+                            range === tab.id ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                        )}
+                    >
+                        {tab.label}
+                    </Link>
+                ))}
             </div>
 
             {/* Section: Ringkasan */}
             <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-white overflow-hidden">
                 <CardHeader className="pb-4 pt-6">
-                    <CardTitle className="text-lg font-black text-slate-900">Ringkasan {rangeLabel}</CardTitle>
+                    <CardTitle className="text-lg font-black text-slate-900 uppercase tracking-tight">Ringkasan {rangeLabel}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -155,7 +176,7 @@ export default async function WeeklyChartPage({
             <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-white overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between pb-2 pt-8">
                     <div>
-                        <CardTitle className="text-lg font-black text-slate-900 tracking-tight">Tren Keberangkatan Guru</CardTitle>
+                        <CardTitle className="text-lg font-black text-slate-900 tracking-tight uppercase">Tren Keberangkatan Guru</CardTitle>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Perbandingan {rangeLabel} Terakhir</p>
                     </div>
                     <div className="p-2 text-slate-300"><Info className="h-5 w-5" /></div>

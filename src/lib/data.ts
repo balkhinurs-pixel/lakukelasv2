@@ -1,9 +1,10 @@
+
 'use server';
 
 import { createClient } from './supabase/server';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday, GoogleDriveIntegration } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, eachDayOfInterval } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, getIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
@@ -23,10 +24,10 @@ async function getAuthenticatedUser() {
 // --- Trend Data Fetcher (OPTIMIZED FOR FREE TIER) ---
 
 /**
- * Mengambil data tren kehadiran guru untuk rentang hari tertentu (7, 30, atau 90 hari).
- * Dioptimalkan: Hanya melakukan 1 BATCH request ke database untuk semua data hari.
+ * Mengambil data tren kehadiran guru untuk rentang hari tertentu (7, 30, 90, atau semester).
+ * Dioptimalkan: Hanya melakukan 1 BATCH request ke database.
  */
-export async function getAttendanceTrendData(days: number = 7) {
+export async function getAttendanceTrendData(range: string = "7") {
     noStore();
     const user = await getAuthenticatedUser();
     if (!user) return [];
@@ -34,10 +35,22 @@ export async function getAttendanceTrendData(days: number = 7) {
     const supabase = createClient();
     const nowIndo = getIndonesianTime();
     
-    const endDate = nowIndo;
-    const startDate = new Date(nowIndo);
-    startDate.setDate(startDate.getDate() - (days - 1));
+    let startDate: Date;
+    const endDate = new Date(nowIndo);
+
+    if (range === 'semester') {
+        const currentMonth = nowIndo.getMonth() + 1; // 1-12
+        // Semester Ganjil mulai Juli (6), Semester Genap mulai Januari (0)
+        startDate = currentMonth >= 7 
+            ? new Date(nowIndo.getFullYear(), 6, 1) 
+            : new Date(nowIndo.getFullYear(), 0, 1);
+    } else {
+        const daysCount = parseInt(range) || 7;
+        startDate = new Date(nowIndo);
+        startDate.setDate(startDate.getDate() - (daysCount - 1));
+    }
     
+    startDate.setHours(0, 0, 0, 0);
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
 
@@ -56,37 +69,27 @@ export async function getAttendanceTrendData(days: number = 7) {
     const attendancePolicy = settingsRes.data?.value || 'schedule_based';
     const totalStaffCount = staffRes.data?.length || 0;
 
-    // Pre-group schedules by day in memory for performance
+    // Pre-group schedules by day
     const scheduleByDay: Record<string, Set<string>> = {};
     const dayNamesFull = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     dayNamesFull.forEach(day => {
-        const teachers = new Set(schedules.filter(s => s.day === day).map(s => s.teacher_id));
-        scheduleByDay[day] = teachers;
+        scheduleByDay[day] = new Set(schedules.filter(s => s.day === day).map(s => s.teacher_id));
     });
 
-    const trend = [];
+    const daysList = eachDayOfInterval({ start: startDate, end: endDate });
     const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
-    // Loop dilakukan di memori SERVER, bukan di Database
-    for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(nowIndo);
-        d.setDate(d.getDate() - i);
+    return daysList.map(d => {
         const dStr = format(d, 'yyyy-MM-dd');
         const dayIdx = d.getDay();
         const dayName = dayNamesFull[dayIdx];
         
-        // Check Holiday
         const holiday = holidays.find(h => h.date === dStr);
         const isHoliday = !!holiday || dayIdx === 0;
 
-        // Determine Expected Attendance
         let expected = 0;
         if (!isHoliday) {
-            if (attendancePolicy === 'daily_based') {
-                expected = totalStaffCount;
-            } else {
-                expected = scheduleByDay[dayName]?.size || 0;
-            }
+            expected = attendancePolicy === 'daily_based' ? totalStaffCount : (scheduleByDay[dayName]?.size || 0);
         }
 
         const dayRecords = attendanceRecords.filter(r => r.date === dStr);
@@ -94,19 +97,18 @@ export async function getAttendanceTrendData(days: number = 7) {
         const izinSakit = dayRecords.filter(r => ['Sakit', 'Izin'].includes(r.status)).length;
         const tidakAbsen = expected > 0 ? Math.max(0, expected - berangkat - izinSakit) : 0;
 
-        trend.push({
+        return {
             day: dayNamesShort[dayIdx],
             tanggal: format(d, 'dd/MM'),
+            tanggal_full: format(d, 'dd MMM yyyy', { locale: id }),
             full_date: dStr,
             berangkat,
             tidakAbsen,
             izinSakit,
             isHoliday,
             holidayName: holiday?.description || (dayIdx === 0 ? 'Hari Minggu' : null)
-        });
-    }
-
-    return trend;
+        };
+    });
 }
 
 // --- Dashboard & Monitoring ---
