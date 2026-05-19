@@ -319,25 +319,25 @@ export default function DashboardLayoutClient({
           </SidebarFooter>
        </Sidebar>
 
-      <SidebarInset className="bg-transparent">
-        <header className="sticky top-0 z-40 w-full px-4 pt-4 md:pt-6">
-            <div className="flex items-center justify-between h-16 px-6 bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg rounded-[2rem] md:rounded-[24px]">
+      <SidebarInset className="bg-transparent overflow-hidden">
+        <header className="sticky top-0 z-40 w-full bg-indigo-700 text-white shadow-md">
+            <div className="flex items-center justify-between h-16 px-4 sm:px-6">
                  <div className="flex items-center gap-4">
-                     <SidebarTrigger className="md:hidden text-indigo-600 hover:bg-indigo-50 rounded-xl" />
+                     <SidebarTrigger className="md:hidden text-white hover:bg-white/20 rounded-xl" />
                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-indigo-600/60 tracking-widest leading-none">Dashboard</span>
-                        <h1 className="text-sm font-black text-slate-800 tracking-tight mt-0.5">LakuKelas Guru</h1>
+                        <span className="text-[10px] font-black uppercase text-indigo-100/60 tracking-widest leading-none">Administrator Guru</span>
+                        <h1 className="text-sm font-black tracking-tight mt-0.5">LakuKelas Dashboard</h1>
                      </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors relative">
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full transition-colors relative">
                         <Bell className="h-5 w-5" />
                         <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
                     </Button>
-                    <div className="h-8 w-px bg-slate-100 mx-1 hidden sm:block" />
+                    <div className="h-8 w-px bg-white/20 mx-1 hidden sm:block" />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-full">
+                          <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-all rounded-full">
                               <LogOut className="h-5 w-5" />
                           </Button>
                       </AlertDialogTrigger>
