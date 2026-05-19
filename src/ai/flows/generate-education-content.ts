@@ -2,7 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan konten pendidikan (RPP & Soal).
  * Menggunakan API Key pribadi milik guru yang disimpan di profil database.
- * Menggunakan model Gemini 2.5 Flash (Terbaru & Mendukung Free Tier).
+ * Menggunakan model Gemini 3 Flash (Terbaru & Stabil).
  */
 
 import { z, genkit } from 'genkit';
@@ -44,10 +44,10 @@ export async function generateEducationContent(input: EducationContentInput): Pr
     throw new Error("API Key Gemini belum diatur. Harap isi di menu Pengaturan > Integrasi.");
   }
 
-  // Inisialisasi instance Genkit lokal dengan model 2.5 Flash
+  // Inisialisasi instance Genkit lokal dengan model Gemini 3 Flash Preview
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
-    model: googleAI.model('gemini-2.5-flash'),
+    model: googleAI.model('gemini-3-flash-preview'),
   });
 
   const response = await ai.generate({

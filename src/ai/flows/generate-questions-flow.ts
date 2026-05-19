@@ -2,7 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
  * Menggunakan API Key pribadi milik guru.
- * Kini dilengkapi dengan dukungan Media (PDF/Foto) untuk ekstraksi materi.
+ * Menggunakan model Gemini 3 Flash (Terbaru) untuk menghindari bottleneck server.
  * Dioptimalkan untuk LaTeX (Matematika) dan Unicode Arab.
  */
 
@@ -66,9 +66,10 @@ export async function generateQuestions(input: GenerateQuestionsInput): Promise<
     throw new Error("API Key Gemini belum diatur di Pengaturan.");
   }
 
+  // Menggunakan Gemini 3 Flash Preview untuk performa dan ketersediaan yang lebih baik
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
-    model: googleAI.model('gemini-2.5-flash'),
+    model: googleAI.model('gemini-3-flash-preview'),
   });
 
   const isHighSchool = input.jenjang.includes('SMA') || input.jenjang.includes('SMK') || input.jenjang.includes('MA');
