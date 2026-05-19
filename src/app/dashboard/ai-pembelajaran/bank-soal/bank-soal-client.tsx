@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -648,7 +647,6 @@ export default function BankSoalClient({
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                     <DialogContent className="rounded-[2.5rem] p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
-                            <button onClick={() => setIsExportDialogOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
                             <div className="flex items-center gap-4">
                                 <div className="p-4 bg-white/20 backdrop-blur-sm rounded-3xl border border-white/20 flex items-center justify-center shrink-0">
                                     <Printer className="h-8 w-8" />

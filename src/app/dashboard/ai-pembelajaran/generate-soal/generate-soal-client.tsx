@@ -474,7 +474,6 @@ export default function GenerateSoalClient({
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl bg-[#F8FAFF]">
                     <div className="flex flex-col h-[90vh]">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white relative shrink-0">
-                            <button onClick={() => setIsPreviewOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
                             <div className="flex items-center gap-5">
                                 <div className="p-4 rounded-3xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-xl"><Eye className="h-8 w-8" /></div>
                                 <div>
