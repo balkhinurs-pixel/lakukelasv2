@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -27,7 +28,8 @@ import {
   Activity,
   ChevronDown,
   ChevronUp,
-  Bell
+  Bell,
+  LineChart
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -78,7 +80,7 @@ export default function AdminLayoutClient({
   const router = useRouter();
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [isMonitoringExpanded, setIsMonitoringExpanded] = React.useState(false);
+  const [isMonitoringExpanded, setIsMonitoringExpanded] = React.useState(true);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -157,6 +159,14 @@ export default function AdminLayoutClient({
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                    </SidebarMenu>
+
+                    <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Monitoring Kepala</SidebarGroupLabel>
+                    <SidebarMenu className="gap-1 mb-6">
+                      <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-purple-600" />
+                      <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="text-purple-600" />
+                      <NavItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="text-purple-600" />
+                      <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas Staf" color="text-purple-600" />
                     </SidebarMenu>
 
                     <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Manajemen Staf</SidebarGroupLabel>
@@ -281,7 +291,7 @@ export default function AdminLayoutClient({
                             </div>
                             {isMonitoringExpanded && (
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-rose-500" />
+                                    <MobileGridItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="bg-rose-500" />
                                     <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi" color="bg-amber-500" />
                                     <MobileGridItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="bg-teal-500" />
                                 </div>
