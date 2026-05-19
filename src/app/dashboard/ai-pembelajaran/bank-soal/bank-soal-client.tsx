@@ -28,7 +28,8 @@ import {
     X,
     Timer,
     ExternalLink,
-    ArrowRight
+    ArrowRight,
+    Brain
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,6 @@ import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileCard } from "@/components/ui/file-card-collections";
 import { AppLogo } from "@/components/icons";
 import { LottieSuccess } from "@/components/ui/lottie-success";
 
@@ -205,7 +205,7 @@ const NaskahPrintTemplate = ({
     );
 };
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
@@ -461,7 +461,7 @@ export default function BankSoalClient({
                 </div>
             </div>
 
-            <div className="px-4 sm:px-6 lg:px-10 space-y-6">
+            <div className="px-4 sm:px-6 lg:px-10 space-y-8">
                 {isExportDialogOpen && (
                     <NaskahPrintTemplate 
                         questions={selectedOrderedIds.map(id => initialQuestions.find(q => q.id === id)).filter(Boolean)} 
@@ -469,12 +469,13 @@ export default function BankSoalClient({
                     />
                 )}
 
+                {/* Main Action Bar */}
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div className="relative flex-1 w-full max-w-md group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
                         <Input 
                             placeholder="Cari materi..." 
-                            className="pl-12 h-12 rounded-2xl border-slate-200 bg-white shadow-sm" 
+                            className="pl-12 h-12 rounded-2xl border-slate-200 bg-white shadow-sm font-bold" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -484,16 +485,16 @@ export default function BankSoalClient({
                             {selectedOrderedIds.length > 0 && (
                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                                     <Button 
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl gap-2 font-bold px-6 shadow-lg shadow-emerald-100 h-12"
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-emerald-100 h-12"
                                         onClick={() => setIsExportDialogOpen(true)}
                                     >
                                         <Printer className="h-5 w-5" />
-                                        Susun Naskah ({selectedOrderedIds.length})
+                                        Cetak Naskah ({selectedOrderedIds.length})
                                     </Button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                        <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-bold px-6 shadow-lg shadow-indigo-100" asChild>
+                        <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-indigo-100" asChild>
                             <Link href="/dashboard/ai-pembelajaran/generate-soal">
                                 <PlusCircle className="h-5 w-5" />
                                 Generate Baru
@@ -502,44 +503,59 @@ export default function BankSoalClient({
                     </div>
                 </div>
 
-                <Card className="border-0 shadow-sm rounded-3xl bg-slate-50/50 p-4">
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
-                        <Filter className="h-4 w-4" />
-                        <Select value={filterClass} onValueChange={setFilterClass}>
-                            <SelectTrigger className="w-32 h-10 rounded-xl bg-white"><SelectValue placeholder="Kelas" /></SelectTrigger>
-                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                <SelectItem value="all">Semua Kelas</SelectItem>
-                                {uniqueClasses.map(c => <SelectItem key={c} value={c}>Kelas {c}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={filterSubject} onValueChange={setFilterSubject}>
-                            <SelectTrigger className="w-44 h-10 rounded-xl bg-white"><SelectValue placeholder="Mapel" /></SelectTrigger>
-                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                <SelectItem value="all">Semua Mapel</SelectItem>
-                                {uniqueSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Badge className="ml-auto bg-indigo-50 text-indigo-700 border-indigo-100 shadow-sm">{filteredQuestions.length} SOAL TERSEDIA</Badge>
-                    </div>
+                {/* Filter Section - Optimized Layout */}
+                <Card className="border-0 shadow-lg rounded-[2.5rem] bg-white overflow-hidden">
+                    <CardContent className="p-6">
+                        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2 text-indigo-600 shrink-0">
+                                <Filter className="h-5 w-5" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Saring Soal</span>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 w-full">
+                                <Select value={filterClass} onValueChange={setFilterClass}>
+                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold"><SelectValue placeholder="Semua Kelas" /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectItem value="all" className="font-bold">Semua Kelas</SelectItem>
+                                        {uniqueClasses.map(c => <SelectItem key={c} value={c} className="font-bold">Kelas {c}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={filterSubject} onValueChange={setFilterSubject}>
+                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold"><SelectValue placeholder="Semua Mapel" /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectItem value="all" className="font-bold">Semua Mapel</SelectItem>
+                                        {uniqueSubjects.map(s => <SelectItem key={s} value={s} className="font-bold">{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <div className="hidden md:block">
+                                    <div className="h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                                        <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">{filteredQuestions.length} SOAL DITEMUKAN</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <Badge className="sm:hidden w-full h-10 flex justify-center bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest">{filteredQuestions.length} SOAL DITEMUKAN</Badge>
+                        </div>
+                    </CardContent>
                 </Card>
 
-                <div className="space-y-4">
+                {/* Question List */}
+                <div className="space-y-5">
                     {paginatedQuestions.map((q) => {
                         const selectionIdx = getSelectionIndex(q.id);
                         const isSelected = selectionIdx !== null;
                         
                         return (
                             <Card key={q.id} className={cn(
-                                "border-0 shadow-sm rounded-[2rem] bg-white overflow-hidden transition-all border-2",
-                                isSelected ? "border-indigo-500 bg-indigo-50/30" : "border-transparent"
+                                "border-0 shadow-sm rounded-[2.5rem] bg-white overflow-hidden transition-all border-2",
+                                isSelected ? "border-indigo-500 bg-indigo-50/20" : "border-transparent"
                             )}>
-                                <div className="p-6 flex flex-col md:flex-row gap-6">
-                                    <div className="flex items-start gap-4 shrink-0">
+                                <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 sm:gap-8">
+                                    {/* Selection & Meta Column */}
+                                    <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start gap-4 shrink-0">
                                         <div className="relative">
                                             <Checkbox 
                                                 checked={isSelected} 
                                                 onCheckedChange={() => toggleSelect(q.id)}
-                                                className="h-7 w-7 rounded-xl mt-1 border-slate-200"
+                                                className="h-9 w-9 rounded-[1.2rem] border-slate-200 data-[state=checked]:bg-indigo-600"
                                             />
                                             <AnimatePresence>
                                                 {isSelected && (
@@ -547,52 +563,79 @@ export default function BankSoalClient({
                                                         initial={{ scale: 0 }} 
                                                         animate={{ scale: 1 }} 
                                                         exit={{ scale: 0 }}
-                                                        className="absolute -top-2 -right-2 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-md z-10"
+                                                        className="absolute -top-3 -right-3 w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[11px] font-black border-2 border-white shadow-lg z-10"
                                                     >
                                                         {selectionIdx}
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
                                         </div>
-                                        <div className="space-y-3 md:w-32 flex flex-col items-center">
-                                            <div className="w-16 h-16 shrink-0 flex items-center justify-center">
-                                                <FileCard formatFile={q.question_type === 'essay' ? 'txt' : 'pdf'} className="scale-75" />
-                                            </div>
-                                            <div className="text-center space-y-1">
+                                        
+                                        <div className="flex flex-col gap-2 md:w-32">
+                                            <div className="flex flex-wrap gap-1.5">
                                                 <Badge className={cn(
-                                                    "font-black text-[9px] uppercase tracking-widest",
-                                                    q.difficulty === 'sulit' ? "bg-rose-500" : "bg-emerald-500"
+                                                    "font-black text-[9px] uppercase tracking-widest px-2 py-0.5",
+                                                    q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500"
                                                 )}>{q.difficulty}</Badge>
-                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelas {q.kelas}</p>
+                                                <Badge variant="outline" className="font-black text-[9px] uppercase border-slate-200 text-slate-400">Kelas {q.kelas}</Badge>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 space-y-4">
-                                        <div className="text-slate-800 font-bold leading-relaxed">
-                                            <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-xl' : ''} />
+                                    {/* Content Column */}
+                                    <div className="flex-1 space-y-5">
+                                        {/* Dynamic Badges Row */}
+                                        <div className="flex flex-wrap gap-2">
+                                            <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
+                                                <BookOpen className="w-3 h-3 mr-1.5 opacity-60" />
+                                                {q.subject}
+                                            </Badge>
+                                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-0 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
+                                                <FileText className="w-3 h-3 mr-1.5 opacity-60" />
+                                                {q.question_type === 'essay' ? 'Esai / Uraian' : 'Pilihan Ganda (PG)'}
+                                            </Badge>
+                                            <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-purple-100 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
+                                                <Brain className="w-3 h-3 mr-1.5 opacity-60" />
+                                                {q.cognitive_level || 'C3 (Aplikasi)'}
+                                            </Badge>
                                         </div>
+
+                                        <div className="text-slate-800 font-bold text-lg leading-relaxed">
+                                            <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : ''} />
+                                        </div>
+
                                         {q.options_json && (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                                    <div key={k} className="p-3 rounded-2xl border border-slate-100 bg-white text-xs font-semibold flex gap-2 hover:border-indigo-200 transition-colors">
+                                                    <div key={k} className="p-4 rounded-2xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm">
                                                         <span className="text-indigo-600 font-black">{k}.</span>
                                                         <MathText content={v} />
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
-                                        <div className="pt-4 flex justify-between items-center border-t border-slate-50">
-                                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg">KUNCI: {q.correct_answer}</p>
-                                            <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
+
+                                        <div className="pt-5 flex justify-between items-center border-t border-slate-100">
+                                            <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">KUNCI JAWABAN: {q.correct_answer}</p>
+                                            <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest h-10 px-4 rounded-xl hover:bg-indigo-50">
                                                 {expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
                                             </Button>
                                         </div>
-                                        {expandedQuestions.has(q.id) && (
-                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="p-5 rounded-2xl bg-slate-50 text-xs italic text-slate-600 border border-slate-100 leading-relaxed">
-                                                <MathText content={q.explanation} />
-                                            </motion.div>
-                                        )}
+
+                                        <AnimatePresence>
+                                            {expandedQuestions.has(q.id) && (
+                                                <motion.div 
+                                                    initial={{ height: 0, opacity: 0 }} 
+                                                    animate={{ height: 'auto', opacity: 1 }} 
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="p-6 rounded-[1.8rem] bg-slate-50 text-sm italic text-slate-600 border border-slate-100 leading-relaxed shadow-inner">
+                                                        <MathText content={q.explanation} />
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 </div>
                             </Card>
