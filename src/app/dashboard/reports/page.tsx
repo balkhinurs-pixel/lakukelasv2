@@ -10,11 +10,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { redirect } from "next/navigation";
 
-export default async function ReportsPage({
-    searchParams
-}: {
-    searchParams: { [key: string]: string | string[] | undefined }
+export default async function ReportsPage(props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
+    const searchParams = await props.searchParams;
+    
     // Ambil data dasar
     const [classes, subjects, profile, { schoolYears, activeSchoolYearId: defaultActiveSchoolYearId }, adminProfile] = await Promise.all([
         getClasses(),

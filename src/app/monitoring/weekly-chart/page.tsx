@@ -32,11 +32,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getIndonesianTime } from "@/lib/timezone";
 
-export default async function WeeklyChartPage({ 
-    searchParams 
-}: { 
-    searchParams: { range?: string } 
+export default async function WeeklyChartPage(props: { 
+    searchParams: Promise<{ range?: string }> 
 }) {
+    const searchParams = await props.searchParams;
     const range = searchParams.range || "7";
     const trendData = await getAttendanceTrendData(range);
     const nowIndo = getIndonesianTime();
