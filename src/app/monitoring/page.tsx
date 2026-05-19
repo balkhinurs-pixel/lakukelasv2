@@ -80,7 +80,7 @@ export default async function MonitoringDashboardPage() {
     <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-                <h1 className="text-3xl font-bold font-headline text-slate-900">Dasbor Monitoring</h1>
+                <h1 className="text-3xl font-bold font-headline text-slate-900">Statistik Monitoring</h1>
                 <p className="text-muted-foreground">Status kehadiran real-time seluruh staf - {format(now, 'EEEE, dd MMMM yyyy', { locale: id })}</p>
             </div>
         </div>
@@ -131,13 +131,13 @@ export default async function MonitoringDashboardPage() {
                     <div className="flex items-center gap-2">
                         <ListFilter className="h-5 w-5 text-teal-600" />
                         <div>
-                            <CardTitle className="text-lg">Kehadiran Guru Hari Ini</CardTitle>
-                            <CardDescription className="text-xs">Daftar guru sesuai kewajiban absen hari ini</CardDescription>
+                            <CardTitle className="text-lg">Daftar Kehadiran Guru Hari Ini</CardTitle>
+                            <CardDescription className="text-xs">Monitor status absen staf secara real-time</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <ScrollArea className="h-[500px]">
+                    <ScrollArea className="h-[600px]">
                         <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {todayAttendanceList.length > 0 ? (
                                 todayAttendanceList.map((item) => (

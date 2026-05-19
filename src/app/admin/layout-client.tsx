@@ -291,6 +291,7 @@ export default function AdminLayoutClient({
                             </div>
                             {isMonitoringExpanded && (
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-blue-600" />
                                     <MobileGridItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="bg-rose-500" />
                                     <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi" color="bg-amber-500" />
                                     <MobileGridItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="bg-teal-500" />
