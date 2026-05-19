@@ -204,6 +204,31 @@ const NaskahPrintTemplate = ({
             <div id="print-footer" style={{ padding: '20mm 16mm', textAlign: 'center', fontSize: '9pt', fontStyle: 'italic', color: '#888' }}>
                 <p>-- Selamat Mengerjakan --</p>
             </div>
+
+            {/* Halaman Kunci Jawaban (Terpisah) */}
+            {config.includeKey && (
+                <div id="answer-key-section">
+                    <div id="key-header" style={{ padding: '15mm 16mm 10mm 16mm', borderTop: '1px dashed #eee' }}>
+                        <div style={{ borderBottom: '2.5pt double black', width: '100%', marginBottom: '10px' }} />
+                        <h2 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14pt', textDecoration: 'underline', marginBottom: '10px' }}>
+                            KUNCI JAWABAN & PEMBAHASAN
+                        </h2>
+                        <div style={{ fontSize: '10pt', marginBottom: '20px' }}>
+                            <p>Mata Pelajaran: {config.subject}</p>
+                            <p>Kelas: {config.kelas}</p>
+                        </div>
+                    </div>
+                    {questions.map((q, idx) => (
+                        <div key={`key-${q.id}`} className="print-answer-block" style={{ padding: '4px 16mm', marginBottom: '12px' }}>
+                            <p style={{ fontWeight: 'bold', fontSize: '11pt' }}>{idx + 1}. Jawaban: {q.correct_answer}</p>
+                            <div style={{ fontSize: '10pt', color: '#333', marginTop: '4px', textAlign: 'justify', borderLeft: '2px solid #eee', paddingLeft: '10px' }}>
+                                <span style={{ fontWeight: 'bold', fontSize: '9pt', color: '#888', display: 'block', marginBottom: '2px' }}>PEMBAHASAN:</span>
+                                <MathText content={q.explanation} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
@@ -278,6 +303,7 @@ export default function BankSoalClient({
         date: "",
         duration: "90 Menit",
         format: "pdf" as "pdf" | "doc",
+        includeKey: true,
         activeSchoolYearName: activeSchoolYearName
     });
 
@@ -364,6 +390,8 @@ export default function BankSoalClient({
         const headerEl = document.getElementById('print-header');
         const footerEl = document.getElementById('print-footer');
         const questionElements = document.querySelectorAll('.print-question-block');
+        const keyHeaderEl = document.getElementById('key-header');
+        const keyElements = document.querySelectorAll('.print-answer-block');
 
         if (!headerEl || questionElements.length === 0) throw new Error("Renderer area not found");
 
@@ -394,14 +422,22 @@ export default function BankSoalClient({
             return yOffset + imgHeight;
         };
 
+        // Render Halaman Soal
         currentY = await renderElementToPdf(headerEl as HTMLElement, 0);
-
         for (let i = 0; i < questionElements.length; i++) {
             currentY = await renderElementToPdf(questionElements[i] as HTMLElement, currentY);
         }
-
         if (footerEl) {
-            await renderElementToPdf(footerEl as HTMLElement, currentY);
+            currentY = await renderElementToPdf(footerEl as HTMLElement, currentY);
+        }
+
+        // Render Halaman Kunci (Jika ada)
+        if (naskahConfig.includeKey && keyHeaderEl && keyElements.length > 0) {
+            pdf.addPage();
+            currentY = await renderElementToPdf(keyHeaderEl as HTMLElement, 0);
+            for (let i = 0; i < keyElements.length; i++) {
+                currentY = await renderElementToPdf(keyElements[i] as HTMLElement, currentY);
+            }
         }
 
         return pdf.output('datauristring').split(',')[1];
@@ -434,7 +470,7 @@ export default function BankSoalClient({
 
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
-                await new Promise(r => setTimeout(r, 2000)); 
+                await new Promise(r => setTimeout(r, 1000)); // Buffer sync template
                 binaryPdf = await generateHighQualityPdf();
             }
 
@@ -733,7 +769,7 @@ export default function BankSoalClient({
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
                                     <Select value={naskahConfig.subject} onValueChange={v => setNaskahConfig({...naskahConfig, subject: v})}>
                                         <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-xl border-0 shadow-2xl">
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {(mapelByJenjang[naskahConfig.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
@@ -773,6 +809,18 @@ export default function BankSoalClient({
                                             </SelectContent>
                                         </Select>
                                     </div>
+                                </div>
+
+                                <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-between gap-4">
+                                    <div className="flex flex-col gap-1">
+                                        <Label className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Kunci & Pembahasan</Label>
+                                        <p className="text-[9px] text-slate-400 font-bold leading-tight">Sertakan lembar pembahasan di akhir naskah.</p>
+                                    </div>
+                                    <Checkbox 
+                                        checked={naskahConfig.includeKey}
+                                        onCheckedChange={(checked) => setNaskahConfig({...naskahConfig, includeKey: !!checked})}
+                                        className="h-7 w-7 rounded-lg border-slate-200 bg-white"
+                                    />
                                 </div>
                             </div>
                         </ScrollArea>
