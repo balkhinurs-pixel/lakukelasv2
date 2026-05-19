@@ -1,21 +1,22 @@
 
 # Log Pembaruan LakuKelas
 
-## Update V33.0: Ultimate Master SQL Blueprint (Professional Standard) - TERIMPLEMENTASI
-Penyempurnaan infrastruktur database tingkat lanjut untuk stabilitas integrasi Cloud dan sistem manajemen sekolah mandiri.
+## Update V34.0: Monitoring & Analytics Suite - TERIMPLEMENTASI
+Penambahan infrastruktur cerdas untuk pemantauan kehadiran dan aktivitas guru secara real-time.
 
-### 1. Perubahan Arsitektur Database (schema.sql)
-- **Otomatisasi Admin (First-User Logic)**: Pendaftar pertama di sistem kini otomatis mendapatkan peran `admin` and status `is_activated = true`. Sangat memudahkan setup sekolah baru.
-- **Integrasi Cloud Storage**: Menambahkan tabel `google_drive_integrations` dan `ai_documents` untuk mendukung penyimpanan otomatis RPP/Soal ke Drive masing-masing guru.
-- **Isolasi Data RLS**: Menjamin privasi data antar guru sambil tetap memberikan akses monitoring bagi Admin dan Kepala Sekolah.
-- **RLS Hari Libur**: Seluruh staf dapat membaca jadwal libur, namun pengelolaannya dikunci khusus untuk Admin.
+### 1. Dashboard Monitoring (Backend)
+- **RPC `get_teacher_attendance_summary`**: Menghitung kuota kehadiran wajib vs realita secara otomatis berdasarkan kebijakan sekolah (Harian/Jadwal).
+- **RPC `get_teacher_activity_counts`**: Mengagregasi data administrasi (Presensi, Nilai, Jurnal) per guru untuk mengukur tingkat kedisiplinan staf.
 
-### 2. Fitur Baru & Perbaikan UI (V26.0)
-- **Bank Soal Pro**: Menambahkan indikator nomor urut berurutan saat memilih soal untuk naskah ujian.
-- **Ekspor Cerdas**: Dialog ekspor naskah kini mendukung pengaturan Waktu (Durasi) dan Tanggal ujian yang dinamis pada Kop Surat.
-- **Identitas Sekolah Lengkap**: Mendukung penuh penyimpanan NPSN, Website, dan Email Resmi Sekolah pada profil institusi.
+### 2. View Pelaporan Lanjut
+- **`attendance_history`**: View terpadu yang menggabungkan data absen dengan nama kelas, mapel, dan guru.
+- **`grades_history`**: View leger nilai yang menyertakan ambang KKM mapel secara dinamis.
+
+### 3. Keamanan & Izin
+- Penambahan instruksi **GRANT** menyeluruh untuk memastikan semua fungsi RPC dapat dipanggil oleh aplikasi Next.js tanpa kendala permission.
+- Penajaman **RLS Hari Libur**: Seluruh staf dapat membaca, namun hanya Admin yang dapat mengubah jadwal libur.
 
 ---
 
-## V32.0: Ultimate SQL Blueprint with First User Auto-Admin - TERIMPLEMENTASI
-Penyempurnaan total blueprint database untuk menjamin kemudahan setup awal dan keamanan terpusat.
+## Update V33.0: Ultimate Master SQL Blueprint (Professional Standard) - TERIMPLEMENTASI
+Penyempurnaan infrastruktur database tingkat lanjut untuk stabilitas integrasi Cloud dan sistem manajemen sekolah mandiri.
