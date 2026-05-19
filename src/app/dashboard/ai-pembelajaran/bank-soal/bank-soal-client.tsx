@@ -64,16 +64,15 @@ import { createClient } from "@/lib/supabase/client";
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
-  const hasMath = content.includes('\\(') || content.includes('\\[');
 
   return (
-    <div className={cn(
-        "math-text-render inline-block w-full", 
-        hasMath ? "py-1.5" : "", 
-        className
-    )}>
+    <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
-        if (part.startsWith('\\[')) return <BlockMath key={i} math={part.slice(2, -2)} />;
+        if (part.startsWith('\\[')) return (
+            <div key={i} className="my-2 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2">
+                <BlockMath math={part.slice(2, -2)} />
+            </div>
+        );
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         return <span key={i} className="whitespace-pre-wrap">{part}</span>;
       })}
@@ -481,6 +480,7 @@ export default function BankSoalClient({
         } catch (e: any) {
             toast({ title: "Error", description: e.message || "Terjadi kesalahan sistem.", variant: "destructive" });
         } finally {
+            }
             setExporting(false);
         }
     };
@@ -526,7 +526,7 @@ export default function BankSoalClient({
                             {selectedOrderedIds.length > 0 && (
                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex-1 sm:flex-none">
                                     <Button 
-                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-emerald-100 h-12"
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-emerald-100 h-12"
                                         onClick={() => setIsExportDialogOpen(true)}
                                     >
                                         <Printer className="h-5 w-5" />
@@ -535,7 +535,7 @@ export default function BankSoalClient({
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                        <Button className="flex-1 sm:flex-none h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-indigo-100" asChild>
+                        <Button className="flex-1 sm:flex-none h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-indigo-100" asChild>
                             <Link href="/dashboard/ai-pembelajaran/generate-soal">
                                 <PlusCircle className="h-5 w-5" />
                                 Generate
@@ -544,7 +544,7 @@ export default function BankSoalClient({
                     </div>
                 </div>
 
-                <Card className="border-0 shadow-lg rounded-[2.5rem] bg-white overflow-hidden mx-1">
+                <Card className="border-0 shadow-lg rounded-xl bg-white overflow-hidden mx-1">
                     <CardContent className="p-4 sm:p-6">
                         <div className="flex flex-col gap-4">
                             <div className="flex items-center gap-2 text-indigo-600">
@@ -596,7 +596,7 @@ export default function BankSoalClient({
                         
                         return (
                             <Card key={q.id} className={cn(
-                                "border-2 rounded-[2.5rem] bg-white overflow-hidden transition-all shadow-sm",
+                                "border-2 rounded-xl bg-white overflow-hidden transition-all shadow-sm",
                                 isSelected ? "border-indigo-600 bg-indigo-50/20 shadow-md" : "border-transparent"
                             )}>
                                 <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 sm:gap-8">
@@ -605,7 +605,7 @@ export default function BankSoalClient({
                                             <Checkbox 
                                                 checked={isSelected} 
                                                 onCheckedChange={() => toggleSelect(q.id)}
-                                                className="h-9 w-9 rounded-2xl border-slate-200 data-[state=checked]:bg-indigo-600"
+                                                className="h-9 w-9 rounded-xl border-slate-200 data-[state=checked]:bg-indigo-600"
                                             />
                                             <AnimatePresence>
                                                 {isSelected && (
@@ -648,16 +648,16 @@ export default function BankSoalClient({
                                             </Badge>
                                         </div>
 
-                                        <div className="text-slate-800 font-bold text-lg leading-relaxed break-words">
+                                        <div className="text-slate-800 font-bold text-lg leading-relaxed break-words overflow-hidden min-w-0">
                                             <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : ''} />
                                         </div>
 
                                         {q.options_json && (
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                                    <div key={k} className="p-4 rounded-2xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm min-w-0 overflow-hidden">
+                                                    <div key={k} className="p-4 rounded-xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm min-w-0 overflow-hidden">
                                                         <span className="text-indigo-600 font-black shrink-0">{k}.</span>
-                                                        <div className="flex-1 min-w-0">
+                                                        <div className="flex-1 min-w-0 overflow-hidden">
                                                             <MathText content={v} />
                                                         </div>
                                                     </div>
@@ -680,7 +680,7 @@ export default function BankSoalClient({
                                                     exit={{ height: 0, opacity: 0 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <div className="p-6 rounded-[1.8rem] bg-slate-50 text-sm italic text-slate-600 border border-slate-100 leading-relaxed shadow-inner">
+                                                    <div className="p-6 rounded-xl bg-slate-50 text-sm italic text-slate-600 border border-slate-100 leading-relaxed shadow-inner">
                                                         <MathText content={q.explanation} />
                                                     </div>
                                                 </motion.div>
@@ -695,10 +695,10 @@ export default function BankSoalClient({
 
                 {/* Dialog Ekspor Naskah */}
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-                    <DialogContent className="rounded-[2.5rem] p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
+                    <DialogContent className="rounded-xl p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
                             <div className="flex items-center gap-4">
-                                <div className="p-4 bg-white/20 backdrop-blur-sm rounded-3xl border border-white/20 flex items-center justify-center shrink-0">
+                                <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/20 flex items-center justify-center shrink-0">
                                     <Printer className="h-8 w-8" />
                                 </div>
                                 <div>
@@ -720,7 +720,7 @@ export default function BankSoalClient({
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
                                         <Select value={naskahConfig.jenjang} onValueChange={handleJenjangChange}>
                                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectContent className="rounded-xl border-0 shadow-2xl">
                                                 {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
@@ -729,7 +729,7 @@ export default function BankSoalClient({
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
                                         <Select value={naskahConfig.kelas} onValueChange={v => setNaskahConfig({...naskahConfig, kelas: v})}>
                                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectContent className="rounded-xl border-0 shadow-2xl">
                                                 {getClassOptions(naskahConfig.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
@@ -740,7 +740,7 @@ export default function BankSoalClient({
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
                                     <Select value={naskahConfig.subject} onValueChange={v => setNaskahConfig({...naskahConfig, subject: v})}>
                                         <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectContent className="rounded-xl border-0 shadow-2xl">
                                             {(mapelByJenjang[naskahConfig.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
@@ -762,7 +762,7 @@ export default function BankSoalClient({
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Asesmen</Label>
                                         <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
                                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectContent className="rounded-xl border-0 shadow-2xl">
                                                 <SelectItem value="Penilaian Harian" className="font-bold">Harian (UH)</SelectItem>
                                                 <SelectItem value="Sumatif Akhir Semester" className="font-bold">SAS / UAS</SelectItem>
                                                 <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
@@ -774,7 +774,7 @@ export default function BankSoalClient({
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Format</Label>
                                         <Select value={naskahConfig.format} onValueChange={(v: any) => setNaskahConfig({...naskahConfig, format: v})}>
                                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectContent className="rounded-xl border-0 shadow-2xl">
                                                 <SelectItem value="pdf" className="font-bold text-rose-600">PDF</SelectItem>
                                                 <SelectItem value="doc" className="font-bold text-blue-600">Google Doc</SelectItem>
                                             </SelectContent>
@@ -785,7 +785,7 @@ export default function BankSoalClient({
                         </ScrollArea>
 
                         <div className="p-8 bg-white border-t">
-                            <Button onClick={handleCreateNaskah} disabled={exporting || !naskahConfig.title} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
+                            <Button onClick={handleCreateNaskah} disabled={exporting || !naskahConfig.title} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
                                 {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : (naskahConfig.format === 'pdf' ? <Download className="h-6 w-6" /> : <CloudIcon className="h-6 w-6" />)}
                                 Simpan ke Drive
                             </Button>
@@ -795,7 +795,7 @@ export default function BankSoalClient({
 
                 {/* Dialog Success */}
                 <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
-                    <DialogContent className="rounded-[2.5rem] p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
+                    <DialogContent className="rounded-xl p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
                         <div className="p-10 flex flex-col items-center text-center">
                             <LottieSuccess size={200} />
                             <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-2">Naskah Berhasil!</h3>
@@ -819,9 +819,9 @@ export default function BankSoalClient({
 
                 {/* Dialog Re-Auth Google Drive */}
                 <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
-                    <DialogContent className="rounded-[2.5rem] p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
+                    <DialogContent className="rounded-xl p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
                         <div className="p-8 text-center space-y-6">
-                            <div className="mx-auto w-20 h-20 rounded-[2.5rem] bg-indigo-50 flex items-center justify-center text-indigo-600">
+                            <div className="mx-auto w-20 h-20 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
                                 <Database className="h-10 w-10" />
                             </div>
                             <div className="space-y-2">
@@ -830,7 +830,7 @@ export default function BankSoalClient({
                                     Sesi izin Google Drive Anda telah habis atau belum terhubung. Silakan hubungkan ulang untuk menyimpan naskah secara otomatis.
                                 </DialogDescription>
                             </div>
-                            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3 text-left">
+                            <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-3 text-left">
                                 <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                 <p className="text-[10px] font-bold text-amber-800 leading-relaxed uppercase tracking-tight">
                                     Klik tombol di bawah untuk memberikan izin akses folder "LakuKelas AI" di Drive Anda.
@@ -838,7 +838,7 @@ export default function BankSoalClient({
                             </div>
                             <Button 
                                 onClick={handleConnectDrive} 
-                                className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95"
+                                className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95"
                             >
                                 <RefreshCw className="h-5 w-5" />
                                 Hubungkan Google Drive
@@ -864,7 +864,7 @@ export default function BankSoalClient({
             </div>
             
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
                 .math-text-render .katex-display { margin: 0.5em 0; overflow-x: auto; overflow-y: hidden; }
