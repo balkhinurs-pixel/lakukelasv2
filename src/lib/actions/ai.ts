@@ -1,4 +1,3 @@
-
 'use server';
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
@@ -53,7 +52,7 @@ export async function generateQuestionImageAction(prompt: string) {
  * Server Action untuk menyimpan kumpulan soal ke database Bank Soal.
  */
 export async function saveQuestionsAction(config: QuestionGenerationInput, questions: GeneratedQuestion[]) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi." };
 
@@ -98,7 +97,7 @@ export async function saveQuestionsAction(config: QuestionGenerationInput, quest
  * Server Action untuk menghapus soal dari Bank Soal.
  */
 export async function deleteQuestionsAction(ids: string[]) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi." };
 
@@ -121,7 +120,7 @@ export async function createNaskahUjianAction(
     format: 'pdf' | 'doc' = 'doc',
     binaryData?: string
 ) {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Jika format adalah PDF, unggah data biner ke Drive
     if (format === 'pdf' && binaryData) {

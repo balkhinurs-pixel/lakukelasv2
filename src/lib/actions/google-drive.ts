@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -51,7 +50,7 @@ async function getOrCreateRecursiveFolder(providerToken: string, parentId: strin
  * Setup folder utama "LakuKelas AI" di Google Drive guru.
  */
 export async function setupGoogleDriveFolder() {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data: userData } = await supabase.auth.getUser();
     const { data: sessionData } = await supabase.auth.getSession();
@@ -123,7 +122,7 @@ export async function saveNaskahToDrive(
     metadata: { jenjang: string, class: string, subject: string },
     format: 'pdf' | 'doc' = 'doc'
 ) {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data: userData } = await supabase.auth.getUser();
     const { data: sessionData } = await supabase.auth.getSession();
@@ -237,7 +236,7 @@ export async function saveNaskahToDrive(
 }
 
 export async function disconnectGoogleDrive() {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
@@ -254,7 +253,7 @@ export async function disconnectGoogleDrive() {
 }
 
 export async function createTestDocument() {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data: userData } = await supabase.auth.getUser();
     const { data: sessionData } = await supabase.auth.getSession();

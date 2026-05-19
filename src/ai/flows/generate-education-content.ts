@@ -28,7 +28,7 @@ const EducationContentOutputSchema = z.object({
 export type EducationContentOutput = z.infer<typeof EducationContentOutputSchema>;
 
 export async function generateEducationContent(input: EducationContentInput): Promise<EducationContentOutput> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) throw new Error("Sesi login berakhir. Harap masuk kembali.");
