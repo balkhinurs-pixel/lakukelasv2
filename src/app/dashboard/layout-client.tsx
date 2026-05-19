@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -32,7 +31,8 @@ import {
   ChevronUp,
   ChevronLeft,
   FileSearch,
-  LineChart
+  LineChart,
+  User
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -105,13 +105,15 @@ export default function DashboardLayoutClient({
           asChild
           isActive={isActive}
           className={cn(
-            "rounded-xl transition-all duration-200",
-            isActive ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "hover:bg-slate-100"
+            "rounded-xl transition-all duration-300 h-11 px-4 mb-0.5",
+            isActive 
+              ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200/50" 
+              : "text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
           )}
         >
           <Link href={href}>
-            <Icon className={cn("w-4 h-4 mr-2", !isActive && color)} />
-            <span className="font-bold">{label}</span>
+            <Icon className={cn("w-4.5 h-4.5 mr-3 transition-transform duration-300", isActive && "scale-110")} />
+            <span className="font-bold tracking-tight">{label}</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -141,21 +143,20 @@ export default function DashboardLayoutClient({
   };
 
   const ProfileHeader = () => (
-    <SidebarHeader className="p-0 text-background">
-      <div className="relative flex flex-col items-center gap-2 bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-6 group-data-[collapsible=icon]:hidden overflow-hidden">
-          <div className="absolute inset-0 bg-white/[0.05] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
-          
-          <Avatar className="h-20 w-20 border-4 border-white/30 shadow-2xl shadow-black/20 relative z-10">
-            <AvatarImage src={(profile?.avatar_url || "https://placehold.co/100x100.png")} alt={profile?.full_name || 'Teacher'} />
-            <AvatarFallback className="text-foreground bg-white/20 backdrop-blur-sm">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
-          </Avatar>
-          <div className="text-center relative z-10">
-            <p className="text-lg font-bold text-white drop-shadow-sm line-clamp-1">{profile?.full_name || 'Guru'}</p>
-            <div className="mt-2">
-              <Badge variant={'outline'} className="text-[10px] font-black uppercase tracking-wider backdrop-blur-sm border-white/30 bg-green-500/20 text-green-100">
-                {profile?.role?.toUpperCase() || 'TEACHER'}
-              </Badge>
-            </div>
+    <SidebarHeader className="p-6 border-b border-indigo-50/50 bg-white/80 backdrop-blur-xl sticky top-0 z-20">
+      <div className="flex items-center gap-3">
+          <div className="relative">
+              <div className="absolute inset-0 bg-indigo-500 blur-md opacity-20 rounded-full animate-pulse" />
+              <Avatar className="h-11 w-11 border-2 border-white shadow-xl relative z-10">
+                <AvatarImage src={(profile?.avatar_url || "")} alt={profile?.full_name || 'Guru'} />
+                <AvatarFallback className="bg-indigo-600 text-white font-black text-sm">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
+              </Avatar>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-black text-slate-900 leading-tight truncate uppercase tracking-tight">{profile?.full_name?.split(',')[0] || 'Guru'}</p>
+            <Badge variant="outline" className="mt-1 h-5 px-1.5 border-indigo-100 bg-indigo-50/50 text-indigo-600 text-[9px] font-black uppercase tracking-widest leading-none">
+              {profile?.role || 'TEACHER'}
+            </Badge>
           </div>
       </div>
     </SidebarHeader>
@@ -163,36 +164,36 @@ export default function DashboardLayoutClient({
 
   return (
     <>
-       <Sidebar className="hidden md:flex">
+       <Sidebar className="hidden md:flex border-r border-indigo-50 bg-white/60 backdrop-blur-2xl">
           <ProfileHeader />
-          <SidebarContent className="p-0 bg-slate-50">
+          <SidebarContent className="p-0">
             <ScrollArea className="flex-1">
                 {(isHeadmaster || isAdmin) && (
                     <SidebarGroup className="p-4 pb-2">
-                        <SidebarGroupLabel className="text-teal-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Monitoring Kepala</SidebarGroupLabel>
-                        <SidebarMenu className="gap-1">
+                        <SidebarGroupLabel className="text-teal-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 ml-2">Monitoring</SidebarGroupLabel>
+                        <SidebarMenu className="gap-0.5">
                           <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-teal-600" />
-                          <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="text-teal-600" />
+                          <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Tren" color="text-teal-600" />
                           <NavItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="text-teal-600" />
-                          <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas Staf" color="text-teal-600" />
+                          <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="text-teal-600" />
                         </SidebarMenu>
                     </SidebarGroup>
                 )}
 
                 {isHomeroom && (
                   <SidebarGroup className="p-4 py-2">
-                      <SidebarGroupLabel className="text-emerald-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Menu Wali Kelas</SidebarGroupLabel>
-                      <SidebarMenu className="gap-1">
+                      <SidebarGroupLabel className="text-emerald-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 ml-2">Wali Kelas</SidebarGroupLabel>
+                      <SidebarMenu className="gap-0.5">
                         <NavItem href="/dashboard/homeroom/student-ledger" icon={ClipboardEdit} label="Leger & Catatan" color="text-emerald-600" />
-                        <NavItem href="/dashboard/homeroom/student-progress" icon={TrendingUp} label="Progres Siswa" color="text-emerald-600" />
-                        <NavItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Laporan Bulanan" color="text-emerald-600" />
+                        <NavItem href="/dashboard/homeroom/student-progress" icon={TrendingUp} label="Progres" color="text-emerald-600" />
+                        <NavItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Lap. Bulanan" color="text-emerald-600" />
                       </SidebarMenu>
                   </SidebarGroup>
                 )}
 
                 <SidebarGroup className="p-4 py-2">
-                    <SidebarGroupLabel className="text-slate-400 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Dashboard Guru</SidebarGroupLabel>
-                    <SidebarMenu className="gap-1">
+                    <SidebarGroupLabel className="text-slate-400 font-black text-[9px] tracking-[0.2em] uppercase mb-3 ml-2">Utama</SidebarGroupLabel>
+                    <SidebarMenu className="gap-0.5">
                       <NavItem href="/dashboard" icon={Home} label="Dasbor" />
                       <NavItem href="/dashboard/teacher-attendance" icon={MapPin} label="Absen Guru" color="text-rose-500" />
                       <NavItem href="/dashboard/agenda" icon={CalendarDays} label="Agenda" color="text-amber-500" />
@@ -208,8 +209,11 @@ export default function DashboardLayoutClient({
                 </SidebarGroup>
 
                 <SidebarGroup className="p-4 py-2">
-                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Asisten AI</SidebarGroupLabel>
-                    <SidebarMenu className="gap-1">
+                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 ml-2 flex items-center gap-2">
+                        <Sparkles className="w-3 h-3" />
+                        Asisten AI
+                    </SidebarGroupLabel>
+                    <SidebarMenu className="gap-0.5">
                       <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
                       <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Modul Ajar" color="text-indigo-600" />
                       <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
@@ -218,13 +222,13 @@ export default function DashboardLayoutClient({
 
                 {isAdmin && (
                   <SidebarGroup className="p-4 pt-2">
-                      <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Panel Admin</SidebarGroupLabel>
+                      <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 ml-2">Sistem</SidebarGroupLabel>
                       <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-black h-12 rounded-xl border border-purple-100 shadow-sm">
+                            <SidebarMenuButton asChild className="bg-gradient-to-br from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 text-indigo-700 font-black h-12 rounded-2xl border border-indigo-100 shadow-sm transition-all duration-300">
                                 <Link href="/admin/users">
-                                    <ShieldCheck className="w-5 h-5 mr-2" />
-                                    <span>Buka Panel Admin</span>
+                                    <ShieldCheck className="w-5 h-5 mr-3" />
+                                    <span>Master Admin</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -233,61 +237,75 @@ export default function DashboardLayoutClient({
                 )}
             </ScrollArea>
           </SidebarContent>
-          <SidebarFooter className="p-4 border-t bg-slate-50">
+          <SidebarFooter className="p-4 border-t border-indigo-50/50">
               <AlertDialog>
                   <AlertDialogTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 font-bold rounded-xl h-12">
-                          <LogOut className="w-4 h-4 mr-2" />
+                      <Button variant="ghost" className="w-full justify-start text-rose-500 hover:bg-rose-50 hover:text-rose-600 font-bold rounded-xl h-12 transition-all">
+                          <LogOut className="w-4 h-4 mr-3" />
                           Keluar Sesi
                       </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>Keluar dari LakuKelas?</AlertDialogTitle>
-                          <AlertDialogDescription>Sesi mengajar Anda akan diakhiri secara aman.</AlertDialogDescription>
+                  <AlertDialogContent className="rounded-[2.5rem] border-0 shadow-2xl p-8">
+                      <AlertDialogHeader className="space-y-4">
+                          <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">
+                              <LogOut className="h-8 w-8" />
+                          </div>
+                          <AlertDialogTitle className="text-2xl font-black tracking-tight text-center">Keluar Sesi?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-center font-medium text-slate-500">Aktivitas mengajar Anda akan diakhiri secara aman.</AlertDialogDescription>
                       </AlertDialogHeader>
-                      <AlertDialogFooter className="flex flex-row gap-2 pt-4">
-                          <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-xl h-12 bg-red-600 font-bold">Ya, Keluar</AlertDialogAction>
+                      <AlertDialogFooter className="flex flex-row gap-3 pt-6">
+                          <AlertDialogCancel className="flex-1 rounded-2xl h-14 font-bold border-slate-100 hover:bg-slate-50">Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-2xl h-14 bg-rose-600 hover:bg-rose-700 font-black uppercase tracking-widest shadow-lg shadow-rose-100">Keluar</AlertDialogAction>
                       </AlertDialogFooter>
                   </AlertDialogContent>
               </AlertDialog>
           </SidebarFooter>
        </Sidebar>
 
-      <SidebarInset className="bg-[#f8fafc]">
-        <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md">
-            <div className="flex items-center justify-between h-16 px-4">
-                 <div className="flex items-center gap-3">
-                     <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20 rounded-xl" />
-                     <h1 className="text-lg font-bold tracking-tight">LakuKelas</h1>
+      <SidebarInset className="bg-[#F8FAFF]">
+        <div className="sticky top-4 z-40 w-[calc(100%-2rem)] mx-auto mb-2 pointer-events-none md:pointer-events-auto">
+            <header className="h-16 px-6 bg-indigo-700/80 backdrop-blur-xl text-white shadow-2xl shadow-indigo-100/50 rounded-2xl border border-white/20 flex items-center justify-between pointer-events-auto overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-transparent pointer-events-none" />
+                
+                <div className="flex items-center gap-4 relative z-10">
+                     <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20 rounded-xl w-10 h-10 transition-colors" />
+                     <div className="h-8 w-px bg-white/20 hidden md:block" />
+                     <div className="flex flex-col">
+                        <h1 className="text-lg font-black tracking-tight leading-none">LakuKelas</h1>
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-200 mt-1">Management System</p>
+                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
+
+                <div className="flex items-center gap-2 relative z-10">
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full w-10 h-10">
                         <Bell className="h-5 w-5" />
                     </Button>
                     <div className="h-8 w-px bg-white/20 mx-2" />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-colors rounded-full">
-                              <LogOut className="h-5 w-5" />
+                          <Button variant="ghost" size="icon" className="text-white hover:bg-rose-500 hover:text-white transition-all rounded-full w-10 h-10 group">
+                              <LogOut className="h-5 w-5 group-hover:scale-110" />
                           </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
-                          <AlertDialogHeader>
-                              <AlertDialogTitle>Keluar Sesi?</AlertDialogTitle>
-                              <AlertDialogDescription>Anda perlu login kembali untuk mengakses data.</AlertDialogDescription>
+                      <AlertDialogContent className="rounded-[2.5rem] border-0 shadow-2xl p-8">
+                          <AlertDialogHeader className="space-y-4">
+                              <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">
+                                  <LogOut className="h-8 w-8" />
+                              </div>
+                              <AlertDialogTitle className="text-2xl font-black tracking-tight text-center text-slate-900">Akhiri Sesi?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-center font-medium text-slate-500">Pastikan semua data administrasi Anda telah tersimpan.</AlertDialogDescription>
                           </AlertDialogHeader>
-                          <AlertDialogFooter className="flex flex-row gap-2 pt-4">
-                              <AlertDialogCancel className="flex-1 rounded-xl h-12">Batal</AlertDialogCancel>
-                              <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-xl h-12 bg-red-600 font-bold">Keluar</AlertDialogAction>
+                          <AlertDialogFooter className="flex flex-row gap-3 pt-6">
+                              <AlertDialogCancel className="flex-1 rounded-2xl h-14 font-bold border-slate-100">Batal</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleLogout} className="flex-1 rounded-2xl h-14 bg-rose-600 hover:bg-rose-700 font-black uppercase tracking-widest shadow-lg">Keluar</AlertDialogAction>
                           </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
                 </div>
-            </div>
-        </header>
-        <div className="p-4 sm:p-6 lg:p-8">
+            </header>
+        </div>
+
+        <div className="p-4 sm:p-6 lg:p-10 pt-4">
             {children}
         </div>
       </SidebarInset>
@@ -386,7 +404,7 @@ export default function DashboardLayoutClient({
                             <Link href="/admin/users" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-3.5 bg-purple-600 text-white rounded-2xl shadow-xl shadow-purple-200 active:scale-95 transition-all">
                                 <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm"><ShieldCheck className="w-5 h-5" /></div>
                                 <div className="flex flex-col flex-1">
-                                    <span className="font-black text-sm tracking-tight leading-none">Buka Panel Admin Utama</span>
+                                    <span className="font-black text-sm tracking-tight leading-none">Buka Master Admin</span>
                                     <span className="text-[8px] font-bold text-white/70 uppercase tracking-widest mt-1">Manajemen Sistem</span>
                                 </div>
                             </Link>
