@@ -323,10 +323,9 @@ export default function DashboardLayoutClient({
         <header className="sticky top-0 z-40 w-full bg-indigo-700 text-white shadow-md">
             <div className="flex items-center justify-between h-16 px-4 sm:px-6">
                  <div className="flex items-center gap-4">
-                     <SidebarTrigger className="md:hidden text-white hover:bg-white/20 rounded-xl" />
                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-indigo-100/60 tracking-widest leading-none">Administrator Guru</span>
-                        <h1 className="text-sm font-black tracking-tight mt-0.5">LakuKelas Dashboard</h1>
+                        <h1 className="text-base font-black tracking-tight leading-none">LakuKelas</h1>
+                        <span className="text-[10px] font-black uppercase text-indigo-100/60 tracking-widest mt-1">Dashboard Guru</span>
                      </div>
                 </div>
                 <div className="flex items-center gap-3">
