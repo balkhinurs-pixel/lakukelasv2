@@ -1,22 +1,20 @@
-
 # Log Pembaruan LakuKelas
 
-## Update V34.0: Monitoring & Analytics Suite - TERIMPLEMENTASI
-Penambahan infrastruktur cerdas untuk pemantauan kehadiran dan aktivitas guru secara real-time.
+## Update V35.0: Principal Monitoring Analytics - TERIMPLEMENTASI
+Penyempurnaan mesin analitik database untuk memberikan wawasan mendalam kepada Kepala Sekolah mengenai kinerja staf.
 
-### 1. Dashboard Monitoring (Backend)
-- **RPC `get_teacher_attendance_summary`**: Menghitung kuota kehadiran wajib vs realita secara otomatis berdasarkan kebijakan sekolah (Harian/Jadwal).
-- **RPC `get_teacher_activity_counts`**: Mengagregasi data administrasi (Presensi, Nilai, Jurnal) per guru untuk mengukur tingkat kedisiplinan staf.
+### 1. Mesin Monitoring Aktivitas (Backend)
+- **RPC `get_teacher_activity_counts` (Optimized)**: 
+  - Kini menghitung **Sesi Absensi Unik** (berdasarkan kombinasi Tanggal, Kelas, Mapel, No Pertemuan).
+  - Menghitung **Set Penilaian Unik** (menghindari duplikasi hitungan per siswa).
+  - Mengintegrasikan data **Beban Kelas** langsung dari Master Jadwal.
+  - Menampilkan nama guru secara otomatis untuk mempercepat proses rendering di UI.
 
-### 2. View Pelaporan Lanjut
-- **`attendance_history`**: View terpadu yang menggabungkan data absen dengan nama kelas, mapel, dan guru.
-- **`grades_history`**: View leger nilai yang menyertakan ambang KKM mapel secara dinamis.
-
-### 3. Keamanan & Izin
-- Penambahan instruksi **GRANT** menyeluruh untuk memastikan semua fungsi RPC dapat dipanggil oleh aplikasi Next.js tanpa kendala permission.
-- Penajaman **RLS Hari Libur**: Seluruh staf dapat membaca, namun hanya Admin yang dapat mengubah jadwal libur.
+### 2. Keamanan & Stabilitas Skema
+- **Single Source of Truth**: Seluruh struktur database (Tabel, View, RLS, RPC, Trigger) telah dikonsolidasikan ke dalam satu file Master Blueprint `schema.sql`.
+- **Permission Fix**: Menambahkan instruksi `GRANT` eksplisit untuk seluruh View pendukung guna mencegah error *insufficient privileges* pada dashboard monitoring.
 
 ---
 
-## Update V33.0: Ultimate Master SQL Blueprint (Professional Standard) - TERIMPLEMENTASI
-Penyempurnaan infrastruktur database tingkat lanjut untuk stabilitas integrasi Cloud dan sistem manajemen sekolah mandiri.
+## Update V34.0: Monitoring & Analytics Suite - TERIMPLEMENTASI
+Penambahan infrastruktur cerdas untuk pemantauan kehadiran dan aktivitas guru secara real-time.
