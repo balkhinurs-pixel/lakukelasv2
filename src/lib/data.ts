@@ -213,7 +213,7 @@ export async function getAttendanceTrendData(range: string = "7") {
 // --- Bulk Fetchers for Optimization ---
 
 /**
- * Mengambil seluruh data yang dibutuhkan halaman Presensi dalam 1 request gabungan.
+ * Mengambil seluruh data yang dibutuhkan halaman Presensi dalam 1-2 request saja.
  */
 export async function getAttendancePageData() {
     noStore();
@@ -253,9 +253,6 @@ export async function getAttendancePageData() {
     };
 }
 
-/**
- * Mengambil seluruh data yang dibutuhkan halaman Nilai dalam 1 request gabungan.
- */
 export async function getGradesPageData() {
     noStore();
     const user = await getAuthenticatedUser();
@@ -881,4 +878,12 @@ export async function getGoogleDriveIntegration(): Promise<GoogleDriveIntegratio
         return null;
     }
     return data as GoogleDriveIntegration | null;
+}
+
+export async function getHolidays(): Promise<Holiday[]> {
+    noStore();
+    const supabase = createClient();
+    const { data, error } = await supabase.from('holidays').select('*').order('date');
+    if (error) return [];
+    return data || [];
 }

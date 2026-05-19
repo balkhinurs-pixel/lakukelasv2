@@ -90,8 +90,8 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         fill="url(#colorBerangkat)"
                         strokeWidth={3}
                         animationDuration={1500}
-                        dot={{ r: 4, fill: "#10b981", strokeWidth: 2, stroke: "#fff" }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
                     />
 
                     {/* Area: Tidak Absen (Alpha - Merah) */}
@@ -103,8 +103,8 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         fill="url(#colorAlpha)"
                         strokeWidth={3}
                         animationDuration={1500}
-                        dot={{ r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "#fff" }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
                     />
 
                     {/* Area: Izin / Sakit (Oranye) */}
@@ -116,8 +116,8 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         fill="url(#colorIzinSakit)"
                         strokeWidth={3}
                         animationDuration={1500}
-                        dot={{ r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
                     />
                 </AreaChart>
             </ResponsiveContainer>
