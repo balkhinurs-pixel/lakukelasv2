@@ -1,0 +1,73 @@
+schemaname,tablename,policyname,permissive,roles,cmd,qual,with_check
+public,activation_tokens,Admins can manage tokens,PERMISSIVE,{authenticated},ALL,is_admin(),null
+public,activation_tokens,Admins full access on tokens,PERMISSIVE,{authenticated},ALL,is_admin(),null
+public,activation_tokens,Enable read access for unused tokens,PERMISSIVE,{authenticated},SELECT,((used_by IS NULL) OR (used_by = auth.uid())),null
+public,activation_tokens,Enable update for claiming tokens,PERMISSIVE,{authenticated},UPDATE,(used_by IS NULL),(used_by = auth.uid())
+public,agendas,Admin dapat mengelola agenda.,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,agendas,Guru dapat mengelola agenda mereka sendiri.,PERMISSIVE,{public},ALL,(auth.uid() = teacher_id),(auth.uid() = teacher_id)
+public,ai_documents,Users can delete own AI documents,PERMISSIVE,{public},DELETE,(auth.uid() = user_id),null
+public,ai_documents,Users can insert own AI documents,PERMISSIVE,{public},INSERT,null,(auth.uid() = user_id)
+public,ai_documents,Users can manage own AI documents,PERMISSIVE,{public},ALL,(auth.uid() = user_id),null
+public,ai_documents,Users can update own AI documents,PERMISSIVE,{public},UPDATE,(auth.uid() = user_id),null
+public,ai_documents,Users can view own AI documents,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),null
+public,classes,Admin dapat mengelola kelas.,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,classes,Guru dapat melihat semua kelas.,PERMISSIVE,{public},SELECT,(auth.role() = 'authenticated'::text),null
+public,google_drive_integrations,Users can insert own drive integration,PERMISSIVE,{public},INSERT,null,(auth.uid() = user_id)
+public,google_drive_integrations,Users can manage own drive integration,PERMISSIVE,{public},ALL,(auth.uid() = user_id),null
+public,google_drive_integrations,Users can update own drive integration,PERMISSIVE,{public},UPDATE,(auth.uid() = user_id),null
+public,google_drive_integrations,Users can view own drive integration,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),null
+public,holidays,Allow admin manage holidays,PERMISSIVE,{public},ALL,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))",null
+public,holidays,Allow public read holidays,PERMISSIVE,{public},SELECT,(auth.role() = 'authenticated'::text),null
+public,journal_entries,Admin dapat melihat semua jurnal.,PERMISSIVE,{public},SELECT,is_admin(),null
+public,journal_entries,Guru dapat mengelola jurnal mereka sendiri.,PERMISSIVE,{public},ALL,(auth.uid() = teacher_id),(auth.uid() = teacher_id)
+public,materials,Teachers can delete their own materials,PERMISSIVE,{public},DELETE,(auth.uid() = teacher_id),null
+public,materials,Teachers can insert their own materials,PERMISSIVE,{public},INSERT,null,(auth.uid() = teacher_id)
+public,materials,Teachers can update their own materials,PERMISSIVE,{public},UPDATE,(auth.uid() = teacher_id),null
+public,materials,Teachers can view their own materials,PERMISSIVE,{public},SELECT,(auth.uid() = teacher_id),null
+public,profiles,Admin dapat mengelola semua profil.,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,profiles,Pengguna dapat melihat profil mereka sendiri.,PERMISSIVE,{public},SELECT,(auth.uid() = id),null
+public,profiles,Pengguna dapat memperbarui profil mereka sendiri.,PERMISSIVE,{public},UPDATE,(auth.uid() = id),(auth.uid() = id)
+public,profiles,Profiles are viewable by everyone,PERMISSIVE,{public},SELECT,true,null
+public,questions,Users can manage own questions,PERMISSIVE,{public},ALL,(auth.uid() = created_by),null
+public,schedule,Admin dapat mengelola semua jadwal.,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,schedule,Guru dapat melihat jadwal mereka.,PERMISSIVE,{public},SELECT,(auth.uid() = teacher_id),null
+public,schedule,Schedules are viewable by owners and admins,PERMISSIVE,{public},SELECT,"((auth.uid() = teacher_id) OR (EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = ANY (ARRAY['admin'::text, 'headmaster'::text]))))))",null
+public,school_years,Admin dapat mengelola tahun ajaran.,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,school_years,Pengguna terautentikasi dapat melihat tahun ajaran.,PERMISSIVE,{public},SELECT,(auth.role() = 'authenticated'::text),null
+public,settings,Admin dapat mengelola pengaturan.,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,settings,Pengguna terautentikasi dapat melihat pengaturan.,PERMISSIVE,{public},SELECT,(auth.role() = 'authenticated'::text),null
+public,student_notes,Admin dan wali kelas dapat melihat semua catatan.,PERMISSIVE,{public},SELECT,"(is_admin() OR (EXISTS ( SELECT 1
+   FROM classes c
+  WHERE ((c.id = ( SELECT s.class_id
+           FROM students s
+          WHERE (s.id = student_notes.student_id))) AND (c.teacher_id = auth.uid())))))",null
+public,student_notes,Guru dapat melihat catatan siswa yang mereka ajar.,PERMISSIVE,{public},SELECT,"(EXISTS ( SELECT 1
+   FROM schedule sch
+  WHERE ((sch.class_id = ( SELECT s.class_id
+           FROM students s
+          WHERE (s.id = student_notes.student_id))) AND (sch.teacher_id = auth.uid()))))",null
+public,student_notes,Guru dapat membuat catatan untuk siswa.,PERMISSIVE,{public},INSERT,null,(auth.role() = 'authenticated'::text)
+public,students,Admin dapat mengelola siswa.,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,students,Guru dapat melihat siswa di kelasnya.,PERMISSIVE,{public},SELECT,"((auth.role() = 'authenticated'::text) AND ((EXISTS ( SELECT 1
+   FROM schedule
+  WHERE ((schedule.class_id = students.class_id) AND (schedule.teacher_id = auth.uid())))) OR (EXISTS ( SELECT 1
+   FROM classes
+  WHERE ((classes.id = students.class_id) AND (classes.teacher_id = auth.uid()))))))",null
+public,subjects,Admin dapat mengelola mapel.,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,subjects,Guru dapat melihat semua mapel.,PERMISSIVE,{public},SELECT,(auth.role() = 'authenticated'::text),null
+public,teacher_attendance,Admin can manage all teacher attendance,PERMISSIVE,{public},ALL,is_admin(),is_admin()
+public,teacher_attendance,Attendance viewable by owners and admins,PERMISSIVE,{public},SELECT,"((auth.uid() = teacher_id) OR (EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = ANY (ARRAY['admin'::text, 'headmaster'::text]))))))",null
+public,teacher_attendance,Teachers can manage their own attendance,PERMISSIVE,{public},ALL,(auth.uid() = teacher_id),null
+storage,objects,Authenticated User Upload,PERMISSIVE,{authenticated},INSERT,null,(bucket_id = 'avatars'::text)
+storage,objects,Avatar Public Access,PERMISSIVE,{public},SELECT,(bucket_id = 'avatars'::text),null
+storage,objects,User Manage Own or Admin Logo,PERMISSIVE,{authenticated},ALL,"((bucket_id = 'avatars'::text) AND (((storage.foldername(name))[1] = (auth.uid())::text) OR ((name ~~ 'school_logo_%'::text) AND (( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = 'admin'::text))))","((bucket_id = 'avatars'::text) AND (((storage.foldername(name))[1] = (auth.uid())::text) OR ((name ~~ 'school_logo_%'::text) AND (( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = 'admin'::text))))"

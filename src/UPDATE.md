@@ -1,26 +1,23 @@
-
 # Log Pembaruan LakuKelas
 
-## V29.0: Master Blueprint Finalization - TERIMPLEMENTASI
-Penyusunan ulang seluruh fondasi database untuk skalabilitas dan keamanan profesional.
+## V30.0: Master SQL Blueprint Finalization - TERIMPLEMENTASI
+Penyusunan ulang total fondasi database ke dalam satu file blueprint yang komprehensif untuk skalabilitas profesional.
 
-### 1. SQL Blueprint (Master Schema 520+ Baris)
-- **Komprehensif**: Menggabungkan 19 tabel utama, 4 Views cerdas, dan 6 fungsi RPC krusial.
-- **Security First**: Penambahan kebijakan RLS (Row Level Security) yang sangat detail untuk seluruh tabel guna menjamin isolasi data antar guru.
-- **Otomatisasi Lanjut**: Trigger `handle_new_user` dan `sync_homeroom_flag` memastikan konsistensi status profil secara real-time.
-- **Reporting Engine**: Implementasi View dan Fungsi SQL di sisi database untuk mempercepat kalkulasi rata-rata nilai dan tingkat kehadiran bulanan.
+### 1. Master SQL Blueprint (520+ Baris)
+- **Terintegrasi**: Menggabungkan 19 tabel utama, 4 view pelaporan, dan 7 fungsi RPC fungsional.
+- **Identitas Profesional**: Menyertakan kolom NPSN, Email, Website, dan Logo Sekolah pada tabel `profiles`.
+- **Keamanan Berlapis**: Implementasi Row Level Security (RLS) yang ketat untuk isolasi data antar guru namun tetap memungkinkan visibilitas data master (Siswa/Kelas).
+- **Otomatisasi Lanjut**:
+    - Trigger `handle_new_user` untuk registrasi instan.
+    - Trigger `sync_homeroom_flag` untuk manajemen otomatis hak akses Wali Kelas.
+    - Fungsi `get_teacher_attendance_summary` untuk monitoring real-time berbasis kebijakan sekolah.
 
-### 2. Fitur Baru Berhasil Dicatat:
-- **Professional Kop Surat**: Integrasi otomatis NPSN dan kontak sekolah pada Naskah Soal PDF.
-- **Smart Selection Indicator**: Badge nomor urut pada pemilihan soal di Bank Soal AI.
-- **Dynamic Metadata Export**: Dialog sebelum cetak yang menentukan struktur folder Drive secara otomatis.
-
----
-
-## V28.0: The Ultimate Master Blueprint - SELESAI
-Konsolidasi seluruh skema database ke dalam satu blueprint utama untuk standarisasi sistem.
+### 2. Fitur Unggulan Terbaru:
+- **Smart PDF Engine**: Rendering elemen individu untuk mencegah duplikasi atau konten terpotong pada naskah soal.
+- **Selection Indexing**: Penomoran urut otomatis saat memilih soal di Bank Soal AI.
+- **Deep Nesting Drive**: Struktur folder otomatis `LakuKelas AI > Bank Soal > [Jenjang] > [Kelas] > [Mapel]`.
 
 ---
 
-## V27.0: Professional Identity Update - SELESAI
-Penambahan identitas sekolah yang lebih lengkap untuk kebutuhan administrasi resmi dan standarisasi kop surat.
+## V29.0: Master Blueprint Structure - SELESAI
+Draft awal penyusunan skema database lengkap untuk koordinasi sistem.
