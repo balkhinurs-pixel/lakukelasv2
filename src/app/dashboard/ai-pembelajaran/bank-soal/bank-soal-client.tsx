@@ -31,7 +31,7 @@ import {
     ArrowRight,
     Brain
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -470,7 +470,7 @@ export default function BankSoalClient({
                 )}
 
                 {/* Main Action Bar */}
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                     <div className="relative flex-1 w-full max-w-md group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
                         <Input 
@@ -483,44 +483,44 @@ export default function BankSoalClient({
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <AnimatePresence>
                             {selectedOrderedIds.length > 0 && (
-                                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex-1 sm:flex-none">
                                     <Button 
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-emerald-100 h-12"
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-emerald-100 h-12"
                                         onClick={() => setIsExportDialogOpen(true)}
                                     >
                                         <Printer className="h-5 w-5" />
-                                        Cetak Naskah ({selectedOrderedIds.length})
+                                        Cetak ({selectedOrderedIds.length})
                                     </Button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                        <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-indigo-100" asChild>
+                        <Button className="flex-1 sm:flex-none h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl gap-2 font-black uppercase tracking-widest px-6 shadow-lg shadow-indigo-100" asChild>
                             <Link href="/dashboard/ai-pembelajaran/generate-soal">
                                 <PlusCircle className="h-5 w-5" />
-                                Generate Baru
+                                Generate
                             </Link>
                         </Button>
                     </div>
                 </div>
 
                 {/* Filter Section - Optimized Layout */}
-                <Card className="border-0 shadow-lg rounded-[2.5rem] bg-white overflow-hidden">
-                    <CardContent className="p-6">
+                <Card className="border-0 shadow-lg rounded-[2.5rem] bg-white overflow-hidden mx-1">
+                    <CardContent className="p-4 sm:p-6">
                         <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4">
-                            <div className="flex items-center gap-2 text-indigo-600 shrink-0">
+                            <div className="flex items-center gap-2 text-indigo-600 shrink-0 self-start sm:self-center">
                                 <Filter className="h-5 w-5" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Saring Soal</span>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 w-full">
                                 <Select value={filterClass} onValueChange={setFilterClass}>
-                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold"><SelectValue placeholder="Semua Kelas" /></SelectTrigger>
+                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold text-xs"><SelectValue placeholder="Kelas" /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="all" className="font-bold">Semua Kelas</SelectItem>
                                         {uniqueClasses.map(c => <SelectItem key={c} value={c} className="font-bold">Kelas {c}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                                 <Select value={filterSubject} onValueChange={setFilterSubject}>
-                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold"><SelectValue placeholder="Semua Mapel" /></SelectTrigger>
+                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold text-xs"><SelectValue placeholder="Mapel" /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="all" className="font-bold">Semua Mapel</SelectItem>
                                         {uniqueSubjects.map(s => <SelectItem key={s} value={s} className="font-bold">{s}</SelectItem>)}
@@ -528,25 +528,25 @@ export default function BankSoalClient({
                                 </Select>
                                 <div className="hidden md:block">
                                     <div className="h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-                                        <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">{filteredQuestions.length} SOAL DITEMUKAN</span>
+                                        <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">{filteredQuestions.length} SOAL</span>
                                     </div>
                                 </div>
                             </div>
-                            <Badge className="sm:hidden w-full h-10 flex justify-center bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest">{filteredQuestions.length} SOAL DITEMUKAN</Badge>
+                            <Badge className="md:hidden w-full h-10 flex justify-center bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest">{filteredQuestions.length} SOAL DITEMUKAN</Badge>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Question List */}
-                <div className="space-y-5">
+                <div className="space-y-6 px-1">
                     {paginatedQuestions.map((q) => {
                         const selectionIdx = getSelectionIndex(q.id);
                         const isSelected = selectionIdx !== null;
                         
                         return (
                             <Card key={q.id} className={cn(
-                                "border-0 shadow-sm rounded-[2.5rem] bg-white overflow-hidden transition-all border-2",
-                                isSelected ? "border-indigo-500 bg-indigo-50/20" : "border-transparent"
+                                "border-2 rounded-[2.5rem] bg-white overflow-hidden transition-all shadow-sm",
+                                isSelected ? "border-indigo-600 bg-indigo-50/20 shadow-md" : "border-transparent"
                             )}>
                                 <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 sm:gap-8">
                                     {/* Selection & Meta Column */}
@@ -555,7 +555,7 @@ export default function BankSoalClient({
                                             <Checkbox 
                                                 checked={isSelected} 
                                                 onCheckedChange={() => toggleSelect(q.id)}
-                                                className="h-9 w-9 rounded-[1.2rem] border-slate-200 data-[state=checked]:bg-indigo-600"
+                                                className="h-9 w-9 rounded-2xl border-slate-200 data-[state=checked]:bg-indigo-600"
                                             />
                                             <AnimatePresence>
                                                 {isSelected && (
@@ -572,7 +572,7 @@ export default function BankSoalClient({
                                         </div>
                                         
                                         <div className="flex flex-col gap-2 md:w-32">
-                                            <div className="flex flex-wrap gap-1.5">
+                                            <div className="flex flex-wrap gap-1.5 justify-end md:justify-start">
                                                 <Badge className={cn(
                                                     "font-black text-[9px] uppercase tracking-widest px-2 py-0.5",
                                                     q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500"
@@ -583,7 +583,7 @@ export default function BankSoalClient({
                                     </div>
 
                                     {/* Content Column */}
-                                    <div className="flex-1 space-y-5">
+                                    <div className="flex-1 space-y-5 min-w-0">
                                         {/* Dynamic Badges Row */}
                                         <div className="flex flex-wrap gap-2">
                                             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
@@ -600,25 +600,27 @@ export default function BankSoalClient({
                                             </Badge>
                                         </div>
 
-                                        <div className="text-slate-800 font-bold text-lg leading-relaxed">
+                                        <div className="text-slate-800 font-bold text-lg leading-relaxed break-words">
                                             <MathText content={q.question_text} className={q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : ''} />
                                         </div>
 
                                         {q.options_json && (
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                                    <div key={k} className="p-4 rounded-2xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm">
-                                                        <span className="text-indigo-600 font-black">{k}.</span>
-                                                        <MathText content={v} />
+                                                    <div key={k} className="p-4 rounded-2xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm min-w-0 overflow-hidden">
+                                                        <span className="text-indigo-600 font-black shrink-0">{k}.</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <MathText content={v} />
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
 
                                         <div className="pt-5 flex justify-between items-center border-t border-slate-100">
-                                            <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">KUNCI JAWABAN: {q.correct_answer}</p>
+                                            <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">KUNCI: {q.correct_answer}</p>
                                             <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest h-10 px-4 rounded-xl hover:bg-indigo-50">
-                                                {expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
+                                                {expandedQuestions.has(q.id) ? "Tutup" : "Pembahasan"}
                                             </Button>
                                         </div>
 
@@ -644,7 +646,7 @@ export default function BankSoalClient({
                 </div>
 
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-                    <DialogContent className="rounded-[2.5rem] p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF]">
+                    <DialogContent className="rounded-[2.5rem] p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
                             <button onClick={() => setIsExportDialogOpen(false)} className="absolute top-6 right-6 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"><X className="h-5 w-5" /></button>
                             <div className="flex items-center gap-4">
@@ -652,8 +654,8 @@ export default function BankSoalClient({
                                     <Printer className="h-8 w-8" />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-2xl font-black tracking-tight text-white">Susun Naskah Ujian</DialogTitle>
-                                    <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest mt-1">Konfigurasi Metadata Akhir</p>
+                                    <DialogTitle className="text-2xl font-black tracking-tight text-white">Susun Naskah</DialogTitle>
+                                    <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest mt-1">Ekspor ke Google Drive</p>
                                 </div>
                             </div>
                         </div>
@@ -667,7 +669,7 @@ export default function BankSoalClient({
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang Sekolah</Label>
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
                                         <Select value={naskahConfig.jenjang} onValueChange={handleJenjangChange}>
                                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
@@ -676,7 +678,7 @@ export default function BankSoalClient({
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tingkat Kelas</Label>
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
                                         <Select value={naskahConfig.kelas} onValueChange={v => setNaskahConfig({...naskahConfig, kelas: v})}>
                                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
@@ -698,12 +700,12 @@ export default function BankSoalClient({
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Calendar className="h-3 w-3" /> Tanggal Ujian</Label>
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Calendar className="h-3 w-3" /> Tanggal</Label>
                                         <Input type="date" value={naskahConfig.date} onChange={e => setNaskahConfig({...naskahConfig, date: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Timer className="h-3 w-3" /> Durasi (Waktu)</Label>
-                                        <Input placeholder="e.g. 90 Menit" value={naskahConfig.duration} onChange={e => setNaskahConfig({...naskahConfig, duration: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2"><Timer className="h-3 w-3" /> Durasi</Label>
+                                        <Input placeholder="90 Menit" value={naskahConfig.duration} onChange={e => setNaskahConfig({...naskahConfig, duration: e.target.value})} className="h-12 rounded-xl bg-white border-slate-200 font-bold" />
                                     </div>
                                 </div>
 
@@ -721,11 +723,11 @@ export default function BankSoalClient({
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Format File</Label>
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Format</Label>
                                         <Select value={naskahConfig.format} onValueChange={(v: any) => setNaskahConfig({...naskahConfig, format: v})}>
                                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                                <SelectItem value="pdf" className="font-bold text-rose-600">PDF Document</SelectItem>
+                                                <SelectItem value="pdf" className="font-bold text-rose-600">PDF</SelectItem>
                                                 <SelectItem value="doc" className="font-bold text-blue-600">Google Doc</SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -737,7 +739,7 @@ export default function BankSoalClient({
                         <div className="p-8 bg-white border-t">
                             <Button onClick={handleCreateNaskah} disabled={exporting || !naskahConfig.title} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
                                 {exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : (naskahConfig.format === 'pdf' ? <Download className="h-6 w-6" /> : <CloudIcon className="h-6 w-6" />)}
-                                Generate & Simpan ke Drive
+                                Simpan ke Drive
                             </Button>
                         </div>
                     </DialogContent>
@@ -750,7 +752,7 @@ export default function BankSoalClient({
                             <LottieSuccess size={200} />
                             <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-2">Naskah Berhasil!</h3>
                             <p className="text-slate-500 font-bold text-sm mt-3 px-4 leading-relaxed">
-                                Dokumen telah berhasil disusun, dikirim ke Google Drive, dan otomatis terunduh ke perangkat Anda.
+                                Dokumen telah berhasil disusun, dikirim ke Google Drive, dan otomatis terunduh.
                             </p>
                             
                             <div className="w-full space-y-3 mt-8">
