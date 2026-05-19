@@ -58,9 +58,12 @@ export default async function WeeklyChartPage({
             { id: 4, label: 'Apr' }, { id: 5, label: 'Mei' }, { id: 6, label: 'Jun' }
           ];
 
-    const totalBerangkat = trendData.reduce((acc, curr) => acc + curr.berangkat, 0);
-    const totalAlpha = trendData.reduce((acc, curr) => acc + curr.tidakAbsen, 0);
-    const totalIzinSakit = trendData.reduce((acc, curr) => acc + curr.izinSakit, 0);
+    // Filter data: Hanya hitung hari yang BUKAN masa depan (isFuture = false)
+    const processedData = trendData.filter(d => !d.isFuture);
+    
+    const totalBerangkat = processedData.reduce((acc, curr) => acc + curr.berangkat, 0);
+    const totalAlpha = processedData.reduce((acc, curr) => acc + curr.tidakAbsen, 0);
+    const totalIzinSakit = processedData.reduce((acc, curr) => acc + curr.izinSakit, 0);
     const totalStafAll = totalBerangkat + totalAlpha + totalIzinSakit;
 
     const getPercent = (val: number) => totalStafAll > 0 ? ((val / totalStafAll) * 100).toFixed(1) : "0";

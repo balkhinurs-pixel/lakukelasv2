@@ -25,7 +25,7 @@ async function getAuthenticatedUser() {
 
 /**
  * Mengambil data untuk Dashboard Admin/Kepala Sekolah.
- * Dioptimalkan untuk menampilkan ringkasan kehadiran hari ini secara akurat.
+ * Menampilkan ringkasan kehadiran hari ini secara akurat.
  */
 export async function getAdminDashboardData() {
     noStore();
@@ -115,7 +115,7 @@ export async function getAdminDashboardData() {
 
 /**
  * Mengambil data tren kehadiran guru untuk rentang hari tertentu.
- * Dioptimalkan: Hanya melakukan 1 BATCH request ke database untuk efisiensi Free Tier.
+ * Dioptimalkan: Menangani 'Future Dates' agar tidak muncul Alpha fiktif.
  */
 export async function getAttendanceTrendData(range: string = "7") {
     noStore();
@@ -124,6 +124,7 @@ export async function getAttendanceTrendData(range: string = "7") {
     
     const supabase = createClient();
     const nowIndo = getIndonesianTime();
+    const todayDateOnly = new Date(nowIndo).setHours(0, 0, 0, 0);
     
     let startDate: Date;
     let endDate: Date = new Date(nowIndo);
@@ -133,14 +134,12 @@ export async function getAttendanceTrendData(range: string = "7") {
         const targetYear = nowIndo.getFullYear();
         startDate = startOfMonth(new Date(targetYear, monthNum - 1));
         endDate = endOfMonth(new Date(targetYear, monthNum - 1));
-        if (monthNum === nowIndo.getMonth() + 1 && endDate > nowIndo) {
-            endDate = new Date(nowIndo);
-        }
     } else if (range === 'semester') {
         const currentMonth = nowIndo.getMonth() + 1;
         startDate = currentMonth >= 7 
             ? new Date(nowIndo.getFullYear(), 6, 1) 
             : new Date(nowIndo.getFullYear(), 0, 1);
+        endDate = endOfMonth(nowIndo);
     } else {
         const daysCount = parseInt(range) || 7;
         startDate = new Date(nowIndo);
@@ -176,21 +175,26 @@ export async function getAttendanceTrendData(range: string = "7") {
 
     return daysList.map(d => {
         const dStr = format(d, 'yyyy-MM-dd');
+        const dDateOnly = new Date(d).setHours(0, 0, 0, 0);
         const dayIdx = d.getDay();
         const dayName = dayNamesFull[dayIdx];
+        const isFuture = dDateOnly > todayDateOnly;
         
         const holiday = holidays.find(h => h.date === dStr);
         const isHoliday = !!holiday || dayIdx === 0;
 
         let expected = 0;
-        if (!isHoliday) {
+        // Jika hari ini libur ATAU hari ini adalah masa depan, maka tidak ada kewajiban absen (expected = 0)
+        if (!isHoliday && !isFuture) {
             expected = attendancePolicy === 'daily_based' ? totalStaffCount : (scheduleByDay[dayName]?.size || 0);
         }
 
         const dayRecords = attendanceRecords.filter(r => r.date === dStr);
         const berangkat = dayRecords.filter(r => ['Tepat Waktu', 'Terlambat'].includes(r.status)).length;
         const izinSakit = dayRecords.filter(r => ['Sakit', 'Izin'].includes(r.status)).length;
-        const tidakAbsen = expected > 0 ? Math.max(0, expected - berangkat - izinSakit) : 0;
+        
+        // Tidak Absen (Alpha) hanya dihitung untuk hari yang SUDAH LEWAT/SEDANG BERJALAN
+        const tidakAbsen = (expected > 0 && !isFuture) ? Math.max(0, expected - berangkat - izinSakit) : 0;
 
         return {
             day: dayNamesShort[dayIdx],
@@ -201,6 +205,7 @@ export async function getAttendanceTrendData(range: string = "7") {
             tidakAbsen,
             izinSakit,
             isHoliday,
+            isFuture,
             holidayName: holiday?.description || (dayIdx === 0 ? 'Hari Minggu' : null)
         };
     });
@@ -208,6 +213,9 @@ export async function getAttendanceTrendData(range: string = "7") {
 
 // --- Bulk Fetchers for Optimization ---
 
+/**
+ * Mengambil seluruh data yang dibutuhkan halaman Presensi dalam 1 request gabungan.
+ */
 export async function getAttendancePageData() {
     noStore();
     const user = await getAuthenticatedUser();
@@ -246,6 +254,9 @@ export async function getAttendancePageData() {
     };
 }
 
+/**
+ * Mengambil seluruh data yang dibutuhkan halaman Nilai dalam 1 request gabungan.
+ */
 export async function getGradesPageData() {
     noStore();
     const user = await getAuthenticatedUser();
@@ -301,14 +312,6 @@ export async function getAllSubjects(): Promise<Subject[]> {
     noStore();
     const supabase = createClient();
     const { data, error } = await supabase.from('subjects').select('*').order('name');
-    if (error) return [];
-    return data;
-}
-
-export async function getHolidays(): Promise<Holiday[]> {
-    noStore();
-    const supabase = createClient();
-    const { data, error } = await supabase.from('holidays').select('*').order('date', { ascending: true });
     if (error) return [];
     return data;
 }
@@ -505,7 +508,7 @@ export async function getDashboardData(todayDay: string) {
     const agendasData = agendasRes.data || [];
     
     const totalRecords = attendanceRes.data?.length || 0;
-    const hadirRecords = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
+    const hadirCount = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
     const attendancePercentage = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
     
     const unfilledJournalsCount = todayScheduleData.length - (journalsRes.data?.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === todayStr).length || 0);
