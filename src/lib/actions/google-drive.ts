@@ -73,6 +73,11 @@ export async function setupGoogleDriveFolder() {
             .maybeSingle();
 
         if (existingIntegration?.folder_id) {
+            // Pastikan statusnya tetap 'connected' jika folder sudah ada
+            if (existingIntegration.status !== 'connected') {
+                await supabase.from('google_drive_integrations').update({ status: 'connected' }).eq('user_id', userId);
+                revalidatePath('/dashboard/settings');
+            }
             return { success: true, folder_id: existingIntegration.folder_id };
         }
 
@@ -106,7 +111,11 @@ export async function setupGoogleDriveFolder() {
             connected_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
 
-        return { success: true, folder_id: folderId };
+        // Paksa server untuk me-render ulang halaman pengaturan
+        revalidatePath('/dashboard/settings');
+        revalidatePath('/dashboard');
+        
+        return { success: true, folder_id: folderId, message: "Berhasil membuat folder LakuKelas AI" };
     } catch (error: any) {
         console.error("[SETUP_DRIVE_ERR]", error);
         return { success: false, error: "Terjadi kesalahan saat menyiapkan folder Drive." };
@@ -248,7 +257,10 @@ export async function disconnectGoogleDrive() {
         })
         .eq('user_id', user.id);
 
+    if (error) return { success: false, error: "Gagal memutuskan integrasi." };
+
     revalidatePath('/dashboard/settings');
+    revalidatePath('/dashboard');
     return { success: true };
 }
 
