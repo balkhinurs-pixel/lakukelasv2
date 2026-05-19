@@ -1,155 +1,136 @@
 -- ======================================================================================
--- LAKUKELAS MASTER DATABASE BLUEPRINT (V29.0 - ULTIMATE EDITION)
--- Description: Comprehensive schema for School Management System with AI & G-Drive
--- Author: App Prototyper - Firebase Studio
--- Total lines: 520+
+-- LAKUKELAS MASTER SQL BLUEPRINT (V31.0)
+-- Deskripsi: Skema basis data lengkap untuk sistem manajemen sekolah digital.
+-- Cakupan: Tabel, RLS, Relasi, View, Indexes, RPC Functions, Triggers, & Permissions.
 -- ======================================================================================
 
--- 1. EXTENSIONS & SCHEMAS
+-- 0. EKSTENSI (WAJIB)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. TABLES DEFINITIONS
-
--- [PROFILES] - User identity and school data
-CREATE TABLE IF NOT EXISTS public.profiles (
+-- 1. TABEL UTAMA: PROFILES (Identitas Pengguna & Sekolah)
+CREATE TABLE public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    full_name TEXT NOT NULL DEFAULT 'User LakuKelas',
+    full_name TEXT DEFAULT 'User LakuKelas',
     avatar_url TEXT,
-    role TEXT NOT NULL DEFAULT 'teacher' CHECK (role IN ('admin', 'teacher', 'headmaster')),
     nip TEXT,
     pangkat TEXT,
     jabatan TEXT,
     phone_number TEXT,
-    is_activated BOOLEAN DEFAULT FALSE,
-    is_homeroom_teacher BOOLEAN DEFAULT FALSE,
+    role TEXT DEFAULT 'teacher' CHECK (role IN ('admin', 'teacher', 'headmaster')),
+    is_activated BOOLEAN DEFAULT false,
+    is_homeroom_teacher BOOLEAN DEFAULT false,
+    -- Identitas Sekolah Profesional (Pembaruan V27.0)
     school_name TEXT,
     school_address TEXT,
     npsn TEXT,
     school_email TEXT,
     school_website TEXT,
+    school_logo_url TEXT,
     headmaster_name TEXT,
     headmaster_nip TEXT,
-    school_logo_url TEXT,
+    -- Integrasi AI
     gemini_api_key TEXT,
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [SETTINGS] - Global application settings
-CREATE TABLE IF NOT EXISTS public.settings (
-    key TEXT PRIMARY KEY,
-    value TEXT,
-    description TEXT,
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- [ACTIVATION TOKENS] - Unique codes for registration
-CREATE TABLE IF NOT EXISTS public.activation_tokens (
+-- 2. TABEL AKADEMIK: TAHUN AJARAN
+CREATE TABLE public.school_years (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    token TEXT UNIQUE NOT NULL,
-    used_by UUID REFERENCES public.profiles(id),
-    used_at TIMESTAMPTZ
+    name TEXT NOT NULL, -- e.g. 2024/2025 - Ganjil
+    is_active BOOLEAN DEFAULT false,
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [SCHOOL YEARS] - Academic periods
-CREATE TABLE IF NOT EXISTS public.school_years (
+-- 3. TABEL AKADEMIK: KELAS
+CREATE TABLE public.classes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
     name TEXT NOT NULL,
-    is_active BOOLEAN DEFAULT FALSE,
-    teacher_id UUID REFERENCES public.profiles(id)
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL, -- Wali Kelas
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [CLASSES] - Rombongan Belajar
-CREATE TABLE IF NOT EXISTS public.classes (
+-- 4. TABEL AKADEMIK: MATA PELAJARAN
+CREATE TABLE public.subjects (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    name TEXT NOT NULL,
-    teacher_id UUID REFERENCES public.profiles(id) -- Wali Kelas
-);
-
--- [SUBJECTS] - Mata Pelajaran
-CREATE TABLE IF NOT EXISTS public.subjects (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
     name TEXT NOT NULL,
     kkm INTEGER DEFAULT 75,
-    teacher_id UUID REFERENCES public.profiles(id)
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [STUDENTS] - Student Master Data
-CREATE TABLE IF NOT EXISTS public.students (
+-- 5. TABEL DATA INDUK: SISWA
+CREATE TABLE public.students (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
     name TEXT NOT NULL,
-    nis TEXT UNIQUE NOT NULL,
+    nis TEXT UNIQUE,
     gender TEXT CHECK (gender IN ('Laki-laki', 'Perempuan')),
     class_id UUID REFERENCES public.classes(id) ON DELETE SET NULL,
-    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'graduated', 'dropout', 'inactive')),
-    avatar_url TEXT
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'graduated', 'dropout', 'inactive')),
+    avatar_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [SCHEDULE] - Teaching schedules
-CREATE TABLE IF NOT EXISTS public.schedule (
+-- 6. TABEL OPERASIONAL: JADWAL MENGAJAR
+CREATE TABLE public.schedule (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
     day TEXT NOT NULL CHECK (day IN ('Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')),
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
     class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE
-);
-
--- [ATTENDANCE RECORDS] - Student daily presence
-CREATE TABLE IF NOT EXISTS public.attendance_records (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    date DATE NOT NULL DEFAULT CURRENT_DATE,
-    meeting_number INTEGER NOT NULL,
-    student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
-    status TEXT NOT NULL CHECK (status IN ('Hadir', 'Sakit', 'Izin', 'Alpha')),
+    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
     teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
-    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-    school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [GRADE RECORDS] - Student academic performance
-CREATE TABLE IF NOT EXISTS public.grade_records (
+-- 7. TABEL OPERASIONAL: PRESENSI SISWA
+CREATE TABLE public.attendance_records (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    date DATE NOT NULL DEFAULT CURRENT_DATE,
-    assessment_type TEXT NOT NULL,
+    date DATE NOT NULL,
     student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
-    score DECIMAL(5,2) NOT NULL,
+    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
     teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
-    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-    school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL
-);
-
--- [JOURNAL ENTRIES] - Teacher teaching log
-CREATE TABLE IF NOT EXISTS public.journal_entries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
+    school_year_id UUID REFERENCES public.school_years(id) ON DELETE CASCADE,
     meeting_number INTEGER,
-    learning_objectives TEXT NOT NULL,
-    learning_activities TEXT NOT NULL,
+    status TEXT CHECK (status IN ('Hadir', 'Sakit', 'Izin', 'Alpha')),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 8. TABEL OPERASIONAL: NILAI SISWA
+CREATE TABLE public.grade_records (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    date DATE NOT NULL,
+    student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
+    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    school_year_id UUID REFERENCES public.school_years(id) ON DELETE CASCADE,
+    assessment_type TEXT NOT NULL, -- e.g. Tugas 1, UTS, UAS
+    score NUMERIC(5,2) DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 9. TABEL OPERASIONAL: JURNAL MENGAJAR
+CREATE TABLE public.journal_entries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    date TIMESTAMPTZ DEFAULT now(),
+    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+    subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    school_year_id UUID REFERENCES public.school_years(id) ON DELETE CASCADE,
+    meeting_number INTEGER,
+    learning_objectives TEXT,
+    learning_activities TEXT,
     assessment TEXT,
     reflection TEXT,
-    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    school_year_id UUID REFERENCES public.school_years(id) ON DELETE SET NULL
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [AGENDAS] - Personal agenda for teachers
-CREATE TABLE IF NOT EXISTS public.agendas (
+-- 10. TABEL OPERASIONAL: AGENDA GURU
+CREATE TABLE public.agendas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
     date DATE NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
@@ -157,84 +138,87 @@ CREATE TABLE IF NOT EXISTS public.agendas (
     color TEXT,
     start_time TIME,
     end_time TIME,
-    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [MATERIALS] - Shared learning resources
-CREATE TABLE IF NOT EXISTS public.materials (
+-- 11. TABEL OPERASIONAL: ABSENSI GURU (Geolocation)
+CREATE TABLE public.teacher_attendance (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    date DATE DEFAULT CURRENT_DATE,
+    check_in TIME,
+    check_out TIME,
+    status TEXT CHECK (status IN ('Tepat Waktu', 'Terlambat', 'Tidak Hadir', 'Sakit', 'Izin')),
+    reason TEXT,
+    latitude TEXT,
+    longitude TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 12. TABEL PENDUKUNG: MATERI PEMBELAJARAN
+CREATE TABLE public.materials (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
     description TEXT,
     link_url TEXT NOT NULL,
     class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
     subject_id UUID REFERENCES public.subjects(id) ON DELETE CASCADE,
-    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [HOLIDAYS] - Public or school holidays
-CREATE TABLE IF NOT EXISTS public.holidays (
+-- 13. TABEL PENDUKUNG: HARI LIBUR
+CREATE TABLE public.holidays (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     date DATE UNIQUE NOT NULL,
     description TEXT NOT NULL,
-    type TEXT DEFAULT 'national' CHECK (type IN ('national', 'school'))
+    type TEXT DEFAULT 'school' CHECK (type IN ('national', 'school'))
 );
 
--- [TEACHER ATTENDANCE] - Teacher location-based presence
-CREATE TABLE IF NOT EXISTS public.teacher_attendance (
+-- 14. TABEL PENDUKUNG: CATATAN SISWA (Konseling)
+CREATE TABLE public.student_notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
+    student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
     teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    date DATE NOT NULL DEFAULT CURRENT_DATE,
-    check_in TIME,
-    check_out TIME,
-    status TEXT NOT NULL DEFAULT 'Tepat Waktu' CHECK (status IN ('Tepat Waktu', 'Terlambat', 'Tidak Hadir', 'Sakit', 'Izin')),
-    reason TEXT,
-    latitude TEXT,
-    longitude TEXT
-);
-
--- [STUDENT NOTES] - Disciplinary and positive notes
-CREATE TABLE IF NOT EXISTS public.student_notes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     note TEXT NOT NULL,
     type TEXT DEFAULT 'neutral' CHECK (type IN ('positive', 'improvement', 'neutral')),
-    student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
-    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE
+    date TIMESTAMPTZ DEFAULT now()
 );
 
--- [GOOGLE DRIVE INTEGRATIONS]
-CREATE TABLE IF NOT EXISTS public.google_drive_integrations (
+-- 15. TABEL PENDUKUNG: PENGATURAN GLOBAL (Settings)
+CREATE TABLE public.settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 16. TABEL PENDUKUNG: TOKEN AKTIVASI
+CREATE TABLE public.activation_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID UNIQUE NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    token TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    used_by UUID REFERENCES public.profiles(id),
+    used_at TIMESTAMPTZ
+);
+
+-- 17. TABEL INTEGRASI: GOOGLE DRIVE
+CREATE TABLE public.google_drive_integrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+    provider TEXT DEFAULT 'google',
     folder_id TEXT,
     folder_url TEXT,
     folder_name TEXT DEFAULT 'LakuKelas AI',
     status TEXT DEFAULT 'connected',
-    connected_at TIMESTAMPTZ DEFAULT NOW(),
-    disconnected_at TIMESTAMPTZ
+    connected_at TIMESTAMPTZ DEFAULT now(),
+    disconnected_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- [AI DOCUMENTS] - Metadata for files in Drive
-CREATE TABLE IF NOT EXISTS public.ai_documents (
+-- 18. TABEL INTEGRASI: BANK SOAL AI
+CREATE TABLE public.questions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    document_type TEXT NOT NULL,
-    title TEXT NOT NULL,
-    class_level TEXT,
-    subject TEXT,
-    drive_file_id TEXT,
-    drive_file_url TEXT,
-    drive_folder_id TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- [QUESTIONS] - AI Bank Soal
-CREATE TABLE IF NOT EXISTS public.questions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
     created_by UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     generation_group_id UUID,
     jenjang TEXT,
@@ -243,7 +227,7 @@ CREATE TABLE IF NOT EXISTS public.questions (
     subject TEXT,
     curriculum TEXT,
     assessment_purpose TEXT,
-    topic TEXT NOT NULL,
+    topic TEXT,
     subtopic TEXT,
     sort_order INTEGER,
     question_type TEXT,
@@ -255,125 +239,155 @@ CREATE TABLE IF NOT EXISTS public.questions (
     cognitive_level TEXT,
     language_direction TEXT DEFAULT 'ltr',
     image_url TEXT,
-    status TEXT DEFAULT 'active'
+    image_prompt TEXT,
+    status TEXT DEFAULT 'draft',
+    needs_review BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. INDEXES FOR PERFORMANCE
-CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
-CREATE INDEX IF NOT EXISTS idx_students_class ON public.students(class_id);
-CREATE INDEX IF NOT EXISTS idx_students_nis ON public.students(nis);
-CREATE INDEX IF NOT EXISTS idx_attendance_date_class ON public.attendance_records(date, class_id);
-CREATE INDEX IF NOT EXISTS idx_attendance_student ON public.attendance_records(student_id);
-CREATE INDEX IF NOT EXISTS idx_grade_records_student ON public.grade_records(student_id);
-CREATE INDEX IF NOT EXISTS idx_journal_teacher_date ON public.journal_entries(teacher_id, date);
-CREATE INDEX IF NOT EXISTS idx_schedule_teacher_day ON public.schedule(teacher_id, day);
-CREATE INDEX IF NOT EXISTS idx_questions_topic ON public.questions(topic);
-CREATE INDEX IF NOT EXISTS idx_teacher_attendance_date ON public.teacher_attendance(date, teacher_id);
+-- 19. TABEL INTEGRASI: REPOSITORY DOKUMEN AI
+CREATE TABLE public.ai_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    document_type TEXT NOT NULL CHECK (document_type IN ('rpp', 'soal', 'naskah_ujian', 'modul_ajar')),
+    title TEXT NOT NULL,
+    subject TEXT,
+    class_level TEXT,
+    semester TEXT,
+    drive_file_id TEXT,
+    drive_file_url TEXT,
+    drive_folder_id TEXT,
+    mime_type TEXT,
+    is_public BOOLEAN DEFAULT false,
+    status TEXT DEFAULT 'created',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
 
--- 4. ROW LEVEL SECURITY (RLS) POLICIES
+-- ======================================================================================
+-- VIEWS (Untuk Mempermudah Query Dashboard)
+-- ======================================================================================
 
--- Enable RLS on all tables
+-- View: Jurnal dengan nama Kelas dan Mapel
+CREATE OR REPLACE VIEW public.journal_entries_with_names AS
+SELECT 
+    j.*,
+    c.name as "className",
+    s.name as "subjectName"
+FROM public.journal_entries j
+LEFT JOIN public.classes c ON j.class_id = c.id
+LEFT JOIN public.subjects s ON j.subject_id = s.id;
+
+-- View: Riwayat Presensi Lengkap
+CREATE OR REPLACE VIEW public.attendance_history AS
+SELECT 
+    a.*,
+    s.name as student_name,
+    c.name as class_name,
+    sub.name as subject_name,
+    p.full_name as teacher_name
+FROM public.attendance_records a
+JOIN public.students s ON a.student_id = s.id
+JOIN public.classes c ON a.class_id = c.id
+JOIN public.subjects sub ON a.subject_id = sub.id
+JOIN public.profiles p ON a.teacher_id = p.id;
+
+-- View: Riwayat Nilai Lengkap
+CREATE OR REPLACE VIEW public.grades_history AS
+SELECT 
+    g.*,
+    s.name as student_name,
+    c.name as class_name,
+    sub.name as subject_name,
+    sub.kkm as subject_kkm,
+    p.full_name as teacher_name
+FROM public.grade_records g
+JOIN public.students s ON g.student_id = s.id
+JOIN public.classes c ON g.class_id = c.id
+JOIN public.subjects sub ON g.subject_id = sub.id
+JOIN public.profiles p ON g.teacher_id = p.id;
+
+-- ======================================================================================
+-- ROW LEVEL SECURITY (RLS) & POLICIES
+-- ======================================================================================
+
+-- Aktifkan RLS pada seluruh tabel
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.activation_tokens ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.school_years ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedule ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.grade_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agendas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.materials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.holidays ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.teacher_attendance ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.student_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.google_drive_integrations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ai_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_documents ENABLE ROW LEVEL SECURITY;
 
--- Profiles Policies
-CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Public profiles are viewable by authenticated users" ON public.profiles FOR SELECT USING (auth.role() = 'authenticated');
+-- Kebijakan Umum: Pengguna hanya dapat melihat/mengelola data miliknya sendiri
+-- Kebijakan Khusus: Admin dapat melihat seluruh data.
 
--- Students Policies (Viewable by all staff, editable by Admin)
-CREATE POLICY "Staff can view students" ON public.students FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins can manage students" ON public.students FOR ALL USING (
+-- Profiles
+CREATE POLICY "Public profiles are viewable by everyone." ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Students (Viewable by all teachers, managed by Admin)
+CREATE POLICY "View students" ON public.students FOR SELECT USING (true);
+CREATE POLICY "Manage students" ON public.students FOR ALL USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- Attendance Records Policies
-CREATE POLICY "Teachers can manage own attendance records" ON public.attendance_records 
-FOR ALL USING (teacher_id = auth.uid()) WITH CHECK (teacher_id = auth.uid());
-CREATE POLICY "Staff can view attendance" ON public.attendance_records FOR SELECT USING (auth.role() = 'authenticated');
+-- Operational Tables (Teacher specific)
+CREATE POLICY "Own attendance" ON public.attendance_records FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Own grades" ON public.grade_records FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Own journals" ON public.journal_entries FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Own agendas" ON public.agendas FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Own teacher attendance" ON public.teacher_attendance FOR ALL USING (auth.uid() = teacher_id);
+CREATE POLICY "Own questions" ON public.questions FOR ALL USING (auth.uid() = created_by);
+CREATE POLICY "Own ai documents" ON public.ai_documents FOR ALL USING (auth.uid() = user_id);
 
--- Grade Records Policies
-CREATE POLICY "Teachers can manage own grade records" ON public.grade_records 
-FOR ALL USING (teacher_id = auth.uid()) WITH CHECK (teacher_id = auth.uid());
-CREATE POLICY "Staff can view grades" ON public.grade_records FOR SELECT USING (auth.role() = 'authenticated');
+-- ======================================================================================
+-- FUNCTIONS & TRIGGERS (Automations)
+-- ======================================================================================
 
--- Journal Entries Policies
-CREATE POLICY "Teachers can manage own journals" ON public.journal_entries 
-FOR ALL USING (teacher_id = auth.uid()) WITH CHECK (teacher_id = auth.uid());
-CREATE POLICY "Staff can view journals" ON public.journal_entries FOR SELECT USING (auth.role() = 'authenticated');
+-- Trigger: Buat Profil Otomatis saat Registrasi Baru
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, avatar_url, role)
+  VALUES (
+    NEW.id, 
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'User LakuKelas'), 
+    NEW.raw_user_meta_data->>'avatar_url',
+    'teacher'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Schedule Policies
-CREATE POLICY "Staff can view schedule" ON public.schedule FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins can manage schedule" ON public.schedule FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-);
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- Holidays Policies
-CREATE POLICY "Everyone can view holidays" ON public.holidays FOR SELECT USING (true);
-CREATE POLICY "Admins can manage holidays" ON public.holidays FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-);
+-- Trigger: Sync Flag Wali Kelas Otomatis
+CREATE OR REPLACE FUNCTION public.sync_homeroom_flag()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE public.profiles SET is_homeroom_teacher = false WHERE id = OLD.teacher_id;
+    IF NEW.teacher_id IS NOT NULL THEN
+        UPDATE public.profiles SET is_homeroom_teacher = true WHERE id = NEW.teacher_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- AI Bank Soal Policies
-CREATE POLICY "Users can manage own questions" ON public.questions 
-FOR ALL USING (created_by = auth.uid()) WITH CHECK (created_by = auth.uid());
+CREATE TRIGGER on_class_teacher_changed
+    AFTER INSERT OR UPDATE OF teacher_id ON public.classes
+    FOR EACH ROW EXECUTE PROCEDURE public.sync_homeroom_flag();
 
--- 5. VIEWS DEFINITIONS
-
--- [Journal View with Class/Subject Names]
-CREATE OR REPLACE VIEW public.journal_entries_with_names AS
-SELECT 
-    j.*, 
-    c.name as "className", 
-    s.name as "subjectName"
-FROM public.journal_entries j
-JOIN public.classes c ON j.class_id = c.id
-JOIN public.subjects s ON j.subject_id = s.id;
-
--- [Attendance History View]
-CREATE OR REPLACE VIEW public.attendance_history AS
-SELECT 
-    a.*, 
-    c.name as class_name, 
-    s.name as subject_name, 
-    p.full_name as teacher_name
-FROM public.attendance_records a
-JOIN public.classes c ON a.class_id = c.id
-JOIN public.subjects s ON a.subject_id = s.id
-JOIN public.profiles p ON a.teacher_id = p.id;
-
--- [Grade History View]
-CREATE OR REPLACE VIEW public.grades_history AS
-SELECT 
-    g.*, 
-    c.name as class_name, 
-    s.name as subject_name, 
-    s.kkm as subject_kkm,
-    p.full_name as teacher_name
-FROM public.grade_records g
-JOIN public.classes c ON g.class_id = c.id
-JOIN public.subjects s ON g.subject_id = s.id
-JOIN public.profiles p ON g.teacher_id = p.id;
-
--- 6. FUNCTIONS (RPC) DEFINITIONS
-
--- Function to get teacher attendance summary for a specific date
+-- RPC: Ringkasan Kehadiran Guru (Untuk Dashboard Admin)
 CREATE OR REPLACE FUNCTION public.get_teacher_attendance_summary(p_date DATE)
 RETURNS TABLE (
     total_expected BIGINT,
@@ -381,101 +395,88 @@ RETURNS TABLE (
     total_late BIGINT,
     total_absent BIGINT,
     attendance_rate NUMERIC
-) LANGUAGE plpgsql AS $$
+) AS $$
 DECLARE
     v_policy TEXT;
-    v_total_expected BIGINT;
-    v_total_present BIGINT;
-    v_total_late BIGINT;
+    v_expected_count BIGINT;
 BEGIN
-    -- 1. Get current policy
+    -- Ambil kebijakan dari settings
     SELECT value INTO v_policy FROM public.settings WHERE key = 'attendance_policy';
     
-    -- 2. Calculate expected based on policy
+    -- Hitung jumlah guru yang wajib hadir berdasarkan kebijakan
     IF v_policy = 'daily_based' THEN
-        SELECT count(*) INTO v_total_expected FROM public.profiles WHERE role IN ('teacher', 'headmaster') AND is_activated = TRUE;
+        SELECT COUNT(*) INTO v_expected_count FROM public.profiles WHERE role IN ('teacher', 'headmaster') AND is_activated = true;
     ELSE
-        -- schedule_based
-        SELECT count(DISTINCT teacher_id) INTO v_total_expected 
-        FROM public.schedule 
-        WHERE day = trim(to_char(p_date, 'Day'));
+        SELECT COUNT(DISTINCT teacher_id) INTO v_expected_count FROM public.schedule 
+        WHERE day = trim(to_char(p_date, 'Day', 'indonesian'));
     END IF;
 
-    -- 3. Calculate present and late
-    SELECT count(*) INTO v_total_present FROM public.teacher_attendance WHERE date = p_date AND check_in IS NOT NULL;
-    SELECT count(*) INTO v_total_late FROM public.teacher_attendance WHERE date = p_date AND status = 'Terlambat';
-
-    RETURN QUERY SELECT 
-        v_total_expected,
-        v_total_present,
-        v_total_late,
-        (v_total_expected - v_total_present),
-        CASE WHEN v_total_expected > 0 THEN round((v_total_present::numeric / v_total_expected::numeric) * 100, 1) ELSE 0 END;
+    RETURN QUERY
+    SELECT 
+        v_expected_count as total_expected,
+        COUNT(ta.id) FILTER (WHERE ta.status IN ('Tepat Waktu', 'Terlambat')) as total_present,
+        COUNT(ta.id) FILTER (WHERE ta.status = 'Terlambat') as total_late,
+        (v_expected_count - COUNT(ta.id) FILTER (WHERE ta.status IN ('Tepat Waktu', 'Terlambat'))) as total_absent,
+        CASE WHEN v_expected_count > 0 
+             THEN ROUND((COUNT(ta.id) FILTER (WHERE ta.status IN ('Tepat Waktu', 'Terlambat'))::NUMERIC / v_expected_count) * 100, 2)
+             ELSE 100 
+        END as attendance_rate
+    FROM public.teacher_attendance ta
+    WHERE ta.date = p_date;
 END;
-$$;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to get overall activity counts per teacher
+-- RPC: Statistik Keaktifan Staf
 CREATE OR REPLACE FUNCTION public.get_teacher_activity_counts()
 RETURNS TABLE (
     teacher_id UUID,
-    full_name TEXT,
     attendance_count BIGINT,
     grades_count BIGINT,
     journal_count BIGINT,
     classes_handled_count BIGINT
-) LANGUAGE sql AS $$
+) AS $$
+BEGIN
+    RETURN QUERY
     SELECT 
         p.id as teacher_id,
-        p.full_name,
-        (SELECT count(DISTINCT (date, class_id, subject_id, meeting_number)) FROM public.attendance_records WHERE teacher_id = p.id) as attendance_count,
-        (SELECT count(DISTINCT (date, class_id, subject_id, assessment_type)) FROM public.grade_records WHERE teacher_id = p.id) as grades_count,
-        (SELECT count(*) FROM public.journal_entries WHERE teacher_id = p.id) as journal_count,
-        (SELECT count(DISTINCT class_id) FROM public.schedule WHERE teacher_id = p.id) as classes_handled_count
+        (SELECT COUNT(DISTINCT (date, class_id, subject_id, meeting_number)) FROM public.attendance_records WHERE teacher_id = p.id) as attendance_count,
+        (SELECT COUNT(DISTINCT (date, class_id, subject_id, assessment_type)) FROM public.grade_records WHERE teacher_id = p.id) as grades_count,
+        (SELECT COUNT(*) FROM public.journal_entries WHERE teacher_id = p.id) as journal_count,
+        (SELECT COUNT(DISTINCT class_id) FROM public.schedule WHERE teacher_id = p.id) as classes_handled_count
     FROM public.profiles p
-    WHERE p.role IN ('teacher', 'headmaster') AND p.is_activated = TRUE;
-$$;
-
--- 7. TRIGGERS & AUTOMATION
-
--- Handle new user creation via auth
-CREATE OR REPLACE FUNCTION public.handle_new_user() 
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name, avatar_url, role, is_activated)
-  VALUES (
-    NEW.id, 
-    COALESCE(NEW.raw_user_meta_data->>'full_name', 'User LakuKelas'),
-    NEW.raw_user_meta_data->>'avatar_url',
-    'teacher',
-    FALSE -- All new users must wait for admin approval
-  );
-  RETURN NEW;
+    WHERE p.role != 'admin' AND p.is_activated = true;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Cleanup existing triggers to prevent duplication
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+-- ======================================================================================
+-- 20. HAK AKSES (PERMISSIONS / GRANTS) - SANGAT PENTING
+-- ======================================================================================
 
--- Automatic Homeroom Teacher Flag Sync
-CREATE OR REPLACE FUNCTION public.sync_homeroom_flag()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF (TG_OP = 'DELETE') THEN
-        UPDATE public.profiles SET is_homeroom_teacher = FALSE WHERE id = OLD.teacher_id;
-    ELSE
-        UPDATE public.profiles SET is_homeroom_teacher = TRUE WHERE id = NEW.teacher_id;
-    END IF;
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
+-- Berikan izin penggunaan skema public
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
 
-CREATE TRIGGER on_class_teacher_change
-    AFTER INSERT OR UPDATE OR DELETE ON public.classes
-    FOR EACH ROW EXECUTE FUNCTION public.sync_homeroom_flag();
+-- Berikan izin ke seluruh tabel untuk peran authenticated
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
+
+-- Batasi izin untuk peran anon (Hanya baca tabel tertentu jika diperlukan)
+GRANT SELECT ON public.profiles TO anon;
+GRANT SELECT ON public.holidays TO anon;
+
+-- Pastikan service_role memiliki akses total (Default Supabase)
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 
 -- ======================================================================================
--- END OF MASTER BLUEPRINT
+-- 21. INDEXES (Optimasi Performa)
 -- ======================================================================================
+CREATE INDEX IF NOT EXISTS idx_students_nis ON public.students(nis);
+CREATE INDEX IF NOT EXISTS idx_students_class ON public.students(class_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON public.attendance_records(date);
+CREATE INDEX IF NOT EXISTS idx_grades_date ON public.grade_records(date);
+CREATE INDEX IF NOT EXISTS idx_journal_date ON public.journal_entries(date);
+CREATE INDEX IF NOT EXISTS idx_schedule_day ON public.schedule(day);
+CREATE INDEX IF NOT EXISTS idx_teacher_attendance_date ON public.teacher_attendance(date);
+CREATE INDEX IF NOT EXISTS idx_questions_topic ON public.questions(topic);
+
+-- SELESAI. Blueprint siap dijalankan di SQL Editor Supabase.
