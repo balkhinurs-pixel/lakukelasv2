@@ -62,18 +62,21 @@ import { createClient } from "@/lib/supabase/client";
 // --- MathText Component ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
+  // Regex untuk memisahkan teks biasa dan LaTeX
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
-    <div className={cn("math-text-render w-full overflow-hidden", className)}>
+    <div className={cn("math-text-render w-full max-w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
         if (part.startsWith('\\[')) return (
-            <div key={i} className="my-2 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible">
-                <BlockMath math={part.slice(2, -2)} />
+            <div key={i} className="my-3 w-full overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible print:w-full">
+                <div className="min-w-fit">
+                    <BlockMath math={part.slice(2, -2)} />
+                </div>
             </div>
         );
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
-        return <span key={i} className="whitespace-pre-wrap">{part}</span>;
+        return <span key={i} className="whitespace-pre-wrap break-words">{part}</span>;
       })}
     </div>
   );
@@ -107,9 +110,8 @@ const NaskahPrintTemplate = ({
             }}
         >
             {/* Header Naskah - Professional Standard */}
-            <div id="print-header" style={{ padding: '15mm 16mm 10mm 16mm' }}>
+            <div id="print-header" style={{ padding: '15mm 16mm 10mm 16mm', width: '210mm', boxSizing: 'border-box' }}>
                 <div className="flex items-center gap-6 mb-4">
-                    {/* Logo Area */}
                     <div className="w-[22mm] h-[22mm] flex items-center justify-center border border-slate-100 rounded-lg overflow-hidden shrink-0">
                         {config.logoUrl ? (
                              <img src={config.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -159,17 +161,17 @@ const NaskahPrintTemplate = ({
                 </div>
             </div>
 
-            {/* Container Soal */}
-            <div id="questions-list">
+            {/* Container Soal - Lebar Terkunci untuk Mencegah Rumus Terpotong */}
+            <div id="questions-list" style={{ width: '210mm', boxSizing: 'border-box' }}>
                 {questions.map((q, idx) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                     const isSma = options.length > 4;
 
                     return (
-                        <div key={q.id} className="print-question-block" style={{ padding: '4px 16mm', marginBottom: '8px' }}>
+                        <div key={q.id} className="print-question-block" style={{ padding: '4px 16mm', marginBottom: '8px', boxSizing: 'border-box' }}>
                             <div className="flex gap-2 mb-2">
                                 <span className="font-bold min-w-[22px]">{idx + 1}.</span>
-                                <div className={cn("flex-1 text-justify", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
+                                <div className={cn("flex-1 text-justify overflow-hidden", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
                                     <MathText content={q.question_text} />
                                 </div>
                             </div>
@@ -189,7 +191,7 @@ const NaskahPrintTemplate = ({
                                     {options.map(([k, v]) => (
                                         <div key={k} className="flex gap-2 items-start" style={{ minHeight: '24px' }}>
                                             <span className="font-bold min-w-[18px]">{k}.</span>
-                                            <div className="flex-1 leading-normal overflow-wrap-break-word">
+                                            <div className="flex-1 leading-normal overflow-hidden">
                                                 <MathText content={v} />
                                             </div>
                                         </div>
@@ -201,13 +203,13 @@ const NaskahPrintTemplate = ({
                 })}
             </div>
 
-            <div id="print-footer" style={{ padding: '20mm 16mm', textAlign: 'center', fontSize: '9pt', fontStyle: 'italic', color: '#888' }}>
+            <div id="print-footer" style={{ padding: '20mm 16mm', textAlign: 'center', fontSize: '9pt', fontStyle: 'italic', color: '#888', width: '210mm', boxSizing: 'border-box' }}>
                 <p>-- Selamat Mengerjakan --</p>
             </div>
 
             {/* Halaman Kunci Jawaban (Terpisah) */}
             {config.includeKey && (
-                <div id="answer-key-section">
+                <div id="answer-key-section" style={{ width: '210mm', boxSizing: 'border-box' }}>
                     <div id="key-header" style={{ padding: '15mm 16mm 10mm 16mm', borderTop: '1px dashed #eee' }}>
                         <div style={{ borderBottom: '2.5pt double black', width: '100%', marginBottom: '10px' }} />
                         <h2 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14pt', textDecoration: 'underline', marginBottom: '10px' }}>
@@ -219,7 +221,7 @@ const NaskahPrintTemplate = ({
                         </div>
                     </div>
                     {questions.map((q, idx) => (
-                        <div key={`key-${q.id}`} className="print-answer-block" style={{ padding: '4px 16mm', marginBottom: '12px' }}>
+                        <div key={`key-${q.id}`} className="print-answer-block" style={{ padding: '4px 16mm', marginBottom: '12px', boxSizing: 'border-box' }}>
                             <p style={{ fontWeight: 'bold', fontSize: '11pt' }}>{idx + 1}. Jawaban: {q.correct_answer}</p>
                             <div style={{ fontSize: '10pt', color: '#333', marginTop: '4px', textAlign: 'justify', borderLeft: '2px solid #eee', paddingLeft: '10px' }}>
                                 <span style={{ fontWeight: 'bold', fontSize: '9pt', color: '#888', display: 'block', marginBottom: '2px' }}>PEMBAHASAN:</span>
@@ -386,6 +388,10 @@ export default function BankSoalClient({
         }
     };
 
+    /**
+     * Optimized PDF Generation
+     * Menggunakan snapshot per soal namun dengan konfigurasi library yang lebih ringan.
+     */
     const generateHighQualityPdf = async (): Promise<string> => {
         const headerEl = document.getElementById('print-header');
         const footerEl = document.getElementById('print-footer');
@@ -402,14 +408,18 @@ export default function BankSoalClient({
         
         let currentY = 0;
 
+        // Fungsi helper untuk memotret elemen secara efisien
         const renderElementToPdf = async (el: HTMLElement, yOffset: number) => {
             const canvas = await html2canvas(el, {
-                scale: 2,
+                scale: 1.5, // Mengurangi dari 2 ke 1.5 untuk kecepatan optimal tanpa pecah di A4
                 useCORS: true,
                 backgroundColor: "#ffffff",
-                logging: false
+                logging: false, // Mematikan log untuk menghemat CPU
+                imageTimeout: 0,
+                removeContainer: true
             });
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            const imgData = canvas.toDataURL('image/jpeg', 0.92);
             const imgProps = pdf.getImageProperties(imgData);
             const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
             
@@ -422,21 +432,28 @@ export default function BankSoalClient({
             return yOffset + imgHeight;
         };
 
-        // Render Halaman Soal
+        // 1. Render Header
         currentY = await renderElementToPdf(headerEl as HTMLElement, 0);
+        
+        // 2. Render Soal (Looping per soal agar rapi per halaman)
         for (let i = 0; i < questionElements.length; i++) {
             currentY = await renderElementToPdf(questionElements[i] as HTMLElement, currentY);
+            // Beri nafas sedikit pada CPU browser
+            await new Promise(r => setTimeout(r, 50));
         }
+
+        // 3. Render Footer
         if (footerEl) {
             currentY = await renderElementToPdf(footerEl as HTMLElement, currentY);
         }
 
-        // Render Halaman Kunci (Jika ada)
+        // 4. Render Kunci & Pembahasan jika dipilih
         if (naskahConfig.includeKey && keyHeaderEl && keyElements.length > 0) {
             pdf.addPage();
             currentY = await renderElementToPdf(keyHeaderEl as HTMLElement, 0);
             for (let i = 0; i < keyElements.length; i++) {
                 currentY = await renderElementToPdf(keyElements[i] as HTMLElement, currentY);
+                await new Promise(r => setTimeout(r, 50));
             }
         }
 
@@ -446,7 +463,6 @@ export default function BankSoalClient({
     const handleCreateNaskah = async () => {
         if (selectedOrderedIds.length === 0) return;
         
-        // Cek koneksi Drive sebelum memproses
         if (userProvider === 'google' && (!driveIntegration || driveIntegration.status !== 'connected')) {
             setIsDriveAuthDialogOpen(true);
             return;
@@ -470,7 +486,8 @@ export default function BankSoalClient({
 
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
-                await new Promise(r => setTimeout(r, 1000)); // Buffer sync template
+                // Buffer kecil untuk memastikan semua rumus LaTeX terender sempurna di memori
+                await new Promise(r => setTimeout(r, 800)); 
                 binaryPdf = await generateHighQualityPdf();
             }
 
@@ -906,19 +923,23 @@ export default function BankSoalClient({
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                
+                /* Reset KaTeX padding for better alignment */
                 .math-text-render .katex-display { 
-                    margin: 0.5em 0; 
+                    margin: 0.8em 0; 
                     overflow-x: auto; 
                     overflow-y: hidden;
                     padding-bottom: 0.5em;
                 }
+                
+                /* Print Specific Fixes */
                 @media print {
                     .math-text-render .katex-display {
                         overflow-x: visible !important;
                     }
-                }
-                .math-text-render .katex {
-                    white-space: nowrap;
+                    .print-question-block {
+                        page-break-inside: avoid !important;
+                    }
                 }
             `}</style>
         </div>
