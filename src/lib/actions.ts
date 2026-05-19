@@ -700,7 +700,7 @@ export async function recordTeacherAttendance(formData: FormData) {
                 return { success: false, error: "Anda sudah melakukan absen masuk hari ini." };
             }
 
-            const { error: insertError } = await supabase
+            const { error: insertError = null } = await supabase
                 .from('teacher_attendance')
                 .insert({
                     teacher_id: user.id,

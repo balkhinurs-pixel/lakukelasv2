@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -171,7 +170,6 @@ export default function AdminLayoutClient({
 
                     <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Manajemen Staf</SidebarGroupLabel>
                     <SidebarMenu className="gap-1 mb-6">
-                      <NavItem href="/admin/codes" icon={Ticket} label="Token Aktivasi" color="text-purple-600" />
                       <NavItem href="/admin/users" icon={Users} label="Staf & Approval" color="text-purple-600" />
                     </SidebarMenu>
 
@@ -292,7 +290,7 @@ export default function AdminLayoutClient({
                             {isMonitoringExpanded && (
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-blue-600" />
-                                    <MobileGridItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="bg-rose-500" />
+                                    <MobileGridItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="bg-rose-50" />
                                     <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi" color="bg-amber-500" />
                                     <MobileGridItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="bg-teal-500" />
                                 </div>
@@ -304,7 +302,6 @@ export default function AdminLayoutClient({
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Manajemen Staf</p>
                                 <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                    <MobileGridItem href="/admin/codes" icon={Ticket} label="Token" color="bg-purple-600" />
                                     <MobileGridItem href="/admin/users" icon={Users} label="Approval" color="bg-blue-600" />
                                 </div>
                             </div>
