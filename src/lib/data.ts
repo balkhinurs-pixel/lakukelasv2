@@ -505,7 +505,7 @@ export async function getDashboardData(todayDay: string) {
     
     const totalRecords = attendanceRes.data?.length || 0;
     const hadirCount = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
-    const attendancePercentage = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
+    const attendancePercentage = totalRecords > 0 ? Math.round((hadirCount / totalAttendance) * 100) : 0;
     
     const unfilledJournalsCount = todayScheduleData.length - (journalsRes.data?.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === todayStr).length || 0);
 

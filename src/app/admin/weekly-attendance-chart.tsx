@@ -32,22 +32,22 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                     <defs>
                         {/* Gradient Hijau - Berangkat */}
                         <linearGradient id="colorBerangkat" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
                             <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                         </linearGradient>
                         {/* Gradient Merah - Alpha */}
                         <linearGradient id="colorAlpha" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.15} />
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
                             <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                         </linearGradient>
                         {/* Gradient Oranye - Izin/Sakit */}
                         <linearGradient id="colorIzinSakit" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.15} />
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.1} />
                             <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                         </linearGradient>
                     </defs>
 
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
                     <XAxis 
                         dataKey="tanggal" 
                         stroke="#94a3b8" 
@@ -56,7 +56,7 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         axisLine={false} 
                         dy={10}
                         fontFamily="inherit"
-                        fontWeight="bold"
+                        fontWeight="600"
                         interval={interval}
                     />
                     <YAxis 
@@ -66,58 +66,58 @@ export default function WeeklyAttendanceChart({ data }: WeeklyAttendanceChartPro
                         axisLine={false}
                         domain={[0, 'auto']}
                         fontFamily="inherit"
-                        fontWeight="bold"
+                        fontWeight="600"
                     />
 
                     <Tooltip 
                         contentStyle={{
-                            borderRadius: '16px',
+                            borderRadius: '20px',
                             border: 'none',
-                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
                             fontSize: '11px',
                             fontWeight: 'bold',
                             padding: '12px'
                         }}
-                        cursor={{ stroke: '#f1f5f9', strokeWidth: 2 }}
+                        cursor={{ stroke: '#e2e8f0', strokeWidth: 1 }}
                     />
 
-                    {/* Area: Berangkat (Hijau) */}
+                    {/* Area: Berangkat (Hijau) - Minimalist Line */}
                     <Area
                         type="monotone"
                         dataKey="berangkat"
                         name="Berangkat"
                         stroke="#10b981"
                         fill="url(#colorBerangkat)"
-                        strokeWidth={3}
+                        strokeWidth={2}
                         animationDuration={1500}
                         dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        activeDot={{ r: 4, strokeWidth: 0, fill: '#10b981' }}
                     />
 
-                    {/* Area: Tidak Absen (Alpha - Merah) */}
+                    {/* Area: Tidak Absen (Alpha - Merah) - Minimalist Line */}
                     <Area
                         type="monotone"
                         dataKey="tidakAbsen"
                         name="Alpha"
                         stroke="#ef4444"
                         fill="url(#colorAlpha)"
-                        strokeWidth={3}
+                        strokeWidth={2}
                         animationDuration={1500}
                         dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        activeDot={{ r: 4, strokeWidth: 0, fill: '#ef4444' }}
                     />
 
-                    {/* Area: Izin / Sakit (Oranye) */}
+                    {/* Area: Izin / Sakit (Oranye) - Minimalist Line */}
                     <Area
                         type="monotone"
                         dataKey="izinSakit"
                         name="Izin/Sakit"
                         stroke="#f59e0b"
                         fill="url(#colorIzinSakit)"
-                        strokeWidth={3}
+                        strokeWidth={2}
                         animationDuration={1500}
                         dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        activeDot={{ r: 4, strokeWidth: 0, fill: '#f59e0b' }}
                     />
                 </AreaChart>
             </ResponsiveContainer>
