@@ -4,7 +4,7 @@ import NaskahRepositoryClient from "./naskah-repository-client";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
 export default async function NaskahSoalPage() {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return <div>Akses ditolak.</div>;

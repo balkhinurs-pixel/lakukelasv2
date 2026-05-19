@@ -4,7 +4,7 @@ import { getAdminProfile, getActiveSchoolYearName, getGoogleDriveIntegration } f
 import BankSoalClient from "./bank-soal-client";
 
 export default async function BankSoalPage() {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return <div>Akses ditolak.</div>;

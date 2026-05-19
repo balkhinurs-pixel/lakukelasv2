@@ -1,5 +1,4 @@
 
-
 import {
   getHomeroomClassDetails,
   getStudentLedgerData,
@@ -8,7 +7,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import StudentLedgerClientPage from "./student-ledger-client";
 
-export default async function StudentLedgerPage({ searchParams }: { searchParams: { student_id?: string }}) {
+export default async function StudentLedgerPage(props: { 
+  searchParams: Promise<{ student_id?: string }>
+}) {
+  const searchParams = await props.searchParams;
   const homeroomData = await getHomeroomClassDetails();
 
   if (!homeroomData) {
@@ -58,5 +60,3 @@ export default async function StudentLedgerPage({ searchParams }: { searchParams
     />
   );
 }
-
-

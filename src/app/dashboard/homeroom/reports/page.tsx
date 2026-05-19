@@ -5,11 +5,10 @@ import { Info } from "lucide-react";
 import HomeroomReportsClient from "./reports-client";
 import { getIndonesianTime } from "@/lib/timezone";
 
-export default async function HomeroomReportsPage({ 
-  searchParams 
-}: { 
-  searchParams: { month?: string, year?: string } 
+export default async function HomeroomReportsPage(props: { 
+  searchParams: Promise<{ month?: string, year?: string }> 
 }) {
+  const searchParams = await props.searchParams;
   const homeroomData = await getHomeroomClassDetails();
 
   if (!homeroomData) {
