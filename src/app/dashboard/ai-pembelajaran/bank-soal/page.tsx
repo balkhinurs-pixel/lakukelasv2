@@ -1,6 +1,6 @@
 
 import { createClient } from "@/lib/supabase/server";
-import { getAdminProfile, getActiveSchoolYearName } from "@/lib/data";
+import { getAdminProfile, getActiveSchoolYearName, getGoogleDriveIntegration } from "@/lib/data";
 import BankSoalClient from "./bank-soal-client";
 
 export default async function BankSoalPage() {
@@ -9,15 +9,16 @@ export default async function BankSoalPage() {
 
     if (!user) return <div>Akses ditolak.</div>;
 
-    // Ambil data soal, profil sekolah, dan tahun ajaran aktif secara bersamaan
-    const [questionsRes, schoolProfile, activeYearName] = await Promise.all([
+    // Ambil data soal, profil sekolah, tahun ajaran aktif, dan integrasi drive secara bersamaan
+    const [questionsRes, schoolProfile, activeYearName, driveIntegration] = await Promise.all([
         supabase
             .from('questions')
             .select('*')
             .eq('created_by', user.id)
             .order('created_at', { ascending: false }),
         getAdminProfile(),
-        getActiveSchoolYearName()
+        getActiveSchoolYearName(),
+        getGoogleDriveIntegration()
     ]);
 
     const qList = questionsRes.data || [];
@@ -50,6 +51,8 @@ export default async function BankSoalPage() {
                 uniqueTopics={topics}
                 schoolProfile={schoolProfile}
                 activeSchoolYearName={activeYearName}
+                driveIntegration={driveIntegration}
+                userProvider={user.app_metadata?.provider}
             />
         </div>
     );

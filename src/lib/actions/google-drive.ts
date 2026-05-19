@@ -52,13 +52,15 @@ async function getOrCreateRecursiveFolder(providerToken: string, parentId: strin
  */
 export async function setupGoogleDriveFolder() {
     const supabase = createClient();
-    const [{ data: { user } }, { data: { session } }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.auth.getSession()
-    ]);
     
-    if (!user || !session || !session.provider_token) {
-        return { success: false, error: "Token akses Google tidak ditemukan. Silakan login ulang." };
+    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    const user = userData?.user;
+    const session = sessionData?.session;
+    
+    if (!user || !session?.provider_token) {
+        return { success: false, error: "Token akses Google tidak ditemukan. Silakan login ulang menggunakan akun Google." };
     }
 
     const providerToken = session.provider_token;
@@ -107,6 +109,7 @@ export async function setupGoogleDriveFolder() {
 
         return { success: true, folder_id: folderId };
     } catch (error: any) {
+        console.error("[SETUP_DRIVE_ERR]", error);
         return { success: false, error: "Terjadi kesalahan saat menyiapkan folder Drive." };
     }
 }
@@ -121,13 +124,15 @@ export async function saveNaskahToDrive(
     format: 'pdf' | 'doc' = 'doc'
 ) {
     const supabase = createClient();
-    const [{ data: { user } }, { data: { session } }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.auth.getSession()
-    ]);
     
-    if (!user || !session || !session.provider_token) {
-        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang." };
+    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    const user = userData?.user;
+    const session = sessionData?.session;
+    
+    if (!user || !session?.provider_token) {
+        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang menggunakan akun Google." };
     }
 
     const providerToken = session.provider_token;
@@ -250,13 +255,15 @@ export async function disconnectGoogleDrive() {
 
 export async function createTestDocument() {
     const supabase = createClient();
-    const [{ data: { user } }, { data: { session } }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.auth.getSession()
-    ]);
     
-    if (!user || !session || !session.provider_token) {
-        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang." };
+    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    const user = userData?.user;
+    const session = sessionData?.session;
+    
+    if (!user || !session?.provider_token) {
+        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang menggunakan akun Google." };
     }
 
     const providerToken = session.provider_token;
@@ -266,9 +273,9 @@ export async function createTestDocument() {
             .from('google_drive_integrations')
             .select('folder_id')
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
 
-        if (!integration?.folder_id) return { success: false, error: "Folder belum siap." };
+        if (!integration?.folder_id) return { success: false, error: "Folder aplikasi belum siap. Klik 'Buat Folder Aplikasi' terlebih dahulu." };
 
         const driveResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
             method: 'POST',
@@ -280,15 +287,15 @@ export async function createTestDocument() {
                 name: "Uji_Coba_LakuKelas.txt",
                 mimeType: 'text/plain',
                 parents: [integration.folder_id],
-                description: 'Berhasil!'
+                description: 'Koneksi berhasil!'
             }),
         });
 
-        if (!driveResponse.ok) return { success: false, error: "Upload gagal." };
+        if (!driveResponse.ok) return { success: false, error: "Gagal mengirim file uji coba." };
         const fileData = await driveResponse.json();
-        return { success: true, message: "Berhasil!", file_url: `https://drive.google.com/file/d/${fileData.id}/view` };
+        return { success: true, message: "Koneksi Google Drive Aktif! File uji coba berhasil dikirim.", file_url: `https://drive.google.com/file/d/${fileData.id}/view` };
     } catch (e) {
-        return { success: false, error: "Gagal." };
+        return { success: false, error: "Terjadi kesalahan sistem saat mencoba koneksi Drive." };
     }
 }
 

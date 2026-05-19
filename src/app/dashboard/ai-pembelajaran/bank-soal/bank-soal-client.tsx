@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -29,7 +30,9 @@ import {
     ExternalLink,
     ArrowRight,
     Brain,
-    Layers
+    Layers,
+    Database,
+    ShieldAlert
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,10 +53,11 @@ import { InlineMath, BlockMath } from 'react-katex';
 import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
-import type { Profile } from "@/lib/types";
+import type { Profile, GoogleDriveIntegration } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppLogo } from "@/components/icons";
 import { LottieSuccess } from "@/components/ui/lottie-success";
+import { createClient } from "@/lib/supabase/client";
 
 // --- MathText Component ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
@@ -205,7 +209,7 @@ const NaskahPrintTemplate = ({
     );
 };
 
-const ITEMS_PER_PAGE = 5; // Diubah menjadi 5 soal per halaman sesuai permintaan
+const ITEMS_PER_PAGE = 5; 
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
@@ -227,17 +231,22 @@ export default function BankSoalClient({
     uniqueClasses,
     uniqueTopics,
     schoolProfile,
-    activeSchoolYearName
+    activeSchoolYearName,
+    driveIntegration,
+    userProvider
 }: { 
     initialQuestions: any[],
     uniqueSubjects: string[],
     uniqueClasses: string[],
     uniqueTopics: string[],
     schoolProfile: Profile | null,
-    activeSchoolYearName: string
+    activeSchoolYearName: string,
+    driveIntegration: GoogleDriveIntegration | null,
+    userProvider?: string
 }) {
     const { toast } = useToast();
     const router = useRouter();
+    const supabase = createClient();
     const [searchTerm, setSearchTerm] = React.useState("");
     const [filterClass, setFilterClass] = React.useState("all");
     const [filterSubject, setFilterSubject] = React.useState("all");
@@ -246,12 +255,12 @@ export default function BankSoalClient({
     const [currentPage, setCurrentPage] = React.useState(1);
     const [expandedQuestions, setExpandedQuestions] = React.useState<Set<string>>(new Set());
     
-    // Menggunakan array untuk melacak urutan seleksi
     const [selectedOrderedIds, setSelectedOrderedIds] = React.useState<string[]>([]);
     
     const [exporting, setExporting] = React.useState(false);
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = React.useState(false);
+    const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
     const [successFileUrl, setSuccessFileUrl] = React.useState("");
     
     const [naskahConfig, setNaskahConfig] = React.useState({
@@ -277,7 +286,6 @@ export default function BankSoalClient({
         setCurrentPage(1);
     }, [searchTerm, filterClass, filterSubject, filterTopic]);
 
-    // Update kelas & mapel saat jenjang berubah di dialog
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
@@ -331,6 +339,28 @@ export default function BankSoalClient({
         });
     };
 
+    const handleConnectDrive = async () => {
+        if (!supabase) return;
+        
+        toast({ title: "Menghubungkan...", description: "Mengarahkan ke halaman izin Google Drive." });
+
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+                redirectTo: window.location.href, // Kembali ke halaman bank soal ini
+                scopes: "openid email profile https://www.googleapis.com/auth/drive.file",
+                queryParams: {
+                    access_type: "offline",
+                    prompt: "consent",
+                },
+            },
+        });
+
+        if (error) {
+            toast({ title: "Gagal", description: "Terjadi kesalahan saat memulai autentikasi.", variant: "destructive" });
+        }
+    };
+
     const generateHighQualityPdf = async (): Promise<string> => {
         const headerEl = document.getElementById('print-header');
         const footerEl = document.getElementById('print-footer');
@@ -358,7 +388,7 @@ export default function BankSoalClient({
             
             if (yOffset + imgHeight > pageHeight - bottomMargin) {
                 pdf.addPage();
-                yOffset = 15; // Jarak atas halaman baru
+                yOffset = 15; 
             }
             
             pdf.addImage(imgData, 'JPEG', 0, yOffset, pageWidth, imgHeight);
@@ -380,6 +410,13 @@ export default function BankSoalClient({
 
     const handleCreateNaskah = async () => {
         if (selectedOrderedIds.length === 0) return;
+        
+        // Cek koneksi Drive sebelum memproses
+        if (userProvider === 'google' && (!driveIntegration || driveIntegration.status !== 'connected')) {
+            setIsDriveAuthDialogOpen(true);
+            return;
+        }
+
         if (!naskahConfig.title) {
             toast({ title: "Judul Wajib Diisi", description: "Harap masukkan nama file naskah Anda.", variant: "destructive" });
             return;
@@ -433,7 +470,12 @@ export default function BankSoalClient({
                 setNaskahConfig(prev => ({ ...prev, title: "" }));
                 router.refresh();
             } else {
-                toast({ title: "Gagal", description: result.error || "Gagal memproses dokumen.", variant: "destructive" });
+                // Jika error adalah masalah token, munculkan dialog rekoneksi
+                if (result.error?.toLowerCase().includes('token') || result.error?.toLowerCase().includes('google')) {
+                    setIsDriveAuthDialogOpen(true);
+                } else {
+                    toast({ title: "Gagal", description: result.error || "Gagal memproses dokumen.", variant: "destructive" });
+                }
             }
         } catch (e: any) {
             toast({ title: "Error", description: e.message || "Terjadi kesalahan sistem.", variant: "destructive" });
@@ -444,7 +486,6 @@ export default function BankSoalClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
-            {/* Header Style Indigo Rounded */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 blur-2xl rounded-full -ml-10 -mb-10" />
@@ -469,7 +510,6 @@ export default function BankSoalClient({
                     />
                 )}
 
-                {/* Main Action Bar */}
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                     <div className="relative flex-1 w-full max-w-md group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
@@ -503,7 +543,6 @@ export default function BankSoalClient({
                     </div>
                 </div>
 
-                {/* Filter Section - Optimized Layout with Topic/Materi Filter */}
                 <Card className="border-0 shadow-lg rounded-[2.5rem] bg-white overflow-hidden mx-1">
                     <CardContent className="p-4 sm:p-6">
                         <div className="flex flex-col gap-4">
@@ -526,7 +565,6 @@ export default function BankSoalClient({
                                         {uniqueSubjects.map(s => <SelectItem key={s} value={s} className="font-bold">{s}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                                {/* Filter Materi Baru */}
                                 <Select value={filterTopic} onValueChange={setFilterTopic}>
                                     <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold text-xs">
                                         <div className="flex items-center gap-2 overflow-hidden">
@@ -550,7 +588,6 @@ export default function BankSoalClient({
                     </CardContent>
                 </Card>
 
-                {/* Question List */}
                 <div className="space-y-6 px-1">
                     {paginatedQuestions.map((q) => {
                         const selectionIdx = getSelectionIndex(q.id);
@@ -562,7 +599,6 @@ export default function BankSoalClient({
                                 isSelected ? "border-indigo-600 bg-indigo-50/20 shadow-md" : "border-transparent"
                             )}>
                                 <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 sm:gap-8">
-                                    {/* Selection & Meta Column */}
                                     <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start gap-4 shrink-0">
                                         <div className="relative">
                                             <Checkbox 
@@ -595,9 +631,7 @@ export default function BankSoalClient({
                                         </div>
                                     </div>
 
-                                    {/* Content Column */}
                                     <div className="flex-1 space-y-5 min-w-0">
-                                        {/* Dynamic Badges Row */}
                                         <div className="flex flex-wrap gap-2">
                                             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
                                                 <BookOpen className="w-3 h-3 mr-1.5 opacity-60" />
@@ -658,6 +692,7 @@ export default function BankSoalClient({
                     })}
                 </div>
 
+                {/* Dialog Ekspor Naskah */}
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                     <DialogContent className="rounded-[2.5rem] p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative">
@@ -757,7 +792,7 @@ export default function BankSoalClient({
                     </DialogContent>
                 </Dialog>
 
-                {/* Success Dialog with Anim Asset */}
+                {/* Dialog Success */}
                 <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
                     <DialogContent className="rounded-[2.5rem] p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
                         <div className="p-10 flex flex-col items-center text-center">
@@ -777,6 +812,43 @@ export default function BankSoalClient({
                                     Selesai
                                 </Button>
                             </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Dialog Re-Auth Google Drive */}
+                <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
+                    <DialogContent className="rounded-[2.5rem] p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
+                        <div className="p-8 text-center space-y-6">
+                            <div className="mx-auto w-20 h-20 rounded-[2.5rem] bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                <Database className="h-10 w-10" />
+                            </div>
+                            <div className="space-y-2">
+                                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Koneksi Drive Terputus</DialogTitle>
+                                <DialogDescription className="text-sm font-medium text-slate-500">
+                                    Sesi izin Google Drive Anda telah habis atau belum terhubung. Silakan hubungkan ulang untuk menyimpan naskah secara otomatis.
+                                </DialogDescription>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3 text-left">
+                                <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                <p className="text-[10px] font-bold text-amber-800 leading-relaxed uppercase tracking-tight">
+                                    Klik tombol di bawah untuk memberikan izin akses folder "LakuKelas AI" di Drive Anda.
+                                </p>
+                            </div>
+                            <Button 
+                                onClick={handleConnectDrive} 
+                                className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95"
+                            >
+                                <RefreshCw className="h-5 w-5" />
+                                Hubungkan Google Drive
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                onClick={() => setIsDriveAuthDialogOpen(false)} 
+                                className="w-full h-10 text-slate-400 font-bold"
+                            >
+                                Batalkan
+                            </Button>
                         </div>
                     </DialogContent>
                 </Dialog>

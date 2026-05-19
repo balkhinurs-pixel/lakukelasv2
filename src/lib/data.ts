@@ -241,7 +241,7 @@ export async function getAttendancePageData() {
         activeSchoolYearName: schoolYearRes.data?.name || 'Belum Diatur',
         classes: Array.from(classesMap.values()),
         subjects: Array.from(subjectsMap.values()),
-        schedule: rawSchedules.map((s: any) => ({ ...s, class: s.class.name, subject: s.subject.name })),
+        schedule: rawSchedules.map((s: any) => ({ ...s, class: s.class?.name || 'N/A', subject: s.subject?.name || 'N/A' })),
         allStudents: studentsRes.data || [],
         holidays: holidaysRes.data || [],
         history: historyRes.data || []
@@ -416,7 +416,7 @@ export async function getSchedule(): Promise<ScheduleItem[]> {
     const supabase = createClient();
     const { data } = await supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').eq('teacher_id', user.id);
     if (!data) return [];
-    return data.map(item => ({ ...item, class: item.class.name, subject: item.subject.name }));
+    return data.map(item => ({ ...item, class: item.class?.name || 'N/A', subject: item.subject?.name || 'N/A' }));
 }
 
 export async function getAllSchedules(): Promise<ScheduleItem[]> {
@@ -424,7 +424,7 @@ export async function getAllSchedules(): Promise<ScheduleItem[]> {
     const supabase = createClient();
     const { data } = await supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').order('day').order('start_time');
     if (!data) return [];
-    return data.map(item => ({ ...item, class: item.class.name, subject: item.subject.name }));
+    return data.map(item => ({ ...item, class: item.class?.name || 'N/A', subject: item.subject?.name || 'N/A' }));
 }
 
 export async function getJournalEntries(): Promise<JournalEntry[]> {
@@ -500,14 +500,28 @@ export async function getDashboardData(todayDay: string) {
         supabase.from('google_drive_integrations').select('*').eq('user_id', user.id).maybeSingle()
     ]);
 
-    const todayScheduleData = scheduleRes.data?.map(item => ({ ...item, class: item.class.name, subject: item.subject.name })) || [];
+    const todayScheduleData = (scheduleRes.data || []).map((item: any) => ({ 
+        ...item, 
+        class: item.class?.name || 'N/A', 
+        subject: item.subject?.name || 'N/A' 
+    }));
+
     const agendasData = agendasRes.data || [];
     
     const totalRecords = attendanceRes.data?.length || 0;
     const hadirCount = attendanceRes.data?.filter(r => r.status === 'Hadir').length || 0;
     const attendancePercentage = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
     
-    const unfilledJournalsCount = todayScheduleData.length - (journalsRes.data?.filter(j => format(parseISO(j.date), 'yyyy-MM-dd') === todayStr).length || 0);
+    const todayJournals = (journalsRes.data || []).filter(j => {
+        if (!j.date) return false;
+        try {
+            return format(parseISO(j.date), 'yyyy-MM-dd') === todayStr;
+        } catch (e) {
+            return false;
+        }
+    });
+
+    const unfilledJournalsCount = Math.max(0, todayScheduleData.length - todayJournals.length);
 
     return { 
         todaySchedule: todayScheduleData, 
