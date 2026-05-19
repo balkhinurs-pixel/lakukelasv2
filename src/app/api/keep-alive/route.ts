@@ -1,3 +1,4 @@
+
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
@@ -6,21 +7,15 @@ import { NextResponse } from 'next/server';
  * Vercel Cron akan memanggil rute ini secara terjadwal.
  */
 export async function GET(request: Request) {
-  // Opsional: Anda bisa menambahkan pengecekan header CRON_SECRET jika ingin lebih aman
-  // const authHeader = request.headers.get('authorization');
-  // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-  //   return new Response('Unauthorized', { status: 401 });
-  // }
-
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Melakukan query sangat ringan untuk memicu aktivitas database
     const { data, error } = await supabase
       .from('settings')
       .select('key')
       .eq('key', 'active_school_year_id')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('[Keep-Alive] Database ping failed:', error.message);

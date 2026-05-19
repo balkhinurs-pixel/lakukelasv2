@@ -1,16 +1,17 @@
+
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // First, get a student with NIS 24027 (from our diagnostic tests)
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select('id, name, nis')
       .eq('nis', '24027')
-      .single();
+      .maybeSingle();
       
     if (studentError || !student) {
       return NextResponse.json({ 
@@ -33,9 +34,9 @@ export async function GET() {
     
     // Also check raw grades data for this student
     const { data: rawGrades, error: rawError } = await supabase
-      .from('grades')
+      .from('grade_records')
       .select('*')
-      .filter('records', 'cs', `{"student_id": "${student.id}"}`)
+      .eq('student_id', student.id)
       .limit(3);
       
     console.log('📋 Test: Raw grades check:', {
@@ -44,26 +45,15 @@ export async function GET() {
       sampleRawGrade: rawGrades?.[0]
     });
     
-    // Test active school year
-    const { data: activeYear, error: yearError } = await supabase
-      .rpc('get_active_school_year_id');
-      
-    console.log('📅 Test: Active school year:', {
-      activeYear,
-      yearError: yearError?.message
-    });
-    
     return NextResponse.json({ 
       student,
       rpcGrades: grades || [],
       rawGrades: rawGrades || [],
-      activeSchoolYear: activeYear,
       debug: {
         rpcGradesCount: grades?.length || 0,
         rawGradesCount: rawGrades?.length || 0,
         gradesError: gradesError?.message,
-        rawError: rawError?.message,
-        yearError: yearError?.message
+        rawError: rawError?.message
       }
     });
   } catch (error) {

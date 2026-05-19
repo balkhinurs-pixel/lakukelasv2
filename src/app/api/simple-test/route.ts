@@ -1,16 +1,17 @@
+
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get student with NIS 24027 (we know this student exists from our tests)
     const { data: student } = await supabase
       .from('students')
       .select('id, name, nis')
       .eq('nis', '24027')
-      .single();
+      .maybeSingle();
       
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });

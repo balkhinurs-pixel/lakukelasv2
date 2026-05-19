@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   console.log('[CRON-ATTENDANCE] Checking for missing attendance...');
   
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 1. Ambil Pengaturan
     const { data: settingsData } = await supabase

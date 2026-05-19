@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   console.log('[CRON-WA] Starting daily schedule reminder...');
   
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data: settingsData } = await supabase
       .from('settings')

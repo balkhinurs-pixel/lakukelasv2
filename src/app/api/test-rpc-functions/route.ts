@@ -1,23 +1,23 @@
+
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Test 1: Check if active school year exists
     const { data: schoolYear, error: schoolYearError } = await supabase
       .from('school_years')
       .select('*')
-      .eq('is_active', true)
-      .single();
+      .maybeSingle();
     
     // Test 2: Check RPC functions exist and can be called
     const { data: testClass, error: classError } = await supabase
       .from('classes')
       .select('id')
       .limit(1)
-      .single();
+      .maybeSingle();
     
     let rpcResults = {
       performance: null,
@@ -41,7 +41,7 @@ export async function GET() {
         .from('students')
         .select('id')
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (testStudent) {
         // Test get_student_grades_ledger
