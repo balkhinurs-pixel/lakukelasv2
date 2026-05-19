@@ -1,6 +1,25 @@
 
 # Log Pembaruan LakuKelas
 
+## V26.0: Smart Export & Metadata Evolution - SELESAI
+Penyempurnaan alur kerja ekspor naskah dengan sistem organisasi folder otomatis dan header dinamis.
+
+### 1. Fitur UI & UX
+- **Indikator Seleksi Berurutan**: Penambahan badge nomor urut pada soal yang dipilih untuk memberikan feedback visual yang jelas sebelum penyusunan naskah.
+- **Dialog Konfigurasi Ekspor (Pre-Save)**: Guru sekarang wajib mengisi metadata lengkap (Jenjang, Kelas, Mapel, Waktu) sebelum melakukan ekspor.
+- **Dukungan Tanggal Fleksibel**: Pilihan tanggal ujian opsional; jika kosong, sistem menggunakan tanggal hari ini.
+
+### 2. Integrasi Google Drive (Deep Nesting)
+- **Struktur Folder Otomatis**: Naskah kini disimpan dengan struktur yang sangat tertata di Drive: `LakuKelas AI > Bank Soal > [Jenjang] > Kelas [Angka] > [Nama Mapel]`.
+- **Auto-Sync Metadata**: Metadata yang diinput di aplikasi disinkronkan langsung sebagai nama file dan lokasi folder di Drive guru.
+
+### 3. Standarisasi PDF Profesional
+- **Kop Surat Dinamis**: Penambahan tabel informasi (Mapel, Kelas/Semester, Hari/Tgl, Waktu) di bawah judul naskah agar identik dengan naskah ujian resmi.
+- **Tahun Ajaran Aktif**: Teks "Tahun Pelajaran" pada Kop Surat sekarang secara otomatis mengambil data dari Tahun Ajaran yang sedang aktif di sistem.
+- **Smart Math Padding**: Perbaikan jarak vertikal pada baris yang mengandung rumus LaTeX (Akar, Pecahan) agar tidak menabrak baris teks lain.
+
+---
+
 ## V25.0: Professional Identity Update - SELESAI
 Penambahan identitas sekolah yang lebih lengkap untuk kebutuhan administrasi resmi dan standarisasi kop surat.
 
