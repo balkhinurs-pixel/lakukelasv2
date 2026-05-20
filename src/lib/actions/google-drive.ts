@@ -233,6 +233,7 @@ async function saveGenericDocumentToDrive(
         });
 
         revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
+        revalidatePath('/dashboard/ai-pembelajaran/arsip-rpp');
         return { success: true, file_url: format === 'doc' ? `https://docs.google.com/document/d/${fileData.id}/edit` : `https://drive.google.com/file/d/${fileData.id}/view` };
 
     } catch (error: any) {
@@ -249,6 +250,24 @@ export async function disconnectGoogleDrive() {
     if (error) return { success: false, error: "Gagal memutuskan integrasi." };
     revalidatePath('/dashboard/settings');
     revalidatePath('/dashboard');
+    return { success: true };
+}
+
+export async function deleteAiDocumentAction(id: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    const { error } = await supabase
+        .from('ai_documents')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) return { success: false, error: "Gagal menghapus data." };
+
+    revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
+    revalidatePath('/dashboard/ai-pembelajaran/arsip-rpp');
     return { success: true };
 }
 

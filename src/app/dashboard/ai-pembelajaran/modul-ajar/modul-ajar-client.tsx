@@ -39,7 +39,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-// --- Data Constants (Sesuai dengan Soal AI untuk Konsistensi) ---
+// --- Data Constants ---
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
@@ -74,6 +74,8 @@ const LEARNING_MODELS = [
 ];
 
 export default function ModulAjarClient({ 
+    classes: _classes, 
+    subjects: _subjects,
     driveIntegration,
     userProvider
 }: { 
@@ -223,14 +225,16 @@ export default function ModulAjarClient({
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
                                             <SelectValue placeholder="Pilih Jenjang" />
                                         </SelectTrigger>
-                                        <SelectContent className="rounded-xl border-0 shadow-2xl">
-                                            {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            {Object.keys(mapelByJenjang).map(j => (
+                                                <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                    <Select value={form.kelas} onValueChange={v => setForm({...form, kelas: v})}>
+                                    <Select value={form.kelas} onValueChange={v => setForm(prev => ({...prev, kelas: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
                                             <SelectValue placeholder="Pilih Kelas" />
                                         </SelectTrigger>
@@ -243,7 +247,7 @@ export default function ModulAjarClient({
 
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
-                                <Select value={form.subject} onValueChange={v => setForm({...form, subject: v})}>
+                                <Select value={form.subject} onValueChange={v => setForm(prev => ({...prev, subject: v}))}>
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
                                         <SelectValue placeholder="Pilih Mapel" />
                                     </SelectTrigger>
@@ -259,7 +263,7 @@ export default function ModulAjarClient({
                                     placeholder="e.g. Struktur Sel Hewan dan Tumbuhan" 
                                     className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
                                     value={form.topic}
-                                    onChange={e => setForm({...form, topic: e.target.value})}
+                                    onChange={e => setForm(prev => ({...prev, topic: e.target.value}))}
                                     required
                                 />
                             </div>
@@ -270,13 +274,13 @@ export default function ModulAjarClient({
                                     placeholder="e.g. 2 x 45 Menit" 
                                     className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
                                     value={form.alokasiWaktu}
-                                    onChange={e => setForm({...form, alokasiWaktu: e.target.value})}
+                                    onChange={e => setForm(prev => ({...prev, alokasiWaktu: e.target.value}))}
                                 />
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Model Pembelajaran</Label>
-                                <Select value={form.modelPembelajaran} onValueChange={v => setForm({...form, modelPembelajaran: v})}>
+                                <Select value={form.modelPembelajaran} onValueChange={v => setForm(prev => ({...prev, modelPembelajaran: v}))}>
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-xl border-0 shadow-2xl">
                                         {LEARNING_MODELS.map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
@@ -307,7 +311,7 @@ export default function ModulAjarClient({
                                     placeholder="e.g. Proyektor, Internet, Lab Biologi..." 
                                     className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner"
                                     value={form.saranaPrasarana}
-                                    onChange={e => setForm({...form, saranaPrasarana: e.target.value})}
+                                    onChange={e => setForm(prev => ({...prev, saranaPrasarana: e.target.value}))}
                                 />
                             </div>
                         </CardContent>
