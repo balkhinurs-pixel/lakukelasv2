@@ -3,10 +3,11 @@
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
 import { generateQuestions, type GenerateQuestionsInput, type GenerateQuestionsOutput } from '@/ai/flows/generate-questions-flow';
 import { generateModulAjar, type ModulAjarInput, type ModulAjarOutput } from '@/ai/flows/generate-modul-ajar-flow';
+import { generateCpAtp, type CpAtpInput, type CpAtpOutput } from '@/ai/flows/generate-cp-atp-flow';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
-import { saveNaskahToDrive } from './google-drive';
+import { saveNaskahToDrive, saveCpAtpToDrive } from './google-drive';
 
 /**
  * Server Action untuk memanggil flow AI RPP/Konten Dasar.
@@ -31,6 +32,19 @@ export async function generateModulAjarAction(input: ModulAjarInput) {
     } catch (error: any) {
         console.error("Modul Ajar Generation Error:", error);
         return { success: false, error: error.message || "Gagal menghasilkan modul ajar." };
+    }
+}
+
+/**
+ * Server Action untuk Generate CP & ATP.
+ */
+export async function generateCpAtpAction(input: CpAtpInput) {
+    try {
+        const result = await generateCpAtp(input);
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error("CP/ATP Generation Error:", error);
+        return { success: false, error: error.message || "Gagal menghasilkan pemetaan CP/ATP." };
     }
 }
 

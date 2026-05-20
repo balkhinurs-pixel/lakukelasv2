@@ -144,6 +144,91 @@ export async function saveModulAjarToDrive(
 }
 
 /**
+ * Server Action khusus untuk menyimpan CP & ATP ke Google Drive.
+ */
+export async function saveCpAtpToDrive(
+    title: string,
+    content: string,
+    metadata: { phase: string, class: string, subject: string }
+) {
+    const supabase = await createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    const user = userData?.user;
+    const session = sessionData?.session;
+    
+    if (!user || !session?.provider_token) {
+        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang." };
+    }
+
+    const providerToken = session.provider_token;
+    const userId = user.id;
+
+    try {
+        let { data: integration } = await supabase
+            .from('google_drive_integrations')
+            .select('folder_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (!integration?.folder_id) {
+            const setup = await setupGoogleDriveFolder();
+            if (!setup.success) return setup;
+            integration = { folder_id: setup.folder_id! };
+        }
+
+        const path = ['CP & ATP', `Fase ${metadata.phase}`, `Kelas ${metadata.class}`, metadata.subject];
+        const targetFolderId = await getOrCreateRecursiveFolder(providerToken, integration.folder_id!, path);
+
+        const fileMetadata = {
+            name: title,
+            mimeType: 'application/vnd.google-apps.document',
+            parents: [targetFolderId]
+        };
+
+        const boundary = '-------LakuKelasBinaryBoundary';
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const close_delim = "\r\n--" + boundary + "--";
+
+        const body = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(fileMetadata) + delimiter + 'Content-Type: text/markdown; charset=UTF-8\r\n\r\n' + content + close_delim;
+
+        const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${providerToken}`,
+                'Content-Type': `multipart/related; boundary=${boundary}`,
+            },
+            body: body,
+        });
+
+        if (!driveResponse.ok) {
+            const err = await driveResponse.json();
+            return { success: false, error: err.error?.message || "Gagal upload ke Drive." };
+        }
+
+        const fileData = await driveResponse.json();
+
+        // Simpan ke tabel cp_atp yang baru
+        await supabase.from('cp_atp').insert({
+            user_id: userId,
+            title: title,
+            subject: metadata.subject,
+            phase: metadata.phase,
+            class_level: metadata.class,
+            drive_file_id: fileData.id,
+            drive_file_url: `https://docs.google.com/document/d/${fileData.id}/edit`
+        });
+
+        revalidatePath('/dashboard/ai-pembelajaran/arsip-cp-atp');
+        return { success: true, file_url: `https://docs.google.com/document/d/${fileData.id}/edit` };
+
+    } catch (error: any) {
+        return { success: false, error: error.message || "Gagal menyimpan ke Drive." };
+    }
+}
+
+/**
  * Fungsi internal untuk menyimpan dokumen ke Drive dengan path yang ditentukan.
  */
 async function saveGenericDocumentToDrive(
