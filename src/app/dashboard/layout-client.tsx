@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -39,7 +40,8 @@ import {
   PanelLeft,
   HelpCircle,
   LifeBuoy,
-  Wand2
+  Wand2,
+  FolderSearch
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -261,7 +263,6 @@ export default function DashboardLayoutClient({
                         <NavItem href="/dashboard/grades" icon={ClipboardEdit} label="Input Nilai" color="text-indigo-600" />
                         <NavItem href="/dashboard/journal" icon={BookText} label="Jurnal Mengajar" color="text-indigo-600" />
                         <NavItem href="/dashboard/materials" icon={Link2} label="Materi Belajar" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah Soal" color="text-indigo-600" />
                         <NavItem href="/dashboard/reports" icon={BarChart3} label="Laporan Akademik" color="text-indigo-600" />
                         <NavItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal Mengajar" color="text-indigo-600" />
                     </SidebarMenu>
@@ -271,7 +272,9 @@ export default function DashboardLayoutClient({
                     </SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
                         <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Daftar Naskah" color="text-indigo-600" />
                         <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={FolderSearch} label="Daftar RPP" color="text-indigo-600" />
                         <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
                     </SidebarMenu>
                 </SidebarGroup>
@@ -423,7 +426,6 @@ export default function DashboardLayoutClient({
                                 <MobileGridItem href="/dashboard/grades" icon={ClipboardEdit} label="Nilai" color="bg-cyan-500" />
                                 <MobileGridItem href="/dashboard/journal" icon={BookText} label="Jurnal" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/materials" icon={Link2} label="Materi" color="bg-purple-600" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/reports" icon={BarChart3} label="Laporan" color="bg-orange-500" />
                                 <MobileGridItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal" color="bg-slate-600" />
                             </div>
@@ -433,7 +435,9 @@ export default function DashboardLayoutClient({
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="RPP AI" color="bg-purple-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={FolderSearch} label="Daftar RPP" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
                           </div>
                         </div>
