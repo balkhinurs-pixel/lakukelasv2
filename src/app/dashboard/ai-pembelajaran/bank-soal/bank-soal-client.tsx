@@ -403,10 +403,6 @@ export default function BankSoalClient({
         }
     };
 
-    /**
-     * Optimized PDF Generation
-     * Menggunakan snapshot per soal namun dengan konfigurasi library yang lebih ringan.
-     */
     const generateHighQualityPdf = async (): Promise<string> => {
         const headerEl = document.getElementById('print-header');
         const footerEl = document.getElementById('print-footer');
@@ -423,13 +419,12 @@ export default function BankSoalClient({
         
         let currentY = 0;
 
-        // Fungsi helper untuk memotret elemen secara efisien
         const renderElementToPdf = async (el: HTMLElement, yOffset: number) => {
             const canvas = await html2canvas(el, {
-                scale: 1.5, // Mengurangi dari 2 ke 1.5 untuk kecepatan optimal tanpa pecah di A4
+                scale: 1.5,
                 useCORS: true,
                 backgroundColor: "#ffffff",
-                logging: false, // Mematikan log untuk menghemat CPU
+                logging: false,
                 imageTimeout: 0,
                 removeContainer: true
             });
@@ -447,22 +442,17 @@ export default function BankSoalClient({
             return yOffset + imgHeight;
         };
 
-        // 1. Render Header
         currentY = await renderElementToPdf(headerEl as HTMLElement, 0);
         
-        // 2. Render Soal (Looping per soal agar rapi per halaman)
         for (let i = 0; i < questionElements.length; i++) {
             currentY = await renderElementToPdf(questionElements[i] as HTMLElement, currentY);
-            // Beri nafas sedikit pada CPU browser
             await new Promise(r => setTimeout(r, 50));
         }
 
-        // 3. Render Footer
         if (footerEl) {
             currentY = await renderElementToPdf(footerEl as HTMLElement, currentY);
         }
 
-        // 4. Render Kunci & Pembahasan jika dipilih
         if (naskahConfig.includeKey && keyHeaderEl && keyElements.length > 0) {
             pdf.addPage();
             currentY = await renderElementToPdf(keyHeaderEl as HTMLElement, 0);
@@ -501,14 +491,13 @@ export default function BankSoalClient({
 
             let binaryPdf: string | undefined;
             if (naskahConfig.format === 'pdf') {
-                // Buffer kecil untuk memastikan semua rumus LaTeX terender sempurna di memori
                 await new Promise(r => setTimeout(r, 800)); 
                 binaryPdf = await generateHighQualityPdf();
             }
 
             const result = await createNaskahUjianAction(
                 naskahConfig.title, 
-                selectedQuestionIds, 
+                selectedOrderedIds, 
                 metadata, 
                 naskahConfig.format,
                 binaryPdf
@@ -843,10 +832,10 @@ export default function BankSoalClient({
                                         <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
                                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-xl border-0 shadow-2xl">
-                                                <SelectItem value="Penilaian Harian" className="font-bold">Harian (UH)</SelectItem>
-                                                <SelectItem value="Sumatif Akhir Semester" className="font-bold">SAS / UAS</SelectItem>
+                                                <SelectItem value="Penilaian Harian" className="font-bold">Penilaian Harian (UH)</SelectItem>
+                                                <SelectItem value="Sumatif Akhir Semester" className="font-bold">Sumatif Akhir Semester (SAS)</SelectItem>
                                                 <SelectItem value="Ujian Sekolah" className="font-bold">Ujian Sekolah</SelectItem>
-                                                <SelectItem value="Latihan Mandiri" className="font-bold">Latihan</SelectItem>
+                                                <SelectItem value="Latihan Mandiri" className="font-bold">Latihan Mandiri</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
