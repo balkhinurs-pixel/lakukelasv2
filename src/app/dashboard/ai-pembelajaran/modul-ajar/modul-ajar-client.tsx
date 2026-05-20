@@ -34,6 +34,14 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
 import { createClient } from "@/lib/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
