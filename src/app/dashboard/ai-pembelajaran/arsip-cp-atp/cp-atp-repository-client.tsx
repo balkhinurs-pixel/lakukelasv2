@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { 
     Network, 
     ExternalLink, 
@@ -15,9 +17,10 @@ import {
     Loader2,
     X,
     Filter,
-    Layers
+    Layers,
+    Printer
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +28,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import type { CpAtpDocument } from "@/lib/types";
+import type { CpAtpDocument, Profile } from "@/lib/types";
 import { FileCard } from "@/components/ui/file-card-collections";
 import { AppLogo } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { deleteAiDocumentAction, renameAiDocumentAction } from "@/lib/actions/google-drive";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -42,16 +44,16 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-export default function CpAtpRepositoryClient({ initialDocuments }: { initialDocuments: CpAtpDocument[] }) {
+export default function CpAtpRepositoryClient({ 
+    initialDocuments,
+    schoolProfile
+}: { 
+    initialDocuments: CpAtpDocument[],
+    schoolProfile: Profile | null
+}) {
     const { toast } = useToast();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -59,8 +61,7 @@ export default function CpAtpRepositoryClient({ initialDocuments }: { initialDoc
     const [filterSubject, setFilterSubject] = React.useState("all");
 
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
-    const [renamingDoc, setRenamingDoc] = React.useState<CpAtpDocument | null>(null);
-    const [newTitle, setNewTitle] = React.useState("");
+    const [printingDoc, setPrintingDoc] = React.useState<CpAtpDocument | null>(null);
 
     // --- Filter Logic ---
     const phases = Array.from(new Set(initialDocuments.map(d => d.phase).filter(Boolean))).sort();
@@ -79,8 +80,6 @@ export default function CpAtpRepositoryClient({ initialDocuments }: { initialDoc
 
     const handleDelete = async (id: string) => {
         setLoadingId(id);
-        // Kita gunakan action generik dokumen AI karena tabelnya berbeda tapi flow hapus Drive-nya mirip
-        // Untuk TAHAP 1 kita hanya akan memicu hapus di database jika integrasi Drive belum aktif penuh untuk tabel baru
         const supabase = (await import('@/lib/supabase/client')).createClient();
         if(!supabase) return;
 
@@ -95,6 +94,55 @@ export default function CpAtpRepositoryClient({ initialDocuments }: { initialDoc
         setLoadingId(null);
     };
 
+    const handleDownloadPdf = async (doc: CpAtpDocument) => {
+        setPrintingDoc(doc);
+        setLoadingId(doc.id);
+        
+        // Beri waktu sejenak agar DOM render (karena menggunakan hidden container)
+        setTimeout(async () => {
+            try {
+                const printableArea = document.getElementById(`printable-cp-atp-${doc.id}`);
+                if (!printableArea) throw new Error("Renderer not found");
+
+                const canvas = await html2canvas(printableArea, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: "#ffffff",
+                    logging: false,
+                });
+
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgProps = pdf.getImageProperties(imgData);
+                const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save(`${doc.title.replace(/\s+/g, '_')}.pdf`);
+                toast({ title: "Berhasil", description: "PDF berhasil diunduh." });
+            } catch (error) {
+                console.error(error);
+                toast({ title: "Gagal", description: "Gagal memproses PDF.", variant: "destructive" });
+            } finally {
+                setLoadingId(null);
+                setPrintingDoc(null);
+            }
+        }, 500);
+    };
+
     const resetFilters = () => {
         setSearchTerm("");
         setFilterPhase("all");
@@ -103,7 +151,7 @@ export default function CpAtpRepositoryClient({ initialDocuments }: { initialDoc
 
     return (
         <div className="space-y-6">
-            {/* Filter Toolbar */}
+            {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
@@ -149,6 +197,45 @@ export default function CpAtpRepositoryClient({ initialDocuments }: { initialDoc
                     )}
                 </div>
             </div>
+
+            {/* Hidden Rendering Area for PDF Generation */}
+            {printingDoc && (
+                <div className="fixed left-[-9999px] top-0">
+                    <div id={`printable-cp-atp-${printingDoc.id}`} className="bg-white p-10" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
+                        <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-slate-900">
+                            <div className="w-20 h-20 shrink-0">
+                                {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" />}
+                            </div>
+                            <div className="flex-1 text-center pr-20">
+                                <h2 className="text-xl font-bold uppercase">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h2>
+                                <p className="text-xs">{schoolProfile?.school_address}</p>
+                                <p className="text-xs">NPSN: {schoolProfile?.npsn}</p>
+                            </div>
+                        </div>
+                        <div className="text-center mb-8">
+                            <h1 className="text-lg font-bold uppercase underline">ALUR TUJUAN PEMBELAJARAN (ATP)</h1>
+                            <p className="text-sm font-bold uppercase mt-1">{printingDoc.title}</p>
+                        </div>
+                        <div className="text-xs mb-8 space-y-1">
+                             <p>Mata Pelajaran: <strong>{printingDoc.subject}</strong></p>
+                             <p>Jenjang / Fase: <strong>{printingDoc.class_level} / {printingDoc.phase}</strong></p>
+                        </div>
+                        <div className="prose prose-slate max-w-none prose-sm">
+                            <ReactMarkdown 
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    table: (props) => <table className="w-full border-collapse border border-slate-300 my-4" {...props} />,
+                                    th: (props) => <th className="border border-slate-300 bg-slate-50 p-2 font-bold text-center text-[10px]" {...props} />,
+                                    td: (props) => <td className="border border-slate-300 p-2 text-[10px]" {...props} />,
+                                    p: (props) => <p className="text-xs mb-3" {...props} />
+                                }}
+                            >
+                                {printingDoc.content || ""}
+                            </ReactMarkdown>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
                 {filteredDocs.length > 0 ? (
@@ -215,12 +302,21 @@ export default function CpAtpRepositoryClient({ initialDocuments }: { initialDoc
                                 </div>
                             </CardContent>
                             <CardFooter className="pt-0 flex gap-2">
-                                <Button asChild className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-lg shadow-indigo-100 group/btn">
+                                <Button asChild className="flex-[2] h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-lg shadow-indigo-100 group/btn">
                                     <a href={doc.drive_file_url || "#"} target="_blank">
                                         <ExternalLink className="h-4 w-4" />
-                                        Buka di Drive
+                                        Drive
                                         <ArrowRight className="h-3.5 w-3.5 ml-auto opacity-0 group-hover/btn:opacity-100 transition-all group-hover/btn:translate-x-1" />
                                     </a>
+                                </Button>
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => handleDownloadPdf(doc)}
+                                    disabled={loadingId === doc.id}
+                                    className="flex-1 h-12 border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl font-bold gap-2 shadow-sm"
+                                >
+                                    {loadingId === doc.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                    PDF
                                 </Button>
                             </CardFooter>
                         </Card>

@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { 
     GitBranchPlus, 
     Sparkles, 
@@ -13,7 +15,9 @@ import {
     Settings2,
     CheckCircle2,
     FileText,
-    Layers
+    Layers,
+    Printer,
+    Download
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { generateCpAtpAction } from "@/lib/actions/ai";
 import { saveCpAtpToDrive } from "@/lib/actions/google-drive";
-import type { Class, Subject, GoogleDriveIntegration } from "@/lib/types";
+import type { Class, Subject, GoogleDriveIntegration, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
@@ -37,8 +41,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { AppLogo } from "@/components/icons";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
-// --- Data Constants ---
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
@@ -66,17 +74,20 @@ export default function GenerateCpAtpClient({
     classes: _classes, 
     subjects: _subjects,
     driveIntegration,
-    userProvider
+    userProvider,
+    schoolProfile
 }: { 
     classes: Class[], 
     subjects: Subject[],
     driveIntegration: GoogleDriveIntegration | null,
-    userProvider?: string
+    userProvider?: string,
+    schoolProfile: Profile | null
 }) {
     const { toast } = useToast();
     const supabase = createClient();
     const [loading, setLoading] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
+    const [printing, setPrinting] = React.useState(false);
     const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string } | null>(null);
     const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
 
@@ -92,8 +103,6 @@ export default function GenerateCpAtpClient({
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
-        
-        // Auto-detect phase based on jenjang
         let defaultPhase = 'D';
         if (val === 'SD / MI') defaultPhase = 'A';
         else if (val === 'SMA / MA' || val === 'SMK / MAK') defaultPhase = 'E';
@@ -147,6 +156,51 @@ export default function GenerateCpAtpClient({
         setLoading(false);
     };
 
+    const handleDownloadPdf = async () => {
+        if (!generatedResult) return;
+        setPrinting(true);
+
+        try {
+            const printableArea = document.getElementById('printable-cp-atp-area');
+            if (!printableArea) throw new Error("Preview area not found");
+
+            const canvas = await html2canvas(printableArea, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#ffffff",
+                logging: false,
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save(`${generatedResult.title.replace(/\s+/g, '_')}.pdf`);
+            toast({ title: "PDF Siap", description: "Dokumen kurikulum telah diunduh." });
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Gagal Cetak", description: "Terjadi kesalahan saat memproses PDF.", variant: "destructive" });
+        } finally {
+            setPrinting(false);
+        }
+    };
+
     const handleSaveToDrive = async () => {
         if (!generatedResult) return;
         
@@ -180,6 +234,7 @@ export default function GenerateCpAtpClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
+            {/* Header Hero */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
                 <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
@@ -195,10 +250,11 @@ export default function GenerateCpAtpClient({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-4 sm:px-6 lg:px-10">
+                {/* Configuration Card */}
                 <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
                     <form onSubmit={handleGenerate}>
                         <CardHeader className="bg-slate-50/50 border-b p-6">
-                            <CardTitle className="text-xl font-black flex items-center gap-2">
+                            <CardTitle className="text-xl font-black flex items-center gap-2 text-indigo-950">
                                 <Settings2 className="h-5 w-5 text-indigo-600" />
                                 Parameter Kurikulum
                             </CardTitle>
@@ -277,26 +333,38 @@ export default function GenerateCpAtpClient({
                     </form>
                 </Card>
 
+                {/* Preview & Print Card */}
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
                     <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
                                 <Layers className="h-5 w-5" />
                             </div>
-                            <CardTitle className="text-xl font-black tracking-tight">Pratinjau Alur</CardTitle>
+                            <CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Alur</CardTitle>
                         </div>
                         {generatedResult && (
-                            <Button 
-                                onClick={handleSaveToDrive} 
-                                disabled={saving}
-                                className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100"
-                            >
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                Simpan Arsip
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    onClick={handleDownloadPdf} 
+                                    disabled={printing}
+                                    variant="outline"
+                                    className="rounded-xl h-10 border-indigo-200 text-indigo-600 font-bold gap-2 hover:bg-indigo-50"
+                                >
+                                    {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                                    PDF
+                                </Button>
+                                <Button 
+                                    onClick={handleSaveToDrive} 
+                                    disabled={saving}
+                                    className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100"
+                                >
+                                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                    Simpan Arsip
+                                </Button>
+                            </div>
                         )}
                     </CardHeader>
-                    <CardContent className="flex-grow p-0">
+                    <CardContent className="flex-grow p-0 bg-slate-50/20">
                         <ScrollArea className="h-full">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
@@ -304,12 +372,81 @@ export default function GenerateCpAtpClient({
                                         key="result"
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="p-8 sm:p-10"
+                                        className="p-4 sm:p-10"
                                     >
-                                        <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-p:font-medium text-slate-700">
-                                            <h1 className="text-2xl border-b pb-4 mb-8 text-indigo-700">{generatedResult.title}</h1>
-                                            <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                                                {generatedResult.content}
+                                        {/* Printable Container */}
+                                        <div id="printable-cp-atp-area" className="bg-white p-10 shadow-sm border border-slate-100 rounded-2xl mx-auto" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
+                                            {/* Formal Header (Kop Surat) */}
+                                            <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-slate-900">
+                                                <div className="w-20 h-20 flex items-center justify-center shrink-0 border border-slate-100 rounded-lg overflow-hidden">
+                                                    {schoolProfile?.school_logo_url ? (
+                                                        <img src={schoolProfile.school_logo_url} alt="Logo" className="w-full h-full object-contain" />
+                                                    ) : (
+                                                        <div className="p-2 opacity-20"><AppLogo /></div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 text-center pr-20">
+                                                    <h2 className="text-xl font-bold uppercase leading-tight">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h2>
+                                                    {schoolProfile?.npsn && <p className="text-xs font-medium">NPSN: {schoolProfile.npsn}</p>}
+                                                    <p className="text-xs italic">{schoolProfile?.school_address || "Alamat sekolah belum diatur di menu Pengaturan"}</p>
+                                                    <p className="text-xs italic">{schoolProfile?.school_email && `Email: ${schoolProfile.school_email}`} {schoolProfile?.school_website && ` | Web: ${schoolProfile.school_website}`}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-center mb-8">
+                                                <h1 className="text-lg font-bold uppercase underline">ALUR TUJUAN PEMBELAJARAN (ATP)</h1>
+                                                <p className="text-sm font-bold uppercase mt-1">TAHUN PELAJARAN {schoolProfile?.active_school_year_id ? '2024/2025' : '---'}</p>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 text-xs mb-8">
+                                                <div className="space-y-1">
+                                                    <div className="grid grid-cols-[100px_10px_1fr]">
+                                                        <span>Mata Pelajaran</span><span>:</span><span className="font-bold">{form.subject}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-[100px_10px_1fr]">
+                                                        <span>Jenjang / Fase</span><span>:</span><span className="font-bold">{form.jenjang} / {form.phase}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <div className="grid grid-cols-[100px_10px_1fr]">
+                                                        <span>Kelas</span><span>:</span><span className="font-bold">{form.kelas}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-[100px_10px_1fr]">
+                                                        <span>Penyusun</span><span>:</span><span className="font-bold">{schoolProfile?.full_name || 'GURU PENGAMPU'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="prose prose-slate max-w-none prose-sm leading-relaxed text-slate-900 print:text-black">
+                                                <ReactMarkdown 
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        table: ({node, ...props}) => <table className="w-full border-collapse border border-slate-300 my-4" {...props} />,
+                                                        th: ({node, ...props}) => <th className="border border-slate-300 bg-slate-50 p-2 font-bold text-center text-[10px]" {...props} />,
+                                                        td: ({node, ...props}) => <td className="border border-slate-300 p-2 text-[10px]" {...props} />,
+                                                        h1: ({node, ...props}) => <h3 className="text-sm font-bold uppercase mt-6 mb-2" {...props} />,
+                                                        h2: ({node, ...props}) => <h4 className="text-xs font-bold uppercase mt-4 mb-2" {...props} />,
+                                                        p: ({node, ...props}) => <p className="text-xs mb-3 text-justify" {...props} />,
+                                                        li: ({node, ...props}) => <li className="text-xs mb-1" {...props} />
+                                                    }}
+                                                >
+                                                    {generatedResult.content}
+                                                </ReactMarkdown>
+                                            </div>
+
+                                            <div className="mt-12 flex justify-between text-xs px-10">
+                                                <div className="text-center">
+                                                    <p>Mengetahui,</p>
+                                                    <p className="mb-20">Kepala Sekolah</p>
+                                                    <p className="font-bold underline">{schoolProfile?.headmaster_name || ".................................."}</p>
+                                                    <p>NIP. {schoolProfile?.headmaster_nip || "..........................."}</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p>Dicetak Pada,</p>
+                                                    <p className="mb-20">{format(new Date(), 'dd MMMM yyyy', { locale: id })}</p>
+                                                    <p className="font-bold underline">{schoolProfile?.full_name || ".................................."}</p>
+                                                    <p>NIP. {schoolProfile?.nip || "..........................."}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </motion.div>
