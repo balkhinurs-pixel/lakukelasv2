@@ -32,7 +32,9 @@ import {
     Layers,
     Database,
     ShieldAlert,
-    RefreshCw
+    RefreshCw,
+    Copy,
+    Image as ImageIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -366,6 +368,19 @@ export default function BankSoalClient({
         });
     };
 
+    const handleCopyPrompt = async (prompt: string) => {
+        if (!prompt) return;
+        try {
+            await navigator.clipboard.writeText(prompt);
+            toast({ 
+                title: "Prompt Disalin!", 
+                description: "Silakan tempel di generator gambar pilihan Anda (Canva, Leonardo, dll)." 
+            });
+        } catch (err) {
+            toast({ title: "Gagal Menyalin", description: "Terjadi kesalahan sistem.", variant: "destructive" });
+        }
+    };
+
     const handleConnectDrive = async () => {
         if (!supabase) return;
         
@@ -493,7 +508,7 @@ export default function BankSoalClient({
 
             const result = await createNaskahUjianAction(
                 naskahConfig.title, 
-                selectedOrderedIds, 
+                selectedQuestionIds, 
                 metadata, 
                 naskahConfig.format,
                 binaryPdf
@@ -715,11 +730,30 @@ export default function BankSoalClient({
                                             </div>
                                         )}
 
-                                        <div className="pt-5 flex justify-between items-center border-t border-slate-100">
+                                        <div className="pt-5 flex flex-wrap justify-between items-center gap-4 border-t border-slate-100">
                                             <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">KUNCI: {q.correct_answer}</p>
-                                            <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest h-10 px-4 rounded-xl hover:bg-indigo-50">
-                                                {expandedQuestions.has(q.id) ? "Tutup" : "Pembahasan"}
-                                            </Button>
+                                            
+                                            <div className="flex items-center gap-2">
+                                                {q.image_prompt && (
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        onClick={() => handleCopyPrompt(q.image_prompt)} 
+                                                        className="text-[10px] font-black uppercase text-amber-600 border-amber-200 tracking-widest h-10 px-4 rounded-xl hover:bg-amber-50"
+                                                    >
+                                                        <Copy className="h-3.5 w-3.5 mr-2" />
+                                                        Salin Prompt Gambar
+                                                    </Button>
+                                                )}
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => toggleDiscussion(q.id)} 
+                                                    className="text-[10px] font-black uppercase text-indigo-600 tracking-widest h-10 px-4 rounded-xl hover:bg-indigo-50"
+                                                >
+                                                    {expandedQuestions.has(q.id) ? "Tutup" : "Pembahasan"}
+                                                </Button>
+                                            </div>
                                         </div>
 
                                         <AnimatePresence>
