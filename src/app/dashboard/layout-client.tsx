@@ -269,16 +269,22 @@ export default function DashboardLayoutClient({
                     </SidebarMenu>
 
                     <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2 px-3 group-data-[collapsible=icon]:hidden">
-                        <Sparkles className="w-3 h-3" /> Asisten AI
+                        <Wand2 className="w-3 h-3" /> AI Generator
+                    </SidebarGroupLabel>
+                    <SidebarMenu className="gap-1 mb-6">
+                        <NavItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Generate CP & ATP" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
+                    </SidebarMenu>
+
+                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2 px-3 group-data-[collapsible=icon]:hidden">
+                        <FolderSearch className="w-3 h-3" /> Arsip Administrasi
                     </SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
                         <NavItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" icon={Network} label="Daftar CP & ATP" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Generate CP/ATP" color="text-indigo-600" />
                         <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Daftar Naskah" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={FolderSearch} label="Daftar RPP" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Daftar Naskah Soal" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={BookOpen} label="Daftar RPP & Modul" color="text-indigo-600" />
                     </SidebarMenu>
                 </SidebarGroup>
             </ScrollArea>
@@ -435,15 +441,21 @@ export default function DashboardLayoutClient({
                         </div>
 
                         <div className="space-y-3">
-                          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
+                          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Wand2 className="w-3 h-3" /> AI Generator</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" icon={Network} label="Daftar CP/ATP" color="bg-indigo-800" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Gen CP/ATP" color="bg-indigo-600" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-indigo-600" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="RPP AI" color="bg-purple-700" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={FolderSearch} label="Daftar RPP" color="bg-indigo-600" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Gen RPP" color="bg-purple-700" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><FolderSearch className="w-3 h-3" /> Arsip Administrasi</p>
+                          <div className="grid grid-cols-4 gap-y-4 gap-x-2">
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" icon={Network} label="CP & ATP" color="bg-indigo-800" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-blue-600" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={BookOpen} label="RPP & Modul" color="bg-indigo-600" />
                           </div>
                         </div>
 
