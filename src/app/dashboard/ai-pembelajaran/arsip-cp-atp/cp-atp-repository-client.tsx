@@ -109,6 +109,7 @@ export default function CpAtpRepositoryClient({
                     useCORS: true,
                     backgroundColor: "#ffffff",
                     logging: false,
+                    windowWidth: 794,
                 });
 
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -151,7 +152,6 @@ export default function CpAtpRepositoryClient({
 
     return (
         <div className="space-y-6">
-            {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
@@ -198,7 +198,6 @@ export default function CpAtpRepositoryClient({
                 </div>
             </div>
 
-            {/* Hidden Rendering Area for PDF Generation */}
             {printingDoc && (
                 <div className="fixed left-[-9999px] top-0">
                     <div id={`printable-cp-atp-${printingDoc.id}`} className="bg-white p-10" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
@@ -227,7 +226,9 @@ export default function CpAtpRepositoryClient({
                                     table: (props) => <table className="w-full border-collapse border border-slate-300 my-4" {...props} />,
                                     th: (props) => <th className="border border-slate-300 bg-slate-50 p-2 font-bold text-center text-[10px]" {...props} />,
                                     td: (props) => <td className="border border-slate-300 p-2 text-[10px]" {...props} />,
-                                    p: (props) => <p className="text-xs mb-3" {...props} />
+                                    p: (props) => <p className="text-xs mb-3" style={{ breakInside: 'avoid' }} {...props} />,
+                                    li: (props) => <li className="text-xs mb-1" style={{ breakInside: 'avoid' }} {...props} />,
+                                    tr: (props) => <tr style={{ breakInside: 'avoid' }} {...props} />
                                 }}
                             >
                                 {printingDoc.content || ""}

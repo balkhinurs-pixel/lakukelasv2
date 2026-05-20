@@ -169,6 +169,7 @@ export default function GenerateCpAtpClient({
                 useCORS: true,
                 backgroundColor: "#ffffff",
                 logging: false,
+                windowWidth: 794, // Standard A4 width in pixels at 96 DPI
             });
 
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -181,9 +182,11 @@ export default function GenerateCpAtpClient({
             let heightLeft = imgHeight;
             let position = 0;
 
+            // Page 1
             pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
             heightLeft -= pageHeight;
 
+            // Subsequent pages
             while (heightLeft >= 0) {
                 position = heightLeft - imgHeight;
                 pdf.addPage();
@@ -222,7 +225,7 @@ export default function GenerateCpAtpClient({
                 description: "Pemetaan kurikulum telah diarsipkan.",
                 action: (
                     <Button variant="outline" size="sm" asChild>
-                        <a href={result.file_url || "#"} target="_blank">Buka File</a>
+                        <a href={result.file_url || "#"} target="_blank" rel="noopener noreferrer">Buka File</a>
                     </Button>
                 )
             });
@@ -234,7 +237,6 @@ export default function GenerateCpAtpClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
-            {/* Header Hero */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
                 <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
@@ -250,7 +252,6 @@ export default function GenerateCpAtpClient({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-4 sm:px-6 lg:px-10">
-                {/* Configuration Card */}
                 <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
                     <form onSubmit={handleGenerate}>
                         <CardHeader className="bg-slate-50/50 border-b p-6">
@@ -333,7 +334,6 @@ export default function GenerateCpAtpClient({
                     </form>
                 </Card>
 
-                {/* Preview & Print Card */}
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
                     <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -374,9 +374,7 @@ export default function GenerateCpAtpClient({
                                         animate={{ opacity: 1, y: 0 }}
                                         className="p-4 sm:p-10"
                                     >
-                                        {/* Printable Container */}
                                         <div id="printable-cp-atp-area" className="bg-white p-10 shadow-sm border border-slate-100 rounded-2xl mx-auto" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
-                                            {/* Formal Header (Kop Surat) */}
                                             <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-slate-900">
                                                 <div className="w-20 h-20 flex items-center justify-center shrink-0 border border-slate-100 rounded-lg overflow-hidden">
                                                     {schoolProfile?.school_logo_url ? (
@@ -426,15 +424,16 @@ export default function GenerateCpAtpClient({
                                                         td: ({node, ...props}) => <td className="border border-slate-300 p-2 text-[10px]" {...props} />,
                                                         h1: ({node, ...props}) => <h3 className="text-sm font-bold uppercase mt-6 mb-2" {...props} />,
                                                         h2: ({node, ...props}) => <h4 className="text-xs font-bold uppercase mt-4 mb-2" {...props} />,
-                                                        p: ({node, ...props}) => <p className="text-xs mb-3 text-justify" {...props} />,
-                                                        li: ({node, ...props}) => <li className="text-xs mb-1" {...props} />
+                                                        p: ({node, ...props}) => <p className="text-xs mb-3 text-justify" style={{ breakInside: 'avoid' }} {...props} />,
+                                                        li: ({node, ...props}) => <li className="text-xs mb-1" style={{ breakInside: 'avoid' }} {...props} />,
+                                                        tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
                                                     }}
                                                 >
                                                     {generatedResult.content}
                                                 </ReactMarkdown>
                                             </div>
 
-                                            <div className="mt-12 flex justify-between text-xs px-10">
+                                            <div className="mt-12 flex justify-between text-xs px-10" style={{ breakInside: 'avoid' }}>
                                                 <div className="text-center">
                                                     <p>Mengetahui,</p>
                                                     <p className="mb-20">Kepala Sekolah</p>
