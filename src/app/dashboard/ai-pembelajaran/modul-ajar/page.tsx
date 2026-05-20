@@ -1,7 +1,6 @@
 import { getClasses, getSubjects, getGoogleDriveIntegration } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import ModulAjarClient from "./modul-ajar-client";
-import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 
 export default async function ModulAjarPage() {
     const supabase = await createClient();
@@ -14,13 +13,7 @@ export default async function ModulAjarPage() {
     ]);
 
     return (
-        <div className="space-y-8 p-1">
-            <HandWrittenTitle 
-                title="Modul Ajar (RPP)" 
-                subtitle="Kurikulum Merdeka"
-                className="py-4 md:py-6"
-            />
-
+        <div className="p-0">
             <ModulAjarClient 
                 classes={classes} 
                 subjects={subjects}

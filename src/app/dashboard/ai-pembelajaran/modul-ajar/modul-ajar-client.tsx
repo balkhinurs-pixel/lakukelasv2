@@ -7,17 +7,12 @@ import {
     Loader2, 
     Save, 
     CheckCircle2, 
-    ChevronRight,
     Wand2,
     Settings2,
-    Target,
-    Activity,
-    ClipboardCheck,
-    Lightbulb,
-    ExternalLink,
     Database,
-    ShieldAlert,
-    RefreshCw
+    RefreshCw,
+    ArrowRight,
+    Target
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,10 +24,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { generateModulAjarAction } from "@/lib/actions/ai";
 import { saveModulAjarToDrive } from "@/lib/actions/google-drive";
-import type { Class, Subject, Profile, ModulAjarInput, GoogleDriveIntegration } from "@/lib/types";
+import type { Class, Subject, ModulAjarInput, GoogleDriveIntegration } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
+import { LottieWelcome } from "@/components/ui/lottie-welcome";
 import { createClient } from "@/lib/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -43,6 +39,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
+// --- Data Constants (Sesuai dengan Soal AI) ---
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
@@ -77,8 +74,6 @@ const LEARNING_MODELS = [
 ];
 
 export default function ModulAjarClient({ 
-    classes: _classes, 
-    subjects: _subjects,
     driveIntegration,
     userProvider
 }: { 
@@ -192,174 +187,193 @@ export default function ModulAjarClient({
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            {/* Form Input Area */}
-            <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
-                <form onSubmit={handleGenerate}>
-                    <CardHeader className="bg-slate-50/50 border-b p-6">
-                        <CardTitle className="text-xl font-black flex items-center gap-2">
-                            <Settings2 className="h-5 w-5 text-indigo-600" />
-                            Konfigurasi RPP
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
-                                <Select value={form.jenjang} onValueChange={handleJenjangChange}>
-                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                <Select value={form.kelas} onValueChange={v => setForm({...form, kelas: v})}>
-                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
-                            <Select value={form.subject} onValueChange={v => setForm({...form, subject: v})}>
-                                <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                    {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label>
-                            <Input 
-                                placeholder="e.g. Struktur Sel Hewan dan Tumbuhan" 
-                                className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
-                                value={form.topic}
-                                onChange={e => setForm({...form, topic: e.target.value})}
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Alokasi Waktu</Label>
-                            <Input 
-                                placeholder="e.g. 2 x 45 Menit" 
-                                className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
-                                value={form.alokasiWaktu}
-                                onChange={e => setForm({...form, alokasiWaktu: e.target.value})}
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Model Pembelajaran</Label>
-                            <Select value={form.modelPembelajaran} onValueChange={v => setForm({...form, modelPembelajaran: v})}>
-                                <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                    {LEARNING_MODELS.map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Profil Pelajar Pancasila</Label>
-                            <div className="grid grid-cols-1 gap-2">
-                                {PANCASILA_DIMENSIONS.map(dim => (
-                                    <div key={dim} className="flex items-center space-x-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                        <Checkbox 
-                                            id={dim} 
-                                            checked={form.profilPancasila.includes(dim)}
-                                            onCheckedChange={() => togglePancasila(dim)}
-                                            className="h-5 w-5 rounded-md border-slate-300"
-                                        />
-                                        <label htmlFor={dim} className="text-xs font-bold text-slate-600 cursor-pointer">{dim}</label>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sarana & Prasarana</Label>
-                            <Textarea 
-                                placeholder="e.g. Proyektor, Internet, Lab Biologi..." 
-                                className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner"
-                                value={form.saranaPrasarana}
-                                onChange={e => setForm({...form, saranaPrasarana: e.target.value})}
-                            />
-                        </div>
-                    </CardContent>
-                    <CardFooter className="bg-slate-50/50 p-6 border-t">
-                        <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 text-lg font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
-                            {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}
-                            Generate Modul AI
-                        </Button>
-                    </CardFooter>
-                </form>
-            </Card>
-
-            {/* Preview Area */}
-            <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
-                <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
-                            <FileText className="h-5 w-5" />
-                        </div>
-                        <CardTitle className="text-xl font-black tracking-tight">Pratinjau Modul</CardTitle>
+        <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
+            {/* Header Premium Indigo (Sama seperti Soal AI) */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 blur-2xl rounded-full -ml-10 -mb-10" />
+                
+                <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
+                    <div className="space-y-2">
+                        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
+                            Generate RPP
+                        </h1>
+                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">
+                            Modul Ajar Kurikulum Merdeka
+                        </p>
                     </div>
-                    {generatedResult && (
-                        <Button 
-                            onClick={handleSaveToDrive} 
-                            disabled={saving}
-                            className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100"
-                        >
-                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                            Simpan ke Drive
-                        </Button>
-                    )}
-                </CardHeader>
-                <CardContent className="flex-grow p-0">
-                    <ScrollArea className="h-full">
-                        <AnimatePresence mode="wait">
-                            {generatedResult ? (
-                                <motion.div 
-                                    key="result"
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="p-8 sm:p-10"
-                                >
-                                    <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight prose-p:font-medium prose-p:leading-relaxed text-slate-700">
-                                        <h1 className="text-2xl border-b pb-4 mb-8 text-indigo-700">{generatedResult.title}</h1>
-                                        <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                                            {generatedResult.content}
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-30">
-                                    <div className="p-12 rounded-[4rem] bg-slate-50 mb-6">
-                                        <Sparkles className="h-20 w-20 text-slate-300" />
-                                    </div>
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">AI Pedagogis Siap Bekerja</h3>
-                                    <p className="text-slate-500 font-bold text-sm max-w-xs mt-3">Lengkapi parameter RPP di samping untuk mulai menyusun modul ajar profesional.</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-4 sm:px-6 lg:px-10">
+                {/* Form Input Area */}
+                <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
+                    <form onSubmit={handleGenerate}>
+                        <CardHeader className="bg-slate-50/50 border-b p-6">
+                            <CardTitle className="text-xl font-black flex items-center gap-2">
+                                <Settings2 className="h-5 w-5 text-indigo-600" />
+                                Konfigurasi RPP
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
+                                    <Select value={form.jenjang} onValueChange={handleJenjangChange}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                            )}
-                        </AnimatePresence>
-                    </ScrollArea>
-                    {loading && (
-                        <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-30 flex flex-col items-center justify-center gap-6">
-                            <LottieAiProcess size={250} />
-                            <div className="text-center space-y-2">
-                                <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyusun Modul Ajar...</p>
-                                <p className="text-sm font-bold text-indigo-600 uppercase tracking-widest animate-pulse">Analisis Kurikulum Merdeka</p>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
+                                    <Select value={form.kelas} onValueChange={v => setForm({...form, kelas: v})}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
+                                <Select value={form.subject} onValueChange={v => setForm({...form, subject: v})}>
+                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label>
+                                <Input 
+                                    placeholder="e.g. Struktur Sel Hewan dan Tumbuhan" 
+                                    className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
+                                    value={form.topic}
+                                    onChange={e => setForm({...form, topic: e.target.value})}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Alokasi Waktu</Label>
+                                <Input 
+                                    placeholder="e.g. 2 x 45 Menit" 
+                                    className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
+                                    value={form.alokasiWaktu}
+                                    onChange={e => setForm({...form, alokasiWaktu: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Model Pembelajaran</Label>
+                                <Select value={form.modelPembelajaran} onValueChange={v => setForm({...form, modelPembelajaran: v})}>
+                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {LEARNING_MODELS.map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Profil Pelajar Pancasila</Label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {PANCASILA_DIMENSIONS.map(dim => (
+                                        <div key={dim} className="flex items-center space-x-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                            <Checkbox 
+                                                id={dim} 
+                                                checked={form.profilPancasila.includes(dim)}
+                                                onCheckedChange={() => togglePancasila(dim)}
+                                                className="h-5 w-5 rounded-md border-slate-300"
+                                            />
+                                            <label htmlFor={dim} className="text-xs font-bold text-slate-600 cursor-pointer">{dim}</label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sarana & Prasarana</Label>
+                                <Textarea 
+                                    placeholder="e.g. Proyektor, Internet, Lab Biologi..." 
+                                    className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner"
+                                    value={form.saranaPrasarana}
+                                    onChange={e => setForm({...form, saranaPrasarana: e.target.value})}
+                                />
+                            </div>
+                        </CardContent>
+                        <CardFooter className="bg-slate-50/50 p-6 border-t">
+                            <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 text-lg font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
+                                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}
+                                Generate Modul AI
+                            </Button>
+                        </CardFooter>
+                    </form>
+                </Card>
+
+                {/* Preview Area Placeholder / Result */}
+                <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
+                    <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
+                                <FileText className="h-5 w-5" />
+                            </div>
+                            <CardTitle className="text-xl font-black tracking-tight">Pratinjau Modul</CardTitle>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+                        {generatedResult && (
+                            <Button 
+                                onClick={handleSaveToDrive} 
+                                disabled={saving}
+                                className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100"
+                            >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                Simpan ke Drive
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent className="flex-grow p-0">
+                        <ScrollArea className="h-full">
+                            <AnimatePresence mode="wait">
+                                {generatedResult ? (
+                                    <motion.div 
+                                        key="result"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="p-8 sm:p-10"
+                                    >
+                                        <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight prose-p:font-medium prose-p:leading-relaxed text-slate-700">
+                                            <h1 className="text-2xl border-b pb-4 mb-8 text-indigo-700">{generatedResult.title}</h1>
+                                            <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                                                {generatedResult.content}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                                        <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
+                                            <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
+                                        </div>
+                                        <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Pedagogis Siap Bekerja</h3>
+                                        <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">Lengkapi parameter RPP di samping untuk mulai menyusun modul ajar profesional.</p>
+                                    </div>
+                                )}
+                            </AnimatePresence>
+                        </ScrollArea>
+                        {loading && (
+                            <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-30 flex flex-col items-center justify-center gap-6">
+                                <LottieAiProcess size={250} />
+                                <div className="text-center space-y-2">
+                                    <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyusun Modul Ajar...</p>
+                                    <p className="text-sm font-bold text-indigo-600 uppercase tracking-widest animate-pulse">Analisis Kurikulum Merdeka</p>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
 
             <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
                 <DialogContent className="rounded-xl p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
