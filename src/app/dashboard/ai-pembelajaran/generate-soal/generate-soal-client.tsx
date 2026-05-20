@@ -110,6 +110,7 @@ export default function GenerateSoalClient({
     const [saving, setSaving] = React.useState(false);
     const [questions, setQuestions] = React.useState<GeneratedQuestion[]>([]);
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
+    const [countdown, setCountdown] = React.useState(30);
 
     // AI Error Dialog State
     const [isErrorOpen, setIsErrorOpen] = React.useState(false);
@@ -135,6 +136,18 @@ export default function GenerateSoalClient({
         count: 5, 
         difficulty: 'sedang'
     });
+
+    // Countdown Logic
+    React.useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (loading && questions.length === 0) {
+            setCountdown(30);
+            interval = setInterval(() => {
+                setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [loading, questions.length]);
 
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
@@ -168,6 +181,7 @@ export default function GenerateSoalClient({
         
         setLoading(true);
         setQuestions([]); // Reset soal
+        setCountdown(30);
         setIsPreviewOpen(true); // Langsung buka modal untuk efek streaming
 
         try {
@@ -427,7 +441,57 @@ export default function GenerateSoalClient({
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
-                    <div className="flex flex-col h-[90vh]">
+                    <div className="flex flex-col h-[90vh] relative">
+                        {/* Premium Loading Overlay */}
+                        {loading && questions.length === 0 && (
+                            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
+                                <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
+                                     {/* Morphing background glow */}
+                                     <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
+                                     
+                                     <div className="relative">
+                                         <LottieAiProcess size={220} />
+                                         <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent pointer-events-none" />
+                                     </div>
+                                     
+                                     <div className="space-y-6">
+                                         <div className="space-y-2">
+                                            <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>Soal Terbaik</p>
+                                            <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
+                                         </div>
+                                         
+                                         <div className="flex flex-col items-center gap-3">
+                                            <div className="relative w-20 h-20 flex items-center justify-center">
+                                                <svg className="w-full h-full -rotate-90">
+                                                    <circle 
+                                                        cx="40" cy="40" r="36" 
+                                                        className="stroke-slate-100 fill-none" 
+                                                        strokeWidth="6" 
+                                                    />
+                                                    <motion.circle 
+                                                        cx="40" cy="40" r="36" 
+                                                        className="stroke-indigo-600 fill-none" 
+                                                        strokeWidth="6" 
+                                                        strokeLinecap="round"
+                                                        strokeDasharray="226"
+                                                        initial={{ strokeDashoffset: 226 }}
+                                                        animate={{ strokeDashoffset: 226 - (226 * (30 - countdown) / 30) }}
+                                                        transition={{ duration: 1, ease: "linear" }}
+                                                    />
+                                                </svg>
+                                                <span className="absolute font-mono font-black text-indigo-600 text-xl">{countdown}s</span>
+                                            </div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Selesai</p>
+                                         </div>
+                                     </div>
+                                     
+                                     <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 text-[11px] font-bold text-indigo-500 italic max-w-xs leading-relaxed">
+                                        "AI sedang menyusun soal yang sesuai dengan capaian kurikulum Merdeka Anda..."
+                                     </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative shrink-0">
                             <div className="relative z-10 flex flex-col items-center text-center">
                                 <DialogHeader><DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">AI Streaming Preview</DialogTitle></DialogHeader>
@@ -465,12 +529,12 @@ export default function GenerateSoalClient({
                                             </div>
                                         </Card>
                                     ))
-                                ) : (
+                                ) : !loading ? (
                                     <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                                         <LottieAiProcess size={150} />
-                                        <p className="font-black text-indigo-600 uppercase tracking-widest animate-pulse">AI sedang mengetik soal...</p>
+                                        <p className="font-black text-indigo-600 uppercase tracking-widest animate-pulse">Menunggu respon AI...</p>
                                     </div>
-                                )}
+                                ) : null}
                             </div>
                         </ScrollArea>
 
