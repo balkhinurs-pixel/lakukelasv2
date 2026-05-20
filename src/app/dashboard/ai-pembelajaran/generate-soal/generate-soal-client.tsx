@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { generateQuestionsAction, saveQuestionsAction, generateQuestionImageAction } from "@/lib/actions/ai";
+import { streamQuestionsAction, saveQuestionsAction, generateQuestionImageAction } from "@/lib/actions/ai";
 import type { Class, Subject, GeneratedQuestion, QuestionGenerationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -43,6 +43,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
 import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
+import { readStreamableValue } from 'ai/rsc';
 
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
@@ -107,7 +108,6 @@ export default function GenerateSoalClient({
     const router = useRouter();
     const [loading, setLoading] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
-    const [imageLoadingIdx, setImageLoadingIdx] = React.useState<number | null>(null);
     const [questions, setQuestions] = React.useState<GeneratedQuestion[]>([]);
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
 
@@ -165,58 +165,38 @@ export default function GenerateSoalClient({
             toast({ title: "Data Belum Lengkap", description: "Mohon isi Topik, Mapel, dan Kelas.", variant: "destructive" });
             return;
         }
+        
         setLoading(true);
+        setQuestions([]); // Reset soal
+        setIsPreviewOpen(true); // Langsung buka modal untuk efek streaming
+
         try {
-            const result = await generateQuestionsAction({ 
+            const { output } = await streamQuestionsAction({ 
                 ...form, 
                 count: 5,
                 mediaDataUri: uploadedFile?.uri, 
                 mediaMimeType: uploadedFile?.mime 
             });
             
-            if (result.success && result.data) {
-                setQuestions(result.data.questions);
-                setIsPreviewOpen(true);
-                toast({ title: "Berhasil", description: `5 butir soal telah dihasilkan.` });
-            } else {
-                const err = result.error || "";
-                let type: AiErrorType = 'generic';
-                if (err.includes('429') || err.toLowerCase().includes('quota')) type = 'quota';
-                else if (err.includes('503') || err.toLowerCase().includes('overloaded')) type = 'overloaded';
-                else if (err.toLowerCase().includes('api key')) type = 'api_key';
-                setErrorType(type);
-                setErrorMsg(err);
-                setIsErrorOpen(true);
+            for await (const delta of readStreamableValue(output)) {
+                if (delta && (delta as any).questions) {
+                    setQuestions((delta as any).questions);
+                }
             }
+
+            toast({ title: "Berhasil", description: `5 butir soal telah dihasilkan.` });
         } catch (err: any) {
-            toast({ title: "Error", description: "Terjadi kesalahan sistem.", variant: "destructive" });
+            setIsPreviewOpen(false);
+            const errStr = err.message || "";
+            let type: AiErrorType = 'generic';
+            if (errStr.includes('429')) type = 'quota';
+            else if (errStr.includes('503')) type = 'overloaded';
+            setErrorType(type);
+            setErrorMsg(errStr);
+            setIsErrorOpen(true);
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleGenerateImage = async (idx: number, prompt: string) => {
-        if (!prompt) {
-            toast({ title: "Prompt Kosong", description: "Tuliskan deskripsi gambar.", variant: "destructive" });
-            return;
-        }
-        setImageLoadingIdx(idx);
-        const result = await generateQuestionImageAction(prompt);
-        if (result.success && result.url) {
-            const updatedQuestions = [...questions];
-            updatedQuestions[idx].image_url = result.url;
-            setQuestions(updatedQuestions);
-            toast({ title: "Gambar Siap", description: "Ilustrasi AI telah ditambahkan." });
-        } else {
-            toast({ title: "Gagal", description: result.error, variant: "destructive" });
-        }
-        setImageLoadingIdx(null);
-    };
-
-    const handleUpdatePrompt = (idx: number, newPrompt: string) => {
-        const updatedQuestions = [...questions];
-        updatedQuestions[idx].image_prompt = newPrompt;
-        setQuestions(updatedQuestions);
     };
 
     const handleSaveToBankSoal = async () => {
@@ -252,7 +232,7 @@ export default function GenerateSoalClient({
                             Generate Soal
                         </h1>
                         <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">
-                            AI Question Engine
+                            AI Question Engine (vStream)
                         </p>
                     </div>
                 </div>
@@ -414,7 +394,7 @@ export default function GenerateSoalClient({
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Soal</Label>
                                         <div className="h-11 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-500 border border-slate-200 text-xs">
-                                            5 Butir (Stabil)
+                                            5 Butir (vStream)
                                         </div>
                                     </div>
                                 </div>
@@ -438,72 +418,67 @@ export default function GenerateSoalClient({
                     <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
                         <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">Asisten AI Siap Membantu</h3>
+                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">Vercel AI SDK Enabled</h3>
                     <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">
-                        Pilih jenjang dan topik di samping. AI akan merumuskan 5 butir soal berkualitas tinggi dalam hitungan detik.
+                        Coba teknologi streaming terbaru. Hasil soal akan muncul secara bertahap seperti sedang diketik, memberikan pengalaman yang lebih cepat dan hidup.
                     </p>
                 </Card>
             </div>
-
-            <AnimatePresence>
-                {loading && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-white/40 dark:bg-slate-950/40 backdrop-blur-2xl z-[100] flex flex-col items-center justify-center text-center p-10">
-                        <div className="relative flex flex-col items-center max-w-md w-full">
-                            <LottieAiProcess size={280} />
-                            <div className="relative z-10 mt-8 space-y-3">
-                                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">PROCESSING...</h2>
-                                <p className="text-sm font-black text-indigo-600 uppercase tracking-[0.3em]">Merumuskan 5 Butir Soal</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                     <div className="flex flex-col h-[90vh]">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative shrink-0">
                             <div className="relative z-10 flex flex-col items-center text-center">
-                                <DialogHeader><DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">Review Hasil AI</DialogTitle></DialogHeader>
+                                <DialogHeader><DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">AI Streaming Preview</DialogTitle></DialogHeader>
                                 <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-3 opacity-90">{form.subject} Kelas {form.kelas}</p>
                             </div>
                         </div>
 
                         <ScrollArea className="flex-1 p-4 sm:p-10">
                             <div className="space-y-6 sm:space-y-12 pb-10">
-                                {questions.map((q, idx) => (
-                                    <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50">
-                                        <div className="flex items-center justify-between mb-8">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{q.sort_order}</div>
-                                            <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{q.type === 'multiple_choice' ? 'PG' : 'Esai'}</Badge>
-                                        </div>
-                                        <div className="space-y-8">
-                                            <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
-                                            {q.type === 'multiple_choice' && q.options && (
-                                                <div className="grid grid-cols-1 gap-3">
-                                                    {Object.entries(q.options).sort().map(([key, val]) => (
-                                                        <div key={key} className={cn("p-5 rounded-xl border flex items-center gap-4 transition-colors", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
-                                                            <span className={cn("w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black shrink-0", q.answer === key ? "bg-emerald-500 text-white shadow-lg" : "bg-white text-slate-400 border border-slate-100")}>{key}</span>
-                                                            <div className="text-sm sm:text-base font-semibold flex-1 overflow-hidden"><MathText content={val} /></div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            <div className="p-5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3">
-                                                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                                                <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">Kunci: <span className="ml-2 text-emerald-600">{q.answer}</span></p>
+                                {questions.length > 0 ? (
+                                    questions.map((q, idx) => (
+                                        <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{q.sort_order || idx + 1}</div>
+                                                <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{q.type === 'multiple_choice' ? 'PG' : 'Esai'}</Badge>
                                             </div>
-                                        </div>
-                                    </Card>
-                                ))}
+                                            <div className="space-y-8">
+                                                <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
+                                                {q.type === 'multiple_choice' && q.options && (
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        {Object.entries(q.options).sort().map(([key, val]) => (
+                                                            <div key={key} className={cn("p-5 rounded-xl border flex items-center gap-4 transition-colors", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
+                                                                <span className={cn("w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black shrink-0", q.answer === key ? "bg-emerald-500 text-white shadow-lg" : "bg-white text-slate-400 border border-slate-100")}>{key}</span>
+                                                                <div className="text-sm sm:text-base font-semibold flex-1 overflow-hidden"><MathText content={val} /></div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {q.answer && (
+                                                    <div className="p-5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-500">
+                                                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                                                        <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">Kunci: <span className="ml-2 text-emerald-600">{q.answer}</span></p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                                        <LottieAiProcess size={150} />
+                                        <p className="font-black text-indigo-600 uppercase tracking-widest animate-pulse">AI sedang mengetik soal...</p>
+                                    </div>
+                                )}
                             </div>
                         </ScrollArea>
 
                         <div className="p-6 sm:p-10 bg-white border-t flex flex-col sm:flex-row gap-4 shrink-0 pb-safe">
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2">
-                                <ArrowLeft className="h-5 w-5" /> Edit Input
+                                <ArrowLeft className="h-5 w-5" /> Kembali
                             </Button>
-                            <Button onClick={handleSaveToBankSoal} disabled={saving} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200">
+                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200">
                                 {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal
                             </Button>
                         </div>

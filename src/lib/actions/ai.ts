@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
 import { saveNaskahToDrive, saveCpAtpToDrive } from './google-drive';
+import { createStreamableValue } from 'ai/rsc';
 
 /**
  * Server Action untuk memanggil flow AI RPP/Konten Dasar.
@@ -68,7 +69,26 @@ export async function generateCpAtpAction(input: CpAtpInput) {
 }
 
 /**
- * Server Action untuk memanggil flow AI Generate Soal Terstruktur.
+ * Server Action untuk memanggil flow AI Generate Soal Terstruktur dengan STREAMING.
+ */
+export async function streamQuestionsAction(input: QuestionGenerationInput) {
+    const stream = createStreamableValue();
+
+    (async () => {
+        try {
+            const result = await generateQuestions(input);
+            stream.update(result);
+            stream.done();
+        } catch (error: any) {
+            stream.error(error.message || "Gagal menghasilkan soal.");
+        }
+    })();
+
+    return { output: stream.value };
+}
+
+/**
+ * Server Action lama (tetap ada untuk kompatibilitas jika dibutuhkan)
  */
 export async function generateQuestionsAction(input: QuestionGenerationInput) {
     try {
