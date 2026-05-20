@@ -184,6 +184,19 @@ export interface AiDocument {
   updated_at: string;
 }
 
+export interface CpAtpDocument {
+  id: string;
+  user_id: string;
+  title: string;
+  subject: string;
+  phase: string;
+  class_level: string;
+  drive_file_id?: string | null;
+  drive_file_url?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- AI Questions Types ---
 export interface GeneratedQuestion {
   sort_order: number;
@@ -229,6 +242,7 @@ export interface ModulAjarInput {
   modelPembelajaran: string;
   saranaPrasarana?: string;
   targetSiswa?: string;
+  atp_id?: string;
 }
 
 // --- History Types ---

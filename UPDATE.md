@@ -1,5 +1,22 @@
 # Log Pembaruan Sistem (Database & Identity)
 
+## Update V46.0: Pemetaan Kurikulum CP & ATP - TAHAP 1
+Penambahan fitur pengarsipan Capaian Pembelajaran (CP) dan Alur Tujuan Pembelajaran (ATP) untuk mendukung standarisasi Modul Ajar.
+
+### 1. Perubahan Skema SQL
+Menambahkan tabel baru `public.cp_atp`:
+- **Title**: Judul pemetaan.
+- **Subject**: Mata pelajaran terkait.
+- **Phase**: Fase pembelajaran (A-F).
+- **Class Level**: Tingkat kelas.
+- **Drive Meta**: ID dan URL file Google Drive.
+
+### 2. Manfaat Fitur
+- **Standarisasi**: Guru dapat mendokumentasikan ATP sebagai master data kurikulum.
+- **Integrasi**: Menyiapkan jalur bagi AI Modul Ajar untuk menggunakan ATP sebagai referensi utama.
+
+---
+
 ## Update V44.0: Dynamic AI Model Selector - TERIMPLEMENTASI
 Pembaruan fundamental untuk memungkinkan pengguna memilih model AI yang digunakan sesuai kebutuhan stabilitas atau teknologi terbaru.
 

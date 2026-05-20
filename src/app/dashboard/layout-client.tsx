@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -41,22 +40,24 @@ import {
   HelpCircle,
   LifeBuoy,
   Wand2,
-  FolderSearch
+  FolderSearch,
+  GitBranchPlus,
+  Network
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
@@ -68,7 +69,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -271,6 +272,8 @@ export default function DashboardLayoutClient({
                         <Sparkles className="w-3 h-3" /> Asisten AI
                     </SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
+                        <NavItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" icon={Network} label="Daftar CP & ATP" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Generate CP/ATP" color="text-indigo-600" />
                         <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
                         <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Daftar Naskah" color="text-indigo-600" />
                         <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-indigo-600" />
@@ -434,6 +437,8 @@ export default function DashboardLayoutClient({
                         <div className="space-y-3">
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" icon={Network} label="Daftar CP/ATP" color="bg-indigo-800" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Gen CP/ATP" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="RPP AI" color="bg-purple-700" />
