@@ -2,6 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan Modul Ajar (RPP) Kurikulum Merdeka.
  * Menggunakan model dinamis sesuai preferensi guru.
+ * Terintegrasi dengan referensi CP & ATP.
  */
 
 import { z, genkit } from 'genkit';
@@ -18,6 +19,7 @@ const ModulAjarInputSchema = z.object({
   modelPembelajaran: z.string().describe('Model seperti PBL, PjBL, atau Inkuiri'),
   saranaPrasarana: z.string().optional().describe('Fasilitas pendukung di sekolah'),
   targetSiswa: z.string().optional().describe('Karakteristik peserta didik'),
+  atpContent: z.string().optional().describe('Konten referensi CP & ATP yang sudah dibuat sebelumnya'),
 });
 
 export type ModulAjarInput = z.infer<typeof ModulAjarInputSchema>;
@@ -70,6 +72,11 @@ IDENTITAS INPUT:
 - Profil Pelajar Pancasila: ${input.profilPancasila.join(', ')}
 - Sarana & Prasarana: ${input.saranaPrasarana || 'Standar Ruang Kelas'}
 - Target Siswa: ${input.targetSiswa || 'Peserta didik reguler'}
+
+${input.atpContent ? `REFERENSI CP & ATP (WAJIB DIIKUTI):
+{{{atpContent}}}
+
+PENTING: Pastikan Tujuan Pembelajaran dan Alur pada Modul Ajar ini selaras sempurna dengan referensi di atas.` : ''}
 
 STRUKTUR MODUL (WAJIB ADA):
 1. INFORMASI UMUM: Identitas Modul, Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana, Target Peserta Didik, Model Pembelajaran.

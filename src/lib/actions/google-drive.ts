@@ -209,13 +209,14 @@ export async function saveCpAtpToDrive(
 
         const fileData = await driveResponse.json();
 
-        // Simpan ke tabel cp_atp yang baru
+        // Simpan ke tabel cp_atp yang baru (termasuk content untuk referensi AI)
         await supabase.from('cp_atp').insert({
             user_id: userId,
             title: title,
             subject: metadata.subject,
             phase: metadata.phase,
             class_level: metadata.class,
+            content: content,
             drive_file_id: fileData.id,
             drive_file_url: `https://docs.google.com/document/d/${fileData.id}/edit`
         });

@@ -12,7 +12,8 @@ import {
     Database,
     RefreshCw,
     ArrowRight,
-    Target
+    Target,
+    GitBranchPlus
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,12 +24,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { generateModulAjarAction } from "@/lib/actions/ai";
-import { saveModulAjarToDrive } from "@/lib/actions/google-drive";
-import type { Class, Subject, ModulAjarInput, GoogleDriveIntegration } from "@/lib/types";
+import { saveModulAjarToDrive, setupGoogleDriveFolder } from "@/lib/actions/google-drive";
+import type { Class, Subject, ModulAjarInput, GoogleDriveIntegration, CpAtpDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
-import { LottieWelcome } from "@/components/ui/lottie-welcome";
 import { createClient } from "@/lib/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -77,12 +77,14 @@ export default function ModulAjarClient({
     classes: _classes, 
     subjects: _subjects,
     driveIntegration,
-    userProvider
+    userProvider,
+    atpDocuments = []
 }: { 
     classes: Class[], 
     subjects: Subject[],
     driveIntegration: GoogleDriveIntegration | null,
-    userProvider?: string
+    userProvider?: string,
+    atpDocuments: Partial<CpAtpDocument>[]
 }) {
     const { toast } = useToast();
     const supabase = createClient();
@@ -100,7 +102,8 @@ export default function ModulAjarClient({
         profilPancasila: [],
         modelPembelajaran: 'Problem Based Learning (PBL)',
         saranaPrasarana: '',
-        targetSiswa: 'Peserta didik reguler'
+        targetSiswa: 'Peserta didik reguler',
+        atp_id: 'none'
     });
 
     const handleJenjangChange = (val: string) => {
@@ -146,11 +149,15 @@ export default function ModulAjarClient({
         setLoading(true);
         setGeneratedResult(null);
 
-        const result = await generateModulAjarAction(form);
+        // Bersihkan atp_id jika nilainya 'none' sebelum dikirim
+        const payload = { ...form };
+        if (payload.atp_id === 'none') delete payload.atp_id;
+
+        const result = await generateModulAjarAction(payload);
 
         if (result.success && result.data) {
             setGeneratedResult(result.data);
-            toast({ title: "Berhasil!", description: "Modul Ajar telah dirumuskan oleh AI." });
+            toast({ title: "Berhasil!", description: "Modul Ajar telah dirumuskan berdasarkan referensi ATP Anda." });
         } else {
             toast({ title: "Gagal", description: result.error || "Gagal menghasilkan modul.", variant: "destructive" });
         }
@@ -190,25 +197,21 @@ export default function ModulAjarClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
-            {/* Header Premium Indigo */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 blur-2xl rounded-full -ml-10 -mb-10" />
-                
                 <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
                     <div className="space-y-2">
                         <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
                             Generate RPP
                         </h1>
                         <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">
-                            Modul Ajar Kurikulum Merdeka
+                            Modul Ajar Terintegrasi ATP
                         </p>
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-4 sm:px-6 lg:px-10">
-                {/* Form Input Area */}
                 <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
                     <form onSubmit={handleGenerate}>
                         <CardHeader className="bg-slate-50/50 border-b p-6">
@@ -218,12 +221,32 @@ export default function ModulAjarClient({
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
+                            <div className="space-y-1.5 p-4 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-inner">
+                                <Label className="text-[10px] font-black uppercase text-indigo-600 tracking-widest ml-1 flex items-center gap-2">
+                                    <GitBranchPlus className="h-3 w-3" /> Gunakan Referensi ATP
+                                </Label>
+                                <Select value={form.atp_id} onValueChange={v => setForm({...form, atp_id: v})}>
+                                    <SelectTrigger className="rounded-xl bg-white border-0 h-11 font-bold shadow-sm">
+                                        <SelectValue placeholder="Pilih ATP (Opsional)" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectItem value="none" className="font-bold text-slate-400">Tanpa Referensi (Manual)</SelectItem>
+                                        {atpDocuments.map(doc => (
+                                            <SelectItem key={doc.id} value={doc.id!} className="font-bold">
+                                                {doc.title} ({doc.subject})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-[9px] text-indigo-400 font-bold px-1 uppercase tracking-tight">RPP akan otomatis sinkron dengan alur tujuan pilihan Anda.</p>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
                                     <Select value={form.jenjang} onValueChange={handleJenjangChange}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
-                                            <SelectValue placeholder="Pilih Jenjang" />
+                                            <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {Object.keys(mapelByJenjang).map(j => (
@@ -236,7 +259,7 @@ export default function ModulAjarClient({
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
                                     <Select value={form.kelas} onValueChange={v => setForm(prev => ({...prev, kelas: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
-                                            <SelectValue placeholder="Pilih Kelas" />
+                                            <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="rounded-xl border-0 shadow-2xl">
                                             {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
@@ -249,7 +272,7 @@ export default function ModulAjarClient({
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
                                 <Select value={form.subject} onValueChange={v => setForm(prev => ({...prev, subject: v}))}>
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
-                                        <SelectValue placeholder="Pilih Mapel" />
+                                        <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-0 shadow-2xl">
                                         {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
@@ -268,14 +291,25 @@ export default function ModulAjarClient({
                                 />
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Alokasi Waktu</Label>
-                                <Input 
-                                    placeholder="e.g. 2 x 45 Menit" 
-                                    className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
-                                    value={form.alokasiWaktu}
-                                    onChange={e => setForm(prev => ({...prev, alokasiWaktu: e.target.value}))}
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Alokasi Waktu</Label>
+                                    <Input 
+                                        placeholder="e.g. 2 x 45 Menit" 
+                                        className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
+                                        value={form.alokasiWaktu}
+                                        onChange={e => setForm(prev => ({...prev, alokasiWaktu: e.target.value}))}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Target Siswa</Label>
+                                    <Input 
+                                        placeholder="Peserta didik reguler" 
+                                        className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
+                                        value={form.targetSiswa}
+                                        onChange={e => setForm(prev => ({...prev, targetSiswa: e.target.value}))}
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-1.5">
@@ -304,27 +338,16 @@ export default function ModulAjarClient({
                                     ))}
                                 </div>
                             </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sarana & Prasarana</Label>
-                                <Textarea 
-                                    placeholder="e.g. Proyektor, Internet, Lab Biologi..." 
-                                    className="rounded-2xl bg-slate-50 border-0 min-h-[80px] font-medium resize-none shadow-inner"
-                                    value={form.saranaPrasarana}
-                                    onChange={e => setForm(prev => ({...prev, saranaPrasarana: e.target.value}))}
-                                />
-                            </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/50 p-6 border-t">
                             <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 text-lg font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
                                 {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}
-                                Generate Modul AI
+                                Generate Modul Ajar
                             </Button>
                         </CardFooter>
                     </form>
                 </Card>
 
-                {/* Preview Area Placeholder / Result */}
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
                     <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -354,7 +377,7 @@ export default function ModulAjarClient({
                                         animate={{ opacity: 1, y: 0 }}
                                         className="p-8 sm:p-10"
                                     >
-                                        <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight prose-p:font-medium prose-p:leading-relaxed text-slate-700">
+                                        <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-p:font-medium text-slate-700">
                                             <h1 className="text-2xl border-b pb-4 mb-8 text-indigo-700">{generatedResult.title}</h1>
                                             <div className="whitespace-pre-wrap text-sm leading-relaxed">
                                                 {generatedResult.content}
@@ -367,7 +390,7 @@ export default function ModulAjarClient({
                                             <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                                         </div>
                                         <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Pedagogis Siap Bekerja</h3>
-                                        <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">Lengkapi parameter RPP di samping untuk mulai menyusun modul ajar profesional.</p>
+                                        <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">Pilih referensi ATP di samping agar modul ajar Anda sinkron dengan alur tujuan pembelajaran yang sudah dirumuskan.</p>
                                     </div>
                                 )}
                             </AnimatePresence>
@@ -377,7 +400,7 @@ export default function ModulAjarClient({
                                 <LottieAiProcess size={250} />
                                 <div className="text-center space-y-2">
                                     <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyusun Modul Ajar...</p>
-                                    <p className="text-sm font-bold text-indigo-600 uppercase tracking-widest animate-pulse">Analisis Kurikulum Merdeka</p>
+                                    <p className="text-sm font-bold text-indigo-600 uppercase tracking-widest animate-pulse">Sintesis Alur Tujuan Pembelajaran</p>
                                 </div>
                             </div>
                         )}

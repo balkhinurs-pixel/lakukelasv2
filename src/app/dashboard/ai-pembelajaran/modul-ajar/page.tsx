@@ -6,10 +6,16 @@ export default async function ModulAjarPage() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    const [classes, subjects, driveIntegration] = await Promise.all([
+    // Ambil data dasar dan daftar CP/ATP untuk referensi
+    const [classes, subjects, driveIntegration, atpDocsRes] = await Promise.all([
         getClasses(),
         getSubjects(),
-        getGoogleDriveIntegration()
+        getGoogleDriveIntegration(),
+        supabase
+            .from('cp_atp')
+            .select('id, title, subject, phase, class_level')
+            .eq('user_id', user?.id)
+            .order('created_at', { ascending: false })
     ]);
 
     return (
@@ -19,6 +25,7 @@ export default async function ModulAjarPage() {
                 subjects={subjects}
                 driveIntegration={driveIntegration}
                 userProvider={user?.app_metadata?.provider}
+                atpDocuments={atpDocsRes.data || []}
             />
         </div>
     );

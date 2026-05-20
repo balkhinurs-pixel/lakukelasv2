@@ -26,8 +26,27 @@ export async function generateContentAction(input: EducationContentInput) {
  * Server Action khusus untuk Generate Modul Ajar (RPP) Profesional.
  */
 export async function generateModulAjarAction(input: ModulAjarInput) {
+    const supabase = await createClient();
+    
     try {
-        const result = await generateModulAjar(input);
+        let finalAtpContent = "";
+        
+        // Jika guru memilih referensi ATP, ambil kontennya dari database
+        if (input.atp_id) {
+            const { data: atpDoc } = await supabase
+                .from('cp_atp')
+                .select('content')
+                .eq('id', input.atp_id)
+                .single();
+            
+            finalAtpContent = atpDoc?.content || "";
+        }
+
+        const result = await generateModulAjar({
+            ...input,
+            atpContent: finalAtpContent
+        });
+        
         return { success: true, data: result };
     } catch (error: any) {
         console.error("Modul Ajar Generation Error:", error);

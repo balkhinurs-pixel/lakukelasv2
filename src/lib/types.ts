@@ -191,6 +191,7 @@ export interface CpAtpDocument {
   subject: string;
   phase: string;
   class_level: string;
+  content?: string | null;
   drive_file_id?: string | null;
   drive_file_url?: string | null;
   created_at: string;
