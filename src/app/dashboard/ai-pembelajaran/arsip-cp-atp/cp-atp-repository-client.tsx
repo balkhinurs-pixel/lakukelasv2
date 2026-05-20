@@ -30,7 +30,6 @@ import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import type { CpAtpDocument, Profile } from "@/lib/types";
 import { FileCard } from "@/components/ui/file-card-collections";
-import { AppLogo } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import {
@@ -275,9 +274,6 @@ export default function CpAtpRepositoryClient({
                                         <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 border-blue-100">
                                             Fase {doc.phase}
                                         </Badge>
-                                        <div className="p-1.5 rounded-lg bg-indigo-50/50">
-                                            <div className="w-5 h-5 opacity-40"><AppLogo /></div>
-                                        </div>
                                     </div>
                                 </div>
                                 <CardTitle className="text-lg font-black text-slate-900 mt-4 leading-tight group-hover:text-indigo-600 transition-colors">
