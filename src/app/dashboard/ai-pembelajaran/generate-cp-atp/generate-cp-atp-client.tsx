@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { generateCpAtpAction } from "@/lib/actions/ai";
+import { streamCpAtpAction } from "@/lib/actions/ai";
 import { saveCpAtpToDrive } from "@/lib/actions/google-drive";
 import type { Class, Subject, GoogleDriveIntegration, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,7 @@ import { AppLogo } from "@/components/icons";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
+import { readStreamableValue } from 'ai/rsc';
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
@@ -91,6 +92,7 @@ export default function GenerateCpAtpClient({
     const [printing, setPrinting] = React.useState(false);
     const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string } | null>(null);
     const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
+    const [countdown, setCountdown] = React.useState(30);
 
     // AI Error Dialog State
     const [isErrorOpen, setIsErrorOpen] = React.useState(false);
@@ -105,6 +107,18 @@ export default function GenerateCpAtpClient({
         scope: '',
         additionalInfo: ''
     });
+
+    // Countdown Logic
+    React.useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (loading && !generatedResult) {
+            setCountdown(30);
+            interval = setInterval(() => {
+                setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [loading, generatedResult]);
 
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
@@ -144,20 +158,26 @@ export default function GenerateCpAtpClient({
 
         setLoading(true);
         setGeneratedResult(null);
+        setCountdown(30);
 
-        const result = await generateCpAtpAction({
-            subject: form.subject,
-            phase: form.phase,
-            classLevel: form.kelas,
-            scope: form.scope,
-            additionalInfo: form.additionalInfo
-        });
+        try {
+            const { output } = await streamCpAtpAction({
+                subject: form.subject,
+                phase: form.phase,
+                classLevel: form.kelas,
+                scope: form.scope,
+                additionalInfo: form.additionalInfo
+            });
 
-        if (result.success && result.data) {
-            setGeneratedResult(result.data);
+            for await (const delta of readStreamableValue(output)) {
+                if (delta) {
+                    setGeneratedResult(delta as any);
+                }
+            }
+
             toast({ title: "Berhasil!", description: "Pemetaan CP & ATP telah dirumuskan." });
-        } else {
-            const err = result.error || "";
+        } catch (error: any) {
+            const err = error.message || "";
             let type: AiErrorType = 'generic';
             
             if (err.includes('429') || err.toLowerCase().includes('quota')) type = 'quota';
@@ -167,8 +187,9 @@ export default function GenerateCpAtpClient({
             setErrorType(type);
             setErrorMsg(err);
             setIsErrorOpen(true);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleDownloadPdf = async () => {
@@ -261,6 +282,44 @@ export default function GenerateCpAtpClient({
                 errorMessage={errorMsg}
                 onRetry={handleGenerate}
             />
+
+            {/* Premium Loading Overlay */}
+            {loading && !generatedResult && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
+                    <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
+                         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
+                         <div className="relative">
+                             <LottieAiProcess size={220} />
+                             <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent pointer-events-none" />
+                         </div>
+                         <div className="space-y-6">
+                             <div className="space-y-2">
+                                <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>CP & ATP</p>
+                                <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
+                             </div>
+                             <div className="flex flex-col items-center gap-3">
+                                <div className="relative w-20 h-20 flex items-center justify-center">
+                                    <svg className="w-full h-full -rotate-90">
+                                        <circle cx="40" cy="40" r="36" className="stroke-slate-100 fill-none" strokeWidth="6" />
+                                        <motion.circle 
+                                            cx="40" cy="40" r="36" 
+                                            className="stroke-indigo-600 fill-none" 
+                                            strokeWidth="6" 
+                                            strokeLinecap="round"
+                                            strokeDasharray="226"
+                                            initial={{ strokeDashoffset: 226 }}
+                                            animate={{ strokeDashoffset: 226 - (226 * (30 - countdown) / 30) }}
+                                            transition={{ duration: 1, ease: "linear" }}
+                                        />
+                                    </svg>
+                                    <span className="absolute font-mono font-black text-indigo-600 text-xl">{countdown}s</span>
+                                </div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Selesai</p>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            )}
 
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
@@ -483,15 +542,6 @@ export default function GenerateCpAtpClient({
                                 )}
                             </AnimatePresence>
                         </ScrollArea>
-                        {loading && (
-                            <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-30 flex flex-col items-center justify-center gap-6">
-                                <LottieAiProcess size={250} />
-                                <div className="text-center space-y-2">
-                                    <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Merumuskan Alur...</p>
-                                    <p className="text-sm font-bold text-indigo-600 uppercase tracking-widest animate-pulse">Sintesis Kompetensi & Capaian</p>
-                                </div>
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
             </div>

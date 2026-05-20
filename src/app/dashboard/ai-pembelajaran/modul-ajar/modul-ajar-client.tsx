@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { generateModulAjarAction } from "@/lib/actions/ai";
+import { streamModulAjarAction } from "@/lib/actions/ai";
 import { saveModulAjarToDrive, setupGoogleDriveFolder } from "@/lib/actions/google-drive";
 import type { Class, Subject, ModulAjarInput, GoogleDriveIntegration, CpAtpDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
+import { readStreamableValue } from 'ai/rsc';
 
 // --- Data Constants ---
 const mapelByJenjang: Record<string, string[]> = {
@@ -54,25 +55,6 @@ const getClassOptions = (jenjang: string) => {
     if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
     return [];
 };
-
-const PANCASILA_DIMENSIONS = [
-    "Beriman, Bertakwa kepada Tuhan YME, dan Berakhlak Mulia",
-    "Berkebinekaan Global",
-    "Gotong Royong",
-    "Mandiri",
-    "Bernalar Kritis",
-    "Kreatif"
-];
-
-const LEARNING_MODELS = [
-    "Problem Based Learning (PBL)",
-    "Project Based Learning (PjBL)",
-    "Discovery Learning",
-    "Inquiry Learning",
-    "Contextual Teaching and Learning",
-    "Ceramah & Diskusi",
-    "Flipped Classroom"
-];
 
 export default function ModulAjarClient({ 
     classes: _classes, 
@@ -93,6 +75,7 @@ export default function ModulAjarClient({
     const [saving, setSaving] = React.useState(false);
     const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string } | null>(null);
     const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
+    const [countdown, setCountdown] = React.useState(30);
 
     // AI Error Dialog State
     const [isErrorOpen, setIsErrorOpen] = React.useState(false);
@@ -102,6 +85,7 @@ export default function ModulAjarClient({
     const [form, setForm] = React.useState<ModulAjarInput>({
         jenjang: 'SMP / MTs',
         kelas: '7',
+        semester: 'Ganjil',
         subject: 'Bahasa Indonesia',
         topic: '',
         alokasiWaktu: '2 x 45 Menit',
@@ -112,19 +96,22 @@ export default function ModulAjarClient({
         atp_id: 'none'
     });
 
+    // Countdown Logic
+    React.useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (loading && !generatedResult) {
+            setCountdown(30);
+            interval = setInterval(() => {
+                setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [loading, generatedResult]);
+
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
         setForm(prev => ({ ...prev, jenjang: val, kelas: classOpts[0] || '1', subject: mapelOpts[0] || 'Bahasa Indonesia' }));
-    };
-
-    const togglePancasila = (dim: string) => {
-        setForm(prev => ({
-            ...prev,
-            profilPancasila: prev.profilPancasila.includes(dim)
-                ? prev.profilPancasila.filter(item => item !== dim)
-                : [...prev.profilPancasila, dim]
-        }));
     };
 
     const handleConnectDrive = async () => {
@@ -149,17 +136,23 @@ export default function ModulAjarClient({
 
         setLoading(true);
         setGeneratedResult(null);
+        setCountdown(30);
 
-        const payload = { ...form };
-        if (payload.atp_id === 'none') delete payload.atp_id;
+        try {
+            const payload = { ...form };
+            if (payload.atp_id === 'none') delete payload.atp_id;
 
-        const result = await generateModulAjarAction(payload);
+            const { output } = await streamModulAjarAction(payload);
+            
+            for await (const delta of readStreamableValue(output)) {
+                if (delta) {
+                    setGeneratedResult(delta as any);
+                }
+            }
 
-        if (result.success && result.data) {
-            setGeneratedResult(result.data);
             toast({ title: "Berhasil!", description: "Modul Ajar telah dirumuskan." });
-        } else {
-            const err = result.error || "";
+        } catch (error: any) {
+            const err = error.message || "";
             let type: AiErrorType = 'generic';
             if (err.includes('429') || err.toLowerCase().includes('quota')) type = 'quota';
             else if (err.includes('503') || err.toLowerCase().includes('overloaded')) type = 'overloaded';
@@ -167,8 +160,9 @@ export default function ModulAjarClient({
             setErrorType(type);
             setErrorMsg(err);
             setIsErrorOpen(true);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleSaveToDrive = async () => {
@@ -201,6 +195,44 @@ export default function ModulAjarClient({
                 errorMessage={errorMsg}
                 onRetry={handleGenerate}
             />
+
+            {/* Premium Loading Overlay */}
+            {loading && !generatedResult && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
+                    <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
+                         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
+                         <div className="relative">
+                             <LottieAiProcess size={220} />
+                             <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent pointer-events-none" />
+                         </div>
+                         <div className="space-y-6">
+                             <div className="space-y-2">
+                                <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>Modul Ajar</p>
+                                <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
+                             </div>
+                             <div className="flex flex-col items-center gap-3">
+                                <div className="relative w-20 h-20 flex items-center justify-center">
+                                    <svg className="w-full h-full -rotate-90">
+                                        <circle cx="40" cy="40" r="36" className="stroke-slate-100 fill-none" strokeWidth="6" />
+                                        <motion.circle 
+                                            cx="40" cy="40" r="36" 
+                                            className="stroke-indigo-600 fill-none" 
+                                            strokeWidth="6" 
+                                            strokeLinecap="round"
+                                            strokeDasharray="226"
+                                            initial={{ strokeDashoffset: 226 }}
+                                            animate={{ strokeDashoffset: 226 - (226 * (30 - countdown) / 30) }}
+                                            transition={{ duration: 1, ease: "linear" }}
+                                        />
+                                    </svg>
+                                    <span className="absolute font-mono font-black text-indigo-600 text-xl">{countdown}s</span>
+                                </div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Selesai</p>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            )}
 
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />

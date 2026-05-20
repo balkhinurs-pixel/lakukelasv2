@@ -24,48 +24,56 @@ export async function generateContentAction(input: EducationContentInput) {
 }
 
 /**
- * Server Action khusus untuk Generate Modul Ajar (RPP) Profesional.
+ * Server Action khusus untuk Generate Modul Ajar (RPP) Profesional dengan STREAMING.
  */
-export async function generateModulAjarAction(input: ModulAjarInput) {
+export async function streamModulAjarAction(input: ModulAjarInput) {
     const supabase = await createClient();
+    const stream = createStreamableValue();
     
-    try {
-        let finalAtpContent = "";
-        
-        // Jika guru memilih referensi ATP, ambil kontennya dari database
-        if (input.atp_id) {
-            const { data: atpDoc } = await supabase
-                .from('cp_atp')
-                .select('content')
-                .eq('id', input.atp_id)
-                .single();
-            
-            finalAtpContent = atpDoc?.content || "";
-        }
+    (async () => {
+        try {
+            let finalAtpContent = "";
+            if (input.atp_id) {
+                const { data: atpDoc } = await supabase
+                    .from('cp_atp')
+                    .select('content')
+                    .eq('id', input.atp_id)
+                    .single();
+                finalAtpContent = atpDoc?.content || "";
+            }
 
-        const result = await generateModulAjar({
-            ...input,
-            atpContent: finalAtpContent
-        });
-        
-        return { success: true, data: result };
-    } catch (error: any) {
-        console.error("Modul Ajar Generation Error:", error);
-        return { success: false, error: error.message || "Gagal menghasilkan modul ajar." };
-    }
+            const result = await generateModulAjar({
+                ...input,
+                atpContent: finalAtpContent
+            });
+            
+            stream.update(result);
+            stream.done();
+        } catch (error: any) {
+            stream.error(error.message || "Gagal menghasilkan modul ajar.");
+        }
+    })();
+
+    return { output: stream.value };
 }
 
 /**
- * Server Action untuk Generate CP & ATP.
+ * Server Action untuk Generate CP & ATP dengan STREAMING.
  */
-export async function generateCpAtpAction(input: CpAtpInput) {
-    try {
-        const result = await generateCpAtp(input);
-        return { success: true, data: result };
-    } catch (error: any) {
-        console.error("CP/ATP Generation Error:", error);
-        return { success: false, error: error.message || "Gagal menghasilkan pemetaan CP/ATP." };
-    }
+export async function streamCpAtpAction(input: CpAtpInput) {
+    const stream = createStreamableValue();
+
+    (async () => {
+        try {
+            const result = await generateCpAtp(input);
+            stream.update(result);
+            stream.done();
+        } catch (error: any) {
+            stream.error(error.message || "Gagal menghasilkan pemetaan CP/ATP.");
+        }
+    })();
+
+    return { output: stream.value };
 }
 
 /**
