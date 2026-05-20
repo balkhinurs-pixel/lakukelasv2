@@ -39,7 +39,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-// --- Data Constants (Sesuai dengan Soal AI) ---
+// --- Data Constants (Sesuai dengan Soal AI untuk Konsistensi) ---
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
@@ -188,7 +188,7 @@ export default function ModulAjarClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
-            {/* Header Premium Indigo (Sama seperti Soal AI) */}
+            {/* Header Premium Indigo */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 blur-2xl rounded-full -ml-10 -mb-10" />
@@ -220,8 +220,10 @@ export default function ModulAjarClient({
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
                                     <Select value={form.jenjang} onValueChange={handleJenjangChange}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
+                                            <SelectValue placeholder="Pilih Jenjang" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-0 shadow-2xl">
                                             {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
@@ -229,8 +231,10 @@ export default function ModulAjarClient({
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
                                     <Select value={form.kelas} onValueChange={v => setForm({...form, kelas: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
+                                            <SelectValue placeholder="Pilih Kelas" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-0 shadow-2xl">
                                             {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
@@ -240,8 +244,10 @@ export default function ModulAjarClient({
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
                                 <Select value={form.subject} onValueChange={v => setForm({...form, subject: v})}>
-                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm">
+                                        <SelectValue placeholder="Pilih Mapel" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-0 shadow-2xl">
                                         {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
@@ -272,7 +278,7 @@ export default function ModulAjarClient({
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Model Pembelajaran</Label>
                                 <Select value={form.modelPembelajaran} onValueChange={v => setForm({...form, modelPembelajaran: v})}>
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                    <SelectContent className="rounded-xl border-0 shadow-2xl">
                                         {LEARNING_MODELS.map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
