@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { AppLogo } from "@/components/icons";
 
 export default function CpAtpRepositoryClient({ 
     initialDocuments,
@@ -97,18 +98,18 @@ export default function CpAtpRepositoryClient({
         setPrintingDoc(doc);
         setLoadingId(doc.id);
         
-        // Wait for renderer to be placed in DOM
+        // Memberikan waktu sedikit untuk rendering area cetak di DOM
         setTimeout(async () => {
             try {
                 const printableArea = document.getElementById(`printable-cp-atp-${doc.id}`);
-                if (!printableArea) throw new Error("Renderer not found");
+                if (!printableArea) throw new Error("Renderer area not found");
 
                 const canvas = await html2canvas(printableArea, {
                     scale: 2,
                     useCORS: true,
                     backgroundColor: "#ffffff",
                     logging: false,
-                    windowWidth: 794,
+                    windowWidth: 794, // Lebar pixel A4 (210mm)
                 });
 
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -132,15 +133,15 @@ export default function CpAtpRepositoryClient({
                 }
 
                 pdf.save(`${doc.title.replace(/\s+/g, '_')}.pdf`);
-                toast({ title: "Berhasil", description: "PDF berhasil diunduh." });
+                toast({ title: "Berhasil", description: "PDF kurikulum telah diunduh." });
             } catch (error) {
                 console.error(error);
-                toast({ title: "Gagal", description: "Gagal memproses PDF.", variant: "destructive" });
+                toast({ title: "Gagal", description: "Gagal memproses dokumen PDF.", variant: "destructive" });
             } finally {
                 setLoadingId(null);
                 setPrintingDoc(null);
             }
-        }, 500);
+        }, 600);
     };
 
     const resetFilters = () => {
@@ -151,6 +152,7 @@ export default function CpAtpRepositoryClient({
 
     return (
         <div className="space-y-6">
+            {/* Filter Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
@@ -197,41 +199,101 @@ export default function CpAtpRepositoryClient({
                 </div>
             </div>
 
+            {/* Hidden Renderer Area untuk PDF Resmi */}
             {printingDoc && (
                 <div className="fixed left-[-9999px] top-0">
-                    <div id={`printable-cp-atp-${printingDoc.id}`} className="bg-white p-10" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
-                        <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-slate-900">
-                            <div className="w-20 h-20 shrink-0">
-                                {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" />}
+                    <div 
+                        id={`printable-cp-atp-${printingDoc.id}`} 
+                        className="bg-white p-[20mm] text-black" 
+                        style={{ 
+                            width: '210mm', 
+                            minHeight: '297mm', 
+                            fontFamily: '"Times New Roman", Times, serif',
+                            lineHeight: '1.5'
+                        }}
+                    >
+                        {/* Kop Surat Profesional */}
+                        <div className="flex items-center gap-6 mb-4 pb-4 border-b-[3pt] border-black">
+                            <div className="w-[22mm] h-[22mm] flex items-center justify-center shrink-0">
+                                {schoolProfile?.school_logo_url ? (
+                                    <img src={schoolProfile.school_logo_url} alt="Logo" className="w-full h-full object-contain" />
+                                ) : (
+                                    <div className="p-2 opacity-20"><AppLogo /></div>
+                                )}
                             </div>
-                            <div className="flex-1 text-center pr-20">
-                                <h2 className="text-xl font-bold uppercase">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h2>
-                                <p className="text-xs">{schoolProfile?.school_address}</p>
-                                <p className="text-xs">NPSN: {schoolProfile?.npsn}</p>
+                            <div className="flex-1 text-center pr-[22mm]">
+                                <h1 className="text-[16pt] font-bold uppercase leading-tight">
+                                    {schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}
+                                </h1>
+                                {schoolProfile?.npsn && (
+                                    <p className="text-[10pt] font-bold m-0">NPSN: {schoolProfile.npsn}</p>
+                                )}
+                                <p className="text-[9pt] italic m-0">
+                                    {schoolProfile?.school_address || "Alamat belum diatur di profil"}
+                                </p>
+                                <p className="text-[9pt] italic m-0">
+                                    {schoolProfile?.school_email ? `Email: ${schoolProfile.school_email}` : ''}
+                                    {schoolProfile?.school_website ? ` | Web: ${schoolProfile.school_website}` : ''}
+                                </p>
                             </div>
                         </div>
-                        <div className="text-center mb-8">
-                            <h1 className="text-lg font-bold uppercase underline">ALUR TUJUAN PEMBELAJARAN (ATP)</h1>
-                            <p className="text-sm font-bold uppercase mt-1">{printingDoc.title}</p>
+
+                        {/* Judul Dokumen */}
+                        <div className="text-center mb-10">
+                            <h2 className="text-[14pt] font-bold uppercase underline">ALUR TUJUAN PEMBELAJARAN (ATP)</h2>
+                            <p className="text-[11pt] font-bold uppercase mt-1">TAHUN PELAJARAN 2024/2025</p>
                         </div>
-                        <div className="text-xs mb-8 space-y-1">
-                             <p>Mata Pelajaran: <strong>{printingDoc.subject}</strong></p>
-                             <p>Jenjang / Fase: <strong>{printingDoc.class_level} / {printingDoc.phase}</strong></p>
+
+                        {/* Identitas Dokumen */}
+                        <div className="grid grid-cols-2 gap-8 text-[11pt] mb-8">
+                            <div className="space-y-1">
+                                <div className="grid grid-cols-[120px_10px_1fr]">
+                                    <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{printingDoc.subject}</span>
+                                </div>
+                                <div className="grid grid-cols-[120px_10px_1fr]">
+                                    <span className="font-bold">Jenjang / Fase</span><span>:</span><span>{printingDoc.class_level} / {printingDoc.phase}</span>
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <div className="grid grid-cols-[120px_10px_1fr]">
+                                    <span className="font-bold">Penyusun</span><span>:</span><span>{schoolProfile?.full_name || 'GURU PENGAMPU'}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="prose prose-slate max-w-none prose-sm">
+
+                        {/* Konten Utama Kurikulum */}
+                        <div className="prose prose-slate max-w-none text-black prose-sm">
                             <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                    table: (props) => <table className="w-full border-collapse border border-slate-300 my-4" {...props} />,
-                                    th: (props) => <th className="border border-slate-300 bg-slate-50 p-2 font-bold text-center text-[10px]" {...props} />,
-                                    td: (props) => <td className="border border-slate-300 p-2 text-[10px]" {...props} />,
-                                    p: (props) => <p className="text-xs mb-3" style={{ breakInside: 'avoid' }} {...props} />,
-                                    li: (props) => <li className="text-xs mb-1" style={{ breakInside: 'avoid' }} {...props} />,
-                                    tr: (props) => <tr style={{ breakInside: 'avoid' }} {...props} />
+                                    table: ({node, ...props}) => <table className="w-full border-collapse border border-black my-6 text-[10pt]" {...props} />,
+                                    th: ({node, ...props}) => <th className="border border-black bg-slate-100 p-2 font-bold text-center" {...props} />,
+                                    td: ({node, ...props}) => <td className="border border-black p-2 align-top" {...props} />,
+                                    h1: ({node, ...props}) => <h3 className="text-[12pt] font-bold uppercase mt-8 mb-4 border-l-4 border-black pl-3" {...props} />,
+                                    h2: ({node, ...props}) => <h4 className="text-[11pt] font-bold uppercase mt-6 mb-3" {...props} />,
+                                    p: ({node, ...props}) => <p className="text-[10.5pt] mb-4 text-justify" style={{ breakInside: 'avoid' }} {...props} />,
+                                    li: ({node, ...props}) => <li className="text-[10.5pt] mb-1" style={{ breakInside: 'avoid' }} {...props} />,
+                                    tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
                                 }}
                             >
                                 {printingDoc.content || ""}
                             </ReactMarkdown>
+                        </div>
+
+                        {/* Tanda Tangan */}
+                        <div className="mt-16 grid grid-cols-2 gap-10 text-[11pt] px-10" style={{ breakInside: 'avoid' }}>
+                            <div className="text-center">
+                                <p>Mengetahui,</p>
+                                <p className="mb-24">Kepala Sekolah</p>
+                                <p className="font-bold underline">{schoolProfile?.headmaster_name || ".................................."}</p>
+                                <p>NIP. {schoolProfile?.headmaster_nip || "..........................."}</p>
+                            </div>
+                            <div className="text-center">
+                                <p>Dicetak Pada,</p>
+                                <p className="mb-24">{format(new Date(), 'dd MMMM yyyy', { locale: id })}</p>
+                                <p className="font-bold underline">{schoolProfile?.full_name || ".................................."}</p>
+                                <p>NIP. {schoolProfile?.nip || "..........................."}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
