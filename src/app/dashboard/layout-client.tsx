@@ -42,7 +42,8 @@ import {
   Wand2,
   FolderSearch,
   GitBranchPlus,
-  Network
+  Network,
+  BookOpen
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -398,7 +399,7 @@ export default function DashboardLayoutClient({
                         {(isHeadmaster || isAdmin) && (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between px-1">
-                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-shared-widest">Monitoring</p>
+                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Monitoring</p>
                                 <button onClick={() => setIsMonitoringExpanded(!isMonitoringExpanded)} className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1">
                                     {isMonitoringExpanded ? 'Sembunyikan' : 'Tampilkan'}
                                     {isMonitoringExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
