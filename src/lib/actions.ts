@@ -99,7 +99,7 @@ export async function saveJournal(formData: FormData) {
         const { error: updateError } = await supabase.from('journal_entries').update(journalData).eq('id', journalData.id);
         error = updateError;
     } else {
-        const { error: insertError } = await supabase.from('journal_entries').insert(journalData);
+        const { error: insertError = null } = await supabase.from('journal_entries').insert(journalData);
         error = insertError;
     }
     
@@ -229,7 +229,7 @@ export async function saveAttendance(formData: FormData) {
         school_year_id: activeSchoolYearId
     }));
     
-    const { error: insertError } = await supabase.from('attendance_records').insert(recordsToInsert);
+    const { error: insertError = null } = await supabase.from('attendance_records').insert(recordsToInsert);
 
     if (insertError) {
         console.error("Error saving attendance:", insertError);
@@ -293,7 +293,7 @@ export async function saveGrades(formData: FormData) {
         school_year_id: activeSchoolYearId,
     }));
 
-    const { error: insertError } = await supabase.from('grade_records').insert(recordsToInsert);
+    const { error: insertError = null } = await supabase.from('grade_records').insert(recordsToInsert);
 
     if (insertError) {
         console.error("Error saving grades:", insertError);
@@ -305,7 +305,7 @@ export async function saveGrades(formData: FormData) {
 }
 
 
-export async function updateProfile(profileData: { fullName: string, nip: string, pangkat: string, jabatan: string, phoneNumber: string, geminiApiKey?: string }) {
+export async function updateProfile(profileData: { fullName: string, nip: string, pangkat: string, jabatan: string, phoneNumber: string, geminiApiKey?: string, aiModel?: string }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
@@ -316,7 +316,8 @@ export async function updateProfile(profileData: { fullName: string, nip: string
         pangkat: profileData.pangkat,
         jabatan: profileData.jabatan,
         phone_number: profileData.phoneNumber,
-        gemini_api_key: profileData.geminiApiKey
+        gemini_api_key: profileData.geminiApiKey,
+        ai_model: profileData.aiModel
     }).eq('id', user.id);
 
     if (error) {
@@ -585,7 +586,7 @@ export async function createSchoolYear(startYear: number) {
 
     const { error } = await supabase.from('school_years').insert([
         { name: ganjilName, teacher_id: user.id },
-        { name: genapName, teacher_id: user.id }
+        { name: ganjilName, teacher_id: user.id }
     ]);
     
     if (error) {
@@ -647,7 +648,7 @@ export async function recordTeacherAttendance(formData: FormData) {
                 return { success: false, error: "Gagal memperbarui status izin." };
             }
         } else {
-             const { error: insertError } = await supabase
+             const { error: insertError = null } = await supabase
                 .from('teacher_attendance')
                 .insert({
                     teacher_id: user.id,
@@ -799,7 +800,7 @@ export async function saveMaterial(formData: FormData) {
         const { error: updateError } = await supabase.from('materials').update(materialData).eq('id', materialData.id);
         error = updateError;
     } else {
-        const { error: insertError } = await supabase.from('materials').insert(materialData);
+        const { error: insertError = null } = await supabase.from('materials').insert(materialData);
         error = insertError;
     }
 

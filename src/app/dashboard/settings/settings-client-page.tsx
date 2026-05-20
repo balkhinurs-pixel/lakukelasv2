@@ -19,10 +19,11 @@ import type { Profile, GoogleDriveIntegration } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { updateProfile, uploadProfileImage } from "@/lib/actions";
 import { disconnectGoogleDrive, setupGoogleDriveFolder, createTestDocument } from "@/lib/actions/google-drive";
-import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText, AlertTriangle, Key, ExternalLink } from "lucide-react";
+import { Loader2, Phone, Camera, User as UserIcon, ShieldCheck, Globe, Database, Share2, LogOut, RefreshCw, FolderPlus, CheckCircle, FileText, AlertTriangle, Key, ExternalLink, Cpu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function SettingsClientPage({ 
     user, 
@@ -52,10 +53,15 @@ export default function SettingsClientPage({
         jabatan: profile.jabatan || '',
         phoneNumber: profile.phone_number || '',
         geminiApiKey: profile.gemini_api_key || '',
+        aiModel: profile.ai_model || 'gemini-2.5-flash',
     });
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setProfileData({ ...profileData, [e.target.name]: e.target.value });
+    }
+
+    const handleModelChange = (val: string) => {
+        setProfileData({ ...profileData, aiModel: val });
     }
 
     const handleProfileSave = async (e: React.FormEvent) => {
@@ -493,7 +499,7 @@ export default function SettingsClientPage({
                                         <CardTitle className="text-2xl font-bold">Google Gemini AI</CardTitle>
                                     </div>
                                     <CardDescription className="max-w-md">
-                                        Gunakan kunci API Anda sendiri untuk menjalankan fitur AI Pembelajaran. Ini memastikan Anda memiliki kontrol penuh atas penggunaan AI.
+                                        Konfigurasikan akses AI Anda. Gunakan API Key pribadi dan pilih model yang sesuai dengan kebutuhan Anda.
                                     </CardDescription>
                                 </div>
                                 {profileData.geminiApiKey ? (
@@ -507,11 +513,36 @@ export default function SettingsClientPage({
                                 )}
                             </div>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
-                            <div className="space-y-4">
+                        <CardContent className="p-8 space-y-8">
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="aiModel" className="text-slate-700 font-bold flex items-center gap-2">
+                                        <Cpu className="h-4 w-4 text-indigo-500" /> Pilih Model AI
+                                    </Label>
+                                    <Select value={profileData.aiModel} onValueChange={handleModelChange}>
+                                        <SelectTrigger className="h-12 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/10 rounded-xl font-bold text-sm">
+                                            <SelectValue placeholder="Pilih Model" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            <SelectItem value="gemini-2.5-flash" className="py-3">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="font-bold">Gemini 2.5 Flash (Stabil)</span>
+                                                    <span className="text-[10px] text-slate-400">Direkomendasikan untuk penggunaan sehari-hari.</span>
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="gemini-3-flash-preview" className="py-3">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="font-bold">Gemini 3 Flash Preview (Eksperimental)</span>
+                                                    <span className="text-[10px] text-slate-400 text-rose-400">Teknologi terbaru, namun mungkin mengalami Error 503 saat sibuk.</span>
+                                                </div>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="geminiApiKey" className="text-slate-700 font-bold flex items-center gap-2">
-                                        API Key Gemini
+                                        <Key className="h-4 w-4 text-indigo-500" /> API Key Gemini
                                     </Label>
                                     <div className="relative">
                                         <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -550,7 +581,7 @@ export default function SettingsClientPage({
                                 className="w-full sm:w-auto h-12 px-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-200 font-bold"
                             >
                                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
-                                Simpan API Key
+                                Simpan Setelan AI
                             </Button>
                         </CardFooter>
                     </form>
