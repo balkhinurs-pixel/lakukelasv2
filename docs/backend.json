@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Profile": {
@@ -18,7 +17,8 @@
         "headmaster_name": { "type": "string" },
         "headmaster_nip": { "type": "string" },
         "school_logo_url": { "type": "string" },
-        "gemini_api_key": { "type": "string" }
+        "gemini_api_key": { "type": "string" },
+        "ai_model": { "type": "string", "description": "Preferensi model AI yang digunakan (Gemini 2.5/3)" }
       }
     },
     "AiDocument": {

@@ -1,4 +1,3 @@
-
 export interface Profile {
   id: string;
   created_at: string;
@@ -21,6 +20,7 @@ export interface Profile {
   active_school_year_id?: string | null;
   is_homeroom_teacher?: boolean;
   gemini_api_key?: string;
+  ai_model?: string;
 }
 
 export interface Student {

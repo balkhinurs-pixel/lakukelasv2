@@ -1,5 +1,18 @@
 # Log Pembaruan Sistem (Database & Identity)
 
+## Update V44.0: Dynamic AI Model Selector - TERIMPLEMENTASI
+Pembaruan fundamental untuk memungkinkan pengguna memilih model AI yang digunakan sesuai kebutuhan stabilitas atau teknologi terbaru.
+
+### 1. Perubahan Skema SQL (Blueprint)
+Menambahkan kolom baru pada tabel `public.profiles` untuk menyimpan preferensi model:
+- **AI Model**: Identifier model yang dipilih (Gemini 2.5 Flash / Gemini 3 Flash Preview).
+
+### 2. Manfaat Fitur
+- **Redundansi**: Guru dapat beralih ke model lain jika satu model mengalami lonjakan permintaan (Error 503).
+- **Fleksibilitas**: Memungkinkan penggunaan model stabil (2.5) untuk tugas rutin dan model terbaru (3.0) untuk eksperimen.
+
+---
+
 ## Update V27.0: Professional Identity Blueprint - TERIMPLEMENTASI
 Pembaruan fundamental pada skema database untuk mendukung identitas sekolah yang lengkap dan profesional.
 
