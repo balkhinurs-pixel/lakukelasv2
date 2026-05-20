@@ -169,7 +169,7 @@ export default function GenerateCpAtpClient({
                 useCORS: true,
                 backgroundColor: "#ffffff",
                 logging: false,
-                windowWidth: 794, // Standard A4 width in pixels at 96 DPI
+                windowWidth: 794,
             });
 
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -182,11 +182,9 @@ export default function GenerateCpAtpClient({
             let heightLeft = imgHeight;
             let position = 0;
 
-            // Page 1
             pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
             heightLeft -= pageHeight;
 
-            // Subsequent pages
             while (heightLeft >= 0) {
                 position = heightLeft - imgHeight;
                 pdf.addPage();
@@ -207,8 +205,12 @@ export default function GenerateCpAtpClient({
     const handleSaveToDrive = async () => {
         if (!generatedResult) return;
         
-        if (userProvider === 'google' && (!driveIntegration || driveIntegration.status !== 'connected')) {
-            setIsDriveAuthDialogOpen(true);
+        // Pengecekan lebih cerdas: Jika login Google tapi record integrasi belum sinkron, 
+        // tetap izinkan percobaan simpan (setup folder akan dipanggil di backend)
+        if (userProvider === 'google') {
+            // Biarkan lanjut, saveCpAtpToDrive akan mencoba setupGoogleDriveFolder jika folder_id belum ada
+        } else {
+            toast({ title: "Login Google Diperlukan", description: "Fitur simpan Drive hanya untuk pengguna akun Google.", variant: "destructive" });
             return;
         }
 
@@ -230,7 +232,11 @@ export default function GenerateCpAtpClient({
                 )
             });
         } else {
-            toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
+            if (result.error?.toLowerCase().includes('token') || result.error?.toLowerCase().includes('sesi')) {
+                setIsDriveAuthDialogOpen(true);
+            } else {
+                toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
+            }
         }
         setSaving(false);
     };
@@ -260,7 +266,7 @@ export default function GenerateCpAtpClient({
                                 Parameter Kurikulum
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
+                        <CardContent className="p-6 space-y-6">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
@@ -294,7 +300,7 @@ export default function GenerateCpAtpClient({
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                    <Select value={form.kelas} onValueChange={v => setForm({...form, kelas: v})}>
+                                    <Select value={form.kelas} onValueChange={v => setForm(prev => ({...prev, kelas: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
@@ -312,13 +318,12 @@ export default function GenerateCpAtpClient({
                                     onChange={e => setForm({...form, scope: e.target.value})}
                                     required
                                 />
-                                <p className="text-[9px] text-slate-400 font-medium px-1">AI akan merumuskan ATP berdasarkan lingkup ini.</p>
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Konteks Tambahan (Opsional)</Label>
                                 <Textarea 
-                                    placeholder="e.g. Fokuskan pada pembelajaran berdiferensiasi atau integrasikan dengan teknologi digital." 
+                                    placeholder="e.g. Fokuskan pada pembelajaran berdiferensiasi..." 
                                     className="rounded-2xl bg-slate-50 border-0 min-h-[100px] font-medium resize-none shadow-inner"
                                     value={form.additionalInfo}
                                     onChange={e => setForm({...form, additionalInfo: e.target.value})}
@@ -364,7 +369,7 @@ export default function GenerateCpAtpClient({
                             </div>
                         )}
                     </CardHeader>
-                    <CardContent className="flex-grow p-0 bg-slate-50/20">
+                    <CardContent className="flex-grow p-0 bg-slate-50/20 max-h-[70vh]">
                         <ScrollArea className="h-full">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
@@ -386,14 +391,13 @@ export default function GenerateCpAtpClient({
                                                 <div className="flex-1 text-center pr-20">
                                                     <h2 className="text-xl font-bold uppercase leading-tight">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h2>
                                                     {schoolProfile?.npsn && <p className="text-xs font-medium">NPSN: {schoolProfile.npsn}</p>}
-                                                    <p className="text-xs italic">{schoolProfile?.school_address || "Alamat sekolah belum diatur di menu Pengaturan"}</p>
-                                                    <p className="text-xs italic">{schoolProfile?.school_email && `Email: ${schoolProfile.school_email}`} {schoolProfile?.school_website && ` | Web: ${schoolProfile.school_website}`}</p>
+                                                    <p className="text-xs italic">{schoolProfile?.school_address || "Alamat sekolah belum diatur"}</p>
                                                 </div>
                                             </div>
 
                                             <div className="text-center mb-8">
                                                 <h1 className="text-lg font-bold uppercase underline">ALUR TUJUAN PEMBELAJARAN (ATP)</h1>
-                                                <p className="text-sm font-bold uppercase mt-1">TAHUN PELAJARAN {schoolProfile?.active_school_year_id ? '2024/2025' : '---'}</p>
+                                                <p className="text-sm font-bold uppercase mt-1">PEMETAAN KURIKULUM MERDEKA</p>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-4 text-xs mb-8">
@@ -452,7 +456,7 @@ export default function GenerateCpAtpClient({
                                 ) : (
                                     <div className="h-full flex flex-col items-center justify-center p-12 text-center">
                                         <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
-                                            <GitBranchPlus className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700" />
+                                            <GitBranchPlus className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                                         </div>
                                         <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Curricullum Architect</h3>
                                         <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">Masukkan lingkup materi di samping untuk mulai memetakan CP ke dalam ATP yang sistematis.</p>

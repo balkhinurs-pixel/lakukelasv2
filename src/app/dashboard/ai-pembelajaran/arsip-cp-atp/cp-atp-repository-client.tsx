@@ -98,7 +98,7 @@ export default function CpAtpRepositoryClient({
         setPrintingDoc(doc);
         setLoadingId(doc.id);
         
-        // Beri waktu sejenak agar DOM render (karena menggunakan hidden container)
+        // Wait for renderer to be placed in DOM
         setTimeout(async () => {
             try {
                 const printableArea = document.getElementById(`printable-cp-atp-${doc.id}`);
