@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 /**
  * Mendapatkan atau membuat sub-folder secara rekursif.
- * Memungkinkan struktur: LakuKelas AI / Bank Soal / [Jenjang] / Kelas [Angka] / [Mapel]
+ * Memungkinkan struktur: LakuKelas AI / [Type] / [Jenjang] / Kelas [Angka] / [Mapel]
  */
 async function getOrCreateRecursiveFolder(providerToken: string, parentId: string, pathParts: string[]): Promise<string> {
     let currentParentId = parentId;
@@ -73,7 +73,6 @@ export async function setupGoogleDriveFolder() {
             .maybeSingle();
 
         if (existingIntegration?.folder_id) {
-            // Pastikan statusnya tetap 'connected' jika folder sudah ada
             if (existingIntegration.status !== 'connected') {
                 await supabase.from('google_drive_integrations').update({ status: 'connected' }).eq('user_id', userId);
                 revalidatePath('/dashboard/settings');
@@ -111,7 +110,6 @@ export async function setupGoogleDriveFolder() {
             connected_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
 
-        // Paksa server untuk me-render ulang halaman pengaturan
         revalidatePath('/dashboard/settings');
         revalidatePath('/dashboard');
         
@@ -123,7 +121,7 @@ export async function setupGoogleDriveFolder() {
 }
 
 /**
- * Server Action untuk menyimpan naskah ke Google Drive dengan dukungan format PDF atau Google Doc.
+ * Server Action untuk menyimpan naskah ke Google Drive.
  */
 export async function saveNaskahToDrive(
     title: string, 
@@ -131,8 +129,31 @@ export async function saveNaskahToDrive(
     metadata: { jenjang: string, class: string, subject: string },
     format: 'pdf' | 'doc' = 'doc'
 ) {
+    return saveGenericDocumentToDrive(title, content, metadata, 'Bank Soal', format);
+}
+
+/**
+ * Server Action khusus untuk menyimpan Modul Ajar (RPP) ke Google Drive.
+ */
+export async function saveModulAjarToDrive(
+    title: string,
+    content: string,
+    metadata: { jenjang: string, class: string, subject: string }
+) {
+    return saveGenericDocumentToDrive(title, content, metadata, 'Modul Ajar', 'doc');
+}
+
+/**
+ * Fungsi internal untuk menyimpan dokumen ke Drive dengan path yang ditentukan.
+ */
+async function saveGenericDocumentToDrive(
+    title: string, 
+    content: string, 
+    metadata: { jenjang: string, class: string, subject: string },
+    rootFolderName: 'Bank Soal' | 'Modul Ajar' | 'Dokumen AI',
+    format: 'pdf' | 'doc' = 'doc'
+) {
     const supabase = await createClient();
-    
     const { data: userData } = await supabase.auth.getUser();
     const { data: sessionData } = await supabase.auth.getSession();
     
@@ -140,7 +161,7 @@ export async function saveNaskahToDrive(
     const session = sessionData?.session;
     
     if (!user || !session?.provider_token) {
-        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang menggunakan akun Google." };
+        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang." };
     }
 
     const providerToken = session.provider_token;
@@ -159,8 +180,7 @@ export async function saveNaskahToDrive(
             integration = { folder_id: setup.folder_id! };
         }
 
-        // Tentukan path folder berjenjang sesuai PRD V2.2
-        const path = ['Bank Soal', metadata.jenjang, `Kelas ${metadata.class}`, metadata.subject];
+        const path = [rootFolderName, metadata.jenjang, `Kelas ${metadata.class}`, metadata.subject];
         const targetFolderId = await getOrCreateRecursiveFolder(providerToken, integration.folder_id!, path);
 
         const mimeType = format === 'doc' ? 'application/vnd.google-apps.document' : 'application/pdf';
@@ -178,24 +198,9 @@ export async function saveNaskahToDrive(
 
         let body;
         if (format === 'pdf') {
-            body = 
-                delimiter +
-                'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                JSON.stringify(fileMetadata) +
-                delimiter +
-                'Content-Type: application/pdf\r\n' +
-                'Content-Transfer-Encoding: base64\r\n\r\n' +
-                content +
-                close_delim;
+            body = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(fileMetadata) + delimiter + 'Content-Type: application/pdf\r\n' + 'Content-Transfer-Encoding: base64\r\n\r\n' + content + close_delim;
         } else {
-            body = 
-                delimiter +
-                'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                JSON.stringify(fileMetadata) +
-                delimiter +
-                'Content-Type: text/markdown; charset=UTF-8\r\n\r\n' +
-                content +
-                close_delim;
+            body = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(fileMetadata) + delimiter + 'Content-Type: text/markdown; charset=UTF-8\r\n\r\n' + content + close_delim;
         }
 
         const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
@@ -209,38 +214,29 @@ export async function saveNaskahToDrive(
 
         if (!driveResponse.ok) {
             const err = await driveResponse.json();
-            return { success: false, error: err.error?.message || "Gagal upload ke Drive." };
+            return { success: false, error: err.error?.message || "Gagal upload." };
         }
 
         const fileData = await driveResponse.json();
 
-        // Simpan metadata ke tabel repository
         await supabase.from('ai_documents').insert({
             user_id: userId,
-            document_type: 'naskah_ujian',
+            document_type: rootFolderName === 'Bank Soal' ? 'naskah_ujian' : 'rpp',
             title: title,
             class_level: metadata.class,
             subject: metadata.subject,
             drive_file_id: fileData.id,
-            drive_file_url: format === 'doc' 
-                ? `https://docs.google.com/document/d/${fileData.id}/edit`
-                : `https://drive.google.com/file/d/${fileData.id}/view`,
+            drive_file_url: format === 'doc' ? `https://docs.google.com/document/d/${fileData.id}/edit` : `https://drive.google.com/file/d/${fileData.id}/view`,
             drive_folder_id: targetFolderId,
             mime_type: mimeType,
             status: 'created'
         });
 
         revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
-        return { 
-            success: true, 
-            file_url: format === 'doc' 
-                ? `https://docs.google.com/document/d/${fileData.id}/edit`
-                : `https://drive.google.com/file/d/${fileData.id}/view` 
-        };
+        return { success: true, file_url: format === 'doc' ? `https://docs.google.com/document/d/${fileData.id}/edit` : `https://drive.google.com/file/d/${fileData.id}/view` };
 
     } catch (error: any) {
-        console.error("[DRIVE_NASKAH_ERR]", error);
-        return { success: false, error: error.message || "Gagal menyimpan naskah ke Drive." };
+        return { success: false, error: error.message || "Gagal menyimpan ke Drive." };
     }
 }
 
@@ -249,16 +245,8 @@ export async function disconnectGoogleDrive() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase
-        .from('google_drive_integrations')
-        .update({ 
-            status: 'disconnected',
-            disconnected_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
+    const { error } = await supabase.from('google_drive_integrations').update({ status: 'disconnected', disconnected_at: new Date().toISOString() }).eq('user_id', user.id);
     if (error) return { success: false, error: "Gagal memutuskan integrasi." };
-
     revalidatePath('/dashboard/settings');
     revalidatePath('/dashboard');
     return { success: true };
@@ -266,50 +254,23 @@ export async function disconnectGoogleDrive() {
 
 export async function createTestDocument() {
     const supabase = await createClient();
-    
     const { data: userData } = await supabase.auth.getUser();
     const { data: sessionData } = await supabase.auth.getSession();
-    
     const user = userData?.user;
     const session = sessionData?.session;
-    
-    if (!user || !session?.provider_token) {
-        return { success: false, error: "Sesi Google tidak aktif. Harap login ulang menggunakan akun Google." };
-    }
-
+    if (!user || !session?.provider_token) return { success: false, error: "Sesi tidak aktif." };
     const providerToken = session.provider_token;
 
     try {
-        const { data: integration } = await supabase
-            .from('google_drive_integrations')
-            .select('folder_id')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-        if (!integration?.folder_id) return { success: false, error: "Folder aplikasi belum siap. Klik 'Buat Folder Aplikasi' terlebih dahulu." };
-
-        const driveResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${providerToken}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name: "Uji_Coba_LakuKelas.txt",
-                mimeType: 'text/plain',
-                parents: [integration.folder_id],
-                description: 'Koneksi berhasil!'
-            }),
-        });
-
+        const { data: integration } = await supabase.from('google_drive_integrations').select('folder_id').eq('user_id', user.id).maybeSingle();
+        if (!integration?.folder_id) return { success: false, error: "Folder belum siap." };
+        const driveResponse = await fetch('https://www.googleapis.com/drive/v3/files', { method: 'POST', headers: { 'Authorization': `Bearer ${providerToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: "Uji_Coba_LakuKelas.txt", mimeType: 'text/plain', parents: [integration.folder_id], description: 'Koneksi berhasil!' }) });
         if (!driveResponse.ok) return { success: false, error: "Gagal mengirim file uji coba." };
         const fileData = await driveResponse.json();
-        return { success: true, message: "Koneksi Google Drive Aktif! File uji coba berhasil dikirim.", file_url: `https://drive.google.com/file/d/${fileData.id}/view` };
-    } catch (e) {
-        return { success: false, error: "Terjadi kesalahan sistem saat mencoba koneksi Drive." };
-    }
+        return { success: true, message: "Koneksi Google Drive Aktif!", file_url: `https://drive.google.com/file/d/${fileData.id}/view` };
+    } catch (e) { return { success: false, error: "Terjadi kesalahan sistem." }; }
 }
 
 export async function saveAiDocumentToDrive(title: string, content: string, type: string) {
-    return saveNaskahToDrive(title, content, { jenjang: 'Umum', class: 'Umum', subject: 'Dokumen AI' }, 'doc');
+    return saveGenericDocumentToDrive(title, content, { jenjang: 'Umum', class: 'Umum', subject: 'Dokumen AI' }, 'Dokumen AI', 'doc');
 }
