@@ -13,13 +13,16 @@ import {
     Clock,
     ArrowRight,
     Download,
-    Loader2
+    Loader2,
+    X,
+    Filter
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import type { AiDocument } from "@/lib/types";
@@ -52,20 +55,33 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
     const { toast } = useToast();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = React.useState("");
+    const [filterClass, setFilterClass] = React.useState("all");
+    const [filterSubject, setFilterSubject] = React.useState("all");
+
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
     const [renamingDoc, setRenamingDoc] = React.useState<AiDocument | null>(null);
     const [newTitle, setNewTitle] = React.useState("");
 
-    const filteredDocs = initialDocuments.filter(doc => 
-        doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.subject?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // --- Filter Logic ---
+    const uniqueClasses = Array.from(new Set(initialDocuments.map(d => d.class_level).filter(Boolean))).sort();
+    const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
+
+    const filteredDocs = React.useMemo(() => {
+        return initialDocuments.filter(doc => {
+            const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                doc.subject?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesClass = filterClass === "all" || doc.class_level === filterClass;
+            const matchesSubject = filterSubject === "all" || doc.subject === filterSubject;
+            
+            return matchesSearch && matchesClass && matchesSubject;
+        });
+    }, [initialDocuments, searchTerm, filterClass, filterSubject]);
 
     const handleDelete = async (id: string) => {
         setLoadingId(id);
         const result = await deleteAiDocumentAction(id);
         if (result.success) {
-            toast({ title: "Berhasil", description: "Dokumen berhasil dihapus dari daftar dan Google Drive." });
+            toast({ title: "Berhasil", description: "Naskah telah dihapus dari sistem dan Google Drive." });
             router.refresh();
         } else {
             toast({ title: "Gagal", description: result.error, variant: "destructive" });
@@ -96,16 +112,59 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
         }
     };
 
+    const resetFilters = () => {
+        setSearchTerm("");
+        setFilterClass("all");
+        setFilterSubject("all");
+    };
+
     return (
         <div className="space-y-6">
-            <div className="relative max-w-md group px-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
-                <Input 
-                    placeholder="Cari naskah atau mapel..." 
-                    className="pl-12 h-12 rounded-2xl border-slate-200 bg-white shadow-sm font-bold" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            {/* Filter Toolbar */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
+                <div className="relative flex-1 w-full max-w-md group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
+                    <Input 
+                        placeholder="Cari naskah..." 
+                        className="pl-12 h-12 rounded-2xl border-slate-200 bg-white shadow-sm font-bold" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 scrollbar-none">
+                    <Select value={filterClass} onValueChange={setFilterClass}>
+                        <SelectTrigger className="h-12 min-w-[140px] rounded-xl bg-white border-slate-200 font-bold text-xs shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <Users className="h-3.5 w-3.5 text-indigo-600" />
+                                <SelectValue placeholder="Semua Kelas" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                            <SelectItem value="all" className="font-bold">Semua Kelas</SelectItem>
+                            {uniqueClasses.map(c => <SelectItem key={c} value={c!} className="font-bold">Kelas {c}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={filterSubject} onValueChange={setFilterSubject}>
+                        <SelectTrigger className="h-12 min-w-[160px] rounded-xl bg-white border-slate-200 font-bold text-xs shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <BookOpen className="h-3.5 w-3.5 text-indigo-600" />
+                                <SelectValue placeholder="Semua Mapel" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                            <SelectItem value="all" className="font-bold">Semua Mapel</SelectItem>
+                            {uniqueSubjects.map(s => <SelectItem key={s} value={s!} className="font-bold">{s}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+
+                    {(filterClass !== 'all' || filterSubject !== 'all' || searchTerm) && (
+                        <Button variant="ghost" size="icon" onClick={resetFilters} className="h-12 w-12 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50">
+                            <X className="h-5 w-5" />
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
@@ -200,7 +259,9 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
                         <div className="p-10 rounded-[3rem] bg-slate-50 mb-6 group-hover:bg-indigo-50 transition-colors">
                             <FileText className="h-16 w-16" />
                         </div>
-                        <p className="font-black uppercase tracking-[0.2em] text-sm">Belum ada naskah tersimpan</p>
+                        <p className="font-black uppercase tracking-[0.2em] text-sm">
+                            {initialDocuments.length === 0 ? "Belum ada naskah tersimpan" : "Naskah tidak ditemukan"}
+                        </p>
                     </div>
                 )}
             </div>
