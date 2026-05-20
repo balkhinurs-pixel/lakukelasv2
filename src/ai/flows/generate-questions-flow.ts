@@ -1,8 +1,7 @@
 'use server';
 /**
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
- * Menggunakan API Key pribadi milik guru.
- * Menggunakan model Gemini 3 Flash (Terbaru) untuk menghindari bottleneck server.
+ * Menggunakan model dinamis sesuai pilihan guru di database.
  * Dioptimalkan untuk LaTeX (Matematika) dan Unicode Arab.
  */
 
@@ -58,7 +57,7 @@ export async function generateQuestions(input: GenerateQuestionsInput): Promise<
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('gemini_api_key')
+    .select('gemini_api_key, ai_model')
     .eq('id', user.id)
     .single();
 
@@ -66,10 +65,12 @@ export async function generateQuestions(input: GenerateQuestionsInput): Promise<
     throw new Error("API Key Gemini belum diatur di Pengaturan.");
   }
 
-  // Menggunakan Gemini 3 Flash Preview untuk performa dan ketersediaan yang lebih baik
+  // Gunakan model pilihan user atau fallback ke 2.5-flash
+  const selectedModel = profile.ai_model || 'gemini-2.5-flash';
+
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
-    model: googleAI.model('gemini-3-flash-preview'),
+    model: googleAI.model(selectedModel),
   });
 
   const isHighSchool = input.jenjang.includes('SMA') || input.jenjang.includes('SMK') || input.jenjang.includes('MA');

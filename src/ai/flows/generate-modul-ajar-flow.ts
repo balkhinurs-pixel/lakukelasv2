@@ -1,8 +1,7 @@
 'use server';
 /**
  * @fileOverview Flow Genkit untuk pembuatan Modul Ajar (RPP) Kurikulum Merdeka.
- * Dirancang secara profesional untuk mencakup seluruh komponen wajib kurikulum.
- * Menggunakan model Gemini 3 Flash Preview untuk kecepatan dan kestabilan.
+ * Menggunakan model dinamis sesuai preferensi guru.
  */
 
 import { z, genkit } from 'genkit';
@@ -38,7 +37,7 @@ export async function generateModulAjar(input: ModulAjarInput): Promise<ModulAja
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('gemini_api_key, full_name, school_name')
+    .select('gemini_api_key, full_name, school_name, ai_model')
     .eq('id', user.id)
     .single();
 
@@ -46,9 +45,12 @@ export async function generateModulAjar(input: ModulAjarInput): Promise<ModulAja
     throw new Error("API Key Gemini belum diatur di Pengaturan > Integrasi.");
   }
 
+  // Gunakan model pilihan user atau fallback ke 2.5-flash
+  const selectedModel = profile.ai_model || 'gemini-2.5-flash';
+
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
-    model: googleAI.model('gemini-3-flash-preview'),
+    model: googleAI.model(selectedModel),
   });
 
   const response = await ai.generate({

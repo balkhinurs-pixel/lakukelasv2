@@ -1,8 +1,7 @@
 'use server';
 /**
  * @fileOverview Flow Genkit untuk pembuatan konten pendidikan (RPP & Soal).
- * Menggunakan API Key pribadi milik guru yang disimpan di profil database.
- * Menggunakan model Gemini 3 Flash (Terbaru & Stabil).
+ * Menggunakan API Key pribadi dan model pilihan guru yang disimpan di profil database.
  */
 
 import { z, genkit } from 'genkit';
@@ -33,10 +32,10 @@ export async function generateEducationContent(input: EducationContentInput): Pr
 
   if (!user) throw new Error("Sesi login berakhir. Harap masuk kembali.");
 
-  // Ambil API Key dari profil guru
+  // Ambil API Key dan preferensi model dari profil guru
   const { data: profile } = await supabase
     .from('profiles')
-    .select('gemini_api_key')
+    .select('gemini_api_key, ai_model')
     .eq('id', user.id)
     .single();
 
@@ -44,10 +43,13 @@ export async function generateEducationContent(input: EducationContentInput): Pr
     throw new Error("API Key Gemini belum diatur. Harap isi di menu Pengaturan > Integrasi.");
   }
 
-  // Inisialisasi instance Genkit lokal dengan model Gemini 3 Flash Preview
+  // Gunakan model pilihan user atau fallback ke 2.5-flash jika belum diatur
+  const selectedModel = profile.ai_model || 'gemini-2.5-flash';
+
+  // Inisialisasi instance Genkit lokal dengan model dinamis
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
-    model: googleAI.model('gemini-3-flash-preview'),
+    model: googleAI.model(selectedModel),
   });
 
   const response = await ai.generate({
