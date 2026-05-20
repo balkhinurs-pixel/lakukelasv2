@@ -38,7 +38,8 @@ import {
   PanelLeftClose,
   PanelLeft,
   HelpCircle,
-  LifeBuoy
+  LifeBuoy,
+  Wand2
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -77,7 +78,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function DashboardLayoutClient({ 
   children,
@@ -270,6 +271,7 @@ export default function DashboardLayoutClient({
                     </SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
                         <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-indigo-600" />
                         <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
                     </SidebarMenu>
                 </SidebarGroup>
@@ -384,7 +386,7 @@ export default function DashboardLayoutClient({
                         {(isHeadmaster || isAdmin) && (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between px-1">
-                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em]">Monitoring</p>
+                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-shared-widest">Monitoring</p>
                                 <button onClick={() => setIsMonitoringExpanded(!isMonitoringExpanded)} className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1">
                                     {isMonitoringExpanded ? 'Sembunyikan' : 'Tampilkan'}
                                     {isMonitoringExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -431,6 +433,7 @@ export default function DashboardLayoutClient({
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Asisten AI</p>
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="RPP AI" color="bg-purple-700" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
                           </div>
                         </div>
