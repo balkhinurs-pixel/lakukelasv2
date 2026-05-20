@@ -52,6 +52,8 @@ import { id } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useRouter } from "next/navigation";
@@ -61,7 +63,7 @@ import { AppLogo } from "@/components/icons";
 import { LottieSuccess } from "@/components/ui/lottie-success";
 import { createClient } from "@/lib/supabase/client";
 
-// --- MathText Component ---
+// --- MathText Component for LaTeX, Markdown Tables, & Arabic Rendering ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
   // Regex untuk memisahkan teks biasa dan LaTeX
@@ -78,7 +80,26 @@ const MathText = ({ content, className }: { content: string, className?: string 
             </div>
         );
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
-        return <span key={i} className="whitespace-pre-wrap break-words">{part}</span>;
+        
+        return (
+            <ReactMarkdown 
+                key={i} 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                    table: ({node, ...props}) => (
+                        <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm">
+                            <table className="w-full border-collapse text-sm text-center" {...props} />
+                        </div>
+                    ),
+                    th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-3 font-black text-slate-900 uppercase tracking-tight" {...props} />,
+                    td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
+                    tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
+                    p: ({node, ...props}) => <span className="whitespace-pre-wrap" {...props} />
+                }}
+            >
+                {part}
+            </ReactMarkdown>
+        );
       })}
     </div>
   );
@@ -100,8 +121,7 @@ const NaskahPrintTemplate = ({
             className="bg-white text-slate-900" 
             style={{ 
                 position: 'fixed', 
-                left: '-9999px', 
-                top: 0,
+                left: '-9999px',  top: 0,
                 width: '210mm',
                 padding: '0',
                 boxSizing: 'border-box',
@@ -535,8 +555,7 @@ export default function BankSoalClient({
         } catch (e: any) {
             toast({ title: "Error", description: e.message || "Terjadi kesalahan sistem.", variant: "destructive" });
         } finally {
-            setExporting(false);
-        }
+            }
     };
 
     return (

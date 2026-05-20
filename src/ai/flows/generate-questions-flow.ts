@@ -2,7 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
  * Menggunakan model dinamis sesuai pilihan guru di database.
- * Dioptimalkan untuk LaTeX (Matematika) dan Unicode Arab.
+ * Dioptimalkan untuk LaTeX (Matematika), Unicode Arab, dan Tabel Markdown.
  */
 
 import { z, genkit } from 'genkit';
@@ -98,17 +98,26 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
 
-ATURAN PENULISAN RUMUS (PENTING):
+ATURAN PENULISAN (SANGAT PENTING):
 1. MATEMATIKA/SAINS: WAJIB menggunakan LaTeX valid.
    - Pembungkus Inline: Gunakan \\( ... \\). Contoh: \\( x^2 + y^2 = r^2 \\).
    - Pembungkus Blok: Gunakan \\[ ... \\]. Contoh: \\[ \frac{-b \pm \sqrt{b^2-4ac}}{2a} \\].
    - JANGAN gunakan simbol unicode mentah untuk akar, pangkat, atau pecahan kompleks.
 
-2. BAHASA ARAB: WAJIB menggunakan Unicode asli Arab.
+2. DATA TABEL (SANGAT PENTING):
+   - Jika soal memerlukan tabel (seperti pada Statistika), WAJIB menggunakan format **Markdown Table**.
+   - JANGAN gunakan tag HTML <table>.
+   - Contoh format:
+     | Kelas | Frekuensi |
+     | :---: | :---: |
+     | 40-44 | 3 |
+     | 45-49 | 5 |
+
+3. BAHASA ARAB: WAJIB menggunakan Unicode asli Arab.
    - Jika mata pelajaran adalah Bahasa Arab atau PAI, set field "language_direction" ke "rtl".
    - Gunakan harakat yang lengkap untuk jenjang SD/SMP agar mudah dibaca.
 
-3. KUALITAS SOAL:
+4. KUALITAS SOAL:
    - Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
    - Pastikan kunci jawaban (answer) tepat sesuai salah satu key di "options".
    - Berikan pembahasan (explanation) yang logis dan edukatif.

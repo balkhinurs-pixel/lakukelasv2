@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -41,20 +43,44 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
 
-// --- MathText Component for LaTeX & Arabic Rendering ---
+// --- MathText Component for LaTeX, Markdown Tables, & Arabic Rendering ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
+  // Regex untuk memisahkan LaTeX (\(...\) atau \[...\]) dari teks biasa
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
+        // Blok Math
         if (part.startsWith('\\[')) return (
-            <div key={i} className="my-2 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible">
+            <div key={i} className="my-3 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible">
                 <BlockMath math={part.slice(2, -2)} />
             </div>
         );
+        // Inline Math
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
-        return <span key={i} className="whitespace-pre-wrap">{part}</span>;
+        
+        // Teks Biasa & Markdown (Termasuk Tabel)
+        return (
+            <ReactMarkdown 
+                key={i} 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                    table: ({node, ...props}) => (
+                        <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm">
+                            <table className="w-full border-collapse text-sm text-center" {...props} />
+                        </div>
+                    ),
+                    th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-3 font-black text-slate-900 uppercase tracking-tight" {...props} />,
+                    td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
+                    tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
+                    p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed" {...props} />
+                }}
+            >
+                {part}
+            </ReactMarkdown>
+        );
       })}
     </div>
   );
