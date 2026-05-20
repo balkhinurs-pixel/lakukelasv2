@@ -11,6 +11,7 @@ import {
     ArrowRight,
     Filter,
     Trash2,
+    Edit,
     Download,
     Loader2
 } from "lucide-react";
@@ -18,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import type { AiDocument } from "@/lib/types";
@@ -25,7 +27,7 @@ import { FileCard } from "@/components/ui/file-card-collections";
 import { AppLogo } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { deleteAiDocumentAction } from "@/lib/actions/google-drive";
+import { deleteAiDocumentAction, renameAiDocumentAction } from "@/lib/actions/google-drive";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,12 +39,22 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function RppRepositoryClient({ initialDocuments }: { initialDocuments: AiDocument[] }) {
     const { toast } = useToast();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = React.useState("");
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
+    const [renamingDoc, setRenamingUser] = React.useState<AiDocument | null>(null);
+    const [newTitle, setNewTitle] = React.useState("");
 
     const filteredDocs = initialDocuments.filter(doc => 
         doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,7 +65,21 @@ export default function RppRepositoryClient({ initialDocuments }: { initialDocum
         setLoadingId(id);
         const result = await deleteAiDocumentAction(id);
         if (result.success) {
-            toast({ title: "Berhasil", description: "Dokumen berhasil dihapus dari daftar." });
+            toast({ title: "Berhasil", description: "Dokumen berhasil dihapus dari daftar dan Google Drive." });
+            router.refresh();
+        } else {
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        }
+        setLoadingId(null);
+    };
+
+    const handleRename = async () => {
+        if (!renamingDoc || !newTitle.trim()) return;
+        setLoadingId(renamingDoc.id);
+        const result = await renameAiDocumentAction(renamingDoc.id, newTitle.trim());
+        if (result.success) {
+            toast({ title: "Berhasil", description: "Nama RPP telah diperbarui." });
+            setRenamingUser(null);
             router.refresh();
         } else {
             toast({ title: "Gagal", description: result.error, variant: "destructive" });
@@ -62,7 +88,6 @@ export default function RppRepositoryClient({ initialDocuments }: { initialDocum
     };
 
     const handleDownload = (doc: AiDocument) => {
-        // RPP umumnya disimpan sebagai Google Doc, maka arahkan ke link ekspor PDF
         const exportUrl = `https://docs.google.com/document/d/${doc.drive_file_id}/export?format=pdf`;
         window.open(exportUrl, '_blank');
     };
@@ -84,7 +109,15 @@ export default function RppRepositoryClient({ initialDocuments }: { initialDocum
                     filteredDocs.map((doc) => (
                         <Card key={doc.id} className="border-0 shadow-md rounded-[2.5rem] bg-white hover:shadow-xl transition-all duration-300 group overflow-hidden border border-slate-100">
                             <CardHeader className="pb-3 relative">
-                                <div className="absolute top-4 right-4 z-10">
+                                <div className="absolute top-4 right-4 z-10 flex gap-1">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-9 w-9 rounded-full text-slate-300 hover:text-indigo-600 hover:bg-indigo-50"
+                                        onClick={() => { setRenamingUser(doc); setNewTitle(doc.title); }}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50">
@@ -95,7 +128,7 @@ export default function RppRepositoryClient({ initialDocuments }: { initialDocum
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle className="text-xl font-bold">Hapus RPP?</AlertDialogTitle>
                                                 <AlertDialogDescription className="font-medium">
-                                                    Dokumen "<span className="font-bold text-slate-900">{doc.title}</span>" akan dihapus dari aplikasi. File di Google Drive tetap ada.
+                                                    Dokumen "<span className="font-bold text-slate-900">{doc.title}</span>" akan dihapus permanen dari sistem dan Google Drive.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter className="flex flex-row gap-2 mt-4">
@@ -112,7 +145,7 @@ export default function RppRepositoryClient({ initialDocuments }: { initialDocum
                                     <div className="w-16 h-16 shrink-0 flex items-center justify-center">
                                         <FileCard formatFile="doc" className="scale-90" />
                                     </div>
-                                    <div className="flex flex-col items-end gap-2 pr-8">
+                                    <div className="flex flex-col items-end gap-2 pr-12">
                                         <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 border-blue-100">
                                             Editable Doc
                                         </Badge>
@@ -167,6 +200,31 @@ export default function RppRepositoryClient({ initialDocuments }: { initialDocum
                     </div>
                 )}
             </div>
+
+            {/* Rename Dialog */}
+            <Dialog open={!!renamingDoc} onOpenChange={(open) => !open && setRenamingUser(null)}>
+                <DialogContent className="rounded-3xl border-0 shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold">Ubah Nama RPP</DialogTitle>
+                        <DialogDescription>Masukkan nama baru untuk file RPP ini.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Judul Baru</Label>
+                        <Input 
+                            value={newTitle} 
+                            onChange={(e) => setNewTitle(e.target.value)} 
+                            placeholder="Judul RPP..." 
+                            className="h-12 rounded-xl font-bold"
+                        />
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button variant="ghost" onClick={() => setRenamingUser(null)} className="flex-1 rounded-xl">Batal</Button>
+                        <Button onClick={handleRename} disabled={loadingId === renamingDoc?.id} className="flex-1 rounded-xl bg-indigo-600 font-bold">
+                            {loadingId === renamingDoc?.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Simpan Nama"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

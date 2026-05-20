@@ -241,6 +241,109 @@ async function saveGenericDocumentToDrive(
     }
 }
 
+/**
+ * Server Action untuk menghapus dokumen AI (Sinkron dengan Google Drive).
+ */
+export async function deleteAiDocumentAction(id: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    try {
+        // 1. Ambil metadata untuk mendapatkan drive_file_id
+        const { data: doc } = await supabase
+            .from('ai_documents')
+            .select('drive_file_id')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (doc?.drive_file_id) {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const providerToken = sessionData.session?.provider_token;
+
+            if (providerToken) {
+                // 2. Hapus file di Google Drive
+                await fetch(`https://www.googleapis.com/drive/v3/files/${doc.drive_file_id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${providerToken}` }
+                });
+            }
+        }
+
+        // 3. Hapus dari database Supabase
+        const { error } = await supabase
+            .from('ai_documents')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
+        revalidatePath('/dashboard/ai-pembelajaran/arsip-rpp');
+        return { success: true };
+    } catch (error: any) {
+        console.error("[DELETE_DOC_ERR]", error);
+        return { success: false, error: "Gagal menghapus dokumen." };
+    }
+}
+
+/**
+ * Server Action untuk mengubah nama dokumen AI (Sinkron dengan Google Drive).
+ */
+export async function renameAiDocumentAction(id: string, newTitle: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
+
+    try {
+        // 1. Ambil metadata dokumen
+        const { data: doc } = await supabase
+            .from('ai_documents')
+            .select('drive_file_id, mime_type')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (doc?.drive_file_id) {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const providerToken = sessionData.session?.provider_token;
+
+            if (providerToken) {
+                // Berikan ekstensi yang sesuai jika bukan Google Apps Document
+                const finalName = doc.mime_type?.includes('google-apps') ? newTitle : `${newTitle}.pdf`;
+
+                // 2. Update nama file di Google Drive
+                await fetch(`https://www.googleapis.com/drive/v3/files/${doc.drive_file_id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': `Bearer ${providerToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: finalName })
+                });
+            }
+        }
+
+        // 3. Update judul di database
+        const { error } = await supabase
+            .from('ai_documents')
+            .update({ title: newTitle })
+            .eq('id', id)
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
+        revalidatePath('/dashboard/ai-pembelajaran/arsip-rpp');
+        return { success: true };
+    } catch (error: any) {
+        console.error("[RENAME_DOC_ERR]", error);
+        return { success: false, error: "Gagal mengubah nama dokumen." };
+    }
+}
+
 export async function disconnectGoogleDrive() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -250,24 +353,6 @@ export async function disconnectGoogleDrive() {
     if (error) return { success: false, error: "Gagal memutuskan integrasi." };
     revalidatePath('/dashboard/settings');
     revalidatePath('/dashboard');
-    return { success: true };
-}
-
-export async function deleteAiDocumentAction(id: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Tidak terautentikasi" };
-
-    const { error } = await supabase
-        .from('ai_documents')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-    if (error) return { success: false, error: "Gagal menghapus data." };
-
-    revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
-    revalidatePath('/dashboard/ai-pembelajaran/arsip-rpp');
     return { success: true };
 }
 

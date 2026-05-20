@@ -9,6 +9,7 @@ import {
     BookOpen, 
     Users,
     Trash2,
+    Edit,
     Clock,
     ArrowRight,
     Download,
@@ -18,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import type { AiDocument } from "@/lib/types";
@@ -25,7 +27,7 @@ import { FileCard } from "@/components/ui/file-card-collections";
 import { AppLogo } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { deleteAiDocumentAction } from "@/lib/actions/google-drive";
+import { deleteAiDocumentAction, renameAiDocumentAction } from "@/lib/actions/google-drive";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,12 +39,22 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function NaskahRepositoryClient({ initialDocuments }: { initialDocuments: AiDocument[] }) {
     const { toast } = useToast();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = React.useState("");
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
+    const [renamingDoc, setRenamingDoc] = React.useState<AiDocument | null>(null);
+    const [newTitle, setNewTitle] = React.useState("");
 
     const filteredDocs = initialDocuments.filter(doc => 
         doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,7 +65,21 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
         setLoadingId(id);
         const result = await deleteAiDocumentAction(id);
         if (result.success) {
-            toast({ title: "Berhasil", description: "Dokumen berhasil dihapus dari daftar." });
+            toast({ title: "Berhasil", description: "Dokumen berhasil dihapus dari daftar dan Google Drive." });
+            router.refresh();
+        } else {
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        }
+        setLoadingId(null);
+    };
+
+    const handleRename = async () => {
+        if (!renamingDoc || !newTitle.trim()) return;
+        setLoadingId(renamingDoc.id);
+        const result = await renameAiDocumentAction(renamingDoc.id, newTitle.trim());
+        if (result.success) {
+            toast({ title: "Berhasil", description: "Judul naskah telah diperbarui." });
+            setRenamingDoc(null);
             router.refresh();
         } else {
             toast({ title: "Gagal", description: result.error, variant: "destructive" });
@@ -62,12 +88,10 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
     };
 
     const handleDownload = (doc: AiDocument) => {
-        // Jika format adalah Google Doc, arahkan ke link ekspor PDF
         if (doc.mime_type?.includes('google-apps.document')) {
             const exportUrl = `https://docs.google.com/document/d/${doc.drive_file_id}/export?format=pdf`;
             window.open(exportUrl, '_blank');
         } else {
-            // Jika format lain (PDF asli), buka file di drive
             window.open(doc.drive_file_url || "#", '_blank');
         }
     };
@@ -89,7 +113,15 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
                     filteredDocs.map((doc) => (
                         <Card key={doc.id} className="border-0 shadow-md rounded-[2.5rem] bg-white hover:shadow-xl transition-all duration-300 group overflow-hidden border border-slate-100">
                             <CardHeader className="pb-3 relative">
-                                <div className="absolute top-4 right-4 z-10">
+                                <div className="absolute top-4 right-4 z-10 flex gap-1">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-9 w-9 rounded-full text-slate-300 hover:text-indigo-600 hover:bg-indigo-50"
+                                        onClick={() => { setRenamingDoc(doc); setNewTitle(doc.title); }}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50">
@@ -100,7 +132,7 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle className="text-xl font-bold">Hapus Naskah?</AlertDialogTitle>
                                                 <AlertDialogDescription className="font-medium">
-                                                    Dokumen "<span className="font-bold text-slate-900">{doc.title}</span>" akan dihapus dari aplikasi. File di Google Drive tetap ada.
+                                                    Dokumen "<span className="font-bold text-slate-900">{doc.title}</span>" akan dihapus permanen dari sistem dan Google Drive.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter className="flex flex-row gap-2 mt-4">
@@ -117,7 +149,7 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
                                     <div className="w-16 h-16 shrink-0 flex items-center justify-center">
                                         <FileCard formatFile={doc.mime_type?.includes('pdf') ? 'pdf' : 'doc'} className="scale-90" />
                                     </div>
-                                    <div className="flex flex-col items-end gap-2 pr-8">
+                                    <div className="flex flex-col items-end gap-2 pr-12">
                                         <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 border-emerald-100">
                                             {doc.mime_type?.includes('pdf') ? 'Original PDF' : 'Editable Doc'}
                                         </Badge>
@@ -172,6 +204,31 @@ export default function NaskahRepositoryClient({ initialDocuments }: { initialDo
                     </div>
                 )}
             </div>
+
+            {/* Rename Dialog */}
+            <Dialog open={!!renamingDoc} onOpenChange={(open) => !open && setRenamingDoc(null)}>
+                <DialogContent className="rounded-3xl border-0 shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold">Ubah Judul Naskah</DialogTitle>
+                        <DialogDescription>Masukkan nama baru untuk file naskah soal ini.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Judul Baru</Label>
+                        <Input 
+                            value={newTitle} 
+                            onChange={(e) => setNewTitle(e.target.value)} 
+                            placeholder="Judul Naskah..." 
+                            className="h-12 rounded-xl font-bold"
+                        />
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button variant="ghost" onClick={() => setRenamingDoc(null)} className="flex-1 rounded-xl">Batal</Button>
+                        <Button onClick={handleRename} disabled={loadingId === renamingDoc?.id} className="flex-1 rounded-xl bg-indigo-600 font-bold">
+                            {loadingId === renamingDoc?.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Simpan Judul"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
