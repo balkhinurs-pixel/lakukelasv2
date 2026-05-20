@@ -46,12 +46,13 @@ import remarkGfm from 'remark-gfm';
 import { AppLogo } from "@/components/icons";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
     'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
-    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
 };
 
 const getClassOptions = (jenjang: string) => {
@@ -91,6 +92,11 @@ export default function GenerateCpAtpClient({
     const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string } | null>(null);
     const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
 
+    // AI Error Dialog State
+    const [isErrorOpen, setIsErrorOpen] = React.useState(false);
+    const [errorType, setErrorType] = React.useState<AiErrorType>(null);
+    const [errorMsg, setErrorMsg] = React.useState("");
+
     const [form, setForm] = React.useState({
         jenjang: 'SMP / MTs',
         kelas: '7',
@@ -129,8 +135,8 @@ export default function GenerateCpAtpClient({
         if (error) toast({ title: "Gagal", description: "Terjadi kesalahan sistem.", variant: "destructive" });
     };
 
-    const handleGenerate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleGenerate = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!form.scope) {
             toast({ title: "Materi Kosong", description: "Mohon isi elemen CP atau lingkup materi.", variant: "destructive" });
             return;
@@ -151,7 +157,16 @@ export default function GenerateCpAtpClient({
             setGeneratedResult(result.data);
             toast({ title: "Berhasil!", description: "Pemetaan CP & ATP telah dirumuskan." });
         } else {
-            toast({ title: "Gagal", description: result.error || "Gagal menghubungi AI.", variant: "destructive" });
+            const err = result.error || "";
+            let type: AiErrorType = 'generic';
+            
+            if (err.includes('429') || err.toLowerCase().includes('quota')) type = 'quota';
+            else if (err.includes('503') || err.toLowerCase().includes('overloaded')) type = 'overloaded';
+            else if (err.toLowerCase().includes('api key')) type = 'api_key';
+
+            setErrorType(type);
+            setErrorMsg(err);
+            setIsErrorOpen(true);
         }
         setLoading(false);
     };
@@ -205,11 +220,7 @@ export default function GenerateCpAtpClient({
     const handleSaveToDrive = async () => {
         if (!generatedResult) return;
         
-        // Pengecekan lebih cerdas: Jika login Google tapi record integrasi belum sinkron, 
-        // tetap izinkan percobaan simpan (setup folder akan dipanggil di backend)
-        if (userProvider === 'google') {
-            // Biarkan lanjut, saveCpAtpToDrive akan mencoba setupGoogleDriveFolder jika folder_id belum ada
-        } else {
+        if (userProvider !== 'google') {
             toast({ title: "Login Google Diperlukan", description: "Fitur simpan Drive hanya untuk pengguna akun Google.", variant: "destructive" });
             return;
         }
@@ -243,6 +254,14 @@ export default function GenerateCpAtpClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
+            <AiErrorDialog 
+                open={isErrorOpen} 
+                onOpenChange={setIsErrorOpen} 
+                errorType={errorType} 
+                errorMessage={errorMsg}
+                onRetry={handleGenerate}
+            />
+
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
                 <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
