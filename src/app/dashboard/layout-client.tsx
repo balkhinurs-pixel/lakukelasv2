@@ -57,8 +57,8 @@ import {
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuButton,
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
@@ -123,17 +123,20 @@ export default function DashboardLayoutClient({
           isActive={isActive}
           tooltip={label}
           className={cn(
-            "rounded-xl transition-all duration-300 h-11 mb-1 group/item",
+            "rounded-xl transition-all duration-300 h-11 mb-1 group/item relative",
             isActive 
-              ? "bg-white/10 text-white shadow-lg shadow-black/10 scale-[1.02]" 
-              : "hover:bg-white/5 text-indigo-100/60 hover:text-white"
+              ? "bg-white text-indigo-700 shadow-lg scale-[1.02]" 
+              : "hover:bg-white/10 text-indigo-100/70 hover:text-white",
+            isCollapsed && isActive && "rounded-r-none rounded-l-2xl translate-x-1"
           )}
         >
-          <Link href={href} className="flex items-center overflow-hidden">
+          <Link href={href} className={cn(
+            "flex items-center w-full",
+            isCollapsed ? "justify-center" : "justify-start px-2"
+          )}>
             <Icon className={cn(
                 "w-5 h-5 shrink-0 transition-transform duration-300", 
-                !isActive && color,
-                isActive && "text-white",
+                isActive ? "text-indigo-600" : color,
                 !isActive && "group-hover/item:scale-110",
                 !isCollapsed && "mr-3"
             )} />
@@ -383,7 +386,7 @@ export default function DashboardLayoutClient({
                         <div className="flex items-center gap-4 p-2">
                             <Avatar className="h-14 w-14 border-2 border-indigo-100 shadow-md">
                                 <AvatarImage src={profile?.avatar_url} />
-                                <AvatarFallback className="bg-indigo-600 text-white font-bold">{profile?.full_name?.charAt(0)}</AvatarFallback>
+                                <AvatarFallback className="bg-indigo-600 text-white font-bold">{profile?.full_name?.charAt(0) || 'G'}</AvatarFallback>
                             </Avatar>
                             <div className="min-w-0 flex-1">
                                 <h3 className="text-xl font-black text-slate-900 leading-tight truncate">{profile?.full_name}</h3>

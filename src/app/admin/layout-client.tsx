@@ -104,17 +104,21 @@ export default function AdminLayoutClient({
           isActive={isActive}
           tooltip={label}
           className={cn(
-            "rounded-xl transition-all duration-300 h-11 mb-1",
+            "rounded-xl transition-all duration-300 h-11 mb-1 relative group/item",
             isActive 
-              ? "bg-white/10 text-white shadow-lg shadow-black/10 scale-[1.02]" 
-              : "hover:bg-white/5 text-purple-100/60 hover:text-white"
+              ? "bg-white text-purple-700 shadow-lg scale-[1.02]" 
+              : "hover:bg-white/10 text-purple-100/70 hover:text-white",
+            isCollapsed && isActive && "rounded-r-none rounded-l-2xl translate-x-1"
           )}
         >
-          <Link href={href} className="flex items-center overflow-hidden">
+          <Link href={href} className={cn(
+              "flex items-center w-full",
+              isCollapsed ? "justify-center" : "justify-start px-2"
+          )}>
             <Icon className={cn(
                 "w-5 h-5 shrink-0 transition-transform duration-300", 
-                !isActive && color,
-                isActive && "text-white",
+                isActive ? "text-purple-600" : color,
+                !isActive && "group-hover/item:scale-110",
                 !isCollapsed && "mr-3"
             )} />
             {!isCollapsed && <span className="font-bold">{label}</span>}
