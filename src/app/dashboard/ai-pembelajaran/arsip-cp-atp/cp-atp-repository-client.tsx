@@ -63,10 +63,6 @@ export default function CpAtpRepositoryClient({
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
     const [printingDoc, setPrintingDoc] = React.useState<CpAtpDocument | null>(null);
 
-    // --- Filter Logic ---
-    const phases = Array.from(new Set(initialDocuments.map(d => d.phase).filter(Boolean))).sort();
-    const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
-
     const filteredDocs = React.useMemo(() => {
         return initialDocuments.filter(doc => {
             const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,6 +73,9 @@ export default function CpAtpRepositoryClient({
             return matchesSearch && matchesPhase && matchesSubject;
         });
     }, [initialDocuments, searchTerm, filterPhase, filterSubject]);
+
+    const phases = Array.from(new Set(initialDocuments.map(d => d.phase).filter(Boolean))).sort();
+    const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
 
     const handleDelete = async (id: string) => {
         setLoadingId(id);
@@ -98,7 +97,6 @@ export default function CpAtpRepositoryClient({
         setPrintingDoc(doc);
         setLoadingId(doc.id);
         
-        // Memberikan waktu sedikit untuk rendering area cetak di DOM
         setTimeout(async () => {
             try {
                 const printableArea = document.getElementById(`printable-cp-atp-${doc.id}`);
@@ -109,7 +107,7 @@ export default function CpAtpRepositoryClient({
                     useCORS: true,
                     backgroundColor: "#ffffff",
                     logging: false,
-                    windowWidth: 794, // Lebar pixel A4 (210mm)
+                    windowWidth: 794,
                 });
 
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -141,7 +139,7 @@ export default function CpAtpRepositoryClient({
                 setLoadingId(null);
                 setPrintingDoc(null);
             }
-        }, 600);
+        }, 800);
     };
 
     const resetFilters = () => {
@@ -152,7 +150,6 @@ export default function CpAtpRepositoryClient({
 
     return (
         <div className="space-y-6">
-            {/* Filter Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
@@ -199,7 +196,6 @@ export default function CpAtpRepositoryClient({
                 </div>
             </div>
 
-            {/* Hidden Renderer Area untuk PDF Resmi */}
             {printingDoc && (
                 <div className="fixed left-[-9999px] top-0">
                     <div 
@@ -209,19 +205,18 @@ export default function CpAtpRepositoryClient({
                             width: '210mm', 
                             minHeight: '297mm', 
                             fontFamily: '"Times New Roman", Times, serif',
-                            lineHeight: '1.5'
+                            lineHeight: '1.45'
                         }}
                     >
-                        {/* Kop Surat Profesional */}
                         <div className="flex items-center gap-6 mb-4 pb-4 border-b-[3pt] border-black">
-                            <div className="w-[22mm] h-[22mm] flex items-center justify-center shrink-0">
+                            <div className="w-[25mm] h-[25mm] flex items-center justify-center shrink-0">
                                 {schoolProfile?.school_logo_url ? (
                                     <img src={schoolProfile.school_logo_url} alt="Logo" className="w-full h-full object-contain" />
                                 ) : (
                                     <div className="p-2 opacity-20"><AppLogo /></div>
                                 )}
                             </div>
-                            <div className="flex-1 text-center pr-[22mm]">
+                            <div className="flex-1 text-center pr-[25mm]">
                                 <h1 className="text-[16pt] font-bold uppercase leading-tight">
                                     {schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}
                                 </h1>
@@ -238,13 +233,11 @@ export default function CpAtpRepositoryClient({
                             </div>
                         </div>
 
-                        {/* Judul Dokumen */}
                         <div className="text-center mb-10">
                             <h2 className="text-[14pt] font-bold uppercase underline">ALUR TUJUAN PEMBELAJARAN (ATP)</h2>
                             <p className="text-[11pt] font-bold uppercase mt-1">TAHUN PELAJARAN 2024/2025</p>
                         </div>
 
-                        {/* Identitas Dokumen */}
                         <div className="grid grid-cols-2 gap-8 text-[11pt] mb-8">
                             <div className="space-y-1">
                                 <div className="grid grid-cols-[120px_10px_1fr]">
@@ -261,14 +254,13 @@ export default function CpAtpRepositoryClient({
                             </div>
                         </div>
 
-                        {/* Konten Utama Kurikulum */}
                         <div className="prose prose-slate max-w-none text-black prose-sm">
                             <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                    table: ({node, ...props}) => <table className="w-full border-collapse border border-black my-6 text-[10pt]" {...props} />,
-                                    th: ({node, ...props}) => <th className="border border-black bg-slate-100 p-2 font-bold text-center" {...props} />,
-                                    td: ({node, ...props}) => <td className="border border-black p-2 align-top" {...props} />,
+                                    table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-black my-6 text-[10pt]" {...props} />,
+                                    th: ({node, ...props}) => <th className="border-2 border-black bg-slate-100 p-2 font-bold text-center" {...props} />,
+                                    td: ({node, ...props}) => <td className="border-2 border-black p-2 align-top" {...props} />,
                                     h1: ({node, ...props}) => <h3 className="text-[12pt] font-bold uppercase mt-8 mb-4 border-l-4 border-black pl-3" {...props} />,
                                     h2: ({node, ...props}) => <h4 className="text-[11pt] font-bold uppercase mt-6 mb-3" {...props} />,
                                     p: ({node, ...props}) => <p className="text-[10.5pt] mb-4 text-justify" style={{ breakInside: 'avoid' }} {...props} />,
@@ -280,7 +272,6 @@ export default function CpAtpRepositoryClient({
                             </ReactMarkdown>
                         </div>
 
-                        {/* Tanda Tangan */}
                         <div className="mt-16 grid grid-cols-2 gap-10 text-[11pt] px-10" style={{ breakInside: 'avoid' }}>
                             <div className="text-center">
                                 <p>Mengetahui,</p>

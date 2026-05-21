@@ -191,6 +191,7 @@ export async function saveCpAtpToDrive(
         const delimiter = "\r\n--" + boundary + "\r\n";
         const close_delim = "\r\n--" + boundary + "--";
 
+        // Pastikan Markdown standard agar Google Docs merender tabel dengan baik
         const body = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(fileMetadata) + delimiter + 'Content-Type: text/markdown; charset=UTF-8\r\n\r\n' + content + close_delim;
 
         const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
@@ -336,7 +337,6 @@ export async function deleteAiDocumentAction(id: string) {
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
     try {
-        // 1. Ambil metadata untuk mendapatkan drive_file_id
         const { data: doc } = await supabase
             .from('ai_documents')
             .select('drive_file_id')
@@ -349,7 +349,6 @@ export async function deleteAiDocumentAction(id: string) {
             const providerToken = sessionData.session?.provider_token;
 
             if (providerToken) {
-                // 2. Hapus file di Google Drive
                 await fetch(`https://www.googleapis.com/drive/v3/files/${doc.drive_file_id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${providerToken}` }
@@ -357,7 +356,6 @@ export async function deleteAiDocumentAction(id: string) {
             }
         }
 
-        // 3. Hapus dari database Supabase
         const { error } = await supabase
             .from('ai_documents')
             .delete()
@@ -384,7 +382,6 @@ export async function renameAiDocumentAction(id: string, newTitle: string) {
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
     try {
-        // 1. Ambil metadata dokumen
         const { data: doc } = await supabase
             .from('ai_documents')
             .select('drive_file_id, mime_type')
@@ -397,10 +394,8 @@ export async function renameAiDocumentAction(id: string, newTitle: string) {
             const providerToken = sessionData.session?.provider_token;
 
             if (providerToken) {
-                // Berikan ekstensi yang sesuai jika bukan Google Apps Document
                 const finalName = doc.mime_type?.includes('google-apps') ? newTitle : `${newTitle}.pdf`;
 
-                // 2. Update nama file di Google Drive
                 await fetch(`https://www.googleapis.com/drive/v3/files/${doc.drive_file_id}`, {
                     method: 'PATCH',
                     headers: { 
@@ -412,7 +407,6 @@ export async function renameAiDocumentAction(id: string, newTitle: string) {
             }
         }
 
-        // 3. Update judul di database
         const { error } = await supabase
             .from('ai_documents')
             .update({ title: newTitle })

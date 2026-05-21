@@ -94,7 +94,6 @@ export default function GenerateCpAtpClient({
     const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
     const [countdown, setCountdown] = React.useState(30);
 
-    // AI Error Dialog State
     const [isErrorOpen, setIsErrorOpen] = React.useState(false);
     const [errorType, setErrorType] = React.useState<AiErrorType>(null);
     const [errorMsg, setErrorMsg] = React.useState("");
@@ -108,7 +107,6 @@ export default function GenerateCpAtpClient({
         additionalInfo: ''
     });
 
-    // Countdown Logic
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
         if (loading && !generatedResult) {
@@ -170,20 +168,16 @@ export default function GenerateCpAtpClient({
             });
 
             for await (const delta of readStreamableValue(output)) {
-                if (delta) {
-                    setGeneratedResult(delta as any);
-                }
+                if (delta) setGeneratedResult(delta as any);
             }
 
             toast({ title: "Berhasil!", description: "Pemetaan CP & ATP telah dirumuskan." });
         } catch (error: any) {
             const err = error.message || "";
             let type: AiErrorType = 'generic';
-            
             if (err.includes('429') || err.toLowerCase().includes('quota')) type = 'quota';
             else if (err.includes('503') || err.toLowerCase().includes('overloaded')) type = 'overloaded';
             else if (err.toLowerCase().includes('api key')) type = 'api_key';
-
             setErrorType(type);
             setErrorMsg(err);
             setIsErrorOpen(true);
@@ -240,77 +234,44 @@ export default function GenerateCpAtpClient({
 
     const handleSaveToDrive = async () => {
         if (!generatedResult) return;
-        
         if (userProvider !== 'google') {
             toast({ title: "Login Google Diperlukan", description: "Fitur simpan Drive hanya untuk pengguna akun Google.", variant: "destructive" });
             return;
         }
-
         setSaving(true);
         const result = await saveCpAtpToDrive(generatedResult.title, generatedResult.content, {
             phase: form.phase,
             class: form.kelas,
             subject: form.subject
         });
-
         if (result.success) {
             toast({ 
-                title: "Tersimpan di Drive!", 
+                title: "Tersimpan!", 
                 description: "Pemetaan kurikulum telah diarsipkan.",
-                action: (
-                    <Button variant="outline" size="sm" asChild>
-                        <a href={result.file_url || "#"} target="_blank" rel="noopener noreferrer">Buka File</a>
-                    </Button>
-                )
+                action: <Button variant="outline" size="sm" asChild><a href={result.file_url || "#"} target="_blank">Buka File</a></Button>
             });
         } else {
-            if (result.error?.toLowerCase().includes('token') || result.error?.toLowerCase().includes('sesi')) {
-                setIsDriveAuthDialogOpen(true);
-            } else {
-                toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
-            }
+            if (result.error?.toLowerCase().includes('token')) setIsDriveAuthDialogOpen(true);
+            else toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
         }
         setSaving(false);
     };
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
-            <AiErrorDialog 
-                open={isErrorOpen} 
-                onOpenChange={setIsErrorOpen} 
-                errorType={errorType} 
-                errorMessage={errorMsg}
-                onRetry={handleGenerate}
-            />
+            <AiErrorDialog open={isErrorOpen} onOpenChange={setIsErrorOpen} errorType={errorType} errorMessage={errorMsg} onRetry={handleGenerate} />
 
-            {/* Premium Loading Overlay */}
             {loading && !generatedResult && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
-                    <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
-                         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
-                         <div className="relative">
-                             <LottieAiProcess size={220} />
-                             <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent pointer-events-none" />
-                         </div>
+                    <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw]">
+                         <LottieAiProcess size={220} />
                          <div className="space-y-6">
-                             <div className="space-y-2">
-                                <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>CP & ATP</p>
-                                <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
-                             </div>
+                             <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase">Merumuskan<br/>CP & ATP</p>
                              <div className="flex flex-col items-center gap-3">
                                 <div className="relative w-20 h-20 flex items-center justify-center">
                                     <svg className="w-full h-full -rotate-90">
                                         <circle cx="40" cy="40" r="36" className="stroke-slate-100 fill-none" strokeWidth="6" />
-                                        <motion.circle 
-                                            cx="40" cy="40" r="36" 
-                                            className="stroke-indigo-600 fill-none" 
-                                            strokeWidth="6" 
-                                            strokeLinecap="round"
-                                            strokeDasharray="226"
-                                            initial={{ strokeDashoffset: 226 }}
-                                            animate={{ strokeDashoffset: 226 - (226 * (30 - countdown) / 30) }}
-                                            transition={{ duration: 1, ease: "linear" }}
-                                        />
+                                        <motion.circle cx="40" cy="40" r="36" className="stroke-indigo-600 fill-none" strokeWidth="6" strokeLinecap="round" strokeDasharray="226" initial={{ strokeDashoffset: 226 }} animate={{ strokeDashoffset: 226 - (226 * (30 - countdown) / 30) }} transition={{ duration: 1, ease: "linear" }} />
                                     </svg>
                                     <span className="absolute font-mono font-black text-indigo-600 text-xl">{countdown}s</span>
                                 </div>
@@ -323,15 +284,9 @@ export default function GenerateCpAtpClient({
 
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
-                <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
-                    <div className="space-y-2">
-                        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
-                            Generate CP & ATP
-                        </h1>
-                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">
-                            AI Curriculum Architect
-                        </p>
-                    </div>
+                <div className="relative z-10 text-center md:text-left">
+                    <h1 className="text-4xl sm:text-6xl font-black tracking-tight">Generate CP & ATP</h1>
+                    <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">AI Curriculum Architect</p>
                 </div>
             </div>
 
@@ -339,206 +294,74 @@ export default function GenerateCpAtpClient({
                 <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
                     <form onSubmit={handleGenerate}>
                         <CardHeader className="bg-slate-50/50 border-b p-6">
-                            <CardTitle className="text-xl font-black flex items-center gap-2 text-indigo-950">
-                                <Settings2 className="h-5 w-5 text-indigo-600" />
-                                Parameter Kurikulum
-                            </CardTitle>
+                            <CardTitle className="text-xl font-black flex items-center gap-2"><Settings2 className="h-5 w-5 text-indigo-600" />Parameter Kurikulum</CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-6">
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
-                                    <Select value={form.jenjang} onValueChange={handleJenjangChange}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Fase</Label>
-                                    <Select value={form.phase} onValueChange={v => setForm({...form, phase: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {PHASES.map(p => <SelectItem key={p.value} value={p.value} className="font-bold">{p.label}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">Jenjang</Label><Select value={form.jenjang} onValueChange={handleJenjangChange}><SelectTrigger className="rounded-xl h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger><SelectContent className="rounded-2xl">{Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}</SelectContent></Select></div>
+                                <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">Fase</Label><Select value={form.phase} onValueChange={v => setForm({...form, phase: v})}><SelectTrigger className="rounded-xl h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger><SelectContent className="rounded-2xl">{PHASES.map(p => <SelectItem key={p.value} value={p.value} className="font-bold">{p.label}</SelectItem>)}</SelectContent></Select></div>
                             </div>
-
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
-                                    <Select value={form.subject} onValueChange={v => setForm({...form, subject: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                    <Select value={form.kelas} onValueChange={v => setForm(prev => ({...prev, kelas: v}))}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">Mapel</Label><Select value={form.subject} onValueChange={v => setForm({...form, subject: v})}><SelectTrigger className="rounded-xl h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger><SelectContent className="rounded-2xl">{(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}</SelectContent></Select></div>
+                                <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">Kelas</Label><Select value={form.kelas} onValueChange={v => setForm(prev => ({...prev, kelas: v}))}><SelectTrigger className="rounded-xl h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger><SelectContent className="rounded-2xl">{getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}</SelectContent></Select></div>
                             </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Elemen CP / Lingkup Materi</Label>
-                                <Input 
-                                    placeholder="e.g. Aljabar, Pancasila, atau Pemahaman Sains" 
-                                    className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
-                                    value={form.scope}
-                                    onChange={e => setForm({...form, scope: e.target.value})}
-                                    required
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Konteks Tambahan (Opsional)</Label>
-                                <Textarea 
-                                    placeholder="e.g. Fokuskan pada pembelajaran berdiferensiasi..." 
-                                    className="rounded-2xl bg-slate-50 border-0 min-h-[100px] font-medium resize-none shadow-inner"
-                                    value={form.additionalInfo}
-                                    onChange={e => setForm({...form, additionalInfo: e.target.value})}
-                                />
-                            </div>
+                            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">Elemen CP / Lingkup Materi</Label><Input placeholder="e.g. Aljabar, Pancasila" className="rounded-xl h-11 font-bold" value={form.scope} onChange={e => setForm({...form, scope: e.target.value})} required /></div>
+                            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">Konteks (Opsional)</Label><Textarea placeholder="e.g. Pembelajaran berdiferensiasi..." className="rounded-2xl min-h-[100px] font-medium resize-none shadow-inner" value={form.additionalInfo} onChange={e => setForm({...form, additionalInfo: e.target.value})} /></div>
                         </CardContent>
-                        <CardFooter className="bg-slate-50/50 p-6 border-t">
-                            <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 text-lg font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
-                                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}
-                                Rumuskan CP & ATP
-                            </Button>
-                        </CardFooter>
+                        <CardFooter className="bg-slate-50/50 p-6 border-t"><Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}Rumuskan CP & ATP</Button></CardFooter>
                     </form>
                 </Card>
 
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
                     <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
-                                <Layers className="h-5 w-5" />
-                            </div>
-                            <CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Alur</CardTitle>
-                        </div>
+                        <div className="flex items-center gap-3"><div className="p-2 rounded-xl bg-indigo-100 text-indigo-600"><Layers className="h-5 w-5" /></div><CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Alur</CardTitle></div>
                         {generatedResult && (
                             <div className="flex items-center gap-2">
-                                <Button 
-                                    onClick={handleDownloadPdf} 
-                                    disabled={printing}
-                                    variant="outline"
-                                    className="rounded-xl h-10 border-indigo-200 text-indigo-600 font-bold gap-2 hover:bg-indigo-50"
-                                >
-                                    {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-                                    PDF
-                                </Button>
-                                <Button 
-                                    onClick={handleSaveToDrive} 
-                                    disabled={saving}
-                                    className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100"
-                                >
-                                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                    Simpan Arsip
-                                </Button>
+                                <Button onClick={handleDownloadPdf} disabled={printing} variant="outline" className="rounded-xl h-10 border-indigo-200 text-indigo-600 font-bold gap-2"><Download className="h-4 w-4" />PDF</Button>
+                                <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan Arsip</Button>
                             </div>
                         )}
                     </CardHeader>
-                    <CardContent className="flex-grow p-0 bg-slate-50/20 max-h-[70vh]">
+                    <CardContent className="flex-grow p-0 bg-slate-50/20">
                         <ScrollArea className="h-full">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
-                                    <motion.div 
-                                        key="result"
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="p-4 sm:p-10"
-                                    >
-                                        <div id="printable-cp-atp-area" className="bg-white p-10 shadow-sm border border-slate-100 rounded-2xl mx-auto" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
-                                            <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-slate-900">
-                                                <div className="w-20 h-20 flex items-center justify-center shrink-0 border border-slate-100 rounded-lg overflow-hidden">
-                                                    {schoolProfile?.school_logo_url ? (
-                                                        <img src={schoolProfile.school_logo_url} alt="Logo" className="w-full h-full object-contain" />
-                                                    ) : (
-                                                        <div className="p-2 opacity-20"><AppLogo /></div>
-                                                    )}
-                                                </div>
+                                    <motion.div key="result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 sm:p-10">
+                                        <div id="printable-cp-atp-area" className="bg-white p-10 shadow-sm border rounded-2xl mx-auto" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
+                                            <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-black">
+                                                <div className="w-20 h-20 flex items-center justify-center shrink-0">{schoolProfile?.school_logo_url ? <img src={schoolProfile.school_logo_url} alt="Logo" className="w-full h-full object-contain" /> : <div className="p-2 opacity-20"><AppLogo /></div>}</div>
                                                 <div className="flex-1 text-center pr-20">
                                                     <h2 className="text-xl font-bold uppercase leading-tight">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h2>
-                                                    {schoolProfile?.npsn && <p className="text-xs font-medium">NPSN: {schoolProfile.npsn}</p>}
+                                                    {schoolProfile?.npsn && <p className="text-xs font-bold">NPSN: {schoolProfile.npsn}</p>}
                                                     <p className="text-xs italic">{schoolProfile?.school_address || "Alamat sekolah belum diatur"}</p>
                                                 </div>
                                             </div>
-
                                             <div className="text-center mb-8">
                                                 <h1 className="text-lg font-bold uppercase underline">ALUR TUJUAN PEMBELAJARAN (ATP)</h1>
                                                 <p className="text-sm font-bold uppercase mt-1">PEMETAAN KURIKULUM MERDEKA</p>
                                             </div>
-
                                             <div className="grid grid-cols-2 gap-4 text-xs mb-8">
-                                                <div className="space-y-1">
-                                                    <div className="grid grid-cols-[100px_10px_1fr]">
-                                                        <span>Mata Pelajaran</span><span>:</span><span className="font-bold">{form.subject}</span>
-                                                    </div>
-                                                    <div className="grid grid-cols-[100px_10px_1fr]">
-                                                        <span>Jenjang / Fase</span><span>:</span><span className="font-bold">{form.jenjang} / {form.phase}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <div className="grid grid-cols-[100px_10px_1fr]">
-                                                        <span>Kelas</span><span>:</span><span className="font-bold">{form.kelas}</span>
-                                                    </div>
-                                                    <div className="grid grid-cols-[100px_10px_1fr]">
-                                                        <span>Penyusun</span><span>:</span><span className="font-bold">{schoolProfile?.full_name || 'GURU PENGAMPU'}</span>
-                                                    </div>
-                                                </div>
+                                                <div className="space-y-1"><div className="grid grid-cols-[100px_10px_1fr]"><span>Mata Pelajaran</span><span>:</span><span className="font-bold">{form.subject}</span></div><div className="grid grid-cols-[100px_10px_1fr]"><span>Jenjang / Fase</span><span>:</span><span className="font-bold">{form.jenjang} / {form.phase}</span></div></div>
+                                                <div className="space-y-1"><div className="grid grid-cols-[100px_10px_1fr]"><span>Kelas</span><span>:</span><span className="font-bold">{form.kelas}</span></div><div className="grid grid-cols-[100px_10px_1fr]"><span>Penyusun</span><span>:</span><span className="font-bold">{schoolProfile?.full_name || 'GURU PENGAMPU'}</span></div></div>
                                             </div>
-
-                                            <div className="prose prose-slate max-w-none prose-sm leading-relaxed text-slate-900 print:text-black">
-                                                <ReactMarkdown 
-                                                    remarkPlugins={[remarkGfm]}
-                                                    components={{
-                                                        table: ({node, ...props}) => <table className="w-full border-collapse border border-slate-300 my-4" {...props} />,
-                                                        th: ({node, ...props}) => <th className="border border-slate-300 bg-slate-50 p-2 font-bold text-center text-[10px]" {...props} />,
-                                                        td: ({node, ...props}) => <td className="border border-slate-300 p-2 text-[10px]" {...props} />,
-                                                        h1: ({node, ...props}) => <h3 className="text-sm font-bold uppercase mt-6 mb-2" {...props} />,
-                                                        h2: ({node, ...props}) => <h4 className="text-xs font-bold uppercase mt-4 mb-2" {...props} />,
-                                                        p: ({node, ...props}) => <p className="text-xs mb-3 text-justify" style={{ breakInside: 'avoid' }} {...props} />,
-                                                        li: ({node, ...props}) => <li className="text-xs mb-1" style={{ breakInside: 'avoid' }} {...props} />,
-                                                        tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
-                                                    }}
-                                                >
-                                                    {generatedResult.content}
-                                                </ReactMarkdown>
+                                            <div className="prose prose-slate max-w-none prose-sm leading-relaxed text-slate-900">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                                                    table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-black my-4" {...props} />,
+                                                    th: ({node, ...props}) => <th className="border-2 border-black bg-slate-50 p-2 font-bold text-center text-[10px]" {...props} />,
+                                                    td: ({node, ...props}) => <td className="border-2 border-black p-2 text-[10px] align-top" {...props} />,
+                                                    h1: ({node, ...props}) => <h3 className="text-sm font-bold uppercase mt-6 mb-2" {...props} />,
+                                                    p: ({node, ...props}) => <p className="text-xs mb-3 text-justify" {...props} />,
+                                                    tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
+                                                }}>{generatedResult.content}</ReactMarkdown>
                                             </div>
-
                                             <div className="mt-12 flex justify-between text-xs px-10" style={{ breakInside: 'avoid' }}>
-                                                <div className="text-center">
-                                                    <p>Mengetahui,</p>
-                                                    <p className="mb-20">Kepala Sekolah</p>
-                                                    <p className="font-bold underline">{schoolProfile?.headmaster_name || ".................................."}</p>
-                                                    <p>NIP. {schoolProfile?.headmaster_nip || "..........................."}</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <p>Dicetak Pada,</p>
-                                                    <p className="mb-20">{format(new Date(), 'dd MMMM yyyy', { locale: id })}</p>
-                                                    <p className="font-bold underline">{schoolProfile?.full_name || ".................................."}</p>
-                                                    <p>NIP. {schoolProfile?.nip || "..........................."}</p>
-                                                </div>
+                                                <div className="text-center"><p>Mengetahui,</p><p className="mb-20">Kepala Sekolah</p><p className="font-bold underline">{schoolProfile?.headmaster_name || ".................................."}</p><p>NIP. {schoolProfile?.headmaster_nip || "..........................."}</p></div>
+                                                <div className="text-center"><p>Dicetak Pada,</p><p className="mb-20">{format(new Date(), 'dd MMMM yyyy', { locale: id })}</p><p className="font-bold underline">{schoolProfile?.full_name || ".................................."}</p><p>NIP. {schoolProfile?.nip || "..........................."}</p></div>
                                             </div>
                                         </div>
                                     </motion.div>
                                 ) : (
-                                    <div className="h-full flex flex-col items-center justify-center p-12 text-center">
-                                        <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
-                                            <GitBranchPlus className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
-                                        </div>
-                                        <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Curricullum Architect</h3>
-                                        <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">Masukkan lingkup materi di samping untuk mulai memetakan CP ke dalam ATP yang sistematis.</p>
-                                    </div>
+                                    <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-30"><GitBranchPlus className="h-24 w-24 mb-4" /><h3 className="text-3xl font-black">AI Curriculum Architect</h3></div>
                                 )}
                             </AnimatePresence>
                         </ScrollArea>
@@ -547,25 +370,8 @@ export default function GenerateCpAtpClient({
             </div>
 
             <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
-                <DialogContent className="rounded-xl p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
-                    <div className="p-8 text-center space-y-6">
-                        <div className="mx-auto w-20 h-20 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600"><Database className="h-10 w-10" /></div>
-                        <div className="space-y-2">
-                            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Koneksi Drive Diperlukan</DialogTitle>
-                            <DialogDescription className="text-sm font-medium text-slate-500">Hubungkan akun Google untuk menyimpan pemetaan kurikulum ini ke Drive Anda.</DialogDescription>
-                        </div>
-                        <Button onClick={handleConnectDrive} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">
-                            <RefreshCw className="h-5 w-5" /> Hubungkan Akun Google
-                        </Button>
-                    </div>
-                </DialogContent>
+                <DialogContent className="rounded-xl p-0 max-w-sm overflow-hidden bg-white"><div className="p-8 text-center space-y-6"><Database className="mx-auto h-12 w-12 text-indigo-600" /><DialogTitle className="text-xl font-bold">Koneksi Drive Diperlukan</DialogTitle><Button onClick={handleConnectDrive} className="w-full h-12 bg-indigo-600 text-white font-bold">Hubungkan Akun Google</Button></div></DialogContent>
             </Dialog>
-
-            <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-            `}</style>
         </div>
     );
 }
