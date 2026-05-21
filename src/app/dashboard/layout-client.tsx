@@ -123,16 +123,17 @@ export default function DashboardLayoutClient({
           isActive={isActive}
           tooltip={label}
           className={cn(
-            "rounded-2xl transition-all duration-300 h-12 mb-1 group/item",
+            "rounded-xl transition-all duration-300 h-11 mb-1 group/item",
             isActive 
-              ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100 scale-[1.02]" 
-              : "hover:bg-indigo-50 text-slate-500 hover:text-indigo-600"
+              ? "bg-white/10 text-white shadow-lg shadow-black/10 scale-[1.02]" 
+              : "hover:bg-white/5 text-indigo-100/60 hover:text-white"
           )}
         >
           <Link href={href} className="flex items-center overflow-hidden">
             <Icon className={cn(
                 "w-5 h-5 shrink-0 transition-transform duration-300", 
                 !isActive && color,
+                isActive && "text-white",
                 !isActive && "group-hover/item:scale-110",
                 !isCollapsed && "mr-3"
             )} />
@@ -184,7 +185,7 @@ export default function DashboardLayoutClient({
             variant="ghost" 
             size="icon" 
             onClick={toggleSidebar}
-            className="hidden md:flex absolute -right-3 top-20 bg-white border shadow-md rounded-full z-50 h-6 w-6 hover:bg-slate-50"
+            className="hidden md:flex absolute -right-3 top-20 bg-indigo-700 text-white border-2 border-indigo-800 shadow-xl rounded-full z-50 h-6 w-6 hover:bg-indigo-600 transition-colors"
         >
             {state === 'expanded' ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </Button>
@@ -195,23 +196,23 @@ export default function DashboardLayoutClient({
     <>
        <Sidebar 
           collapsible="icon" 
-          className="hidden md:flex m-4 h-[calc(100vh-2rem)] rounded-[40px] border-0 shadow-2xl shadow-indigo-100/30 overflow-visible bg-white"
+          className="hidden md:flex h-screen border-r border-indigo-900/50 overflow-visible bg-indigo-800"
        >
-          <SidebarHeader className="p-0 shrink-0 overflow-hidden rounded-t-[40px]">
-              <div className="bg-gradient-to-br from-indigo-800 to-indigo-600 p-6 text-white text-center space-y-4 group-data-[collapsible=icon]:p-4">
-                  <div className="mx-auto w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:rounded-lg">
-                      <GraduationCap className="w-8 h-8 group-data-[collapsible=icon]:w-5 group-data-[collapsible=icon]:h-5" />
+          <SidebarHeader className="p-0 shrink-0 overflow-hidden bg-indigo-700">
+              <div className="p-6 text-white text-center space-y-4 group-data-[collapsible=icon]:p-4">
+                  <div className="mx-auto w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:rounded-lg">
+                      <GraduationCap className="w-7 h-7 group-data-[collapsible=icon]:w-5 group-data-[collapsible=icon]:h-5" />
                   </div>
                   <div className="group-data-[collapsible=icon]:hidden animate-in fade-in slide-in-from-top-1 duration-300">
                       <h2 className="font-black text-lg tracking-tight">LakuKelas</h2>
-                      <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-[9px] uppercase tracking-widest mt-1">Dashboard Guru</Badge>
+                      <Badge variant="outline" className="bg-white/5 text-indigo-100 border-white/10 text-[9px] uppercase tracking-widest mt-1">Dashboard Guru</Badge>
                   </div>
               </div>
           </SidebarHeader>
           
           <SidebarToggle />
 
-          <SidebarContent className="px-3 bg-slate-50">
+          <SidebarContent className="px-3 bg-indigo-800">
             <ScrollArea className="flex-1">
                 <SidebarGroup className="p-2 pt-4">
                     {isAdmin && (
@@ -220,7 +221,7 @@ export default function DashboardLayoutClient({
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <SidebarMenuButton asChild className="bg-slate-900 text-white hover:bg-slate-800 h-12 rounded-2xl shadow-lg group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
+                                            <SidebarMenuButton asChild className="bg-white/10 text-white hover:bg-white/20 h-12 rounded-xl shadow-lg group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
                                                 <Link href="/admin/users">
                                                     <ShieldCheck className="w-5 h-5 shrink-0" />
                                                     <span className="font-black group-data-[collapsible=icon]:hidden ml-2">Master Admin</span>
@@ -236,86 +237,80 @@ export default function DashboardLayoutClient({
 
                     {(isHeadmaster || isAdmin) && (
                         <>
-                            <SidebarGroupLabel className="text-teal-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden">Monitoring</SidebarGroupLabel>
+                            <SidebarGroupLabel className="text-teal-400 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden opacity-70">Monitoring</SidebarGroupLabel>
                             <SidebarMenu className="gap-1 mb-6">
-                                <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-teal-600" />
-                                <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Tren" color="text-teal-600" />
-                                <NavItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="text-teal-600" />
-                                <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="text-teal-600" />
+                                <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-teal-400" />
+                                <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Tren" color="text-teal-400" />
+                                <NavItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="text-teal-400" />
+                                <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="text-teal-400" />
                             </SidebarMenu>
                         </>
                     )}
 
                     {isHomeroom && (
                         <>
-                            <SidebarGroupLabel className="text-emerald-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden">Wali Kelas</SidebarGroupLabel>
+                            <SidebarGroupLabel className="text-emerald-400 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden opacity-70">Wali Kelas</SidebarGroupLabel>
                             <SidebarMenu className="gap-1 mb-6">
-                                <NavItem href="/dashboard/homeroom/student-ledger" icon={ClipboardEdit} label="Leger & Catatan" color="text-emerald-600" />
-                                <NavItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Laporan Bulanan" color="text-emerald-600" />
+                                <NavItem href="/dashboard/homeroom/student-ledger" icon={ClipboardEdit} label="Leger & Catatan" color="text-emerald-400" />
+                                <NavItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Laporan Bulanan" color="text-emerald-400" />
                             </SidebarMenu>
                         </>
                     )}
 
-                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden">Menu Utama</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-indigo-200 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden opacity-70">Menu Utama</SidebarGroupLabel>
                     <SidebarMenu className="gap-1 mb-6">
-                        <NavItem href="/dashboard" icon={Home} label="Dasbor" color="text-indigo-600" />
-                        <NavItem href="/dashboard/teacher-attendance" icon={MapPin} label="Absen Guru" color="text-indigo-600" />
-                        <NavItem href="/dashboard/agenda" icon={CalendarDays} label="Agenda Sekolah" color="text-indigo-600" />
-                        <NavItem href="/dashboard/attendance" icon={ClipboardCheck} label="Presensi Siswa" color="text-indigo-600" />
-                        <NavItem href="/dashboard/grades" icon={ClipboardEdit} label="Input Nilai" color="text-indigo-600" />
-                        <NavItem href="/dashboard/journal" icon={BookText} label="Jurnal Mengajar" color="text-indigo-600" />
-                        <NavItem href="/dashboard/materials" icon={Link2} label="Materi Belajar" color="text-indigo-600" />
-                        <NavItem href="/dashboard/reports" icon={BarChart3} label="Laporan Akademik" color="text-indigo-600" />
-                        <NavItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal Mengajar" color="text-indigo-600" />
+                        <NavItem href="/dashboard" icon={Home} label="Dasbor" color="text-indigo-200" />
+                        <NavItem href="/dashboard/teacher-attendance" icon={MapPin} label="Absen Guru" color="text-indigo-200" />
+                        <NavItem href="/dashboard/agenda" icon={CalendarDays} label="Agenda Sekolah" color="text-indigo-200" />
+                        <NavItem href="/dashboard/attendance" icon={ClipboardCheck} label="Presensi Siswa" color="text-indigo-200" />
+                        <NavItem href="/dashboard/grades" icon={ClipboardEdit} label="Input Nilai" color="text-indigo-200" />
+                        <NavItem href="/dashboard/journal" icon={BookText} label="Jurnal Mengajar" color="text-indigo-200" />
+                        <NavItem href="/dashboard/materials" icon={Link2} label="Materi Belajar" color="text-indigo-200" />
+                        <NavItem href="/dashboard/reports" icon={BarChart3} label="Laporan Akademik" color="text-indigo-200" />
+                        <NavItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal Mengajar" color="text-indigo-200" />
                     </SidebarMenu>
 
-                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2 px-3 group-data-[collapsible=icon]:hidden">
+                    <SidebarGroupLabel className="text-amber-400 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2 px-3 group-data-[collapsible=icon]:hidden opacity-70">
                         <Wand2 className="w-3 h-3" /> AI Generator
                     </SidebarGroupLabel>
                     <SidebarMenu className="gap-1 mb-6">
-                        <NavItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Generate CP & ATP" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Generate CP & ATP" color="text-amber-400" />
+                        <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-amber-400" />
+                        <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-amber-400" />
                     </SidebarMenu>
 
-                    <SidebarGroupLabel className="text-indigo-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2 px-3 group-data-[collapsible=icon]:hidden">
+                    <SidebarGroupLabel className="text-sky-400 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2 px-3 group-data-[collapsible=icon]:hidden opacity-70">
                         <FolderSearch className="w-3 h-3" /> Arsip Administrasi
                     </SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
-                        <NavItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" icon={Network} label="Daftar CP & ATP" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Daftar Naskah Soal" color="text-indigo-600" />
-                        <NavItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={BookOpen} label="Daftar RPP & Modul" color="text-indigo-600" />
+                        <NavItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" icon={Network} label="Daftar CP & ATP" color="text-sky-400" />
+                        <NavItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal AI" color="text-sky-400" />
+                        <NavItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Daftar Naskah Soal" color="text-sky-400" />
+                        <NavItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={BookOpen} label="Daftar RPP & Modul" color="text-sky-400" />
                     </SidebarMenu>
                 </SidebarGroup>
             </ScrollArea>
           </SidebarContent>
 
-          <SidebarFooter className="p-4 pt-0 shrink-0 bg-slate-50 rounded-b-[40px] border-t">
-                <SidebarMenu className="gap-2 mb-4 pt-4">
-                    <NavItem href="/dashboard/settings" icon={Settings} label="Setelan Akun" color="text-slate-400" />
-                    <SidebarMenuItem>
-                         <SidebarMenuButton className="rounded-2xl h-12 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50">
-                            <LifeBuoy className="w-5 h-5 mr-3 shrink-0" />
-                            <span className="font-bold group-data-[collapsible=icon]:hidden">Pusat Bantuan</span>
-                         </SidebarMenuButton>
-                    </SidebarMenuItem>
+          <SidebarFooter className="p-4 pt-0 shrink-0 bg-indigo-900/50 border-t border-white/5">
+                <SidebarMenu className="gap-1 mb-4 pt-4">
+                    <NavItem href="/dashboard/settings" icon={Settings} label="Setelan Akun" color="text-indigo-300" />
                 </SidebarMenu>
 
                 <div className="flex items-center gap-3 px-2 mb-4 group-data-[collapsible=icon]:justify-center">
-                    <Avatar className="h-9 w-9 border-2 border-indigo-100 shadow-sm shrink-0">
+                    <Avatar className="h-8 w-8 border border-white/10 shadow-sm shrink-0">
                         <AvatarImage src={profile?.avatar_url} />
-                        <AvatarFallback className="bg-indigo-600 text-white font-bold">{profile?.full_name?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-indigo-600 text-white font-bold text-[10px]">{profile?.full_name?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-                        <p className="text-xs font-black text-slate-900 truncate">{profile?.full_name?.split(',')[0]}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{profile?.role}</p>
+                        <p className="text-[11px] font-black text-white truncate">{profile?.full_name?.split(',')[0]}</p>
+                        <p className="text-[8px] font-bold text-indigo-300/60 uppercase tracking-widest">{profile?.role}</p>
                     </div>
                 </div>
 
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 font-bold rounded-2xl h-11 px-3 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
+                        <Button variant="ghost" className="w-full justify-start text-rose-400 hover:bg-rose-500/10 font-bold rounded-xl h-10 px-3 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center transition-colors">
                             <LogOut className="w-5 h-5 shrink-0" />
                             <span className="group-data-[collapsible=icon]:hidden ml-3">Keluar</span>
                         </Button>
@@ -335,23 +330,23 @@ export default function DashboardLayoutClient({
        </Sidebar>
 
       <SidebarInset className="bg-transparent overflow-hidden">
-        <header className="sticky top-0 z-40 w-full bg-indigo-700 text-white shadow-md">
+        <header className="sticky top-0 z-40 w-full bg-indigo-700 text-white shadow-md border-b border-indigo-800">
             <div className="flex items-center justify-between h-16 px-4 sm:px-6">
                  <div className="flex items-center gap-4">
                      <div className="flex flex-col">
                         <h1 className="text-base font-black tracking-tight leading-none">LakuKelas</h1>
-                        <span className="text-[10px] font-black uppercase text-indigo-100/60 tracking-widest mt-1">Dashboard Guru</span>
+                        <span className="text-[10px] font-black uppercase text-indigo-100/60 tracking-widest mt-1">Sistem Administrasi Guru</span>
                      </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full transition-colors relative">
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full transition-colors relative">
                         <Bell className="h-5 w-5" />
-                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-indigo-700" />
                     </Button>
-                    <div className="h-8 w-px bg-white/20 mx-1 hidden sm:block" />
+                    <div className="h-8 w-px bg-white/10 mx-1 hidden sm:block" />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-all rounded-full">
+                          <Button variant="ghost" size="icon" className="text-white hover:bg-rose-500 hover:text-white transition-all rounded-full">
                               <LogOut className="h-5 w-5" />
                           </Button>
                       </AlertDialogTrigger>
@@ -369,7 +364,7 @@ export default function DashboardLayoutClient({
                 </div>
             </div>
         </header>
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8 bg-[#fcfaff] min-h-screen">
             {children}
         </div>
       </SidebarInset>

@@ -22,6 +22,7 @@ import {
   CalendarClock,
   CalendarOff,
   ChevronLeft,
+  ChevronRight,
   LayoutDashboard,
   UserCheck,
   Activity,
@@ -44,6 +45,7 @@ import {
   SidebarTrigger,
   SidebarGroup,
   SidebarGroupLabel,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -65,6 +67,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function AdminLayoutClient({ 
   children,
@@ -90,20 +93,31 @@ export default function AdminLayoutClient({
   };
 
   const NavItem = ({ href, icon: Icon, label, color = "" }: any) => {
+    const { state } = useSidebar();
     const isActive = pathname === href || pathname.startsWith(href + '/');
+    const isCollapsed = state === "collapsed";
+
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
           asChild
           isActive={isActive}
+          tooltip={label}
           className={cn(
-            "rounded-xl transition-all duration-200 h-10",
-            isActive ? "bg-purple-600 text-white shadow-lg shadow-purple-100" : "hover:bg-slate-100"
+            "rounded-xl transition-all duration-300 h-11 mb-1",
+            isActive 
+              ? "bg-white/10 text-white shadow-lg shadow-black/10 scale-[1.02]" 
+              : "hover:bg-white/5 text-purple-100/60 hover:text-white"
           )}
         >
-          <Link href={href}>
-            <Icon className={cn("w-4 h-4 mr-2", !isActive && color)} />
-            <span className="font-bold">{label}</span>
+          <Link href={href} className="flex items-center overflow-hidden">
+            <Icon className={cn(
+                "w-5 h-5 shrink-0 transition-transform duration-300", 
+                !isActive && color,
+                isActive && "text-white",
+                !isCollapsed && "mr-3"
+            )} />
+            {!isCollapsed && <span className="font-bold">{label}</span>}
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -132,74 +146,106 @@ export default function AdminLayoutClient({
     );
   };
 
+  const SidebarToggle = () => {
+    const { toggleSidebar, state } = useSidebar();
+    return (
+        <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleSidebar}
+            className="hidden md:flex absolute -right-3 top-20 bg-purple-700 text-white border-2 border-purple-800 shadow-xl rounded-full z-50 h-6 w-6 hover:bg-purple-600 transition-colors"
+        >
+            {state === 'expanded' ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        </Button>
+    )
+  }
+
   return (
     <>
-       <Sidebar className="hidden md:flex border-r-purple-100">
-          <SidebarHeader className="p-0">
-              <div className="bg-gradient-to-br from-purple-800 to-purple-600 p-6 text-white text-center space-y-4">
-                  <div className="mx-auto w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl">
-                      <ShieldCheck className="w-10 h-10" />
+       <Sidebar 
+          collapsible="icon" 
+          className="hidden md:flex h-screen border-r border-purple-900/50 overflow-visible bg-purple-800"
+       >
+          <SidebarHeader className="p-0 shrink-0 overflow-hidden bg-purple-700">
+              <div className="p-6 text-white text-center space-y-4 group-data-[collapsible=icon]:p-4">
+                  <div className="mx-auto w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:rounded-lg">
+                      <ShieldCheck className="w-7 h-7 group-data-[collapsible=icon]:w-5 group-data-[collapsible=icon]:h-5" />
                   </div>
-                  <div>
+                  <div className="group-data-[collapsible=icon]:hidden animate-in fade-in slide-in-from-top-1 duration-300">
                       <h2 className="font-black text-lg tracking-tight">Panel Admin</h2>
-                      <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-[9px] uppercase tracking-widest mt-1">Superuser Mode</Badge>
+                      <Badge variant="outline" className="bg-white/5 text-purple-100 border-white/10 text-[9px] uppercase tracking-widest mt-1">Superuser Mode</Badge>
                   </div>
               </div>
           </SidebarHeader>
-          <SidebarContent className="bg-slate-50">
+          
+          <SidebarToggle />
+
+          <SidebarContent className="px-3 bg-purple-800">
             <ScrollArea className="flex-1">
-                <SidebarGroup className="p-4 pt-6">
-                    <SidebarMenu>
-                        <SidebarMenuItem className="mb-4">
-                            <SidebarMenuButton asChild className="bg-slate-900 text-white hover:bg-slate-800 h-12 rounded-xl shadow-lg">
+                <SidebarGroup className="p-2 pt-4">
+                    <SidebarMenu className="mb-6">
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild className="bg-slate-900 text-white hover:bg-slate-800 h-12 rounded-xl shadow-lg group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
                                 <Link href="/dashboard">
-                                    <ChevronLeft className="w-5 h-5 mr-2" />
-                                    <span className="font-black">Kembali ke Guru</span>
+                                    <ChevronLeft className="w-5 h-5 shrink-0" />
+                                    <span className="font-black group-data-[collapsible=icon]:hidden ml-2">Balik ke Guru</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
 
-                    <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Monitoring Kepala</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-purple-300 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden opacity-70">Monitoring Kepala</SidebarGroupLabel>
                     <SidebarMenu className="gap-1 mb-6">
-                      <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-purple-600" />
-                      <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="text-purple-600" />
-                      <NavItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="text-purple-600" />
-                      <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas Staf" color="text-purple-600" />
+                      <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-purple-300" />
+                      <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="text-purple-300" />
+                      <NavItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="text-purple-300" />
+                      <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas Staf" color="text-purple-300" />
                     </SidebarMenu>
 
-                    <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Manajemen Staf</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-purple-300 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden opacity-70">Manajemen Staf</SidebarGroupLabel>
                     <SidebarMenu className="gap-1 mb-6">
-                      <NavItem href="/admin/users" icon={Users} label="Staf & Approval" color="text-purple-600" />
+                      <NavItem href="/admin/users" icon={Users} label="Staf & Approval" color="text-purple-300" />
                     </SidebarMenu>
 
-                    <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Data Master Rombel</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-purple-300 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden opacity-70">Data Master Rombel</SidebarGroupLabel>
                     <SidebarMenu className="gap-1 mb-6">
-                      <NavItem href="/admin/roster/school-year" icon={CalendarCheck} label="Tahun Ajaran" color="text-purple-600" />
-                      <NavItem href="/admin/roster/classes" icon={School} label="Data Kelas" color="text-purple-600" />
-                      <NavItem href="/admin/roster/subjects" icon={BookOpen} label="Data Mapel" color="text-purple-600" />
-                      <NavItem href="/admin/roster/students" icon={Users2} label="Data Siswa" color="text-purple-600" />
-                      <NavItem href="/admin/roster/promotion" icon={ArrowRightLeft} label="Promosi Siswa" color="text-purple-600" />
-                      <NavItem href="/admin/roster/alumni" icon={GraduationCap} label="Arsip Alumni" color="text-purple-600" />
+                      <NavItem href="/admin/roster/school-year" icon={CalendarCheck} label="Tahun Ajaran" color="text-purple-300" />
+                      <NavItem href="/admin/roster/classes" icon={School} label="Data Kelas" color="text-purple-300" />
+                      <NavItem href="/admin/roster/subjects" icon={BookOpen} label="Data Mapel" color="text-purple-300" />
+                      <NavItem href="/admin/roster/students" icon={Users2} label="Data Siswa" color="text-purple-300" />
+                      <NavItem href="/admin/roster/promotion" icon={ArrowRightLeft} label="Promosi Siswa" color="text-purple-300" />
+                      <NavItem href="/admin/roster/alumni" icon={GraduationCap} label="Arsip Alumni" color="text-purple-300" />
                     </SidebarMenu>
 
-                    <SidebarGroupLabel className="text-purple-600 font-black text-[9px] tracking-[0.2em] uppercase mb-3">Pengaturan Sistem</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-purple-300 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden opacity-70">Pengaturan Sistem</SidebarGroupLabel>
                     <SidebarMenu className="gap-1 mb-6">
-                      <NavItem href="/admin/settings/school" icon={Building} label="Data Sekolah" color="text-purple-600" />
-                      <NavItem href="/admin/settings/location" icon={MapPin} label="Setelan Lokasi" color="text-purple-600" />
-                      <NavItem href="/admin/settings/whatsapp" icon={MessageSquare} label="WhatsApp API" color="text-purple-600" />
-                      <NavItem href="/admin/settings/schedule" icon={CalendarClock} label="Master Jadwal" color="text-purple-600" />
-                      <NavItem href="/admin/settings/holidays" icon={CalendarOff} label="Hari Libur" color="text-purple-600" />
+                      <NavItem href="/admin/settings/school" icon={Building} label="Data Sekolah" color="text-purple-300" />
+                      <NavItem href="/admin/settings/location" icon={MapPin} label="Setelan Lokasi" color="text-purple-300" />
+                      <NavItem href="/admin/settings/whatsapp" icon={MessageSquare} label="WhatsApp API" color="text-purple-300" />
+                      <NavItem href="/admin/settings/schedule" icon={CalendarClock} label="Master Jadwal" color="text-purple-300" />
+                      <NavItem href="/admin/settings/holidays" icon={CalendarOff} label="Hari Libur" color="text-purple-300" />
                     </SidebarMenu>
                 </SidebarGroup>
             </ScrollArea>
           </SidebarContent>
-          <SidebarFooter className="p-4 border-t bg-slate-50">
+
+          <SidebarFooter className="p-4 pt-0 shrink-0 bg-purple-900/50 border-t border-white/5">
+                <div className="flex items-center gap-3 px-2 py-4 mb-2 group-data-[collapsible=icon]:justify-center">
+                    <Avatar className="h-8 w-8 border border-white/10 shadow-sm shrink-0">
+                        <AvatarImage src={profile?.avatar_url} />
+                        <AvatarFallback className="bg-purple-600 text-white font-bold text-[10px]">{profile?.full_name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+                        <p className="text-[11px] font-black text-white truncate">{profile?.full_name?.split(',')[0]}</p>
+                        <p className="text-[8px] font-bold text-purple-300/60 uppercase tracking-widest">Administrator</p>
+                    </div>
+                </div>
+
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 font-bold rounded-xl h-12">
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Keluar Sesi
+                        <Button variant="ghost" className="w-full justify-start text-rose-400 hover:bg-rose-500/10 font-bold rounded-xl h-10 px-3 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center transition-colors">
+                            <LogOut className="w-5 h-5 shrink-0" />
+                            <span className="group-data-[collapsible=icon]:hidden ml-3">Keluar</span>
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
@@ -217,23 +263,22 @@ export default function AdminLayoutClient({
        </Sidebar>
 
       <SidebarInset className="bg-[#fcfaff]">
-        <header className="sticky top-0 z-40 w-full bg-purple-700 text-white shadow-md">
+        <header className="sticky top-0 z-40 w-full bg-purple-700 text-white shadow-md border-b border-purple-800">
             <div className="flex items-center justify-between h-16 px-4">
                  <div className="flex items-center gap-3">
-                     <SidebarTrigger className="hidden md:flex text-white hover:bg-white/20 rounded-xl" />
                      <div className="flex flex-col">
                         <span className="text-xs font-black uppercase opacity-70 tracking-widest">Administrator</span>
-                        <h1 className="text-sm font-bold tracking-tight">Panel Admin</h1>
+                        <h1 className="text-sm font-bold tracking-tight">Panel Monitoring & Roster</h1>
                      </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full">
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
                         <Bell className="h-5 w-5" />
                     </Button>
-                    <div className="h-8 w-px bg-white/20 mx-2" />
+                    <div className="h-8 w-px bg-white/10 mx-2" />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-white hover:bg-red-500 hover:text-white transition-colors rounded-full">
+                          <Button variant="ghost" size="icon" className="text-white hover:bg-rose-500 hover:text-white transition-all rounded-full">
                               <LogOut className="h-5 w-5" />
                           </Button>
                       </AlertDialogTrigger>
@@ -251,7 +296,7 @@ export default function AdminLayoutClient({
                 </div>
             </div>
         </header>
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
             {children}
         </div>
       </SidebarInset>
@@ -278,7 +323,6 @@ export default function AdminLayoutClient({
                             </div>
                         </div>
 
-                        {/* 1. Monitoring Section (Collapsible) */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between px-1">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Monitoring Kepala</p>
@@ -288,7 +332,7 @@ export default function AdminLayoutClient({
                                 </button>
                             </div>
                             {isMonitoringExpanded && (
-                                <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in duration-300">
                                     <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-blue-600" />
                                     <MobileGridItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="bg-rose-50" />
                                     <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi" color="bg-amber-500" />
@@ -297,7 +341,6 @@ export default function AdminLayoutClient({
                             )}
                         </div>
 
-                        {/* 2. Admin Menus (Always Grid) */}
                         <div className="space-y-5">
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Manajemen Staf</p>
@@ -330,7 +373,6 @@ export default function AdminLayoutClient({
                             </div>
                         </div>
 
-                        {/* 3. Panel Switcher */}
                         <div className="space-y-2 pt-2 border-t border-slate-100">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Navigasi Panel</p>
                             <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 p-3.5 bg-slate-900 text-white rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-all">
@@ -346,7 +388,6 @@ export default function AdminLayoutClient({
               </SheetContent>
             </Sheet>
 
-            {/* Bottom Nav Mobile - Fixed to be perfectly centered */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-[45] bg-white/80 backdrop-blur-xl border-t flex items-center h-16 pb-safe">
                 <div className="flex-1 flex justify-center">
                     <Link href="/admin/users" className={cn("flex flex-col items-center p-2 rounded-xl transition-all", pathname.startsWith("/admin/users") ? "text-purple-600 bg-purple-50" : "text-muted-foreground")}>
@@ -360,9 +401,9 @@ export default function AdminLayoutClient({
                       className="group flex flex-col items-center justify-center -mt-10 h-14 w-14 rounded-full bg-gradient-to-br from-purple-700 to-purple-500 text-white shadow-lg border-4 border-background transition-all active:scale-95"
                     >
                         <svg className="pointer-events-none" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M4 12L20 12" className="origin-center -translate-y-[7px] transition-all duration-300 group-aria-expanded:rotate-[315deg]" />
-                          <path d="M4 12H20" className="origin-center transition-all duration-300 group-aria-expanded:rotate-45" />
-                          <path d="M4 12H20" className="origin-center translate-y-[7px] transition-all duration-300 group-aria-expanded:rotate-[135deg]" />
+                          <path d="M4 12L20 12" className={cn("origin-center transition-all duration-300", isMobileMenuOpen ? "rotate-[315deg] translate-y-0" : "-translate-y-[7px]")} />
+                          <path d="M4 12H20" className={cn("origin-center transition-all duration-300", isMobileMenuOpen ? "rotate-45" : "")} />
+                          <path d="M4 12H20" className={cn("origin-center transition-all duration-300", isMobileMenuOpen ? "rotate-[135deg] translate-y-0" : "translate-y-[7px]")} />
                         </svg>
                     </button>
                 </div>
