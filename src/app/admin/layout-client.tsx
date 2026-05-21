@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
+import Image from 'next/image';
 import {
   LogOut,
   Settings,
@@ -178,8 +179,14 @@ export default function AdminLayoutClient({
        >
           <SidebarHeader className="p-0 shrink-0 overflow-hidden bg-purple-700">
               <div className="p-6 text-white text-center space-y-4 group-data-[collapsible=icon]:p-4">
-                  <div className="mx-auto w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:rounded-lg">
-                      <ShieldCheck className="w-7 h-7 group-data-[collapsible=icon]:w-5 group-data-[collapsible=icon]:h-5" />
+                  <div className="mx-auto w-12 h-12 rounded-2xl bg-white flex items-center justify-center border border-white/20 shadow-xl group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:rounded-lg overflow-hidden p-1">
+                      <Image 
+                        src="/icons-512x512.png" 
+                        alt="Logo" 
+                        width={48} 
+                        height={48} 
+                        className="w-full h-full object-contain"
+                      />
                   </div>
                   <div className="group-data-[collapsible=icon]:hidden animate-in fade-in slide-in-from-top-1 duration-300">
                       <h2 className="font-black text-lg tracking-tight">Panel Admin</h2>
