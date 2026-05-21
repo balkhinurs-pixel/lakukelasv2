@@ -120,7 +120,6 @@ export default function DashboardLayoutClient({
     const { state } = useSidebar();
     const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href) && href !== '/dashboard';
     
-    // Pastikan status collapsed hanya aktif setelah mounted untuk menghindari hydration mismatch
     const isCollapsed = mounted ? state === "collapsed" : false;
 
     return (
@@ -340,7 +339,7 @@ export default function DashboardLayoutClient({
           </SidebarFooter>
        </Sidebar>
 
-      <SidebarInset className="bg-transparent overflow-hidden">
+      <SidebarInset className="bg-transparent overflow-visible">
         <header className="sticky top-0 z-40 w-full bg-indigo-700 text-white shadow-md border-b border-indigo-800">
             <div className="flex items-center justify-between h-16 px-4 sm:px-6">
                  <div className="flex items-center gap-4">

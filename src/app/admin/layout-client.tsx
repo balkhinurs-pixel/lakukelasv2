@@ -272,7 +272,7 @@ export default function AdminLayoutClient({
           </SidebarFooter>
        </Sidebar>
 
-      <SidebarInset className="bg-[#fcfaff]">
+      <SidebarInset className="bg-[#fcfaff] overflow-visible">
         <header className="sticky top-0 z-40 w-full bg-purple-700 text-white shadow-md border-b border-purple-800">
             <div className="flex items-center justify-between h-16 px-4">
                  <div className="flex items-center gap-3">
