@@ -1,4 +1,3 @@
-
 'use server';
 
 import * as React from 'react';
@@ -40,7 +39,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider style={{ "--sidebar-width": "19rem" } as React.CSSProperties}>
         <AdminLayoutClient user={user} profile={profile}>
             {children}
         </AdminLayoutClient>
