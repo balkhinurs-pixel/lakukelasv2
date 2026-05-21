@@ -83,6 +83,11 @@ export default function AdminLayoutClient({
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isMonitoringExpanded, setIsMonitoringExpanded] = React.useState(true);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -95,7 +100,7 @@ export default function AdminLayoutClient({
   const NavItem = ({ href, icon: Icon, label, color = "" }: any) => {
     const { state } = useSidebar();
     const isActive = pathname === href || pathname.startsWith(href + '/');
-    const isCollapsed = state === "collapsed";
+    const isCollapsed = mounted ? state === "collapsed" : false;
 
     return (
       <SidebarMenuItem>
@@ -119,9 +124,9 @@ export default function AdminLayoutClient({
                 "w-5 h-5 shrink-0 transition-transform duration-300", 
                 isActive ? "text-purple-600" : color,
                 !isActive && "group-hover/item:scale-110",
-                !isCollapsed && "mr-3"
+                (!isCollapsed && mounted) && "mr-3"
             )} />
-            {!isCollapsed && <span className="font-bold">{label}</span>}
+            {(!isCollapsed && mounted) && <span className="font-bold">{label}</span>}
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -152,6 +157,7 @@ export default function AdminLayoutClient({
 
   const SidebarToggle = () => {
     const { toggleSidebar, state } = useSidebar();
+    const isCollapsed = mounted ? state === 'collapsed' : false;
     return (
         <Button 
             variant="ghost" 
@@ -159,7 +165,7 @@ export default function AdminLayoutClient({
             onClick={toggleSidebar}
             className="hidden md:flex absolute -right-3 top-20 bg-purple-700 text-white border-2 border-purple-800 shadow-xl rounded-full z-50 h-6 w-6 hover:bg-purple-600 transition-colors"
         >
-            {state === 'expanded' ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            {!isCollapsed ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </Button>
     )
   }
@@ -247,7 +253,7 @@ export default function AdminLayoutClient({
 
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-start text-rose-400 hover:bg-rose-500/10 font-bold rounded-xl h-10 px-3 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center transition-colors">
+                        <Button variant="ghost" className="w-full justify-start text-rose-400 hover:bg-rose-50/10 font-bold rounded-xl h-10 px-3 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center transition-colors">
                             <LogOut className="w-5 h-5 shrink-0" />
                             <span className="group-data-[collapsible=icon]:hidden ml-3">Keluar</span>
                         </Button>

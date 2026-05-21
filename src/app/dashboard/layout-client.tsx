@@ -98,6 +98,11 @@ export default function DashboardLayoutClient({
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isMonitoringExpanded, setIsMonitoringExpanded] = React.useState(true);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const isHeadmaster = profile?.role === 'headmaster';
   const isAdmin = profile?.role === 'admin';
@@ -114,7 +119,9 @@ export default function DashboardLayoutClient({
   const NavItem = ({ href, icon: Icon, label, color = "" }: any) => {
     const { state } = useSidebar();
     const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href) && href !== '/dashboard';
-    const isCollapsed = state === "collapsed";
+    
+    // Pastikan status collapsed hanya aktif setelah mounted untuk menghindari hydration mismatch
+    const isCollapsed = mounted ? state === "collapsed" : false;
 
     return (
       <SidebarMenuItem>
@@ -138,10 +145,10 @@ export default function DashboardLayoutClient({
                 "w-5 h-5 shrink-0 transition-transform duration-300", 
                 isActive ? "text-indigo-600" : color,
                 !isActive && "group-hover/item:scale-110",
-                !isCollapsed && "mr-3"
+                (!isCollapsed && mounted) && "mr-3"
             )} />
             <AnimatePresence mode="wait">
-              {!isCollapsed && (
+              {(!isCollapsed && mounted) && (
                 <motion.span
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -183,6 +190,7 @@ export default function DashboardLayoutClient({
 
   const SidebarToggle = () => {
     const { toggleSidebar, state } = useSidebar();
+    const isCollapsed = mounted ? state === 'collapsed' : false;
     return (
         <Button 
             variant="ghost" 
@@ -190,7 +198,7 @@ export default function DashboardLayoutClient({
             onClick={toggleSidebar}
             className="hidden md:flex absolute -right-3 top-20 bg-indigo-700 text-white border-2 border-indigo-800 shadow-xl rounded-full z-50 h-6 w-6 hover:bg-indigo-600 transition-colors"
         >
-            {state === 'expanded' ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            {!isCollapsed ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </Button>
     )
   }
@@ -313,7 +321,7 @@ export default function DashboardLayoutClient({
 
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-start text-rose-400 hover:bg-rose-500/10 font-bold rounded-xl h-10 px-3 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center transition-colors">
+                        <Button variant="ghost" className="w-full justify-start text-rose-400 hover:bg-rose-50/10 font-bold rounded-xl h-10 px-3 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center transition-colors">
                             <LogOut className="w-5 h-5 shrink-0" />
                             <span className="group-data-[collapsible=icon]:hidden ml-3">Keluar</span>
                         </Button>
