@@ -60,15 +60,16 @@ INPUT KURIKULUM:
 - Fokus Materi/Elemen: ${input.scope}
 - Instruksi Tambahan: ${input.additionalInfo || 'Tidak ada'}
 
-STRUKTUR DOKUMEN (WAJIB ADA):
-1. CAPAIAN PEMBELAJARAN (CP): Tuliskan narasi CP sesuai elemen yang dipilih berdasarkan regulasi terbaru.
-2. TUJUAN PEMBELAJARAN (TP): Pecah CP tersebut menjadi beberapa Tujuan Pembelajaran yang konkret (menggunakan kata kerja operasional).
-3. ALUR TUJUAN PEMBELAJARAN (ATP): Susun TP tersebut ke dalam alur urutan pembelajaran yang logis dari mudah ke sulit atau dari konkret ke abstrak.
-4. PERKIRAAN JAM PELAJARAN (JP): Berikan saran alokasi waktu untuk setiap TP.
-5. KATA KUNCI & MATERI INTI: Daftar konsep utama yang harus dikuasai siswa.
-6. PROFIL PELAJAR PANCASILA: Tentukan dimensi yang paling relevan dengan alur ini.
+ATURAN PENULISAN (PENTING):
+1. GUNAKAN HURUF NORMAL (Sentence case). JANGAN gunakan huruf kapital semua untuk isi teks. Huruf kapital hanya untuk judul atau awal kalimat.
+2. STRUKTUR DOKUMEN (WAJIB ADA):
+   - CAPAIAN PEMBELAJARAN (CP): Tuliskan narasi CP sesuai elemen.
+   - TUJUAN PEMBELAJARAN (TP): Pecah menjadi beberapa TP yang konkret.
+   - ALUR TUJUAN PEMBELAJARAN (ATP): WAJIB menggunakan format TABEL Markdown dengan kolom: No, TP, Lingkup Materi, Dimensi P3, Alokasi Waktu, dan Strategi Pembelajaran.
+3. KATA KUNCI & MATERI INTI: Daftar konsep utama.
+4. PROFIL PELAJAR PANCASILA: Tentukan dimensi yang relevan.
 
-Gunakan bahasa yang sangat profesional namun praktis bagi guru. Gunakan format Markdown yang sangat rapi (gunakan tabel untuk ATP agar mudah dibaca) sehingga siap dipindahkan ke Google Docs.`,
+Gunakan bahasa yang sangat profesional namun praktis. Pastikan tabel Markdown dibuat dengan benar menggunakan pemisah pipe (|) dan garis header (---).`,
   });
 
   const result = response.output;

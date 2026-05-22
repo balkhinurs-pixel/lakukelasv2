@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { streamCpAtpAction } from "@/lib/actions/ai";
-import { saveCpAtpToDrive } from "@/lib/actions/google-drive";
+import { saveCpAtpToDrive, setupGoogleDriveFolder } from "@/lib/actions/google-drive";
 import type { Class, Subject, GoogleDriveIntegration, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -107,6 +107,15 @@ export default function GenerateCpAtpClient({
         additionalInfo: ''
     });
 
+    // Fungsi Sanitasi untuk membersihkan karakter newline yang ter-escape
+    const sanitizeContent = (text: string) => {
+        if (!text) return "";
+        return text
+            .replace(/\\n/gi, '\n') // Mengubah \n mentah menjadi baris baru asli
+            .replace(/\\r/gi, '') 
+            .replace(/\n{3,}/g, '\n\n'); // Mencegah spasi berlebih
+    };
+
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
         if (loading && !generatedResult) {
@@ -168,7 +177,13 @@ export default function GenerateCpAtpClient({
             });
 
             for await (const delta of readStreamableValue(output)) {
-                if (delta) setGeneratedResult(delta as any);
+                if (delta) {
+                    const sanitized = {
+                        title: delta.title,
+                        content: sanitizeContent(delta.content)
+                    };
+                    setGeneratedResult(sanitized as any);
+                }
             }
 
             toast({ title: "Berhasil!", description: "Pemetaan CP & ATP telah dirumuskan." });

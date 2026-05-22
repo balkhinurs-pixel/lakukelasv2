@@ -63,6 +63,15 @@ export default function CpAtpRepositoryClient({
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
     const [printingDoc, setPrintingDoc] = React.useState<CpAtpDocument | null>(null);
 
+    // Sanitasi Konten untuk memperbaiki escape character dari database
+    const sanitizeContent = (text: string) => {
+        if (!text) return "";
+        return text
+            .replace(/\\n/gi, '\n')
+            .replace(/\\r/gi, '')
+            .replace(/\n{3,}/g, '\n\n');
+    };
+
     const filteredDocs = React.useMemo(() => {
         return initialDocuments.filter(doc => {
             const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -268,7 +277,7 @@ export default function CpAtpRepositoryClient({
                                     tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
                                 }}
                             >
-                                {printingDoc.content || ""}
+                                {sanitizeContent(printingDoc.content || "")}
                             </ReactMarkdown>
                         </div>
 
