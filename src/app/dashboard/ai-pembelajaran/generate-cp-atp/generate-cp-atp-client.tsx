@@ -107,13 +107,12 @@ export default function GenerateCpAtpClient({
         additionalInfo: ''
     });
 
-    // Fungsi Sanitasi untuk membersihkan karakter newline yang ter-escape
     const sanitizeContent = (text: string) => {
         if (!text) return "";
         return text
-            .replace(/\\n/gi, '\n') // Mengubah \n mentah menjadi baris baru asli
+            .replace(/\\n/gi, '\n')
             .replace(/\\r/gi, '') 
-            .replace(/\n{3,}/g, '\n\n'); // Mencegah spasi berlebih
+            .replace(/\n{3,}/g, '\n\n');
     };
 
     React.useEffect(() => {
@@ -224,17 +223,17 @@ export default function GenerateCpAtpClient({
             const imgProps = pdf.getImageProperties(imgData);
             const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
 
-            let heightLeft = imgHeight;
             let position = 0;
-
+            
+            // Render halaman pertama
             pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
-            heightLeft -= pageHeight;
+            position -= pageHeight;
 
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
+            // Render halaman tambahan
+            while (position > -imgHeight) {
                 pdf.addPage();
                 pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
-                heightLeft -= pageHeight;
+                position -= pageHeight;
             }
 
             pdf.save(`${generatedResult.title.replace(/\s+/g, '_')}.pdf`);
@@ -360,14 +359,20 @@ export default function GenerateCpAtpClient({
                                                 <div className="space-y-1"><div className="grid grid-cols-[100px_10px_1fr]"><span>Kelas</span><span>:</span><span className="font-bold">{form.kelas}</span></div><div className="grid grid-cols-[100px_10px_1fr]"><span>Penyusun</span><span>:</span><span className="font-bold">{schoolProfile?.full_name || 'GURU PENGAMPU'}</span></div></div>
                                             </div>
                                             <div className="prose prose-slate max-w-none prose-sm leading-relaxed text-slate-900">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-                                                    table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-black my-4" {...props} />,
-                                                    th: ({node, ...props}) => <th className="border-2 border-black bg-slate-50 p-2 font-bold text-center text-[10px]" {...props} />,
-                                                    td: ({node, ...props}) => <td className="border-2 border-black p-2 text-[10px] align-top" {...props} />,
-                                                    h1: ({node, ...props}) => <h3 className="text-sm font-bold uppercase mt-6 mb-2" {...props} />,
-                                                    p: ({node, ...props}) => <p className="text-xs mb-3 text-justify" {...props} />,
-                                                    tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
-                                                }}>{generatedResult.content}</ReactMarkdown>
+                                                <ReactMarkdown 
+                                                    remarkPlugins={[remarkGfm]} 
+                                                    components={{
+                                                        table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-black my-4" style={{ breakInside: 'auto' }} {...props} />,
+                                                        th: ({node, ...props}) => <th className="border-2 border-black bg-slate-50 p-2 font-bold text-center text-[10px]" {...props} />,
+                                                        td: ({node, ...props}) => <td className="border-2 border-black p-2 text-[10px] align-top" {...props} />,
+                                                        h1: ({node, ...props}) => <h3 className="text-sm font-bold uppercase mt-6 mb-2" style={{ breakInside: 'avoid', breakAfter: 'avoid' }} {...props} />,
+                                                        p: ({node, ...props}) => <p className="text-xs mb-3 text-justify" style={{ breakInside: 'avoid' }} {...props} />,
+                                                        li: ({node, ...props}) => <li className="text-xs mb-1" style={{ breakInside: 'avoid' }} {...props} />,
+                                                        tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
+                                                    }}
+                                                >
+                                                    {generatedResult.content}
+                                                </ReactMarkdown>
                                             </div>
                                             <div className="mt-12 flex justify-between text-xs px-10" style={{ breakInside: 'avoid' }}>
                                                 <div className="text-center"><p>Mengetahui,</p><p className="mb-20">Kepala Sekolah</p><p className="font-bold underline">{schoolProfile?.headmaster_name || ".................................."}</p><p>NIP. {schoolProfile?.headmaster_nip || "..........................."}</p></div>

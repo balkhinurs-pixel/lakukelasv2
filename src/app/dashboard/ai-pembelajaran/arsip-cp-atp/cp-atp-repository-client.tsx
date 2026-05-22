@@ -63,7 +63,6 @@ export default function CpAtpRepositoryClient({
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
     const [printingDoc, setPrintingDoc] = React.useState<CpAtpDocument | null>(null);
 
-    // Sanitasi Konten untuk memperbaiki escape character dari database
     const sanitizeContent = (text: string) => {
         if (!text) return "";
         return text
@@ -126,17 +125,17 @@ export default function CpAtpRepositoryClient({
                 const imgProps = pdf.getImageProperties(imgData);
                 const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
 
-                let heightLeft = imgHeight;
                 let position = 0;
-
+                
+                // Menambahkan halaman pertama
                 pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
-                heightLeft -= pageHeight;
+                position -= pageHeight;
 
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight;
+                // Menambahkan halaman tambahan jika konten melebihi satu halaman
+                while (position > -imgHeight) {
                     pdf.addPage();
                     pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
-                    heightLeft -= pageHeight;
+                    position -= pageHeight;
                 }
 
                 pdf.save(`${doc.title.replace(/\s+/g, '_')}.pdf`);
@@ -214,7 +213,7 @@ export default function CpAtpRepositoryClient({
                             width: '210mm', 
                             minHeight: '297mm', 
                             fontFamily: '"Times New Roman", Times, serif',
-                            lineHeight: '1.45'
+                            lineHeight: '1.5'
                         }}
                     >
                         <div className="flex items-center gap-6 mb-4 pb-4 border-b-[3pt] border-black">
@@ -267,11 +266,11 @@ export default function CpAtpRepositoryClient({
                             <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                    table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-black my-6 text-[10pt]" {...props} />,
+                                    table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-black my-6 text-[10pt]" style={{ breakInside: 'auto' }} {...props} />,
                                     th: ({node, ...props}) => <th className="border-2 border-black bg-slate-100 p-2 font-bold text-center" {...props} />,
                                     td: ({node, ...props}) => <td className="border-2 border-black p-2 align-top" {...props} />,
-                                    h1: ({node, ...props}) => <h3 className="text-[12pt] font-bold uppercase mt-8 mb-4 border-l-4 border-black pl-3" {...props} />,
-                                    h2: ({node, ...props}) => <h4 className="text-[11pt] font-bold uppercase mt-6 mb-3" {...props} />,
+                                    h1: ({node, ...props}) => <h3 className="text-[12pt] font-bold uppercase mt-8 mb-4 border-l-4 border-black pl-3" style={{ breakInside: 'avoid', breakAfter: 'avoid' }} {...props} />,
+                                    h2: ({node, ...props}) => <h4 className="text-[11pt] font-bold uppercase mt-6 mb-3" style={{ breakInside: 'avoid', breakAfter: 'avoid' }} {...props} />,
                                     p: ({node, ...props}) => <p className="text-[10.5pt] mb-4 text-justify" style={{ breakInside: 'avoid' }} {...props} />,
                                     li: ({node, ...props}) => <li className="text-[10.5pt] mb-1" style={{ breakInside: 'avoid' }} {...props} />,
                                     tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
