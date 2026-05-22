@@ -327,14 +327,13 @@ export default function GenerateCpAtpClient({
                 </Card>
 
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
-                    <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-3"><div className="p-2 rounded-xl bg-indigo-100 text-indigo-600"><Layers className="h-5 w-5" /></div><CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Alur</CardTitle></div>
-                        {generatedResult && (
-                            <div className="flex items-center gap-2">
-                                <Button onClick={handleDownloadPdf} disabled={printing} variant="outline" className="rounded-xl h-10 border-indigo-200 text-indigo-600 font-bold gap-2"><Download className="h-4 w-4" />PDF</Button>
-                                <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan Arsip</Button>
+                    <CardHeader className="bg-slate-50/50 border-b p-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
+                                <Layers className="h-5 w-5" />
                             </div>
-                        )}
+                            <CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Alur</CardTitle>
+                        </div>
                     </CardHeader>
                     <CardContent className="flex-grow p-0 bg-slate-50/20">
                         <ScrollArea className="h-full">
@@ -386,6 +385,26 @@ export default function GenerateCpAtpClient({
                             </AnimatePresence>
                         </ScrollArea>
                     </CardContent>
+                    <AnimatePresence>
+                        {generatedResult && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                            >
+                                <CardFooter className="bg-white border-t p-6">
+                                    <Button 
+                                        onClick={handleSaveToDrive} 
+                                        disabled={saving} 
+                                        className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95"
+                                    >
+                                        {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
+                                        Simpan ke Arsip & Google Drive
+                                    </Button>
+                                </CardFooter>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </Card>
             </div>
 
