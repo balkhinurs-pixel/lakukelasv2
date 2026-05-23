@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
+import { PdfIcon } from "@/components/icons";
 
 export type FormatFileProps =
   | "doc"
@@ -96,9 +97,13 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
   const colorBannerClass = colorBannerMap[formatFile];
   let filePlaceholder: ReactNode = null;
 
-  filePlaceholder = <DefaultPlaceholder />;
-
-  if (formatFile === "md" || formatFile === "mdx") {
+  if (formatFile === "pdf") {
+    filePlaceholder = (
+      <div className="flex h-full items-center justify-center p-0.5">
+        <PdfIcon className="w-full h-full" />
+      </div>
+    );
+  } else if (formatFile === "md" || formatFile === "mdx") {
     filePlaceholder = (
       <div className="space-y-1.5">
         <div className="flex items-center gap-1">
@@ -116,9 +121,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </div>
     );
-  }
-
-  if (formatFile === "xls" || formatFile === "xlsx") {
+  } else if (formatFile === "xls" || formatFile === "xlsx") {
     filePlaceholder = (
       <div className="space-y-0.5">
         <div className="grid grid-cols-3 gap-0.5">
@@ -143,9 +146,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </div>
     );
-  }
-
-  if (formatFile === "csv") {
+  } else if (formatFile === "csv") {
     filePlaceholder = (
       <>
         <div className="mb-2">
@@ -176,9 +177,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </>
     );
-  }
-
-  if (
+  } else if (
     formatFile === "zip" ||
     formatFile === "rar" ||
     formatFile === "tar" ||
@@ -226,9 +225,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </div>
     );
-  }
-
-  if (formatFile === "ppt" || formatFile === "pptx") {
+  } else if (formatFile === "ppt" || formatFile === "pptx") {
     filePlaceholder = (
       <>
         <div className="bg-foreground/5 mb-1.5 space-y-1 rounded border p-1">
@@ -247,9 +244,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </>
     );
-  }
-
-  if (
+  } else if (
     formatFile === "img" ||
     formatFile === "png" ||
     formatFile === "jpg" ||
@@ -266,9 +261,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </>
     );
-  }
-
-  if (formatFile === "video") {
+  } else if (formatFile === "video") {
     filePlaceholder = (
       <>
         <div className="bg-foreground/5 mb-1.5 space-y-1 rounded border p-1">
@@ -280,9 +273,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </>
     );
-  }
-
-  if (
+  } else if (
     formatFile === "html" ||
     formatFile === "js" ||
     formatFile === "jsx" ||
@@ -313,9 +304,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </div>
     );
-  }
-
-  if (formatFile === "css") {
+  } else if (formatFile === "css") {
     filePlaceholder = (
       <div className="space-y-1">
         <div className="flex items-center gap-1">
@@ -338,9 +327,7 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </div>
     );
-  }
-
-  if (formatFile === "json") {
+  } else if (formatFile === "json") {
     filePlaceholder = (
       <div className="space-y-1">
         <div className="flex items-center gap-1">
@@ -366,6 +353,8 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
         </div>
       </div>
     );
+  } else {
+    filePlaceholder = <DefaultPlaceholder />;
   }
 
   const sizeClass = "w-14 h-18";
