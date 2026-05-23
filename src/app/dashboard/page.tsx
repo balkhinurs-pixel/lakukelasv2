@@ -18,6 +18,11 @@ type DashboardData = {
     allHolidays: Holiday[];
     profile: Profile | null;
     driveIntegration: GoogleDriveIntegration | null;
+    weeklyProgress: {
+        percentage: number;
+        completed: number;
+        total: number;
+    };
 };
 
 function DashboardLoadingSkeleton() {
@@ -77,6 +82,7 @@ export default function DashboardPage() {
             allHolidays={data.allHolidays}
             profileName={data.profile?.full_name}
             driveIntegration={data.driveIntegration}
+            weeklyProgress={data.weeklyProgress}
         />
     );
 }

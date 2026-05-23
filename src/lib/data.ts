@@ -3,7 +3,7 @@
 import { createClient } from './supabase/server';
 import type { Profile, Class, Subject, Student, JournalEntry, ScheduleItem, AttendanceHistoryEntry, GradeHistoryEntry, SchoolYear, Agenda, TeacherAttendance, Material, Holiday, GoogleDriveIntegration, AiDocument } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
-import { format, parseISO, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO, eachDayOfInterval, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { getIndonesianDayName, getIndonesianTime } from './timezone';
 import { getActiveSchoolYearId } from './actions';
@@ -460,18 +460,28 @@ export async function getAlumni(): Promise<Student[]> {
 export async function getDashboardData(todayDay: string) {
     noStore();
     const user = await getAuthenticatedUser();
-    if (!user) return { todaySchedule: [], agendas: [], attendancePercentage: 0, unfilledJournalsCount: 0, todayHoliday: null, driveIntegration: null };
+    if (!user) return { todaySchedule: [], agendas: [], attendancePercentage: 0, unfilledJournalsCount: 0, todayHoliday: null, driveIntegration: null, weeklyProgress: { percentage: 0, completed: 0, total: 0 } };
+    
     const supabase = await createClient();
     const activeSchoolYearId = await getActiveSchoolYearId();
-    const todayStr = format(getIndonesianTime(), 'yyyy-MM-dd');
+    const nowIndo = getIndonesianTime();
+    const todayStr = format(nowIndo, 'yyyy-MM-dd');
     
-    const [scheduleRes, agendasRes, attendanceRes, journalsRes, holidayRes, driveRes] = await Promise.all([
+    // Weekly range (Monday to Sunday)
+    const weekStart = startOfWeek(nowIndo, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(nowIndo, { weekStartsOn: 1 });
+    const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+    const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+
+    const [scheduleRes, agendasRes, attendanceRes, journalsRes, holidayRes, driveRes, weeklyJournalsRes, allSchedulesRes] = await Promise.all([
         supabase.from('schedule').select('*, class:classes(name), subject:subjects(name)').eq('teacher_id', user.id).eq('day', todayDay),
         supabase.from('agendas').select('*').eq('teacher_id', user.id).gte('date', todayStr).order('date', { ascending: true }).order('start_time', { ascending: true }).limit(5),
         supabase.from('attendance_records').select('status').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || ''),
         supabase.from('journal_entries').select('date').eq('teacher_id', user.id).eq('school_year_id', activeSchoolYearId || ''),
         supabase.from('holidays').select('*').eq('date', todayStr).maybeSingle(),
-        supabase.from('google_drive_integrations').select('*').eq('user_id', user.id).maybeSingle()
+        supabase.from('google_drive_integrations').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('journal_entries').select('id').eq('teacher_id', user.id).gte('date', weekStartStr).lte('date', weekEndStr),
+        supabase.from('schedule').select('id').eq('teacher_id', user.id)
     ]);
 
     const todayScheduleData = (scheduleRes.data || []).map((item: any) => ({ 
@@ -497,13 +507,23 @@ export async function getDashboardData(todayDay: string) {
 
     const unfilledJournalsCount = Math.max(0, todayScheduleData.length - todayJournals.length);
 
+    // Weekly progress calculation
+    const weeklyTotal = (allSchedulesRes.data?.length || 0);
+    const weeklyCompleted = weeklyJournalsRes.data?.length || 0;
+    const weeklyPercentage = weeklyTotal > 0 ? Math.round((weeklyCompleted / weeklyTotal) * 100) : 0;
+
     return { 
         todaySchedule: todayScheduleData, 
         agendas: agendasData, 
         attendancePercentage, 
         unfilledJournalsCount,
         todayHoliday: holidayRes.data || null,
-        driveIntegration: driveRes.data || null
+        driveIntegration: driveRes.data || null,
+        weeklyProgress: {
+            percentage: Math.min(100, weeklyPercentage),
+            completed: weeklyCompleted,
+            total: weeklyTotal
+        }
     };
 }
 

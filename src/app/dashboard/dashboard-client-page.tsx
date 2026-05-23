@@ -42,6 +42,11 @@ type DashboardPageProps = {
   allHolidays?: Holiday[];
   profileName?: string;
   driveIntegration?: GoogleDriveIntegration | null;
+  weeklyProgress: {
+    percentage: number;
+    completed: number;
+    total: number;
+  };
 }
 
 // Komponen Pembantu untuk Hitung Mundur Sisa Waktu Mengajar
@@ -204,7 +209,8 @@ export default function DashboardClientPage({
     todayHoliday,
     allHolidays = [],
     profileName = "Bapak/Ibu Guru",
-    driveIntegration
+    driveIntegration,
+    weeklyProgress
 }: DashboardPageProps) {
     const [now, setNow] = React.useState<Date>(new Date());
     const [showAll, setShowAll] = React.useState(false);
@@ -401,16 +407,27 @@ export default function DashboardClientPage({
                         <div className="relative h-24 w-24 shrink-0">
                             <svg className="h-full w-full" viewBox="0 0 36 36">
                                 <circle className="stroke-slate-100 fill-none" strokeWidth="3" cx="18" cy="18" r="15.91549430918954" />
-                                <circle className="stroke-indigo-600 fill-none transition-all duration-1000" strokeWidth="3" strokeDasharray="72 28" strokeDashoffset="25" strokeLinecap="round" cx="18" cy="18" r="15.91549430918954" />
+                                <circle 
+                                    className="stroke-indigo-600 fill-none transition-all duration-1000" 
+                                    strokeWidth="3" 
+                                    strokeDasharray={`${weeklyProgress.percentage} ${100 - weeklyProgress.percentage}`} 
+                                    strokeDashoffset="25" 
+                                    strokeLinecap="round" 
+                                    cx="18" cy="18" r="15.91549430918954" 
+                                />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-lg font-black text-slate-900">72%</span>
+                                <span className="text-lg font-black text-slate-900">{weeklyProgress.percentage}%</span>
                             </div>
                         </div>
                         <div className="space-y-1">
                             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Minggu Ini</p>
-                            <p className="text-sm font-bold text-slate-700 leading-tight">8 dari 11 kelas telah diselesaikan</p>
-                            <Button variant="link" size="sm" className="p-0 h-auto text-indigo-600 font-black text-[11px] uppercase tracking-wider">Lihat detail ></Button>
+                            <p className="text-sm font-bold text-slate-700 leading-tight">
+                                {weeklyProgress.completed} dari {weeklyProgress.total} sesi telah dicatat
+                            </p>
+                            <Button variant="link" size="sm" className="p-0 h-auto text-indigo-600 font-black text-[11px] uppercase tracking-wider" asChild>
+                                <Link href="/dashboard/journal">Lihat detail ></Link>
+                            </Button>
                         </div>
                     </div>
                 </Card>
