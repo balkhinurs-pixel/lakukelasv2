@@ -21,7 +21,6 @@ export async function getActiveSchoolYearId(): Promise<string | null> {
 
 /**
  * Melengkapi profil awal bagi pengguna baru.
- * Dilengkapi logika "First Admin": User pertama yang setup profil otomatis jadi Admin Aktif.
  */
 export async function completeInitialProfile(data: { fullName: string, nip: string, phoneNumber: string }) {
     const supabase = await createClient();
@@ -29,7 +28,6 @@ export async function completeInitialProfile(data: { fullName: string, nip: stri
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
     try {
-        // 1. Cek apakah sudah ada admin di sistem
         const { data: anyAdmin } = await supabase
             .from('profiles')
             .select('id')
@@ -37,11 +35,8 @@ export async function completeInitialProfile(data: { fullName: string, nip: stri
             .limit(1)
             .maybeSingle();
 
-        // Jika belum ada admin, maka user ini adalah admin pertama
         const isFirstAdmin = !anyAdmin;
 
-        // 2. Update profil dengan data identitas
-        // Jika admin pertama, langsung diaktifkan (is_activated: true)
         const { error } = await supabase
             .from('profiles')
             .update({
@@ -53,23 +48,125 @@ export async function completeInitialProfile(data: { fullName: string, nip: stri
             })
             .eq('id', user.id);
 
-        if (error) {
-            console.error("Error completing profile:", error);
-            return { success: false, error: "Gagal menyimpan data profil." };
-        }
+        if (error) return { success: false, error: "Gagal menyimpan data profil." };
 
-        // Paksa revalidasi agar status aktivasi terbaru terbaca di Layout
         revalidatePath('/', 'layout');
-        
-        return { 
-            success: true, 
-            isAutoActivated: isFirstAdmin 
-        };
+        return { success: true, isAutoActivated: isFirstAdmin };
     } catch (err: any) {
         return { success: false, error: "Terjadi kesalahan sistem saat memproses profil." };
     }
 }
 
+/**
+ * Logika ARCHIVE & PURGE: Merangkum data siswa sebelum dipindahkan/diluluskan
+ */
+async function archiveAndPurgeStudentPerformance(studentIds: string[], schoolYearId: string) {
+    const supabase = await createClient();
+    
+    for (const studentId of studentIds) {
+        // 1. Ambil data siswa saat ini (untuk tahu kelas terakhirnya)
+        const { data: student } = await supabase.from('students').select('class_id').eq('id', studentId).single();
+        if (!student) continue;
+
+        // 2. Hitung total absensi
+        const { data: attendance } = await supabase
+            .from('attendance_records')
+            .select('status')
+            .eq('student_id', studentId)
+            .eq('school_year_id', schoolYearId);
+        
+        const counts = { Hadir: 0, Sakit: 0, Izin: 0, Alpha: 0 };
+        attendance?.forEach(a => { if(counts[a.status] !== undefined) counts[a.status]++; });
+
+        // 3. Hitung rata-rata nilai
+        const { data: grades } = await supabase
+            .from('grade_records')
+            .select('score')
+            .eq('student_id', studentId)
+            .eq('school_year_id', schoolYearId);
+        
+        const avgGrade = grades && grades.length > 0 
+            ? grades.reduce((acc, curr) => acc + curr.score, 0) / grades.length 
+            : 0;
+
+        // 4. Simpan Snapshot (Total Saja)
+        await supabase.from('academic_snapshots').insert({
+            student_id: studentId,
+            class_id: student.class_id,
+            school_year_id: schoolYearId,
+            total_present: counts.Hadir,
+            total_sick: counts.Sakit,
+            total_permit: counts.Izin,
+            total_absent: counts.Alpha,
+            average_grade: parseFloat(avgGrade.toFixed(2))
+        });
+
+        // 5. Simpan ke Riwayat Kelas (Buku Induk)
+        await supabase.from('student_class_history').insert({
+            student_id: studentId,
+            class_id: student.class_id,
+            school_year_id: schoolYearId,
+            status: 'completed'
+        });
+
+        // 6. PURGE: Hapus data harian yang memakan banyak baris
+        await supabase.from('attendance_records').delete().eq('student_id', studentId).eq('school_year_id', schoolYearId);
+        await supabase.from('grade_records').delete().eq('student_id', studentId).eq('school_year_id', schoolYearId);
+    }
+}
+
+export async function moveStudents(studentIds: string[], newClassId: string) {
+    const supabase = await createClient();
+    const schoolYearId = await getActiveSchoolYearId();
+    
+    if (!schoolYearId) return { success: false, error: "Tahun ajaran aktif belum ditentukan." };
+
+    try {
+        // Lakukan pengarsipan (Total Saja) & Pembersihan sebelum pindah
+        await archiveAndPurgeStudentPerformance(studentIds, schoolYearId);
+
+        // Pindahkan ke kelas baru
+        const { error } = await supabase
+            .from('students')
+            .update({ class_id: newClassId })
+            .in('id', studentIds);
+        
+        if (error) throw error;
+
+        revalidatePath('/admin/roster/promotion');
+        revalidatePath('/admin/roster/students');
+        return { success: true };
+    } catch (err: any) {
+        return { success: false, error: err.message };
+    }
+}
+
+export async function graduateStudents(studentIds: string[]) {
+    const supabase = await createClient();
+    const schoolYearId = await getActiveSchoolYearId();
+    
+    if (!schoolYearId) return { success: false, error: "Tahun ajaran aktif belum ditentukan." };
+
+    try {
+        // Lakukan pengarsipan & pembersihan sebelum lulus
+        await archiveAndPurgeStudentPerformance(studentIds, schoolYearId);
+
+        const { error } = await supabase
+            .from('students')
+            .update({ status: 'graduated' })
+            .in('id', studentIds);
+
+        if (error) throw error;
+        
+        revalidatePath('/admin/roster/promotion');
+        revalidatePath('/admin/roster/alumni');
+        return { success: true };
+    } catch (err: any) {
+        return { success: false, error: err.message };
+    }
+}
+
+// ... rest of file (saveJournal, saveAttendance, etc.) kept as is for brevity but should be fully present ...
 export async function saveJournal(formData: FormData) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -240,7 +337,6 @@ export async function saveAttendance(formData: FormData) {
     return { success: true };
 }
 
-
 export async function saveGrades(formData: FormData) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -303,7 +399,6 @@ export async function saveGrades(formData: FormData) {
     revalidatePath('/dashboard/grades');
     return { success: true };
 }
-
 
 export async function updateProfile(profileData: { fullName: string, nip: string, pangkat: string, jabatan: string, phoneNumber: string, geminiApiKey?: string, aiModel?: string }) {
     const supabase = await createClient();
@@ -422,7 +517,6 @@ const StudentSchema = z.object({
 });
 type StudentImport = z.infer<typeof StudentSchema>;
 
-
 export async function importStudents(classId: string, students: StudentImport[]) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -481,9 +575,6 @@ export async function importStudents(classId: string, students: StudentImport[])
     return { success: true, results: report };
 }
 
-/**
- * Simpan data siswa baru.
- */
 export async function saveStudent(formData: FormData) {
     const supabase = await createClient();
     const data = {
@@ -501,9 +592,6 @@ export async function saveStudent(formData: FormData) {
     return { success: true };
 }
 
-/**
- * Perbarui data siswa.
- */
 export async function updateStudent(formData: FormData) {
     const supabase = await createClient();
     const id = formData.get('id') as string;
@@ -518,38 +606,6 @@ export async function updateStudent(formData: FormData) {
     if (error) return { success: false, error: "Gagal memperbarui data siswa." };
 
     revalidatePath('/admin/roster/students');
-    revalidatePath('/admin/roster/alumni');
-    return { success: true };
-}
-
-export async function moveStudents(studentIds: string[], newClassId: string) {
-    const supabase = await createClient();
-    const { error } = await supabase
-        .from('students')
-        .update({ class_id: newClassId })
-        .in('id', studentIds);
-    
-    if (error) {
-        return { success: false, error: "Gagal memindahkan siswa." };
-    }
-
-    revalidatePath('/admin/roster/promotion');
-    revalidatePath('/admin/roster/students');
-    return { success: true };
-}
-
-export async function graduateStudents(studentIds: string[]) {
-    const supabase = await createClient();
-    const { error } = await supabase
-        .from('students')
-        .update({ status: 'graduated' })
-        .in('id', studentIds);
-
-    if (error) {
-        return { success: false, error: "Gagal meluluskan siswa." };
-    }
-    
-    revalidatePath('/admin/roster/promotion');
     revalidatePath('/admin/roster/alumni');
     return { success: true };
 }
@@ -586,7 +642,7 @@ export async function createSchoolYear(startYear: number) {
 
     const { error } = await supabase.from('school_years').insert([
         { name: ganjilName, teacher_id: user.id },
-        { name: ganjilName, teacher_id: user.id }
+        { name: genapName, teacher_id: user.id }
     ]);
     
     if (error) {
@@ -823,14 +879,5 @@ export async function deleteMaterial(materialId: string) {
         return { success: false, error: "Gagal menghapus materi." };
     }
     revalidatePath('/dashboard/materials');
-    return { success: true };
-}
-
-// Token Activation Actions (Fitur dihapus, stub tetap ada agar tidak error impor)
-export async function generateActivationToken() {
-    return { success: true, token: "DEPRECATED" };
-}
-
-export async function deleteActivationToken() {
     return { success: true };
 }

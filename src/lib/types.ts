@@ -77,6 +77,28 @@ export interface GradeRecord {
   school_year_id: string;
 }
 
+export interface AcademicSnapshot {
+  id: string;
+  student_id: string;
+  class_id: string;
+  school_year_id: string;
+  total_present: number;
+  total_sick: number;
+  total_permit: number;
+  total_absent: number;
+  average_grade: number;
+  created_at: string;
+}
+
+export interface StudentClassHistory {
+  id: string;
+  student_id: string;
+  class_id: string;
+  school_year_id: string;
+  status: string;
+  created_at: string;
+}
+
 export interface JournalEntry {
   id: string;
   date: string;

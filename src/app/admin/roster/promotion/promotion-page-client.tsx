@@ -1,4 +1,3 @@
-
 "use client"
 import * as React from "react";
 import {
@@ -20,12 +19,22 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ArrowRight, Loader2, Users, GraduationCap, ArrowRightLeft } from "lucide-react";
+import { ArrowRight, Loader2, Users, GraduationCap, ArrowRightLeft, Info, DatabaseZap } from "lucide-react";
 import type { Class, Student } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { moveStudents, graduateStudents, updateStudentsStatus } from "@/lib/actions";
 import { useRouter } from "next/navigation";
-
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function PromotionPageClient({ 
     classes,
@@ -97,14 +106,11 @@ export default function PromotionPageClient({
     }
 
     const handlePromotion = async () => {
-        if (selectedStudentIds.size === 0 || !destinationClassId) {
-            toast({ title: "Gagal", description: "Pilih setidaknya satu siswa dan kelas tujuan.", variant: "destructive"});
-            return;
-        }
+        if (selectedStudentIds.size === 0 || !destinationClassId) return;
         setLoading(true);
         const result = await moveStudents(Array.from(selectedStudentIds), destinationClassId);
         if (result.success) {
-            toast({ title: "Sukses!", description: `${selectedStudentIds.size} siswa berhasil dipindahkan.` });
+            toast({ title: "Kenaikan Kelas Berhasil!", description: `${selectedStudentIds.size} siswa telah dipindahkan dan data riwayat telah diarsipkan.` });
             setSelectedStudentIds(new Set());
             router.refresh();
         } else {
@@ -114,14 +120,11 @@ export default function PromotionPageClient({
     }
     
     const handleGraduation = async () => {
-        if (selectedGraduationIds.size === 0) {
-            toast({ title: "Gagal", description: "Pilih setidaknya satu siswa untuk diluluskan.", variant: "destructive"});
-            return;
-        }
+        if (selectedGraduationIds.size === 0) return;
         setLoading(true);
         const result = await graduateStudents(Array.from(selectedGraduationIds));
         if (result.success) {
-            toast({ title: "Sukses!", description: `${selectedGraduationIds.size} siswa berhasil diluluskan dan diarsipkan.` });
+            toast({ title: "Kelulusan Berhasil!", description: `${selectedGraduationIds.size} siswa telah diluluskan dan data riwayat telah diringkas.` });
             setSelectedGraduationIds(new Set());
             router.refresh();
         } else {
@@ -131,14 +134,11 @@ export default function PromotionPageClient({
     }
 
     const handleStatusMutation = async () => {
-        if (selectedMutationIds.size === 0) {
-            toast({ title: "Gagal", description: "Pilih setidaknya satu siswa.", variant: "destructive"});
-            return;
-        }
+        if (selectedMutationIds.size === 0) return;
         setLoading(true);
         const result = await updateStudentsStatus(Array.from(selectedMutationIds), targetStatus);
         if (result.success) {
-            toast({ title: "Sukses!", description: `${selectedMutationIds.size} siswa berhasil diubah statusnya menjadi '${targetStatus === 'dropout' ? 'Pindah/Keluar' : 'Tidak Aktif'}'` });
+            toast({ title: "Mutasi Berhasil!", description: `${selectedMutationIds.size} siswa telah diubah statusnya.` });
             setSelectedMutationIds(new Set());
             router.refresh();
         } else {
@@ -227,21 +227,22 @@ export default function PromotionPageClient({
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold font-headline">Promosi & Mutasi Siswa</h1>
-                <p className="text-muted-foreground">Pindahkan siswa secara kolektif di akhir tahun ajaran.</p>
+                <h1 className="text-2xl font-bold font-headline">Promosi & Kelulusan</h1>
+                <p className="text-muted-foreground">Pindahkan siswa ke kelas baru atau luluskan siswa di akhir tahun ajaran.</p>
             </div>
             
-            <Alert>
-                <AlertTitle>Proses Akhir Tahun Ajaran</AlertTitle>
-                <AlertDescription>
-                   Gunakan fitur ini dengan hati-hati, idealnya di akhir semester genap. Pastikan semua nilai dan laporan telah final sebelum melakukan promosi atau kelulusan siswa.
+            <Alert className="bg-indigo-50 border-indigo-200">
+                <DatabaseZap className="h-4 w-4 text-indigo-600" />
+                <AlertTitle className="text-indigo-800">Sistem Snapshot & Purge Aktif</AlertTitle>
+                <AlertDescription className="text-indigo-700">
+                   Kenaikan kelas akan otomatis <strong>meringkas</strong> detail absensi/nilai menjadi total akhir dan <strong>menghapus</strong> log harian untuk menjaga database tetap ringan.
                 </AlertDescription>
             </Alert>
             
             <Card>
                 <CardHeader>
                     <CardTitle>Alat Bantu Kenaikan Kelas</CardTitle>
-                    <CardDescription>Pilih siswa dari kelas asal, lalu pindahkan mereka ke kelas tujuan.</CardDescription>
+                    <CardDescription>Pindahkan siswa secara kolektif dan buat arsip riwayat kelasnya.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6 items-start">
                     {/* Source Class Column */}
@@ -282,14 +283,33 @@ export default function PromotionPageClient({
                         {destinationClassId && (
                              <StudentList students={studentsInDestinationClass} title="Siswa di Kelas Tujuan" />
                         )}
-                        <Button 
-                            className="w-full"
-                            disabled={loading || selectedStudentIds.size === 0 || !destinationClassId}
-                            onClick={handlePromotion}
-                        >
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
-                            Pindahkan {selectedStudentIds.size > 0 ? `(${selectedStudentIds.size})` : ''} Siswa
-                        </Button>
+
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button 
+                                    className="w-full h-12 bg-indigo-600 font-bold shadow-lg shadow-indigo-100"
+                                    disabled={loading || selectedStudentIds.size === 0 || !destinationClassId}
+                                >
+                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
+                                    Proses Kenaikan ({selectedStudentIds.size}) Siswa
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-xl font-bold">Konfirmasi Kenaikan Kelas</AlertDialogTitle>
+                                    <AlertDialogDescription className="space-y-4">
+                                        <p>Anda akan memindahkan <span className="font-bold text-slate-900">{selectedStudentIds.size} siswa</span> ke kelas <span className="font-bold text-indigo-600">{classes.find(c => c.id === destinationClassId)?.name}</span>.</p>
+                                        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-800 text-xs">
+                                            <strong>Perhatian:</strong> Detail log absensi dan nilai harian siswa pada tahun ini akan <strong>dihapus</strong> dan diringkas menjadi total akhir di tabel arsip.
+                                        </div>
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="gap-2">
+                                    <AlertDialogCancel className="flex-1 rounded-xl">Batal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handlePromotion} className="flex-1 rounded-xl bg-indigo-600 font-bold">Ya, Proses</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </CardContent>
             </Card>
@@ -297,7 +317,7 @@ export default function PromotionPageClient({
             <Card>
                 <CardHeader>
                     <CardTitle>Mutasi Siswa (Pindah/Keluar)</CardTitle>
-                    <CardDescription>Ubah status siswa menjadi 'Pindah/Keluar' atau 'Tidak Aktif' lainnya.</CardDescription>
+                    <CardDescription>Ubah status siswa menjadi 'Pindah/Keluar' tanpa menghapus data log (untuk mutasi darurat).</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6 items-start">
                     <div className="space-y-4">
@@ -336,12 +356,12 @@ export default function PromotionPageClient({
                         </div>
                         <Button 
                             variant="secondary"
-                            className="w-full mt-4"
+                            className="w-full h-12 mt-4 rounded-xl font-bold"
                             disabled={loading || selectedMutationIds.size === 0}
                             onClick={handleStatusMutation}
                         >
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRightLeft className="mr-2 h-4 w-4" />}
-                            Ubah Status {selectedMutationIds.size > 0 ? `(${selectedMutationIds.size})` : ''} Siswa
+                            Ubah Status ({selectedMutationIds.size}) Siswa
                         </Button>
                     </div>
                 </CardContent>
@@ -350,7 +370,7 @@ export default function PromotionPageClient({
             <Card>
                 <CardHeader>
                     <CardTitle>Luluskan Siswa</CardTitle>
-                    <CardDescription>Tandai siswa sebagai 'lulus'. Data mereka akan diarsipkan dan tidak aktif lagi.</CardDescription>
+                    <CardDescription>Tandai siswa sebagai 'lulus'. Data detail akan diringkas ke tabel alumni.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6 items-start">
                     <div className="space-y-4">
@@ -375,15 +395,33 @@ export default function PromotionPageClient({
                         )}
                     </div>
                     <div className="flex flex-col justify-end">
-                        <Button 
-                            variant="destructive"
-                            className="w-full"
-                            disabled={loading || selectedGraduationIds.size === 0}
-                            onClick={handleGraduation}
-                        >
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GraduationCap className="mr-2 h-4 w-4" />}
-                            Luluskan {selectedGraduationIds.size > 0 ? `(${selectedGraduationIds.size})` : ''} Siswa Terpilih
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button 
+                                    variant="destructive"
+                                    className="w-full h-12 rounded-xl font-bold shadow-lg shadow-rose-100"
+                                    disabled={loading || selectedGraduationIds.size === 0}
+                                >
+                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GraduationCap className="mr-2 h-4 w-4" />}
+                                    Luluskan ({selectedGraduationIds.size}) Siswa Terpilih
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-xl font-bold text-rose-600">Konfirmasi Kelulusan</AlertDialogTitle>
+                                    <AlertDialogDescription className="space-y-4">
+                                        <p>Anda akan meluluskan <span className="font-bold text-slate-900">{selectedGraduationIds.size} siswa</span>. Siswa ini akan dipindahkan ke daftar Alumni.</p>
+                                        <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 text-rose-800 text-xs">
+                                            <strong>Arsip Alumni:</strong> Seluruh data performa siswa selama satu tahun terakhir akan diringkas dan log detailnya akan dihapus permanen.
+                                        </div>
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="gap-2">
+                                    <AlertDialogCancel className="flex-1 rounded-xl">Batal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleGraduation} className="flex-1 rounded-xl bg-rose-600 font-bold hover:bg-rose-700">Ya, Luluskan</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </CardContent>
             </Card>
