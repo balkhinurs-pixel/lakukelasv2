@@ -17,7 +17,8 @@ import {
     FileText,
     Layers,
     Printer,
-    Download
+    Download,
+    MoveHorizontal
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -310,7 +311,7 @@ export default function GenerateCpAtpClient({
                         <CardHeader className="bg-slate-50/50 border-b p-6">
                             <CardTitle className="text-xl font-black flex items-center gap-2"><Settings2 className="h-5 w-5 text-indigo-600" />Parameter Kurikulum</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-6">
+                        <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">Jenjang</Label><Select value={form.jenjang} onValueChange={handleJenjangChange}><SelectTrigger className="rounded-xl h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger><SelectContent className="rounded-2xl">{Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}</SelectContent></Select></div>
                                 <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">Fase</Label><Select value={form.phase} onValueChange={v => setForm({...form, phase: v})}><SelectTrigger className="rounded-xl h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger><SelectContent className="rounded-2xl">{PHASES.map(p => <SelectItem key={p.value} value={p.value} className="font-bold">{p.label}</SelectItem>)}</SelectContent></Select></div>
@@ -328,19 +329,30 @@ export default function GenerateCpAtpClient({
 
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
                     <CardHeader className="bg-slate-50/50 border-b p-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
-                                <Layers className="h-5 w-5" />
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
+                                    <Layers className="h-5 w-5" />
+                                </div>
+                                <CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Alur</CardTitle>
                             </div>
-                            <CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Alur</CardTitle>
+                            <Badge variant="outline" className="md:hidden bg-indigo-50 text-indigo-600 border-indigo-100 flex items-center gap-1.5 py-1 px-3 rounded-full animate-pulse">
+                                <MoveHorizontal className="w-3.5 h-3.5" />
+                                <span className="text-[9px] font-black uppercase">Geser untuk melihat</span>
+                            </Badge>
                         </div>
                     </CardHeader>
-                    <CardContent className="flex-grow p-0 bg-slate-50/20">
+                    <CardContent className="flex-grow p-0 bg-slate-50/20 overflow-x-auto custom-scrollbar">
                         <ScrollArea className="h-full">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
-                                    <motion.div key="result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 sm:p-10">
-                                        <div id="printable-cp-atp-area" className="bg-white p-10 shadow-sm border rounded-2xl mx-auto" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
+                                    <motion.div 
+                                        key="result" 
+                                        initial={{ opacity: 0, y: 10 }} 
+                                        animate={{ opacity: 1, y: 0 }} 
+                                        className="p-4 sm:p-10 w-fit min-w-full"
+                                    >
+                                        <div id="printable-cp-atp-area" className="bg-white p-6 sm:p-12 shadow-sm border rounded-2xl mx-auto" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
                                             <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-black">
                                                 <div className="w-20 h-20 flex items-center justify-center shrink-0">{schoolProfile?.school_logo_url ? <img src={schoolProfile.school_logo_url} alt="Logo" className="w-full h-full object-contain" /> : <div className="p-2 opacity-20"><AppLogo /></div>}</div>
                                                 <div className="flex-1 text-center pr-20">
