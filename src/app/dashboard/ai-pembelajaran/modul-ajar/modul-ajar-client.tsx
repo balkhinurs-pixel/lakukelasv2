@@ -20,7 +20,9 @@ import {
     GraduationCap,
     School,
     BookOpen,
-    Layers
+    Layers,
+    Printer,
+    Download
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +51,8 @@ import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog
 import { readStreamableValue } from 'ai/rsc';
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
@@ -547,13 +551,28 @@ export default function ModulAjarClient({
                                             className="bg-white p-8 sm:p-12 shadow-sm border rounded-2xl shrink-0" 
                                             style={{ 
                                                 width: '210mm', 
-                                                minHeight: '297mm'
+                                                minHeight: '297mm',
+                                                fontFamily: '"Times New Roman", Times, serif'
                                             }}
                                         >
-                                            <div className="prose prose-slate max-w-none text-slate-700">
-                                                <h1 className="text-2xl border-b pb-4 mb-8 text-indigo-700 uppercase tracking-tight font-black">{generatedResult.title}</h1>
-                                                <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                                                    {generatedResult.content}
+                                            <div className="prose prose-slate max-w-none text-slate-800">
+                                                <h1 className="text-2xl border-b-2 border-indigo-700 pb-4 mb-8 text-indigo-700 uppercase tracking-tight font-black text-center">{generatedResult.title}</h1>
+                                                <div className="modul-ajar-content text-sm leading-relaxed">
+                                                    <ReactMarkdown 
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-slate-300 my-6" {...props} />,
+                                                            th: ({node, ...props}) => <th className="border-2 border-slate-300 bg-slate-50 p-2 font-bold text-center text-xs" {...props} />,
+                                                            td: ({node, ...props}) => <td className="border-2 border-slate-300 p-2 text-xs align-top" {...props} />,
+                                                            h1: ({node, ...props}) => <h2 className="text-lg font-black uppercase text-indigo-700 mt-8 mb-4 border-l-4 border-indigo-600 pl-3" {...props} />,
+                                                            h2: ({node, ...props}) => <h3 className="text-md font-bold uppercase text-slate-800 mt-6 mb-3" {...props} />,
+                                                            p: ({node, ...props}) => <p className="mb-4 text-justify" {...props} />,
+                                                            ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-1" {...props} />,
+                                                            ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-1" {...props} />
+                                                        }}
+                                                    >
+                                                        {generatedResult.content}
+                                                    </ReactMarkdown>
                                                 </div>
                                             </div>
                                         </div>
@@ -590,6 +609,10 @@ export default function ModulAjarClient({
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                
+                .modul-ajar-content table {
+                    width: 100% !important;
+                }
             `}</style>
         </div>
     );

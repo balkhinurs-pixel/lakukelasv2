@@ -2,6 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan Modul Ajar (RPP) Profesional.
  * Mendukung Kurikulum Merdeka (Kemdikbud) dan Kurikulum Kemenag (KBC & PPRA).
+ * Output dioptimalkan menggunakan tabel Markdown untuk tampilan standar kedinasan.
  */
 
 import { z, genkit } from 'genkit';
@@ -30,7 +31,7 @@ export type ModulAjarInput = z.infer<typeof ModulAjarInputSchema>;
 
 const ModulAjarOutputSchema = z.object({
   title: z.string().describe('Judul Modul Ajar'),
-  content: z.string().describe('Konten lengkap Modul Ajar dalam format Markdown'),
+  content: z.string().describe('Konten lengkap Modul Ajar dalam format Markdown dengan Tabel'),
 });
 
 export type ModulAjarOutput = z.infer<typeof ModulAjarOutputSchema>;
@@ -62,41 +63,44 @@ export async function generateModulAjar(input: ModulAjarInput): Promise<ModulAja
 
   const response = await ai.generate({
     output: { schema: ModulAjarOutputSchema },
-    prompt: `Anda adalah pakar pengembang kurikulum senior di Indonesia yang ahli dalam Kurikulum Merdeka (Kemdikbud) dan Kurikulum Madrasah (Kemenag).
+    prompt: `Anda adalah pakar pengembang kurikulum senior di Indonesia (Widyaiswara) yang sangat ahli dalam menyusun Modul Ajar Kurikulum Merdeka yang rapi, sistematis, dan profesional.
+
 Tugas Anda adalah menyusun "Modul Ajar" (RPP) yang sangat detail untuk ${input.jumlahPertemuan} kali pertemuan.
 
 KONTEKS KURIKULUM:
 - Jalur: ${isKemenag ? 'KEMENTERIAN AGAMA (Kemenag) - Fokus pada Kurikulum Berbasis Cinta (KBC)' : 'KEMDIKBUDRISTEK (Kemdikbud)'}
-- Sekolah: ${profile.school_name || 'Sekolah Terkait'}
+- Nama Sekolah: ${profile.school_name || 'Sekolah Terkait'}
 - Nama Guru: ${profile.full_name}
 - Mata Pelajaran: ${input.subject}
 - Kelas: ${input.kelas} (${input.jenjang})
-- Materi: ${input.topic}
-- Alokasi Waktu: ${input.alokasiWaktu} untuk ${input.jumlahPertemuan} Pertemuan
-- Model: ${input.modelPembelajaran}
+- Materi/Bab: ${input.topic}
+- Alokasi Waktu: ${input.alokasiWaktu}
+- Model Pembelajaran: ${input.modelPembelajaran}
 - Profil Pelajar Pancasila: ${input.profilPancasila.join(', ')}
 ${isKemenag ? `- Profil Pelajar Rahmatan Lil Alamin (PPRA): ${input.profilRahmatanLilAlamin?.join(', ')}` : ''}
-- Praktik Pedagogis: ${input.pedagogicalPractice}
+- Fokus Praktik Pedagogis: ${input.pedagogicalPractice}
 - Pendekatan Deep Learning: ${input.deepLearningType}
 
-${input.atpContent ? `REFERENSI CP & ATP:
+${input.atpContent ? `REFERENSI ALUR TUJUAN PEMBELAJARAN (WAJIB DISINKRONKAN):
 {{{atpContent}}}` : ''}
 
-STRUKTUR MODUL (HARUS PROFESIONAL):
-1. INFORMASI UMUM: Identitas, Kompetensi Awal, Profil Pelajar, Sarana, Target Siswa, Model Pembelajaran.
-2. KOMPONEN INTI: Tujuan Pembelajaran (ABCD), Pemahaman Bermakna, Pertanyaan Pemantik.
+ATURAN FORMAT (SANGAT PENTING):
+1. GUNAKAN TABEL MARKDOWN untuk bagian "Informasi Umum" (Identitas) dan "Kegiatan Pembelajaran".
+2. GUNAKAN HURUF NORMAL (Sentence case). JANGAN kapital semua.
+3. TUJUAN PEMBELAJARAN: Wajib mengandung unsur ABCD (Audience, Behavior, Condition, Degree).
+4. KEGIATAN PEMBELAJARAN: Harus merinci langkah per pertemuan (Pertemuan 1, 2, dst). 
+   - Masukkan tabel kegiatan dengan kolom: Tahap, Kegiatan (Detail Guru & Siswa), Alokasi Waktu.
+   - Integrasikan pilar Deep Learning (${input.deepLearningType}) dan praktik ${input.pedagogicalPractice} secara eksplisit dalam instruksi guru.
+
+STRUKTUR MODUL:
+1. INFORMASI UMUM: (Gunakan TABEL untuk identitas guru, sekolah, kompetensi awal, sarana, dll).
+2. KOMPONEN INTI: Tujuan Pembelajaran, Pemahaman Bermakna, Pertanyaan Pemantik.
 3. KEGIATAN PEMBELAJARAN (DETAIL PER PERTEMUAN):
-   Urutkan dari Pertemuan 1 sampai Pertemuan ${input.jumlahPertemuan}. Setiap pertemuan harus mencakup:
-   - Pendahuluan (Orientasi, Apersepsi, Motivasi).
-   - Inti (Langkah-langkah Model ${input.modelPembelajaran} dikombinasikan dengan Praktik ${input.pedagogicalPractice}).
-   - Penutup (Refleksi, Umpan Balik, Tindak Lanjut).
-   ${isKemenag ? '- Integrasikan nilai-nilai KBC (Kurikulum Berbasis Cinta) dalam interaksi guru-siswa.' : ''}
-   - Pastikan prinsip Deep Learning (${input.deepLearningType}) terlihat nyata dalam langkah kegiatan.
+   Buat TABEL untuk setiap pertemuan. Sertakan detail Pendahuluan, Inti (sesuai sintaks model ${input.modelPembelajaran}), dan Penutup.
+4. ASESMEN: (Gunakan TABEL untuk kriteria penilaian formatif dan sumatif).
+5. LAMPIRAN: Ringkasan LKPD, Bahan Bacaan, Glosarium, Daftar Pustaka.
 
-4. ASESMEN: Diagnostik, Formatif, Sumatif (Sertakan instrumen singkat).
-5. LAMPIRAN: LKPD singkat, Bahan Bacaan, Glosarium, Daftar Pustaka.
-
-Gunakan bahasa yang formal, inspiratif, dan sangat praktis bagi guru. Format Markdown harus sangat rapi dengan heading, tabel, dan bullet points.`,
+Gunakan bahasa yang formal, edukatif, dan sangat praktis untuk langsung dibawa guru ke dalam kelas.`,
   });
 
   const result = response.output;
