@@ -33,17 +33,22 @@ export async function streamModulAjarAction(input: ModulAjarInput) {
     (async () => {
         try {
             let finalAtpContent = "";
-            if (input.atp_id) {
+            const atpId = input.atp_id;
+
+            if (atpId && atpId !== 'none') {
                 const { data: atpDoc } = await supabase
                     .from('cp_atp')
                     .select('content')
-                    .eq('id', input.atp_id)
+                    .eq('id', atpId)
                     .single();
                 finalAtpContent = atpDoc?.content || "";
             }
 
+            // Hapus atp_id dari payload karena tidak ada di schema flow AI (agar tidak error validasi)
+            const { atp_id: _, ...aiInput } = input;
+
             const result = await generateModulAjar({
-                ...input,
+                ...aiInput,
                 atpContent: finalAtpContent
             });
             

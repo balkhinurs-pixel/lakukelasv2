@@ -6,7 +6,6 @@ import {
     Sparkles, 
     Loader2, 
     Save, 
-    CheckCircle2, 
     Wand2,
     Settings2,
     Database,
@@ -21,8 +20,7 @@ import {
     GraduationCap,
     School,
     BookOpen,
-    Layers,
-    ListOrdered
+    Layers
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +50,6 @@ import { readStreamableValue } from 'ai/rsc';
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// --- Data Constants ---
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
@@ -168,7 +165,12 @@ export default function ModulAjarClient({
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
         const mapelOpts = mapelByJenjang[val] || [];
-        setForm(prev => ({ ...prev, jenjang: val, kelas: classOpts[0] || '1', subject: mapelOpts[0] || 'Bahasa Indonesia' }));
+        setForm(prev => ({ 
+            ...prev, 
+            jenjang: val, 
+            kelas: classOpts[0] || '1', 
+            subject: mapelOpts[0] || 'Bahasa Indonesia' 
+        }));
     };
 
     const handleConnectDrive = async () => {
@@ -223,12 +225,10 @@ export default function ModulAjarClient({
 
             const payload = { 
                 ...form,
-                pedagogicalPractice: finalPedagogy,
-                deepLearningType: finalDeepLearning
+                pedagogicalPractice: finalPedagogy || form.pedagogicalPractice,
+                deepLearningType: finalDeepLearning || form.deepLearningType
             };
             
-            if (payload.atp_id === 'none') delete payload.atp_id;
-
             const { output } = await streamModulAjarAction(payload);
             
             for await (const delta of readStreamableValue(output)) {
@@ -281,7 +281,6 @@ export default function ModulAjarClient({
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
             <AiErrorDialog open={isErrorOpen} onOpenChange={setIsErrorOpen} errorType={errorType} errorMessage={errorMsg} onRetry={handleGenerate} />
 
-            {/* Premium Loading Overlay */}
             {loading && !generatedResult && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
                     <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
@@ -349,21 +348,19 @@ export default function ModulAjarClient({
                             </Tabs>
                         </CardHeader>
                         <CardContent className="p-6 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
-                            {/* ATP Selection */}
                             <div className="space-y-2 p-4 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-inner">
                                 <Label className="text-[10px] font-black uppercase text-indigo-600 tracking-widest ml-1 flex items-center gap-2"><GitBranchPlus className="h-3 w-3" /> Gunakan Referensi ATP</Label>
-                                <Select value={form.atp_id} onValueChange={v => setForm({...form, atp_id: v})}>
+                                <Select value={form.atp_id || 'none'} onValueChange={v => setForm({...form, atp_id: v})}>
                                     <SelectTrigger className="rounded-xl bg-white border-0 h-11 font-bold shadow-sm"><SelectValue placeholder="Pilih ATP (Opsional)" /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="none" className="font-bold text-slate-400">Tanpa Referensi (Manual)</SelectItem>
-                                        {atpDocuments.map(doc => (
+                                        {atpDocuments.filter(d => d.id).map(doc => (
                                             <SelectItem key={doc.id} value={doc.id!} className="font-bold">{doc.title} ({doc.subject})</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
 
-                            {/* Basic Data */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
@@ -411,7 +408,6 @@ export default function ModulAjarClient({
                                 <Input placeholder="e.g. Struktur Sel, Adab bertetangga" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" value={form.topic} onChange={e => setForm(prev => ({...prev, topic: e.target.value}))} required />
                             </div>
 
-                            {/* Profil Pancasila (Multiselect) */}
                             <div className="space-y-3 pt-4 border-t border-slate-100">
                                 <Label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Profil Pelajar Pancasila</Label>
                                 <div className="grid grid-cols-1 gap-2">
@@ -427,7 +423,6 @@ export default function ModulAjarClient({
                                 </div>
                             </div>
 
-                            {/* PPRA (Only for Kemenag) */}
                             {form.kurikulumPath === 'kemenag' && (
                                 <div className="space-y-3 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
                                     <div className="flex items-center justify-between">
@@ -448,7 +443,6 @@ export default function ModulAjarClient({
                                 </div>
                             )}
 
-                            {/* Deep Learning Kategori */}
                             <div className="space-y-3 pt-4 border-t border-slate-100">
                                 <div className="flex items-center justify-between">
                                     <Label className="text-[10px] font-black uppercase text-indigo-600 tracking-widest ml-1 flex items-center gap-2">
@@ -482,7 +476,6 @@ export default function ModulAjarClient({
                                 )}
                             </div>
 
-                            {/* Praktik Pedagogis */}
                             <div className="space-y-2 pt-4 border-t border-slate-100">
                                 <Label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Praktik Pedagogis Utama</Label>
                                 <Select value={form.pedagogicalPractice} onValueChange={(v) => setForm({...form, pedagogicalPractice: v})}>
@@ -531,7 +524,6 @@ export default function ModulAjarClient({
                         {generatedResult && <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan ke Drive</Button>}
                     </CardHeader>
                     <CardContent className="flex-grow p-0 bg-slate-50/20">
-                        {/* Horizontal Scroll Wrapper for Mobile Table Viewing */}
                         <div className="w-full h-full overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
@@ -571,7 +563,6 @@ export default function ModulAjarClient({
                 </Card>
             </div>
 
-            {/* Drive Connection Overlay */}
             <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
                 <DialogContent className="rounded-xl p-0 max-w-sm overflow-hidden bg-white">
                     <div className="p-8 text-center space-y-6">
