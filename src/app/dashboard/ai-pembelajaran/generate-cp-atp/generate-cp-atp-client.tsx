@@ -507,17 +507,26 @@ export default function GenerateCpAtpClient({
                             )}
                         </div>
                     </CardHeader>
-                    <CardContent className="flex-grow p-0 bg-slate-50/20 overflow-x-auto custom-scrollbar">
-                        <ScrollArea className="h-full">
+                    <CardContent className="flex-grow p-0 bg-slate-50/20">
+                        {/* Horizontal Scroll Wrapper for Mobile Table Viewing */}
+                        <div className="w-full h-full overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
                                     <motion.div 
                                         key="result" 
                                         initial={{ opacity: 0, y: 10 }} 
                                         animate={{ opacity: 1, y: 0 }} 
-                                        className="p-4 sm:p-10 w-fit min-w-full"
+                                        className="w-full flex justify-start lg:justify-center"
                                     >
-                                        <div id="printable-cp-atp-area" className="bg-white p-6 sm:p-12 shadow-sm border rounded-2xl mx-auto" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif' }}>
+                                        <div 
+                                            id="printable-cp-atp-area" 
+                                            className="bg-white p-6 sm:p-12 shadow-sm border rounded-2xl shrink-0" 
+                                            style={{ 
+                                                width: '210mm', 
+                                                minHeight: '297mm', 
+                                                fontFamily: '"Times New Roman", Times, serif' 
+                                            }}
+                                        >
                                             <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-black">
                                                 <div className="w-20 h-20 flex items-center justify-center shrink-0">{schoolProfile?.school_logo_url ? <img src={schoolProfile.school_logo_url} alt="Logo" className="w-full h-full object-contain" /> : <div className="p-2 opacity-20"><AppLogo /></div>}</div>
                                                 <div className="flex-1 text-center pr-20">
@@ -557,10 +566,16 @@ export default function GenerateCpAtpClient({
                                         </div>
                                     </motion.div>
                                 ) : (
-                                    <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-30"><GitBranchPlus className="h-24 w-24 mb-4" /><h3 className="text-3xl font-black">AI Curriculum Architect</h3></div>
+                                    <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-30">
+                                        <div className="p-16 rounded-[5rem] bg-slate-100 mb-8 shadow-inner group hover:bg-indigo-100 transition-all duration-700">
+                                            <GitBranchPlus className="h-24 w-24 text-slate-300 group-hover:text-indigo-400 group-hover:rotate-12 transition-all" />
+                                        </div>
+                                        <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Curriculum Architect</h3>
+                                        <p className="text-slate-400 font-bold text-sm max-w-xs mt-3">Lengkapi parameter di samping untuk mulai merumuskan alur kurikulum.</p>
+                                    </div>
                                 )}
                             </AnimatePresence>
-                        </ScrollArea>
+                        </div>
                     </CardContent>
                     <AnimatePresence>
                         {generatedResult && (

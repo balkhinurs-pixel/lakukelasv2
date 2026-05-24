@@ -389,7 +389,7 @@ export default function ModulAjarClient({
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mapel</Label>
                                     <Select value={form.subject} onValueChange={v => setForm(prev => ({...prev, subject: v}))}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                         </SelectContent>
@@ -441,7 +441,7 @@ export default function ModulAjarClient({
                                                 form.profilRahmatanLilAlamin?.includes(dim) ? "bg-emerald-100 border-emerald-300" : "bg-white border-slate-50 hover:bg-emerald-50"
                                             )} onClick={() => handleToggleRahmatan(dim)}>
                                                 <Checkbox checked={form.profilRahmatanLilAlamin?.includes(dim)} className="rounded-md h-5 w-5 border-emerald-200 data-[state=checked]:bg-emerald-600" />
-                                                <span className="text-[11px] font-bold text-emerald-900 leading-tight">{dim}</span>
+                                                <span className="text-11px font-bold text-emerald-900 leading-tight">{dim}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -530,11 +530,32 @@ export default function ModulAjarClient({
                         <div className="flex items-center gap-3"><div className="p-2 rounded-xl bg-indigo-100 text-indigo-600"><FileText className="h-5 w-5" /></div><CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Modul</CardTitle></div>
                         {generatedResult && <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan ke Drive</Button>}
                     </CardHeader>
-                    <CardContent className="flex-grow p-0">
-                        <ScrollArea className="h-full">
+                    <CardContent className="flex-grow p-0 bg-slate-50/20">
+                        {/* Horizontal Scroll Wrapper for Mobile Table Viewing */}
+                        <div className="w-full h-full overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
-                                    <motion.div key="result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-8 sm:p-10"><div className="prose prose-slate max-w-none text-slate-700"><h1 className="text-2xl border-b pb-4 mb-8 text-indigo-700">{generatedResult.title}</h1><div className="whitespace-pre-wrap text-sm leading-relaxed">{generatedResult.content}</div></div></motion.div>
+                                    <motion.div 
+                                        key="result" 
+                                        initial={{ opacity: 0, y: 10 }} 
+                                        animate={{ opacity: 1, y: 0 }} 
+                                        className="w-full flex justify-start lg:justify-center"
+                                    >
+                                        <div 
+                                            className="bg-white p-8 sm:p-12 shadow-sm border rounded-2xl shrink-0" 
+                                            style={{ 
+                                                width: '210mm', 
+                                                minHeight: '297mm'
+                                            }}
+                                        >
+                                            <div className="prose prose-slate max-w-none text-slate-700">
+                                                <h1 className="text-2xl border-b pb-4 mb-8 text-indigo-700 uppercase tracking-tight font-black">{generatedResult.title}</h1>
+                                                <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                                                    {generatedResult.content}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
                                 ) : (
                                     <div className="h-full flex flex-col items-center justify-center p-12 text-center">
                                         <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
@@ -545,7 +566,7 @@ export default function ModulAjarClient({
                                     </div>
                                 )}
                             </AnimatePresence>
-                        </ScrollArea>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
