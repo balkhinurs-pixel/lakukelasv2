@@ -1,4 +1,3 @@
-
 "use client"
 import * as React from "react";
 import {
@@ -25,7 +24,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GoogleDriveIcon } from "@/components/icons";
+import { GoogleDriveIcon, GeminiIcon } from "@/components/icons";
 
 export default function SettingsClientPage({ 
     user, 
@@ -490,8 +489,8 @@ export default function SettingsClientPage({
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm flex items-center justify-center">
-                                            <Key className="h-6 w-6" />
+                                        <div className="p-2 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center overflow-hidden">
+                                            <GeminiIcon className="h-6 w-6" />
                                         </div>
                                         <CardTitle className="text-2xl font-bold">Google Gemini AI</CardTitle>
                                     </div>
