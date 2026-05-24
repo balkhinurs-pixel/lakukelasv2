@@ -117,6 +117,7 @@ export default function GenerateCpAtpClient({
             .replace(/\n{3,}/g, '\n\n');
     };
 
+    // Countdown Logic
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
         if (loading && !generatedResult) {
@@ -415,6 +416,43 @@ export default function GenerateCpAtpClient({
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
             <AiErrorDialog open={isErrorOpen} onOpenChange={setIsErrorOpen} errorType={errorType} errorMessage={errorMsg} onRetry={handleGenerate} />
+
+            {/* Premium Loading Overlay */}
+            {loading && !generatedResult && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
+                    <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
+                         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
+                         <div className="relative">
+                             <LottieAiProcess size={220} />
+                         </div>
+                         <div className="space-y-6">
+                             <div className="space-y-2">
+                                <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>CP & ATP</p>
+                                <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
+                             </div>
+                             <div className="flex flex-col items-center gap-3">
+                                <div className="relative w-20 h-20 flex items-center justify-center">
+                                    <svg className="w-full h-full -rotate-90">
+                                        <circle cx="40" cy="40" r="36" className="stroke-slate-100 fill-none" strokeWidth="6" />
+                                        <motion.circle 
+                                            cx="40" cy="40" r="36" 
+                                            className="stroke-indigo-600 fill-none" 
+                                            strokeWidth="6" 
+                                            strokeLinecap="round"
+                                            strokeDasharray="226"
+                                            initial={{ strokeDashoffset: 226 }}
+                                            animate={{ strokeDashoffset: 226 - (226 * (30 - countdown) / 30) }}
+                                            transition={{ duration: 1, ease: "linear" }}
+                                        />
+                                    </svg>
+                                    <span className="absolute font-mono font-black text-indigo-600 text-xl">{countdown}s</span>
+                                </div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Selesai</p>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            )}
 
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-10 sm:p-14 text-white rounded-b-[4rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mr-20 -mt-20" />
