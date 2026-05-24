@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
-import { PdfIcon } from "@/components/icons";
+import { PdfIcon, WordIcon } from "@/components/icons";
 
 export type FormatFileProps =
   | "doc"
@@ -101,6 +101,12 @@ export const FileCard = ({ formatFile, className }: FileCardProps) => {
     filePlaceholder = (
       <div className="flex h-full items-center justify-center p-0.5">
         <PdfIcon className="w-full h-full" />
+      </div>
+    );
+  } else if (formatFile === "doc") {
+    filePlaceholder = (
+      <div className="flex h-full items-center justify-center p-0.5">
+        <WordIcon className="w-full h-full" />
       </div>
     );
   } else if (formatFile === "md" || formatFile === "mdx") {
