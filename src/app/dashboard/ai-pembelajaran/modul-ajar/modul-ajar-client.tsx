@@ -17,7 +17,12 @@ import {
     Plus,
     Heart,
     Brain,
-    Lightbulb
+    Lightbulb,
+    GraduationCap,
+    School,
+    BookOpen,
+    Layers,
+    ListOrdered
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,13 +50,14 @@ import {
 import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
 import { readStreamableValue } from 'ai/rsc';
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // --- Data Constants ---
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
     'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
-    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
 };
 
 const getClassOptions = (jenjang: string) => {
@@ -68,6 +74,19 @@ const PROFIL_PANCASILA = [
     "Mandiri",
     "Bernalar kritis",
     "Kreatif"
+];
+
+const PROFIL_RAHMATAN_LIL_ALAMIN = [
+    "Berkeadaban (Ta’addub)",
+    "Keteladanan (Qudwah)",
+    "Kewarganegaraan dan Kebangsaan (Muwatanah)",
+    "Mengambil Jalan Tengah (Tawassut)",
+    "Berimbang (Tawazun)",
+    "Lurus dan Tegas (I’tidal)",
+    "Kesetaraan (Musawah)",
+    "Musyawarah (Syura)",
+    "Toleransi (Tasamuh)",
+    "Dinamis dan Inovatif (Tathawwur wa Ibtikar)"
 ];
 
 const PEDAGOGICAL_PRACTICES = [
@@ -109,23 +128,24 @@ export default function ModulAjarClient({
     const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
     const [countdown, setCountdown] = React.useState(30);
 
-    // AI Error Dialog State
     const [isErrorOpen, setIsErrorOpen] = React.useState(false);
     const [errorType, setErrorType] = React.useState<AiErrorType>(null);
     const [errorMsg, setErrorMsg] = React.useState("");
 
-    // Custom Input States
     const [customPedagogy, setCustomPedagogy] = React.useState("");
     const [customDeepLearning, setCustomDeepLearning] = React.useState("");
 
     const [form, setForm] = React.useState<ModulAjarInput>({
+        kurikulumPath: 'dikbud',
         jenjang: 'SMP / MTs',
         kelas: '7',
         semester: 'Ganjil',
         subject: 'Bahasa Indonesia',
         topic: '',
         alokasiWaktu: '2 x 45 Menit',
+        jumlahPertemuan: 1,
         profilPancasila: [],
+        profilRahmatanLilAlamin: [],
         modelPembelajaran: 'Problem Based Learning (PBL)',
         saranaPrasarana: '',
         targetSiswa: 'Peserta didik reguler',
@@ -134,7 +154,6 @@ export default function ModulAjarClient({
         deepLearningType: 'Mindful Learning'
     });
 
-    // Countdown Logic
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
         if (loading && !generatedResult) {
@@ -172,6 +191,17 @@ export default function ModulAjarClient({
                 return { ...prev, profilPancasila: current.filter(item => item !== val) };
             } else {
                 return { ...prev, profilPancasila: [...current, val] };
+            }
+        });
+    };
+
+    const handleToggleRahmatan = (val: string) => {
+        setForm(prev => {
+            const current = prev.profilRahmatanLilAlamin || [];
+            if (current.includes(val)) {
+                return { ...prev, profilRahmatanLilAlamin: current.filter(item => item !== val) };
+            } else {
+                return { ...prev, profilRahmatanLilAlamin: [...current, val] };
             }
         });
     };
@@ -249,13 +279,7 @@ export default function ModulAjarClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
-            <AiErrorDialog 
-                open={isErrorOpen} 
-                onOpenChange={setIsErrorOpen} 
-                errorType={errorType} 
-                errorMessage={errorMsg}
-                onRetry={handleGenerate}
-            />
+            <AiErrorDialog open={isErrorOpen} onOpenChange={setIsErrorOpen} errorType={errorType} errorMessage={errorMsg} onRetry={handleGenerate} />
 
             {/* Premium Loading Overlay */}
             {loading && !generatedResult && (
@@ -299,7 +323,7 @@ export default function ModulAjarClient({
                 <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
                     <div className="space-y-2">
                         <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">Generate RPP</h1>
-                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">Modul Ajar Terintegrasi Kurikulum Merdeka</p>
+                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">Modul Ajar Terintegrasi Nasional</p>
                     </div>
                 </div>
             </div>
@@ -307,8 +331,22 @@ export default function ModulAjarClient({
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 px-4 sm:px-6 lg:px-10">
                 <Card className="lg:col-span-2 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden h-fit">
                     <form onSubmit={handleGenerate}>
-                        <CardHeader className="bg-slate-50/50 border-b p-6">
+                        <CardHeader className="bg-slate-50/50 border-b p-6 space-y-4">
                             <CardTitle className="text-xl font-black flex items-center gap-2"><Settings2 className="h-5 w-5 text-indigo-600" />Konfigurasi RPP</CardTitle>
+                            <Tabs 
+                                value={form.kurikulumPath} 
+                                onValueChange={(v: any) => setForm({...form, kurikulumPath: v})}
+                                className="w-full"
+                            >
+                                <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-100 rounded-xl p-1 shadow-inner">
+                                    <TabsTrigger value="dikbud" className="rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black text-[10px] uppercase tracking-widest gap-2">
+                                        <School className="h-3.5 w-3.5" /> Kemdikbud
+                                    </TabsTrigger>
+                                    <TabsTrigger value="kemenag" className="rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black text-[10px] uppercase tracking-widest gap-2">
+                                        <GraduationCap className="h-3.5 w-3.5" /> Kemenag (KBC)
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </CardHeader>
                         <CardContent className="p-6 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
                             {/* ATP Selection */}
@@ -347,22 +385,33 @@ export default function ModulAjarClient({
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
-                                <Select value={form.subject} onValueChange={v => setForm(prev => ({...prev, subject: v}))}>
-                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mapel</Label>
+                                    <Select value={form.subject} onValueChange={v => setForm(prev => ({...prev, subject: v}))}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                            {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Pertemuan</Label>
+                                    <Select value={String(form.jumlahPertemuan)} onValueChange={v => setForm({...form, jumlahPertemuan: Number(v)})}>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                            {[1,2,3,4,5,6].map(n => <SelectItem key={n} value={String(n)} className="font-bold">{n} Pertemuan</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label>
-                                <Input placeholder="e.g. Struktur Sel" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" value={form.topic} onChange={e => setForm(prev => ({...prev, topic: e.target.value}))} required />
+                                <Input placeholder="e.g. Struktur Sel, Adab bertetangga" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" value={form.topic} onChange={e => setForm(prev => ({...prev, topic: e.target.value}))} required />
                             </div>
 
-                            {/* Pancasila Dimensions */}
+                            {/* Profil Pancasila (Multiselect) */}
                             <div className="space-y-3 pt-4 border-t border-slate-100">
                                 <Label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Profil Pelajar Pancasila</Label>
                                 <div className="grid grid-cols-1 gap-2">
@@ -377,6 +426,27 @@ export default function ModulAjarClient({
                                     ))}
                                 </div>
                             </div>
+
+                            {/* PPRA (Only for Kemenag) */}
+                            {form.kurikulumPath === 'kemenag' && (
+                                <div className="space-y-3 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest ml-1">Profil Rahmatan Lil Alamin (PPRA)</Label>
+                                        <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[8px]">Wajib Kemenag</Badge>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-2 max-h-[250px] overflow-y-auto p-2 border-2 border-emerald-50 rounded-2xl bg-emerald-50/20 custom-scrollbar">
+                                        {PROFIL_RAHMATAN_LIL_ALAMIN.map((dim) => (
+                                            <div key={dim} className={cn(
+                                                "flex items-center space-x-3 p-3 rounded-xl border-2 transition-all cursor-pointer",
+                                                form.profilRahmatanLilAlamin?.includes(dim) ? "bg-emerald-100 border-emerald-300" : "bg-white border-slate-50 hover:bg-emerald-50"
+                                            )} onClick={() => handleToggleRahmatan(dim)}>
+                                                <Checkbox checked={form.profilRahmatanLilAlamin?.includes(dim)} className="rounded-md h-5 w-5 border-emerald-200 data-[state=checked]:bg-emerald-600" />
+                                                <span className="text-[11px] font-bold text-emerald-900 leading-tight">{dim}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Deep Learning Kategori */}
                             <div className="space-y-3 pt-4 border-t border-slate-100">
@@ -431,8 +501,12 @@ export default function ModulAjarClient({
                                 )}
                             </div>
 
-                            {/* Advanced Options */}
                             <div className="space-y-1.5 pt-4 border-t border-slate-100">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Alokasi Waktu Total</Label>
+                                <Input placeholder="e.g. 2 x 45 Menit" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.alokasiWaktu} onChange={e => setForm({...form, alokasiWaktu: e.target.value})} />
+                            </div>
+
+                            <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Karakteristik Siswa (Opsional)</Label>
                                 <Input placeholder="e.g. Siswa Aktif, Gaya Belajar Visual" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.targetSiswa} onChange={e => setForm({...form, targetSiswa: e.target.value})} />
                             </div>

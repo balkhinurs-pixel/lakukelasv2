@@ -255,13 +255,16 @@ export interface QuestionGenerationInput {
 }
 
 export interface ModulAjarInput {
+  kurikulumPath: 'dikbud' | 'kemenag';
   jenjang: string;
   kelas: string;
   semester?: string;
   subject: string;
   topic: string;
   alokasiWaktu: string;
+  jumlahPertemuan: number;
   profilPancasila: string[];
+  profilRahmatanLilAlamin?: string[];
   modelPembelajaran: string;
   saranaPrasarana?: string;
   targetSiswa?: string;
