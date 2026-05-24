@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import "jspdf-autotable";
 import { 
     Network, 
     ExternalLink, 
@@ -43,9 +43,6 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { AppLogo } from "@/components/icons";
 
 export default function CpAtpRepositoryClient({ 
     initialDocuments,
@@ -61,7 +58,6 @@ export default function CpAtpRepositoryClient({
     const [filterSubject, setFilterSubject] = React.useState("all");
 
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
-    const [printingDoc, setPrintingDoc] = React.useState<CpAtpDocument | null>(null);
 
     const sanitizeContent = (text: string) => {
         if (!text) return "";
@@ -69,6 +65,37 @@ export default function CpAtpRepositoryClient({
             .replace(/\\n/gi, '\n')
             .replace(/\\r/gi, '')
             .replace(/\n{3,}/g, '\n\n');
+    };
+
+    const parseMarkdownTables = (markdown: string) => {
+        const lines = markdown.split('\n');
+        const content: any[] = [];
+        let currentText = "";
+        let inTable = false;
+        let tableLines: string[] = [];
+
+        lines.forEach(line => {
+            if (line.trim().startsWith('|')) {
+                if (!inTable) {
+                    if (currentText.trim()) content.push({ type: 'text', value: currentText.trim() });
+                    currentText = "";
+                    inTable = true;
+                }
+                tableLines.push(line);
+            } else {
+                if (inTable) {
+                    content.push({ type: 'table', value: tableLines });
+                    tableLines = [];
+                    inTable = false;
+                }
+                currentText += line + "\n";
+            }
+        });
+
+        if (inTable) content.push({ type: 'table', value: tableLines });
+        else if (currentText.trim()) content.push({ type: 'text', value: currentText.trim() });
+
+        return content;
     };
 
     const filteredDocs = React.useMemo(() => {
@@ -101,53 +128,161 @@ export default function CpAtpRepositoryClient({
         setLoadingId(null);
     };
 
-    const handleDownloadPdf = async (doc: CpAtpDocument) => {
-        setPrintingDoc(doc);
-        setLoadingId(doc.id);
+    const handleDownloadPdf = async (docData: CpAtpDocument) => {
+        if (!docData.content) {
+            toast({ title: "Konten Kosong", description: "Dokumen ini tidak memiliki data untuk dicetak.", variant: "destructive" });
+            return;
+        }
         
-        setTimeout(async () => {
-            try {
-                const printableArea = document.getElementById(`printable-cp-atp-${doc.id}`);
-                if (!printableArea) throw new Error("Renderer area not found");
+        setLoadingId(docData.id);
+        
+        try {
+            const doc = new jsPDF('p', 'mm', 'a4') as any;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 15;
+            let currentY = margin;
 
-                const canvas = await html2canvas(printableArea, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: "#ffffff",
-                    logging: false,
-                    windowWidth: 794,
-                });
+            // 1. Render Header (Kop Surat)
+            const schoolName = (schoolProfile?.school_name || "SEKOLAH LAKUKELAS").toUpperCase();
+            const npsn = schoolProfile?.npsn ? `NPSN: ${schoolProfile.npsn}` : "";
+            const address = schoolProfile?.school_address || "Alamat belum diatur";
 
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const imgProps = pdf.getImageProperties(imgData);
-                const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+            doc.setFont('times', 'bold');
+            doc.setFontSize(14);
+            doc.text(schoolName, pageWidth / 2 + 10, currentY + 8, { align: 'center' });
+            
+            doc.setFont('times', 'normal');
+            doc.setFontSize(10);
+            if (npsn) doc.text(npsn, pageWidth / 2 + 10, currentY + 14, { align: 'center' });
+            doc.setFont('times', 'italic');
+            doc.text(address, pageWidth / 2 + 10, currentY + (npsn ? 20 : 16), { align: 'center' });
 
-                let position = 0;
-                
-                // Menambahkan halaman pertama
-                pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
-                position -= pageHeight;
-
-                // Menambahkan halaman tambahan jika konten melebihi satu halaman
-                while (position > -imgHeight) {
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
-                    position -= pageHeight;
-                }
-
-                pdf.save(`${doc.title.replace(/\s+/g, '_')}.pdf`);
-                toast({ title: "Berhasil", description: "PDF kurikulum telah diunduh." });
-            } catch (error) {
-                console.error(error);
-                toast({ title: "Gagal", description: "Gagal memproses dokumen PDF.", variant: "destructive" });
-            } finally {
-                setLoadingId(null);
-                setPrintingDoc(null);
+            // Logo
+            if (schoolProfile?.school_logo_url) {
+                try {
+                    const img = new Image();
+                    img.src = schoolProfile.school_logo_url;
+                    img.crossOrigin = "Anonymous";
+                    await new Promise((resolve) => {
+                        img.onload = () => {
+                            doc.addImage(img, 'PNG', margin, currentY, 25, 25);
+                            resolve(true);
+                        };
+                        img.onerror = () => resolve(false);
+                    });
+                } catch (e) { console.error("Logo fail", e); }
             }
-        }, 800);
+
+            currentY += 30;
+            doc.setLineWidth(0.8);
+            doc.line(margin, currentY, pageWidth - margin, currentY);
+            doc.setLineWidth(0.2);
+            doc.line(margin, currentY + 1, pageWidth - margin, currentY + 1);
+
+            // 2. Title & Metadata
+            currentY += 15;
+            doc.setFont('times', 'bold');
+            doc.setFontSize(12);
+            doc.text("ALUR TUJUAN PEMBELAJARAN (ATP)", pageWidth / 2, currentY, { align: 'center' });
+            doc.text("PEMETAAN KURIKULUM MERDEKA", pageWidth / 2, currentY + 6, { align: 'center' });
+
+            currentY += 15;
+            doc.setFontSize(10);
+            doc.text("Mata Pelajaran", margin, currentY);
+            doc.text(":", margin + 30, currentY);
+            doc.setFont('times', 'normal');
+            doc.text(docData.subject, margin + 35, currentY);
+
+            doc.setFont('times', 'bold');
+            doc.text("Jenjang / Fase", margin, currentY + 6);
+            doc.text(":", margin + 30, currentY + 6);
+            doc.setFont('times', 'normal');
+            doc.text(`${docData.class_level} / ${docData.phase}`, margin + 35, currentY + 6);
+
+            doc.setFont('times', 'bold');
+            doc.text("Penyusun", margin, currentY + 12);
+            doc.text(":", margin + 30, currentY + 12);
+            doc.setFont('times', 'normal');
+            doc.text(schoolProfile?.full_name || "GURU PENGAMPU", margin + 35, currentY + 12);
+
+            currentY += 22;
+
+            // 3. Render Content (Text & Tables)
+            const sanitized = sanitizeContent(docData.content);
+            const parsedContent = parseMarkdownTables(sanitized);
+
+            for (const block of parsedContent) {
+                if (block.type === 'text') {
+                    doc.setFont('times', 'normal');
+                    doc.setFontSize(10);
+                    const splitText = doc.splitTextToSize(block.value, pageWidth - (margin * 2));
+                    
+                    if (currentY + (splitText.length * 5) > pageHeight - 40) {
+                        doc.addPage();
+                        currentY = margin + 10;
+                    }
+
+                    doc.text(splitText, margin, currentY);
+                    currentY += (splitText.length * 5) + 10;
+                } else if (block.type === 'table') {
+                    const rows = block.value.map((line: string) => 
+                        line.split('|').filter(cell => cell.trim() !== '').map(cell => cell.trim())
+                    ).filter((row: any[]) => row.length > 0 && !row[0].startsWith('---'));
+
+                    if (rows.length > 1) {
+                        const head = [rows[0]];
+                        const body = rows.slice(1);
+
+                        doc.autoTable({
+                            startY: currentY,
+                            head: head,
+                            body: body,
+                            margin: { left: margin, right: margin },
+                            theme: 'grid',
+                            styles: { font: 'times', fontSize: 9, cellPadding: 2, textColor: 0 },
+                            headStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold', halign: 'center' },
+                            didDrawPage: (data: any) => {
+                                currentY = data.cursor.y;
+                            }
+                        });
+                        currentY = (doc as any).lastAutoTable.finalY + 10;
+                    }
+                }
+            }
+
+            // 4. Signatures
+            if (currentY > pageHeight - 50) {
+                doc.addPage();
+                currentY = margin + 20;
+            }
+
+            const today = format(new Date(), 'dd MMMM yyyy', { locale: id });
+            
+            doc.setFont('times', 'normal');
+            doc.text("Mengetahui,", margin + 15, currentY);
+            doc.text("Kepala Sekolah", margin + 15, currentY + 6);
+            
+            doc.text("Dicetak Pada,", pageWidth - margin - 55, currentY);
+            doc.text(today, pageWidth - margin - 55, currentY + 6);
+
+            currentY += 25;
+            doc.setFont('times', 'bold');
+            doc.text(schoolProfile?.headmaster_name || "..................................", margin + 15, currentY);
+            doc.text(schoolProfile?.full_name || "..................................", pageWidth - margin - 55, currentY);
+            
+            doc.setFont('times', 'normal');
+            doc.text(`NIP. ${schoolProfile?.headmaster_nip || "..........................."}`, margin + 15, currentY + 5);
+            doc.text(`NIP. ${schoolProfile?.nip || "..........................."}`, pageWidth - margin - 55, currentY + 5);
+
+            doc.save(`${docData.title.replace(/\s+/g, '_')}.pdf`);
+            toast({ title: "Berhasil", description: "PDF kurikulum telah diunduh." });
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Gagal", description: "Gagal memproses dokumen PDF.", variant: "destructive" });
+        } finally {
+            setLoadingId(null);
+        }
     };
 
     const resetFilters = () => {
@@ -203,100 +338,6 @@ export default function CpAtpRepositoryClient({
                     )}
                 </div>
             </div>
-
-            {printingDoc && (
-                <div className="fixed left-[-9999px] top-0">
-                    <div 
-                        id={`printable-cp-atp-${printingDoc.id}`} 
-                        className="bg-white p-[20mm] text-black" 
-                        style={{ 
-                            width: '210mm', 
-                            minHeight: '297mm', 
-                            fontFamily: '"Times New Roman", Times, serif',
-                            lineHeight: '1.5'
-                        }}
-                    >
-                        <div className="flex items-center gap-6 mb-4 pb-4 border-b-[3pt] border-black">
-                            <div className="w-[25mm] h-[25mm] flex items-center justify-center shrink-0">
-                                {schoolProfile?.school_logo_url ? (
-                                    <img src={schoolProfile.school_logo_url} alt="Logo" className="w-full h-full object-contain" />
-                                ) : (
-                                    <div className="p-2 opacity-20"><AppLogo /></div>
-                                )}
-                            </div>
-                            <div className="flex-1 text-center pr-[25mm]">
-                                <h1 className="text-[16pt] font-bold uppercase leading-tight">
-                                    {schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}
-                                </h1>
-                                {schoolProfile?.npsn && (
-                                    <p className="text-[10pt] font-bold m-0">NPSN: {schoolProfile.npsn}</p>
-                                )}
-                                <p className="text-[9pt] italic m-0">
-                                    {schoolProfile?.school_address || "Alamat belum diatur di profil"}
-                                </p>
-                                <p className="text-[9pt] italic m-0">
-                                    {schoolProfile?.school_email ? `Email: ${schoolProfile.school_email}` : ''}
-                                    {schoolProfile?.school_website ? ` | Web: ${schoolProfile.school_website}` : ''}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="text-center mb-10">
-                            <h2 className="text-[14pt] font-bold uppercase underline">ALUR TUJUAN PEMBELAJARAN (ATP)</h2>
-                            <p className="text-[11pt] font-bold uppercase mt-1">TAHUN PELAJARAN 2024/2025</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-8 text-[11pt] mb-8">
-                            <div className="space-y-1">
-                                <div className="grid grid-cols-[120px_10px_1fr]">
-                                    <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{printingDoc.subject}</span>
-                                </div>
-                                <div className="grid grid-cols-[120px_10px_1fr]">
-                                    <span className="font-bold">Jenjang / Fase</span><span>:</span><span>{printingDoc.class_level} / {printingDoc.phase}</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="grid grid-cols-[120px_10px_1fr]">
-                                    <span className="font-bold">Penyusun</span><span>:</span><span>{schoolProfile?.full_name || 'GURU PENGAMPU'}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="prose prose-slate max-w-none text-black prose-sm">
-                            <ReactMarkdown 
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-black my-6 text-[10pt]" style={{ breakInside: 'auto' }} {...props} />,
-                                    th: ({node, ...props}) => <th className="border-2 border-black bg-slate-100 p-2 font-bold text-center" {...props} />,
-                                    td: ({node, ...props}) => <td className="border-2 border-black p-2 align-top" {...props} />,
-                                    h1: ({node, ...props}) => <h3 className="text-[12pt] font-bold uppercase mt-8 mb-4 border-l-4 border-black pl-3" style={{ breakInside: 'avoid', breakAfter: 'avoid' }} {...props} />,
-                                    h2: ({node, ...props}) => <h4 className="text-[11pt] font-bold uppercase mt-6 mb-3" style={{ breakInside: 'avoid', breakAfter: 'avoid' }} {...props} />,
-                                    p: ({node, ...props}) => <p className="text-[10.5pt] mb-4 text-justify" style={{ breakInside: 'avoid' }} {...props} />,
-                                    li: ({node, ...props}) => <li className="text-[10.5pt] mb-1" style={{ breakInside: 'avoid' }} {...props} />,
-                                    tr: ({node, ...props}) => <tr style={{ breakInside: 'avoid' }} {...props} />
-                                }}
-                            >
-                                {sanitizeContent(printingDoc.content || "")}
-                            </ReactMarkdown>
-                        </div>
-
-                        <div className="mt-16 grid grid-cols-2 gap-10 text-[11pt] px-10" style={{ breakInside: 'avoid' }}>
-                            <div className="text-center">
-                                <p>Mengetahui,</p>
-                                <p className="mb-24">Kepala Sekolah</p>
-                                <p className="font-bold underline">{schoolProfile?.headmaster_name || ".................................."}</p>
-                                <p>NIP. {schoolProfile?.headmaster_nip || "..........................."}</p>
-                            </div>
-                            <div className="text-center">
-                                <p>Dicetak Pada,</p>
-                                <p className="mb-24">{format(new Date(), 'dd MMMM yyyy', { locale: id })}</p>
-                                <p className="font-bold underline">{schoolProfile?.full_name || ".................................."}</p>
-                                <p>NIP. {schoolProfile?.nip || "..........................."}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
                 {filteredDocs.length > 0 ? (
