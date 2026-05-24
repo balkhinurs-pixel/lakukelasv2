@@ -160,7 +160,7 @@ export default function ModulAjarClient({
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [loading, generatedResult]);
+    }, [loading, !!generatedResult]);
 
     const handleJenjangChange = (val: string) => {
         const classOpts = getClassOptions(val);
@@ -186,10 +186,10 @@ export default function ModulAjarClient({
         if (error) toast({ title: "Gagal", description: "Terjadi kesalahan sistem.", variant: "destructive" });
     };
 
-    const handleTogglePancasila = (val: string) => {
+    const handleTogglePancasila = (val: string, checked: boolean) => {
         setForm(prev => {
             const current = prev.profilPancasila;
-            if (current.includes(val)) {
+            if (!checked) {
                 return { ...prev, profilPancasila: current.filter(item => item !== val) };
             } else {
                 return { ...prev, profilPancasila: [...current, val] };
@@ -197,10 +197,10 @@ export default function ModulAjarClient({
         });
     };
 
-    const handleToggleRahmatan = (val: string) => {
+    const handleToggleRahmatan = (val: string, checked: boolean) => {
         setForm(prev => {
             const current = prev.profilRahmatanLilAlamin || [];
-            if (current.includes(val)) {
+            if (!checked) {
                 return { ...prev, profilRahmatanLilAlamin: current.filter(item => item !== val) };
             } else {
                 return { ...prev, profilRahmatanLilAlamin: [...current, val] };
@@ -334,7 +334,7 @@ export default function ModulAjarClient({
                             <CardTitle className="text-xl font-black flex items-center gap-2"><Settings2 className="h-5 w-5 text-indigo-600" />Konfigurasi RPP</CardTitle>
                             <Tabs 
                                 value={form.kurikulumPath} 
-                                onValueChange={(v: any) => setForm({...form, kurikulumPath: v})}
+                                onValueChange={(v: any) => setForm(prev => ({...prev, kurikulumPath: v}))}
                                 className="w-full"
                             >
                                 <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-100 rounded-xl p-1 shadow-inner">
@@ -350,7 +350,7 @@ export default function ModulAjarClient({
                         <CardContent className="p-6 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
                             <div className="space-y-2 p-4 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-inner">
                                 <Label className="text-[10px] font-black uppercase text-indigo-600 tracking-widest ml-1 flex items-center gap-2"><GitBranchPlus className="h-3 w-3" /> Gunakan Referensi ATP</Label>
-                                <Select value={form.atp_id || 'none'} onValueChange={v => setForm({...form, atp_id: v})}>
+                                <Select value={form.atp_id || 'none'} onValueChange={v => setForm(prev => ({...prev, atp_id: v}))}>
                                     <SelectTrigger className="rounded-xl bg-white border-0 h-11 font-bold shadow-sm"><SelectValue placeholder="Pilih ATP (Opsional)" /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         <SelectItem value="none" className="font-bold text-slate-400">Tanpa Referensi (Manual)</SelectItem>
@@ -364,7 +364,7 @@ export default function ModulAjarClient({
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
-                                    <Select value={form.jenjang} onValueChange={handleJenjangChange}>
+                                    <Select value={form.jenjang || ""} onValueChange={handleJenjangChange}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
@@ -373,7 +373,7 @@ export default function ModulAjarClient({
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
-                                    <Select value={form.kelas} onValueChange={v => setForm(prev => ({...prev, kelas: v}))}>
+                                    <Select value={form.kelas || ""} onValueChange={v => setForm(prev => ({...prev, kelas: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
@@ -385,7 +385,7 @@ export default function ModulAjarClient({
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mapel</Label>
-                                    <Select value={form.subject} onValueChange={v => setForm(prev => ({...prev, subject: v}))}>
+                                    <Select value={form.subject || ""} onValueChange={v => setForm(prev => ({...prev, subject: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
@@ -394,7 +394,7 @@ export default function ModulAjarClient({
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Pertemuan</Label>
-                                    <Select value={String(form.jumlahPertemuan)} onValueChange={v => setForm({...form, jumlahPertemuan: Number(v)})}>
+                                    <Select value={String(form.jumlahPertemuan)} onValueChange={v => setForm(prev => ({...prev, jumlahPertemuan: Number(v)}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-xl">
                                             {[1,2,3,4,5,6].map(n => <SelectItem key={n} value={String(n)} className="font-bold">{n} Pertemuan</SelectItem>)}
@@ -411,14 +411,19 @@ export default function ModulAjarClient({
                             <div className="space-y-3 pt-4 border-t border-slate-100">
                                 <Label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Profil Pelajar Pancasila</Label>
                                 <div className="grid grid-cols-1 gap-2">
-                                    {PROFIL_PANCASILA.map((dim) => (
-                                        <div key={dim} className={cn(
+                                    {PROFIL_PANCASILA.map((dim, idx) => (
+                                        <label key={dim} htmlFor={`p3-${idx}`} className={cn(
                                             "flex items-center space-x-3 p-3 rounded-xl border-2 transition-all cursor-pointer",
                                             form.profilPancasila.includes(dim) ? "bg-indigo-50 border-indigo-200" : "bg-white border-slate-50 hover:bg-slate-50"
-                                        )} onClick={() => handleTogglePancasila(dim)}>
-                                            <Checkbox checked={form.profilPancasila.includes(dim)} className="rounded-md h-5 w-5" />
+                                        )}>
+                                            <Checkbox 
+                                                id={`p3-${idx}`} 
+                                                checked={form.profilPancasila.includes(dim)} 
+                                                onCheckedChange={(checked) => handleTogglePancasila(dim, !!checked)}
+                                                className="rounded-md h-5 w-5" 
+                                            />
                                             <span className="text-xs font-bold text-slate-700 leading-tight">{dim}</span>
-                                        </div>
+                                        </label>
                                     ))}
                                 </div>
                             </div>
@@ -430,14 +435,19 @@ export default function ModulAjarClient({
                                         <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[8px]">Wajib Kemenag</Badge>
                                     </div>
                                     <div className="grid grid-cols-1 gap-2 max-h-[250px] overflow-y-auto p-2 border-2 border-emerald-50 rounded-2xl bg-emerald-50/20 custom-scrollbar">
-                                        {PROFIL_RAHMATAN_LIL_ALAMIN.map((dim) => (
-                                            <div key={dim} className={cn(
+                                        {PROFIL_RAHMATAN_LIL_ALAMIN.map((dim, idx) => (
+                                            <label key={dim} htmlFor={`ppra-${idx}`} className={cn(
                                                 "flex items-center space-x-3 p-3 rounded-xl border-2 transition-all cursor-pointer",
                                                 form.profilRahmatanLilAlamin?.includes(dim) ? "bg-emerald-100 border-emerald-300" : "bg-white border-slate-50 hover:bg-emerald-50"
-                                            )} onClick={() => handleToggleRahmatan(dim)}>
-                                                <Checkbox checked={form.profilRahmatanLilAlamin?.includes(dim)} className="rounded-md h-5 w-5 border-emerald-200 data-[state=checked]:bg-emerald-600" />
-                                                <span className="text-11px font-bold text-emerald-900 leading-tight">{dim}</span>
-                                            </div>
+                                            )}>
+                                                <Checkbox 
+                                                    id={`ppra-${idx}`}
+                                                    checked={form.profilRahmatanLilAlamin?.includes(dim)} 
+                                                    onCheckedChange={(checked) => handleToggleRahmatan(dim, !!checked)}
+                                                    className="rounded-md h-5 w-5 border-emerald-200 data-[state=checked]:bg-emerald-600" 
+                                                />
+                                                <span className="text-[11px] font-bold text-emerald-900 leading-tight">{dim}</span>
+                                            </label>
                                         ))}
                                     </div>
                                 </div>
@@ -455,7 +465,7 @@ export default function ModulAjarClient({
                                         <button
                                             key={type.value}
                                             type="button"
-                                            onClick={() => setForm({...form, deepLearningType: type.value})}
+                                            onClick={() => setForm(prev => ({...prev, deepLearningType: type.value}))}
                                             className={cn(
                                                 "p-3 rounded-xl border-2 flex flex-col items-center gap-2 transition-all text-center h-full",
                                                 form.deepLearningType === type.value ? "bg-indigo-600 border-indigo-600 text-white shadow-lg" : "bg-white border-slate-100 text-slate-400 hover:bg-slate-50"
@@ -478,7 +488,7 @@ export default function ModulAjarClient({
 
                             <div className="space-y-2 pt-4 border-t border-slate-100">
                                 <Label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Praktik Pedagogis Utama</Label>
-                                <Select value={form.pedagogicalPractice} onValueChange={(v) => setForm({...form, pedagogicalPractice: v})}>
+                                <Select value={form.pedagogicalPractice || ""} onValueChange={(v) => setForm(prev => ({...prev, pedagogicalPractice: v}))}>
                                     <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                         {PEDAGOGICAL_PRACTICES.map(p => <SelectItem key={p} value={p} className="font-bold">{p}</SelectItem>)}
@@ -496,17 +506,17 @@ export default function ModulAjarClient({
 
                             <div className="space-y-1.5 pt-4 border-t border-slate-100">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Alokasi Waktu Total</Label>
-                                <Input placeholder="e.g. 2 x 45 Menit" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.alokasiWaktu} onChange={e => setForm({...form, alokasiWaktu: e.target.value})} />
+                                <Input placeholder="e.g. 2 x 45 Menit" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.alokasiWaktu} onChange={e => setForm(prev => ({...prev, alokasiWaktu: e.target.value}))} />
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Karakteristik Siswa (Opsional)</Label>
-                                <Input placeholder="e.g. Siswa Aktif, Gaya Belajar Visual" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.targetSiswa} onChange={e => setForm({...form, targetSiswa: e.target.value})} />
+                                <Input placeholder="e.g. Siswa Aktif, Gaya Belajar Visual" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.targetSiswa} onChange={e => setForm(prev => ({...prev, targetSiswa: e.target.value}))} />
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sarana & Prasarana</Label>
-                                <Input placeholder="e.g. Proyektor, Internet, Lab IPA" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.saranaPrasarana} onChange={e => setForm({...form, saranaPrasarana: e.target.value})} />
+                                <Input placeholder="e.g. Proyektor, Internet, Lab IPA" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.saranaPrasarana} onChange={e => setForm(prev => ({...prev, saranaPrasarana: e.target.value}))} />
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/50 p-6 border-t">
