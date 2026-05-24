@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { streamCpAtpAction } from "@/lib/actions/ai";
-import { saveCpAtpToDrive, setupGoogleDriveFolder } from "@/lib/actions/google-drive";
+import { saveCpAtpToDrive } from "@/lib/actions/google-drive";
 import type { Class, Subject, GoogleDriveIntegration, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -77,7 +77,7 @@ const PHASES = [
 export default function GenerateCpAtpClient({ 
     classes: _classes, 
     subjects: _subjects,
-    driveIntegration,
+    driveIntegration: _driveIntegration,
     userProvider,
     schoolProfile
 }: { 

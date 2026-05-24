@@ -51,7 +51,7 @@ export async function generateCpAtp(input: CpAtpInput): Promise<CpAtpOutput> {
   const response = await ai.generate({
     output: { schema: CpAtpOutputSchema },
     prompt: `Anda adalah pakar kurikulum nasional Indonesia yang sangat ahli dalam implementasi Kurikulum Merdeka.
-Tugas Anda adalah membantu guru menyusun "Pemetaan Capaian Pembelajaran (CP) dan Alur Tujuan Pembelajaran (ATP)" yang logis, terukur, dan sistematis.
+Tugas Anda adalah membantu guru menyusun "Pemetaan Capaian Pembelajaran (CP) dan Alur Tujuan Pembelajaran (ATP)" yang logis, terukur, dan sistematis untuk kurun waktu satu semester atau satu tahun ajaran.
 
 INPUT KURIKULUM:
 - Mata Pelajaran: ${input.subject}
@@ -60,16 +60,16 @@ INPUT KURIKULUM:
 - Fokus Materi/Elemen: ${input.scope}
 - Instruksi Tambahan: ${input.additionalInfo || 'Tidak ada'}
 
-ATURAN PENULISAN (PENTING):
+ATURAN PENULISAN (SANGAT PENTING):
 1. GUNAKAN HURUF NORMAL (Sentence case). JANGAN gunakan huruf kapital semua untuk isi teks. Huruf kapital hanya untuk judul atau awal kalimat.
 2. STRUKTUR DOKUMEN (WAJIB ADA):
-   - CAPAIAN PEMBELAJARAN (CP): Tuliskan narasi CP sesuai elemen.
-   - TUJUAN PEMBELAJARAN (TP): Pecah menjadi beberapa TP yang konkret.
-   - ALUR TUJUAN PEMBELAJARAN (ATP): WAJIB menggunakan format TABEL Markdown dengan kolom: No, TP, Lingkup Materi, Dimensi P3, Alokasi Waktu, dan Strategi Pembelajaran.
-3. KATA KUNCI & MATERI INTI: Daftar konsep utama.
-4. PROFIL PELAJAR PANCASILA: Tentukan dimensi yang relevan.
+   - CAPAIAN PEMBELAJARAN (CP): Tuliskan narasi CP sesuai elemen kurikulum terbaru.
+   - TUJUAN PEMBELAJARAN (TP): Pecah narasi CP menjadi beberapa TP yang konkret dan dapat diukur.
+   - ALUR TUJUAN PEMBELAJARAN (ATP): WAJIB menggunakan format TABEL Markdown dengan kolom: No, Tujuan Pembelajaran (TP), Lingkup Materi, Dimensi P3 (Profil Pelajar Pancasila), Alokasi Waktu, dan Strategi Pembelajaran.
+3. KATA KUNCI & MATERI INTI: Daftar konsep utama yang harus dikuasai siswa.
+4. PROFIL PELAJAR PANCASILA: Tentukan dimensi yang relevan dengan lingkup materi ini.
 
-Gunakan bahasa yang sangat profesional namun praktis. Pastikan tabel Markdown dibuat dengan benar menggunakan pemisah pipe (|) dan garis header (---).`,
+Gunakan bahasa yang sangat profesional namun praktis bagi guru di lapangan. Pastikan tabel Markdown dibuat dengan benar menggunakan pemisah pipe (|) dan garis header (---).`,
   });
 
   const result = response.output;
