@@ -266,6 +266,8 @@ export interface ModulAjarInput {
   saranaPrasarana?: string;
   targetSiswa?: string;
   atp_id?: string;
+  pedagogicalPractice?: string;
+  deepLearningType?: string;
 }
 
 // --- History Types ---

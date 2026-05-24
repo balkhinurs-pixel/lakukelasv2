@@ -13,7 +13,11 @@ import {
     RefreshCw,
     ArrowRight,
     Target,
-    GitBranchPlus
+    GitBranchPlus,
+    Plus,
+    Heart,
+    Brain,
+    Lightbulb
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { streamModulAjarAction } from "@/lib/actions/ai";
-import { saveModulAjarToDrive, setupGoogleDriveFolder } from "@/lib/actions/google-drive";
+import { saveModulAjarToDrive } from "@/lib/actions/google-drive";
 import type { Class, Subject, ModulAjarInput, GoogleDriveIntegration, CpAtpDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,13 +44,14 @@ import {
 } from "@/components/ui/dialog";
 import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
 import { readStreamableValue } from 'ai/rsc';
+import { Badge } from "@/components/ui/badge";
 
 // --- Data Constants ---
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
     'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
-    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
 };
 
 const getClassOptions = (jenjang: string) => {
@@ -56,10 +61,37 @@ const getClassOptions = (jenjang: string) => {
     return [];
 };
 
+const PROFIL_PANCASILA = [
+    "Beriman, bertakwa kepada Tuhan YME, dan berakhlak mulia",
+    "Berkebinekaan global",
+    "Bergotong royong",
+    "Mandiri",
+    "Bernalar kritis",
+    "Kreatif"
+];
+
+const PEDAGOGICAL_PRACTICES = [
+    "Scaffolding (Perancah)",
+    "Diferensiasi Produk",
+    "Diferensiasi Proses",
+    "Diferensiasi Konten",
+    "Feedback Konstruktif",
+    "Inquiry Learning",
+    "Lainnya (Tulis Manual)"
+];
+
+const DEEP_LEARNING_TYPES = [
+    { value: "Mindful Learning", label: "Mindful Learning (Sadar & Fokus)", icon: Heart },
+    { value: "Meaningful Learning", label: "Meaningful Learning (Bermakna)", icon: Lightbulb },
+    { value: "Joyful Learning", label: "Joyful Learning (Menyenangkan)", icon: Sparkles },
+    { value: "Dialogic Learning", label: "Dialogic Learning (Dialogis)", icon: Target },
+    { value: "Lainnya (Tulis Manual)", label: "Lainnya (Tulis Manual)", icon: Plus }
+];
+
 export default function ModulAjarClient({ 
     classes: _classes, 
     subjects: _subjects,
-    driveIntegration,
+    driveIntegration: _driveIntegration,
     userProvider,
     atpDocuments = []
 }: { 
@@ -82,6 +114,10 @@ export default function ModulAjarClient({
     const [errorType, setErrorType] = React.useState<AiErrorType>(null);
     const [errorMsg, setErrorMsg] = React.useState("");
 
+    // Custom Input States
+    const [customPedagogy, setCustomPedagogy] = React.useState("");
+    const [customDeepLearning, setCustomDeepLearning] = React.useState("");
+
     const [form, setForm] = React.useState<ModulAjarInput>({
         jenjang: 'SMP / MTs',
         kelas: '7',
@@ -93,7 +129,9 @@ export default function ModulAjarClient({
         modelPembelajaran: 'Problem Based Learning (PBL)',
         saranaPrasarana: '',
         targetSiswa: 'Peserta didik reguler',
-        atp_id: 'none'
+        atp_id: 'none',
+        pedagogicalPractice: 'Scaffolding (Perancah)',
+        deepLearningType: 'Mindful Learning'
     });
 
     // Countdown Logic
@@ -127,6 +165,17 @@ export default function ModulAjarClient({
         if (error) toast({ title: "Gagal", description: "Terjadi kesalahan sistem.", variant: "destructive" });
     };
 
+    const handleTogglePancasila = (val: string) => {
+        setForm(prev => {
+            const current = prev.profilPancasila;
+            if (current.includes(val)) {
+                return { ...prev, profilPancasila: current.filter(item => item !== val) };
+            } else {
+                return { ...prev, profilPancasila: [...current, val] };
+            }
+        });
+    };
+
     const handleGenerate = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!form.topic) {
@@ -139,7 +188,15 @@ export default function ModulAjarClient({
         setCountdown(30);
 
         try {
-            const payload = { ...form };
+            const finalPedagogy = form.pedagogicalPractice === "Lainnya (Tulis Manual)" ? customPedagogy : form.pedagogicalPractice;
+            const finalDeepLearning = form.deepLearningType === "Lainnya (Tulis Manual)" ? customDeepLearning : form.deepLearningType;
+
+            const payload = { 
+                ...form,
+                pedagogicalPractice: finalPedagogy,
+                deepLearningType: finalDeepLearning
+            };
+            
             if (payload.atp_id === 'none') delete payload.atp_id;
 
             const { output } = await streamModulAjarAction(payload);
@@ -178,7 +235,11 @@ export default function ModulAjarClient({
             subject: form.subject
         });
         if (result.success) {
-            toast({ title: "Tersimpan!", description: "Modul Ajar telah disimpan di Google Drive." });
+            toast({ 
+                title: "Tersimpan!", 
+                description: "Modul Ajar telah disimpan di Google Drive.",
+                action: <Button variant="outline" size="sm" asChild><a href={result.file_url || "#"} target="_blank">Buka File</a></Button>
+            });
         } else {
             if (result.error?.toLowerCase().includes('token')) setIsDriveAuthDialogOpen(true);
             else toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
@@ -203,7 +264,6 @@ export default function ModulAjarClient({
                          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
                          <div className="relative">
                              <LottieAiProcess size={220} />
-                             <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent pointer-events-none" />
                          </div>
                          <div className="space-y-6">
                              <div className="space-y-2">
@@ -239,7 +299,7 @@ export default function ModulAjarClient({
                 <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
                     <div className="space-y-2">
                         <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">Generate RPP</h1>
-                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">Modul Ajar Terintegrasi ATP</p>
+                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">Modul Ajar Terintegrasi Kurikulum Merdeka</p>
                     </div>
                 </div>
             </div>
@@ -250,8 +310,9 @@ export default function ModulAjarClient({
                         <CardHeader className="bg-slate-50/50 border-b p-6">
                             <CardTitle className="text-xl font-black flex items-center gap-2"><Settings2 className="h-5 w-5 text-indigo-600" />Konfigurasi RPP</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
-                            <div className="space-y-1.5 p-4 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-inner">
+                        <CardContent className="p-6 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
+                            {/* ATP Selection */}
+                            <div className="space-y-2 p-4 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-inner">
                                 <Label className="text-[10px] font-black uppercase text-indigo-600 tracking-widest ml-1 flex items-center gap-2"><GitBranchPlus className="h-3 w-3" /> Gunakan Referensi ATP</Label>
                                 <Select value={form.atp_id} onValueChange={v => setForm({...form, atp_id: v})}>
                                     <SelectTrigger className="rounded-xl bg-white border-0 h-11 font-bold shadow-sm"><SelectValue placeholder="Pilih ATP (Opsional)" /></SelectTrigger>
@@ -263,11 +324,13 @@ export default function ModulAjarClient({
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {/* Basic Data */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
                                     <Select value={form.jenjang} onValueChange={handleJenjangChange}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
                                         </SelectContent>
@@ -276,17 +339,115 @@ export default function ModulAjarClient({
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
                                     <Select value={form.kelas} onValueChange={v => setForm(prev => ({...prev, kelas: v}))}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                             {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
-                            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label><Select value={form.subject} onValueChange={v => setForm(prev => ({...prev, subject: v}))}><SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger><SelectContent className="rounded-2xl border-0 shadow-2xl">{(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}</SelectContent></Select></div>
-                            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label><Input placeholder="e.g. Struktur Sel" className="rounded-xl bg-slate-50 border-0 h-11 font-bold" value={form.topic} onChange={e => setForm(prev => ({...prev, topic: e.target.value}))} required /></div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
+                                <Select value={form.subject} onValueChange={v => setForm(prev => ({...prev, subject: v}))}>
+                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label>
+                                <Input placeholder="e.g. Struktur Sel" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" value={form.topic} onChange={e => setForm(prev => ({...prev, topic: e.target.value}))} required />
+                            </div>
+
+                            {/* Pancasila Dimensions */}
+                            <div className="space-y-3 pt-4 border-t border-slate-100">
+                                <Label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Profil Pelajar Pancasila</Label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {PROFIL_PANCASILA.map((dim) => (
+                                        <div key={dim} className={cn(
+                                            "flex items-center space-x-3 p-3 rounded-xl border-2 transition-all cursor-pointer",
+                                            form.profilPancasila.includes(dim) ? "bg-indigo-50 border-indigo-200" : "bg-white border-slate-50 hover:bg-slate-50"
+                                        )} onClick={() => handleTogglePancasila(dim)}>
+                                            <Checkbox checked={form.profilPancasila.includes(dim)} className="rounded-md h-5 w-5" />
+                                            <span className="text-xs font-bold text-slate-700 leading-tight">{dim}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Deep Learning Kategori */}
+                            <div className="space-y-3 pt-4 border-t border-slate-100">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-[10px] font-black uppercase text-indigo-600 tracking-widest ml-1 flex items-center gap-2">
+                                        <Brain className="h-3 w-3" /> Metode Deep Learning
+                                    </Label>
+                                    <Badge variant="outline" className="bg-indigo-50 text-indigo-600 border-indigo-100 font-black text-[8px] uppercase tracking-tighter">Terupdate</Badge>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {DEEP_LEARNING_TYPES.map((type) => (
+                                        <button
+                                            key={type.value}
+                                            type="button"
+                                            onClick={() => setForm({...form, deepLearningType: type.value})}
+                                            className={cn(
+                                                "p-3 rounded-xl border-2 flex flex-col items-center gap-2 transition-all text-center h-full",
+                                                form.deepLearningType === type.value ? "bg-indigo-600 border-indigo-600 text-white shadow-lg" : "bg-white border-slate-100 text-slate-400 hover:bg-slate-50"
+                                            )}
+                                        >
+                                            <type.icon className="h-5 w-5" />
+                                            <span className="text-[9px] font-black uppercase leading-none">{type.label.split('(')[0]}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                {form.deepLearningType === "Lainnya (Tulis Manual)" && (
+                                    <Input 
+                                        placeholder="Tulis kategori deep learning..." 
+                                        className="rounded-xl h-11 font-bold mt-2 animate-in slide-in-from-top-1" 
+                                        value={customDeepLearning}
+                                        onChange={(e) => setCustomDeepLearning(e.target.value)}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Praktik Pedagogis */}
+                            <div className="space-y-2 pt-4 border-t border-slate-100">
+                                <Label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Praktik Pedagogis Utama</Label>
+                                <Select value={form.pedagogicalPractice} onValueChange={(v) => setForm({...form, pedagogicalPractice: v})}>
+                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {PEDAGOGICAL_PRACTICES.map(p => <SelectItem key={p} value={p} className="font-bold">{p}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                {form.pedagogicalPractice === "Lainnya (Tulis Manual)" && (
+                                    <Input 
+                                        placeholder="Tulis praktik pedagogis..." 
+                                        className="rounded-xl h-11 font-bold mt-2 animate-in slide-in-from-top-1" 
+                                        value={customPedagogy}
+                                        onChange={(e) => setCustomPedagogy(e.target.value)}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Advanced Options */}
+                            <div className="space-y-1.5 pt-4 border-t border-slate-100">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Karakteristik Siswa (Opsional)</Label>
+                                <Input placeholder="e.g. Siswa Aktif, Gaya Belajar Visual" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.targetSiswa} onChange={e => setForm({...form, targetSiswa: e.target.value})} />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sarana & Prasarana</Label>
+                                <Input placeholder="e.g. Proyektor, Internet, Lab IPA" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm" value={form.saranaPrasarana} onChange={e => setForm({...form, saranaPrasarana: e.target.value})} />
+                            </div>
                         </CardContent>
-                        <CardFooter className="bg-slate-50/50 p-6 border-t"><Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 text-lg font-black uppercase tracking-widest gap-3 transition-all active:scale-95">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}Generate Modul Ajar</Button></CardFooter>
+                        <CardFooter className="bg-slate-50/50 p-6 border-t">
+                            <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 transition-all active:scale-95 shadow-xl shadow-indigo-100">
+                                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}
+                                Generate Modul Ajar
+                            </Button>
+                        </CardFooter>
                     </form>
                 </Card>
 
@@ -301,13 +462,34 @@ export default function ModulAjarClient({
                                 {generatedResult ? (
                                     <motion.div key="result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-8 sm:p-10"><div className="prose prose-slate max-w-none text-slate-700"><h1 className="text-2xl border-b pb-4 mb-8 text-indigo-700">{generatedResult.title}</h1><div className="whitespace-pre-wrap text-sm leading-relaxed">{generatedResult.content}</div></div></motion.div>
                                 ) : (
-                                    <div className="h-full flex flex-col items-center justify-center p-12 text-center"><div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700"><Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" /></div><h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Pedagogis Siap Bekerja</h3></div>
+                                    <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                                        <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
+                                            <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
+                                        </div>
+                                        <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Pedagogis Siap Bekerja</h3>
+                                        <p className="text-slate-400 font-bold text-sm max-w-xs mt-3">Lengkapi parameter kurikulum dan metode pengajaran di samping untuk mulai merumuskan.</p>
+                                    </div>
                                 )}
                             </AnimatePresence>
                         </ScrollArea>
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Drive Connection Overlay */}
+            <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
+                <DialogContent className="rounded-xl p-0 max-w-sm overflow-hidden bg-white">
+                    <div className="p-8 text-center space-y-6">
+                        <Database className="mx-auto h-12 w-12 text-indigo-600" />
+                        <div className="space-y-2">
+                            <DialogTitle className="text-xl font-bold">Koneksi Drive Diperlukan</DialogTitle>
+                            <DialogDescription>Hubungkan akun Google Anda untuk menyimpan Modul Ajar secara otomatis.</DialogDescription>
+                        </div>
+                        <Button onClick={handleConnectDrive} className="w-full h-12 bg-indigo-600 text-white font-bold rounded-xl">Hubungkan Akun Google</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

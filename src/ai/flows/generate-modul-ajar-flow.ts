@@ -20,6 +20,8 @@ const ModulAjarInputSchema = z.object({
   saranaPrasarana: z.string().optional().describe('Fasilitas pendukung di sekolah'),
   targetSiswa: z.string().optional().describe('Karakteristik peserta didik'),
   atpContent: z.string().optional().describe('Konten referensi CP & ATP yang sudah dibuat sebelumnya'),
+  pedagogicalPractice: z.string().optional().describe('Praktik pedagogis utama (misal: Scaffolding, Diferensiasi)'),
+  deepLearningType: z.string().optional().describe('Kategori Deep Learning (Mindful, Meaningful, Joyful)'),
 });
 
 export type ModulAjarInput = z.infer<typeof ModulAjarInputSchema>;
@@ -58,7 +60,7 @@ export async function generateModulAjar(input: ModulAjarInput): Promise<ModulAja
   const response = await ai.generate({
     output: { schema: ModulAjarOutputSchema },
     prompt: `Anda adalah pakar pengembang kurikulum dan guru penggerak senior di Indonesia.
-Tugas Anda adalah menyusun "Modul Ajar" (RPP) yang sangat detail, sistematis, dan profesional sesuai standar Kurikulum Merdeka.
+Tugas Anda adalah menyusun "Modul Ajar" (RPP) yang sangat detail, sistematis, dan profesional sesuai standar Kurikulum Merdeka terbaru.
 
 IDENTITAS INPUT:
 - Sekolah: ${profile.school_name || 'Sekolah Terkait'}
@@ -70,6 +72,8 @@ IDENTITAS INPUT:
 - Alokasi Waktu: ${input.alokasiWaktu}
 - Model Pembelajaran: ${input.modelPembelajaran}
 - Profil Pelajar Pancasila: ${input.profilPancasila.join(', ')}
+- Praktik Pedagogis Utama: ${input.pedagogicalPractice || 'Standar Kurikulum Merdeka'}
+- Pendekatan Deep Learning: ${input.deepLearningType || 'Umum'}
 - Sarana & Prasarana: ${input.saranaPrasarana || 'Standar Ruang Kelas'}
 - Target Siswa: ${input.targetSiswa || 'Peserta didik reguler'}
 
@@ -78,14 +82,20 @@ ${input.atpContent ? `REFERENSI CP & ATP (WAJIB DIIKUTI):
 
 PENTING: Pastikan Tujuan Pembelajaran dan Alur pada Modul Ajar ini selaras sempurna dengan referensi di atas.` : ''}
 
+PANDUAN PENULISAN DEEP LEARNING (WAJIB):
+Jika pendekatan Deep Learning dipilih (Mindful, Meaningful, Joyful), pastikan langkah-langkah pembelajaran mencerminkan:
+1. Mindful: Kesadaran penuh, fokus, dan empati dalam belajar.
+2. Meaningful: Keterkaitan materi dengan kehidupan nyata siswa.
+3. Joyful: Pengalaman belajar yang menyenangkan dan menantang.
+
 STRUKTUR MODUL (WAJIB ADA):
 1. INFORMASI UMUM: Identitas Modul, Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana, Target Peserta Didik, Model Pembelajaran.
 2. KOMPONEN INTI: Tujuan Pembelajaran (ABCD format), Pemahaman Bermakna, Pertanyaan Pemantik, Persiapan Pembelajaran.
-3. KEGIATAN PEMBELAJARAN: Langkah-langkah detail per fase (Pendahuluan, Inti, Penutup) dengan alokasi menit. Sertakan sintaks ${input.modelPembelajaran}.
+3. KEGIATAN PEMBELAJARAN: Langkah-langkah detail per fase (Pendahuluan, Inti, Penutup) dengan alokasi menit. Sertakan sintaks ${input.modelPembelajaran}. Terapkan praktik pedagogis ${input.pedagogicalPractice}.
 4. ASESMEN: Rencana Asesmen Formatif (awal & proses) dan Sumatif. Sertakan instrumen singkat (rubrik/checklist).
 5. PENGAYAAN & REMEDIAL: Strategi untuk siswa cepat dan siswa yang butuh bantuan.
 6. REFLEKSI: Refleksi guru dan siswa.
-7. LAMPIRAN: Bahan Bacaan Guru & Siswa, Glosarium, Daftar Pustaka.
+7. LAMPIRAN: Bahan Bacaan Guru & Siswa, Lembar Kerja Peserta Didik (LKPD), Glosarium, Daftar Pustaka.
 
 Gunakan bahasa yang formal namun inspiratif. Gunakan format Markdown yang sangat rapi (heading, bullet points, table) agar mudah dibaca di Google Docs.`,
   });
