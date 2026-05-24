@@ -100,6 +100,18 @@ const PEDAGOGICAL_PRACTICES = [
     "Lainnya (Tulis Manual)"
 ];
 
+const LEARNING_MODELS = [
+    "Problem Based Learning (PBL)",
+    "Project Based Learning (PjBL)",
+    "Discovery Learning",
+    "Inquiry Learning",
+    "Cooperative Learning",
+    "Contextual Teaching and Learning (CTL)",
+    "STEAM",
+    "Disesuaikan otomatis oleh AI",
+    "Lainnya (Tulis Manual)"
+];
+
 const DEEP_LEARNING_TYPES = [
     { value: "Mindful Learning", label: "Mindful Learning (Sadar & Fokus)", icon: Heart },
     { value: "Meaningful Learning", label: "Meaningful Learning (Bermakna)", icon: Lightbulb },
@@ -135,6 +147,7 @@ export default function ModulAjarClient({
 
     const [customPedagogy, setCustomPedagogy] = React.useState("");
     const [customDeepLearning, setCustomDeepLearning] = React.useState("");
+    const [customModel, setCustomModel] = React.useState("");
 
     const [form, setForm] = React.useState<ModulAjarInput>({
         kurikulumPath: 'dikbud',
@@ -147,7 +160,7 @@ export default function ModulAjarClient({
         jumlahPertemuan: 1,
         profilPancasila: [],
         profilRahmatanLilAlamin: [],
-        modelPembelajaran: 'Problem Based Learning (PBL)',
+        modelPembelajaran: 'Disesuaikan otomatis oleh AI',
         saranaPrasarana: '',
         targetSiswa: 'Peserta didik reguler',
         atp_id: 'none',
@@ -226,11 +239,13 @@ export default function ModulAjarClient({
         try {
             const finalPedagogy = form.pedagogicalPractice === "Lainnya (Tulis Manual)" ? customPedagogy : form.pedagogicalPractice;
             const finalDeepLearning = form.deepLearningType === "Lainnya (Tulis Manual)" ? customDeepLearning : form.deepLearningType;
+            const finalModel = form.modelPembelajaran === "Lainnya (Tulis Manual)" ? customModel : form.modelPembelajaran;
 
             const payload = { 
                 ...form,
                 pedagogicalPractice: finalPedagogy || form.pedagogicalPractice,
-                deepLearningType: finalDeepLearning || form.deepLearningType
+                deepLearningType: finalDeepLearning || form.deepLearningType,
+                modelPembelajaran: finalModel || form.modelPembelajaran
             };
             
             const { output } = await streamModulAjarAction(payload);
@@ -410,6 +425,24 @@ export default function ModulAjarClient({
                             <div className="space-y-1.5">
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label>
                                 <Input placeholder="e.g. Struktur Sel, Adab bertetangga" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" value={form.topic} onChange={e => setForm(prev => ({...prev, topic: e.target.value}))} required />
+                            </div>
+
+                            <div className="space-y-3 pt-4 border-t border-slate-100">
+                                <Label className="text-[10px] font-black uppercase text-slate-600 tracking-widest ml-1">Model Pembelajaran</Label>
+                                <Select value={form.modelPembelajaran} onValueChange={(v) => setForm(prev => ({...prev, modelPembelajaran: v}))}>
+                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        {LEARNING_MODELS.map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                {form.modelPembelajaran === "Lainnya (Tulis Manual)" && (
+                                    <Input 
+                                        placeholder="Tulis model pembelajaran..." 
+                                        className="rounded-xl h-11 font-bold mt-2 animate-in slide-in-from-top-1" 
+                                        value={customModel}
+                                        onChange={(e) => setCustomModel(e.target.value)}
+                                    />
+                                )}
                             </div>
 
                             <div className="space-y-3 pt-4 border-t border-slate-100">
