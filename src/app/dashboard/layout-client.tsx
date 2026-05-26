@@ -168,7 +168,6 @@ export default function DashboardLayoutClient({
   };
 
   const MobileGridItem = ({ href, iconName, label }: any) => {
-    // FIX: Gunakan exact match untuk dashboard root agar tidak nyala terus
     const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href);
     
     return (
@@ -454,7 +453,7 @@ export default function DashboardLayoutClient({
                                 <MobileGridItem href="/dashboard/attendance" iconName="solar:clipboard-check-bold-duotone" label="Presensi" />
                                 <MobileGridItem href="/dashboard/grades" iconName="solar:ranking-bold-duotone" label="Nilai" />
                                 <MobileGridItem href="/dashboard/journal" iconName="solar:notebook-bold-duotone" label="Jurnal" />
-                                <MobileGridItem href="/dashboard/materials" iconName="solar:link-circle-bold-duotone" label="Materi" />
+                                <MobileGridItem href="/dashboard/materials" iconName="gridicons:book" label="Materi" />
                                 <MobileGridItem href="/dashboard/reports" iconName="solar:chart-2-bold-duotone" label="Laporan" />
                                 <MobileGridItem href="/dashboard/schedule" iconName="solar:clock-circle-bold-duotone" label="Jadwal" />
                             </div>
