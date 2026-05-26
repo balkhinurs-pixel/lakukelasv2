@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import Image from 'next/image';
+import { Icon } from '@iconify/react';
 import {
   BarChart3,
   BookText,
@@ -117,7 +118,7 @@ export default function DashboardLayoutClient({
     router.refresh();
   };
 
-  const NavItem = ({ href, icon: Icon, label, color = "" }: any) => {
+  const NavItem = ({ href, icon: IconComponent, label, color = "" }: any) => {
     const { state } = useSidebar();
     const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href) && href !== '/dashboard';
     
@@ -141,7 +142,7 @@ export default function DashboardLayoutClient({
             "flex items-center w-full",
             isCollapsed ? "justify-center" : "justify-start px-2"
           )}>
-            <Icon className={cn(
+            <IconComponent className={cn(
                 "w-5 h-5 shrink-0 transition-transform duration-300", 
                 isActive ? "text-indigo-600" : color,
                 !isActive && "group-hover/item:scale-110",
@@ -166,22 +167,25 @@ export default function DashboardLayoutClient({
     );
   };
 
-  const MobileGridItem = ({ href, icon: Icon, label, color }: any) => {
+  const MobileGridItem = ({ href, iconName, label }: any) => {
     const isActive = pathname === href || pathname.startsWith(href + '/');
     return (
         <Link 
             href={href} 
             onClick={() => setIsMobileMenuOpen(false)} 
-            className="flex flex-col items-center gap-1.5 transition-transform active:scale-90"
+            className="flex flex-col items-center gap-1.5 transition-all active:scale-95 group"
         >
             <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-all",
-                color,
-                isActive && "ring-2 ring-offset-2 ring-indigo-600 scale-105"
+                "w-14 h-14 rounded-[20px] flex items-center justify-center transition-all duration-300 relative overflow-hidden",
+                "bg-[#FFF0F0] text-[#FF4D8D]", // Peach background, Raspberry icon
+                isActive && "shadow-xl shadow-[#FF4D8D]/20 scale-110 -translate-y-1 bg-[#FF4D8D] text-white"
             )}>
-                <Icon className="w-5 h-5" />
+                <Icon icon={iconName} className="w-7 h-7" />
             </div>
-            <span className="text-[9px] font-black text-center leading-tight uppercase tracking-wider text-slate-600 line-clamp-2 px-1">
+            <span className={cn(
+                "text-[9px] font-black text-center leading-tight uppercase tracking-[0.05em] line-clamp-2 px-1 transition-colors",
+                isActive ? "text-[#FF4D8D]" : "text-slate-500"
+            )}>
                 {label}
             </span>
         </Link>
@@ -419,11 +423,11 @@ export default function DashboardLayoutClient({
                                 </button>
                             </div>
                             {isMonitoringExpanded && (
-                                <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in duration-300">
-                                    <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-blue-600" />
-                                    <MobileGridItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Tren" color="bg-rose-500" />
-                                    <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="bg-amber-500" />
-                                    <MobileGridItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="bg-emerald-500" />
+                                <div className="grid grid-cols-4 gap-y-6 gap-x-2 animate-in fade-in duration-300">
+                                    <MobileGridItem href="/monitoring" iconName="solar:monitor-bold-duotone" label="Statistik" />
+                                    <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:graph-bold-duotone" label="Grafik Tren" />
+                                    <MobileGridItem href="/monitoring/teacher-attendance" iconName="solar:user-check-bold-duotone" label="Absensi Guru" />
+                                    <MobileGridItem href="/monitoring/teacher-activity" iconName="solar:activity-bold-duotone" label="Aktivitas" />
                                 </div>
                             )}
                           </div>
@@ -432,45 +436,45 @@ export default function DashboardLayoutClient({
                         {isHomeroom && (
                           <div className="space-y-3">
                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] px-1">Wali Kelas</p>
-                            <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                <MobileGridItem href="/dashboard/homeroom/student-ledger" icon={ClipboardEdit} label="Leger" color="bg-blue-500" />
-                                <MobileGridItem href="/dashboard/homeroom/reports" icon={TableIcon} label="Bulanan" color="bg-purple-500" />
+                            <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                                <MobileGridItem href="/dashboard/homeroom/student-ledger" iconName="solar:clipboard-list-bold-duotone" label="Leger" />
+                                <MobileGridItem href="/dashboard/homeroom/reports" iconName="solar:table-list-bold-duotone" label="Bulanan" />
                             </div>
                           </div>
                         )}
 
                         <div className="space-y-3">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Menu Utama</p>
-                            <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                <MobileGridItem href="/dashboard" icon={Home} label="Dasbor" color="bg-pink-500" />
-                                <MobileGridItem href="/dashboard/teacher-attendance" icon={MapPin} label="Absen Guru" color="bg-rose-600" />
-                                <MobileGridItem href="/dashboard/agenda" icon={CalendarDays} label="Agenda" color="bg-amber-600" />
-                                <MobileGridItem href="/dashboard/attendance" icon={ClipboardCheck} label="Presensi" color="bg-emerald-600" />
-                                <MobileGridItem href="/dashboard/grades" icon={ClipboardEdit} label="Nilai" color="bg-cyan-500" />
-                                <MobileGridItem href="/dashboard/journal" icon={BookText} label="Jurnal" color="bg-indigo-600" />
-                                <MobileGridItem href="/dashboard/materials" icon={Link2} label="Materi" color="bg-purple-600" />
-                                <MobileGridItem href="/dashboard/reports" icon={BarChart3} label="Laporan" color="bg-orange-500" />
-                                <MobileGridItem href="/dashboard/schedule" icon={CalendarClock} label="Jadwal" color="bg-slate-600" />
+                            <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                                <MobileGridItem href="/dashboard" iconName="solar:home-smile-angle-bold-duotone" label="Dasbor" />
+                                <MobileGridItem href="/dashboard/teacher-attendance" iconName="solar:map-point-wave-bold-duotone" label="Absen Guru" />
+                                <MobileGridItem href="/dashboard/agenda" iconName="solar:calendar-date-bold-duotone" label="Agenda" />
+                                <MobileGridItem href="/dashboard/attendance" iconName="solar:clipboard-check-bold-duotone" label="Presensi" />
+                                <MobileGridItem href="/dashboard/grades" iconName="solar:ranking-bold-duotone" label="Nilai" />
+                                <MobileGridItem href="/dashboard/journal" iconName="solar:notebook-bold-duotone" label="Jurnal" />
+                                <MobileGridItem href="/dashboard/materials" iconName="solar:link-circle-bold-duotone" label="Materi" />
+                                <MobileGridItem href="/dashboard/reports" iconName="solar:chart-2-bold-duotone" label="Laporan" />
+                                <MobileGridItem href="/dashboard/schedule" iconName="solar:clock-circle-bold-duotone" label="Jadwal" />
                             </div>
                         </div>
 
                         <div className="space-y-3">
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Wand2 className="w-3 h-3" /> AI Generator</p>
-                          <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Gen CP/ATP" color="bg-indigo-600" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Gen RPP" color="bg-purple-700" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-materi" icon={BookOpen} label="Gen Materi" color="bg-indigo-500" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
+                          <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-cp-atp" iconName="solar:git-branch-bold-duotone" label="Gen CP/ATP" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" iconName="solar:document-add-bold-duotone" label="Gen RPP" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-materi" iconName="solar:book-open-bold-duotone" label="Gen Materi" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" iconName="solar:checklist-minimalistic-bold-duotone" label="Gen Soal" />
                           </div>
                         </div>
 
                         <div className="space-y-3">
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><FolderSearch className="w-3 h-3" /> Arsip Administrasi</p>
-                          <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" icon={Network} label="CP & ATP" color="bg-indigo-800" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" icon={Database} label="Bank Soal" color="bg-indigo-700" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" icon={FileSearch} label="Naskah" color="bg-blue-600" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-rpp" icon={BookOpen} label="RPP & Modul" color="bg-indigo-600" />
+                          <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" iconName="solar:network-bold-duotone" label="CP & ATP" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" iconName="solar:database-bold-duotone" label="Bank Soal" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" iconName="solar:file-search-bold-duotone" label="Naskah" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-rpp" iconName="solar:document-text-bold-duotone" label="RPP & Modul" />
                           </div>
                         </div>
 

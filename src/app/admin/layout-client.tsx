@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import Image from 'next/image';
+import { Icon } from '@iconify/react';
 import {
   LogOut,
   Settings,
@@ -98,7 +99,7 @@ export default function AdminLayoutClient({
     router.refresh();
   };
 
-  const NavItem = ({ href, icon: Icon, label, color = "" }: any) => {
+  const NavItem = ({ href, icon: IconComponent, label, color = "" }: any) => {
     const { state } = useSidebar();
     const isActive = pathname === href || pathname.startsWith(href + '/');
     const isCollapsed = mounted ? state === "collapsed" : false;
@@ -121,7 +122,7 @@ export default function AdminLayoutClient({
               "flex items-center w-full",
               isCollapsed ? "justify-center" : "justify-start px-2"
           )}>
-            <Icon className={cn(
+            <IconComponent className={cn(
                 "w-5 h-5 shrink-0 transition-transform duration-300", 
                 isActive ? "text-purple-600" : color,
                 !isActive && "group-hover/item:scale-110",
@@ -134,22 +135,25 @@ export default function AdminLayoutClient({
     );
   };
 
-  const MobileGridItem = ({ href, icon: Icon, label, color }: any) => {
+  const MobileGridItem = ({ href, iconName, label }: any) => {
     const isActive = pathname === href || pathname.startsWith(href + '/');
     return (
         <Link 
             href={href} 
             onClick={() => setIsMobileMenuOpen(false)} 
-            className="flex flex-col items-center gap-1.5 transition-transform active:scale-90"
+            className="flex flex-col items-center gap-1.5 transition-all active:scale-95 group"
         >
             <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-all",
-                color,
-                isActive && "ring-2 ring-offset-2 ring-purple-600 scale-105"
+                "w-14 h-14 rounded-[20px] flex items-center justify-center transition-all duration-300 relative overflow-hidden",
+                "bg-[#F5F3FF] text-[#7C3AED]", // Soft Purple theme for Admin
+                isActive && "shadow-xl shadow-[#7C3AED]/20 scale-110 -translate-y-1 bg-[#7C3AED] text-white"
             )}>
-                <Icon className="w-5 h-5" />
+                <Icon icon={iconName} className="w-7 h-7" />
             </div>
-            <span className="text-[9px] font-black text-center leading-tight uppercase tracking-wider text-slate-600 line-clamp-2 px-1">
+            <span className={cn(
+                "text-[9px] font-black text-center leading-tight uppercase tracking-[0.05em] line-clamp-2 px-1 transition-colors",
+                isActive ? "text-[#7C3AED]" : "text-slate-500"
+            )}>
                 {label}
             </span>
         </Link>
@@ -216,7 +220,7 @@ export default function AdminLayoutClient({
                       <NavItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="text-purple-300" />
                       <NavItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="text-purple-300" />
                       <NavItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi Guru" color="text-purple-300" />
-                      <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas Staf" color="text-purple-300" />
+                      <NavItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="text-purple-300" />
                     </SidebarMenu>
 
                     <SidebarGroupLabel className="text-purple-300 font-black text-[9px] tracking-[0.2em] uppercase mb-3 px-3 group-data-[collapsible=icon]:hidden opacity-70">Manajemen Staf</SidebarGroupLabel>
@@ -349,11 +353,11 @@ export default function AdminLayoutClient({
                                 </button>
                             </div>
                             {isMonitoringExpanded && (
-                                <div className="grid grid-cols-4 gap-y-4 gap-x-2 animate-in fade-in duration-300">
-                                    <MobileGridItem href="/monitoring" icon={LayoutDashboard} label="Statistik" color="bg-blue-600" />
-                                    <MobileGridItem href="/monitoring/weekly-chart" icon={LineChart} label="Grafik Mingguan" color="bg-rose-50" />
-                                    <MobileGridItem href="/monitoring/teacher-attendance" icon={UserCheck} label="Absensi" color="bg-amber-500" />
-                                    <MobileGridItem href="/monitoring/teacher-activity" icon={Activity} label="Aktivitas" color="bg-teal-500" />
+                                <div className="grid grid-cols-4 gap-y-6 gap-x-2 animate-in fade-in duration-300">
+                                    <MobileGridItem href="/monitoring" iconName="solar:monitor-bold-duotone" label="Statistik" />
+                                    <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:graph-bold-duotone" label="Grafik Tren" />
+                                    <MobileGridItem href="/monitoring/teacher-attendance" iconName="solar:user-check-bold-duotone" label="Absensi" />
+                                    <MobileGridItem href="/monitoring/teacher-activity" iconName="solar:activity-bold-duotone" label="Aktivitas" />
                                 </div>
                             )}
                         </div>
@@ -361,31 +365,31 @@ export default function AdminLayoutClient({
                         <div className="space-y-5">
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Manajemen Staf</p>
-                                <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                    <MobileGridItem href="/admin/users" icon={Users} label="Approval" color="bg-blue-600" />
+                                <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                                    <MobileGridItem href="/admin/users" iconName="solar:users-group-rounded-bold-duotone" label="Approval" />
                                 </div>
                             </div>
 
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Data Master Rombel</p>
-                                <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                    <MobileGridItem href="/admin/roster/school-year" icon={CalendarCheck} label="Tahun Ajaran" color="bg-pink-500" />
-                                    <MobileGridItem href="/admin/roster/classes" icon={School} label="Kelas" color="bg-indigo-500" />
-                                    <MobileGridItem href="/admin/roster/subjects" icon={BookOpen} label="Mapel" color="bg-cyan-500" />
-                                    <MobileGridItem href="/admin/roster/students" icon={Users2} label="Siswa" color="bg-emerald-500" />
-                                    <MobileGridItem href="/admin/roster/promotion" icon={ArrowRightLeft} label="Promosi" color="bg-orange-500" />
-                                    <MobileGridItem href="/admin/roster/alumni" icon={GraduationCap} label="Alumni" color="bg-slate-600" />
+                                <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                                    <MobileGridItem href="/admin/roster/school-year" iconName="solar:calendar-bold-duotone" label="Tahun Ajaran" />
+                                    <MobileGridItem href="/admin/roster/classes" iconName="solar:school-bold-duotone" label="Kelas" />
+                                    <MobileGridItem href="/admin/roster/subjects" iconName="solar:book-2-bold-duotone" label="Mapel" />
+                                    <MobileGridItem href="/admin/roster/students" iconName="solar:user-rounded-bold-duotone" label="Siswa" />
+                                    <MobileGridItem href="/admin/roster/promotion" iconName="solar:transfer-horizontal-bold-duotone" label="Promosi" />
+                                    <MobileGridItem href="/admin/roster/alumni" iconName="solar:graduation-cap-bold-duotone" label="Alumni" />
                                 </div>
                             </div>
 
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Pengaturan Sistem</p>
-                                <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-                                    <MobileGridItem href="/admin/settings/school" icon={Building} label="Sekolah" color="bg-red-500" />
-                                    <MobileGridItem href="/admin/settings/location" icon={MapPin} label="Lokasi" color="bg-amber-600" />
-                                    <MobileGridItem href="/admin/settings/whatsapp" icon={MessageSquare} label="WhatsApp" color="bg-green-600" />
-                                    <MobileGridItem href="/admin/settings/schedule" icon={CalendarClock} label="Jadwal" color="bg-blue-700" />
-                                    <MobileGridItem href="/admin/settings/holidays" icon={CalendarOff} label="Libur" color="bg-rose-700" />
+                                <div className="grid grid-cols-4 gap-y-6 gap-x-2">
+                                    <MobileGridItem href="/admin/settings/school" iconName="solar:city-bold-duotone" label="Sekolah" />
+                                    <MobileGridItem href="/admin/settings/location" iconName="solar:map-point-bold-duotone" label="Lokasi" />
+                                    <MobileGridItem href="/admin/settings/whatsapp" iconName="solar:chat-round-dots-bold-duotone" label="WhatsApp" />
+                                    <MobileGridItem href="/admin/settings/schedule" iconName="solar:clock-circle-bold-duotone" label="Jadwal" />
+                                    <MobileGridItem href="/admin/settings/holidays" iconName="solar:calendar-mark-bold-duotone" label="Libur" />
                                 </div>
                             </div>
                         </div>
