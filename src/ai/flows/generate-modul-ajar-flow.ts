@@ -32,6 +32,7 @@ export type ModulAjarInput = z.infer<typeof ModulAjarInputSchema>;
 const ModulAjarOutputSchema = z.object({
   title: z.string().describe('Judul Modul Ajar'),
   content: z.string().describe('Konten lengkap Modul Ajar dalam format Markdown dengan Tabel'),
+  lkpdPrompt: z.string().describe('Prompt visual detail dalam bahasa Inggris untuk generator gambar AI (nanobana) guna membuat LKPD yang estetik'),
 });
 
 export type ModulAjarOutput = z.infer<typeof ModulAjarOutputSchema>;
@@ -99,6 +100,9 @@ STRUKTUR MODUL:
    Buat TABEL untuk setiap pertemuan. Sertakan detail Pendahuluan, Inti (sesuai sintaks model ${input.modelPembelajaran}), dan Penutup.
 4. ASESMEN: (Gunakan TABEL untuk kriteria penilaian formatif dan sumatif).
 5. LAMPIRAN: Ringkasan LKPD, Bahan Bacaan, Glosarium, Daftar Pustaka.
+
+PROMPT LKPD VISUAL (OUTPUT TERPISAH):
+Buatlah satu prompt bahasa Inggris yang sangat detail untuk generator gambar AI. Prompt ini harus menggambarkan desain Lembar Kerja Peserta Didik (Student Worksheet) yang estetik, bersih, dan sesuai dengan materi ${input.topic} untuk kelas ${input.kelas}. Gunakan gaya "minimalist educational design" atau "professional infographic style".
 
 Gunakan bahasa yang formal, edukatif, dan sangat praktis untuk langsung dibawa guru ke dalam kelas.`,
   });

@@ -22,7 +22,9 @@ import {
     BookOpen,
     Layers,
     Printer,
-    Download
+    Download,
+    Copy,
+    ClipboardCheck
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -137,7 +139,7 @@ export default function ModulAjarClient({
     const supabase = createClient();
     const [loading, setLoading] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
-    const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string } | null>(null);
+    const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string, lkpdPrompt?: string } | null>(null);
     const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
     const [countdown, setCountdown] = React.useState(30);
 
@@ -225,6 +227,16 @@ export default function ModulAjarClient({
         });
     };
 
+    const handleCopyLkpdPrompt = () => {
+        if (!generatedResult?.lkpdPrompt) return;
+        navigator.clipboard.writeText(generatedResult.lkpdPrompt);
+        toast({
+            title: "Prompt LKPD Disalin",
+            description: "Silakan tempel prompt ini pada generator gambar AI (nanobana).",
+            icon: <ClipboardCheck className="h-5 w-5 text-emerald-500" />
+        });
+    }
+
     const handleGenerate = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!form.topic) {
@@ -278,11 +290,16 @@ export default function ModulAjarClient({
             return;
         }
         setSaving(true);
-        const result = await saveModulAjarToDrive(generatedResult.title, generatedResult.content, {
-            jenjang: form.jenjang,
-            class: form.kelas,
-            subject: form.subject
-        });
+        const result = await saveModulAjarToDrive(
+            generatedResult.title, 
+            generatedResult.content, 
+            {
+                jenjang: form.jenjang,
+                class: form.kelas,
+                subject: form.subject
+            },
+            generatedResult.lkpdPrompt
+        );
         if (result.success) {
             toast({ 
                 title: "Tersimpan!", 
@@ -566,9 +583,23 @@ export default function ModulAjarClient({
                 </Card>
 
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col relative">
-                    <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-3"><div className="p-2 rounded-xl bg-indigo-100 text-indigo-600"><FileText className="h-5 w-5" /></div><CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Modul</CardTitle></div>
-                        {generatedResult && <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan ke Drive</Button>}
+                    <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600"><FileText className="h-5 w-5" /></div>
+                            <CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Modul</CardTitle>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {generatedResult?.lkpdPrompt && (
+                                <Button 
+                                    onClick={handleCopyLkpdPrompt}
+                                    variant="outline"
+                                    className="rounded-xl h-10 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold gap-2"
+                                >
+                                    <Copy className="h-4 w-4" /> Copy Prompt LKPD
+                                </Button>
+                            )}
+                            {generatedResult && <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan ke Drive</Button>}
+                        </div>
                     </CardHeader>
                     <CardContent className="flex-grow p-0 bg-slate-50/20">
                         <div className="w-full h-full overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar">

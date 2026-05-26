@@ -138,9 +138,10 @@ export async function saveNaskahToDrive(
 export async function saveModulAjarToDrive(
     title: string,
     content: string,
-    metadata: { jenjang: string, class: string, subject: string }
+    metadata: { jenjang: string, class: string, subject: string },
+    lkpdPrompt?: string
 ) {
-    return saveGenericDocumentToDrive(title, content, metadata, 'Modul Ajar', 'doc');
+    return saveGenericDocumentToDrive(title, content, metadata, 'Modul Ajar', 'doc', lkpdPrompt);
 }
 
 /**
@@ -238,7 +239,8 @@ export async function saveGenericDocumentToDrive(
     content: string, 
     metadata: { jenjang: string, class: string, subject: string },
     rootFolderName: string,
-    format: 'pdf' | 'doc' = 'doc'
+    format: 'pdf' | 'doc' = 'doc',
+    lkpdPrompt?: string
 ) {
     const supabase = await createClient();
     const { data: userData } = await supabase.auth.getUser();
@@ -322,6 +324,7 @@ export async function saveGenericDocumentToDrive(
             drive_file_url: format === 'doc' ? `https://docs.google.com/document/d/${fileData.id}/edit` : `https://drive.google.com/file/d/${fileData.id}/view`,
             drive_folder_id: targetFolderId,
             mime_type: mimeType,
+            lkpd_prompt: lkpdPrompt || null,
             status: 'created'
         });
 
@@ -446,7 +449,7 @@ export async function createTestDocument() {
     const supabase = await createClient();
     const { data: userData } = await supabase.auth.getUser();
     const { data: sessionData } = await supabase.auth.getSession();
-    user = userData?.user;
+    const user = userData?.user;
     const session = sessionData?.session;
     if (!user || !session?.provider_token) return { success: false, error: "Sesi tidak aktif." };
     const providerToken = session.provider_token;

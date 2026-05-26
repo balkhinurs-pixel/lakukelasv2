@@ -201,6 +201,7 @@ export interface AiDocument {
   drive_folder_id?: string | null;
   mime_type?: string | null;
   is_public: boolean;
+  lkpd_prompt?: string | null;
   status: string;
   created_at: string;
   updated_at: string;

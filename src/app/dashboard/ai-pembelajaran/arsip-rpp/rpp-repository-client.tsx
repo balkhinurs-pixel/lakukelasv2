@@ -14,7 +14,9 @@ import {
     Edit,
     Download,
     Loader2,
-    X
+    X,
+    Copy,
+    ClipboardCheck
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -74,6 +76,16 @@ export default function RppRepositoryClient({ initialDocuments }: { initialDocum
             return matchesSearch && matchesClass && matchesSubject;
         });
     }, [initialDocuments, searchTerm, filterClass, filterSubject]);
+
+    const handleCopyLkpdPrompt = (prompt: string) => {
+        if (!prompt) return;
+        navigator.clipboard.writeText(prompt);
+        toast({
+            title: "Prompt LKPD Disalin",
+            description: "Silakan tempel pada generator gambar AI (nanobana).",
+            icon: <ClipboardCheck className="h-5 w-5 text-emerald-500" />
+        });
+    }
 
     const handleDelete = async (id: string) => {
         setLoadingId(id);
@@ -230,18 +242,29 @@ export default function RppRepositoryClient({ initialDocuments }: { initialDocum
                                     </span>
                                 </div>
                             </CardContent>
-                            <CardFooter className="pt-0 flex gap-2">
-                                <Button asChild className="flex-[2] h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-lg shadow-indigo-100 group/btn">
-                                    <a href={doc.drive_file_url || "#"} target="_blank">
-                                        <ExternalLink className="h-4 w-4" />
-                                        Drive
-                                        <ArrowRight className="h-3.5 w-3.5 ml-auto opacity-0 group-hover/btn:opacity-100 transition-all group-hover/btn:translate-x-1" />
-                                    </a>
-                                </Button>
-                                <Button variant="outline" onClick={() => handleDownload(doc)} className="flex-1 h-12 border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl font-bold gap-2 shadow-sm">
-                                    <Download className="h-4 w-4" />
-                                    PDF
-                                </Button>
+                            <CardFooter className="pt-0 flex flex-col gap-2">
+                                <div className="flex gap-2 w-full">
+                                    <Button asChild className="flex-[2] h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-lg shadow-indigo-100 group/btn">
+                                        <a href={doc.drive_file_url || "#"} target="_blank">
+                                            <ExternalLink className="h-4 w-4" />
+                                            Drive
+                                            <ArrowRight className="h-3.5 w-3.5 ml-auto opacity-0 group-hover/btn:opacity-100 transition-all group-hover/btn:translate-x-1" />
+                                        </a>
+                                    </Button>
+                                    <Button variant="outline" onClick={() => handleDownload(doc)} className="flex-1 h-12 border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl font-bold gap-2 shadow-sm">
+                                        <Download className="h-4 w-4" />
+                                        PDF
+                                    </Button>
+                                </div>
+                                {doc.lkpd_prompt && (
+                                    <Button 
+                                        onClick={() => handleCopyLkpdPrompt(doc.lkpd_prompt!)}
+                                        variant="ghost" 
+                                        className="w-full h-11 border border-dashed border-emerald-200 bg-emerald-50/30 text-emerald-700 hover:bg-emerald-100 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-2"
+                                    >
+                                        <Copy className="h-3.5 w-3.5" /> Salin Prompt LKPD
+                                    </Button>
+                                )}
                             </CardFooter>
                         </Card>
                     ))
