@@ -357,7 +357,7 @@ export default function AdminLayoutClient({
                                     <MobileGridItem href="/monitoring" iconName="solar:monitor-bold-duotone" label="Statistik" />
                                     <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:graph-bold-duotone" label="Grafik Tren" />
                                     <MobileGridItem href="/monitoring/teacher-attendance" iconName="solar:user-check-bold-duotone" label="Absensi" />
-                                    <MobileGridItem href="/monitoring/teacher-activity" iconName="solar:activity-bold-duotone" label="Aktivitas" />
+                                    <MobileGridItem href="/monitoring/teacher-activity" iconName="nrk:live-activity" label="Aktivitas" />
                                 </div>
                             )}
                         </div>
