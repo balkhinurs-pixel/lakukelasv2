@@ -168,7 +168,9 @@ export default function DashboardLayoutClient({
   };
 
   const MobileGridItem = ({ href, iconName, label }: any) => {
-    const isActive = pathname === href || pathname.startsWith(href + '/');
+    // FIX: Gunakan exact match untuk dashboard root agar tidak nyala terus
+    const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href);
+    
     return (
         <Link 
             href={href} 

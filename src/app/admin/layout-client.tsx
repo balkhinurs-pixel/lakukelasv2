@@ -136,7 +136,9 @@ export default function AdminLayoutClient({
   };
 
   const MobileGridItem = ({ href, iconName, label }: any) => {
-    const isActive = pathname === href || pathname.startsWith(href + '/');
+    // FIX: Gunakan exact match untuk admin root agar tidak nyala terus
+    const isActive = href === '/admin' ? pathname === href : pathname.startsWith(href);
+
     return (
         <Link 
             href={href} 
