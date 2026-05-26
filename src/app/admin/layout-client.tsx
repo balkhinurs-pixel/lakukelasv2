@@ -357,7 +357,7 @@ export default function AdminLayoutClient({
                             {isMonitoringExpanded && (
                                 <div className="grid grid-cols-4 gap-y-6 gap-x-2 animate-in fade-in duration-300">
                                     <MobileGridItem href="/monitoring" iconName="solar:monitor-bold-duotone" label="Statistik" />
-                                    <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:graph-bold-duotone" label="Grafik Tren" />
+                                    <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:chart-bold-duotone" label="Grafik Tren" />
                                     <MobileGridItem href="/monitoring/teacher-attendance" iconName="solar:user-check-bold-duotone" label="Absensi" />
                                     <MobileGridItem href="/monitoring/teacher-activity" iconName="nrk:live-activity" label="Aktivitas" />
                                 </div>
@@ -390,7 +390,7 @@ export default function AdminLayoutClient({
                                     <MobileGridItem href="/admin/settings/school" iconName="solar:city-bold-duotone" label="Sekolah" />
                                     <MobileGridItem href="/admin/settings/location" iconName="solar:map-point-bold-duotone" label="Lokasi" />
                                     <MobileGridItem href="/admin/settings/whatsapp" iconName="solar:chat-round-dots-bold-duotone" label="WhatsApp" />
-                                    <MobileGridItem href="/admin/settings/schedule" iconName="solar:clock-circle-bold-duotone" label="Jadwal" />
+                                    <MobileGridItem href="/admin/settings/schedule" iconName="ph:alarm-duotone" label="Jadwal" />
                                     <MobileGridItem href="/admin/settings/holidays" iconName="solar:calendar-mark-bold-duotone" label="Libur" />
                                 </div>
                             </div>

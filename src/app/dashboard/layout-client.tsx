@@ -426,7 +426,7 @@ export default function DashboardLayoutClient({
                             {isMonitoringExpanded && (
                                 <div className="grid grid-cols-4 gap-y-6 gap-x-2 animate-in fade-in duration-300">
                                     <MobileGridItem href="/monitoring" iconName="solar:monitor-bold-duotone" label="Statistik" />
-                                    <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:graph-bold-duotone" label="Grafik Tren" />
+                                    <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:chart-bold-duotone" label="Grafik Tren" />
                                     <MobileGridItem href="/monitoring/teacher-attendance" iconName="solar:user-check-bold-duotone" label="Absensi Guru" />
                                     <MobileGridItem href="/monitoring/teacher-activity" iconName="nrk:live-activity" label="Aktivitas" />
                                 </div>
@@ -453,16 +453,16 @@ export default function DashboardLayoutClient({
                                 <MobileGridItem href="/dashboard/attendance" iconName="solar:clipboard-check-bold-duotone" label="Presensi" />
                                 <MobileGridItem href="/dashboard/grades" iconName="solar:ranking-bold-duotone" label="Nilai" />
                                 <MobileGridItem href="/dashboard/journal" iconName="solar:notebook-bold-duotone" label="Jurnal" />
-                                <MobileGridItem href="/dashboard/materials" iconName="gridicons:book" label="Materi" />
+                                <MobileGridItem href="/dashboard/materials" iconName="ph:books-duotone" label="Materi" />
                                 <MobileGridItem href="/dashboard/reports" iconName="solar:chart-2-bold-duotone" label="Laporan" />
-                                <MobileGridItem href="/dashboard/schedule" iconName="solar:clock-circle-bold-duotone" label="Jadwal" />
+                                <MobileGridItem href="/dashboard/schedule" iconName="ph:alarm-duotone" label="Jadwal" />
                             </div>
                         </div>
 
                         <div className="space-y-3">
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><Wand2 className="w-3 h-3" /> AI Generator</p>
                           <div className="grid grid-cols-4 gap-y-6 gap-x-2">
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-cp-atp" iconName="si:ai-note-fill" label="Gen CP/ATP" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-cp-atp" iconName="ph:files-duotone" label="Gen CP/ATP" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" iconName="solar:document-add-bold-duotone" label="Gen RPP" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-materi" iconName="mingcute:content-ai-fill" label="Gen Materi" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" iconName="solar:checklist-minimalistic-bold-duotone" label="Gen Soal" />
@@ -472,9 +472,9 @@ export default function DashboardLayoutClient({
                         <div className="space-y-3">
                           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] px-1 flex items-center gap-2"><FolderSearch className="w-3 h-3" /> Arsip Administrasi</p>
                           <div className="grid grid-cols-4 gap-y-6 gap-x-2">
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" iconName="icon-park-solid:doc-detail" label="CP & ATP" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-cp-atp" iconName="lets-icons:order-duotone" label="CP & ATP" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/bank-soal" iconName="solar:database-bold-duotone" label="Bank Soal" />
-                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" iconName="icon-park-solid:doc-add" label="Naskah" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/naskah-soal" iconName="solar:notes-bold-duotone" label="Naskah" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/arsip-rpp" iconName="solar:document-text-bold-duotone" label="RPP & Modul" />
                           </div>
                         </div>
