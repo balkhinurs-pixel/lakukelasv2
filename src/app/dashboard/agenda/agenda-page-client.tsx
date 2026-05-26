@@ -66,6 +66,7 @@ import { saveAgenda, deleteAgenda } from "@/lib/actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
 import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
+import { LottieAgenda } from "@/components/ui/lottie-agenda";
 
 interface IndonesianHoliday {
     date: string;
@@ -118,7 +119,7 @@ export default function AgendaPageClient({
   const [loading, setLoading] = React.useState(false);
   
   const initialFormState: NewAgendaEntry = {
-    date: format(selectedDate, 'yyyy-MM-dd'),
+    date: format(new Date(), 'yyyy-MM-dd'),
     title: "",
     description: "",
     tag: "",
@@ -126,13 +127,12 @@ export default function AgendaPageClient({
     start_time: "",
     end_time: "",
   };
-  const [newAgenda, setNewAgenda] = React.useState<NewJournalEntry>(initialFormState);
+  const [newAgenda, setNewAgenda] = React.useState<NewAgendaEntry>(initialFormState);
 
   React.useEffect(() => {
     setAgendas(initialAgendas);
   }, [initialAgendas]);
 
-  // Statistics Calculation
   const stats = React.useMemo(() => {
       const now = new Date();
       const monthStart = startOfMonth(currentMonth);
@@ -316,7 +316,7 @@ export default function AgendaPageClient({
             </div>
             <div className="w-40 h-40 sm:w-56 sm:h-56 shrink-0 relative flex items-center justify-center">
                  <div className="absolute inset-0 bg-indigo-100/40 rounded-full blur-3xl animate-pulse" />
-                 <LottieCalendar size={200} />
+                 <LottieAgenda size={200} />
             </div>
         </div>
 
@@ -358,7 +358,6 @@ export default function AgendaPageClient({
 
         {/* 3. Main Content: Calendar & List */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start px-1">
-            {/* Calendar Column */}
             <Card className="lg:col-span-5 p-6 bg-white border-0 shadow-xl rounded-[2.5rem] overflow-hidden">
                 <DayPicker
                     locale={id}
@@ -394,7 +393,6 @@ export default function AgendaPageClient({
                     }}
                 />
 
-                {/* Legend Section */}
                 <div className="mt-10 pt-6 border-t border-slate-50 space-y-4">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Keterangan Kalender</p>
                     <div className="grid grid-cols-2 gap-y-3 px-2">
@@ -414,7 +412,6 @@ export default function AgendaPageClient({
                 </div>
             </Card>
       
-            {/* Agenda List Column */}
             <div className="lg:col-span-7 flex flex-col gap-6">
                 <div className="flex items-center justify-between px-3">
                     <div className="flex items-center gap-3">
@@ -467,7 +464,6 @@ export default function AgendaPageClient({
                         {eventsForSelectedDate.map((event) => (
                           <Card key={event.id} className="border-0 shadow-lg rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all">
                               <CardContent className="p-0 flex items-stretch">
-                                  {/* Side Accent */}
                                   <div className="w-1.5 shrink-0" style={{ backgroundColor: event.color || '#4f46e5' }} />
                                   
                                   <div className="p-6 sm:p-8 flex-1 flex flex-col sm:flex-row gap-6 items-start">
@@ -557,7 +553,6 @@ export default function AgendaPageClient({
                   </motion.div>
                 </AnimatePresence>
 
-                {/* Bottom Tip */}
                 <div className="p-6 rounded-[2rem] bg-white border border-slate-100 flex items-start gap-4 shadow-sm">
                     <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-600 shrink-0">
                         <Info className="h-5 w-5" />
@@ -572,7 +567,6 @@ export default function AgendaPageClient({
             </div>
         </div>
 
-        {/* Dialog Add/Edit */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-2xl dialog-content-mobile mobile-safe-area bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-[2.5rem]">
                 <form onSubmit={handleSaveAgenda}>
