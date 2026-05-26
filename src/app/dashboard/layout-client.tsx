@@ -293,6 +293,7 @@ export default function DashboardLayoutClient({
                     <SidebarMenu className="gap-1 mb-6">
                         <NavItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Generate CP & ATP" color="text-amber-400" />
                         <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-amber-400" />
+                        <NavItem href="/dashboard/ai-pembelajaran/generate-materi" icon={BookOpen} label="Generate Materi" color="text-amber-400" />
                         <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-amber-400" />
                     </SidebarMenu>
 
@@ -458,6 +459,7 @@ export default function DashboardLayoutClient({
                           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-cp-atp" icon={GitBranchPlus} label="Gen CP/ATP" color="bg-indigo-600" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Gen RPP" color="bg-purple-700" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/generate-materi" icon={BookOpen} label="Gen Materi" color="bg-indigo-500" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Gen Soal" color="bg-emerald-700" />
                           </div>
                         </div>

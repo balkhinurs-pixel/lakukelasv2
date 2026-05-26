@@ -233,11 +233,11 @@ export async function saveCpAtpToDrive(
 /**
  * Fungsi internal untuk menyimpan dokumen ke Drive dengan path yang ditentukan.
  */
-async function saveGenericDocumentToDrive(
+export async function saveGenericDocumentToDrive(
     title: string, 
     content: string, 
     metadata: { jenjang: string, class: string, subject: string },
-    rootFolderName: 'Bank Soal' | 'Modul Ajar' | 'Dokumen AI',
+    rootFolderName: string,
     format: 'pdf' | 'doc' = 'doc'
 ) {
     const supabase = await createClient();
@@ -306,9 +306,15 @@ async function saveGenericDocumentToDrive(
 
         const fileData = await driveResponse.json();
 
+        // Tipe dokumen ditentukan berdasarkan root folder
+        let docType = 'ai_content';
+        if (rootFolderName === 'Bank Soal') docType = 'naskah_ujian';
+        else if (rootFolderName === 'Modul Ajar') docType = 'rpp';
+        else if (rootFolderName === 'Materi Belajar') docType = 'materi';
+
         await supabase.from('ai_documents').insert({
             user_id: userId,
-            document_type: rootFolderName === 'Bank Soal' ? 'naskah_ujian' : 'rpp',
+            document_type: docType,
             title: title,
             class_level: metadata.class,
             subject: metadata.subject,
@@ -440,7 +446,7 @@ export async function createTestDocument() {
     const supabase = await createClient();
     const { data: userData } = await supabase.auth.getUser();
     const { data: sessionData } = await supabase.auth.getSession();
-    const user = userData?.user;
+    user = userData?.user;
     const session = sessionData?.session;
     if (!user || !session?.provider_token) return { success: false, error: "Sesi tidak aktif." };
     const providerToken = session.provider_token;

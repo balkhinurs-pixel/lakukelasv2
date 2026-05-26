@@ -254,6 +254,19 @@ export interface QuestionGenerationInput {
   mediaMimeType?: string;
 }
 
+export interface MaterialGenerationInput {
+  jenjang: string;
+  kelas: string;
+  semester?: string;
+  subject: string;
+  topic: string;
+  subtopic?: string;
+  instruction?: string;
+  depth: 'dasar' | 'menengah' | 'mendalam';
+  mediaDataUri?: string;
+  mediaMimeType?: string;
+}
+
 export interface ModulAjarInput {
   kurikulumPath: 'dikbud' | 'kemenag';
   jenjang: string;

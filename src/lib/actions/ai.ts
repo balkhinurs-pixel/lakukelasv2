@@ -4,10 +4,11 @@ import { generateEducationContent, type EducationContentInput, type EducationCon
 import { generateQuestions, type GenerateQuestionsInput, type GenerateQuestionsOutput } from '@/ai/flows/generate-questions-flow';
 import { generateModulAjar, type ModulAjarInput, type ModulAjarOutput } from '@/ai/flows/generate-modul-ajar-flow';
 import { generateCpAtp, type CpAtpInput, type CpAtpOutput } from '@/ai/flows/generate-cp-atp-flow';
+import { generateMaterial, type MaterialGenerationInput, type MaterialGenerationOutput } from '@/ai/flows/generate-material-flow';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
-import { saveNaskahToDrive, saveCpAtpToDrive } from './google-drive';
+import { saveNaskahToDrive, saveCpAtpToDrive, saveGenericDocumentToDrive } from './google-drive';
 import { createStreamableValue } from 'ai/rsc';
 
 /**
@@ -75,6 +76,25 @@ export async function streamCpAtpAction(input: CpAtpInput) {
             stream.done();
         } catch (error: any) {
             stream.error(error.message || "Gagal menghasilkan pemetaan CP/ATP.");
+        }
+    })();
+
+    return { output: stream.value };
+}
+
+/**
+ * Server Action untuk Generate Materi Ajar dengan STREAMING.
+ */
+export async function streamMaterialAction(input: MaterialGenerationInput) {
+    const stream = createStreamableValue();
+
+    (async () => {
+        try {
+            const result = await generateMaterial(input);
+            stream.update(result);
+            stream.done();
+        } catch (error: any) {
+            stream.error(error.message || "Gagal menghasilkan materi ajar.");
         }
     })();
 
@@ -251,4 +271,8 @@ Tanggal        : ${new Date().toLocaleDateString('id-ID')}
         markdown: content,
         format: 'doc'
     };
+}
+
+export async function saveMaterialToDriveAction(title: string, content: string, metadata: { jenjang: string, class: string, subject: string }) {
+    return saveGenericDocumentToDrive(title, content, metadata, 'Materi Belajar', 'doc');
 }
