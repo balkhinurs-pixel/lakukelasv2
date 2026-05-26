@@ -177,14 +177,14 @@ export default function DashboardLayoutClient({
         >
             <div className={cn(
                 "w-14 h-14 rounded-[20px] flex items-center justify-center transition-all duration-300 relative overflow-hidden",
-                "bg-[#FFF0F0] text-[#FF4D8D]", // Peach background, Raspberry icon
-                isActive && "shadow-xl shadow-[#FF4D8D]/20 scale-110 -translate-y-1 bg-[#FF4D8D] text-white"
+                "bg-[#EEF2FF] text-[#4338CA]", // Background: Indigo-50, Icon: Indigo-700
+                isActive && "shadow-xl shadow-[#7C3AED]/20 scale-110 -translate-y-1 bg-[#7C3AED] text-white" // Active: Violet-600
             )}>
                 <Icon icon={iconName} className="w-7 h-7" />
             </div>
             <span className={cn(
                 "text-[9px] font-black text-center leading-tight uppercase tracking-[0.05em] line-clamp-2 px-1 transition-colors",
-                isActive ? "text-[#FF4D8D]" : "text-slate-500"
+                isActive ? "text-[#7C3AED]" : "text-slate-500"
             )}>
                 {label}
             </span>

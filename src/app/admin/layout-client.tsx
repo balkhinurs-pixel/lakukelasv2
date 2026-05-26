@@ -145,8 +145,8 @@ export default function AdminLayoutClient({
         >
             <div className={cn(
                 "w-14 h-14 rounded-[20px] flex items-center justify-center transition-all duration-300 relative overflow-hidden",
-                "bg-[#F5F3FF] text-[#7C3AED]", // Soft Purple theme for Admin
-                isActive && "shadow-xl shadow-[#7C3AED]/20 scale-110 -translate-y-1 bg-[#7C3AED] text-white"
+                "bg-[#EEF2FF] text-[#4338CA]", // Background: Indigo-50, Icon: Indigo-700
+                isActive && "shadow-xl shadow-[#7C3AED]/20 scale-110 -translate-y-1 bg-[#7C3AED] text-white" // Active: Violet-600
             )}>
                 <Icon icon={iconName} className="w-7 h-7" />
             </div>
