@@ -332,7 +332,7 @@ export default function GenerateMateriClient({
                 </Card>
 
                 <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col items-center justify-center text-center px-10">
-                    <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
+                    <div className="p-16 rounded-[5rem] bg-slate-100 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
                         <BookOpen className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
                     <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Content Summarizer</h3>
@@ -364,16 +364,35 @@ export default function GenerateMateriClient({
                             </div>
                         </div>
 
-                        <ScrollArea className="flex-1 p-6 sm:p-12">
-                            {generatedResult ? (
-                                <div className="bg-white p-6 sm:p-10 border rounded-2xl shadow-sm min-h-full">
-                                    <h1 className="text-3xl font-black border-b-4 border-indigo-600 pb-4 mb-8 text-indigo-700 uppercase tracking-tight text-center">{generatedResult.title}</h1>
-                                    <MathText content={generatedResult.content} />
-                                </div>
-                            ) : !loading ? (
-                                <div className="flex flex-col items-center justify-center h-full opacity-30"><Loader2 className="h-10 w-10 animate-spin text-indigo-600" /></div>
-                            ) : null}
-                        </ScrollArea>
+                        {/* Mobile Swipeable Preview Container */}
+                        <div className="flex-1 overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar">
+                            <AnimatePresence mode="wait">
+                                {generatedResult ? (
+                                    <motion.div 
+                                        key="result"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="w-full flex justify-start lg:justify-center"
+                                    >
+                                        <div 
+                                            className="bg-white p-8 sm:p-12 shadow-sm border rounded-2xl shrink-0" 
+                                            style={{ 
+                                                width: '210mm', 
+                                                minHeight: '297mm',
+                                                fontFamily: '"Times New Roman", Times, serif'
+                                            }}
+                                        >
+                                            <h1 className="text-3xl font-black border-b-4 border-indigo-600 pb-4 mb-8 text-indigo-700 uppercase tracking-tight text-center">{generatedResult.title}</h1>
+                                            <MathText content={generatedResult.content} />
+                                        </div>
+                                    </motion.div>
+                                ) : !loading ? (
+                                    <div className="flex flex-col items-center justify-center h-full opacity-30 w-full">
+                                        <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+                                    </div>
+                                ) : null}
+                            </AnimatePresence>
+                        </div>
 
                         <div className="p-6 sm:p-10 bg-slate-50 border-t flex flex-col sm:flex-row gap-4 shrink-0 pb-safe">
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2">
@@ -388,7 +407,7 @@ export default function GenerateMateriClient({
             </Dialog>
 
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
             `}</style>
