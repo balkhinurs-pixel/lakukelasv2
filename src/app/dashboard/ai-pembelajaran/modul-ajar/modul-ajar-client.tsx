@@ -24,7 +24,8 @@ import {
     Printer,
     Download,
     Copy,
-    ClipboardCheck
+    ClipboardCheck,
+    ArrowLeft
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -595,10 +596,10 @@ export default function ModulAjarClient({
                                     variant="outline"
                                     className="rounded-xl h-10 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold gap-2"
                                 >
-                                    <Copy className="h-4 w-4" /> Copy Prompt LKPD
+                                    <Copy className="h-4 w-4" /> Salin Prompt LKPD
                                 </Button>
                             )}
-                            {generatedResult && <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan ke Drive</Button>}
+                            {generatedResult && <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100">{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan ke Drive</Button>}
                         </div>
                     </CardHeader>
                     <CardContent className="flex-grow p-0 bg-slate-50/20">

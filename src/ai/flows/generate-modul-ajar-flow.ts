@@ -3,6 +3,7 @@
  * @fileOverview Flow Genkit untuk pembuatan Modul Ajar (RPP) Profesional.
  * Mendukung Kurikulum Merdeka (Kemdikbud) dan Kurikulum Kemenag (KBC & PPRA).
  * Output dioptimalkan menggunakan tabel Markdown untuk tampilan standar kedinasan.
+ * Menghasilkan prompt visual LKPD yang disesuaikan dengan jenjang kelas.
  */
 
 import { z, genkit } from 'genkit';
@@ -32,7 +33,7 @@ export type ModulAjarInput = z.infer<typeof ModulAjarInputSchema>;
 const ModulAjarOutputSchema = z.object({
   title: z.string().describe('Judul Modul Ajar'),
   content: z.string().describe('Konten lengkap Modul Ajar dalam format Markdown dengan Tabel'),
-  lkpdPrompt: z.string().describe('Prompt visual detail dalam bahasa Inggris untuk generator gambar AI (nanobana) guna membuat LKPD yang estetik'),
+  lkpdPrompt: z.string().describe('Prompt visual detail dalam bahasa Inggris untuk generator gambar AI (nanobana) guna membuat LKPD yang estetik, dengan konten teks tetap berbahasa Indonesia.'),
 });
 
 export type ModulAjarOutput = z.infer<typeof ModulAjarOutputSchema>;
@@ -83,7 +84,7 @@ ${isKemenag ? `- Profil Pelajar Rahmatan Lil Alamin (PPRA): ${input.profilRahmat
 - Pendekatan Deep Learning: ${input.deepLearningType}
 
 ${input.atpContent ? `REFERENSI ALUR TUJUAN PEMBELAJARAN (WAJIB DISINKRONKAN):
-{{{atpContent}}}` : ''}
+${input.atpContent}` : ''}
 
 ATURAN FORMAT (SANGAT PENTING):
 1. GUNAKAN TABEL MARKDOWN untuk bagian "Informasi Umum" (Identitas) dan "Kegiatan Pembelajaran".
@@ -101,10 +102,16 @@ STRUKTUR MODUL:
 4. ASESMEN: (Gunakan TABEL untuk kriteria penilaian formatif dan sumatif).
 5. LAMPIRAN: Ringkasan LKPD, Bahan Bacaan, Glosarium, Daftar Pustaka.
 
-PROMPT LKPD VISUAL (OUTPUT TERPISAH):
-Buatlah satu prompt bahasa Inggris yang sangat detail untuk generator gambar AI. Prompt ini harus menggambarkan desain Lembar Kerja Peserta Didik (Student Worksheet) yang estetik, bersih, dan sesuai dengan materi ${input.topic} untuk kelas ${input.kelas}. Gunakan gaya "minimalist educational design" atau "professional infographic style".
-
-Gunakan bahasa yang formal, edukatif, dan sangat praktis untuk langsung dibawa guru ke dalam kelas.`,
+PROMPT LKPD VISUAL (OUTPUT FIELD lkpdPrompt):
+Buatlah satu prompt dalam bahasa Inggris yang sangat detail untuk generator gambar AI.
+INSTRUKSI KHUSUS PROMPT:
+1. Format: Lembar kerja ukuran A4 vertikal yang estetik dan bersih.
+2. Konten Teks: Pastikan Anda menuliskan teks instruksi dan judul di dalam gambar harus menggunakan Bahasa Indonesia yang mudah dimengerti.
+3. Gaya Visual Sesuai Kelas:
+   - Jika SD (Kelas 1-6): Gunakan gaya "Colorful educational worksheet for kids, cute illustrations, friendly characters, soft colors, playful vibe".
+   - Jika SMP/SMA (Kelas 7-12): Gunakan gaya "Modern infographic style, professional academic layout, clean diagrams, minimalist typography, mature educational aesthetic".
+4. Topik Spesifik: Visual harus relevan dengan materi ${input.topic}.
+5. Detail Tambahan: Minimalist borders, organized spaces for student names, and sections for writing or activities.`,
   });
 
   const result = response.output;
