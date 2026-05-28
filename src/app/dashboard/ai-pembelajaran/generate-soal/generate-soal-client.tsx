@@ -14,7 +14,8 @@ import {
     Image as ImageIcon,
     ClipboardCheck,
     FileUp,
-    FileText
+    FileText,
+    SquareChartGantt
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -432,9 +433,9 @@ export default function GenerateSoalClient({
                     <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
                         <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">Vercel AI SDK Enabled</h3>
+                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Math & Geometry SDK</h3>
                     <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">
-                        Coba teknologi streaming terbaru. Hasil soal akan muncul secara bertahap seperti sedang diketik, memberikan pengalaman yang lebih cepat dan hidup.
+                        Fitur terbaru: AI kini dapat menghasilkan ilustrasi **SVG** untuk soal geometri, diagram statistika, dan grafik fungsi secara otomatis dan presisi.
                     </p>
                 </Card>
             </div>
@@ -446,7 +447,6 @@ export default function GenerateSoalClient({
                         {loading && questions.length === 0 && (
                             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
                                 <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
-                                     {/* Morphing background glow */}
                                      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
                                      
                                      <div className="relative">
@@ -484,10 +484,6 @@ export default function GenerateSoalClient({
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Selesai</p>
                                          </div>
                                      </div>
-                                     
-                                     <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 text-[11px] font-bold text-indigo-500 italic max-w-xs leading-relaxed">
-                                        "AI sedang menyusun soal yang sesuai dengan capaian kurikulum Merdeka Anda..."
-                                     </div>
                                 </div>
                             </div>
                         )}
@@ -510,6 +506,21 @@ export default function GenerateSoalClient({
                                             </div>
                                             <div className="space-y-8">
                                                 <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
+                                                
+                                                {/* Visual SVG Rendering Area */}
+                                                {q.visual_svg && (
+                                                    <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center gap-3">
+                                                        <div className="flex items-center gap-2 text-indigo-600 mb-2">
+                                                            <SquareChartGantt className="h-4 w-4" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Ilustrasi Geometri AI</span>
+                                                        </div>
+                                                        <div 
+                                                            className="w-full max-w-[400px] aspect-[2/1] flex items-center justify-center overflow-hidden"
+                                                            dangerouslySetInnerHTML={{ __html: q.visual_svg }}
+                                                        />
+                                                    </div>
+                                                )}
+
                                                 {q.type === 'multiple_choice' && q.options && (
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {Object.entries(q.options).sort().map(([key, val]) => (
@@ -542,7 +553,7 @@ export default function GenerateSoalClient({
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2">
                                 <ArrowLeft className="h-5 w-5" /> Kembali
                             </Button>
-                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200">
+                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100">
                                 {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal
                             </Button>
                         </div>
@@ -554,6 +565,11 @@ export default function GenerateSoalClient({
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                
+                .math-text-render svg {
+                    max-width: 100%;
+                    height: auto;
+                }
             `}</style>
         </div>
     );

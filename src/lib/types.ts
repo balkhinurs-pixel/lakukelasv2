@@ -234,6 +234,7 @@ export interface GeneratedQuestion {
   language_direction?: 'ltr' | 'rtl';
   image_prompt?: string;
   image_url?: string;
+  visual_svg?: string;
 }
 
 export interface QuestionGenerationInput {

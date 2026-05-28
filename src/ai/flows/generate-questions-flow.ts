@@ -2,7 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
  * Menggunakan model dinamis sesuai pilihan guru di database.
- * Dioptimalkan untuk LaTeX (Matematika), Unicode Arab, dan Tabel Markdown.
+ * Dioptimalkan untuk LaTeX (Matematika), Unicode Arab, Tabel Markdown, dan Ilustrasi SVG Geometri.
  */
 
 import { z, genkit } from 'genkit';
@@ -20,6 +20,7 @@ const QuestionSchema = z.object({
   cognitive_level: z.string().optional().describe('Level kognitif C1-C6'),
   language_direction: z.enum(['ltr', 'rtl']).default('ltr').describe('Arah teks'),
   image_prompt: z.string().optional().describe('Detailed English description for an educational image related to this question.'),
+  visual_svg: z.string().optional().describe('Kode SVG minimalis untuk ilustrasi soal jika diperlukan (seperti segitiga, lingkaran, diagram batang, atau grafik fungsi). Gunakan viewbox 0 0 400 300, stroke hitam (#000), dan isi transparan.'),
 });
 
 const GenerateQuestionsInputSchema = z.object({
@@ -98,6 +99,11 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
 
+ATURAN VISUALISASI (SANGAT PENTING):
+1. Jika soal membahas GEOMETRI (bangun datar/ruang), STATISTIKA (diagram), atau GRAFIK FUNGSI, Anda WAJIB menyertakan kode SVG pada field "visual_svg".
+2. Kode SVG harus bersih, valid, dan menggunakan viewBox="0 0 400 200".
+3. Gunakan stroke hitam (#333) dan tambahkan label teks (<text>) untuk titik sudut atau nilai data agar soal dapat dipahami tanpa gambar eksternal.
+
 ATURAN PENULISAN (SANGAT PENTING):
 1. MATEMATIKA/SAINS: WAJIB menggunakan LaTeX valid.
    - Pembungkus Inline: Gunakan \\( ... \\). Contoh: \\( x^2 + y^2 = r^2 \\).
@@ -107,19 +113,12 @@ ATURAN PENULISAN (SANGAT PENTING):
 2. DATA TABEL (SANGAT PENTING):
    - Jika soal memerlukan tabel (seperti pada Statistika), WAJIB menggunakan format **Markdown Table**.
    - JANGAN gunakan tag HTML <table>.
-   - Contoh format:
-     | Kelas | Frekuensi |
-     | :---: | :---: |
-     | 40-44 | 3 |
-     | 45-49 | 5 |
 
 3. BAHASA ARAB: WAJIB menggunakan Unicode asli Arab.
    - Jika mata pelajaran adalah Bahasa Arab atau PAI, set field "language_direction" ke "rtl".
-   - Gunakan harakat yang lengkap untuk jenjang SD/SMP agar mudah dibaca.
 
 4. KUALITAS SOAL:
    - Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
-   - Pastikan kunci jawaban (answer) tepat sesuai salah satu key di "options".
    - Berikan pembahasan (explanation) yang logis dan edukatif.
 
 Output harus berupa JSON valid sesuai skema.` }

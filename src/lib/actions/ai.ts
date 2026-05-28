@@ -180,7 +180,8 @@ export async function saveQuestionsAction(config: QuestionGenerationInput, quest
             language_direction: q.language_direction || 'ltr',
             status: 'draft',
             needs_review: true,
-            image_url: q.image_url || null
+            image_url: q.image_url || null,
+            visual_svg: q.visual_svg || null
         }));
 
         const { error } = await supabase.from('questions').insert(rows);
@@ -218,13 +219,13 @@ export async function createNaskahUjianAction(
     selectedQuestionIds: string[], 
     metadata: { jenjang: string, class: string, subject: string, schoolName: string, examType: string },
     format: 'pdf' | 'doc' = 'doc',
-    binaryData?: string
+    binaryPdf?: string
 ) {
     const supabase = await createClient();
     
     // Jika format adalah PDF, unggah data biner ke Drive
-    if (format === 'pdf' && binaryData) {
-        const result = await saveNaskahToDrive(title, binaryData, metadata, 'pdf');
+    if (format === 'pdf' && binaryPdf) {
+        const result = await saveNaskahToDrive(title, binaryPdf, metadata, 'pdf');
         return { ...result, format: 'pdf' };
     }
 
