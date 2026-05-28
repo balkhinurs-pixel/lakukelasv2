@@ -63,6 +63,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppLogo } from "@/components/icons";
 import { LottieSuccess } from "@/components/ui/lottie-success";
 import { createClient } from "@/lib/supabase/client";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // --- MathText Component for LaTeX, Markdown Tables, & Arabic Rendering ---
 const MathText = ({ content, className }: { content: string, className?: string }) => {
@@ -315,6 +326,7 @@ export default function BankSoalClient({
     const [selectedOrderedIds, setSelectedOrderedIds] = React.useState<string[]>([]);
     
     const [exporting, setExporting] = React.useState(false);
+    const [deletingId, setDeletingId] = React.useState<string | null>(null);
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = React.useState(false);
     const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
@@ -395,6 +407,18 @@ export default function BankSoalClient({
             else next.add(id);
             return next;
         });
+    };
+
+    const handleDeleteSingle = async (id: string) => {
+        setDeletingId(id);
+        const result = await deleteQuestionsAction([id]);
+        if (result.success) {
+            toast({ title: "Berhasil", description: "Soal telah dihapus dari Bank Soal." });
+            router.refresh();
+        } else {
+            toast({ title: "Gagal", description: result.error, variant: "destructive" });
+        }
+        setDeletingId(null);
     };
 
     const handleCopyPrompt = async (prompt: string) => {
@@ -654,9 +678,37 @@ export default function BankSoalClient({
                         
                         return (
                             <Card key={q.id} className={cn(
-                                "border-2 rounded-xl bg-white overflow-hidden transition-all shadow-sm",
+                                "relative border-2 rounded-xl bg-white overflow-hidden transition-all shadow-sm",
                                 isSelected ? "border-indigo-600 bg-indigo-50/20 shadow-md" : "border-transparent"
                             )}>
+                                {/* Button Hapus Individual */}
+                                <div className="absolute top-4 right-4 z-10">
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle className="text-xl font-bold">Hapus Soal ini?</AlertDialogTitle>
+                                                <AlertDialogDescription className="font-medium">
+                                                    Soal ini akan dihapus permanen dari Bank Soal Anda. Tindakan ini tidak dapat dibatalkan.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter className="flex flex-row gap-2 mt-4">
+                                                <AlertDialogCancel className="flex-1 rounded-xl h-11 border-slate-200 font-bold">Batal</AlertDialogCancel>
+                                                <AlertDialogAction 
+                                                    onClick={() => handleDeleteSingle(q.id)} 
+                                                    className="flex-1 rounded-xl h-11 bg-rose-600 hover:bg-rose-700 font-bold"
+                                                >
+                                                    {deletingId === q.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ya, Hapus"}
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+
                                 <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 sm:gap-8">
                                     <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start gap-4 shrink-0">
                                         <div className="relative">
@@ -679,7 +731,7 @@ export default function BankSoalClient({
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 space-y-5 min-w-0">
+                                    <div className="flex-1 space-y-5 min-w-0 pr-8 md:pr-0">
                                         <div className="flex flex-wrap gap-2">
                                             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
                                                 <BookOpen className="w-3 h-3 mr-1.5 opacity-60" />
