@@ -575,8 +575,7 @@ export default function BankSoalClient({
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
         } finally {
-            setExporting(false);
-        }
+            }
     };
 
     return (
@@ -681,34 +680,6 @@ export default function BankSoalClient({
                                 "relative border-2 rounded-xl bg-white overflow-hidden transition-all shadow-sm",
                                 isSelected ? "border-indigo-600 bg-indigo-50/20 shadow-md" : "border-transparent"
                             )}>
-                                {/* Button Hapus Individual */}
-                                <div className="absolute top-4 right-4 z-10">
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle className="text-xl font-bold">Hapus Soal ini?</AlertDialogTitle>
-                                                <AlertDialogDescription className="font-medium">
-                                                    Soal ini akan dihapus permanen dari Bank Soal Anda. Tindakan ini tidak dapat dibatalkan.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter className="flex flex-row gap-2 mt-4">
-                                                <AlertDialogCancel className="flex-1 rounded-xl h-11 border-slate-200 font-bold">Batal</AlertDialogCancel>
-                                                <AlertDialogAction 
-                                                    onClick={() => handleDeleteSingle(q.id)} 
-                                                    className="flex-1 rounded-xl h-11 bg-rose-600 hover:bg-rose-700 font-bold"
-                                                >
-                                                    {deletingId === q.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ya, Hapus"}
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-
                                 <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 sm:gap-8">
                                     <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start gap-4 shrink-0">
                                         <div className="relative">
@@ -723,7 +694,37 @@ export default function BankSoalClient({
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex flex-col gap-2 md:w-32">
+                                        <div className="flex flex-col items-end md:items-start gap-2 md:w-32">
+                                            {/* Button Hapus Berpindah ke Sini agar Tidak Tumpang Tindih */}
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-9 w-9 rounded-full text-rose-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle className="text-xl font-bold">Hapus Soal ini?</AlertDialogTitle>
+                                                        <AlertDialogDescription className="font-medium">
+                                                            Soal ini akan dihapus permanen dari Bank Soal Anda. Tindakan ini tidak dapat dibatalkan.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter className="flex flex-row gap-2 mt-4">
+                                                        <AlertDialogCancel className="flex-1 rounded-xl h-11 border-slate-200 font-bold">Batal</AlertDialogCancel>
+                                                        <AlertDialogAction 
+                                                            onClick={() => handleDeleteSingle(q.id)} 
+                                                            className="flex-1 rounded-xl h-11 bg-rose-600 hover:bg-rose-700 font-bold"
+                                                        >
+                                                            {deletingId === q.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ya, Hapus"}
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+
                                             <div className="flex flex-wrap gap-1.5 justify-end md:justify-start">
                                                 <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500")}>{q.difficulty}</Badge>
                                                 <Badge variant="outline" className="font-black text-[9px] uppercase border-slate-200 text-slate-400">Kelas {q.kelas}</Badge>
@@ -731,7 +732,7 @@ export default function BankSoalClient({
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 space-y-5 min-w-0 pr-8 md:pr-0">
+                                    <div className="flex-1 space-y-5 min-w-0">
                                         <div className="flex flex-wrap gap-2">
                                             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
                                                 <BookOpen className="w-3 h-3 mr-1.5 opacity-60" />
