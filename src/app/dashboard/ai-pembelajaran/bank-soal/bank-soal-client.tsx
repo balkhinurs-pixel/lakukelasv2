@@ -77,15 +77,18 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // --- MathText Component for LaTeX, Markdown Tables, & Arabic Rendering ---
-const MathText = ({ content, className }: { content: string, className?: string }) => {
+const MathText = ({ content, className, isPrint = false }: { content: string, className?: string, isPrint?: boolean }) => {
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
-    <div className={cn("math-text-render w-full max-w-full overflow-hidden", className)}>
+    <div className={cn("math-text-render w-full max-w-full", !isPrint && "overflow-hidden", className)}>
       {parts.map((part, i) => {
         if (part.startsWith('\\[')) return (
-            <div key={i} className="my-3 w-full overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible print:w-full">
+            <div key={i} className={cn(
+                "my-3 w-full",
+                !isPrint ? "overflow-x-auto overflow-y-hidden custom-scrollbar pb-2" : "overflow-visible"
+            )}>
                 <div className="min-w-fit">
                     <BlockMath math={part.slice(2, -2)} />
                 </div>
@@ -99,7 +102,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
                 remarkPlugins={[remarkGfm]}
                 components={{
                     table: ({node, ...props}) => (
-                        <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className={cn("my-6 rounded-xl border border-slate-200 shadow-sm", !isPrint ? "overflow-x-auto" : "overflow-visible")}>
                             <table className="w-full border-collapse text-sm text-center" {...props} />
                         </div>
                     ),
@@ -144,9 +147,9 @@ const NaskahPrintTemplate = ({
             }}
         >
             {/* Header Naskah - Professional Standard */}
-            <div id="print-header" style={{ padding: '15mm 16mm 10mm 16mm', width: '210mm', boxSizing: 'border-box' }}>
+            <div id="print-header" style={{ padding: '15mm 16mm 8mm 16mm', width: '210mm', boxSizing: 'border-box' }}>
                 <div className="flex items-center gap-6 mb-4">
-                    <div className="w-[22mm] h-[22mm] flex items-center justify-center border border-slate-100 rounded-lg overflow-hidden shrink-0">
+                    <div className="w-[20mm] h-[20mm] flex items-center justify-center border border-slate-100 rounded-lg overflow-hidden shrink-0">
                         {config.logoUrl ? (
                              <img src={config.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
@@ -154,14 +157,14 @@ const NaskahPrintTemplate = ({
                         )}
                     </div>
 
-                    <div className="flex-1 text-center pr-[22mm]">
+                    <div className="flex-1 text-center pr-[20mm]">
                         <h1 className="text-[14pt] font-bold uppercase leading-tight" style={{ margin: 0 }}>
                             {config.schoolName || "SEKOLAH LAKUKELAS"}
                         </h1>
                         {config.schoolNpsn && (
-                            <p className="text-[9pt] font-medium" style={{ margin: 0 }}>NPSN: {config.schoolNpsn}</p>
+                            <p className="text-[9pt] font-medium" style={{ margin: '1px 0' }}>NPSN: {config.schoolNpsn}</p>
                         )}
-                        <p className="text-[9pt] italic" style={{ margin: '2px 0' }}>
+                        <p className="text-[9pt] italic" style={{ margin: '1px 0' }}>
                             {config.schoolAddress || "Alamat belum diatur"}
                         </p>
                         <p className="text-[9pt] italic" style={{ margin: 0 }}>
@@ -178,19 +181,19 @@ const NaskahPrintTemplate = ({
                     </h2>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10pt', marginBottom: '20px', paddingLeft: '10px', paddingRight: '10px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15mm', fontSize: '10pt', marginBottom: '15px', paddingLeft: '5mm', paddingRight: '5mm' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '35mm 4mm 1fr', gap: '0px' }}>
                         <span className="font-bold">Mata Pelajaran</span><span>:</span><span>{config.subject || "-"}</span>
                         <span className="font-bold">Kelas/Semester</span><span>:</span><span>{config.kelas || "-"} / {config.semester || 'Ganjil'}</span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '110px 10px 1fr', gap: '2px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '35mm 4mm 1fr', gap: '0px' }}>
                         <span className="font-bold">Hari dan Tanggal</span><span>:</span><span>{displayDate}</span>
                         <span className="font-bold">Waktu</span><span>:</span><span>{config.duration || "90 Menit"}</span>
                     </div>
                 </div>
 
                 <div className="mb-4">
-                    <p className="font-bold uppercase">I. PILIHAN GANDA</p>
+                    <p className="font-bold uppercase" style={{ fontSize: '11pt', marginBottom: '2px' }}>I. PILIHAN GANDA</p>
                     <p className="text-[10pt] italic">Pilihlah salah satu jawaban yang paling tepat dengan memberi tanda silang (X) pada huruf A, B, C, D atau E!</p>
                 </div>
             </div>
@@ -202,18 +205,18 @@ const NaskahPrintTemplate = ({
                     const isSma = options.length > 4;
 
                     return (
-                        <div key={q.id} className="print-question-block" style={{ padding: '4px 16mm', marginBottom: '8px', boxSizing: 'border-box' }}>
-                            <div className="flex gap-2 mb-2">
+                        <div key={q.id} className="print-question-block" style={{ padding: '4px 16mm', marginBottom: '6px', boxSizing: 'border-box', breakInside: 'avoid' }}>
+                            <div className="flex gap-3 mb-2">
                                 <span className="font-bold min-w-[22px]">{idx + 1}.</span>
-                                <div className={cn("flex-1 text-justify overflow-hidden", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
-                                    <MathText content={q.question_text} />
+                                <div className={cn("flex-1 text-justify", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
+                                    <MathText content={q.question_text} isPrint />
                                     
-                                    {/* Inline SVG for Printed Naskah */}
+                                    {/* SVG di perkecil untuk PDF agar tidak memakan tempat berlebih */}
                                     {q.visual_svg && (
                                         <div 
-                                            className="my-4 flex justify-center"
+                                            className="my-3 flex justify-center"
                                             style={{ maxWidth: '100%', height: 'auto' }}
-                                            dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="max-width:100%;height:auto;max-height:100mm;" preserveAspectRatio="xMidYMid meet"') }}
+                                            dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="max-width:120mm;height:auto;max-height:55mm;" preserveAspectRatio="xMidYMid meet"') }}
                                         />
                                     )}
                                 </div>
@@ -221,21 +224,19 @@ const NaskahPrintTemplate = ({
                             
                             {options.length > 0 && (
                                 <div 
-                                    className="ml-[22px]"
+                                    className="ml-[28px]"
                                     style={{
                                         display: 'grid',
                                         gridTemplateColumns: '1fr 1fr',
-                                        gridAutoFlow: 'column',
-                                        gridTemplateRows: isSma ? 'repeat(3, auto)' : 'repeat(2, auto)',
-                                        columnGap: '40px',
-                                        rowGap: '6px'
+                                        columnGap: '20px',
+                                        rowGap: '4px'
                                     }}
                                 >
                                     {options.map(([k, v]) => (
-                                        <div key={k} className="flex gap-2 items-start" style={{ minHeight: '24px' }}>
+                                        <div key={k} className="flex gap-2 items-start" style={{ minHeight: '22px' }}>
                                             <span className="font-bold min-w-[18px]">{k}.</span>
-                                            <div className="flex-1 leading-normal overflow-hidden">
-                                                <MathText content={v} />
+                                            <div className="flex-1 leading-normal" style={{ overflow: 'visible' }}>
+                                                <MathText content={v} isPrint />
                                             </div>
                                         </div>
                                     ))}
@@ -246,29 +247,28 @@ const NaskahPrintTemplate = ({
                 })}
             </div>
 
-            <div id="print-footer" style={{ padding: '20mm 16mm', textAlign: 'center', fontSize: '9pt', fontStyle: 'italic', color: '#888', width: '210mm', boxSizing: 'border-box' }}>
+            <div id="print-footer" style={{ padding: '15mm 16mm', textAlign: 'center', fontSize: '9pt', fontStyle: 'italic', color: '#666', width: '210mm', boxSizing: 'border-box' }}>
                 <p>-- Selamat Mengerjakan --</p>
             </div>
 
             {/* Halaman Kunci Jawaban (Terpisah) */}
             {config.includeKey && (
-                <div id="answer-key-section" style={{ width: '210mm', boxSizing: 'border-box' }}>
-                    <div id="key-header" style={{ padding: '15mm 16mm 10mm 16mm', borderTop: '1px dashed #eee' }}>
-                        <div style={{ borderBottom: '2.5pt double black', width: '100%', marginBottom: '10px' }} />
-                        <h2 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14pt', textDecoration: 'underline', marginBottom: '10px' }}>
+                <div id="answer-key-section" style={{ width: '210mm', boxSizing: 'border-box', borderTop: '1px dashed #ccc' }}>
+                    <div id="key-header" style={{ padding: '15mm 16mm 5mm 16mm' }}>
+                        <div style={{ borderBottom: '2pt double black', width: '100%', marginBottom: '10px' }} />
+                        <h2 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '13pt', textDecoration: 'underline', marginBottom: '5px' }}>
                             KUNCI JAWABAN & PEMBAHASAN
                         </h2>
-                        <div style={{ fontSize: '10pt', marginBottom: '20px' }}>
-                            <p>Mata Pelajaran: {config.subject}</p>
-                            <p>Kelas: {config.kelas}</p>
+                        <div style={{ fontSize: '10pt', marginBottom: '15px' }}>
+                            <p>Mata Pelajaran: {config.subject} | Kelas: {config.kelas}</p>
                         </div>
                     </div>
                     {questions.map((q, idx) => (
-                        <div key={`key-${q.id}`} className="print-answer-block" style={{ padding: '4px 16mm', marginBottom: '12px', boxSizing: 'border-box' }}>
+                        <div key={`key-${q.id}`} className="print-answer-block" style={{ padding: '3px 16mm', marginBottom: '8px', boxSizing: 'border-box', breakInside: 'avoid' }}>
                             <p style={{ fontWeight: 'bold', fontSize: '11pt' }}>{idx + 1}. Jawaban: {q.correct_answer}</p>
-                            <div style={{ fontSize: '10pt', color: '#333', marginTop: '4px', textAlign: 'justify', borderLeft: '2px solid #eee', paddingLeft: '10px' }}>
-                                <span style={{ fontWeight: 'bold', fontSize: '9pt', color: '#888', display: 'block', marginBottom: '2px' }}>PEMBAHASAN:</span>
-                                <MathText content={q.explanation} />
+                            <div style={{ fontSize: '10pt', color: '#333', marginTop: '3px', textAlign: 'justify', borderLeft: '2px solid #ddd', paddingLeft: '8px' }}>
+                                <span style={{ fontWeight: 'bold', fontSize: '8.5pt', color: '#777', display: 'block', marginBottom: '1px' }}>PEMBAHASAN:</span>
+                                <MathText content={q.explanation} isPrint />
                             </div>
                         </div>
                     ))}
@@ -468,7 +468,7 @@ export default function BankSoalClient({
 
         const renderElementToPdf = async (el: HTMLElement, yOffset: number) => {
             const canvas = await html2canvas(el, {
-                scale: 2, // High resolution
+                scale: 3, // Higher resolution for professional print
                 useCORS: true,
                 backgroundColor: "#ffffff",
                 logging: false,
@@ -476,7 +476,7 @@ export default function BankSoalClient({
                 removeContainer: true
             });
             
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const imgData = canvas.toDataURL('image/jpeg', 0.98);
             const imgProps = pdf.getImageProperties(imgData);
             const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
             
@@ -734,7 +734,7 @@ export default function BankSoalClient({
                                             )}
                                         </div>
                                         <div className="flex flex-col items-end md:items-start gap-2 md:w-32">
-                                            {/* Button Hapus Berpindah ke Sini agar Tidak Tumpang Tindih */}
+                                            {/* Button Hapus */}
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button 
