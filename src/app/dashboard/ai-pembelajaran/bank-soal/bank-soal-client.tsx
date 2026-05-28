@@ -202,7 +202,6 @@ const NaskahPrintTemplate = ({
             <div id="questions-list" style={{ width: '210mm', boxSizing: 'border-box' }}>
                 {questions.map((q, idx) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
-                    const isSma = options.length > 4;
 
                     return (
                         <div key={q.id} className="print-question-block" style={{ padding: '4px 16mm', marginBottom: '6px', boxSizing: 'border-box', breakInside: 'avoid' }}>
@@ -211,7 +210,6 @@ const NaskahPrintTemplate = ({
                                 <div className={cn("flex-1 text-justify", q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')}>
                                     <MathText content={q.question_text} isPrint />
                                     
-                                    {/* SVG di perkecil untuk PDF agar tidak memakan tempat berlebih */}
                                     {q.visual_svg && (
                                         <div 
                                             className="my-3 flex justify-center"
@@ -294,6 +292,16 @@ const getClassOptions = (jenjang: string) => {
     return [];
 };
 
+const examTypes = [
+    "Penilaian Harian",
+    "Tugas Mandiri",
+    "Sumatif Tengah Semester (STS)",
+    "Sumatif Akhir Semester (SAS)",
+    "Ujian Sekolah",
+    "Try Out",
+    "Latihan Soal"
+];
+
 export default function BankSoalClient({ 
     initialQuestions,
     uniqueSubjects,
@@ -347,7 +355,7 @@ export default function BankSoalClient({
         semester: 'Ganjil',
         subject: 'Bahasa Indonesia',
         examType: "Penilaian Harian",
-        date: "",
+        date: format(new Date(), 'yyyy-MM-dd'),
         duration: "90 Menit",
         format: "pdf" as "pdf" | "doc",
         includeKey: true,
@@ -468,7 +476,7 @@ export default function BankSoalClient({
 
         const renderElementToPdf = async (el: HTMLElement, yOffset: number) => {
             const canvas = await html2canvas(el, {
-                scale: 3, // Higher resolution for professional print
+                scale: 3, 
                 useCORS: true,
                 backgroundColor: "#ffffff",
                 logging: false,
@@ -865,6 +873,30 @@ export default function BankSoalClient({
                                     </div>
                                 </div>
                                 <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400">Mata Pelajaran</Label>
+                                    <Select value={naskahConfig.subject} onValueChange={v => setNaskahConfig({...naskahConfig, subject: v})}>
+                                        <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-xl">{(mapelByJenjang[naskahConfig.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400">Jenis Ujian</Label>
+                                    <Select value={naskahConfig.examType} onValueChange={v => setNaskahConfig({...naskahConfig, examType: v})}>
+                                        <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-xl">{examTypes.map(t => <SelectItem key={t} value={t} className="font-bold">{t}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400">Tanggal Pelaksanaan</Label>
+                                        <Input type="date" value={naskahConfig.date} onChange={e => setNaskahConfig({...naskahConfig, date: e.target.value})} className="h-11 rounded-xl bg-white border-slate-200 font-bold text-xs" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400">Alokasi Waktu</Label>
+                                        <Input placeholder="e.g. 90 Menit" value={naskahConfig.duration} onChange={e => setNaskahConfig({...naskahConfig, duration: e.target.value})} className="h-11 rounded-xl bg-white border-slate-200 font-bold text-xs" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase text-slate-400">Format Ekspor</Label>
                                     <Select value={naskahConfig.format} onValueChange={(v: any) => setNaskahConfig({...naskahConfig, format: v})}>
                                         <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold"><SelectValue /></SelectTrigger>
@@ -873,6 +905,16 @@ export default function BankSoalClient({
                                             <SelectItem value="doc" className="font-bold text-blue-600">Google Doc (Hanya Teks)</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+
+                                <div className="flex items-center space-x-3 p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
+                                    <Checkbox 
+                                        id="include-key" 
+                                        checked={naskahConfig.includeKey} 
+                                        onCheckedChange={(v) => setNaskahConfig({...naskahConfig, includeKey: !!v})}
+                                        className="h-5 w-5 rounded-md"
+                                    />
+                                    <Label htmlFor="include-key" className="text-xs font-bold text-slate-700 cursor-pointer">Sertakan Kunci Jawaban & Pembahasan</Label>
                                 </div>
                             </div>
                         </ScrollArea>
