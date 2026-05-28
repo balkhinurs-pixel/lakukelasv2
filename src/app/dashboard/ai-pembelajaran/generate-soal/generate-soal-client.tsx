@@ -518,8 +518,9 @@ export default function GenerateSoalClient({
                                                             <span className="text-[10px] font-black uppercase tracking-widest">Ilustrasi Geometri AI</span>
                                                         </div>
                                                         <div 
-                                                            className="w-full max-w-[400px] aspect-[2/1] flex items-center justify-center overflow-hidden"
-                                                            dangerouslySetInnerHTML={{ __html: q.visual_svg }}
+                                                            className="w-full max-w-[400px] aspect-[1/1] flex items-center justify-center overflow-hidden"
+                                                            style={{ height: 'auto', maxHeight: '400px' }}
+                                                            dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%;height:100%;max-width:400px;max-height:400px;" preserveAspectRatio="xMidYMid meet"') }}
                                                         />
                                                     </div>
                                                 )}
@@ -589,7 +590,7 @@ export default function GenerateSoalClient({
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2">
                                 <ArrowLeft className="h-5 w-5" /> Kembali
                             </Button>
-                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-100">
+                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100">
                                 {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal
                             </Button>
                         </div>

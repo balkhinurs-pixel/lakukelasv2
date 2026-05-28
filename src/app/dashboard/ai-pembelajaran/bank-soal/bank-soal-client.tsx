@@ -34,7 +34,7 @@ import {
     ShieldAlert,
     RefreshCw,
     Copy,
-    Image as ImageIcon,
+    ImageIcon,
     SquareChartGantt
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -200,8 +200,8 @@ const NaskahPrintTemplate = ({
                                     {q.visual_svg && (
                                         <div 
                                             className="my-4 flex justify-center"
-                                            style={{ maxWidth: '100%' }}
-                                            dangerouslySetInnerHTML={{ __html: q.visual_svg }}
+                                            style={{ maxWidth: '100%', height: 'auto' }}
+                                            dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="max-width:100%;height:auto;max-height:100mm;" preserveAspectRatio="xMidYMid meet"') }}
                                         />
                                     )}
                                 </div>
@@ -703,8 +703,9 @@ export default function BankSoalClient({
                                                     <span className="text-[10px] font-black uppercase tracking-widest">Visualisasi Matematika AI</span>
                                                 </div>
                                                 <div 
-                                                    className="w-full max-w-[400px] aspect-[2/1] flex items-center justify-center overflow-hidden"
-                                                    dangerouslySetInnerHTML={{ __html: q.visual_svg }}
+                                                    className="w-full max-w-[400px] aspect-[1/1] flex items-center justify-center overflow-hidden"
+                                                    style={{ height: 'auto', maxHeight: '400px' }}
+                                                    dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%;height:100%;max-width:400px;max-height:400px;" preserveAspectRatio="xMidYMid meet"') }}
                                                 />
                                             </div>
                                         )}

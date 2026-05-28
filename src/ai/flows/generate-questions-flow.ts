@@ -20,7 +20,7 @@ const QuestionSchema = z.object({
   cognitive_level: z.string().optional().describe('Level kognitif C1-C6'),
   language_direction: z.enum(['ltr', 'rtl']).default('ltr').describe('Arah teks'),
   image_prompt: z.string().optional().describe('Detailed English description for an educational image related to this question.'),
-  visual_svg: z.string().optional().describe('Kode SVG minimalis untuk ilustrasi soal jika diperlukan (seperti segitiga, lingkaran, diagram batang, atau grafik fungsi). Gunakan viewbox 0 0 400 300, stroke hitam (#000), dan isi transparan.'),
+  visual_svg: z.string().optional().describe('Kode SVG minimalis untuk ilustrasi soal jika diperlukan. Gunakan viewBox 0 0 400 400, stroke hitam (#333), dan isi transparan/berwarna lembut.'),
 });
 
 const GenerateQuestionsInputSchema = z.object({
@@ -99,23 +99,27 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
 
-ATURAN VISUALISASI (SANGAT PENTING):
-1. Jika soal membahas GEOMETRI (bangun datar/ruang), STATISTIKA (diagram), atau GRAFIK FUNGSI, Anda WAJIB menyertakan kode SVG pada field "visual_svg".
-2. Kode SVG harus bersih, valid, dan menggunakan viewBox="0 0 400 200".
-3. Gunakan stroke hitam (#333) dan tambahkan label teks (<text>) untuk titik sudut atau nilai data agar soal dapat dipahami tanpa gambar eksternal.
+ATURAN VISUALISASI SVG (SANGAT PENTING):
+1. Gunakan viewBox="0 0 400 400" agar gambar simetris dan luas.
+2. DIAGRAM LINGKARAN (Pie Chart):
+   - Jika membuat pie chart, pastikan setiap slice menggunakan elemen <path>.
+   - Perhitungan busur (arc) HARUS akurat. Rumus: M cx,cy L x1,y1 A r,r 0 largeArcFlag,1 x2,y2 Z.
+   - Pastikan cx (pusat x) dan cy (pusat y) adalah (200, 200). Radius r = 150.
+   - Segmen dilarang tumpang tindih. Gunakan warna lembut (fill="rgba(...,0.3)").
+   - Tambahkan label teks (<text>) di luar/dalam segmen yang sesuai.
+3. GEOMETRI & DIAGRAM:
+   - Gunakan stroke-width="2" dan stroke="#333".
+   - Untuk bangun datar, beri label pada setiap sudut atau sisi.
+   - Jika diagram batang, gunakan rect dengan jarak (spacing) yang proporsional.
 
-ATURAN PENULISAN (SANGAT PENTING):
+ATURAN PENULISAN:
 1. MATEMATIKA/SAINS: WAJIB menggunakan LaTeX valid.
    - Pembungkus Inline: Gunakan \\( ... \\). Contoh: \\( x^2 + y^2 = r^2 \\).
    - Pembungkus Blok: Gunakan \\[ ... \\]. Contoh: \\[ \frac{-b \pm \sqrt{b^2-4ac}}{2a} \\].
-   - JANGAN gunakan simbol unicode mentah untuk akar, pangkat, atau pecahan kompleks.
 
-2. DATA TABEL (SANGAT PENTING):
-   - Jika soal memerlukan tabel (seperti pada Statistika), WAJIB menggunakan format **Markdown Table**.
-   - JANGAN gunakan tag HTML <table>.
+2. DATA TABEL: WAJIB menggunakan format Markdown Table.
 
-3. BAHASA ARAB: WAJIB menggunakan Unicode asli Arab.
-   - Jika mata pelajaran adalah Bahasa Arab atau PAI, set field "language_direction" ke "rtl".
+3. BAHASA ARAB: WAJIB menggunakan Unicode asli Arab. Set field "language_direction" ke "rtl".
 
 4. KUALITAS SOAL:
    - Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
