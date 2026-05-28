@@ -6,6 +6,7 @@ import { generateModulAjar, type ModulAjarInput, type ModulAjarOutput } from '@/
 import { generateCpAtp, type CpAtpInput, type CpAtpOutput } from '@/ai/flows/generate-cp-atp-flow';
 import { generateMaterial, type MaterialGenerationInput, type MaterialGenerationOutput } from '@/ai/flows/generate-material-flow';
 import { generateKisiKisi, type KisiKisiInput, type KisiKisiOutput } from '@/ai/flows/generate-kisi-kisi-flow';
+import { correctExam, type CorrectExamInput, type CorrectExamOutput } from '@/ai/flows/correct-exam-flow';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
@@ -22,6 +23,58 @@ export async function generateContentAction(input: EducationContentInput) {
     } catch (error: any) {
         console.error("AI Generation Error:", error);
         return { success: false, error: error.message || "Gagal menghubungi AI." };
+    }
+}
+
+/**
+ * Server Action khusus untuk Koreksi LJK AI.
+ */
+export async function correctExamAction(naskahId: string, photoDataUri: string) {
+    const supabase = await createClient();
+    try {
+        // 1. Ambil Kunci Jawaban dari Database
+        const { data: naskah } = await supabase
+            .from('ai_documents')
+            .select('question_ids, subject, class_level')
+            .eq('id', naskahId)
+            .single();
+
+        if (!naskah?.question_ids) throw new Error("Detail naskah tidak ditemukan.");
+
+        const { data: questions } = await supabase
+            .from('questions')
+            .select('sort_order, correct_answer, question_type')
+            .in('id', naskah.question_ids)
+            .order('sort_order', { ascending: true });
+
+        if (!questions) throw new Error("Gagal memuat kunci jawaban.");
+
+        // 2. Panggil AI Vision Flow
+        const result = await correctExam({
+            photoDataUri,
+            naskahId,
+            correctAnswers: questions
+        });
+
+        // 3. Identifikasi Siswa Berdasarkan NIS Terdeteksi
+        const { data: student } = await supabase
+            .from('students')
+            .select('id, name')
+            .eq('nis', result.detectedNis)
+            .maybeSingle();
+
+        return { 
+            success: true, 
+            data: {
+                ...result,
+                studentName: student?.name || "Siswa Tidak Dikenal",
+                studentId: student?.id,
+                subject: naskah.subject,
+                classLevel: naskah.class_level
+            } 
+        };
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 }
 
@@ -46,7 +99,7 @@ export async function streamModulAjarAction(input: ModulAjarInput) {
                 finalAtpContent = atpDoc?.content || "";
             }
 
-            // Hapus atp_id dari payload karena tidak ada di schema flow AI (agar tidak error validasi)
+            // Hapus atp_id dari payload karena tidak ada di schema flow AI
             const { atp_id: _, ...aiInput } = input;
 
             const result = await generateModulAjar({
