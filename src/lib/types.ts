@@ -222,9 +222,11 @@ export interface CpAtpDocument {
 }
 
 // --- AI Questions Types ---
+export type QuestionType = 'multiple_choice' | 'essay' | 'short_answer' | 'true_false' | 'matching';
+
 export interface GeneratedQuestion {
   sort_order: number;
-  type: 'multiple_choice' | 'essay';
+  type: QuestionType;
   question: string;
   options?: Record<string, string>; // e.g., { "A": "...", "B": "..." }
   answer: string;
@@ -249,7 +251,7 @@ export interface QuestionGenerationInput {
   cognitive_level?: string;
   mode?: string;
   instruction?: string;
-  question_type: 'multiple_choice' | 'essay';
+  question_type: QuestionType;
   count: number;
   difficulty: 'mudah' | 'sedang' | 'sulit' | 'campuran';
   mediaDataUri?: string;

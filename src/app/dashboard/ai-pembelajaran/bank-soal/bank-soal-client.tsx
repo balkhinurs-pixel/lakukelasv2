@@ -193,8 +193,8 @@ const NaskahPrintTemplate = ({
                 </div>
 
                 <div className="mb-4">
-                    <p className="font-bold uppercase" style={{ fontSize: '11pt', marginBottom: '2px' }}>I. PILIHAN GANDA</p>
-                    <p className="text-[10pt] italic">Pilihlah salah satu jawaban yang paling tepat dengan memberi tanda silang (X) pada huruf A, B, C, D atau E!</p>
+                    <p className="font-bold uppercase" style={{ fontSize: '11pt', marginBottom: '2px' }}>DATA SOAL UJIAN</p>
+                    <p className="text-[10pt] italic">Kerjakan soal-soal berikut dengan teliti dan jujur!</p>
                 </div>
             </div>
 
@@ -225,7 +225,7 @@ const NaskahPrintTemplate = ({
                                     className="ml-[28px]"
                                     style={{
                                         display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr',
+                                        gridTemplateColumns: q.question_type === 'true_false' ? '1fr' : '1fr 1fr',
                                         columnGap: '20px',
                                         rowGap: '4px'
                                     }}
@@ -429,6 +429,17 @@ export default function BankSoalClient({
             else next.add(id);
             return next;
         });
+    };
+
+    const getQuestionTypeLabel = (type: string) => {
+        switch(type) {
+            case 'multiple_choice': return 'PG';
+            case 'essay': return 'Uraian';
+            case 'short_answer': return 'Isian';
+            case 'true_false': return 'B/S';
+            case 'matching': return 'Jodohkan';
+            default: return type;
+        }
     };
 
     const handleDeleteSingle = async (id: string) => {
@@ -773,7 +784,7 @@ export default function BankSoalClient({
                                             </AlertDialog>
 
                                             <div className="flex flex-wrap gap-1.5 justify-end md:justify-start">
-                                                <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500")}>{q.difficulty}</Badge>
+                                                <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : q.difficulty === 'mudah' ? "bg-emerald-500" : "bg-slate-500")}>{q.difficulty}</Badge>
                                                 <Badge variant="outline" className="font-black text-[9px] uppercase border-slate-200 text-slate-400">Kelas {q.kelas}</Badge>
                                             </div>
                                         </div>
@@ -787,7 +798,7 @@ export default function BankSoalClient({
                                             </Badge>
                                             <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-0 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
                                                 <FileText className="w-3 h-3 mr-1.5 opacity-60" />
-                                                {q.question_type === 'essay' ? 'Esai' : 'Pilihan Ganda'}
+                                                {getQuestionTypeLabel(q.question_type)}
                                             </Badge>
                                         </div>
 

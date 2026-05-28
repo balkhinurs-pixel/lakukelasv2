@@ -11,10 +11,10 @@ import { createClient } from '@/lib/supabase/server';
 
 const QuestionSchema = z.object({
   sort_order: z.number().describe('Urutan soal'),
-  type: z.enum(['multiple_choice', 'essay']).describe('Tipe soal'),
+  type: z.enum(['multiple_choice', 'essay', 'short_answer', 'true_false', 'matching']).describe('Tipe soal'),
   question: z.string().describe('Teks pertanyaan (WAJIB menggunakan LaTeX \(...\) untuk rumus)'),
-  options: z.record(z.string(), z.string()).optional().describe('Pilihan jawaban A-D/E (Gunakan LaTeX untuk rumus)'),
-  answer: z.string().describe('Kunci jawaban (huruf opsi atau teks esai)'),
+  options: z.record(z.string(), z.string()).optional().describe('Pilihan jawaban A-D/E (Gunakan LaTeX untuk rumus). Hanya diisi jika tipe adalah multiple_choice, true_false, atau matching.'),
+  answer: z.string().describe('Kunci jawaban (huruf opsi, teks esai, atau pasangan menjodohkan)'),
   explanation: z.string().describe('Pembahasan soal (Gunakan LaTeX untuk rumus)'),
   difficulty: z.enum(['mudah', 'sedang', 'sulit', 'campuran']).describe('Tingkat kesulitan'),
   cognitive_level: z.string().optional().describe('Level kognitif C1-C6'),
@@ -35,7 +35,7 @@ const GenerateQuestionsInputSchema = z.object({
   cognitive_level: z.string().optional(),
   mode: z.string().optional(),
   instruction: z.string().optional(),
-  question_type: z.enum(['multiple_choice', 'essay']),
+  question_type: z.enum(['multiple_choice', 'essay', 'short_answer', 'true_false', 'matching']),
   count: z.number().default(5),
   difficulty: z.enum(['mudah', 'sedang', 'sulit', 'campuran']),
   mediaDataUri: z.string().optional().describe('Materi dalam format Data URI (Base64)'),
@@ -84,7 +84,7 @@ export async function generateQuestions(input: GenerateQuestionsInput): Promise<
         { text: `Anda adalah asisten guru profesional di Indonesia yang ahli dalam kurikulum ${input.curriculum}.
     
 Tugas Anda:
-Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilihan Ganda' : 'Esai'} untuk:
+Buatlah ${input.count} soal dengan tipe "${input.question_type}" untuk:
 - Jenjang: ${input.jenjang}
 - Kelas: ${input.kelas}
 - Semester: ${input.semester || 'Tidak ditentukan'}
@@ -98,6 +98,13 @@ Buatlah ${input.count} soal ${input.question_type === 'multiple_choice' ? 'Pilih
 - Instruksi Tambahan: ${input.instruction || 'Tidak ada'}
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
+
+ATURAN KHUSUS TIPE SOAL:
+1. Pilihan Ganda (multiple_choice): Sediakan ${optionCount} opsi (A-${isHighSchool ? 'E' : 'D'}).
+2. Benar/Salah (true_false): Opsi hanya A. Benar dan B. Salah.
+3. Isian Singkat (short_answer): Tanpa opsi. Jawaban berupa kata atau frasa pendek.
+4. Menjodohkan (matching): Pertanyaan berisi daftar item kiri, opsi berisi daftar item kanan yang diacak. Kunci jawaban berisi pasangan yang benar (misal: 1-C, 2-A).
+5. Uraian (essay): Soal analisis mendalam yang membutuhkan jawaban panjang terstruktur.
 
 ATURAN VISUALISASI SVG (SANGAT PENTING):
 1. Gunakan viewBox="0 0 400 400" agar gambar simetris dan luas.
@@ -122,7 +129,6 @@ ATURAN PENULISAN:
 3. BAHASA ARAB: WAJIB menggunakan Unicode asli Arab. Set field "language_direction" ke "rtl".
 
 4. KUALITAS SOAL:
-   - Pilihan Ganda: Harus memiliki ${optionCount} opsi (${isHighSchool ? 'A-E' : 'A-D'}).
    - Berikan pembahasan (explanation) yang logis dan edukatif.
 
 Output harus berupa JSON valid sesuai skema.` }

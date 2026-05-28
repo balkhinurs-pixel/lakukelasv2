@@ -242,6 +242,17 @@ export default function GenerateSoalClient({
         setSaving(false);
     };
 
+    const getQuestionTypeLabel = (type: string) => {
+        switch(type) {
+            case 'multiple_choice': return 'PG';
+            case 'essay': return 'Uraian';
+            case 'short_answer': return 'Isian';
+            case 'true_false': return 'B/S';
+            case 'matching': return 'Jodohkan';
+            default: return type;
+        }
+    };
+
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
             <AiErrorDialog 
@@ -408,22 +419,19 @@ export default function GenerateSoalClient({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4">
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Soal</Label>
                                         <Select value={form.question_type} onValueChange={(v: any) => setForm(prev => ({...prev, question_type: v}))}>
                                             <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent className="rounded-2xl border-0 shadow-2xl">
                                                 <SelectItem value="multiple_choice" className="font-bold">Pilihan Ganda</SelectItem>
-                                                <SelectItem value="essay" className="font-bold">Esai / Uraian</SelectItem>
+                                                <SelectItem value="essay" className="font-bold">Uraian / Esai</SelectItem>
+                                                <SelectItem value="short_answer" className="font-bold text-indigo-600">Isian Singkat</SelectItem>
+                                                <SelectItem value="true_false" className="font-bold">Benar / Salah</SelectItem>
+                                                <SelectItem value="matching" className="font-bold text-emerald-600">Menjodohkan</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Soal</Label>
-                                        <div className="h-11 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-500 border border-slate-200 text-xs">
-                                            5 Butir (vStream)
-                                        </div>
                                     </div>
                                 </div>
 
@@ -434,7 +442,7 @@ export default function GenerateSoalClient({
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/50 p-6 border-t">
-                            <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 text-lg font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
+                            <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
                                 {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}
                                 Generate Sekarang
                             </Button>
@@ -446,9 +454,9 @@ export default function GenerateSoalClient({
                     <div className="p-16 rounded-[5rem] bg-slate-50 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
                         <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Math & Geometry SDK</h3>
+                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Multi-Type Question Engine</h3>
                     <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">
-                        Fitur terbaru: AI kini dapat menghasilkan ilustrasi **SVG** untuk soal geometri, diagram statistika, dan grafik fungsi secara otomatis dan presisi.
+                        Kini mendukung variasi soal: **Pilihan Ganda, Uraian, Benar/Salah, Isian Singkat, dan Menjodohkan** dengan ilustrasi SVG otomatis.
                     </p>
                 </Card>
             </div>
@@ -506,7 +514,7 @@ export default function GenerateSoalClient({
                                         <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50 group hover:shadow-md transition-all">
                                             <div className="flex items-center justify-between mb-8">
                                                 <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{q.sort_order || idx + 1}</div>
-                                                <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{q.type === 'multiple_choice' ? 'PG' : 'Esai'}</Badge>
+                                                <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{getQuestionTypeLabel(q.type)}</Badge>
                                             </div>
                                             <div className="space-y-8">
                                                 <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
@@ -525,7 +533,7 @@ export default function GenerateSoalClient({
                                                     </div>
                                                 )}
 
-                                                {q.type === 'multiple_choice' && q.options && (
+                                                {q.options && (
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {Object.entries(q.options).sort().map(([key, val]) => (
                                                             <div key={key} className={cn("p-5 rounded-xl border flex items-center gap-4 transition-colors", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
@@ -540,7 +548,7 @@ export default function GenerateSoalClient({
                                                     <div className="flex flex-wrap items-center justify-between gap-4">
                                                         <div className="flex items-center gap-3 p-3 px-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700">
                                                             <CheckCircle2 className="h-5 w-5" />
-                                                            <p className="text-sm font-black uppercase tracking-tight">Kunci Jawaban: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
+                                                            <p className="text-sm font-black uppercase tracking-tight">Jawaban: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
                                                         </div>
                                                         <Button 
                                                             variant="ghost" 
