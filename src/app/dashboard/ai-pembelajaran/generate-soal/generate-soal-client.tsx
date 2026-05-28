@@ -18,7 +18,8 @@ import {
     SquareChartGantt,
     Info,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Plus
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -124,6 +125,8 @@ export default function GenerateSoalClient({
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [uploadedFile, setUploadedFile] = React.useState<{ name: string, uri: string, mime: string } | null>(null);
 
+    const [customSubject, setCustomSubject] = React.useState("");
+
     const [form, setForm] = React.useState<QuestionGenerationInput>({
         jenjang: 'SMP / MTs',
         kelas: '7',
@@ -178,7 +181,10 @@ export default function GenerateSoalClient({
 
     const handleGenerate = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!form.topic || !form.subject || !form.kelas) {
+        
+        const finalSubject = form.subject === "Lainnya (Tulis Manual)" ? customSubject : form.subject;
+
+        if (!form.topic || !finalSubject || !form.kelas) {
             toast({ title: "Data Belum Lengkap", description: "Mohon isi Topik, Mapel, dan Kelas.", variant: "destructive" });
             return;
         }
@@ -192,6 +198,7 @@ export default function GenerateSoalClient({
         try {
             const { output } = await streamQuestionsAction({ 
                 ...form, 
+                subject: finalSubject,
                 count: 5,
                 mediaDataUri: uploadedFile?.uri, 
                 mediaMimeType: uploadedFile?.mime 
@@ -230,7 +237,11 @@ export default function GenerateSoalClient({
     const handleSaveToBankSoal = async () => {
         if (questions.length === 0) return;
         setSaving(true);
-        const result = await saveQuestionsAction(form, questions);
+        
+        const finalSubject = form.subject === "Lainnya (Tulis Manual)" ? customSubject : form.subject;
+        const finalConfig = { ...form, subject: finalSubject };
+
+        const result = await saveQuestionsAction(finalConfig, questions);
         if (result.success) {
             toast({ title: "Berhasil Disimpan", description: "Soal-soal telah masuk ke Bank Soal Anda." });
             setQuestions([]);
@@ -333,16 +344,42 @@ export default function GenerateSoalClient({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
                                     <Select value={form.subject} onValueChange={(v) => setForm(prev => ({...prev, subject: v}))}>
                                         <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                         <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                            {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
+                                            {(mapelByJenjang[form.jenjang] || []).map(m => (
+                                                <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
+                                            ))}
+                                            <SelectItem value="Lainnya (Tulis Manual)" className="font-bold text-indigo-600 flex items-center gap-2">
+                                                <Plus className="h-3 w-3 mr-1 inline" /> Lainnya (Tulis Manual)
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                
+                                <AnimatePresence>
+                                    {form.subject === "Lainnya (Tulis Manual)" && (
+                                        <motion.div 
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="space-y-1.5 overflow-hidden"
+                                        >
+                                            <Label className="text-[10px] font-black uppercase text-indigo-600 tracking-widest ml-1">Nama Mapel Mulok</Label>
+                                            <Input 
+                                                placeholder="Misal: BTQ, Bahasa Jawa..." 
+                                                className="rounded-xl bg-white border-2 border-indigo-100 h-11 font-bold" 
+                                                value={customSubject} 
+                                                onChange={(e) => setCustomSubject(e.target.value)} 
+                                                required 
+                                            />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
                                 <div className="space-y-1.5">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
                                     <Select value={form.kelas} onValueChange={(v) => setForm(prev => ({...prev, kelas: v}))}>
@@ -503,7 +540,7 @@ export default function GenerateSoalClient({
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative shrink-0">
                             <div className="relative z-10 flex flex-col items-center text-center">
                                 <DialogHeader><DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">AI Streaming Preview</DialogTitle></DialogHeader>
-                                <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-3 opacity-90">{form.subject} Kelas {form.kelas}</p>
+                                <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-3 opacity-90">{form.subject === "Lainnya (Tulis Manual)" ? customSubject : form.subject} Kelas {form.kelas}</p>
                             </div>
                         </div>
 
