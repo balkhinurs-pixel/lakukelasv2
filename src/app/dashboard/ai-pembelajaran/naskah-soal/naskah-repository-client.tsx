@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -106,7 +107,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
     return (
         <div 
             id={`print-target-${docMetadata.id}`} 
-            className="bg-white text-slate-900 p-[18mm_16mm]" 
+            className="bg-white text-slate-900 p-[10mm_20mm_20mm_20mm]" 
             style={{ 
                 width: '210mm', 
                 fontFamily: '"Times New Roman", Times, serif', 
@@ -117,22 +118,29 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
             {/* Kop Surat */}
             <div className="flex items-center gap-6 mb-4 pb-4 border-b-[2.5pt] border-double border-black">
                 <div className="w-[20mm] h-[20mm] flex items-center justify-center shrink-0">
-                    {schoolProfile?.school_logo_url ? <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" /> : <AppLogo className="opacity-20" />}
+                    {schoolProfile?.school_logo_url ? (
+                        <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" />
+                    ) : (
+                        <AppLogo className="opacity-20 w-full h-full" />
+                    )}
                 </div>
                 <div className="flex-1 text-center pr-[20mm]">
-                    <h1 className="text-[14pt] font-bold uppercase">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h1>
+                    <h1 className="text-[14pt] font-bold uppercase leading-tight">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h1>
                     {schoolProfile?.npsn && <p className="text-[9pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
-                    <p className="text-[9pt] italic">{schoolProfile?.school_address || "Alamat sekolah belum diatur"}</p>
-                    <p className="text-[9pt] italic">{schoolProfile?.school_email && `Email: ${schoolProfile.school_email}`} {schoolProfile?.school_website && `| Web: ${schoolProfile.school_website}`}</p>
+                    <p className="text-[9pt] italic leading-tight">{schoolProfile?.school_address || "Alamat sekolah belum diatur"}</p>
+                    <p className="text-[9pt] italic leading-tight">
+                        {schoolProfile?.school_email && `Email: ${schoolProfile.school_email}`} 
+                        {schoolProfile?.school_website && ` | Web: ${schoolProfile.school_website}`}
+                    </p>
                 </div>
             </div>
 
             <div className="text-center mb-6">
-                <h2 className="text-[12pt] font-bold uppercase underline">NASKAH SOAL {docMetadata.title}</h2>
+                <h2 className="text-[12pt] font-bold uppercase underline leading-tight">NASKAH SOAL {docMetadata.title}</h2>
                 <p className="text-[10pt] font-bold uppercase mt-1">Mata Pelajaran: {docMetadata.subject}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-12 gap-y-1 text-[10pt] mb-8 border border-slate-300 p-4 rounded-lg bg-slate-50/30">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[10pt] mb-6 border border-black p-3 rounded-lg bg-slate-50/10">
                 <div className="flex"><span className="w-[30mm] font-bold">Kelas</span><span>: {docMetadata.class_level}</span></div>
                 <div className="flex"><span className="w-[30mm] font-bold">Waktu</span><span>: 90 Menit</span></div>
                 <div className="flex"><span className="w-[30mm] font-bold">Tgl Cetak</span><span>: {format(new Date(), 'dd/MM/yyyy')}</span></div>
@@ -140,25 +148,42 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
             </div>
 
             {/* Questions List */}
-            <div className="space-y-6">
+            <div className="space-y-5">
                 {questions.map((q: any, idx: number) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
+                    const rowCount = options.length > 4 ? 3 : 2;
+                    
                     return (
-                        <div key={q.id} className="print-item-block" style={{ breakInside: 'avoid' }}>
-                            <div className="flex gap-4">
+                        <div key={q.id} className="print-item-block" style={{ breakInside: 'avoid', marginBottom: '15px' }}>
+                            <div className="flex gap-3">
                                 <span className="font-bold min-w-[20px]">{idx + 1}.</span>
                                 <div className="flex-1 text-justify">
                                     <MathText content={q.question_text} isPrint />
                                     {q.visual_svg && (
-                                        <div className="my-4 flex justify-center" dangerouslySetInnerHTML={{ __html: q.visual_svg }} />
+                                        <div className="my-2 flex justify-center overflow-hidden">
+                                            <div 
+                                                style={{ maxWidth: '50mm', maxHeight: '40mm' }}
+                                                dangerouslySetInnerHTML={{ 
+                                                    __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto; max-height:40mm;"') 
+                                                }} 
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             </div>
                             
                             {options.length > 0 && (
-                                <div className="ml-[32px] mt-2 grid grid-cols-2 gap-x-12 gap-y-1">
+                                <div 
+                                    className="ml-[32px] mt-2 grid grid-cols-2 gap-x-8 gap-y-1"
+                                    style={{ 
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr 1fr',
+                                        gridTemplateRows: `repeat(${rowCount}, min-content)`,
+                                        gridAutoFlow: 'column'
+                                    }}
+                                >
                                     {options.map(([k, v]) => (
-                                        <div key={k} className="flex gap-2 items-start">
+                                        <div key={k} className="flex gap-2 items-start py-0.5">
                                             <span className="font-bold min-w-[15px]">{k}.</span>
                                             <div className="flex-1"><MathText content={v} isPrint /></div>
                                         </div>
@@ -167,7 +192,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                             )}
 
                             {config.showDiscussion && (
-                                <div className="ml-[32px] mt-4 p-4 border-l-4 border-indigo-100 bg-indigo-50/30 text-[10pt] italic">
+                                <div className="ml-[32px] mt-3 p-3 border-l-2 border-slate-300 bg-slate-50/50 text-[10pt] italic">
                                     <p className="font-bold text-indigo-700 not-italic uppercase text-[8pt] mb-1">Pembahasan (Kunci: {q.correct_answer}):</p>
                                     <MathText content={q.explanation} isPrint />
                                 </div>
@@ -177,7 +202,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                 })}
             </div>
 
-            <div className="mt-16 text-center italic text-slate-400 text-[9pt] border-t pt-8">
+            <div className="mt-12 text-center italic text-slate-400 text-[9pt] border-t pt-6">
                 <p>-- Selamat Mengerjakan --</p>
             </div>
         </div>
@@ -489,7 +514,7 @@ export default function NaskahRepositoryClient({
                                     <Button 
                                         onClick={() => handlePrepareRender(doc.id, 'soal')} 
                                         disabled={loadingId === doc.id}
-                                        className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-lg shadow-indigo-100"
+                                        className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-xl shadow-indigo-100"
                                     >
                                         {loadingId === doc.id && renderTarget?.mode === 'soal' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
                                         Cetak Soal
@@ -538,6 +563,11 @@ export default function NaskahRepositoryClient({
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                
+                .math-text-render svg {
+                    max-width: 100%;
+                    height: auto;
+                }
             `}</style>
         </div>
     );
