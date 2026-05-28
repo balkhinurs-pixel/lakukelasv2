@@ -202,6 +202,7 @@ export interface AiDocument {
   mime_type?: string | null;
   is_public: boolean;
   lkpd_prompt?: string | null;
+  question_ids?: string[] | null;
   status: string;
   created_at: string;
   updated_at: string;

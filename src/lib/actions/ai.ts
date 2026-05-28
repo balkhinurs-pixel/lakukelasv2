@@ -5,6 +5,7 @@ import { generateQuestions, type GenerateQuestionsInput, type GenerateQuestionsO
 import { generateModulAjar, type ModulAjarInput, type ModulAjarOutput } from '@/ai/flows/generate-modul-ajar-flow';
 import { generateCpAtp, type CpAtpInput, type CpAtpOutput } from '@/ai/flows/generate-cp-atp-flow';
 import { generateMaterial, type MaterialGenerationInput, type MaterialGenerationOutput } from '@/ai/flows/generate-material-flow';
+import { generateKisiKisi, type KisiKisiInput, type KisiKisiOutput } from '@/ai/flows/generate-kisi-kisi-flow';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
@@ -121,30 +122,43 @@ export async function streamQuestionsAction(input: QuestionGenerationInput) {
 }
 
 /**
- * Server Action lama (tetap ada untuk kompatibilitas jika dibutuhkan)
+ * Server Action untuk memanggil flow AI Generate Kisi-kisi dari Naskah.
  */
-export async function generateQuestionsAction(input: QuestionGenerationInput) {
+export async function generateKisiKisiAction(docId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Sesi berakhir." };
+
     try {
-        const result = await generateQuestions(input);
+        const { data: doc } = await supabase
+            .from('ai_documents')
+            .select('*')
+            .eq('id', docId)
+            .single();
+
+        if (!doc || !doc.question_ids || doc.question_ids.length === 0) {
+            return { success: false, error: "Naskah ini tidak memiliki referensi soal." };
+        }
+
+        const { data: questions } = await supabase
+            .from('questions')
+            .select('sort_order, question_text, question_type, topic, cognitive_level, difficulty')
+            .in('id', doc.question_ids);
+
+        if (!questions || questions.length === 0) {
+            return { success: false, error: "Gagal memuat butir soal dari database." };
+        }
+
+        const result = await generateKisiKisi({
+            subject: doc.subject || "Umum",
+            classLevel: doc.class_level || "Umum",
+            examType: "Ujian / Penilaian",
+            questions: questions
+        });
+
         return { success: true, data: result };
     } catch (error: any) {
-        console.error("Question Generation Error:", error);
-        return { success: false, error: error.message || "Gagal menghasilkan soal." };
-    }
-}
-
-/**
- * Server Action untuk generate gambar menggunakan Pollinations.ai.
- */
-export async function generateQuestionImageAction(prompt: string) {
-    try {
-        const sanitizedPrompt = prompt.replace(/[\n\r]/g, " ").trim();
-        const encodedPrompt = encodeURIComponent(sanitizedPrompt);
-        const seed = Math.floor(Math.random() * 1000000);
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=768&nologo=true&model=flux&seed=${seed}`;
-        return { success: true, url: imageUrl };
-    } catch (error: any) {
-        return { success: false, error: "Gagal merumuskan link gambar ilustrasi." };
+        return { success: false, error: error.message || "Gagal generate kisi-kisi." };
     }
 }
 
@@ -222,10 +236,16 @@ export async function createNaskahUjianAction(
     binaryPdf?: string
 ) {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
     
     // Jika format adalah PDF, unggah data biner ke Drive
     if (format === 'pdf' && binaryPdf) {
         const result = await saveNaskahToDrive(title, binaryPdf, metadata, 'pdf');
+        // Update metadata with question_ids for kisi-kisi logic
+        if (result.success) {
+            await supabase.from('ai_documents').update({ question_ids: selectedQuestionIds }).eq('drive_file_id', result.file_id);
+        }
         return { ...result, format: 'pdf' };
     }
 
@@ -266,6 +286,11 @@ Tanggal        : ${new Date().toLocaleDateString('id-ID')}
     });
 
     const result = await saveNaskahToDrive(title, content, metadata, 'doc');
+    
+    // Update metadata with question_ids for kisi-kisi logic
+    if (result.success) {
+        await supabase.from('ai_documents').update({ question_ids: selectedQuestionIds }).eq('drive_file_id', result.file_id);
+    }
     
     return { 
         ...result, 
