@@ -69,7 +69,7 @@ export default function NaskahRepositoryClient({
     schoolProfile 
 }: { 
     initialDocuments: AiDocument[],
-    schoolProfile?: Profile | null
+    schoolProfile: Profile | null
 }) {
     const { toast } = useToast();
     const router = useRouter();
@@ -154,6 +154,7 @@ export default function NaskahRepositoryClient({
         setSelectedDocForLjk(docData);
         
         try {
+            // Ambil detail butir soal asli dari database untuk menentukan tipe bulatan
             const result = await getNaskahDetailsAction(docData.id);
             if (!result.success || !result.questions) {
                 throw new Error(result.error || "Gagal memuat detail naskah.");
@@ -166,17 +167,18 @@ export default function NaskahRepositoryClient({
             
             // --- DRAW LJK DESIGN (REVISED: NIS 5 DIGIT, MAPEL MANUAL) ---
             
-            // 1. Header Area
+            // 1. Header Area (Sinkron dengan Data Sekolah)
             const headerY = margin;
             doc.setDrawColor(0).setLineWidth(0.5);
             doc.rect(margin, headerY, 90, 25); // Left Header Box
             doc.rect(margin + 90, headerY, pageWidth - (margin * 2) - 90, 25); // Right Header Box (Instructions)
             
+            // Identitas Sekolah di Header
             doc.setFont('helvetica', 'bold').setFontSize(10);
             doc.text("ASESMEN MADRASAH / SEKOLAH", margin + 25, headerY + 8);
             doc.text(schoolProfile?.school_name?.toUpperCase() || "NAMA SEKOLAH ANDA", margin + 25, headerY + 14);
             doc.setFontSize(8).setFont('helvetica', 'normal');
-            doc.text(schoolProfile?.school_address || "Alamat sekolah...", margin + 25, headerY + 20);
+            doc.text(schoolProfile?.school_address || "Alamat belum diatur di Pengaturan", margin + 25, headerY + 20);
 
             // Instructions Box (Right)
             doc.setFont('helvetica', 'bold').setFontSize(9);
@@ -187,6 +189,13 @@ export default function NaskahRepositoryClient({
             doc.text("1. Lembar Jawaban tidak boleh kotor, basah, robek, atau terlipat.", margin + 93, headerY + 10);
             doc.text("2. Tulislah nama, kelas, serta semua data lainnya dengan benar.", margin + 93, headerY + 15);
             doc.text("3. Hitamkan bulatan pada pilihan jawaban yang dianggap benar.", margin + 93, headerY + 20);
+
+            // Logo Sekolah (Jika ada)
+            if (schoolProfile?.school_logo_url) {
+                try {
+                    doc.addImage(schoolProfile.school_logo_url, 'PNG', margin + 2, headerY + 2, 20, 20);
+                } catch(e) { console.error("Logo gagal dimuat ke LJK"); }
+            }
 
             // 2. Exam Type Banner
             doc.setFillColor(80, 80, 80).rect(margin, headerY + 25, 90, 6, 'F');
@@ -238,7 +247,7 @@ export default function NaskahRepositoryClient({
                 }
             }
 
-            // 6b. Questions Grid (Dynamic Bubbles A-D/A-E)
+            // 6b. Questions Grid (Dinamis Berdasarkan Data Database)
             const questions = result.questions;
             const colWidth = 35;
             const startX = margin + 55;
@@ -247,7 +256,7 @@ export default function NaskahRepositoryClient({
                 doc.setFontSize(7).text(String(idx + 1), x - 6, y + 0.5);
                 
                 if (q.question_type === 'multiple_choice') {
-                    // Cek jumlah opsi, default 4 (A-D) jika tidak terdeteksi
+                    // Ambil jumlah opsi dari data JSON di database
                     const optCount = q.options_json ? Object.keys(q.options_json).length : 4;
                     const opts = ['A', 'B', 'C', 'D', 'E'];
                     for(let i=0; i<optCount; i++) {
@@ -265,7 +274,7 @@ export default function NaskahRepositoryClient({
                 }
             };
 
-            // Question Grid Header (Label A B C D)
+            // Question Grid Header
             for(let c=0; colWidth*c < (pageWidth - startX - margin); c++) {
                 const x = startX + (c * colWidth) + 6;
                 doc.setFillColor(80, 80, 80).rect(x - 2, mainY + 2, colWidth - 8, 5, 'F');
@@ -281,7 +290,7 @@ export default function NaskahRepositoryClient({
                 renderBubbles(q, idx, x, y);
             });
 
-            // 7. Essay Section
+            // 7. Essay Section (Otomatis Muncul jika ada soal uraian di database)
             const hasEssay = questions.some((q: any) => q.question_type === 'essay');
             if (hasEssay) {
                 const essayY = mainY + 85;
@@ -290,14 +299,14 @@ export default function NaskahRepositoryClient({
                 doc.setDrawColor(0).rect(margin, essayY + 6, pageWidth - (margin * 2), 50);
             }
 
-            // 8. OMR Anchor Points (Black Squares)
+            // 8. OMR Anchor Points (Kotak Hitam untuk Akurasi Scan)
             doc.setFillColor(0).rect(margin, mainY + 2, 4, 4, 'F'); // Top Left
             doc.rect(pageWidth - margin - 4, mainY + 2, 4, 4, 'F'); // Top Right
             doc.rect(margin, mainY + 80, 4, 4, 'F'); // Bottom Left
             doc.rect(pageWidth - margin - 4, mainY + 80, 4, 4, 'F'); // Bottom Right
 
             doc.save(`LJK_${docData.title.replace(/\s+/g, '_')}.pdf`);
-            toast({ title: "LJK Berhasil Dibuat", description: "NIS 5 digit dan Mapel manual telah diterapkan." });
+            toast({ title: "LJK Berhasil Dibuat", description: "Format telah disinkronkan dengan data sekolah dan soal." });
         } catch (error: any) {
             toast({ title: "Gagal", description: error.message, variant: "destructive" });
         } finally {

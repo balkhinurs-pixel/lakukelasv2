@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import NaskahRepositoryClient from "./naskah-repository-client";
+import { getAdminProfile } from "@/lib/data";
 
 export default async function NaskahSoalPage() {
     const supabase = await createClient();
@@ -7,13 +8,16 @@ export default async function NaskahSoalPage() {
 
     if (!user) return <div>Akses ditolak.</div>;
 
-    // Ambil daftar naskah yang sudah pernah diekspor
-    const { data: documents } = await supabase
-        .from('ai_documents')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('document_type', 'naskah_ujian')
-        .order('created_at', { ascending: false });
+    // Ambil daftar naskah dan profil sekolah (Admin) secara paralel
+    const [docsRes, schoolProfile] = await Promise.all([
+        supabase
+            .from('ai_documents')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('document_type', 'naskah_ujian')
+            .order('created_at', { ascending: false }),
+        getAdminProfile()
+    ]);
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
@@ -36,7 +40,10 @@ export default async function NaskahSoalPage() {
 
             {/* Content Section with matched padding */}
             <div className="px-4 sm:px-6 lg:px-10">
-                <NaskahRepositoryClient initialDocuments={documents || []} />
+                <NaskahRepositoryClient 
+                    initialDocuments={docsRes.data || []} 
+                    schoolProfile={schoolProfile} 
+                />
             </div>
         </div>
     );
