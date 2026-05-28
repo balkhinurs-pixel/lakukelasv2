@@ -116,7 +116,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                 lineHeight: '1.45' 
             }}
         >
-            {/* Header / Kop - Wrapped for slicing */}
+            {/* Header / Kop - Wrapped for slicing with fixed side margins */}
             <div className="print-header-block p-[10mm_20mm_5mm_20mm]">
                 <div className="flex items-center gap-6 mb-4 pb-4 border-b-[2.5pt] border-double border-black">
                     <div className="w-[20mm] h-[20mm] flex items-center justify-center shrink-0">
@@ -150,11 +150,12 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                 </div>
             </div>
 
-            {/* Questions List */}
+            {/* Questions List with fixed side margins */}
             <div className="questions-container px-[20mm]">
                 {questions.map((q: any, idx: number) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                     const isLongOptions = options.some(([, v]) => v.length > 50);
+                    const optionCount = options.length;
                     
                     return (
                         <div key={q.id} id={`q-row-${idx}`} className="print-item-block mb-6" style={{ breakInside: 'avoid' }}>
@@ -181,6 +182,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                                         "ml-[32px] mt-2",
                                         isLongOptions ? "flex flex-col gap-1" : "grid grid-cols-2 gap-x-12 gap-y-1"
                                     )}
+                                    style={!isLongOptions ? { gridAutoFlow: 'column', gridTemplateRows: `repeat(${Math.ceil(optionCount / 2)}, auto)` } : {}}
                                 >
                                     {options.map(([k, v]) => (
                                         <div key={k} className="flex gap-2 items-start py-0.5">
@@ -255,6 +257,7 @@ const LjkPrintTemplate = ({ questions, docMetadata, schoolProfile }: any) => {
             </div>
 
             <div className="relative border-4 border-black p-8 rounded-3xl min-h-[140mm]">
+                {/* 4 Points of Calibration (Anchor Points) */}
                 <div className="absolute -top-2 -left-2 w-4 h-4 bg-black" />
                 <div className="absolute -top-2 -right-2 w-4 h-4 bg-black" />
                 <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-black" />
@@ -262,26 +265,37 @@ const LjkPrintTemplate = ({ questions, docMetadata, schoolProfile }: any) => {
 
                 <div className="grid grid-cols-2 gap-x-12 gap-y-4">
                     {questions.map((q: any, idx: number) => {
-                        const optionCount = q.options_json ? Object.keys(q.options_json).length : 5;
+                        const isTrueFalse = q.question_type === 'true_false';
+                        const options = q.options_json ? Object.keys(q.options_json) : (isTrueFalse ? ['B', 'S'] : ['A', 'B', 'C', 'D']);
+                        
                         return (
                             <div key={q.id} className="flex items-center gap-3">
                                 <span className="w-6 font-bold text-[10pt] text-right">{idx + 1}.</span>
                                 <div className="flex gap-2">
-                                    {q.question_type === 'true_false' ? (
-                                        ['B', 'S'].map(opt => (
-                                            <div key={opt} className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center font-black text-[10pt]">{opt}</div>
-                                        ))
-                                    ) : (
-                                        ['A', 'B', 'C', 'D', 'E'].slice(0, optionCount).map(opt => (
-                                            <div key={opt} className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center font-black text-[10pt]">{opt}</div>
-                                        ))
-                                    )}
+                                    {options.map(opt => (
+                                        <div key={opt} className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center font-black text-[9pt]">{opt}</div>
+                                    ))}
                                 </div>
                             </div>
                         );
                     })}
                 </div>
             </div>
+            
+            {/* Area for Essay Questions if any */}
+            {questions.some((q: any) => q.question_type === 'essay') && (
+                <div className="mt-8 border-2 border-black p-6 rounded-2xl">
+                    <h3 className="font-black text-[10pt] uppercase tracking-widest border-b border-black pb-2 mb-4">LEMBAR JAWABAN URAIAN (ESSAY)</h3>
+                    <div className="space-y-6">
+                        {questions.filter((q: any) => q.question_type === 'essay').map((q: any, idx: number) => (
+                            <div key={q.id} className="space-y-2">
+                                <p className="font-bold text-[10pt]">Pertanyaan No. {questions.indexOf(q) + 1}</p>
+                                <div className="h-32 border border-slate-300 w-full" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -323,51 +337,67 @@ export default function NaskahRepositoryClient({
         try {
             const result = await getNaskahDetailsAction(docId);
             if (result.success && result.questions && result.doc) {
+                // Ensure we use the latest doc data
                 setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
                 
-                // Beri waktu agar DOM ter-render di hidden area
-                setTimeout(() => handleExecuteCetak(result.doc.id, mode), 1200);
+                // Optimized wait time for DOM rendering
+                setTimeout(() => handleExecuteCetak(result.doc.id, mode, result.doc.title), 1000);
             } else {
                 toast({ variant: "destructive", title: "Gagal Memuat Soal", description: result.error });
                 setLoadingId(null);
                 setDownloading(false);
             }
         } catch (e) {
+            console.error(e);
             setLoadingId(null);
             setDownloading(false);
         }
     };
 
-    const handleExecuteCetak = async (id: string, mode: string) => {
+    const handleExecuteCetak = async (id: string, mode: string, title: string) => {
         try {
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageHeight = 297;
             const marginY = 15;
-            let currentY = marginY;
+            let currentY = 0; // Starting from 0 because HTML has internal padding
 
             if (mode === 'ljk') {
                 const element = document.getElementById(`ljk-target-${id}`);
                 if (!element) throw new Error("Renderer not found");
-                const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+                const canvas = await html2canvas(element, { 
+                    scale: 2, // Scale 2 is enough for LJK
+                    useCORS: true, 
+                    backgroundColor: "#ffffff",
+                    logging: false
+                });
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
                 pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
             } else {
-                // --- Smart Element Assembly Logic ---
-                // 1. Render Header & Meta
+                // --- Optimized Element-by-Element Assembly ---
+                
+                // 1. Render Header
                 const header = document.querySelector(`#print-target-${id} .print-header-block`) as HTMLElement;
                 if (header) {
-                    const canvas = await html2canvas(header, { scale: 2, useCORS: true });
+                    const canvas = await html2canvas(header, { 
+                        scale: 2, // Scale 2 for speed and enough quality
+                        useCORS: true,
+                        logging: false
+                    });
                     const imgData = canvas.toDataURL('image/jpeg', 1.0);
                     const hHeight = (canvas.height * 210) / canvas.width;
-                    pdf.addImage(imgData, 'JPEG', 0, currentY, 210, hHeight);
-                    currentY += hHeight + 5;
+                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, hHeight);
+                    currentY = hHeight;
                 }
 
-                // 2. Render Questions Individually to prevent cuts
+                // 2. Render Questions Individually
                 const qRows = document.querySelectorAll(`#print-target-${id} .print-item-block`);
                 for (let i = 0; i < qRows.length; i++) {
                     const row = qRows[i] as HTMLElement;
-                    const canvas = await html2canvas(row, { scale: 2, useCORS: true });
+                    const canvas = await html2canvas(row, { 
+                        scale: 2, 
+                        useCORS: true,
+                        logging: false
+                    });
                     const imgData = canvas.toDataURL('image/jpeg', 1.0);
                     const rHeight = (canvas.height * 210) / canvas.width;
 
@@ -384,15 +414,16 @@ export default function NaskahRepositoryClient({
                 // 3. Render Footer
                 const footer = document.querySelector(`#print-target-${id} .print-footer-block`) as HTMLElement;
                 if (footer) {
-                    if (currentY + 20 > pageHeight - marginY) { pdf.addPage(); currentY = marginY; }
-                    const canvas = await html2canvas(footer, { scale: 2, useCORS: true });
+                    const canvas = await html2canvas(footer, { scale: 2, useCORS: true, logging: false });
                     const imgData = canvas.toDataURL('image/jpeg', 1.0);
                     const fHeight = (canvas.height * 210) / canvas.width;
+                    
+                    if (currentY + fHeight > pageHeight - marginY) { pdf.addPage(); currentY = marginY; }
                     pdf.addImage(imgData, 'JPEG', 0, currentY, 210, fHeight);
                 }
             }
 
-            const fileName = `${mode.toUpperCase()}_${renderTarget?.doc.title.replace(/\s+/g, '_')}.pdf`;
+            const fileName = `${mode.toUpperCase()}_${title.replace(/\s+/g, '_')}.pdf`;
             pdf.save(fileName);
             
             toast({ 
@@ -433,7 +464,7 @@ export default function NaskahRepositoryClient({
                         </div>
                         <div className="text-center space-y-2">
                             <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Merakit Dokumen...</p>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Menghindari Pemotongan Konten</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Optimalisasi Kecepatan & Margin</p>
                         </div>
                     </Card>
                 </div>
