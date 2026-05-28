@@ -10,7 +10,7 @@ import { correctExam, type CorrectExamInput, type CorrectExamOutput } from '@/ai
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
-import { saveNaskahToDrive, saveCpAtpToDrive, saveGenericDocumentToDrive } from './google-drive';
+import { saveGenericDocumentToDrive } from './google-drive';
 import { createStreamableValue } from 'ai/rsc';
 
 /**
@@ -196,7 +196,8 @@ export async function generateKisiKisiAction(docId: string) {
         const { data: questions } = await supabase
             .from('questions')
             .select('sort_order, question_text, question_type, topic, cognitive_level, difficulty')
-            .in('id', doc.question_ids);
+            .in('id', doc.question_ids)
+            .order('sort_order', { ascending: true });
 
         if (!questions || questions.length === 0) {
             return { success: false, error: "Gagal memuat butir soal dari database." };
@@ -223,7 +224,7 @@ export async function getNaskahDetailsAction(docId: string) {
     try {
         const { data: doc } = await supabase
             .from('ai_documents')
-            .select('question_ids')
+            .select('question_ids, title, subject, class_level')
             .eq('id', docId)
             .single();
             
@@ -232,9 +233,10 @@ export async function getNaskahDetailsAction(docId: string) {
         const { data: questions } = await supabase
             .from('questions')
             .select('*')
-            .in('id', doc.question_ids);
+            .in('id', doc.question_ids)
+            .order('sort_order', { ascending: true });
             
-        return { success: true, questions };
+        return { success: true, doc, questions };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
@@ -305,67 +307,46 @@ export async function deleteQuestionsAction(ids: string[]) {
 
 /**
  * Server Action untuk menyusun naskah ujian.
+ * Sekarang hanya menyimpan "Resep" metadata soal untuk diproses render di client.
  */
 export async function createNaskahUjianAction(
     title: string, 
     selectedQuestionIds: string[], 
-    metadata: { jenjang: string, class: string, subject: string, schoolName: string, examType: string },
-    format: 'pdf' | 'doc' = 'doc',
-    binaryPdf?: string
+    metadata: { jenjang: string, class: string, subject: string, schoolName: string, examType: string }
 ) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
     
-    // Jika format adalah PDF, unggah data biner ke Drive
-    if (format === 'pdf' && binaryPdf) {
-        const result = await saveGenericDocumentToDrive(title, binaryPdf, metadata, 'Bank Soal', 'pdf', undefined, selectedQuestionIds);
-        return { ...result, format: 'pdf' };
-    }
-
-    // Jika format adalah DOC, ambil data soal dan susun Markdown
-    const { data: questions, error: fetchError } = await supabase
-        .from('questions')
-        .select('*')
-        .in('id', selectedQuestionIds);
-
-    // Pastikan soal diurutkan sesuai urutan input array IDs
-    const orderedQuestions = selectedQuestionIds.map(id => questions?.find(q => q.id === id)).filter(Boolean);
-
-    if (fetchError || orderedQuestions.length === 0) {
-        return { success: false, error: "Gagal mengambil data soal terpilih." };
-    }
-
-    // Bangun Konten Naskah Formal (Markdown)
+    // Bangun Konten Ringkasan (Markdown) untuk Drive draf
     let content = `
 ${metadata.schoolName.toUpperCase()}
 ${metadata.examType.toUpperCase()}
 ==========================================
-Jenjang        : ${metadata.jenjang}
 Mata Pelajaran : ${metadata.subject}
 Kelas          : ${metadata.class}
-Tanggal        : ${new Date().toLocaleDateString('id-ID')}
+Penyusun       : ${user.user_metadata?.full_name || 'Guru LakuKelas'}
 ==========================================
 
+Daftar ID Soal (Tersinkron dengan Database):
+${selectedQuestionIds.join('\n')}
+
+_Gunakan tombol 'Cetak' di aplikasi LakuKelas untuk menghasilkan PDF dengan rumus matematika yang rapi._
 `;
 
-    orderedQuestions.forEach((q, idx) => {
-        content += `${idx + 1}. ${q.question_text}\n`;
-        if (q.options_json) {
-            Object.entries(q.options_json as Record<string, string>).sort().forEach(([key, val]) => {
-                content += `   ${key}. ${val}\n`;
-            });
-        }
-        content += `\n`;
-    });
-
-    const result = await saveGenericDocumentToDrive(title, content, metadata, 'Bank Soal', 'doc', undefined, selectedQuestionIds);
+    // Simpan metadata "Resep" soal ke ai_documents
+    const result = await saveGenericDocumentToDrive(
+        title, 
+        content, 
+        metadata, 
+        'Bank Soal', 
+        'doc', 
+        undefined, 
+        selectedQuestionIds
+    );
     
-    return { 
-        ...result, 
-        markdown: content,
-        format: 'doc'
-    };
+    revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
+    return result;
 }
 
 export async function saveMaterialToDriveAction(title: string, content: string, metadata: { jenjang: string, class: string, subject: string }) {
