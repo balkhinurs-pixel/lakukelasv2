@@ -162,66 +162,154 @@ export default function NaskahRepositoryClient({
             const doc = new jsPDF('p', 'mm', 'a4') as any;
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
-            const margin = 15;
+            const margin = 10;
             
-            // Header LJK Profesional
-            doc.setFont('times', 'bold').setFontSize(14);
-            doc.text("LEMBAR JAWAB KOMPUTER (LJK) DIGITAL", pageWidth / 2, margin + 5, { align: 'center' });
-            doc.setFontSize(10).setFont('times', 'normal');
-            doc.text(schoolProfile?.school_name || "SEKOLAH LAKUKELAS", pageWidth / 2, margin + 11, { align: 'center' });
+            // --- DRAW LJK DESIGN (Professional Standard) ---
             
-            doc.setLineWidth(0.5);
-            doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
+            // 1. Header Area
+            const headerY = margin;
+            doc.setDrawColor(0).setLineWidth(0.5);
+            doc.rect(margin, headerY, 90, 25); // Left Header Box
+            doc.rect(margin + 90, headerY, pageWidth - (margin * 2) - 90, 25); // Right Header Box (General Info)
+            
+            // School Logo Placeholder (if exists)
+            doc.setFont('helvetica', 'bold').setFontSize(10);
+            doc.text("ASESMEN MADRASAH", margin + 25, headerY + 8);
+            doc.text(schoolProfile?.school_name?.toUpperCase() || "NAMA SEKOLAH ANDA", margin + 25, headerY + 14);
+            doc.setFontSize(8).setFont('helvetica', 'normal');
+            doc.text(schoolProfile?.school_address || "Alamat sekolah...", margin + 25, headerY + 20);
 
-            // Identitas Ujian & Siswa
-            doc.setFontSize(9);
-            doc.text(`Mata Pelajaran: ${docData.subject}`, margin, margin + 22);
-            doc.text(`Kelas: ${docData.class_level}`, margin, margin + 27);
-            doc.text(`Tahun Ajaran: 2024/2025`, margin, margin + 32);
+            // Instructions Box (Right)
+            doc.setFont('helvetica', 'bold').setFontSize(9);
+            const midX = margin + 90 + ((pageWidth - (margin * 2) - 90) / 2);
+            doc.setFillColor(80, 80, 80).rect(margin + 90, headerY, pageWidth - (margin * 2) - 90, 5, 'F');
+            doc.setTextColor(255).text("PETUNJUK UMUM", midX, headerY + 3.5, { align: 'center' });
+            doc.setTextColor(0).setFontSize(7).setFont('helvetica', 'normal');
+            doc.text("1. Lembar Jawaban tidak boleh kotor, basah, robek, atau terlipat.", margin + 93, headerY + 10);
+            doc.text("2. Tulislah nama, kelas, serta semua data lainnya dengan benar.", margin + 93, headerY + 15);
 
-            // Kotak NIS (Anchor OMR)
-            doc.setDrawColor(0).setLineWidth(0.2);
-            doc.rect(pageWidth - margin - 60, margin + 20, 60, 25);
-            doc.text("KOLOM NIS / NO. UJIAN", pageWidth - margin - 58, margin + 24);
+            // 2. Exam Type Banner
+            doc.setFillColor(80, 80, 80).rect(margin, headerY + 25, 90, 6, 'F');
+            doc.setTextColor(255).setFontSize(8).setFont('helvetica', 'bold');
+            doc.text("LEMBAR JAWAB PENILAIAN AKHIR TAHUN", margin + 45, headerY + 29, { align: 'center' });
+
+            // 3. Identity Area
+            const identityY = headerY + 31;
+            doc.setDrawColor(0).setLineWidth(0.3);
+            doc.rect(margin + 90, identityY, pageWidth - (margin * 2) - 90, 25);
+            doc.setFillColor(80, 80, 80).rect(margin + 90, identityY, pageWidth - (margin * 2) - 90, 5, 'F');
+            doc.setTextColor(255).text("IDENTITAS DIRI", midX, identityY + 3.5, { align: 'center' });
+            doc.setTextColor(0).setFontSize(9).setFont('helvetica', 'normal');
+            doc.text("Nama Lengkap : .....................................................................", margin + 93, identityY + 12);
+            doc.text("Kelas              : .....................................................................", margin + 93, identityY + 18);
+            doc.text("Hari/Tanggal : .....................................................................", margin + 93, identityY + 24);
+
+            // 4. Instructions Drawing
+            doc.setFontSize(8).setFont('helvetica', 'bold');
+            doc.text("Cara menjawab pada lembar jawaban :", margin + 10, headerY + 38);
+            doc.circle(margin + 15, headerY + 44, 1.8, 'F'); doc.text("Benar", margin + 35, headerY + 44.5);
+            doc.circle(margin + 15, headerY + 50, 1.8, 'S'); doc.text("Salah", margin + 35, headerY + 50.5);
+            doc.circle(margin + 50, headerY + 44, 1.8, 'S'); doc.text("Salah", margin + 70, headerY + 44.5);
+            doc.circle(margin + 50, headerY + 50, 1.8, 'S'); doc.text("Salah", margin + 70, headerY + 50.5);
+
+            // 5. Subject Selection Area
+            const subjectY = identityY + 30;
+            doc.setFillColor(80, 80, 80).rect(margin, subjectY, pageWidth - (margin * 2), 6, 'F');
+            doc.setTextColor(255).text("MATA PELAJARAN", pageWidth / 2, subjectY + 4.5, { align: 'center' });
+            doc.setDrawColor(0).rect(margin, subjectY + 6, pageWidth - (margin * 2), 15);
             
-            // Grid Jawaban Dinamis
+            const commonSubjects = ['MAT', 'FQ', 'IPA', 'B.Ing', 'PKN', 'Akidah', 'BTQ', 'Prakarya', 'B.Ind', 'QH', 'IPS', 'B.Arab', 'SKI', 'B.Jawa', 'Penjas', 'Seni Budaya'];
+            doc.setTextColor(0).setFontSize(7).setFont('helvetica', 'normal');
+            commonSubjects.forEach((sub, i) => {
+                const col = i % 8;
+                const row = Math.floor(i / 8);
+                const x = margin + 5 + (col * 23);
+                const y = subjectY + 12 + (row * 6);
+                doc.circle(x, y - 0.8, 1.5, 'S');
+                doc.text(sub, x + 3.5, y);
+            });
+
+            // 6. Main Answer Area
+            const mainY = subjectY + 28;
+            doc.setFillColor(80, 80, 80).rect(margin, mainY - 6, pageWidth - (margin * 2), 6, 'F');
+            doc.setTextColor(255).setFontSize(9).setFont('helvetica', 'bold').text("LEMBAR JAWAB", pageWidth / 2, mainY - 1.5, { align: 'center' });
+
+            // 6a. Exam Number / NIS Block
+            doc.setTextColor(0).setFontSize(8);
+            doc.setFillColor(80, 80, 80).rect(margin + 10, mainY + 2, 35, 5, 'F');
+            doc.setTextColor(255).text("No. Ujian / NIS", margin + 27.5, mainY + 5.5, { align: 'center' });
+            doc.setTextColor(0);
+            for(let i=0; i<4; i++) doc.rect(margin + 12 + (i * 7.5), mainY + 8, 7, 6);
+            for(let row=0; row<10; row++) {
+                doc.text(String(row), margin + 8, mainY + 18.5 + (row * 5));
+                for(let col=0; col<4; col++) {
+                    doc.circle(margin + 15.5 + (col * 7.5), mainY + 17.5 + (row * 5), 1.8, 'S');
+                }
+            }
+
+            // 6b. Questions Grid (Dynamic)
             const questions = result.questions;
-            const col1 = questions.slice(0, 20);
-            const col2 = questions.slice(20, 40);
-
-            const renderColumn = (qs: any[], xOffset: number, yStart: number) => {
-                qs.forEach((q, idx) => {
-                    const y = yStart + (idx * 8);
-                    const qNum = questions.indexOf(q) + 1;
-                    doc.text(`${qNum}.`, xOffset, y);
-                    
-                    if (q.question_type === 'multiple_choice') {
-                        ['A', 'B', 'C', 'D', 'E'].forEach((opt, i) => {
-                            doc.circle(xOffset + 8 + (i * 7), y - 1, 2, 'S');
-                            doc.setFontSize(6).text(opt, xOffset + 7.2 + (i * 7), y - 0.5).setFontSize(9);
-                        });
-                    } else if (q.question_type === 'true_false') {
-                        ['B', 'S'].forEach((opt, i) => {
-                            doc.circle(xOffset + 8 + (i * 7), y - 1, 2, 'S');
-                            doc.setFontSize(6).text(opt, xOffset + 7.2 + (i * 7), y - 0.5).setFontSize(9);
-                        });
-                    } else {
-                        doc.line(xOffset + 8, y, xOffset + 40, y); // Garis untuk uraian/isian
+            const colWidth = 35;
+            const startX = margin + 55;
+            
+            const renderBubbles = (q: any, idx: number, x: number, y: number) => {
+                doc.setFontSize(7).text(String(idx + 1), x - 6, y + 0.5);
+                
+                if (q.question_type === 'multiple_choice') {
+                    const opts = ['A', 'B', 'C', 'D', 'E'];
+                    const optCount = q.options_json ? Object.keys(q.options_json).length : 4;
+                    for(let i=0; i<optCount; i++) {
+                        doc.circle(x + (i * 6), y - 0.5, 1.8, 'S');
+                        doc.setFontSize(5).text(opts[i], x + (i * 6) - 0.8, y + 0.2);
                     }
-                });
+                } else if (q.question_type === 'true_false') {
+                    const opts = ['B', 'S'];
+                    for(let i=0; i<2; i++) {
+                        doc.circle(x + (i * 6), y - 0.5, 1.8, 'S');
+                        doc.setFontSize(5).text(opts[i], x + (i * 6) - 0.8, y + 0.2);
+                    }
+                } else {
+                    doc.line(x, y + 0.5, x + 20, y + 0.5); // Placeholder for others
+                }
             };
 
-            renderColumn(col1, margin, margin + 50);
-            if (col2.length > 0) renderColumn(col2, pageWidth / 2 + 10, margin + 50);
+            // Question Grid Header
+            for(let c=0; colWidth*c < (pageWidth - startX - margin); c++) {
+                const x = startX + (c * colWidth) + 6;
+                doc.setFillColor(80, 80, 80).rect(x - 2, mainY + 2, colWidth - 8, 5, 'F');
+                doc.setTextColor(255).setFontSize(7).text("A  B  C  D  E", x + 3, mainY + 5.5);
+                doc.setTextColor(0);
+            }
 
-            // Anchor Points untuk Scanner
-            doc.setFillColor(0).rect(5, 5, 5, 5, 'F');
-            doc.rect(pageWidth - 10, 5, 5, 5, 'F');
-            doc.rect(5, pageHeight - 10, 5, 5, 'F');
-            doc.rect(pageWidth - 10, pageHeight - 10, 5, 5, 'F');
+            questions.slice(0, 40).forEach((q: any, idx: number) => {
+                const col = Math.floor(idx / 10);
+                const row = idx % 10;
+                const x = startX + (col * colWidth) + 6;
+                const y = mainY + 12 + (row * 6.5);
+                renderBubbles(q, idx, x, y);
+            });
+
+            // 7. Essay Section (Dinamis)
+            const hasEssay = questions.some((q: any) => q.question_type === 'essay');
+            if (hasEssay) {
+                const essayY = mainY + 85;
+                doc.setFillColor(80, 80, 80).rect(margin, essayY, pageWidth - (margin * 2), 6, 'F');
+                doc.setTextColor(255).setFontSize(9).setFont('helvetica', 'bold').text("ESSAY", pageWidth / 2, essayY + 4.5, { align: 'center' });
+                doc.setDrawColor(0).rect(margin, essayY + 6, pageWidth - (margin * 2), 50);
+            }
+
+            // 8. OMR Anchor Points (Crucial for AI Scanning)
+            doc.setFillColor(0).rect(margin, mainY + 2, 4, 4, 'F'); // Top Left
+            doc.rect(pageWidth - margin - 4, mainY + 2, 4, 4, 'F'); // Top Right
+            doc.rect(margin, mainY + 80, 4, 4, 'F'); // Bottom Left
+            doc.rect(pageWidth - margin - 4, mainY + 80, 4, 4, 'F'); // Bottom Right
+            
+            // Intermediate Anchors
+            doc.rect(startX - 2, mainY + 2, 4, 4, 'F');
+            doc.rect(startX - 2, mainY + 80, 4, 4, 'F');
 
             doc.save(`LJK_${docData.title.replace(/\s+/g, '_')}.pdf`);
-            toast({ title: "LJK Berhasil Dibuat", description: "Silakan cetak lembar jawab ini untuk dibagikan ke siswa." });
+            toast({ title: "LJK Berhasil Dibuat", description: "Format LJK telah disesuaikan dengan tipe soal naskah." });
         } catch (error: any) {
             toast({ title: "Gagal", description: error.message, variant: "destructive" });
         } finally {
@@ -244,7 +332,7 @@ export default function NaskahRepositoryClient({
             generatedKisi.title,
             generatedKisi.content,
             metadata,
-            'Bank Soal', // Masukkan ke root folder Bank Soal
+            'Bank Soal', 
             'doc'
         );
 
@@ -425,7 +513,7 @@ export default function NaskahRepositoryClient({
                                         disabled={isLjkLoading && selectedDocForLjk?.id === doc.id}
                                         className="flex-1 h-11 border-indigo-100 text-indigo-600 bg-indigo-50/30 hover:bg-indigo-100 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-2"
                                     >
-                                        {isLjkLoading && selectedDocForLjk?.id === doc.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LayoutGrid className="h-3.5 w-3.5" />}
+                                        {isLjkLoading && selectedDocForLjk?.id === doc.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ScanLine className="h-3.5 w-3.5" />}
                                         Cetak LJK AI
                                     </Button>
                                     <Button 
