@@ -15,7 +15,10 @@ import {
     ClipboardCheck,
     FileUp,
     FileText,
-    SquareChartGantt
+    SquareChartGantt,
+    Info,
+    ChevronDown,
+    ChevronUp
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { streamQuestionsAction, saveQuestionsAction, generateQuestionImageAction } from "@/lib/actions/ai";
+import { streamQuestionsAction, saveQuestionsAction } from "@/lib/actions/ai";
 import type { Class, Subject, GeneratedQuestion, QuestionGenerationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,7 +37,6 @@ import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
     Dialog,
     DialogContent,
@@ -112,6 +114,7 @@ export default function GenerateSoalClient({
     const [questions, setQuestions] = React.useState<GeneratedQuestion[]>([]);
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
     const [countdown, setCountdown] = React.useState(30);
+    const [expandedExplanations, setExpandedExplanations] = React.useState<Set<number>>(new Set());
 
     // AI Error Dialog State
     const [isErrorOpen, setIsErrorOpen] = React.useState(false);
@@ -181,9 +184,10 @@ export default function GenerateSoalClient({
         }
         
         setLoading(true);
-        setQuestions([]); // Reset soal
+        setQuestions([]); 
         setCountdown(30);
-        setIsPreviewOpen(true); // Langsung buka modal untuk efek streaming
+        setExpandedExplanations(new Set());
+        setIsPreviewOpen(true); 
 
         try {
             const { output } = await streamQuestionsAction({ 
@@ -212,6 +216,15 @@ export default function GenerateSoalClient({
         } finally {
             setLoading(false);
         }
+    };
+
+    const toggleExplanation = (index: number) => {
+        setExpandedExplanations(prev => {
+            const next = new Set(prev);
+            if (next.has(index)) next.delete(index);
+            else next.add(index);
+            return next;
+        });
     };
 
     const handleSaveToBankSoal = async () => {
@@ -443,31 +456,22 @@ export default function GenerateSoalClient({
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                     <div className="flex flex-col h-[90vh] relative">
-                        {/* Premium Loading Overlay */}
                         {loading && questions.length === 0 && (
                             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
                                 <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
                                      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
-                                     
                                      <div className="relative">
                                          <LottieAiProcess size={220} />
-                                         <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent pointer-events-none" />
                                      </div>
-                                     
                                      <div className="space-y-6">
                                          <div className="space-y-2">
                                             <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>Soal Terbaik</p>
                                             <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
                                          </div>
-                                         
                                          <div className="flex flex-col items-center gap-3">
                                             <div className="relative w-20 h-20 flex items-center justify-center">
                                                 <svg className="w-full h-full -rotate-90">
-                                                    <circle 
-                                                        cx="40" cy="40" r="36" 
-                                                        className="stroke-slate-100 fill-none" 
-                                                        strokeWidth="6" 
-                                                    />
+                                                    <circle cx="40" cy="40" r="36" className="stroke-slate-100 fill-none" strokeWidth="6" />
                                                     <motion.circle 
                                                         cx="40" cy="40" r="36" 
                                                         className="stroke-indigo-600 fill-none" 
@@ -499,7 +503,7 @@ export default function GenerateSoalClient({
                             <div className="space-y-6 sm:space-y-12 pb-10">
                                 {questions.length > 0 ? (
                                     questions.map((q, idx) => (
-                                        <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50">
+                                        <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50 group hover:shadow-md transition-all">
                                             <div className="flex items-center justify-between mb-8">
                                                 <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{q.sort_order || idx + 1}</div>
                                                 <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{q.type === 'multiple_choice' ? 'PG' : 'Esai'}</Badge>
@@ -507,7 +511,6 @@ export default function GenerateSoalClient({
                                             <div className="space-y-8">
                                                 <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
                                                 
-                                                {/* Visual SVG Rendering Area */}
                                                 {q.visual_svg && (
                                                     <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center gap-3">
                                                         <div className="flex items-center gap-2 text-indigo-600 mb-2">
@@ -531,12 +534,45 @@ export default function GenerateSoalClient({
                                                         ))}
                                                     </div>
                                                 )}
-                                                {q.answer && (
-                                                    <div className="p-5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-500">
-                                                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                                                        <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">Kunci: <span className="ml-2 text-emerald-600">{q.answer}</span></p>
+
+                                                <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
+                                                    <div className="flex flex-wrap items-center justify-between gap-4">
+                                                        <div className="flex items-center gap-3 p-3 px-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700">
+                                                            <CheckCircle2 className="h-5 w-5" />
+                                                            <p className="text-sm font-black uppercase tracking-tight">Kunci Jawaban: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
+                                                        </div>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            onClick={() => toggleExplanation(idx)}
+                                                            className="text-[10px] font-black uppercase tracking-widest text-indigo-600 h-10 px-4 rounded-xl hover:bg-indigo-50"
+                                                        >
+                                                            {expandedExplanations.has(idx) ? <ChevronUp className="h-4 w-4 mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
+                                                            {expandedExplanations.has(idx) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
+                                                        </Button>
                                                     </div>
-                                                )}
+
+                                                    <AnimatePresence>
+                                                        {expandedExplanations.has(idx) && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: 'auto', opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                className="overflow-hidden"
+                                                            >
+                                                                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 shadow-inner">
+                                                                    <div className="flex items-center gap-2 mb-4 text-slate-400">
+                                                                        <Info className="h-3.5 w-3.5" />
+                                                                        <span className="text-[9px] font-black uppercase tracking-[0.2em]">Analisis Jawaban AI</span>
+                                                                    </div>
+                                                                    <div className="text-sm italic text-slate-600 leading-relaxed font-medium">
+                                                                        <MathText content={q.explanation} />
+                                                                    </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
                                             </div>
                                         </Card>
                                     ))
@@ -553,7 +589,7 @@ export default function GenerateSoalClient({
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2">
                                 <ArrowLeft className="h-5 w-5" /> Kembali
                             </Button>
-                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100">
+                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-100">
                                 {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal
                             </Button>
                         </div>
