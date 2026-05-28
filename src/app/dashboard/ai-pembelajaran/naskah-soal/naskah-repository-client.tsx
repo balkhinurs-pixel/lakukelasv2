@@ -164,17 +164,16 @@ export default function NaskahRepositoryClient({
             const pageHeight = doc.internal.pageSize.getHeight();
             const margin = 10;
             
-            // --- DRAW LJK DESIGN (Professional Standard) ---
+            // --- DRAW LJK DESIGN (REVISED: NIS 5 DIGIT, MAPEL MANUAL) ---
             
             // 1. Header Area
             const headerY = margin;
             doc.setDrawColor(0).setLineWidth(0.5);
             doc.rect(margin, headerY, 90, 25); // Left Header Box
-            doc.rect(margin + 90, headerY, pageWidth - (margin * 2) - 90, 25); // Right Header Box (General Info)
+            doc.rect(margin + 90, headerY, pageWidth - (margin * 2) - 90, 25); // Right Header Box (Instructions)
             
-            // School Logo Placeholder (if exists)
             doc.setFont('helvetica', 'bold').setFontSize(10);
-            doc.text("ASESMEN MADRASAH", margin + 25, headerY + 8);
+            doc.text("ASESMEN MADRASAH / SEKOLAH", margin + 25, headerY + 8);
             doc.text(schoolProfile?.school_name?.toUpperCase() || "NAMA SEKOLAH ANDA", margin + 25, headerY + 14);
             doc.setFontSize(8).setFont('helvetica', 'normal');
             doc.text(schoolProfile?.school_address || "Alamat sekolah...", margin + 25, headerY + 20);
@@ -187,11 +186,12 @@ export default function NaskahRepositoryClient({
             doc.setTextColor(0).setFontSize(7).setFont('helvetica', 'normal');
             doc.text("1. Lembar Jawaban tidak boleh kotor, basah, robek, atau terlipat.", margin + 93, headerY + 10);
             doc.text("2. Tulislah nama, kelas, serta semua data lainnya dengan benar.", margin + 93, headerY + 15);
+            doc.text("3. Hitamkan bulatan pada pilihan jawaban yang dianggap benar.", margin + 93, headerY + 20);
 
             // 2. Exam Type Banner
             doc.setFillColor(80, 80, 80).rect(margin, headerY + 25, 90, 6, 'F');
             doc.setTextColor(255).setFontSize(8).setFont('helvetica', 'bold');
-            doc.text("LEMBAR JAWAB PENILAIAN AKHIR TAHUN", margin + 45, headerY + 29, { align: 'center' });
+            doc.text("LEMBAR JAWAB PENILAIAN SISWA", margin + 45, headerY + 29, { align: 'center' });
 
             // 3. Identity Area
             const identityY = headerY + 31;
@@ -212,42 +212,33 @@ export default function NaskahRepositoryClient({
             doc.circle(margin + 50, headerY + 44, 1.8, 'S'); doc.text("Salah", margin + 70, headerY + 44.5);
             doc.circle(margin + 50, headerY + 50, 1.8, 'S'); doc.text("Salah", margin + 70, headerY + 50.5);
 
-            // 5. Subject Selection Area
+            // 5. Subject Writing Area (REVISED: MANUAL)
             const subjectY = identityY + 30;
             doc.setFillColor(80, 80, 80).rect(margin, subjectY, pageWidth - (margin * 2), 6, 'F');
             doc.setTextColor(255).text("MATA PELAJARAN", pageWidth / 2, subjectY + 4.5, { align: 'center' });
-            doc.setDrawColor(0).rect(margin, subjectY + 6, pageWidth - (margin * 2), 15);
-            
-            const commonSubjects = ['MAT', 'FQ', 'IPA', 'B.Ing', 'PKN', 'Akidah', 'BTQ', 'Prakarya', 'B.Ind', 'QH', 'IPS', 'B.Arab', 'SKI', 'B.Jawa', 'Penjas', 'Seni Budaya'];
-            doc.setTextColor(0).setFontSize(7).setFont('helvetica', 'normal');
-            commonSubjects.forEach((sub, i) => {
-                const col = i % 8;
-                const row = Math.floor(i / 8);
-                const x = margin + 5 + (col * 23);
-                const y = subjectY + 12 + (row * 6);
-                doc.circle(x, y - 0.8, 1.5, 'S');
-                doc.text(sub, x + 3.5, y);
-            });
+            doc.setDrawColor(0).rect(margin, subjectY + 6, pageWidth - (margin * 2), 12);
+            doc.setTextColor(0).setFontSize(10).setFont('helvetica', 'bold');
+            doc.text("Mata Pelajaran : .........................................................................................................................................", margin + 5, subjectY + 14);
 
             // 6. Main Answer Area
-            const mainY = subjectY + 28;
+            const mainY = subjectY + 25;
             doc.setFillColor(80, 80, 80).rect(margin, mainY - 6, pageWidth - (margin * 2), 6, 'F');
             doc.setTextColor(255).setFontSize(9).setFont('helvetica', 'bold').text("LEMBAR JAWAB", pageWidth / 2, mainY - 1.5, { align: 'center' });
 
-            // 6a. Exam Number / NIS Block
+            // 6a. NIS Block (REVISED: 5 DIGIT)
             doc.setTextColor(0).setFontSize(8);
-            doc.setFillColor(80, 80, 80).rect(margin + 10, mainY + 2, 35, 5, 'F');
-            doc.setTextColor(255).text("No. Ujian / NIS", margin + 27.5, mainY + 5.5, { align: 'center' });
+            doc.setFillColor(80, 80, 80).rect(margin + 5, mainY + 2, 40, 5, 'F');
+            doc.setTextColor(255).text("No. Ujian / NIS", margin + 25, mainY + 5.5, { align: 'center' });
             doc.setTextColor(0);
-            for(let i=0; i<4; i++) doc.rect(margin + 12 + (i * 7.5), mainY + 8, 7, 6);
+            for(let i=0; i<5; i++) doc.rect(margin + 8 + (i * 7.5), mainY + 8, 7, 6);
             for(let row=0; row<10; row++) {
-                doc.text(String(row), margin + 8, mainY + 18.5 + (row * 5));
-                for(let col=0; col<4; col++) {
-                    doc.circle(margin + 15.5 + (col * 7.5), mainY + 17.5 + (row * 5), 1.8, 'S');
+                doc.text(String(row), margin + 4, mainY + 18.5 + (row * 5));
+                for(let col=0; col<5; col++) {
+                    doc.circle(margin + 11.5 + (col * 7.5), mainY + 17.5 + (row * 5), 1.8, 'S');
                 }
             }
 
-            // 6b. Questions Grid (Dynamic)
+            // 6b. Questions Grid (Dynamic Bubbles A-D/A-E)
             const questions = result.questions;
             const colWidth = 35;
             const startX = margin + 55;
@@ -256,8 +247,9 @@ export default function NaskahRepositoryClient({
                 doc.setFontSize(7).text(String(idx + 1), x - 6, y + 0.5);
                 
                 if (q.question_type === 'multiple_choice') {
-                    const opts = ['A', 'B', 'C', 'D', 'E'];
+                    // Cek jumlah opsi, default 4 (A-D) jika tidak terdeteksi
                     const optCount = q.options_json ? Object.keys(q.options_json).length : 4;
+                    const opts = ['A', 'B', 'C', 'D', 'E'];
                     for(let i=0; i<optCount; i++) {
                         doc.circle(x + (i * 6), y - 0.5, 1.8, 'S');
                         doc.setFontSize(5).text(opts[i], x + (i * 6) - 0.8, y + 0.2);
@@ -269,15 +261,15 @@ export default function NaskahRepositoryClient({
                         doc.setFontSize(5).text(opts[i], x + (i * 6) - 0.8, y + 0.2);
                     }
                 } else {
-                    doc.line(x, y + 0.5, x + 20, y + 0.5); // Placeholder for others
+                    doc.line(x, y + 0.5, x + 20, y + 0.5); 
                 }
             };
 
-            // Question Grid Header
+            // Question Grid Header (Label A B C D)
             for(let c=0; colWidth*c < (pageWidth - startX - margin); c++) {
                 const x = startX + (c * colWidth) + 6;
                 doc.setFillColor(80, 80, 80).rect(x - 2, mainY + 2, colWidth - 8, 5, 'F');
-                doc.setTextColor(255).setFontSize(7).text("A  B  C  D  E", x + 3, mainY + 5.5);
+                doc.setTextColor(255).setFontSize(7).text("A  B  C  D  (E)", x + 3, mainY + 5.5);
                 doc.setTextColor(0);
             }
 
@@ -289,27 +281,23 @@ export default function NaskahRepositoryClient({
                 renderBubbles(q, idx, x, y);
             });
 
-            // 7. Essay Section (Dinamis)
+            // 7. Essay Section
             const hasEssay = questions.some((q: any) => q.question_type === 'essay');
             if (hasEssay) {
                 const essayY = mainY + 85;
                 doc.setFillColor(80, 80, 80).rect(margin, essayY, pageWidth - (margin * 2), 6, 'F');
-                doc.setTextColor(255).setFontSize(9).setFont('helvetica', 'bold').text("ESSAY", pageWidth / 2, essayY + 4.5, { align: 'center' });
+                doc.setTextColor(255).setFontSize(9).setFont('helvetica', 'bold').text("ESSAY / URAIAN", pageWidth / 2, essayY + 4.5, { align: 'center' });
                 doc.setDrawColor(0).rect(margin, essayY + 6, pageWidth - (margin * 2), 50);
             }
 
-            // 8. OMR Anchor Points (Crucial for AI Scanning)
+            // 8. OMR Anchor Points (Black Squares)
             doc.setFillColor(0).rect(margin, mainY + 2, 4, 4, 'F'); // Top Left
             doc.rect(pageWidth - margin - 4, mainY + 2, 4, 4, 'F'); // Top Right
             doc.rect(margin, mainY + 80, 4, 4, 'F'); // Bottom Left
             doc.rect(pageWidth - margin - 4, mainY + 80, 4, 4, 'F'); // Bottom Right
-            
-            // Intermediate Anchors
-            doc.rect(startX - 2, mainY + 2, 4, 4, 'F');
-            doc.rect(startX - 2, mainY + 80, 4, 4, 'F');
 
             doc.save(`LJK_${docData.title.replace(/\s+/g, '_')}.pdf`);
-            toast({ title: "LJK Berhasil Dibuat", description: "Format LJK telah disesuaikan dengan tipe soal naskah." });
+            toast({ title: "LJK Berhasil Dibuat", description: "NIS 5 digit dan Mapel manual telah diterapkan." });
         } catch (error: any) {
             toast({ title: "Gagal", description: error.message, variant: "destructive" });
         } finally {
@@ -580,7 +568,7 @@ export default function NaskahRepositoryClient({
                             </div>
                         )}
 
-                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white shrink-0">
+                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-8 text-white shrink-0">
                             <div className="flex flex-col items-center text-center">
                                 <DialogHeader><DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">Pratinjau Kisi-kisi</DialogTitle></DialogHeader>
                                 <p className="text-indigo-100 font-bold text-xs uppercase tracking-[0.2em] mt-3">Matriks Kurikulum • {selectedDocForKisi?.title}</p>
@@ -673,7 +661,7 @@ export default function NaskahRepositoryClient({
                                 disabled={savingKisi || !generatedKisi} 
                                 className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200"
                             >
-                                {savingKisi ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Google Drive
+                                {savingKisi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Simpan ke Google Drive
                             </Button>
                         </div>
                     </div>
