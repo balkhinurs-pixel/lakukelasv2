@@ -155,8 +155,8 @@ export default function NaskahRepositoryClient({
         
         try {
             const result = await getNaskahDetailsAction(docData.id);
-            if (!result.success || !result.questions) {
-                throw new Error(result.error || "Gagal memuat detail naskah.");
+            if (!result.success || !result.questions || result.questions.length === 0) {
+                throw new Error(result.error || "Data soal tidak ditemukan di database. Pastikan naskah ini dibuat melalui Bank Soal.");
             }
 
             const doc = new jsPDF('p', 'mm', 'a4') as any;
@@ -217,7 +217,7 @@ export default function NaskahRepositoryClient({
             doc.setTextColor(255).text("MATA PELAJARAN", pageWidth / 2, subjectY + 4.5, { align: 'center' });
             doc.setDrawColor(0).rect(margin, subjectY + 6, pageWidth - (margin * 2), 12);
             doc.setTextColor(0).setFontSize(10).setFont('helvetica', 'bold');
-            doc.text("Mata Pelajaran : .........................................................................................................................................", margin + 5, subjectY + 14);
+            doc.text(`Mata Pelajaran : ${docData.subject || "........................................................................................................................................."}`, margin + 5, subjectY + 14);
 
             // 2. Answer Area Header
             const mainY = subjectY + 25;
@@ -290,22 +290,19 @@ export default function NaskahRepositoryClient({
                 finalY += essayBoxHeight + 10;
             }
 
-            // 6. ANCHOR POINTS (Wraps the content for AI perspective warping)
+            // 6. ANCHOR POINTS
             doc.setFillColor(0);
             const anchorSize = 4;
-            // Top Left Anchor
             doc.rect(margin, mainY + 2, anchorSize, anchorSize, 'F');
-            // Top Right Anchor
             doc.rect(pageWidth - margin - anchorSize, mainY + 2, anchorSize, anchorSize, 'F');
-            // Bottom Left Anchor
-            doc.rect(margin, Math.min(finalY, pageHeight - margin - anchorSize), anchorSize, anchorSize, 'F');
-            // Bottom Right Anchor
-            doc.rect(pageWidth - margin - anchorSize, Math.min(finalY, pageHeight - margin - anchorSize), anchorSize, anchorSize, 'F');
+            const anchorBottomY = Math.min(finalY, pageHeight - margin - anchorSize);
+            doc.rect(margin, anchorBottomY, anchorSize, anchorSize, 'F');
+            doc.rect(pageWidth - margin - anchorSize, anchorBottomY, anchorSize, anchorSize, 'F');
 
             doc.save(`LJK_${docData.title.replace(/\s+/g, '_')}.pdf`);
-            toast({ title: "LJK Berhasil Dibuat", description: "Format dinamis menyesuaikan tipe soal Anda." });
+            toast({ title: "LJK Berhasil Dibuat", description: "Data soal berhasil disinkronkan ke lembar jawab." });
         } catch (error: any) {
-            toast({ title: "Gagal", description: error.message, variant: "destructive" });
+            toast({ title: "Gagal Mencetak LJK", description: error.message, variant: "destructive" });
         } finally {
             setIsLjkLoading(false);
             setSelectedDocForLjk(null);

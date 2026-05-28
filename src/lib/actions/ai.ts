@@ -227,7 +227,7 @@ export async function getNaskahDetailsAction(docId: string) {
             .eq('id', docId)
             .single();
             
-        if (!doc?.question_ids) return { success: false, error: "Question IDs not found." };
+        if (!doc?.question_ids || doc.question_ids.length === 0) return { success: false, error: "Daftar ID soal tidak ditemukan." };
         
         const { data: questions } = await supabase
             .from('questions')
@@ -292,7 +292,7 @@ export async function saveQuestionsAction(config: QuestionGenerationInput, quest
 export async function deleteQuestionsAction(ids: string[]) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Tidak terautentikasi." };
+    if (!user) return { success: false, error: "Tidak terautentikasi" };
 
     try {
         await supabase.from('questions').delete().in('id', ids).eq('created_by', user.id);
@@ -319,11 +319,7 @@ export async function createNaskahUjianAction(
     
     // Jika format adalah PDF, unggah data biner ke Drive
     if (format === 'pdf' && binaryPdf) {
-        const result = await saveNaskahToDrive(title, binaryPdf, metadata, 'pdf');
-        // Update metadata with question_ids for kisi-kisi logic
-        if (result.success) {
-            await supabase.from('ai_documents').update({ question_ids: selectedQuestionIds }).eq('drive_file_id', result.file_id);
-        }
+        const result = await saveGenericDocumentToDrive(title, binaryPdf, metadata, 'Bank Soal', 'pdf', undefined, selectedQuestionIds);
         return { ...result, format: 'pdf' };
     }
 
@@ -363,12 +359,7 @@ Tanggal        : ${new Date().toLocaleDateString('id-ID')}
         content += `\n`;
     });
 
-    const result = await saveNaskahToDrive(title, content, metadata, 'doc');
-    
-    // Update metadata with question_ids for kisi-kisi logic
-    if (result.success) {
-        await supabase.from('ai_documents').update({ question_ids: selectedQuestionIds }).eq('drive_file_id', result.file_id);
-    }
+    const result = await saveGenericDocumentToDrive(title, content, metadata, 'Bank Soal', 'doc', undefined, selectedQuestionIds);
     
     return { 
         ...result, 

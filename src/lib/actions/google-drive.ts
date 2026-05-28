@@ -121,18 +121,6 @@ export async function setupGoogleDriveFolder() {
 }
 
 /**
- * Server Action untuk menyimpan naskah ke Google Drive.
- */
-export async function saveNaskahToDrive(
-    title: string, 
-    content: string, 
-    metadata: { jenjang: string, class: string, subject: string },
-    format: 'pdf' | 'doc' = 'doc'
-) {
-    return saveGenericDocumentToDrive(title, content, metadata, 'Bank Soal', format);
-}
-
-/**
  * Server Action khusus untuk menyimpan Modul Ajar (RPP) ke Google Drive.
  */
 export async function saveModulAjarToDrive(
@@ -240,7 +228,8 @@ export async function saveGenericDocumentToDrive(
     metadata: { jenjang: string, class: string, subject: string },
     rootFolderName: string,
     format: 'pdf' | 'doc' = 'doc',
-    lkpdPrompt?: string
+    lkpdPrompt?: string,
+    questionIds: string[] = []
 ) {
     const supabase = await createClient();
     const { data: userData } = await supabase.auth.getUser();
@@ -325,12 +314,13 @@ export async function saveGenericDocumentToDrive(
             drive_folder_id: targetFolderId,
             mime_type: mimeType,
             lkpd_prompt: lkpdPrompt || null,
+            question_ids: questionIds,
             status: 'created'
         });
 
         revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
         revalidatePath('/dashboard/ai-pembelajaran/arsip-rpp');
-        return { success: true, file_url: format === 'doc' ? `https://docs.google.com/document/d/${fileData.id}/edit` : `https://drive.google.com/file/d/${fileData.id}/view` };
+        return { success: true, file_id: fileData.id, file_url: format === 'doc' ? `https://docs.google.com/document/d/${fileData.id}/edit` : `https://drive.google.com/file/d/${fileData.id}/view` };
 
     } catch (error: any) {
         return { success: false, error: error.message || "Gagal menyimpan ke Drive." };
