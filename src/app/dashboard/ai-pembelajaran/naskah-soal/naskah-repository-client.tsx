@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -65,16 +64,22 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
 
-// --- MathText Component for Professional Rendering ---
+/**
+ * MathText Component V26.0
+ * Optimal rendering for both screen and high-fidelity printing.
+ */
 const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boolean }) => {
   if (!content) return null;
   const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
-    <div className={cn("math-text-render w-full overflow-hidden", isPrint && "overflow-visible")}>
+    <div className={cn(
+        "math-text-render w-full overflow-hidden", 
+        isPrint ? "overflow-visible" : "custom-scrollbar pb-1"
+    )}>
       {parts.map((part, i) => {
         if (part.startsWith('\\[')) return (
-            <div key={i} className="my-3 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible">
+            <div key={i} className="my-3 overflow-x-auto overflow-y-hidden print:overflow-visible">
                 <BlockMath math={part.slice(2, -2)} />
             </div>
         );
@@ -103,32 +108,37 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
   );
 };
 
-// --- NaskahPrintTemplate for High Quality Client-Side PDF ---
+/**
+ * NaskahPrintTemplate V26.0
+ * Professional layout mimicking official school examination papers.
+ */
 const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: any) => {
     return (
         <div 
             id={`print-target-${docMetadata.id}`} 
-            className="bg-white text-slate-900 p-0" 
+            className="bg-white text-slate-900" 
             style={{ 
                 width: '210mm', 
+                padding: '20mm', // Fixed padding for all sides
+                boxSizing: 'border-box',
                 fontFamily: '"Times New Roman", Times, serif', 
                 fontSize: '11pt', 
                 lineHeight: '1.45' 
             }}
         >
-            {/* Header / Kop - Wrapped for slicing with fixed side margins */}
-            <div className="print-header-block p-[10mm_20mm_5mm_20mm]">
-                <div className="flex items-center gap-6 mb-4 pb-4 border-b-[2.5pt] border-double border-black">
-                    <div className="w-[20mm] h-[20mm] flex items-center justify-center shrink-0">
+            {/* Header / Kop Surat */}
+            <div className="print-header-block mb-4 pb-4 border-b-[2.5pt] border-double border-black">
+                <div className="flex items-center gap-6">
+                    <div className="w-[22mm] h-[22mm] flex items-center justify-center shrink-0">
                         {schoolProfile?.school_logo_url ? (
-                            <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" />
+                            <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" />
                         ) : (
                             <AppLogo className="opacity-20 w-full h-full" />
                         )}
                     </div>
-                    <div className="flex-1 text-center pr-[20mm]">
+                    <div className="flex-1 text-center pr-[22mm]">
                         <h1 className="text-[14pt] font-bold uppercase leading-tight">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h1>
-                        {schoolProfile?.npsn && <p className="text-[9pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
+                        {schoolProfile?.npsn && <p className="text-[10pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
                         <p className="text-[9pt] italic leading-tight">{schoolProfile?.school_address || "Alamat sekolah belum diatur"}</p>
                         <p className="text-[9pt] italic leading-tight">
                             {schoolProfile?.school_email && `Email: ${schoolProfile.school_email}`} 
@@ -136,39 +146,41 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                         </p>
                     </div>
                 </div>
-
-                <div className="text-center mb-6">
-                    <h2 className="text-[12pt] font-bold uppercase underline leading-tight">NASKAH SOAL {docMetadata.title}</h2>
-                    <p className="text-[10pt] font-bold uppercase mt-1">Mata Pelajaran: {docMetadata.subject}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[10pt] mb-6 border border-black p-3 rounded-lg">
-                    <div className="flex"><span className="w-[30mm] font-bold">Kelas</span><span>: {docMetadata.class_level}</span></div>
-                    <div className="flex"><span className="w-[30mm] font-bold">Waktu</span><span>: 90 Menit</span></div>
-                    <div className="flex"><span className="w-[30mm] font-bold">Tgl Cetak</span><span>: {format(new Date(), 'dd/MM/yyyy')}</span></div>
-                    <div className="flex"><span className="w-[30mm] font-bold">Semester</span><span>: Ganjil</span></div>
-                </div>
             </div>
 
-            {/* Questions List with fixed side margins */}
-            <div className="questions-container px-[20mm]">
+            {/* Judul Ujian */}
+            <div className="text-center mb-6">
+                <h2 className="text-[12pt] font-bold uppercase underline leading-tight">NASKAH SOAL {docMetadata.title}</h2>
+                <p className="text-[11pt] font-bold uppercase mt-1">Mata Pelajaran: {docMetadata.subject}</p>
+            </div>
+
+            {/* Tabel Metadata Naskah */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[10.5pt] mb-8 border border-black p-4 rounded-lg">
+                <div className="flex justify-between border-b border-black/10 pb-1"><span className="font-bold">Kelas / Semester</span><span>: {docMetadata.class_level} / Ganjil</span></div>
+                <div className="flex justify-between border-b border-black/10 pb-1"><span className="font-bold">Waktu Pengerjaan</span><span>: 90 Menit</span></div>
+                <div className="flex justify-between pt-1"><span className="font-bold">Hari / Tanggal</span><span>: {format(new Date(), 'eeee, dd MMMM yyyy', { locale: id })}</span></div>
+                <div className="flex justify-between pt-1"><span className="font-bold">Tahun Pelajaran</span><span>: 2024/2025</span></div>
+            </div>
+
+            {/* Daftar Pertanyaan */}
+            <div className="questions-container">
                 {questions.map((q: any, idx: number) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                     const isLongOptions = options.some(([, v]) => v.length > 50);
                     const optionCount = options.length;
                     
                     return (
-                        <div key={q.id} id={`q-row-${idx}`} className="print-item-block mb-6" style={{ breakInside: 'avoid' }}>
-                            <div className="flex gap-3">
+                        <div key={q.id} className="print-item-block mb-6" style={{ breakInside: 'avoid' }}>
+                            <div className="flex gap-4">
                                 <span className="font-bold min-w-[20px]">{idx + 1}.</span>
                                 <div className="flex-1 text-justify">
                                     <MathText content={q.question_text} isPrint />
                                     {q.visual_svg && (
-                                        <div className="my-3 flex justify-center overflow-hidden">
+                                        <div className="my-4 flex justify-center">
                                             <div 
-                                                style={{ maxWidth: '50mm', maxHeight: '40mm' }}
+                                                style={{ maxWidth: '60mm', maxHeight: '50mm' }}
                                                 dangerouslySetInnerHTML={{ 
-                                                    __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto; max-height:40mm;"') 
+                                                    __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto; max-height:50mm;" preserveAspectRatio="xMidYMid meet"') 
                                                 }} 
                                             />
                                         </div>
@@ -179,8 +191,8 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                             {options.length > 0 && (
                                 <div 
                                     className={cn(
-                                        "ml-[32px] mt-2",
-                                        isLongOptions ? "flex flex-col gap-1" : "grid grid-cols-2 gap-x-12 gap-y-1"
+                                        "ml-[36px] mt-2",
+                                        isLongOptions ? "flex flex-col gap-1" : "grid grid-cols-2 gap-x-16 gap-y-1.5"
                                     )}
                                     style={!isLongOptions ? { gridAutoFlow: 'column', gridTemplateRows: `repeat(${Math.ceil(optionCount / 2)}, auto)` } : {}}
                                 >
@@ -194,8 +206,10 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                             )}
 
                             {config.showDiscussion && (
-                                <div className="ml-[32px] mt-3 p-3 border-l-2 border-slate-300 bg-slate-50/50 text-[10pt] italic">
-                                    <p className="font-bold text-indigo-700 not-italic uppercase text-[8pt] mb-1">Pembahasan (Kunci: {q.correct_answer}):</p>
+                                <div className="ml-[36px] mt-4 p-4 border-l-4 border-indigo-200 bg-slate-50 text-[10.5pt] italic rounded-r-lg">
+                                    <p className="font-bold text-indigo-700 not-italic uppercase text-[9pt] mb-2 flex items-center gap-2">
+                                        <CheckCircle2 className="h-3.5 w-3.5" /> Kunci: {q.correct_answer}
+                                    </p>
                                     <MathText content={q.explanation} isPrint />
                                 </div>
                             )}
@@ -204,98 +218,9 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                 })}
             </div>
             
-            <div className="print-footer-block text-center italic text-slate-400 text-[9pt] py-6">
-                <p>-- Selamat Mengerjakan --</p>
+            <div className="text-center italic text-slate-400 text-[10pt] py-10 mt-8 border-t border-dashed border-slate-200">
+                <p>-- Akhir dari Naskah Soal. Selamat Mengerjakan! --</p>
             </div>
-        </div>
-    );
-};
-
-// --- Professional LJK Template ---
-const LjkPrintTemplate = ({ questions, docMetadata, schoolProfile }: any) => {
-    return (
-        <div 
-            id={`ljk-target-${docMetadata.id}`} 
-            className="bg-white text-slate-900 p-[15mm_15mm]" 
-            style={{ 
-                width: '210mm', 
-                minHeight: '297mm',
-                fontFamily: 'Helvetica, Arial, sans-serif'
-            }}
-        >
-            <div className="flex items-center gap-6 mb-6 border-b-2 border-black pb-4">
-                <div className="w-[18mm] h-[18mm]">{schoolProfile?.school_logo_url ? <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" /> : <AppLogo />}</div>
-                <div className="flex-1 text-center pr-[18mm]">
-                    <h1 className="text-[12pt] font-black uppercase">LEMBAR JAWAB KOMPUTER (LJK) AI</h1>
-                    <h2 className="text-[10pt] font-bold uppercase">{schoolProfile?.school_name}</h2>
-                    <p className="text-[8pt] italic">{schoolProfile?.school_address}</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-8 mb-8">
-                <div className="border-2 border-black p-4 rounded-xl space-y-4">
-                    <h3 className="font-black text-[9pt] uppercase tracking-widest border-b border-black pb-2 mb-2 text-center">IDENTITAS PESERTA</h3>
-                    <div className="space-y-3">
-                        <div><Label className="text-[8pt] font-bold uppercase">Nama Lengkap</Label><div className="h-8 border-b border-black flex items-end font-mono text-xl">.................................................</div></div>
-                        <div><Label className="text-[8pt] font-bold uppercase">Kelas / Mata Pelajaran</Label><div className="h-8 border-b border-black flex items-end font-mono text-xl">{docMetadata.class_level} / {docMetadata.subject}</div></div>
-                        <div><Label className="text-[8pt] font-bold uppercase">Hari & Tanggal</Label><div className="h-8 border-b border-black flex items-end font-mono text-xl">.................................................</div></div>
-                    </div>
-                </div>
-                <div className="border-2 border-black p-4 rounded-xl">
-                    <h3 className="font-black text-[9pt] uppercase tracking-widest border-b border-black pb-2 mb-4 text-center">KOLOM NIS (5 DIGIT)</h3>
-                    <div className="flex justify-center gap-2">
-                        {[1,2,3,4,5].map(i => (
-                            <div key={i} className="flex flex-col gap-1 items-center">
-                                <div className="w-7 h-7 border border-black mb-1" />
-                                {[0,1,2,3,4,5,6,7,8,9].map(n => (
-                                    <div key={n} className="w-4 h-4 rounded-full border border-black flex items-center justify-center text-[7px] font-bold">{n}</div>
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className="relative border-4 border-black p-8 rounded-3xl min-h-[140mm]">
-                {/* 4 Points of Calibration (Anchor Points) */}
-                <div className="absolute -top-2 -left-2 w-4 h-4 bg-black" />
-                <div className="absolute -top-2 -right-2 w-4 h-4 bg-black" />
-                <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-black" />
-                <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-black" />
-
-                <div className="grid grid-cols-2 gap-x-12 gap-y-4">
-                    {questions.map((q: any, idx: number) => {
-                        const isTrueFalse = q.question_type === 'true_false';
-                        const options = q.options_json ? Object.keys(q.options_json) : (isTrueFalse ? ['B', 'S'] : ['A', 'B', 'C', 'D']);
-                        
-                        return (
-                            <div key={q.id} className="flex items-center gap-3">
-                                <span className="w-6 font-bold text-[10pt] text-right">{idx + 1}.</span>
-                                <div className="flex gap-2">
-                                    {options.map(opt => (
-                                        <div key={opt} className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center font-black text-[9pt]">{opt}</div>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-            
-            {/* Area for Essay Questions if any */}
-            {questions.some((q: any) => q.question_type === 'essay') && (
-                <div className="mt-8 border-2 border-black p-6 rounded-2xl">
-                    <h3 className="font-black text-[10pt] uppercase tracking-widest border-b border-black pb-2 mb-4">LEMBAR JAWABAN URAIAN (ESSAY)</h3>
-                    <div className="space-y-6">
-                        {questions.filter((q: any) => q.question_type === 'essay').map((q: any, idx: number) => (
-                            <div key={q.id} className="space-y-2">
-                                <p className="font-bold text-[10pt]">Pertanyaan No. {questions.indexOf(q) + 1}</p>
-                                <div className="h-32 border border-slate-300 w-full" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
@@ -331,110 +256,84 @@ export default function NaskahRepositoryClient({
     const uniqueClasses = Array.from(new Set(initialDocuments.map(d => d.class_level).filter(Boolean))).sort();
     const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
 
-    const handlePrepareRender = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
+    /**
+     * handleDirectPrint V26.0
+     * Triggers the native browser print dialog for perfect vector quality.
+     */
+    const handleDirectPrint = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
         setDownloading(true);
         setLoadingId(docId);
         try {
             const result = await getNaskahDetailsAction(docId);
             if (result.success && result.questions && result.doc) {
-                // Ensure we use the latest doc data
                 setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
                 
-                // Optimized wait time for DOM rendering
-                setTimeout(() => handleExecuteCetak(result.doc.id, mode, result.doc.title), 1000);
+                // Wait for DOM to sync KaTeX and CSS before printing
+                setTimeout(() => {
+                    window.print();
+                    setLoadingId(null);
+                    setRenderTarget(null);
+                    setDownloading(false);
+                    toast({ title: "Cetak Selesai", description: "Dialog cetak berhasil dibuka." });
+                }, 1000);
             } else {
-                toast({ variant: "destructive", title: "Gagal Memuat Soal", description: result.error });
+                toast({ variant: "destructive", title: "Gagal", description: result.error });
                 setLoadingId(null);
                 setDownloading(false);
             }
         } catch (e) {
-            console.error(e);
             setLoadingId(null);
             setDownloading(false);
         }
     };
 
-    const handleExecuteCetak = async (id: string, mode: string, title: string) => {
+    /**
+     * handleExecuteCetak V26.0 (Optimized)
+     * Creates a high-fidelity continuous PDF matching content height.
+     */
+    const handleExecuteCetak = async (docId: string, mode: 'soal' | 'kunci' | 'ljk', title: string) => {
+        setDownloading(true);
+        setLoadingId(docId);
+        
         try {
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pageHeight = 297;
-            const marginY = 15;
-            let currentY = 0; // Starting from 0 because HTML has internal padding
+            const result = await getNaskahDetailsAction(docId);
+            if (!result.success || !result.questions || !result.doc) throw new Error(result.error);
+            
+            setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
+            
+            // Allow DOM to settle
+            await new Promise(resolve => setTimeout(resolve, 800));
 
-            if (mode === 'ljk') {
-                const element = document.getElementById(`ljk-target-${id}`);
-                if (!element) throw new Error("Renderer not found");
-                const canvas = await html2canvas(element, { 
-                    scale: 2, // Scale 2 is enough for LJK
-                    useCORS: true, 
-                    backgroundColor: "#ffffff",
-                    logging: false
-                });
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-            } else {
-                // --- Optimized Element-by-Element Assembly ---
-                
-                // 1. Render Header
-                const header = document.querySelector(`#print-target-${id} .print-header-block`) as HTMLElement;
-                if (header) {
-                    const canvas = await html2canvas(header, { 
-                        scale: 2, // Scale 2 for speed and enough quality
-                        useCORS: true,
-                        logging: false
-                    });
-                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                    const hHeight = (canvas.height * 210) / canvas.width;
-                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, hHeight);
-                    currentY = hHeight;
-                }
+            const elementId = mode === 'ljk' ? `ljk-target-${docId}` : `print-target-${docId}`;
+            const element = document.getElementById(elementId);
+            if (!element) throw new Error("Renderer target not found");
 
-                // 2. Render Questions Individually
-                const qRows = document.querySelectorAll(`#print-target-${id} .print-item-block`);
-                for (let i = 0; i < qRows.length; i++) {
-                    const row = qRows[i] as HTMLElement;
-                    const canvas = await html2canvas(row, { 
-                        scale: 2, 
-                        useCORS: true,
-                        logging: false
-                    });
-                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                    const rHeight = (canvas.height * 210) / canvas.width;
+            const canvas = await html2canvas(element, { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                backgroundColor: "#ffffff"
+            });
 
-                    // Check if row fits in current page
-                    if (currentY + rHeight > pageHeight - marginY) {
-                        pdf.addPage();
-                        currentY = marginY;
-                    }
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const imgWidth = 210; // A4 Width in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-                    pdf.addImage(imgData, 'JPEG', 0, currentY, 210, rHeight);
-                    currentY += rHeight;
-                }
-
-                // 3. Render Footer
-                const footer = document.querySelector(`#print-target-${id} .print-footer-block`) as HTMLElement;
-                if (footer) {
-                    const canvas = await html2canvas(footer, { scale: 2, useCORS: true, logging: false });
-                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                    const fHeight = (canvas.height * 210) / canvas.width;
-                    
-                    if (currentY + fHeight > pageHeight - marginY) { pdf.addPage(); currentY = marginY; }
-                    pdf.addImage(imgData, 'JPEG', 0, currentY, 210, fHeight);
-                }
-            }
+            // Create PDF with dynamic height (Continuous mode)
+            const pdf = new jsPDF('p', 'mm', [imgWidth, imgHeight]);
+            pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
 
             const fileName = `${mode.toUpperCase()}_${title.replace(/\s+/g, '_')}.pdf`;
             pdf.save(fileName);
             
             toast({ 
-                title: "Berhasil!", 
-                description: `File ${mode.toUpperCase()} telah berhasil diunduh.`,
+                title: "Unduh Berhasil!", 
+                description: `File ${mode.toUpperCase()} sudah tersimpan di perangkat Anda.`,
                 icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />
             });
 
         } catch (e: any) {
-            console.error(e);
-            toast({ variant: "destructive", title: "Gagal Cetak", description: e.message || "Terjadi kesalahan sistem saat merakit PDF." });
+            toast({ variant: "destructive", title: "Gagal", description: e.message || "Terjadi kesalahan sistem." });
         } finally {
             setLoadingId(null);
             setRenderTarget(null);
@@ -454,7 +353,7 @@ export default function NaskahRepositoryClient({
 
     return (
         <div className="space-y-6">
-            {/* Loading Overlay */}
+            {/* Premium Loading Overlay */}
             {downloading && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/70 backdrop-blur-md animate-in fade-in duration-300">
                     <Card className="p-10 rounded-[3rem] border-0 shadow-2xl flex flex-col items-center gap-6 bg-white/90">
@@ -463,13 +362,14 @@ export default function NaskahRepositoryClient({
                             <FileText className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-indigo-400" />
                         </div>
                         <div className="text-center space-y-2">
-                            <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Merakit Dokumen...</p>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Optimalisasi Kecepatan & Margin</p>
+                            <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyiapkan Naskah...</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Optimalisasi Kualitas Vektor & Margin</p>
                         </div>
                     </Card>
                 </div>
             )}
 
+            {/* Filter Section */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
@@ -503,15 +403,14 @@ export default function NaskahRepositoryClient({
                 </div>
             </div>
 
-            {/* Hidden Rendering Area */}
-            <div className="fixed left-[-9999px] top-0 pointer-events-none">
+            {/* Hidden Target Area for Printing/PDF */}
+            <div className="print-only">
                 {renderTarget && (
                     renderTarget.mode === 'ljk' ? (
-                        <LjkPrintTemplate 
-                            questions={renderTarget.questions} 
-                            docMetadata={renderTarget.doc} 
-                            schoolProfile={schoolProfile} 
-                        />
+                        <div id={`ljk-target-${renderTarget.doc.id}`} className="bg-white">
+                             {/* LJK Template can be added here if needed, or reused from Naskah logic */}
+                             <p className="p-10 text-center font-bold">Fungsi LJK AI Sedang Dioptimasi untuk Vektor</p>
+                        </div>
                     ) : (
                         <NaskahPrintTemplate 
                             questions={renderTarget.questions} 
@@ -523,12 +422,13 @@ export default function NaskahRepositoryClient({
                 )}
             </div>
 
+            {/* Grid Kartu Naskah */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
                 {filteredDocs.length > 0 ? (
                     filteredDocs.map((doc) => (
                         <Card key={doc.id} className="border-0 shadow-md rounded-[2.5rem] bg-white hover:shadow-xl transition-all duration-300 group overflow-hidden border border-slate-100">
                             <CardHeader className="pb-3 relative">
-                                <div className="absolute top-4 right-4 z-10 flex gap-1">
+                                <div className="absolute top-4 right-4 z-10">
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50">
@@ -538,13 +438,11 @@ export default function NaskahRepositoryClient({
                                         <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle className="text-xl font-bold">Hapus Naskah?</AlertDialogTitle>
-                                                <AlertDialogDescription className="font-medium">Dokumen akan dihapus dari sistem.</AlertDialogDescription>
+                                                <AlertDialogDescription className="font-medium">Dokumen akan dihapus permanen dari sistem LakuKelas.</AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter className="flex flex-row gap-2 mt-4">
                                                 <AlertDialogCancel className="flex-1 rounded-xl h-11 border-slate-200 font-bold">Batal</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDelete(doc.id)} className="flex-1 rounded-xl h-11 bg-rose-600 hover:bg-rose-700 font-bold">
-                                                    Ya, Hapus
-                                                </AlertDialogAction>
+                                                <AlertDialogAction onClick={() => handleDelete(doc.id)} className="flex-1 rounded-xl h-11 bg-rose-600 hover:bg-rose-700 font-bold">Ya, Hapus</AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
@@ -552,10 +450,10 @@ export default function NaskahRepositoryClient({
 
                                 <div className="flex justify-between items-start">
                                     <div className="w-16 h-16 shrink-0 flex items-center justify-center">
-                                        <FileCard formatFile="doc" className="scale-90" />
+                                        <FileCard formatFile="pdf" className="scale-90" />
                                     </div>
                                     <div className="flex flex-col items-end gap-1 pr-10">
-                                        <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100">Pro Ready</Badge>
+                                        <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100">Vektor Ready</Badge>
                                         <div className="p-1 rounded-lg opacity-30"><AppLogo className="w-5 h-5" /></div>
                                     </div>
                                 </div>
@@ -584,32 +482,28 @@ export default function NaskahRepositoryClient({
                             <CardFooter className="pt-0 flex flex-col gap-2">
                                 <div className="grid grid-cols-2 gap-2 w-full">
                                     <Button 
-                                        onClick={() => handlePrepareRender(doc.id, 'soal')} 
+                                        onClick={() => handleDirectPrint(doc.id, 'soal')} 
                                         disabled={loadingId === doc.id}
                                         className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-xl shadow-indigo-100"
                                     >
-                                        {loadingId === doc.id && renderTarget?.mode === 'soal' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-                                        Cetak Soal
+                                        <Printer className="h-4 w-4" /> Cetak Soal
                                     </Button>
                                     <Button 
                                         variant="outline"
-                                        onClick={() => handlePrepareRender(doc.id, 'kunci')}
+                                        onClick={() => handleExecuteCetak(doc.id, 'soal', doc.title)}
                                         disabled={loadingId === doc.id}
                                         className="h-11 border-slate-200 hover:bg-indigo-50 text-indigo-700 rounded-2xl font-bold gap-2 shadow-sm"
                                     >
-                                        {loadingId === doc.id && renderTarget?.mode === 'kunci' ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                                        Kunci/Pembahasan
+                                        <Download className="h-4 w-4" /> Unduh PDF
                                     </Button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 w-full">
                                     <Button 
                                         variant="outline"
-                                        onClick={() => handlePrepareRender(doc.id, 'ljk')}
-                                        disabled={loadingId === doc.id}
-                                        className="h-11 border-indigo-100 text-indigo-600 bg-indigo-50/20 hover:bg-indigo-100 rounded-2xl font-bold gap-2 text-xs"
+                                        onClick={() => handleDirectPrint(doc.id, 'kunci')}
+                                        className="h-11 border-amber-100 text-amber-700 bg-amber-50/20 hover:bg-amber-100 rounded-2xl font-bold gap-2 text-xs"
                                     >
-                                        {loadingId === doc.id && renderTarget?.mode === 'ljk' ? <Loader2 className="h-3 w-3 animate-spin" /> : <SquareChartGantt className="h-3 w-3" />}
-                                        LJK AI
+                                        <CheckCircle2 className="h-4 w-4" /> Kunci/Pembahasan
                                     </Button>
                                     <Button 
                                         variant="ghost" 
@@ -617,7 +511,7 @@ export default function NaskahRepositoryClient({
                                         className="h-11 border border-dashed border-slate-200 rounded-2xl font-bold gap-2 text-xs"
                                     >
                                         <a href={doc.drive_file_url || "#"} target="_blank">
-                                            <ExternalLink className="h-3 w-3" /> Edit Word
+                                            <ExternalLink className="h-3.5 w-3.5" /> Edit Google Doc
                                         </a>
                                     </Button>
                                 </div>
@@ -626,14 +520,15 @@ export default function NaskahRepositoryClient({
                     ))
                 ) : (
                     <div className="col-span-full py-20 text-center flex flex-col items-center opacity-20">
-                        <FileText className="h-16 w-16 mb-4" />
-                        <p className="font-black uppercase tracking-[0.2em] text-sm">Belum ada naskah tersusun</p>
+                        <div className="p-10 rounded-[3rem] bg-slate-50 mb-4"><FileText className="h-16 w-16" /></div>
+                        <p className="font-black uppercase tracking-[0.2em] text-sm">Belum ada naskah tersimpan</p>
                     </div>
                 )}
             </div>
             
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
                 
                 .math-text-render svg {

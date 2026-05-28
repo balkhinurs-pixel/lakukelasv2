@@ -170,3 +170,57 @@
     @apply bg-primary text-primary-foreground;
   }
 }
+
+/* 
+  Sistem Cetak LakuKelas V26.0
+  Mengatur visibilitas elemen saat window.print() dipicu.
+*/
+@media print {
+  /* Sembunyikan elemen UI aplikasi */
+  aside, header, footer, button, .no-print, 
+  [data-sidebar="sidebar"], [data-sidebar="header"], 
+  [data-sidebar="trigger"], .sidebar-trigger,
+  .mobile-nav, nav {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Reset kontainer utama agar naskah memenuhi kertas */
+  main, body, html, #__next, .sidebar-inset {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* Munculkan hanya area naskah yang ditargetkan */
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important; /* Standar A4 */
+    margin: 0 auto !important;
+    z-index: 9999 !important;
+  }
+
+  /* Pastikan rumus KaTeX tampil tajam */
+  .katex {
+    text-rendering: auto !important;
+  }
+
+  /* Pengaturan halaman A4 */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}
+
+/* Sembunyikan area cetak di layar normal aplikasi */
+.print-only {
+  display: none;
+}
