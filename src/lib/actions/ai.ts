@@ -163,6 +163,31 @@ export async function generateKisiKisiAction(docId: string) {
 }
 
 /**
+ * Server Action untuk mendapatkan detail pertanyaan dari sebuah naskah.
+ */
+export async function getNaskahDetailsAction(docId: string) {
+    const supabase = await createClient();
+    try {
+        const { data: doc } = await supabase
+            .from('ai_documents')
+            .select('question_ids')
+            .eq('id', docId)
+            .single();
+            
+        if (!doc?.question_ids) return { success: false, error: "Question IDs not found." };
+        
+        const { data: questions } = await supabase
+            .from('questions')
+            .select('*')
+            .in('id', doc.question_ids);
+            
+        return { success: true, questions };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
  * Server Action untuk menyimpan kumpulan soal ke database Bank Soal.
  */
 export async function saveQuestionsAction(config: QuestionGenerationInput, questions: GeneratedQuestion[]) {

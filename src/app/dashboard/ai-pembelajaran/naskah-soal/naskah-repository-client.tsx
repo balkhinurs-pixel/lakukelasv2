@@ -20,7 +20,9 @@ import {
     Filter,
     Network,
     Printer,
-    Save
+    Save,
+    ScanLine,
+    LayoutGrid
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,7 +38,7 @@ import { AppLogo } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { deleteAiDocumentAction, renameAiDocumentAction, saveGenericDocumentToDrive } from "@/lib/actions/google-drive";
-import { generateKisiKisiAction } from "@/lib/actions/ai";
+import { generateKisiKisiAction, getNaskahDetailsAction } from "@/lib/actions/ai";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -84,6 +86,10 @@ export default function NaskahRepositoryClient({
     const [selectedDocForKisi, setSelectedDocForKisi] = React.useState<AiDocument | null>(null);
     const [isKisiLoading, setIsKisiLoading] = React.useState(false);
     const [savingKisi, setSavingKisi] = React.useState(false);
+
+    // LJK State
+    const [selectedDocForLjk, setSelectedDocForLjk] = React.useState<AiDocument | null>(null);
+    const [isLjkLoading, setIsLjkLoading] = React.useState(false);
 
     // --- Filter Logic ---
     const uniqueClasses = Array.from(new Set(initialDocuments.map(d => d.class_level).filter(Boolean))).sort();
@@ -141,6 +147,87 @@ export default function NaskahRepositoryClient({
             setSelectedDocForKisi(null);
         }
         setIsKisiLoading(false);
+    };
+
+    const handleDownloadLjk = async (docData: AiDocument) => {
+        setIsLjkLoading(true);
+        setSelectedDocForLjk(docData);
+        
+        try {
+            const result = await getNaskahDetailsAction(docData.id);
+            if (!result.success || !result.questions) {
+                throw new Error(result.error || "Gagal memuat detail naskah.");
+            }
+
+            const doc = new jsPDF('p', 'mm', 'a4') as any;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 15;
+            
+            // Header LJK Profesional
+            doc.setFont('times', 'bold').setFontSize(14);
+            doc.text("LEMBAR JAWAB KOMPUTER (LJK) DIGITAL", pageWidth / 2, margin + 5, { align: 'center' });
+            doc.setFontSize(10).setFont('times', 'normal');
+            doc.text(schoolProfile?.school_name || "SEKOLAH LAKUKELAS", pageWidth / 2, margin + 11, { align: 'center' });
+            
+            doc.setLineWidth(0.5);
+            doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
+
+            // Identitas Ujian & Siswa
+            doc.setFontSize(9);
+            doc.text(`Mata Pelajaran: ${docData.subject}`, margin, margin + 22);
+            doc.text(`Kelas: ${docData.class_level}`, margin, margin + 27);
+            doc.text(`Tahun Ajaran: 2024/2025`, margin, margin + 32);
+
+            // Kotak NIS (Anchor OMR)
+            doc.setDrawColor(0).setLineWidth(0.2);
+            doc.rect(pageWidth - margin - 60, margin + 20, 60, 25);
+            doc.text("KOLOM NIS / NO. UJIAN", pageWidth - margin - 58, margin + 24);
+            
+            // Grid Jawaban Dinamis
+            const questions = result.questions;
+            const col1 = questions.slice(0, 20);
+            const col2 = questions.slice(20, 40);
+
+            const renderColumn = (qs: any[], xOffset: number, yStart: number) => {
+                qs.forEach((q, idx) => {
+                    const y = yStart + (idx * 8);
+                    const qNum = questions.indexOf(q) + 1;
+                    doc.text(`${qNum}.`, xOffset, y);
+                    
+                    if (q.question_type === 'multiple_choice') {
+                        ['A', 'B', 'C', 'D', 'E'].forEach((opt, i) => {
+                            doc.circle(xOffset + 8 + (i * 7), y - 1, 2, 'S');
+                            doc.setFontSize(6).text(opt, xOffset + 7.2 + (i * 7), y - 0.5).setFontSize(9);
+                        });
+                    } else if (q.question_type === 'true_false') {
+                        ['B', 'S'].forEach((opt, i) => {
+                            doc.circle(xOffset + 8 + (i * 7), y - 1, 2, 'S');
+                            doc.setFontSize(6).text(opt, xOffset + 7.2 + (i * 7), y - 0.5).setFontSize(9);
+                        });
+                    } else {
+                        doc.line(xOffset + 8, y, xOffset + 40, y); // Garis untuk uraian/isian
+                    }
+                });
+            };
+
+            renderColumn(col1, margin, margin + 50);
+            if (col2.length > 0) renderColumn(col2, pageWidth / 2 + 10, margin + 50);
+
+            // Anchor Points untuk Scanner
+            doc.setFillColor(0).rect(5, 5, 5, 5, 'F');
+            doc.rect(pageWidth - 10, 5, 5, 5, 'F');
+            doc.rect(5, pageHeight - 10, 5, 5, 'F');
+            doc.rect(pageWidth - 10, pageHeight - 10, 5, 5, 'F');
+
+            doc.save(`LJK_${docData.title.replace(/\s+/g, '_')}.pdf`);
+            toast({ title: "LJK Berhasil Dibuat", description: "Silakan cetak lembar jawab ini untuk dibagikan ke siswa." });
+        } catch (error: any) {
+            toast({ title: "Gagal", description: error.message, variant: "destructive" });
+        } finally {
+            setIsLjkLoading(false);
+            setSelectedDocForLjk(null);
+        }
     };
 
     const handleSaveKisiToDrive = async () => {
@@ -331,13 +418,24 @@ export default function NaskahRepositoryClient({
                                         Kisi-kisi
                                     </Button>
                                 </div>
-                                <Button 
-                                    variant="ghost" 
-                                    onClick={() => handleDownloadPdf(doc)}
-                                    className="w-full h-11 border border-dashed border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-2"
-                                >
-                                    <Download className="h-3.5 w-3.5" /> Download PDF
-                                </Button>
+                                <div className="flex gap-2 w-full">
+                                    <Button 
+                                        variant="outline"
+                                        onClick={() => handleDownloadLjk(doc)}
+                                        disabled={isLjkLoading && selectedDocForLjk?.id === doc.id}
+                                        className="flex-1 h-11 border-indigo-100 text-indigo-600 bg-indigo-50/30 hover:bg-indigo-100 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-2"
+                                    >
+                                        {isLjkLoading && selectedDocForLjk?.id === doc.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LayoutGrid className="h-3.5 w-3.5" />}
+                                        Cetak LJK AI
+                                    </Button>
+                                    <Button 
+                                        variant="ghost" 
+                                        onClick={() => handleDownloadPdf(doc)}
+                                        className="flex-1 h-11 border border-dashed border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-2"
+                                    >
+                                        <Download className="h-3.5 w-3.5" /> PDF
+                                    </Button>
+                                </div>
                             </CardFooter>
                         </Card>
                     ))
@@ -436,7 +534,7 @@ export default function NaskahRepositoryClient({
 
                                             <div className="prose prose-slate max-w-none text-slate-800">
                                                 <ReactMarkdown 
-                                                    remarkPlugins={[remarkGfm]}
+                                                    remarkPlugins={[remarkGfm]} 
                                                     components={{
                                                         table: ({node, ...props}) => <table className="w-full border-collapse border-2 border-black my-6 text-[10px]" {...props} />,
                                                         th: ({node, ...props}) => <th className="border-2 border-black bg-slate-50 p-2 font-bold text-center" {...props} />,

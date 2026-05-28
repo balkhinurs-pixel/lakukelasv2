@@ -45,7 +45,9 @@ import {
   FolderSearch,
   GitBranchPlus,
   Network,
-  BookOpen
+  BookOpen,
+  ScanQrCode,
+  CheckCircle2
 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -300,6 +302,7 @@ export default function DashboardLayoutClient({
                         <NavItem href="/dashboard/ai-pembelajaran/modul-ajar" icon={FileText} label="Generate RPP" color="text-amber-400" />
                         <NavItem href="/dashboard/ai-pembelajaran/generate-materi" icon={BookOpen} label="Generate Materi" color="text-amber-400" />
                         <NavItem href="/dashboard/ai-pembelajaran/generate-soal" icon={PlusCircle} label="Generate Soal" color="text-amber-400" />
+                        <NavItem href="/dashboard/ai-pembelajaran/koreksi" icon={ScanQrCode} label="Koreksi LJK AI" color="text-emerald-400" />
                     </SidebarMenu>
 
                     <SidebarGroupLabel className="text-sky-400 font-black text-[9px] tracking-[0.2em] uppercase mb-3 flex items-center gap-2 px-3 group-data-[collapsible=icon]:hidden opacity-70">
@@ -466,6 +469,7 @@ export default function DashboardLayoutClient({
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/modul-ajar" iconName="solar:document-add-bold-duotone" label="Gen RPP" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-materi" iconName="mingcute:content-ai-fill" label="Gen Materi" />
                                 <MobileGridItem href="/dashboard/ai-pembelajaran/generate-soal" iconName="solar:checklist-minimalistic-bold-duotone" label="Gen Soal" />
+                                <MobileGridItem href="/dashboard/ai-pembelajaran/koreksi" iconName="solar:scanner-2-bold-duotone" label="Koreksi AI" />
                           </div>
                         </div>
 
