@@ -8,12 +8,14 @@ import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
-import { Printer, ArrowLeft, Loader2 } from "lucide-react";
+import { Printer, ArrowLeft, Loader2, FileDown, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 /**
- * MathText Component V60.0 (Print Optimized)
+ * MathText Component V61.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -65,6 +67,8 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const isKunci = mode === 'kunci';
     const [scale, setScale] = React.useState(1);
     const [isReady, setIsReady] = React.useState(false);
+    const [generating, setGenerating] = React.useState(false);
+    const printRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
         const handleResize = () => {
@@ -86,6 +90,37 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const handlePrint = () => window.print();
     const handleClose = () => window.close();
 
+    const handleDownloadLjkPdf = async () => {
+        if (!printRef.current) return;
+        setGenerating(true);
+
+        try {
+            // Optimasi Kanvas: Scale 2 untuk kualitas cetak tajam, useCORS untuk logo
+            const canvas = await html2canvas(printRef.current, {
+                scale: 2.5, 
+                useCORS: true,
+                logging: false,
+                backgroundColor: "#ffffff"
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4"
+            });
+
+            // Pasang gambar ke ukuran A4 murni
+            pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+            pdf.save(`LJK_AI_${doc.title.replace(/\s+/g, '_')}.pdf`);
+            
+        } catch (error) {
+            console.error("PDF Generation Error:", error);
+        } finally {
+            setGenerating(false);
+        }
+    };
+
     const groupedQuestions = React.useMemo(() => {
         const groups: Record<string, any[]> = {};
         questions.forEach((q: any) => {
@@ -95,21 +130,32 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         return groups;
     }, [questions]);
 
-    // Template LJK OMR Profesional (Update V60.0 - Edge to Edge Stabilization)
+    // Template LJK OMR Profesional (V61.0 - Canvas Optimized)
     if (isLjk) {
         return (
-            <div className="min-h-screen bg-slate-50 flex flex-col print:bg-white">
+            <div className="min-h-screen bg-slate-100 flex flex-col print:bg-white">
                 <header className="no-print sticky top-0 z-[100] bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
                     <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                         <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
                     </Button>
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">LJK AI OMR (Single Page Stable)</div>
-                    <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4 shadow-lg">
-                        <Printer className="h-4 w-4" /> <span className="hidden sm:inline">Cetak / Simpan</span>
-                    </Button>
+                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">Lembar Jawab AI (HQ Mode)</div>
+                    <div className="flex gap-2">
+                        <Button 
+                            onClick={handleDownloadLjkPdf} 
+                            disabled={generating}
+                            className="bg-emerald-600 hover:bg-emerald-700 font-bold gap-2 px-3 sm:px-5 shadow-lg"
+                        >
+                            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                            <span className="hidden sm:inline">Simpan PDF (Akurasi Tinggi)</span>
+                            <span className="sm:hidden">Simpan PDF</span>
+                        </Button>
+                        <Button onClick={handlePrint} variant="outline" className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold gap-2 hidden sm:flex">
+                            <Printer className="h-4 w-4" /> Print Langsung
+                        </Button>
+                    </div>
                 </header>
 
-                <main className="flex-1 flex justify-center items-start print:p-0 print-area-container relative">
+                <main className="flex-1 flex justify-center items-start print:p-0 print-area-container relative p-4 sm:p-8">
                     {!isReady && (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-50 z-10 no-print">
                             <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
@@ -124,16 +170,17 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                     >
                         <div 
-                            className="print-area bg-white relative print:shadow-none shadow-xl mx-auto overflow-hidden" 
+                            ref={printRef}
+                            className="print-area bg-white relative print:shadow-none shadow-2xl mx-auto overflow-hidden" 
                             style={{ 
                                 width: '210mm', 
                                 height: '297mm',
-                                padding: '10mm 15mm', // Padding ditingkatkan sedikit agar tidak kena potong printer
+                                padding: '10mm 15mm',
                                 boxSizing: 'border-box', 
                                 fontFamily: 'Arial, sans-serif'
                             }}
                         >
-                            {/* Anchor Points - Reposisi agar tidak terkena clipping fisik printer (5mm dari tepi div) */}
+                            {/* Anchor Points (Disesuaikan untuk Capture Kanvas) */}
                             <div className="absolute top-[5mm] left-[5mm] w-6 h-6 bg-black z-50" />
                             <div className="absolute top-[5mm] right-[5mm] w-6 h-6 bg-black z-50" />
                             <div className="absolute bottom-[5mm] left-[5mm] w-6 h-6 bg-black z-50" />
@@ -146,7 +193,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                     </div>
                                     <div>
                                         <h1 className="text-[12pt] font-black uppercase leading-tight">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
-                                        <p className="text-[7pt] font-bold uppercase text-slate-500">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
+                                        <p className="text-[7pt] font-bold uppercase text-slate-500 tracking-tighter">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
@@ -244,7 +291,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 </div>
                             </div>
 
-                            <div className="absolute bottom-[15mm] left-[20mm] right-[20mm] flex justify-between text-[8pt]">
+                            <div className="absolute bottom-[10mm] left-[20mm] right-[20mm] flex justify-between text-[8pt] font-bold">
                                 <div className="text-center">
                                     <p>Tanda Tangan Pengawas</p>
                                     <div className="h-10" />
@@ -275,7 +322,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     let lastRenderedType = "";
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col print:bg-white">
+        <div className="min-h-screen bg-slate-100 flex flex-col print:bg-white">
             <header className="no-print sticky top-0 z-[100] bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
                 <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                     <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
