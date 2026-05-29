@@ -19,9 +19,10 @@ import {
     Info,
     ChevronDown,
     ChevronUp,
-    Plus
+    Plus,
+    ArrowRightLeft
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,11 +52,14 @@ import { readStreamableValue } from 'ai/rsc';
 
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-  const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  // Improved regex to handle $...$ and $$...$$ as well as standard LaTeX \(...\) and \[...\]
+  const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
+        if (part.startsWith('$$')) return <div key={i} className="my-3 overflow-x-auto"><BlockMath math={part.slice(2, -2)} /></div>;
+        if (part.startsWith('$')) return <InlineMath key={i} math={part.slice(1, -1)} />;
         if (part.startsWith('\\[')) return (
             <div key={i} className="my-3 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 print:overflow-visible">
                 <BlockMath math={part.slice(2, -2)} />
@@ -549,89 +553,148 @@ export default function GenerateSoalClient({
 
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white relative shrink-0">
                             <div className="relative z-10 flex flex-col items-center text-center">
-                                <DialogHeader><DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">AI Streaming Preview</DialogTitle></DialogHeader>
-                                <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-3 opacity-90">{form.subject === "Lainnya (Tulis Manual)" ? customSubject : form.subject} Kelas {form.kelas}</p>
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">AI Streaming Preview</DialogTitle>
+                                    <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-3 opacity-90">{form.subject === "Lainnya (Tulis Manual)" ? customSubject : form.subject} Kelas {form.kelas}</p>
+                                </DialogHeader>
                             </div>
                         </div>
 
                         <ScrollArea className="flex-1 p-4 sm:p-10">
                             <div className="space-y-6 sm:space-y-12 pb-10">
                                 {questions.length > 0 ? (
-                                    questions.map((q, idx) => (
-                                        <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50 group hover:shadow-md transition-all">
-                                            <div className="flex items-center justify-between mb-8">
-                                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{q.sort_order || idx + 1}</div>
-                                                <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{getQuestionTypeLabel(q.type)}</Badge>
-                                            </div>
-                                            <div className="space-y-8">
-                                                <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
-                                                
-                                                {q.visual_svg && (
-                                                    <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center gap-3">
-                                                        <div className="flex items-center gap-2 text-indigo-600 mb-2">
-                                                            <SquareChartGantt className="h-4 w-4" />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Ilustrasi Geometri AI</span>
-                                                        </div>
-                                                        <div 
-                                                            className="w-full max-w-[400px] aspect-[1/1] flex items-center justify-center overflow-hidden"
-                                                            style={{ height: 'auto', maxHeight: '400px' }}
-                                                            dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%;height:100%;max-width:400px;max-height:400px;" preserveAspectRatio="xMidYMid meet"') }}
-                                                        />
-                                                    </div>
-                                                )}
+                                    questions.map((q, idx) => {
+                                        const isMatching = q.type === 'matching';
+                                        let matchingItems: string[] = [];
+                                        let matchingIntro = q.question;
 
-                                                {q.options && (
-                                                    <div className="grid grid-cols-1 gap-3">
-                                                        {Object.entries(q.options).sort().map(([key, val]) => (
-                                                            <div key={key} className={cn("p-5 rounded-xl border flex items-center gap-4 transition-colors", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
-                                                                <span className={cn("w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black shrink-0", q.answer === key ? "bg-emerald-500 text-white shadow-lg" : "bg-white text-slate-400 border border-slate-100")}>{key}</span>
-                                                                <div className="text-sm sm:text-base font-semibold flex-1 overflow-hidden"><MathText content={val} /></div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                        if (isMatching) {
+                                            const lines = q.question.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
+                                            if (lines.length > 1) {
+                                                const hasNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
+                                                if (hasNumberedLines) {
+                                                    matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
+                                                    matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
+                                                } else {
+                                                    matchingIntro = lines[0];
+                                                    matchingItems = lines.slice(1);
+                                                }
+                                            }
+                                        }
 
-                                                <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
-                                                    <div className="flex flex-wrap items-center justify-between gap-4">
-                                                        <div className="flex items-center gap-3 p-3 px-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700">
-                                                            <CheckCircle2 className="h-5 w-5" />
-                                                            <p className="text-sm font-black uppercase tracking-tight">Jawaban: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
-                                                        </div>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            onClick={() => toggleExplanation(idx)}
-                                                            className="text-[10px] font-black uppercase tracking-widest text-indigo-600 h-10 px-4 rounded-xl hover:bg-indigo-50"
-                                                        >
-                                                            {expandedExplanations.has(idx) ? <ChevronUp className="h-4 w-4 mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
-                                                            {expandedExplanations.has(idx) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
-                                                        </Button>
-                                                    </div>
-
-                                                    <AnimatePresence>
-                                                        {expandedExplanations.has(idx) && (
-                                                            <motion.div
-                                                                initial={{ height: 0, opacity: 0 }}
-                                                                animate={{ height: 'auto', opacity: 1 }}
-                                                                exit={{ height: 0, opacity: 0 }}
-                                                                className="overflow-hidden"
-                                                            >
-                                                                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 shadow-inner">
-                                                                    <div className="flex items-center gap-2 mb-4 text-slate-400">
-                                                                        <Info className="h-3.5 w-3.5" />
-                                                                        <span className="text-[9px] font-black uppercase tracking-[0.2em]">Analisis Jawaban AI</span>
-                                                                    </div>
-                                                                    <div className="text-sm italic text-slate-600 leading-relaxed font-medium">
-                                                                        <MathText content={q.explanation} />
-                                                                    </div>
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
+                                        return (
+                                            <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50 group hover:shadow-md transition-all">
+                                                <div className="flex items-center justify-between mb-8">
+                                                    <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{q.sort_order || idx + 1}</div>
+                                                    <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{getQuestionTypeLabel(q.type)}</Badge>
                                                 </div>
-                                            </div>
-                                        </Card>
-                                    ))
+                                                <div className="space-y-8">
+                                                    <MathText 
+                                                        content={isMatching ? matchingIntro : q.question} 
+                                                        className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} 
+                                                    />
+                                                    
+                                                    {q.visual_svg && (
+                                                        <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center gap-3">
+                                                            <div className="flex items-center gap-2 text-indigo-600 mb-2">
+                                                                <SquareChartGantt className="h-4 w-4" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">Ilustrasi Geometri AI</span>
+                                                            </div>
+                                                            <div 
+                                                                className="w-full max-w-[400px] aspect-[1/1] flex items-center justify-center overflow-hidden"
+                                                                style={{ height: 'auto', maxHeight: '400px' }}
+                                                                dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%;height:100%;max-width:400px;max-height:400px;" preserveAspectRatio="xMidYMid meet"') }}
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {isMatching ? (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 shadow-inner">
+                                                            <div className="space-y-3">
+                                                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                                                                    <Info className="w-3 h-3" /> Pernyataan / Soal
+                                                                </p>
+                                                                <div className="space-y-2">
+                                                                    {matchingItems.length > 0 ? matchingItems.map((item, i) => (
+                                                                        <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 text-xs font-bold shadow-sm min-h-[44px] flex items-center">
+                                                                            <MathText content={item} />
+                                                                        </div>
+                                                                    )) : (
+                                                                        <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 text-center opacity-40">
+                                                                            <p className="text-[9px] font-black uppercase">Pernyataan Kosong</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="space-y-3">
+                                                                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                                                                    <ArrowRightLeft className="w-3 h-3" /> Pilihan Jawaban
+                                                                </p>
+                                                                <div className="space-y-2">
+                                                                    {q.options && Object.entries(q.options).sort().map(([key, val]) => (
+                                                                        <div key={key} className="p-3 bg-white rounded-xl border border-slate-100 text-xs font-bold flex gap-3 shadow-sm min-h-[44px] flex items-center">
+                                                                            <span className="text-emerald-600 font-black">{key}.</span>
+                                                                            <div className="flex-1 overflow-hidden"><MathText content={val} /></div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        q.options && (
+                                                            <div className="grid grid-cols-1 gap-3">
+                                                                {Object.entries(q.options).sort().map(([key, val]) => (
+                                                                    <div key={key} className={cn("p-5 rounded-xl border flex items-center gap-4 transition-colors", q.answer === key ? "bg-emerald-50 border-emerald-200" : "bg-slate-50/30 border-slate-100")}>
+                                                                        <span className={cn("w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black shrink-0", q.answer === key ? "bg-emerald-500 text-white shadow-lg" : "bg-white text-slate-400 border border-slate-100")}>{key}</span>
+                                                                        <div className="text-sm sm:text-base font-semibold flex-1 overflow-hidden"><MathText content={val} /></div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )
+                                                    )}
+
+                                                    <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
+                                                        <div className="flex flex-wrap items-center justify-between gap-4">
+                                                            <div className="flex items-center gap-3 p-3 px-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700">
+                                                                <CheckCircle2 className="h-5 w-5" />
+                                                                <p className="text-sm font-black uppercase tracking-tight">Jawaban: <span className="ml-1 text-emerald-600">{q.answer}</span></p>
+                                                            </div>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                onClick={() => toggleExplanation(idx)}
+                                                                className="text-[10px] font-black uppercase tracking-widest text-indigo-600 h-10 px-4 rounded-xl hover:bg-indigo-50"
+                                                            >
+                                                                {expandedExplanations.has(idx) ? <ChevronUp className="h-4 w-4 mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
+                                                                {expandedExplanations.has(idx) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
+                                                            </Button>
+                                                        </div>
+
+                                                        <AnimatePresence>
+                                                            {expandedExplanations.has(idx) && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 shadow-inner">
+                                                                        <div className="flex items-center gap-2 mb-4 text-slate-400">
+                                                                            <Info className="h-3.5 w-3.5" />
+                                                                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">Analisis Jawaban AI</span>
+                                                                        </div>
+                                                                        <div className="text-sm italic text-slate-600 leading-relaxed font-medium">
+                                                                            <MathText content={q.explanation} />
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        );
+                                    })
                                 ) : !loading ? (
                                     <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                                         <LottieAiProcess size={150} />
