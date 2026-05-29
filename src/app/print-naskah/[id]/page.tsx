@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAdminProfile } from "@/lib/data";
 import { redirect } from "next/navigation";
-import PrintView from "./print-view";
+import PrintSoalView from "./print-soal-view";
+import PrintLjkView from "./print-ljk-view";
 
 /**
- * Halaman Cetak Terisolasi Total (V47.0)
- * Menangani pengambilan data dengan mempertahankan urutan question_ids dari manifest.
+ * Halaman Cetak Terisolasi Total (V73.0)
+ * Memisahkan perenderan berdasarkan 'mode' untuk isolasi tata letak yang sempurna.
  */
 export default async function NaskahPrintPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ mode?: string }> }) {
     const params = await props.params;
@@ -15,14 +16,14 @@ export default async function NaskahPrintPage(props: { params: Promise<{ id: str
 
     if (!user) redirect("/login");
 
-    // 1. Ambil Detail Naskah (Manifest)
+    // 1. Ambil Detail Naskah
     const { data: doc } = await supabase
         .from('ai_documents')
         .select('*')
         .eq('id', params.id)
         .single();
 
-    if (!doc) return <div className="p-10 text-center font-bold">Naskah tidak ditemukan.</div>;
+    if (!doc) return <div className="p-10 text-center font-bold text-rose-600">Naskah tidak ditemukan di database.</div>;
 
     // 2. Ambil Butir Soal Mentah
     const { data: rawQuestions } = await supabase
@@ -30,18 +31,26 @@ export default async function NaskahPrintPage(props: { params: Promise<{ id: str
         .select('*')
         .in('id', doc.question_ids || []);
 
-    // 3. PENTING: Urutkan kembali hasil query agar SAMA PERSIS dengan urutan question_ids di naskah
+    // 3. Urutkan kembali hasil query agar SAMA PERSIS dengan urutan question_ids di naskah
     const questions = doc.question_ids?.map(id => rawQuestions?.find(q => q.id === id)).filter(Boolean) || [];
 
     // 4. Ambil Profil Sekolah untuk Kop Surat
     const schoolProfile = await getAdminProfile();
 
+    const mode = searchParams.mode || 'soal';
+
+    // RENDER LJK (RIGID ABSOLUTE)
+    if (mode === 'ljk') {
+        return <PrintLjkView doc={doc} questions={questions} schoolProfile={schoolProfile} />;
+    }
+
+    // RENDER SOAL / KUNCI (FLOWING)
     return (
-        <PrintView 
+        <PrintSoalView 
             doc={doc} 
             questions={questions} 
-            schoolProfile={schoolProfile}
-            mode={(searchParams.mode as any) || 'soal'}
+            schoolProfile={schoolProfile} 
+            isKunci={mode === 'kunci'} 
         />
     );
 }
