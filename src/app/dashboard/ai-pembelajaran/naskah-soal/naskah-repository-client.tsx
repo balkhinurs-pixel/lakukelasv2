@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -66,7 +67,7 @@ import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
 
 /**
- * MathText Component V31.0
+ * MathText Component V32.0 (Optimized for Table Context)
  */
 const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boolean }) => {
   if (!content) return null;
@@ -79,7 +80,7 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
     )}>
       {parts.map((part, i) => {
         if (part.startsWith('\\[')) return (
-            <div key={i} className="my-3 overflow-x-auto overflow-y-hidden print:overflow-visible">
+            <div key={i} className="my-2 overflow-x-auto overflow-y-hidden print:overflow-visible">
                 <BlockMath math={part.slice(2, -2)} />
             </div>
         );
@@ -97,7 +98,8 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
                     ),
                     th: ({node, ...props}) => <th className="border border-black bg-slate-50 p-2 font-bold" {...props} />,
                     td: ({node, ...props}) => <td className="border border-black p-2" {...props} />,
-                    p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed" {...props} />
+                    p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed inline-block" {...props} />,
+                    li: ({node, ...props}) => <li className="text-[10pt] leading-tight" {...props} />
                 }}
             >
                 {part}
@@ -109,7 +111,7 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
 };
 
 /**
- * NaskahPrintTemplate V32.0 (Optimized for Multi-Type Questions)
+ * NaskahPrintTemplate V33.0 (Smart Matching Logic)
  */
 const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: any) => {
     return (
@@ -160,12 +162,22 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                     const isTrueFalse = q.question_type === 'true_false';
                     const isMatching = q.question_type === 'matching';
                     
+                    // Logic parsing untuk Menjodohkan
+                    const lines = isMatching ? q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '') : [];
+                    const matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
+                    const matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
+                    const rowCount = isMatching ? Math.max(matchingItems.length, options.length) : 0;
+
                     return (
                         <div key={q.id} className="print-question-block mb-10">
                             <div className="flex gap-4 items-start">
                                 <span className="font-bold min-w-[28pt] text-left">{idx + 1}.</span>
                                 <div className="flex-1">
-                                    <MathText content={q.question_text} isPrint />
+                                    {isMatching ? (
+                                        matchingIntro && <MathText content={matchingIntro} isPrint />
+                                    ) : (
+                                        <MathText content={q.question_text} isPrint />
+                                    )}
                                     
                                     {/* Visual Diagram SVG */}
                                     {q.visual_svg && (
@@ -182,7 +194,6 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
 
                                     {/* Layout Opsi Berdasarkan Tipe */}
                                     {isTrueFalse ? (
-                                        /* Benar/Salah: Horizontal Sejajar */
                                         <div className="mt-4 flex gap-12 items-center">
                                             {options.map(([k, v]) => (
                                                 <div key={k} className="flex gap-2 items-center">
@@ -192,26 +203,39 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                                             ))}
                                         </div>
                                     ) : isMatching ? (
-                                        /* Menjodohkan: Format Tabel Korespondensi */
-                                        <div className="mt-6 border border-black rounded-lg overflow-hidden max-w-2xl">
+                                        <div className="mt-6 border border-black rounded-lg overflow-hidden">
                                             <table className="w-full border-collapse">
                                                 <thead>
                                                     <tr className="bg-slate-50 border-b border-black">
-                                                        <th className="p-2 border-r border-black font-bold text-[10pt] uppercase text-center w-12">No</th>
-                                                        <th className="p-2 border-r border-black font-bold text-[10pt] uppercase text-left">Pernyataan / Soal</th>
-                                                        <th className="p-2 border-r border-black font-bold text-[10pt] uppercase text-center w-12">Pilih</th>
-                                                        <th className="p-2 font-bold text-[10pt] uppercase text-left">Pilihan Jawaban</th>
+                                                        <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-center w-10">No</th>
+                                                        <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-left">Pernyataan / Soal</th>
+                                                        <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-center w-14">Pilih</th>
+                                                        <th className="p-2 font-bold text-[9pt] uppercase text-left">Pilihan Jawaban</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {options.map(([k, v], i) => (
-                                                        <tr key={k} className="border-b border-black last:border-b-0">
+                                                    {Array.from({ length: rowCount }).map((_, i) => (
+                                                        <tr key={i} className="border-b border-black last:border-b-0">
                                                             <td className="p-2 border-r border-black text-center font-bold">{i + 1}</td>
-                                                            <td className="p-2 border-r border-black italic text-slate-400">................................................</td>
-                                                            <td className="p-2 border-r border-black text-center font-bold opacity-20">[{k}]</td>
-                                                            <td className="p-2 flex gap-2 items-start">
-                                                                <span className="font-bold min-w-[15pt]">{k}.</span>
-                                                                <MathText content={v} isPrint />
+                                                            <td className="p-2 border-r border-black text-[10pt] min-w-[70mm]">
+                                                                {matchingItems[i] ? (
+                                                                    <MathText content={matchingItems[i].replace(/^\d+[\.\)]\s*/, '')} isPrint />
+                                                                ) : (
+                                                                    <div className="h-6 italic text-slate-300">...</div>
+                                                                )}
+                                                            </td>
+                                                            <td className="p-2 border-r border-black text-center font-bold text-slate-200">
+                                                                [.....]
+                                                            </td>
+                                                            <td className="p-2 text-[10pt] min-w-[50mm]">
+                                                                {options[i] ? (
+                                                                    <div className="flex gap-2 items-start">
+                                                                        <span className="font-bold min-w-[15pt]">{options[i][0]}.</span>
+                                                                        <MathText content={options[i][1]} isPrint />
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="h-6 italic text-slate-300">...</div>
+                                                                )}
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -219,7 +243,6 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                                             </table>
                                         </div>
                                     ) : (
-                                        /* Pilihan Ganda Standar: Grid 2 Kolom */
                                         options.length > 0 && (
                                             <div className={cn(
                                                 "mt-4 grid grid-cols-2 gap-x-12 items-start",
@@ -250,7 +273,6 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                 })}
             </div>
 
-            {/* Footer Penutup */}
             <div className="mt-12 text-center border-t border-black pt-4 italic text-[9pt]">
                 <p>*** Selamat Mengerjakan & Utamakan Kejujuran ***</p>
             </div>
@@ -259,7 +281,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
 };
 
 /**
- * LjkPrintTemplate V31.0 (Professional OMR Standard)
+ * LjkPrintTemplate V31.0 (OMR Standard)
  */
 const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
     return (
@@ -388,15 +410,14 @@ export default function NaskahRepositoryClient({
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
             
-            if (!element) throw new Error("Sistem gagal memuat area cetak. Silakan muat ulang halaman.");
+            if (!element) throw new Error("Sistem gagal memuat area cetak.");
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             const canvas = await html2canvas(element, { 
                 scale: 2, 
                 useCORS: true, 
                 logging: false,
-                backgroundColor: "#ffffff",
-                windowWidth: 1000
+                backgroundColor: "#ffffff"
             });
 
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -409,7 +430,7 @@ export default function NaskahRepositoryClient({
             const fileName = `${mode.toUpperCase()}_${title.replace(/\s+/g, '_')}.pdf`;
             pdf.save(fileName);
             
-            toast({ title: "Unduh Berhasil!", description: `File ${mode.toUpperCase()} siap dibuka.` });
+            toast({ title: "Unduh Berhasil!", description: "File siap dibuka." });
 
         } catch (e: any) {
             toast({ variant: "destructive", title: "Gagal", description: e.message });
@@ -459,12 +480,12 @@ export default function NaskahRepositoryClient({
     return (
         <div className="space-y-6">
             {downloading && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/70 backdrop-blur-md animate-in fade-in duration-300">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/70 backdrop-blur-md">
                     <Card className="p-10 rounded-[3rem] border-0 shadow-2xl flex flex-col items-center gap-6 bg-white/90">
                         <Loader2 className="h-16 w-16 animate-spin text-indigo-600" />
                         <div className="text-center">
                             <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyiapkan Naskah...</p>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Font & Vektor Sedang Dimuat</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Sistem sedang merakit dokumen</p>
                         </div>
                     </Card>
                 </div>
@@ -547,7 +568,7 @@ export default function NaskahRepositoryClient({
                                     <div className="w-16 h-16 shrink-0 flex items-center justify-center">
                                         <FileCard formatFile="pdf" className="scale-90" />
                                     </div>
-                                    <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100">V32.0 Multi-Type</Badge>
+                                    <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100">Smart Layout</Badge>
                                 </div>
                                 <CardTitle className="text-lg font-black text-slate-900 mt-4 leading-tight group-hover:text-indigo-600 transition-colors">
                                     {doc.title}
