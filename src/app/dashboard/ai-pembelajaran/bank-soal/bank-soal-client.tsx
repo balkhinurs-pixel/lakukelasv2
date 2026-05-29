@@ -179,7 +179,6 @@ export default function BankSoalClient({
         setCurrentPage(1);
     }, [searchTerm, filterClass, filterSubject, filterTopic]);
 
-    // Countdown Logic
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
         if (exporting) {
@@ -333,7 +332,6 @@ export default function BankSoalClient({
 
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
-            {/* Loading Overlay */}
             {exporting && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl">
                     <div className="p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8">
@@ -438,7 +436,6 @@ export default function BankSoalClient({
                         const selectionIdx = getSelectionIndex(q.id);
                         const isSelected = selectionIdx !== null;
                         
-                        // Logic parsing khusus untuk tipe Menjodohkan (Matching) - V37.0 Smart Heuristic
                         const isMatching = q.question_type === 'matching';
                         let matchingItems: string[] = [];
                         let matchingIntro = q.question_text;
@@ -446,14 +443,12 @@ export default function BankSoalClient({
                         if (isMatching) {
                             const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
                             if (lines.length > 1) {
-                                // Cari baris yang dimulai dengan angka
-                                constNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
+                                const hasNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
                                 
-                                if (constNumberedLines) {
+                                if (hasNumberedLines) {
                                     matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
                                     matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
                                 } else {
-                                    // Heuristik: Anggap baris pertama intro, sisanya item
                                     matchingIntro = lines[0];
                                     matchingItems = lines.slice(1);
                                 }
@@ -637,7 +632,6 @@ export default function BankSoalClient({
                     )}
                 </div>
 
-                {/* simplified Naskah Config Dialog */}
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                     <DialogContent className="rounded-xl p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white text-center">
@@ -693,9 +687,12 @@ export default function BankSoalClient({
                     </DialogContent>
                 </Dialog>
 
-                {/* Success Dialog */}
                 <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
                     <DialogContent className="rounded-xl p-0 max-w-sm border-0 shadow-2xl overflow-hidden bg-white">
+                        <DialogHeader className="sr-only">
+                            <DialogTitle>Berhasil Disusun</DialogTitle>
+                            <DialogDescription>Konfirmasi penyusunan naskah soal berhasil.</DialogDescription>
+                        </DialogHeader>
                         <div className="p-10 flex flex-col items-center text-center">
                             <LottieSuccess size={200} />
                             <h3 className="text-2xl font-black text-slate-900 mt-2">Berhasil Disusun!</h3>
@@ -705,6 +702,23 @@ export default function BankSoalClient({
                                     Buka Daftar Naskah
                                 </Link>
                             </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
+                    <DialogContent className="rounded-xl p-0 max-w-sm overflow-hidden bg-white">
+                        <DialogHeader className="sr-only">
+                            <DialogTitle>Koneksi Google Drive</DialogTitle>
+                            <DialogDescription>Otentikasi Google Drive diperlukan untuk melanjutkan.</DialogDescription>
+                        </DialogHeader>
+                        <div className="p-8 text-center space-y-6">
+                            <Database className="mx-auto h-12 w-12 text-indigo-600" />
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-bold">Koneksi Drive Diperlukan</h3>
+                                <p className="text-sm text-slate-500">Hubungkan akun Google untuk menyimpan naskah.</p>
+                            </div>
+                            <Button onClick={handleConnectDrive} className="w-full h-12 bg-indigo-600 text-white font-bold">Hubungkan Akun Google</Button>
                         </div>
                     </DialogContent>
                 </Dialog>
