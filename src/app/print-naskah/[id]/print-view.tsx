@@ -8,12 +8,12 @@ import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
-import { Printer, ArrowLeft, Download } from "lucide-react";
+import { Printer, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V47.0 (Print Optimized)
+ * MathText Component V48.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -165,18 +165,27 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                 </Button>
             </header>
 
-            <main className="print-area mx-auto" style={{ width: '210mm', padding: '15mm 20mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45' }}>
+            <main className="print-area mx-auto" style={{ width: '210mm', padding: '15mm 20mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45', position: 'relative', zIndex: 1 }}>
+                {/* Kop Surat Refined (V48.0) */}
                 <div className="print-header-block mb-6 pb-2 border-b-[3pt] border-double border-black">
                     <div className="flex items-center gap-6">
-                        <div className="w-[28mm] h-[25mm] flex items-center justify-center shrink-0">
+                        {/* Logo Sekolah */}
+                        <div className="w-[30mm] h-[28mm] flex items-center justify-center shrink-0">
                             {schoolProfile?.school_logo_url ? (
-                                <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
+                                <img 
+                                    src={schoolProfile.school_logo_url} 
+                                    className="w-full h-full object-contain" 
+                                    alt="Logo Sekolah" 
+                                    crossOrigin="anonymous" 
+                                />
                             ) : (
-                                <div className="p-2 opacity-10 w-full h-full"><AppLogo /></div>
+                                <div className="p-2 opacity-20 w-full h-full"><AppLogo /></div>
                             )}
                         </div>
-                        <div className="flex-1 text-center pr-[28mm]">
-                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Yayasan Pendidikan / Dinas Pendidikan Kota</p>
+                        
+                        {/* Identitas Sekolah */}
+                        <div className="flex-1 text-center pr-[30mm]">
+                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Kota / Yayasan Pendidikan</p>
                             <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
                             <p className="text-[9pt] font-bold mt-1">
                                 {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
