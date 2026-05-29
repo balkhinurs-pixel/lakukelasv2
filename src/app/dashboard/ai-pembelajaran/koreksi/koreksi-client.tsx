@@ -15,7 +15,10 @@ import {
     AlertTriangle, 
     Trash2, 
     History, 
-    ClipboardCheck 
+    ClipboardCheck,
+    Image as ImageIcon,
+    RefreshCw,
+    Play
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +55,7 @@ async function optimizeImage(base64: string): Promise<string> {
         img.src = base64;
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 1200; // Adjusted for better token efficiency in V67.0
+            const MAX_WIDTH = 1200; 
             const MAX_HEIGHT = 1200;
             let width = img.width;
             let height = img.height;
@@ -77,7 +80,7 @@ async function optimizeImage(base64: string): Promise<string> {
                 return;
             }
             ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', 0.7); // 70% quality is enough for OMR
+            const compressed = canvas.toDataURL('image/jpeg', 0.7); 
             resolve(compressed);
         };
         img.onerror = (e) => reject(e);
@@ -95,8 +98,10 @@ export default function KoreksiClient({
     const router = useRouter();
     const [selectedNaskahId, setSelectedNaskahId] = React.useState<string>("");
     const [loading, setLoading] = React.useState(false);
+    const [optimizing, setOptimizing] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
     
+    const [pendingPhoto, setPendingPhoto] = React.useState<string | null>(null);
     const [resultsList, setResultsList] = React.useState<ScannedResult[]>([]);
     const [currentScan, setCurrentScan] = React.useState<ScannedResult | null>(null);
 
@@ -106,7 +111,7 @@ export default function KoreksiClient({
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-    const handleStartScan = () => {
+    const handleStartCapture = () => {
         if (!selectedNaskahId) {
             toast({ title: "Pilih Ujian", description: "Pilih paket ujian terlebih dahulu.", variant: "destructive" });
             return;
@@ -118,45 +123,61 @@ export default function KoreksiClient({
         const file = e.target.files?.[0];
         if (!file) return;
 
-        setLoading(true);
+        setOptimizing(true);
         const reader = new FileReader();
         reader.onload = async (event) => {
             const rawBase64 = event.target?.result as string;
             
             try {
                 const optimizedBase64 = await optimizeImage(rawBase64);
-                const result = await correctExamAction(selectedNaskahId, optimizedBase64);
-                
-                if (result.success && result.data) {
-                    const newResult: ScannedResult = {
-                        ...result.data,
-                        id: crypto.randomUUID(),
-                        timestamp: Date.now()
-                    };
-                    
-                    setResultsList(prev => [newResult, ...prev]);
-                    setCurrentScan(newResult);
-                } else {
-                    const err = result.error || "";
-                    let type: AiErrorType = 'generic';
-                    if (err.includes('429')) type = 'quota';
-                    else if (err.includes('503')) type = 'overloaded';
-                    else if (err.toLowerCase().includes('api key')) type = 'api_key';
-
-                    setErrorType(type);
-                    setErrorMsg(err);
-                    setIsErrorOpen(true);
-                }
+                setPendingPhoto(optimizedBase64);
+                toast({ title: "Foto Siap", description: "Silakan periksa kejernihan foto lalu klik Mulai Koreksi." });
             } catch (err: any) {
-                setErrorType('generic');
-                setErrorMsg(err.message || "Gagal memproses gambar.");
-                setIsErrorOpen(true);
+                toast({ title: "Error", description: "Gagal memproses gambar.", variant: "destructive" });
             } finally {
-                setLoading(false);
+                setOptimizing(false);
                 if (fileInputRef.current) fileInputRef.current.value = "";
             }
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleStartCorrection = async () => {
+        if (!pendingPhoto || !selectedNaskahId) return;
+
+        setLoading(true);
+        try {
+            const result = await correctExamAction(selectedNaskahId, pendingPhoto);
+            
+            if (result.success && result.data) {
+                const newResult: ScannedResult = {
+                    ...result.data,
+                    id: crypto.randomUUID(),
+                    timestamp: Date.now()
+                };
+                
+                setResultsList(prev => [newResult, ...prev]);
+                setCurrentScan(newResult);
+                setPendingPhoto(null); // Clear preview after success
+                toast({ title: "Berhasil!", description: "Koreksi AI selesai." });
+            } else {
+                const err = result.error || "";
+                let type: AiErrorType = 'generic';
+                if (err.includes('429')) type = 'quota';
+                else if (err.includes('503')) type = 'overloaded';
+                else if (err.toLowerCase().includes('api key')) type = 'api_key';
+
+                setErrorType(type);
+                setErrorMsg(err);
+                setIsErrorOpen(true);
+            }
+        } catch (err: any) {
+            setErrorType('generic');
+            setErrorMsg(err.message || "Gagal memproses gambar.");
+            setIsErrorOpen(true);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const removeResult = (id: string) => {
@@ -207,23 +228,23 @@ export default function KoreksiClient({
 
     return (
         <div className="space-y-8 pb-32">
-            <AiErrorDialog open={isErrorOpen} onOpenChange={setIsErrorOpen} errorType={errorType} errorMessage={errorMsg} onRetry={handleStartScan} />
+            <AiErrorDialog open={isErrorOpen} onOpenChange={setIsErrorOpen} errorType={errorType} errorMessage={errorMsg} onRetry={handleStartCorrection} />
 
             <input type="file" ref={fileInputRef} accept="image/*" capture="environment" className="hidden" onChange={handleFileCapture} />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-1">
-                <div className="lg:col-span-4 space-y-6">
+                <div className="lg:col-span-5 space-y-6">
                     <Card className="border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden">
                         <CardHeader className="bg-slate-50/50 border-b p-6 sm:p-8">
                             <CardTitle className="text-xl font-black flex items-center gap-3">
                                 <LayoutGrid className="h-6 w-6 text-indigo-600" />
-                                Pilih Ujian
+                                Konfigurasi Scan
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 sm:p-8 space-y-6">
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Naskah Kunci</Label>
-                                <Select value={selectedNaskahId} onValueChange={setSelectedNaskahId} disabled={loading}>
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Naskah Kunci (Acuan)</Label>
+                                <Select value={selectedNaskahId} onValueChange={setSelectedNaskahId} disabled={loading || optimizing}>
                                     <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-0 font-bold shadow-inner">
                                         <SelectValue placeholder="Pilih paket naskah..." />
                                     </SelectTrigger>
@@ -235,53 +256,77 @@ export default function KoreksiClient({
                                 </Select>
                             </div>
 
-                            <div className="pt-4 flex flex-col gap-3">
-                                <Button 
-                                    onClick={handleStartScan}
-                                    disabled={!selectedNaskahId || loading}
-                                    className="w-full h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95"
-                                >
-                                    {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
-                                    Ambil Foto LJK
-                                </Button>
-                            </div>
+                            <AnimatePresence mode="wait">
+                                {!pendingPhoto ? (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                                        <Button 
+                                            onClick={handleStartCapture}
+                                            disabled={!selectedNaskahId || loading || optimizing}
+                                            className="w-full h-20 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-4 shadow-xl shadow-indigo-100 transition-all active:scale-95 text-lg"
+                                        >
+                                            {optimizing ? <Loader2 className="h-7 w-7 animate-spin" /> : <Camera className="h-7 w-7" />}
+                                            {optimizing ? "Mengoptimasi..." : "Ambil Foto LJK"}
+                                        </Button>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
+                                        <div className="relative group rounded-3xl overflow-hidden border-4 border-white shadow-xl aspect-[3/4] bg-slate-900">
+                                            <img src={pendingPhoto} className="w-full h-full object-contain" alt="Preview LJK" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                 <Button variant="destructive" onClick={() => setPendingPhoto(null)} className="rounded-xl font-bold gap-2">
+                                                     <X className="h-4 w-4" /> Batalkan Foto
+                                                 </Button>
+                                            </div>
+                                            {loading && (
+                                                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 gap-4">
+                                                    <LottieAiProcess size={120} />
+                                                    <div>
+                                                        <p className="font-black text-indigo-950 uppercase tracking-tight">Koreksi Berjalan</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Mohon tidak menutup halaman</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Button 
+                                                variant="outline"
+                                                onClick={() => setPendingPhoto(null)}
+                                                disabled={loading}
+                                                className="h-14 rounded-2xl border-slate-200 text-slate-500 font-bold uppercase tracking-widest text-xs"
+                                            >
+                                                Ganti Foto
+                                            </Button>
+                                            <Button 
+                                                onClick={handleStartCorrection}
+                                                disabled={loading}
+                                                className="h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-xs gap-2 shadow-lg shadow-emerald-100"
+                                            >
+                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}
+                                                Koreksi Sekarang
+                                            </Button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </CardContent>
                     </Card>
-
-                    <div className="p-6 rounded-[2.5rem] bg-indigo-50 border border-indigo-100 space-y-4 shadow-inner">
-                        <div className="flex items-center gap-2 text-indigo-900 font-black text-[10px] uppercase tracking-widest">
-                            <ShieldCheck className="h-4 w-4 text-indigo-600" />
-                            <span>Status Sesi</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white p-4 rounded-2xl shadow-sm">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Scan</p>
-                                <p className="text-2xl font-black text-slate-900">{resultsList.length}</p>
-                            </div>
-                            <div className="bg-white p-4 rounded-2xl shadow-sm">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Avg Skor</p>
-                                <p className="text-2xl font-black text-emerald-600">
-                                    {resultsList.length > 0 ? Math.round(resultsList.reduce((a, b) => a + b.totalScore, 0) / resultsList.length) : 0}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <div className="lg:col-span-8 space-y-6">
+                <div className="lg:col-span-7 space-y-6">
                     <div className="flex items-center justify-between px-3">
                         <div className="flex items-center gap-3">
                             <History className="h-5 w-5 text-indigo-600" />
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Daftar Hasil Scan</h3>
+                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hasil Sesi Scan</h3>
                         </div>
                         {resultsList.length > 0 && (
                             <Button 
                                 onClick={handleSaveAll}
-                                disabled={saving}
+                                disabled={saving || loading}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 font-bold gap-2 shadow-lg shadow-emerald-100"
                             >
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                Simpan Rekap
+                                Simpan Rekap ({resultsList.length})
                             </Button>
                         )}
                     </div>
@@ -302,7 +347,7 @@ export default function KoreksiClient({
                                                                 <h4 className="font-black text-lg text-slate-900 leading-tight truncate uppercase tracking-tight">{res.studentName}</h4>
                                                                 <div className="flex items-center gap-2 mt-1">
                                                                     <Badge variant="outline" className="text-[9px] font-mono">NIS: {res.detectedNis}</Badge>
-                                                                    {!res.studentId && <Badge variant="destructive" className="text-[8px] uppercase tracking-widest font-black">Siswa Tak Terdaftar</Badge>}
+                                                                    {!res.studentId && <Badge variant="destructive" className="text-[8px] uppercase tracking-widest font-black">Tak Terdaftar</Badge>}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -325,8 +370,8 @@ export default function KoreksiClient({
                             ) : (
                                 <div className="h-[500px] flex flex-col items-center justify-center text-center opacity-30">
                                     <div className="p-16 rounded-[4rem] bg-slate-50 shadow-inner mb-8"><ScanLine className="h-20 w-20 text-slate-200" /></div>
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Sesi Masih Kosong</h3>
-                                    <p className="text-sm font-bold text-slate-400 mt-2">Ambil foto LJK siswa untuk mulai koreksi.</p>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Belum Ada Koreksi</h3>
+                                    <p className="text-sm font-bold text-slate-400 mt-2">Ambil foto LJK siswa untuk memulai pemindaian otomatis.</p>
                                 </div>
                             )}
                         </AnimatePresence>
@@ -359,7 +404,7 @@ export default function KoreksiClient({
                                         </Badge>
                                     </div>
                                     <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Peta Jawaban</h4>
+                                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Analisis Per Butir</h4>
                                         <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5">
                                             {currentScan.studentAnswers.map((item: any, idx: number) => (
                                                 <div key={idx} className={cn("aspect-square rounded-2xl flex flex-col items-center justify-center border-2 transition-all shadow-sm", item.isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700")}>
@@ -372,12 +417,12 @@ export default function KoreksiClient({
                                     {currentScan.analysis && (
                                         <div className="p-6 rounded-[2rem] bg-amber-50 border border-amber-100 flex items-start gap-4">
                                             <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                                            <div><span className="text-[10px] font-black uppercase text-amber-900 tracking-widest">Catatan AI</span><p className="text-xs font-bold text-amber-800/80 leading-relaxed mt-1.5 italic">{currentScan.analysis}</p></div>
+                                            <div><span className="text-[10px] font-black uppercase text-amber-900 tracking-widest">Catatan Kualitas</span><p className="text-xs font-bold text-amber-800/80 leading-relaxed mt-1.5 italic">{currentScan.analysis}</p></div>
                                         </div>
                                     )}
                                 </div>
                             </ScrollArea>
-                            <div className="p-8 bg-white border-t shrink-0"><Button className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl" onClick={() => setCurrentScan(null)}>Selesai Meninjau</Button></div>
+                            <div className="p-8 bg-white border-t shrink-0"><Button className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl" onClick={() => setCurrentScan(null)}>Tutup Review</Button></div>
                         </div>
                     )}
                 </DialogContent>
