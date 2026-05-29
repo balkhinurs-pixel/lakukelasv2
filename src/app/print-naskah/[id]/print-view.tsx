@@ -15,12 +15,12 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 /**
- * MathText Component V61.0 (Print Optimized)
+ * MathText Component V62.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
   
-  const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  const parts = content.split(/(\$\$[\s\S]*?\$$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
     <div className="math-text-render w-full overflow-visible text-justify">
@@ -95,23 +95,27 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         setGenerating(true);
 
         try {
-            // Optimasi Kanvas: Scale 2 untuk kualitas cetak tajam, useCORS untuk logo
+            // Optimasi Canvas V62.0: 
+            // - Scale 2.0 (Cukup tajam untuk A4)
+            // - JPEG Quality 0.8 (Sangat kecil filenya dibanding PNG)
             const canvas = await html2canvas(printRef.current, {
-                scale: 2.5, 
+                scale: 2.0, 
                 useCORS: true,
                 logging: false,
-                backgroundColor: "#ffffff"
+                backgroundColor: "#ffffff",
+                windowWidth: 794, // Paksa lebar A4 saat render
+                windowHeight: 1123
             });
 
-            const imgData = canvas.toDataURL("image/png");
+            const imgData = canvas.toDataURL("image/jpeg", 0.8);
             const pdf = new jsPDF({
                 orientation: "portrait",
                 unit: "mm",
-                format: "a4"
+                format: "a4",
+                compress: true // Aktifkan kompresi internal PDF
             });
 
-            // Pasang gambar ke ukuran A4 murni
-            pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+            pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, 'FAST');
             pdf.save(`LJK_AI_${doc.title.replace(/\s+/g, '_')}.pdf`);
             
         } catch (error) {
@@ -130,7 +134,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         return groups;
     }, [questions]);
 
-    // Template LJK OMR Profesional (V61.0 - Canvas Optimized)
     if (isLjk) {
         return (
             <div className="min-h-screen bg-slate-100 flex flex-col print:bg-white">
@@ -146,7 +149,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             className="bg-emerald-600 hover:bg-emerald-700 font-bold gap-2 px-3 sm:px-5 shadow-lg"
                         >
                             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                            <span className="hidden sm:inline">Simpan PDF (Akurasi Tinggi)</span>
+                            <span className="hidden sm:inline">Simpan PDF (Kecil & Tajam)</span>
                             <span className="sm:hidden">Simpan PDF</span>
                         </Button>
                         <Button onClick={handlePrint} variant="outline" className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold gap-2 hidden sm:flex">
@@ -180,7 +183,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 fontFamily: 'Arial, sans-serif'
                             }}
                         >
-                            {/* Anchor Points (Disesuaikan untuk Capture Kanvas) */}
+                            {/* Anchor Points */}
                             <div className="absolute top-[5mm] left-[5mm] w-6 h-6 bg-black z-50" />
                             <div className="absolute top-[5mm] right-[5mm] w-6 h-6 bg-black z-50" />
                             <div className="absolute bottom-[5mm] left-[5mm] w-6 h-6 bg-black z-50" />
