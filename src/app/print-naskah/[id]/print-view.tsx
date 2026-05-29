@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V51.0 (Print Optimized)
+ * MathText Component V52.0 (Print Optimized & Robust LaTeX)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -108,7 +108,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     <div className="absolute bottom-4 left-4 w-8 h-8 bg-black z-50" />
                     <div className="absolute bottom-4 right-4 w-8 h-8 bg-black z-50" />
 
-                    {/* Kop Surat */}
+                    {/* Kop Surat LJK */}
                     <div className="mb-6 pb-2 border-b-[3pt] border-double border-black">
                         <div className="flex items-center gap-6">
                             <div className="w-[28mm] h-[25mm] flex items-center justify-center shrink-0">
@@ -244,7 +244,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         );
     }
 
-    // -- SOAL & KUNCI VIEW (PROFESSIONAL NATIONAL STANDARD) --
+    // -- SOAL & KUNCI VIEW (PROFESSIONAL NATIONAL STANDARD V52) --
     let currentRomanIdx = 0;
     let lastRenderedType = "";
 
@@ -262,15 +262,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
 
             <main className="print-area mx-auto" style={{ width: '210mm', padding: '15mm 20mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45' }}>
                 
-                {/* Dokumen Negara Header */}
-                <div className="flex justify-between items-start mb-2 no-print-manual">
-                    <div className="border-[1.5pt] border-black px-4 py-1">
-                        <p className="text-[10pt] font-bold uppercase leading-tight text-center">DOKUMEN NEGARA</p>
-                        <p className="text-[10pt] font-black uppercase leading-tight text-center bg-black text-white px-2 mt-0.5">SANGAT RAHASIA</p>
-                    </div>
-                </div>
-
-                {/* Kop Surat Utama */}
+                {/* 1. Kop Surat Utama Sesuai Identitas Sekolah */}
                 <div className="print-header-block mb-4 pb-2 border-b-[3pt] border-double border-black">
                     <div className="flex items-center gap-6">
                         <div className="w-[28mm] h-[28mm] flex items-center justify-center shrink-0">
@@ -282,17 +274,19 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">
                                 {schoolProfile?.jabatan || "Kementerian Pendidikan / Agama"} Terkait
                             </p>
-                            <p className="text-[12pt] font-bold uppercase leading-tight mt-1">{doc.title.toUpperCase()}</p>
                             <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
-                            <p className="text-[9pt] font-bold mt-1">
-                                NPSN: {schoolProfile?.npsn || "........"} | NSM: {schoolProfile?.nip?.substring(0, 12) || "............"}
+                            <p className="text-[9.5pt] font-bold mt-1">
+                                {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"}
+                            </p>
+                            <p className="text-[9pt] font-bold mt-0.5">
+                                NPSN: {schoolProfile?.npsn || "........"} {schoolProfile?.school_website && ` | Website: ${schoolProfile.school_website}`}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Metadata Box (New Professional Layout) */}
-                <div className="border-[1.5pt] border-black p-4 mb-8 rounded-sm">
+                {/* 2. Metadata Box (Hari, Pukul, Mapel, Kelas) */}
+                <div className="border-[1.5pt] border-black p-4 mb-6 rounded-sm bg-slate-50/20">
                     <div className="grid grid-cols-2 gap-x-12">
                         <div className="space-y-1.5">
                             <div className="grid grid-cols-[110px_10px_1fr] items-baseline">
@@ -321,7 +315,14 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     </div>
                 </div>
 
-                {/* Question Rendering */}
+                {/* 3. Judul Tes */}
+                <div className="text-center mb-8">
+                    <h3 className="text-[12pt] font-bold uppercase underline leading-tight tracking-tight">
+                        {isKunci ? 'KUNCI JAWABAN: ' : ''}{doc.title}
+                    </h3>
+                </div>
+
+                {/* 4. Question Rendering */}
                 <div className="questions-container">
                     {questions.map((q: any, idx: number) => {
                         const showSectionHeader = q.question_type !== lastRenderedType;
