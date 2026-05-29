@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -22,7 +23,8 @@ import {
     ChevronUp,
     Plus,
     BrainCircuit,
-    Tag
+    Tag,
+    ArrowUp
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -313,6 +315,11 @@ export default function BankSoalClient({
         }
     };
 
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
             {/* Loading Overlay */}
@@ -374,9 +381,14 @@ export default function BankSoalClient({
                 <Card className="border-0 shadow-lg rounded-xl bg-white overflow-hidden mx-1">
                     <CardContent className="p-4 sm:p-6">
                         <div className="flex flex-col gap-4">
-                            <div className="flex items-center gap-2 text-indigo-600">
-                                <Filter className="h-5 w-5" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Saring Soal</span>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-indigo-600">
+                                    <Filter className="h-5 w-5" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Saring Soal</span>
+                                </div>
+                                <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-0 font-black text-[10px]">
+                                    Total: {filteredQuestions.length} Soal
+                                </Badge>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
                                 <Select value={filterClass} onValueChange={setFilterClass}>
@@ -534,20 +546,20 @@ export default function BankSoalClient({
                                 variant="outline" 
                                 size="sm" 
                                 disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(prev => prev - 1)}
-                                className="rounded-xl font-bold"
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                className="rounded-xl font-bold h-10 w-10 p-0"
                             >
                                 <ChevronLeft className="h-4 w-4" />
                             </Button>
-                            <div className="flex items-center px-4 bg-white rounded-xl border text-sm font-black">
+                            <div className="flex items-center px-6 bg-white rounded-xl border text-sm font-black shadow-sm">
                                 {currentPage} / {totalPages}
                             </div>
                             <Button 
                                 variant="outline" 
                                 size="sm" 
                                 disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(prev => prev + 1)}
-                                className="rounded-xl font-bold"
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                className="rounded-xl font-bold h-10 w-10 p-0"
                             >
                                 <ChevronRight className="h-4 w-4" />
                             </Button>
