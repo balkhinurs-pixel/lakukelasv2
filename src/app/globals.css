@@ -37,29 +37,6 @@
     --sidebar-accent-foreground: 262 84% 48%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 262 84% 58%;
-
-    /* Supabase Auth UI Theme Overrides */
-    --colors-brand: hsl(var(--primary));
-    --colors-brandAccent: hsl(var(--primary) / 0.8);
-    --colors-brandButtonText: hsl(var(--primary-foreground));
-    --colors-defaultButtonBackground: hsl(var(--card));
-    --colors-defaultButtonBackgroundHover: hsl(var(--accent));
-    --colors-defaultButtonBorder: hsl(var(--border));
-    --colors-defaultButtonText: hsl(var(--foreground));
-    --colors-dividerBackground: hsl(var(--border));
-    --colors-inputBackground: hsl(var(--muted));
-    --colors-inputBorder: transparent;
-    --colors-inputBorderHover: hsl(var(--border));
-    --colors-inputBorderFocus: hsl(var(--primary));
-    --colors-inputText: hsl(var(--foreground));
-    --colors-inputLabelText: hsl(var(--muted-foreground));
-    --colors-inputPlaceholder: hsl(var(--muted-foreground));
-    --fonts-bodyFontFamily: "var(--font-plus-jakarta-sans)";
-    --fonts-buttonFontFamily: "var(--font-plus-jakarta-sans)";
-    --fonts-inputFontFamily: "var(--font-plus-jakarta-sans)";
-    --fonts-labelFontFamily: "var(--font-plus-jakarta-sans)";
-    --fonts-linkFontFamily: "var(--font-plus-jakarta-sans)";
-    --border-radius: var(--radius);
   }
 
   .dark {
@@ -166,50 +143,66 @@
 }
 
 /* 
-  Sistem Cetak LakuKelas V28.0 (Optimized for Mobile)
+  Sistem Cetak LakuKelas V29.0 (Anti-Blank Solution)
 */
 @media print {
-  /* Sembunyikan elemen UI secara selektif agar browser tidak bingung */
-  body > *:not(.print-only-container) {
-    display: none !important;
+  @page {
+    size: A4;
+    margin: 0mm;
   }
 
-  .print-only-container {
+  /* Sembunyikan elemen utama aplikasi agar tidak mengganggu layout cetak */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  /* Sembunyikan seluruh UI kecuali area cetak */
+  body > *:not(.print-container-root) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .print-container-root {
     display: block !important;
+    visibility: visible !important;
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
     z-index: 99999 !important;
-    background: white !important;
+  }
+
+  .print-container-root * {
     visibility: visible !important;
   }
 
-  .print-only-container * {
-    visibility: visible !important;
-  }
-
-  main, body, html {
-    background: white !important;
-    overflow: visible !important;
-    height: auto !important;
-  }
-
-  @page {
-    size: A4;
-    margin: 0;
+  /* Reset Sidebar & Overflows */
+  [data-sidebar="sidebar"], header, aside, nav, button {
+    display: none !important;
   }
 }
 
 /* 
   Container render di luar layar (Off-screen) 
-  Agar html2canvas bisa menangkap elemen tanpa mengganggu UI
+  Digunakan untuk html2canvas dan penyiapan sebelum window.print()
 */
-.print-only-container {
+.print-container-root {
   position: absolute;
   left: -9999px;
   top: 0;
   width: 210mm;
   background: white;
   z-index: -100;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Saat aktif merender untuk cetak, kita jaga tetap invisible ke user tapi visible ke browser */
+.print-container-root.rendering {
+  opacity: 1;
 }

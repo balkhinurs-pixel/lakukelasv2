@@ -66,7 +66,7 @@ import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
 
 /**
- * MathText Component V28.0
+ * MathText Component V29.0
  */
 const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boolean }) => {
   if (!content) return null;
@@ -109,13 +109,13 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
 };
 
 /**
- * NaskahPrintTemplate V28.0
+ * NaskahPrintTemplate V29.0
  */
 const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: any) => {
     return (
         <div 
             id={`print-target-${docMetadata.id}`} 
-            className="bg-white text-slate-900" 
+            className="bg-white text-slate-900 mx-auto" 
             style={{ 
                 width: '210mm', 
                 padding: '20mm',
@@ -207,13 +207,13 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
 };
 
 /**
- * LjkPrintTemplate V28.0
+ * LjkPrintTemplate V29.0
  */
 const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
     return (
         <div 
             id={`ljk-target-${docMetadata.id}`} 
-            className="bg-white text-slate-900 relative" 
+            className="bg-white text-slate-900 relative mx-auto" 
             style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', fontFamily: 'Arial, sans-serif' }}
         >
             {/* Anchor Points for Scanner */}
@@ -307,8 +307,8 @@ export default function NaskahRepositoryClient({
     const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
 
     /**
-     * Logika Ekspor PDF (V28.0)
-     * Mengatasi error "Render Not Found" dan Cetak Kosong
+     * Logika Ekspor PDF (V29.0)
+     * Solusi untuk Blank PDF
      */
     const handleExecuteCetak = async (docId: string, mode: 'soal' | 'kunci' | 'ljk', title: string) => {
         setDownloading(true);
@@ -318,37 +318,33 @@ export default function NaskahRepositoryClient({
             const result = await getNaskahDetailsAction(docId);
             if (!result.success || !result.questions || !result.doc) throw new Error(result.error);
             
-            // 1. Render elemen ke area tersembunyi
+            // 1. Render elemen ke area khusus cetak di root
             setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
             
-            // 2. Berikan waktu ekstra bagi KaTeX dan Browser untuk merender visual
+            // 2. Polling DOM sampai konten muncul
             const elementId = mode === 'ljk' ? `ljk-target-${docId}` : `print-target-${docId}`;
-            
-            // Logika Polling: Tunggu sampai elemen ada di DOM (maksimal 3 detik)
             let element = null;
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 20; i++) {
                 element = document.getElementById(elementId);
                 if (element) break;
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
             
-            if (!element) {
-                throw new Error("Sistem gagal menyiapkan area cetak. Silakan coba muat ulang halaman.");
-            }
+            if (!element) throw new Error("Sistem gagal memuat area cetak. Silakan muat ulang halaman.");
 
-            // Tunggu tambahan agar rendering font/math stabil
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // Jeda tambahan untuk KaTeX rendering
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // 3. Ambil Screenshot Kualitas Tinggi
+            // 3. Capture Snapshot
             const canvas = await html2canvas(element, { 
                 scale: 2, 
                 useCORS: true, 
                 logging: false,
                 backgroundColor: "#ffffff",
-                windowWidth: 1000 // Menjaga lebar render konsisten
+                windowWidth: 1000
             });
 
-            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const imgWidth = 210; 
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -375,29 +371,29 @@ export default function NaskahRepositoryClient({
 
     /**
      * Logika Cetak Langsung (Direct Print)
-     * Menggunakan sistem dialog cetak bawaan Windows/Android
+     * Solusi untuk hasil blank putih di pratinjau sistem
      */
     const handleDirectPrint = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
         setDownloading(true);
         setLoadingId(docId);
         try {
             const result = await getNaskahDetailsAction(docId);
-            if (result.success && result.questions && result.doc) {
-                setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
+            if (!result.success || !result.questions || !result.doc) throw new Error(result.error);
+            
+            // Set target render untuk memunculkan portal cetak
+            setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
+            
+            // Tunggu ekstra lama (1.5 detik) agar mesin cetak browser menangkap elemen
+            setTimeout(() => {
+                window.print();
                 
-                // Tunggu elemen dirender sempurna sebelum panggil dialog print
-                setTimeout(() => {
-                    window.print();
-                    setLoadingId(null);
-                    setRenderTarget(null);
-                    setDownloading(false);
-                }, 1500);
-            } else {
-                toast({ variant: "destructive", title: "Gagal", description: result.error });
+                // Cleanup setelah dialog cetak ditutup
                 setLoadingId(null);
+                setRenderTarget(null);
                 setDownloading(false);
-            }
-        } catch (e) {
+            }, 1500);
+        } catch (e: any) {
+            toast({ variant: "destructive", title: "Gagal", description: e.message });
             setLoadingId(null);
             setDownloading(false);
         }
@@ -464,8 +460,8 @@ export default function NaskahRepositoryClient({
                 </div>
             </div>
 
-            {/* Area Render Khusus Cetak (V28.0) */}
-            <div className="print-only-container">
+            {/* Area Render Khusus Cetak V29.0 (Portal Root) */}
+            <div id="print-area" className={cn("print-container-root", renderTarget && "rendering")}>
                 {renderTarget && (
                     renderTarget.mode === 'ljk' ? (
                         <LjkPrintTemplate docMetadata={renderTarget.doc} questions={renderTarget.questions} schoolProfile={schoolProfile} />
@@ -551,14 +547,14 @@ export default function NaskahRepositoryClient({
                                 <div className="grid grid-cols-2 gap-2 w-full">
                                     <Button 
                                         variant="outline"
-                                        onClick={() => handleExecuteCetak(doc.id, 'kunci', doc.title)}
+                                        onClick={() => handleDirectPrint(doc.id, 'kunci')}
                                         className="h-11 border-amber-100 text-amber-700 bg-amber-50/20 hover:bg-amber-100 rounded-2xl font-bold gap-2 text-[10px] uppercase tracking-tighter"
                                     >
                                         <CheckCircle2 className="h-4 w-4" /> Kunci & Pembahasan
                                     </Button>
                                     <Button 
                                         variant="outline"
-                                        onClick={() => handleExecuteCetak(doc.id, 'ljk', doc.title)}
+                                        onClick={() => handleDirectPrint(doc.id, 'ljk')}
                                         className="h-11 border-emerald-100 text-emerald-700 bg-emerald-50/20 hover:bg-emerald-100 rounded-2xl font-bold gap-2 text-[10px] uppercase tracking-tighter"
                                     >
                                         <ScanQrCode className="h-4 w-4" /> Cetak LJK AI
