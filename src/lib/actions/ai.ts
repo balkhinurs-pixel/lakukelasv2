@@ -6,7 +6,6 @@ import { generateModulAjar, type ModulAjarInput, type ModulAjarOutput } from '@/
 import { generateCpAtp, type CpAtpInput, type CpAtpOutput } from '@/ai/flows/generate-cp-atp-flow';
 import { generateMaterial, type MaterialGenerationInput, type MaterialGenerationOutput } from '@/ai/flows/generate-material-flow';
 import { generateKisiKisi, type KisiKisiInput, type KisiKisiOutput } from '@/ai/flows/generate-kisi-kisi-flow';
-import { generateKisiKisi as generateKisiKisiFlow } from '@/ai/flows/generate-kisi-kisi-flow';
 import { correctExam, type CorrectExamInput, type CorrectExamOutput } from '@/ai/flows/correct-exam-flow';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
@@ -28,13 +27,16 @@ export async function generateContentAction(input: EducationContentInput) {
 }
 
 /**
- * Server Action khusus untuk Koreksi LJK AI.
- * Update V66.0: Penanganan error kuota yang lebih bersih.
+ * Server Action untuk Koreksi LJK AI - V69.0 Optimized Scoring.
+ * Gemini bertindak sebagai scanner, kode program melakukan penilaian.
  */
 export async function correctExamAction(naskahId: string, photoDataUri: string) {
     const supabase = await createClient();
     try {
-        // 1. Ambil Kunci Jawaban dari Database
+        // 1. Ambil data visual mentah dari Gemini (Scanner Mode)
+        const scanResult = await correctExam({ photoDataUri });
+
+        // 2. Ambil Kunci Jawaban dari Database untuk perbandingan kode
         const { data: naskah } = await supabase
             .from('ai_documents')
             .select('question_ids, subject, class_level')
@@ -43,50 +45,59 @@ export async function correctExamAction(naskahId: string, photoDataUri: string) 
 
         if (!naskah?.question_ids) throw new Error("Detail naskah tidak ditemukan.");
 
-        const { data: questions } = await supabase
+        const { data: keys } = await supabase
             .from('questions')
-            .select('sort_order, correct_answer, question_type')
+            .select('sort_order, correct_answer')
             .in('id', naskah.question_ids)
             .order('sort_order', { ascending: true });
 
-        if (!questions) throw new Error("Gagal memuat kunci jawaban.");
+        if (!keys) throw new Error("Gagal memuat kunci jawaban.");
 
-        // 2. Panggil AI Vision Flow
-        const result = await correctExam({
-            photoDataUri,
-            naskahId,
-            correctAnswers: questions
+        // 3. LOGIKA KOREKSI DETERMINISTIK (Scoring Engine)
+        let correctCount = 0;
+        const totalQuestions = keys.length;
+        
+        const processedAnswers = scanResult.detectedAnswers.map(ans => {
+            const key = keys.find(k => k.sort_order === ans.questionNum);
+            const isCorrect = key ? (ans.studentChoice === key.correct_answer) : false;
+            if (isCorrect) correctCount++;
+            
+            return {
+                questionNum: ans.questionNum,
+                studentChoice: ans.studentChoice,
+                isCorrect: isCorrect,
+                correctValue: key?.correct_answer || "?"
+            };
         });
 
-        // 3. Identifikasi Siswa Berdasarkan NIS Terdeteksi
+        // Hitung Skor (Skala 0-100)
+        const finalScore = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+
+        // 4. Identifikasi Siswa Berdasarkan NIS
         const { data: student } = await supabase
             .from('students')
             .select('id, name')
-            .eq('nis', result.detectedNis)
+            .eq('nis', scanResult.detectedNis)
             .maybeSingle();
 
         return { 
             success: true, 
             data: {
-                ...result,
+                detectedNis: scanResult.detectedNis,
                 studentName: student?.name || "Siswa Tidak Dikenal",
                 studentId: student?.id,
+                studentAnswers: processedAnswers,
+                totalScore: finalScore,
+                analysis: scanResult.analysis,
                 subject: naskah.subject,
                 classLevel: naskah.class_level
             } 
         };
     } catch (error: any) {
-        console.error("Scoring Error:", error.message);
+        console.error("Scoring Action Error:", error.message);
         const errStr = error.message || "";
-        
-        // Bersihkan pesan error kuota untuk UI
-        if (errStr.includes("429") || errStr.includes("RESOURCE_EXHAUSTED")) {
-            return { success: false, error: "429: Batas kuota API terlampaui. Silakan tunggu 1 menit lalu coba lagi." };
-        }
-        if (errStr.includes("503")) {
-            return { success: false, error: "503: Server AI sedang sibuk. Silakan coba lagi nanti." };
-        }
-        
+        if (errStr.includes("429")) return { success: false, error: "429: Kuota API penuh. Tunggu 1 menit." };
+        if (errStr.includes("503")) return { success: false, error: "503: Server AI sedang sibuk." };
         return { success: false, error: errStr };
     }
 }
@@ -223,7 +234,7 @@ export async function generateKisiKisiAction(docId: string) {
             return { success: false, error: "Gagal memuat butir soal dari database." };
         }
 
-        const result = await generateKisiKisiFlow({
+        const result = await generateKisiKisi({
             subject: doc.subject || "Umum",
             classLevel: doc.class_level || "Umum",
             examType: "Ujian / Penilaian",

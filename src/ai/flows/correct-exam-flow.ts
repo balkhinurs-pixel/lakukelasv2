@@ -1,7 +1,8 @@
 'use server';
 /**
- * @fileOverview Flow Genkit untuk Koreksi LJK (OMR Vision) - V67.0 Optimized.
- * Meringkas instruksi teks (Prompt) untuk menghemat kuota Token (TPM) Gemini Free Tier.
+ * @fileOverview Flow Genkit untuk Deteksi LJK (Vision Only) - V69.0.
+ * Gemini hanya bertugas sebagai scanner visual untuk mengubah bulatan menjadi JSON.
+ * Logika koreksi dipindahkan ke Server Action untuk akurasi maksimal.
  */
 
 import { z, genkit } from 'genkit';
@@ -9,27 +10,18 @@ import { googleAI } from '@genkit-ai/google-genai';
 import { createClient } from '@/lib/supabase/server';
 
 const CorrectExamInputSchema = z.object({
-  photoDataUri: z.string().describe("Data URI foto LJK (Base64)"),
-  naskahId: z.string().describe("ID naskah sebagai referensi kunci jawaban"),
-  correctAnswers: z.array(z.object({
-    sort_order: z.number(),
-    correct_answer: z.string(),
-    question_type: z.string()
-  })).describe("Daftar kunci jawaban dari database")
+  photoDataUri: z.string().describe("Data URI foto LJK (Base64)")
 });
 
 export type CorrectExamInput = z.infer<typeof CorrectExamInputSchema>;
 
 const CorrectExamOutputSchema = z.object({
-  detectedNis: z.string().describe("NIS 5 digit dari bulatan LJK"),
-  studentAnswers: z.array(z.object({
-    questionNum: z.number(),
-    studentChoice: z.string(),
-    isCorrect: z.boolean(),
-    correctValue: z.string()
-  })).describe("Hasil deteksi jawaban"),
-  totalScore: z.number().describe("Skor 0-100"),
-  analysis: z.string().describe("Catatan singkat kualitas foto")
+  detectedNis: z.string().describe("NIS 5 digit yang terdeteksi dari bulatan"),
+  detectedAnswers: z.array(z.object({
+    questionNum: z.number().describe("Nomor soal"),
+    studentChoice: z.string().describe("Huruf yang dihitamkan (A/B/C/D/E atau B/S)")
+  })).describe("Daftar jawaban mentah hasil deteksi visual"),
+  analysis: z.string().describe("Catatan kualitas foto (gelap, miring, dsb)")
 });
 
 export type CorrectExamOutput = z.infer<typeof CorrectExamOutputSchema>;
@@ -59,26 +51,21 @@ export async function correctExam(input: CorrectExamInput): Promise<CorrectExamO
     output: { schema: CorrectExamOutputSchema },
     prompt: [
         { media: { url: input.photoDataUri, contentType: 'image/jpeg' } },
-        { text: `Act as a high-precision OMR Scanner. 
-LAYOUT:
-- Use 4 black corner squares for alignment.
-- NIS Column: Right side (5 columns of 0-9 bubbles).
-- Answers: Sequentially numbered bubbles (A-E or B-S).
+        { text: `Act as a high-precision LJK/OMR Scanner.
+Your ONLY task is to convert the visual marks into JSON.
 
-KEYS:
-${input.correctAnswers.map(k => `No ${k.sort_order}: ${k.correct_answer}`).join('\n')}
+1. Detect the 4 corner squares to align the perspective.
+2. EXTRACT 5-digit NIS: Look at the grid on the right. Identify which digit (0-9) is filled in each of the 5 columns.
+3. DETECT ANSWERS: Scan all numbered question rows. Identify the filled bubble (A-E or B-S).
+4. If multiple bubbles are filled in one row, mark studentChoice as "MULTIPLE".
+5. If no bubble is filled, mark studentChoice as "EMPTY".
 
-TASK:
-1. Extract 5-digit NIS from bubbles.
-2. Detect filled bubbles for each question number.
-3. Compare with KEYS and calculate score (0-100).
-4. Identify multiple marks as wrong.
-5. Report blur/angle issues in analysis field.` }
+Return ONLY the detected data. Do NOT perform any scoring.` }
     ]
   });
 
   const result = response.output;
-  if (!result) throw new Error("AI failed to process image. Ensure 4 corner anchors are visible.");
+  if (!result) throw new Error("AI gagal membaca gambar. Pastikan 4 kotak di pojok terlihat jelas.");
   
   return result;
 }
