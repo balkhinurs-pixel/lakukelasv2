@@ -166,39 +166,33 @@
 }
 
 /* 
-  Sistem Cetak LakuKelas V27.0
-  Mengatur visibilitas elemen saat window.print() dipicu.
+  Sistem Cetak LakuKelas V28.0 (Optimized for Mobile)
 */
 @media print {
-  /* SEMBUNYIKAN SEMUA elemen UI aplikasi secara paksa */
-  body * {
-    visibility: hidden !important;
-  }
-  
-  /* TAMPILKAN HANYA area cetak yang ditargetkan */
-  .print-only, .print-only * {
-    visibility: visible !important;
+  /* Sembunyikan elemen UI secara selektif agar browser tidak bingung */
+  body > *:not(.print-only-container) {
+    display: none !important;
   }
 
-  .print-only {
+  .print-only-container {
     display: block !important;
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 210mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    z-index: 9999 !important;
+    z-index: 99999 !important;
+    background: white !important;
+    visibility: visible !important;
   }
 
-  /* Reset layout dasar agar tidak ada scrollbar atau latar dashboard */
+  .print-only-container * {
+    visibility: visible !important;
+  }
+
   main, body, html {
     background: white !important;
     overflow: visible !important;
-  }
-
-  .katex {
-    text-rendering: auto !important;
+    height: auto !important;
   }
 
   @page {
@@ -207,6 +201,15 @@
   }
 }
 
-.print-only {
-  display: none;
+/* 
+  Container render di luar layar (Off-screen) 
+  Agar html2canvas bisa menangkap elemen tanpa mengganggu UI
+*/
+.print-only-container {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 210mm;
+  background: white;
+  z-index: -100;
 }

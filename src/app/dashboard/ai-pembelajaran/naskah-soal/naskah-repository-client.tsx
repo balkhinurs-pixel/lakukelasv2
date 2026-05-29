@@ -66,7 +66,7 @@ import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
 
 /**
- * MathText Component V27.0
+ * MathText Component V28.0
  */
 const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boolean }) => {
   if (!content) return null;
@@ -109,7 +109,7 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
 };
 
 /**
- * NaskahPrintTemplate V27.0
+ * NaskahPrintTemplate V28.0
  */
 const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: any) => {
     return (
@@ -207,7 +207,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
 };
 
 /**
- * LjkPrintTemplate V27.0
+ * LjkPrintTemplate V28.0
  */
 const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
     return (
@@ -306,6 +306,10 @@ export default function NaskahRepositoryClient({
     const uniqueClasses = Array.from(new Set(initialDocuments.map(d => d.class_level).filter(Boolean))).sort();
     const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
 
+    /**
+     * Logika Ekspor PDF (V28.0)
+     * Mengatasi error "Render Not Found" dan Cetak Kosong
+     */
     const handleExecuteCetak = async (docId: string, mode: 'soal' | 'kunci' | 'ljk', title: string) => {
         setDownloading(true);
         setLoadingId(docId);
@@ -314,26 +318,34 @@ export default function NaskahRepositoryClient({
             const result = await getNaskahDetailsAction(docId);
             if (!result.success || !result.questions || !result.doc) throw new Error(result.error);
             
-            // 1. Set Target untuk di-render ke DOM (tersembunyi)
+            // 1. Render elemen ke area tersembunyi
             setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
             
-            // 2. Beri jeda agar React selesai merender elemen baru ke DOM
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
+            // 2. Berikan waktu ekstra bagi KaTeX dan Browser untuk merender visual
             const elementId = mode === 'ljk' ? `ljk-target-${docId}` : `print-target-${docId}`;
-            const element = document.getElementById(elementId);
+            
+            // Logika Polling: Tunggu sampai elemen ada di DOM (maksimal 3 detik)
+            let element = null;
+            for (let i = 0; i < 15; i++) {
+                element = document.getElementById(elementId);
+                if (element) break;
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
             
             if (!element) {
-                console.error("DEBUG: Element with ID not found:", elementId);
-                throw new Error("Sistem gagal menyiapkan area cetak. Silakan coba lagi.");
+                throw new Error("Sistem gagal menyiapkan area cetak. Silakan coba muat ulang halaman.");
             }
 
-            // 3. Ambil Screenshot Vektor Tinggi
+            // Tunggu tambahan agar rendering font/math stabil
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // 3. Ambil Screenshot Kualitas Tinggi
             const canvas = await html2canvas(element, { 
                 scale: 2, 
                 useCORS: true, 
                 logging: false,
-                backgroundColor: "#ffffff"
+                backgroundColor: "#ffffff",
+                windowWidth: 1000 // Menjaga lebar render konsisten
             });
 
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -348,7 +360,7 @@ export default function NaskahRepositoryClient({
             
             toast({ 
                 title: "Unduh Berhasil!", 
-                description: `File ${mode.toUpperCase()} naskah '${title}' siap dibuka.`,
+                description: `File ${mode.toUpperCase()} siap dibuka.`,
                 icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />
             });
 
@@ -361,6 +373,10 @@ export default function NaskahRepositoryClient({
         }
     };
 
+    /**
+     * Logika Cetak Langsung (Direct Print)
+     * Menggunakan sistem dialog cetak bawaan Windows/Android
+     */
     const handleDirectPrint = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
         setDownloading(true);
         setLoadingId(docId);
@@ -368,12 +384,14 @@ export default function NaskahRepositoryClient({
             const result = await getNaskahDetailsAction(docId);
             if (result.success && result.questions && result.doc) {
                 setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
+                
+                // Tunggu elemen dirender sempurna sebelum panggil dialog print
                 setTimeout(() => {
                     window.print();
                     setLoadingId(null);
                     setRenderTarget(null);
                     setDownloading(false);
-                }, 1200);
+                }, 1500);
             } else {
                 toast({ variant: "destructive", title: "Gagal", description: result.error });
                 setLoadingId(null);
@@ -397,7 +415,7 @@ export default function NaskahRepositoryClient({
 
     return (
         <div className="space-y-6">
-            {/* Loading Overlay */}
+            {/* Loading Overlay Premium */}
             {downloading && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/70 backdrop-blur-md animate-in fade-in duration-300">
                     <Card className="p-10 rounded-[3rem] border-0 shadow-2xl flex flex-col items-center gap-6 bg-white/90">
@@ -412,7 +430,7 @@ export default function NaskahRepositoryClient({
                 </div>
             )}
 
-            {/* Filter Section */}
+            {/* Filter Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
@@ -446,8 +464,8 @@ export default function NaskahRepositoryClient({
                 </div>
             </div>
 
-            {/* Hidden Target Area for Printing/PDF */}
-            <div className="print-only">
+            {/* Area Render Khusus Cetak (V28.0) */}
+            <div className="print-only-container">
                 {renderTarget && (
                     renderTarget.mode === 'ljk' ? (
                         <LjkPrintTemplate docMetadata={renderTarget.doc} questions={renderTarget.questions} schoolProfile={schoolProfile} />
@@ -462,7 +480,7 @@ export default function NaskahRepositoryClient({
                 )}
             </div>
 
-            {/* Grid Kartu Naskah */}
+            {/* Kartu Naskah */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
                 {filteredDocs.length > 0 ? (
                     filteredDocs.map((doc) => (
