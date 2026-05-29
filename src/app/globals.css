@@ -143,8 +143,8 @@
 }
 
 /* 
-  DEDICATED PRINT STYLES V43.0 
-  Pembaruan total untuk standar naskah profesional dan anti-dashboard-leak.
+  DEDICATED PRINT STYLES V54.0 
+  Pembaruan total: Memaksa skala 100% dan ukuran A4 murni.
 */
 @media print {
   @page {
@@ -158,19 +158,31 @@
     color: black !important;
     height: auto !important;
     min-height: 0 !important;
+    width: auto !important;
+    overflow: visible !important;
   }
 
   .no-print {
     display: none !important;
   }
 
+  /* Wrapper harus di-reset agar tidak mengecil */
+  .preview-scale-wrapper {
+    transform: none !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   .print-area {
     display: block !important;
-    width: 100% !important;
+    width: 210mm !important; /* Paksa lebar A4 asli */
     margin: 0 !important;
     padding: 0 !important;
     font-family: "Times New Roman", Times, serif !important;
     box-shadow: none !important;
+    border: none !important;
+    transform: none !important; /* Pastikan tidak ada transform inline */
   }
 
   /* Mencegah soal terpotong di tengah (Anti-Cut) */
