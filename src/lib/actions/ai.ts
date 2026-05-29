@@ -6,6 +6,7 @@ import { generateModulAjar, type ModulAjarInput, type ModulAjarOutput } from '@/
 import { generateCpAtp, type CpAtpInput, type CpAtpOutput } from '@/ai/flows/generate-cp-atp-flow';
 import { generateMaterial, type MaterialGenerationInput, type MaterialGenerationOutput } from '@/ai/flows/generate-material-flow';
 import { generateKisiKisi, type KisiKisiInput, type KisiKisiOutput } from '@/ai/flows/generate-kisi-kisi-flow';
+import { generateKisiKisi as generateKisiKisiFlow } from '@/ai/flows/generate-kisi-kisi-flow';
 import { correctExam, type CorrectExamInput, type CorrectExamOutput } from '@/ai/flows/correct-exam-flow';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
@@ -88,7 +89,7 @@ export async function streamModulAjarAction(input: ModulAjarInput) {
     (async () => {
         try {
             let finalAtpContent = "";
-            const atpId = input.atp_id;
+            const atpId = (input as any).atp_id;
 
             if (atpId && atpId !== 'none') {
                 const { data: atpDoc } = await supabase
@@ -100,7 +101,7 @@ export async function streamModulAjarAction(input: ModulAjarInput) {
             }
 
             // Hapus atp_id dari payload karena tidak ada di schema flow AI
-            const { atp_id: _, ...aiInput } = input;
+            const { atp_id: _, ...aiInput }: any = input;
 
             const result = await generateModulAjar({
                 ...aiInput,
@@ -210,7 +211,7 @@ export async function generateKisiKisiAction(docId: string) {
             return { success: false, error: "Gagal memuat butir soal dari database." };
         }
 
-        const result = await generateKisiKisi({
+        const result = await generateKisiKisiFlow({
             subject: doc.subject || "Umum",
             classLevel: doc.class_level || "Umum",
             examType: "Ujian / Penilaian",
@@ -306,7 +307,7 @@ export async function deleteQuestionsAction(ids: string[]) {
     try {
         await supabase.from('questions').delete().in('id', ids).eq('created_by', user.id);
         revalidatePath('/dashboard/ai-pembelajaran/bank-soal');
-        return { true: true };
+        return { success: true };
     } catch (error: any) {
         return { success: false, error: "Gagal menghapus data soal." };
     }
@@ -375,6 +376,7 @@ export async function createNaskahUjianAction(
         revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
         return { success: true };
     } catch (e: any) {
+        console.error("Error creating naskah:", e.message);
         return { success: false, error: e.message };
     }
 }
