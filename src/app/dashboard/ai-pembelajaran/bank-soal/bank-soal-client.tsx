@@ -501,6 +501,9 @@ export default function BankSoalClient({
                                             <div className="flex flex-wrap gap-1.5 justify-end md:justify-start">
                                                 <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500")}>{q.difficulty}</Badge>
                                                 <Badge variant="outline" className="font-black text-[9px] uppercase border-slate-200 text-slate-400">Kelas {q.kelas}</Badge>
+                                                <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black text-[9px] uppercase tracking-widest px-2 py-0.5">
+                                                    {getQuestionTypeLabel(q.question_type)}
+                                                </Badge>
                                             </div>
                                         </div>
                                     </div>
