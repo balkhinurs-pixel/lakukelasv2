@@ -143,21 +143,18 @@
 }
 
 /* 
-  ULTIMATE PRINT ISOLATION V72.0 
-  Menjamin dokumen cetak bebas dari pengaruh tata letak dashboard/mobile.
+  ULTIMATE PRINT ISOLATION V73.0 
+  Pemisahan logika antara naskah (flowing) dan LJK (rigid).
 */
 @media print {
   @page {
     size: A4;
-    margin: 0 !important; /* Menghilangkan header/footer otomatis browser */
+    margin: 0 !important;
   }
 
-  /* Reset total untuk mode cetak */
   html, body {
     background: #ffffff !important;
     color: #000000 !important;
-    width: 210mm !important;
-    height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
@@ -166,34 +163,28 @@
   }
 
   /* Sembunyikan semua elemen UI */
-  .no-print, 
-  nav, 
-  header, 
-  footer, 
-  aside, 
-  .sidebar, 
-  button {
+  .no-print, nav, header, footer, aside, .sidebar, button {
     display: none !important;
   }
 
-  /* Area Cetak Utama (A4 Rigid) */
-  .print-area {
+  /* 1. Aturan untuk Dokumen Flowing (Soal & Kunci) */
+  .questions-container {
     display: block !important;
-    position: relative !important;
-    width: 210mm !important;
-    min-height: 297mm !important;
-    margin: 0 !important;
-    padding: 15mm 20mm !important; /* Padding konten di dalam kertas */
-    box-shadow: none !important;
-    border: none !important;
-    background: #ffffff !important;
-    transform: none !important;
-    page-break-after: always;
+    width: 100% !important;
   }
 
-  /* Untuk LJK yang butuh presensi koordinat absolut */
+  .print-question-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    display: block;
+    width: 100%;
+    margin-bottom: 2rem !important;
+    position: relative;
+  }
+
+  /* 2. Aturan untuk LJK (Rigid Absolute) */
   .ljk-rigid-container {
-    width: 794px !important; /* A4 exact pixel */
+    width: 794px !important;
     height: 1123px !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -201,15 +192,8 @@
     top: 0 !important;
     left: 0 !important;
     background: #ffffff !important;
-  }
-
-  /* Mencegah soal terpotong di tengah */
-  .print-question-block {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-    display: block;
-    width: 100%;
-    margin-bottom: 1.5rem !important;
+    page-break-after: always;
+    overflow: hidden !important;
   }
 
   table {
