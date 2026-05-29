@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -439,15 +438,29 @@ export default function BankSoalClient({
                         const selectionIdx = getSelectionIndex(q.id);
                         const isSelected = selectionIdx !== null;
                         
-                        // Logic parsing khusus untuk tampilan Menjodohkan
+                        // Logic parsing khusus untuk tipe Menjodohkan (Matching) - V37.0 Smart Heuristic
                         const isMatching = q.question_type === 'matching';
                         let matchingItems: string[] = [];
                         let matchingIntro = q.question_text;
 
                         if (isMatching) {
                             const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
-                            matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
-                            matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
+                            if (lines.length > 1) {
+                                // Cari baris yang dimulai dengan angka
+                                constNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
+                                
+                                if (constNumberedLines) {
+                                    matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
+                                    matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
+                                } else {
+                                    // Heuristik: Anggap baris pertama intro, sisanya item
+                                    matchingIntro = lines[0];
+                                    matchingItems = lines.slice(1);
+                                }
+                            } else {
+                                matchingIntro = q.question_text;
+                                matchingItems = [];
+                            }
                         }
 
                         return (
@@ -535,11 +548,15 @@ export default function BankSoalClient({
                                                         <Info className="w-3 h-3" /> Pernyataan / Soal
                                                     </p>
                                                     <div className="space-y-2">
-                                                        {matchingItems.map((item, i) => (
-                                                            <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 text-xs font-bold shadow-sm">
+                                                        {matchingItems.length > 0 ? matchingItems.map((item, i) => (
+                                                            <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 text-xs font-bold shadow-sm min-h-[44px] flex items-center">
                                                                 <MathText content={item} />
                                                             </div>
-                                                        ))}
+                                                        )) : (
+                                                            <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 text-center opacity-40">
+                                                                <p className="text-[9px] font-black uppercase">Pernyataan Kosong</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-3">
@@ -548,7 +565,7 @@ export default function BankSoalClient({
                                                     </p>
                                                     <div className="space-y-2">
                                                         {q.options_json && Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                                            <div key={k} className="p-3 bg-white rounded-xl border border-slate-100 text-xs font-bold flex gap-3 shadow-sm">
+                                                            <div key={k} className="p-3 bg-white rounded-xl border border-slate-100 text-xs font-bold flex gap-3 shadow-sm min-h-[44px] flex items-center">
                                                                 <span className="text-emerald-600 font-black">{k}.</span>
                                                                 <div className="flex-1 overflow-hidden"><MathText content={v} /></div>
                                                             </div>

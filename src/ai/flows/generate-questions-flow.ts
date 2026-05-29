@@ -99,6 +99,12 @@ Buatlah ${input.count} soal dengan tipe "${input.question_type}" untuk:
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
 
+ATURAN KHUSUS TIPIKAL SOAL:
+1. MENJODOHKAN (matching):
+   - Field 'question' WAJIB berisi instruksi diikuti daftar pernyataan (list) yang harus dijodohkan, masing-masing di baris baru dan diberi nomor (1., 2., 3., dst).
+   - Field 'options' berisi pilihan jawaban (A, B, C, dst) yang menjadi pasangan dari pernyataan tersebut.
+   - Field 'answer' berisi pemetaan yang benar, contoh: "1-B, 2-A, 3-C".
+
 ATURAN KHUSUS PENGGUNAAN SVG (PENTING):
 1. BERSIKAPLAH SELEKTIF: Jangan sertakan "visual_svg" untuk setiap soal.
 2. GUNAKAN SVG HANYA JIKA: Soal tersebut menanyakan tentang geometri (bangun datar/ruang), membaca grafik/diagram batang/lingkaran, atau membutuhkan ilustrasi visual spesifik untuk dapat dijawab.
