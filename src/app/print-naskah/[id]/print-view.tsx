@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V50.0 (Print Optimized & Clean)
+ * MathText Component V51.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -132,7 +132,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         <p className="text-[10pt] font-bold uppercase mt-1">SISTEM PENILAIAN DIGITAL LAKUKELAS</p>
                     </div>
 
-                    {/* Section 1: Identitas & Petunjuk */}
                     <div className="grid grid-cols-[1.5fr_1fr] gap-6 mb-8">
                         <div className="space-y-4">
                             <div className="border-[1.5pt] border-black p-4 rounded-xl">
@@ -154,7 +153,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             </div>
                         </div>
 
-                        {/* NIS Block OMR Style */}
                         <div className="border-[1.5pt] border-black p-4 rounded-xl text-center">
                             <p className="text-[8pt] font-black mb-3 uppercase text-slate-500 tracking-widest">C. KOLOM NIS (5 DIGIT)</p>
                             <div className="flex justify-center gap-1.5">
@@ -170,11 +168,8 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         </div>
                     </div>
 
-                    {/* Section 2: Dinamis Jawaban Berkelompok */}
                     <div className="border-[2pt] border-black p-6 rounded-3xl min-h-[150mm]">
                         <div className="grid grid-cols-2 gap-x-12 gap-y-10 items-start">
-                            
-                            {/* Pilihan Ganda / True False Group */}
                             <div className="space-y-6">
                                 {(groupedQuestions.multiple_choice || groupedQuestions.true_false) && (
                                     <div className="space-y-3">
@@ -198,7 +193,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 )}
                             </div>
 
-                            {/* Matching & Short Answer Group */}
                             <div className="space-y-8">
                                 {groupedQuestions.matching && (
                                     <div className="space-y-3">
@@ -233,7 +227,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         </div>
                     </div>
 
-                    {/* Bottom Signature Area */}
                     <div className="mt-8 flex justify-between text-[9pt] px-10">
                         <div className="text-center">
                             <p>Tanda Tangan Pengawas</p>
@@ -246,13 +239,12 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             <p>( .................................... )</p>
                         </div>
                     </div>
-
                 </main>
             </div>
         );
     }
 
-    // -- SOAL & KUNCI VIEW --
+    // -- SOAL & KUNCI VIEW (PROFESSIONAL NATIONAL STANDARD) --
     let currentRomanIdx = 0;
     let lastRenderedType = "";
 
@@ -262,55 +254,74 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                 <Button variant="ghost" onClick={handleClose} className="text-white gap-2">
                     <ArrowLeft className="h-4 w-4" /> Kembali
                 </Button>
-                <div className="font-bold uppercase tracking-widest text-xs">Pratinjau Cetak {isKunci ? 'Kunci Jawaban' : 'Naskah Soal'}</div>
+                <div className="font-bold uppercase tracking-widest text-xs">Pratinjau {isKunci ? 'Kunci Jawaban' : 'Naskah Soal'}</div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2">
                     <Printer className="h-4 w-4" /> Simpan PDF / Print
                 </Button>
             </header>
 
-            <main className="print-area mx-auto" style={{ width: '210mm', padding: '15mm 20mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45', position: 'relative', zIndex: 1 }}>
+            <main className="print-area mx-auto" style={{ width: '210mm', padding: '15mm 20mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45' }}>
                 
-                <div className="print-header-block mb-6 pb-2 border-b-[3pt] border-double border-black">
+                {/* Dokumen Negara Header */}
+                <div className="flex justify-between items-start mb-2 no-print-manual">
+                    <div className="border-[1.5pt] border-black px-4 py-1">
+                        <p className="text-[10pt] font-bold uppercase leading-tight text-center">DOKUMEN NEGARA</p>
+                        <p className="text-[10pt] font-black uppercase leading-tight text-center bg-black text-white px-2 mt-0.5">SANGAT RAHASIA</p>
+                    </div>
+                </div>
+
+                {/* Kop Surat Utama */}
+                <div className="print-header-block mb-4 pb-2 border-b-[3pt] border-double border-black">
                     <div className="flex items-center gap-6">
-                        <div className="w-[30mm] h-[28mm] flex items-center justify-center shrink-0">
+                        <div className="w-[28mm] h-[28mm] flex items-center justify-center shrink-0">
                             {schoolProfile?.school_logo_url ? (
-                                <img 
-                                    src={schoolProfile.school_logo_url} 
-                                    className="w-full h-full object-contain" 
-                                    alt="Logo Sekolah" 
-                                    crossOrigin="anonymous" 
-                                />
+                                <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
                             ) : null}
                         </div>
-                        <div className="flex-1 text-center pr-[30mm]">
-                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Yayasan / Dinas Pendidikan Terkait</p>
+                        <div className="flex-1 text-center pr-[28mm]">
+                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">
+                                {schoolProfile?.jabatan || "Kementerian Pendidikan / Agama"} Terkait
+                            </p>
+                            <p className="text-[12pt] font-bold uppercase leading-tight mt-1">{doc.title.toUpperCase()}</p>
                             <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
                             <p className="text-[9pt] font-bold mt-1">
-                                {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
-                                {schoolProfile?.npsn && ` | NPSN: ${schoolProfile.npsn}`}
-                            </p>
-                            <p className="text-[8pt] italic mt-0.5">
-                                {schoolProfile?.school_website && `Website: ${schoolProfile.school_website}`} 
-                                {schoolProfile?.school_email && ` | Email: ${schoolProfile.school_email}`}
+                                NPSN: {schoolProfile?.npsn || "........"} | NSM: {schoolProfile?.nip?.substring(0, 12) || "............"}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div className="text-center mb-8">
-                    <h3 className="text-[12pt] font-bold uppercase underline leading-tight">
-                        {isKunci ? 'KUNCI JAWABAN & PEMBAHASAN' : `NASKAH SOAL ${doc.title.toUpperCase()}`}
-                    </h3>
-                    <div className="flex justify-center gap-10 mt-2 text-[11pt] font-bold uppercase">
-                        <p>Mata Pelajaran: {doc.subject}</p>
-                        <p>Kelas: {doc.class_level}</p>
-                    </div>
-                    <div className="flex justify-center gap-10 mt-1 text-[10pt] font-bold">
-                        {doc.exam_date && <p>Hari/Tanggal: {format(parseISO(doc.exam_date), 'EEEE, d MMMM yyyy', { locale: id })}</p>}
-                        {doc.exam_time && <p>Waktu: {doc.exam_time}</p>}
+                {/* Metadata Box (New Professional Layout) */}
+                <div className="border-[1.5pt] border-black p-4 mb-8 rounded-sm">
+                    <div className="grid grid-cols-2 gap-x-12">
+                        <div className="space-y-1.5">
+                            <div className="grid grid-cols-[110px_10px_1fr] items-baseline">
+                                <span className="font-bold">Hari / Tanggal</span>
+                                <span className="font-bold">:</span>
+                                <span className="font-bold">{doc.exam_date ? format(parseISO(doc.exam_date), 'EEEE, dd MMMM yyyy', { locale: id }) : '..........................'}</span>
+                            </div>
+                            <div className="grid grid-cols-[110px_10px_1fr] items-baseline">
+                                <span className="font-bold">Pukul</span>
+                                <span className="font-bold">:</span>
+                                <span className="font-bold">{doc.exam_time || '..........................'}</span>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <div className="grid grid-cols-[130px_10px_1fr] items-baseline">
+                                <span className="font-bold">Mata Pelajaran</span>
+                                <span className="font-bold">:</span>
+                                <span className="font-black uppercase">{doc.subject}</span>
+                            </div>
+                            <div className="grid grid-cols-[130px_10px_1fr] items-baseline">
+                                <span className="font-bold">Kelas / Semester</span>
+                                <span className="font-bold">:</span>
+                                <span className="font-bold">{doc.class_level} / {doc.semester || 'I (Satu)'}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
+                {/* Question Rendering */}
                 <div className="questions-container">
                     {questions.map((q: any, idx: number) => {
                         const showSectionHeader = q.question_type !== lastRenderedType;
@@ -337,7 +348,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                         </p>
                                     </div>
                                 )}
-                                <div className="print-question-block mb-10" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                                <div className="print-question-block mb-10" style={{ breakInside: 'avoid' }}>
                                     <div className="flex gap-4 items-start">
                                         <span className="font-bold min-w-[28pt] text-left">{idx + 1}.</span>
                                         <div className="flex-1">
