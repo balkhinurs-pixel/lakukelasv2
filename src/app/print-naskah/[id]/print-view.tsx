@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V43.0 (Print Optimized)
+ * MathText Component V45.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -158,21 +158,36 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
             </header>
 
             <main className="print-area mx-auto" style={{ width: '210mm', padding: '15mm 20mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45' }}>
-                {/* Kop Surat Profesional */}
+                {/* Kop Surat Profesional V45.0 */}
                 <div className="print-header-block mb-6 pb-2 border-b-[3pt] border-double border-black">
-                    <div className="flex items-center gap-8">
-                        <div className="w-[25mm] h-[25mm] flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-6">
+                        <div className="w-[28mm] h-[25mm] flex items-center justify-center shrink-0">
                             {schoolProfile?.school_logo_url ? (
-                                <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" />
+                                <img 
+                                    src={schoolProfile.school_logo_url} 
+                                    className="w-full h-full object-contain" 
+                                    alt="Logo" 
+                                    crossOrigin="anonymous"
+                                />
                             ) : (
-                                <AppLogo className="opacity-20 w-full h-full text-slate-300" />
+                                <div className="p-2 opacity-10 w-full h-full"><AppLogo /></div>
                             )}
                         </div>
-                        <div className="flex-1 text-center pr-[25mm]">
-                            <h1 className="text-[14pt] font-bold uppercase leading-tight">{schoolProfile?.school_name || "PEMERINTAH KOTA / KABUPATEN"}</h1>
-                            <h2 className="text-[16pt] font-black uppercase leading-tight">{schoolProfile?.school_name || "DINAS PENDIDIKAN"}</h2>
-                            {schoolProfile?.npsn && <p className="text-[10pt] font-bold mt-1">NPSN: {schoolProfile.npsn}</p>}
-                            <p className="text-[9pt] italic leading-tight mt-1">{schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"}</p>
+                        <div className="flex-1 text-center pr-[28mm]">
+                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">
+                                Yayasan Pendidikan / Dinas Pendidikan Kota
+                            </p>
+                            <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">
+                                {schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}
+                            </h1>
+                            <p className="text-[9pt] font-bold mt-1">
+                                {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
+                                {schoolProfile?.npsn && ` | NPSN: ${schoolProfile.npsn}`}
+                            </p>
+                            <p className="text-[8pt] italic mt-0.5">
+                                {schoolProfile?.school_website && `Website: ${schoolProfile.school_website}`} 
+                                {schoolProfile?.school_email && ` | Email: ${schoolProfile.school_email}`}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -210,7 +225,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                             <div className="my-6 flex justify-center">
                                                 <div 
                                                     className="border border-slate-100 p-2 rounded-lg"
-                                                    style={{ maxWidth: '60mm', width: '100%' }}
+                                                    style={{ maxWidth: '50mm', width: '100%' }}
                                                     dangerouslySetInnerHTML={{ 
                                                         __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') 
                                                     }} 
