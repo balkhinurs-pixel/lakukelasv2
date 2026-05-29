@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -15,12 +16,12 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 /**
- * MathText Component V62.0 (Print Optimized)
+ * MathText Component V63.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
   
-  const parts = content.split(/(\$\$[\s\S]*?\$$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
     <div className="math-text-render w-full overflow-visible text-justify">
@@ -95,24 +96,30 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         setGenerating(true);
 
         try {
-            // Optimasi Canvas V62.0: 
-            // - Scale 2.0 (Cukup tajam untuk A4)
-            // - JPEG Quality 0.8 (Sangat kecil filenya dibanding PNG)
+            // Optimasi V63.0: Gunakan resolusi 794x1123 (A4 96DPI) sebagai base capture
             const canvas = await html2canvas(printRef.current, {
-                scale: 2.0, 
+                scale: 2, 
                 useCORS: true,
                 logging: false,
                 backgroundColor: "#ffffff",
-                windowWidth: 794, // Paksa lebar A4 saat render
-                windowHeight: 1123
+                windowWidth: 794,
+                windowHeight: 1123,
+                onclone: (clonedDoc) => {
+                    // Reset transform pada elemen kloning agar tidak miring/kecil saat dicapture
+                    const element = clonedDoc.querySelector('.print-area') as HTMLElement;
+                    if (element) {
+                        element.style.transform = 'none';
+                        element.style.margin = '0';
+                    }
+                }
             });
 
-            const imgData = canvas.toDataURL("image/jpeg", 0.8);
+            const imgData = canvas.toDataURL("image/jpeg", 0.9);
             const pdf = new jsPDF({
                 orientation: "portrait",
                 unit: "mm",
                 format: "a4",
-                compress: true // Aktifkan kompresi internal PDF
+                compress: true
             });
 
             pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, 'FAST');
@@ -120,6 +127,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
             
         } catch (error) {
             console.error("PDF Generation Error:", error);
+            alert("Gagal membuat PDF. Silakan coba Cetak Langsung.");
         } finally {
             setGenerating(false);
         }
@@ -136,7 +144,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
 
     if (isLjk) {
         return (
-            <div className="min-h-screen bg-slate-100 flex flex-col print:bg-white">
+            <div className="min-h-screen bg-white flex flex-col">
                 <header className="no-print sticky top-0 z-[100] bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
                     <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                         <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
@@ -149,32 +157,32 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             className="bg-emerald-600 hover:bg-emerald-700 font-bold gap-2 px-3 sm:px-5 shadow-lg"
                         >
                             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                            <span className="hidden sm:inline">Simpan PDF (Kecil & Tajam)</span>
-                            <span className="sm:hidden">Simpan PDF</span>
+                            <span className="hidden sm:inline">Simpan PDF</span>
+                            <span className="sm:hidden">PDF</span>
                         </Button>
                         <Button onClick={handlePrint} variant="outline" className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold gap-2 hidden sm:flex">
-                            <Printer className="h-4 w-4" /> Print Langsung
+                            <Printer className="h-4 w-4" /> Print
                         </Button>
                     </div>
                 </header>
 
-                <main className="flex-1 flex justify-center items-start print:p-0 print-area-container relative p-4 sm:p-8">
+                <main className="flex-1 flex justify-center items-start print:p-0 relative p-4 sm:p-8 bg-white">
                     {!isReady && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-slate-50 z-10 no-print">
+                        <div className="absolute inset-0 flex items-center justify-center bg-white z-10 no-print">
                             <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
                         </div>
                     )}
                     
                     <div 
                         className={cn(
-                            "preview-scale-wrapper transition-opacity duration-500 will-change-transform print:transform-none",
+                            "transition-opacity duration-500 will-change-transform print:transform-none",
                             isReady ? "opacity-100" : "opacity-0"
                         )}
                         style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                     >
                         <div 
                             ref={printRef}
-                            className="print-area bg-white relative print:shadow-none shadow-2xl mx-auto overflow-hidden" 
+                            className="print-area bg-white relative print:shadow-none shadow-sm mx-auto overflow-hidden" 
                             style={{ 
                                 width: '210mm', 
                                 height: '297mm',
@@ -183,55 +191,55 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 fontFamily: 'Arial, sans-serif'
                             }}
                         >
-                            {/* Anchor Points */}
-                            <div className="absolute top-[5mm] left-[5mm] w-6 h-6 bg-black z-50" />
-                            <div className="absolute top-[5mm] right-[5mm] w-6 h-6 bg-black z-50" />
-                            <div className="absolute bottom-[5mm] left-[5mm] w-6 h-6 bg-black z-50" />
-                            <div className="absolute bottom-[5mm] right-[5mm] w-6 h-6 bg-black z-50" />
+                            {/* Anchor Points (Presisi untuk AI Vision) */}
+                            <div className="absolute top-[5mm] left-[5mm] w-6 h-6 bg-black" />
+                            <div className="absolute top-[5mm] right-[5mm] w-6 h-6 bg-black" />
+                            <div className="absolute bottom-[5mm] left-[5mm] w-6 h-6 bg-black" />
+                            <div className="absolute bottom-[5mm] right-[5mm] w-6 h-6 bg-black" />
 
-                            <div className="flex items-center justify-between border-b-[1.5pt] border-black pb-2 mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 flex items-center justify-center">
+                            <div className="flex items-center justify-between border-b-[2pt] border-black pb-3 mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 flex items-center justify-center">
                                         {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />}
                                     </div>
                                     <div>
-                                        <h1 className="text-[12pt] font-black uppercase leading-tight">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
-                                        <p className="text-[7pt] font-bold uppercase text-slate-500 tracking-tighter">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
+                                        <h1 className="text-[14pt] font-black uppercase leading-tight">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
+                                        <p className="text-[8pt] font-bold uppercase text-slate-500 tracking-tight">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <h2 className="text-[10pt] font-black uppercase underline">LJK Ujian Siswa</h2>
-                                    <p className="text-[7pt] font-bold text-slate-500">{doc.subject} | KELAS {doc.class_level}</p>
+                                    <h2 className="text-[12pt] font-black uppercase underline">LJK Ujian</h2>
+                                    <p className="text-[8pt] font-bold text-slate-500">{doc.subject} | KELAS {doc.class_level}</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-[1.4fr_1fr] gap-4 mb-6">
-                                <div className="space-y-3">
-                                    <div className="border border-black p-3 rounded-lg">
-                                        <p className="text-[7pt] font-black mb-2 uppercase text-slate-500">IDENTITAS PESERTA</p>
-                                        <div className="space-y-3">
-                                            <div className="h-7 border-b border-black flex items-end pb-0.5 text-[9pt] font-bold text-slate-300">NAMA: ................................................................</div>
-                                            <div className="h-7 border-b border-black flex items-end pb-0.5 text-[9pt] font-bold text-slate-300">KELAS: ...............................................................</div>
+                            <div className="grid grid-cols-[1.5fr_1fr] gap-6 mb-8">
+                                <div className="space-y-4">
+                                    <div className="border-2 border-black p-4 rounded-xl">
+                                        <p className="text-[8pt] font-black mb-3 uppercase text-slate-600">IDENTITAS PESERTA</p>
+                                        <div className="space-y-5">
+                                            <div className="h-8 border-b-2 border-black flex items-end pb-1 text-[10pt] font-bold text-slate-400">NAMA: ..............................................................</div>
+                                            <div className="h-8 border-b-2 border-black flex items-end pb-1 text-[10pt] font-bold text-slate-400">KELAS: .............................................................</div>
                                         </div>
                                     </div>
-                                    <div className="border border-black p-3 rounded-lg bg-slate-50">
-                                        <p className="text-[7pt] font-black mb-1 uppercase text-slate-500">PETUNJUK</p>
-                                        <p className="text-[6.5pt] font-bold leading-tight">
+                                    <div className="border-2 border-black p-4 rounded-xl bg-slate-50">
+                                        <p className="text-[8pt] font-black mb-1 uppercase text-slate-600">PETUNJUK</p>
+                                        <p className="text-[7.5pt] font-bold leading-relaxed">
                                             1. Gunakan Pensil 2B atau Pulpen Hitam.<br/>
-                                            2. Hitamkan bulatan secara penuh.<br/>
-                                            3. Jaga lembar tetap bersih dan tidak terlipat.
+                                            2. Hitamkan bulatan secara penuh dan jelas.<br/>
+                                            3. Jaga lembar tetap bersih, tidak basah/terlipat.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="border border-black p-3 rounded-lg text-center">
-                                    <p className="text-[7pt] font-black mb-2 uppercase text-slate-500">KOLOM NIS (5 DIGIT)</p>
-                                    <div className="flex justify-center gap-1.5">
+                                <div className="border-2 border-black p-4 rounded-xl text-center">
+                                    <p className="text-[8pt] font-black mb-3 uppercase text-slate-600 tracking-wider">KOLOM NIS (5 DIGIT)</p>
+                                    <div className="flex justify-center gap-2">
                                         {[1,2,3,4,5].map(col => (
-                                            <div key={col} className="space-y-0.5">
-                                                <div className="w-6 h-6 border border-black flex items-center justify-center font-bold text-[8pt] mb-1 text-slate-200" />
+                                            <div key={col} className="space-y-1">
+                                                <div className="w-8 h-8 border-2 border-black flex items-center justify-center font-bold text-[10pt] mb-1 text-slate-200 rounded-sm" />
                                                 {[0,1,2,3,4,5,6,7,8,9].map(num => (
-                                                    <div key={num} className="w-4 h-4 rounded-full border-[1pt] border-black flex items-center justify-center text-[6pt] font-bold">{num}</div>
+                                                    <div key={num} className="w-5 h-5 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[7pt] font-black">{num}</div>
                                                 ))}
                                             </div>
                                         ))}
@@ -239,19 +247,19 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 </div>
                             </div>
 
-                            <div className="border-[1.5pt] border-black p-4 rounded-2xl flex-1 bg-white">
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-6 items-start">
-                                    <div className="space-y-4">
-                                        <p className="text-[8pt] font-black uppercase text-center bg-slate-100 py-1 rounded tracking-widest mb-2">Jawaban Objektif</p>
-                                        <div className="grid grid-cols-1 gap-y-1.5">
+                            <div className="border-[2pt] border-black p-6 rounded-3xl flex-1 bg-white">
+                                <div className="grid grid-cols-2 gap-x-12 gap-y-8 items-start">
+                                    <div className="space-y-6">
+                                        <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Jawaban Objektif</p>
+                                        <div className="grid grid-cols-1 gap-y-2.5">
                                             {questions.filter((q:any) => q.question_type === 'multiple_choice' || q.question_type === 'true_false').map((q: any, idx: number) => {
                                                 const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
                                                 return (
-                                                    <div key={q.id} className="flex items-center gap-3 py-0.5">
-                                                        <span className="w-5 font-bold text-[8pt] text-right">{idx + 1}.</span>
-                                                        <div className="flex gap-1.5">
+                                                    <div key={q.id} className="flex items-center gap-4 py-0.5">
+                                                        <span className="w-6 font-black text-[10pt] text-right text-slate-400">{idx + 1}.</span>
+                                                        <div className="flex gap-2">
                                                             {options.map(opt => (
-                                                                <div key={opt} className="w-5 h-5 rounded-full border-[1pt] border-black flex items-center justify-center text-[6pt] font-black">{opt}</div>
+                                                                <div key={opt} className="w-7 h-7 rounded-full border-[1.8pt] border-black flex items-center justify-center text-[9pt] font-black">{opt}</div>
                                                             ))}
                                                         </div>
                                                     </div>
@@ -260,15 +268,15 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                         </div>
                                     </div>
 
-                                    <div className="space-y-6">
+                                    <div className="space-y-8">
                                         {groupedQuestions.matching && (
-                                            <div className="space-y-2">
-                                                <p className="text-[8pt] font-black uppercase text-center bg-slate-100 py-1 rounded tracking-widest mb-2">Menjodohkan</p>
-                                                <div className="grid grid-cols-1 gap-1.5">
+                                            <div className="space-y-3">
+                                                <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Menjodohkan</p>
+                                                <div className="grid grid-cols-1 gap-2.5">
                                                     {groupedQuestions.matching.map((q: any, idx: number) => (
-                                                        <div key={q.id} className="flex items-center gap-2">
-                                                            <span className="w-5 font-bold text-[8pt] text-right">{idx + 1}.</span>
-                                                            <div className="flex-1 h-7 border-[1pt] border-black border-dashed rounded flex items-center px-2 text-[6pt] font-bold text-slate-300">Tulis Pasangan (e.g. 1-C)</div>
+                                                        <div key={q.id} className="flex items-center gap-3">
+                                                            <span className="w-6 font-black text-[10pt] text-right text-slate-400">{idx + 1}.</span>
+                                                            <div className="flex-1 h-9 border-[1.5pt] border-black border-dashed rounded-lg flex items-center px-3 text-[8pt] font-bold text-slate-300">Pasangan (Contoh: 1-C)</div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -276,14 +284,14 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                         )}
 
                                         {(groupedQuestions.short_answer || groupedQuestions.essay) && (
-                                            <div className="space-y-2">
-                                                <p className="text-[8pt] font-black uppercase text-center bg-slate-100 py-1 rounded tracking-widest mb-2">Isian / Uraian</p>
-                                                <div className="grid grid-cols-1 gap-2">
+                                            <div className="space-y-3">
+                                                <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Isian / Uraian</p>
+                                                <div className="grid grid-cols-1 gap-3">
                                                     {questions.filter((q:any) => q.question_type === 'short_answer' || q.question_type === 'essay').map((q: any, idx: number) => (
                                                         <div key={q.id} className="space-y-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-bold text-[8pt]">{idx + 1}.</span>
-                                                                <div className="flex-1 h-[10mm] border-[1pt] border-black rounded-md" />
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="font-black text-[10pt] text-slate-400">{idx + 1}.</span>
+                                                                <div className="flex-1 h-[14mm] border-[1.5pt] border-black rounded-xl" />
                                                             </div>
                                                         </div>
                                                     ))}
@@ -294,38 +302,27 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 </div>
                             </div>
 
-                            <div className="absolute bottom-[10mm] left-[20mm] right-[20mm] flex justify-between text-[8pt] font-bold">
+                            <div className="absolute bottom-[10mm] left-[20mm] right-[20mm] flex justify-between text-[9pt] font-black">
                                 <div className="text-center">
                                     <p>Tanda Tangan Pengawas</p>
-                                    <div className="h-10" />
+                                    <div className="h-14" />
                                     <p>( .................................... )</p>
                                 </div>
                                 <div className="text-center">
                                     <p>Tanda Tangan Siswa</p>
-                                    <div className="h-10" />
+                                    <div className="h-14" />
                                     <p>( .................................... )</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </main>
-                <style jsx global>{`
-                    @media print {
-                        @page { 
-                            margin: 0 !important; 
-                        }
-                    }
-                `}</style>
             </div>
         );
     }
 
-    // Template Naskah Soal / Kunci Jawaban
-    let currentRomanIdx = 0;
-    let lastRenderedType = "";
-
     return (
-        <div className="min-h-screen bg-slate-100 flex flex-col print:bg-white">
+        <div className="min-h-screen bg-slate-100 flex flex-col">
             <header className="no-print sticky top-0 z-[100] bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
                 <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                     <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
@@ -333,27 +330,27 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                 <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">
                     {isKunci ? 'Kunci Jawaban' : 'Naskah Soal'}
                 </div>
-                <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4 shadow-lg shadow-indigo-600/20">
+                <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4 shadow-lg">
                     <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF / Print</span>
                 </Button>
             </header>
 
             <main className="flex-1 p-4 sm:p-8 flex justify-center items-start print:p-0 print-area-container relative">
                 {!isReady && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-50 z-10 no-print">
+                    <div className="absolute inset-0 flex items-center justify-center bg-white z-10 no-print">
                         <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
                     </div>
                 )}
 
                 <div 
                     className={cn(
-                        "preview-scale-wrapper transition-opacity duration-500 will-change-transform print:transform-none",
+                        "transition-opacity duration-500 will-change-transform print:transform-none",
                         isReady ? "opacity-100" : "opacity-0"
                     )}
                     style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                 >
                     <div 
-                        className="print-area bg-white mx-auto print:shadow-none shadow-2xl" 
+                        className="print-area bg-white mx-auto print:shadow-none shadow-sm" 
                         style={{ 
                             width: '210mm', 
                             padding: '15mm 15mm', 
