@@ -313,8 +313,8 @@ export async function deleteQuestionsAction(ids: string[]) {
 }
 
 /**
- * Server Action untuk menyusun naskah ujian (Local Implementation V44.0).
- * Melepaskan ketergantungan dari Google Drive untuk naskah soal.
+ * Server Action untuk menyusun naskah ujian (V47.0 - Auto Grouping).
+ * Soal dikelompokkan otomatis berdasarkan tipe standar pendidikan.
  */
 export async function createNaskahUjianAction(
     title: string, 
@@ -329,23 +329,31 @@ export async function createNaskahUjianAction(
         // 1. Ambil data tipe soal untuk semua ID yang dipilih
         const { data: questionsData } = await supabase
             .from('questions')
-            .select('id, question_type')
+            .select('id, question_type, sort_order')
             .in('id', selectedQuestionIds);
             
         if (!questionsData) throw new Error("Gagal memproses urutan soal.");
 
-        // 2. Tentukan Urutan Tipe Soal Standar Ujian
+        // 2. Tentukan Urutan Tipe Soal Standar Ujian Indonesia
         const typeOrder: Record<string, number> = {
-            'multiple_choice': 1, // Pilihan Ganda
-            'true_false': 2,      // Benar / Salah
-            'matching': 3,        // Menjodohkan
-            'short_answer': 4,    // Isian Singkat
-            'essay': 5            // Uraian / Esai
+            'multiple_choice': 1, // I. PILIHAN GANDA
+            'true_false': 2,      // II. BENAR / SALAH
+            'matching': 3,        // III. MENJODOHKAN
+            'short_answer': 4,    // IV. ISIAN SINGKAT
+            'essay': 5            // V. URAIAN / ESAI
         };
 
-        // 3. Urutkan ID soal berdasarkan tipe standar di atas
+        // 3. Urutkan ID soal berdasarkan tipe standar dan pertahankan urutan asli jika tipenya sama
         const sortedQuestionIds = [...questionsData]
-            .sort((a, b) => (typeOrder[a.question_type] || 99) - (typeOrder[b.question_type] || 99))
+            .sort((a, b) => {
+                const orderA = typeOrder[a.question_type] || 99;
+                const orderB = typeOrder[b.question_type] || 99;
+                
+                if (orderA !== orderB) return orderA - orderB;
+                
+                // Jika tipe sama, urutkan berdasarkan sort_order asli dari database
+                return (a.sort_order || 0) - (b.sort_order || 0);
+            })
             .map(q => q.id);
 
         // 4. Simpan metadata "Resep" soal ke ai_documents secara lokal

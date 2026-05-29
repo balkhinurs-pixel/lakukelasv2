@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import PrintView from "./print-view";
 
 /**
- * Halaman Cetak Terisolasi Total (V43.0)
- * Berada di luar folder dashboard agar tidak mewarisi komponen navigasi.
+ * Halaman Cetak Terisolasi Total (V47.0)
+ * Menangani pengambilan data dengan mempertahankan urutan question_ids dari manifest.
  */
 export default async function NaskahPrintPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ mode?: string }> }) {
     const params = await props.params;
@@ -15,7 +15,7 @@ export default async function NaskahPrintPage(props: { params: Promise<{ id: str
 
     if (!user) redirect("/login");
 
-    // Fetch Naskah Details
+    // 1. Ambil Detail Naskah (Manifest)
     const { data: doc } = await supabase
         .from('ai_documents')
         .select('*')
@@ -24,20 +24,22 @@ export default async function NaskahPrintPage(props: { params: Promise<{ id: str
 
     if (!doc) return <div className="p-10 text-center font-bold">Naskah tidak ditemukan.</div>;
 
-    // Fetch Questions
-    const { data: questions } = await supabase
+    // 2. Ambil Butir Soal Mentah
+    const { data: rawQuestions } = await supabase
         .from('questions')
         .select('*')
-        .in('id', doc.question_ids || [])
-        .order('sort_order', { ascending: true });
+        .in('id', doc.question_ids || []);
 
-    // Fetch School Profile for Kop Surat (Admin data)
+    // 3. PENTING: Urutkan kembali hasil query agar SAMA PERSIS dengan urutan question_ids di naskah
+    const questions = doc.question_ids?.map(id => rawQuestions?.find(q => q.id === id)).filter(Boolean) || [];
+
+    // 4. Ambil Profil Sekolah untuk Kop Surat
     const schoolProfile = await getAdminProfile();
 
     return (
         <PrintView 
             doc={doc} 
-            questions={questions || []} 
+            questions={questions} 
             schoolProfile={schoolProfile}
             mode={(searchParams.mode as any) || 'soal'}
         />

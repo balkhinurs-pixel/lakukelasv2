@@ -13,12 +13,11 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V45.0 (Print Optimized)
+ * MathText Component V47.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
   
-  // Deteksi berbagai format LaTeX yang mungkin dihasilkan AI
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
@@ -48,21 +47,28 @@ const MathText = ({ content }: { content: string }) => {
   );
 };
 
+const typeLabels: Record<string, string> = {
+    'multiple_choice': 'PILIHAN GANDA',
+    'true_false': 'BENAR / SALAH',
+    'matching': 'MENJODOHKAN',
+    'short_answer': 'ISIAN SINGKAT',
+    'essay': 'URAIAN / ESAI'
+};
+
+const toRoman = (num: number) => {
+    const roman = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+    return roman[num] || String(num);
+};
+
 export default function PrintView({ doc, questions, schoolProfile, mode }: any) {
     const isLjk = mode === 'ljk';
     const isKunci = mode === 'kunci';
 
     React.useEffect(() => {
         const prepareAndPrint = async () => {
-            // Tunggu font siap (krusial untuk LaTeX/Serif)
             if (typeof document !== 'undefined' && (document as any).fonts) {
                 await (document as any).fonts.ready;
             }
-            // Delay kecil untuk KaTeX rendering
-            setTimeout(() => {
-                // Auto print bisa diaktifkan jika dirasa perlu
-                // window.print();
-            }, 1000);
         };
         prepareAndPrint();
     }, []);
@@ -70,7 +76,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const handlePrint = () => window.print();
     const handleClose = () => window.close();
 
-    // --- LJK VIEW ---
+    // LJK VIEW
     if (isLjk) {
         return (
             <div className="min-h-screen bg-white">
@@ -85,7 +91,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                 </header>
 
                 <main className="print-area bg-white mx-auto" style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', fontFamily: 'Arial, sans-serif', position: 'relative' }}>
-                    {/* Anchor Points for Vision AI */}
                     <div className="absolute top-6 left-6 w-6 h-6 bg-black" />
                     <div className="absolute top-6 right-6 w-6 h-6 bg-black" />
                     <div className="absolute bottom-6 left-6 w-6 h-6 bg-black" />
@@ -144,7 +149,10 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         );
     }
 
-    // --- SOAL & KUNCI VIEW ---
+    // SOAL & KUNCI VIEW
+    let currentRomanIdx = 0;
+    let lastRenderedType = "";
+
     return (
         <div className="min-h-screen bg-white">
             <header className="no-print sticky top-0 z-50 bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
@@ -158,28 +166,18 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
             </header>
 
             <main className="print-area mx-auto" style={{ width: '210mm', padding: '15mm 20mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45' }}>
-                {/* Kop Surat Profesional V45.0 */}
                 <div className="print-header-block mb-6 pb-2 border-b-[3pt] border-double border-black">
                     <div className="flex items-center gap-6">
                         <div className="w-[28mm] h-[25mm] flex items-center justify-center shrink-0">
                             {schoolProfile?.school_logo_url ? (
-                                <img 
-                                    src={schoolProfile.school_logo_url} 
-                                    className="w-full h-full object-contain" 
-                                    alt="Logo" 
-                                    crossOrigin="anonymous"
-                                />
+                                <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
                             ) : (
                                 <div className="p-2 opacity-10 w-full h-full"><AppLogo /></div>
                             )}
                         </div>
                         <div className="flex-1 text-center pr-[28mm]">
-                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">
-                                Yayasan Pendidikan / Dinas Pendidikan Kota
-                            </p>
-                            <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">
-                                {schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}
-                            </h1>
+                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Yayasan Pendidikan / Dinas Pendidikan Kota</p>
+                            <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
                             <p className="text-[9pt] font-bold mt-1">
                                 {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
                                 {schoolProfile?.npsn && ` | NPSN: ${schoolProfile.npsn}`}
@@ -200,7 +198,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         <p>Mata Pelajaran: {doc.subject}</p>
                         <p>Kelas: {doc.class_level}</p>
                     </div>
-                    {/* Exam Date & Time V46.0 */}
                     <div className="flex justify-center gap-10 mt-1 text-[10pt] font-bold">
                         {doc.exam_date && <p>Hari/Tanggal: {format(parseISO(doc.exam_date), 'EEEE, d MMMM yyyy', { locale: id })}</p>}
                         {doc.exam_time && <p>Waktu: {doc.exam_time}</p>}
@@ -209,102 +206,116 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
 
                 <div className="questions-container">
                     {questions.map((q: any, idx: number) => {
+                        const showSectionHeader = q.question_type !== lastRenderedType;
+                        if (showSectionHeader) {
+                            lastRenderedType = q.question_type;
+                            currentRomanIdx++;
+                        }
+
                         const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                         const isTrueFalse = q.question_type === 'true_false';
                         const isMatching = q.question_type === 'matching';
                         
-                        // Logic Parsing Menjodohkan Profesional
                         const lines = isMatching ? q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '') : [];
                         const matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
                         const matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
                         const rowCount = isMatching ? Math.max(matchingItems.length, options.length) : 0;
 
                         return (
-                            <div key={q.id} className="print-question-block mb-10" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
-                                <div className="flex gap-4 items-start">
-                                    <span className="font-bold min-w-[28pt] text-left">{idx + 1}.</span>
-                                    <div className="flex-1">
-                                        <MathText content={isMatching ? (matchingIntro || q.question_text) : q.question_text} />
-                                        
-                                        {q.visual_svg && (
-                                            <div className="my-6 flex justify-center">
-                                                <div 
-                                                    className="border border-slate-100 p-2 rounded-lg"
-                                                    style={{ maxWidth: '50mm', width: '100%' }}
-                                                    dangerouslySetInnerHTML={{ 
-                                                        __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') 
-                                                    }} 
-                                                />
-                                            </div>
-                                        )}
+                            <React.Fragment key={q.id}>
+                                {showSectionHeader && (
+                                    <div className="mt-8 mb-4 border-b border-black/20 pb-1" style={{ breakAfter: 'avoid' }}>
+                                        <p className="text-[11pt] font-black uppercase">
+                                            {toRoman(currentRomanIdx)}. {typeLabels[q.question_type] || q.question_type.toUpperCase()}
+                                        </p>
+                                    </div>
+                                )}
+                                <div className="print-question-block mb-10" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                                    <div className="flex gap-4 items-start">
+                                        <span className="font-bold min-w-[28pt] text-left">{idx + 1}.</span>
+                                        <div className="flex-1">
+                                            <MathText content={isMatching ? (matchingIntro || q.question_text) : q.question_text} />
+                                            
+                                            {q.visual_svg && (
+                                                <div className="my-6 flex justify-center">
+                                                    <div 
+                                                        className="border border-slate-100 p-2 rounded-lg"
+                                                        style={{ maxWidth: '50mm', width: '100%' }}
+                                                        dangerouslySetInnerHTML={{ 
+                                                            __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') 
+                                                        }} 
+                                                    />
+                                                </div>
+                                            )}
 
-                                        {isTrueFalse ? (
-                                            <div className="mt-4 flex gap-12 items-center">
-                                                {options.map(([k, v]) => (
-                                                    <div key={k} className="flex gap-2 items-center">
-                                                        <span className="font-bold">{k}.</span>
-                                                        <div className="font-bold uppercase tracking-wide">{v}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : isMatching ? (
-                                            <div className="mt-6 border border-black rounded-lg overflow-hidden">
-                                                <table className="w-full border-collapse">
-                                                    <thead>
-                                                        <tr className="bg-gray-50 border-b border-black">
-                                                            <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-center w-10">No</th>
-                                                            <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-left">Pernyataan / Soal</th>
-                                                            <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-center w-14">Pilih</th>
-                                                            <th className="p-2 font-bold text-[9pt] uppercase text-left">Pilihan Jawaban</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {Array.from({ length: rowCount }).map((_, i) => (
-                                                            <tr key={i} className="border-b border-black last:border-b-0">
-                                                                <td className="p-2 border-r border-black text-center font-bold">{i + 1}</td>
-                                                                <td className="p-2 border-r border-black text-[10pt] min-w-[70mm]">
-                                                                    {matchingItems[i] ? <MathText content={matchingItems[i].replace(/^\d+[\.\)]\s*/, '')} /> : <div className="h-6 italic text-slate-300">...</div>}
-                                                                </td>
-                                                                <td className="p-2 border-r border-black text-center font-bold text-slate-200">[.....]</td>
-                                                                <td className="p-2 text-[10pt] min-w-[50mm]">
-                                                                    {options[i] ? (
-                                                                        <div className="flex gap-2 items-start">
-                                                                            <span className="font-bold min-w-[15pt]">{options[i][0]}.</span>
-                                                                            <MathText content={options[i][1]} />
-                                                                        </div>
-                                                                    ) : <div className="h-6 italic text-slate-300">...</div>}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        ) : (
-                                            options.length > 0 && (
-                                                <div className={cn(
-                                                    "mt-4 grid grid-cols-2 gap-x-12 items-start",
-                                                    options.length === 4 ? "grid-rows-2" : "grid-rows-3",
-                                                    "grid-flow-col"
-                                                )}>
+                                            {isTrueFalse ? (
+                                                <div className="mt-4 flex gap-12 items-center">
                                                     {options.map(([k, v]) => (
-                                                        <div key={k} className="flex gap-2 items-start py-1">
-                                                            <span className="font-bold min-w-[18pt]">{k}.</span>
-                                                            <div className="flex-1"><MathText content={v} /></div>
+                                                        <div key={k} className="flex gap-2 items-center">
+                                                            <span className="font-bold">{k}.</span>
+                                                            <div className="font-bold uppercase tracking-wide">{v}</div>
                                                         </div>
                                                     ))}
                                                 </div>
-                                            )
-                                        )}
+                                            ) : isMatching ? (
+                                                <div className="mt-6 border border-black rounded-lg overflow-hidden">
+                                                    <table className="w-full border-collapse">
+                                                        <thead>
+                                                            <tr className="bg-gray-50 border-b border-black">
+                                                                <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-center w-10">No</th>
+                                                                <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-left">Pernyataan / Soal</th>
+                                                                <th className="p-2 border-r border-black font-bold text-[9pt] uppercase text-center w-14">Pilih</th>
+                                                                <th className="p-2 font-bold text-[9pt] uppercase text-left">Pilihan Jawaban</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {Array.from({ length: rowCount }).map((_, i) => (
+                                                                <tr key={i} className="border-b border-black last:border-b-0">
+                                                                    <td className="p-2 border-r border-black text-center font-bold">{i + 1}</td>
+                                                                    <td className="p-2 border-r border-black text-[10pt] min-w-[70mm]">
+                                                                        {matchingItems[i] ? <MathText content={matchingItems[i].replace(/^\d+[\.\)]\s*/, '')} /> : <div className="h-6 italic text-slate-300">...</div>}
+                                                                    </td>
+                                                                    <td className="p-2 border-r border-black text-center font-bold text-slate-200">[.....]</td>
+                                                                    <td className="p-2 text-[10pt] min-w-[50mm]">
+                                                                        {options[i] ? (
+                                                                            <div className="flex gap-2 items-start">
+                                                                                <span className="font-bold min-w-[15pt]">{options[i][0]}.</span>
+                                                                                <MathText content={options[i][1]} />
+                                                                            </div>
+                                                                        ) : <div className="h-6 italic text-slate-300">...</div>}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ) : (
+                                                options.length > 0 && (
+                                                    <div className={cn(
+                                                        "mt-4 grid grid-cols-2 gap-x-12 items-start",
+                                                        options.length === 4 ? "grid-rows-2" : "grid-rows-3",
+                                                        "grid-flow-col"
+                                                    )}>
+                                                        {options.map(([k, v]) => (
+                                                            <div key={k} className="flex gap-2 items-start py-1">
+                                                                <span className="font-bold min-w-[18pt]">{k}.</span>
+                                                                <div className="flex-1"><MathText content={v} /></div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )
+                                            )}
 
-                                        {isKunci && (
-                                            <div className="mt-4 p-4 border-l-[3pt] border-indigo-200 bg-slate-50 text-[10pt] italic rounded-r-lg">
-                                                <p className="font-bold text-indigo-800 not-italic uppercase text-[8.5pt] mb-2 tracking-widest">Analisis Jawaban (Kunci: {q.correct_answer})</p>
-                                                <MathText content={q.explanation} />
-                                            </div>
-                                        )}
+                                            {isKunci && (
+                                                <div className="mt-4 p-4 border-l-[3pt] border-indigo-200 bg-slate-50 text-[10pt] italic rounded-r-lg">
+                                                    <p className="font-bold text-indigo-800 not-italic uppercase text-[8.5pt] mb-2 tracking-widest">Analisis Jawaban (Kunci: {q.correct_answer})</p>
+                                                    <MathText content={q.explanation} />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </React.Fragment>
                         );
                     })}
                 </div>
