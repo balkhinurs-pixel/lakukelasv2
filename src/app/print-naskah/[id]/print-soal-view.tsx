@@ -13,10 +13,13 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V75.0 (Ultimate Print Optimized)
+ * MathText Component V76.0 (Ultimate Android & Print Optimized)
+ * Mendukung deteksi LaTeX yang lebih luas termasuk $...$ dan raw text symbols.
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
+  
+  // Regex diperluas untuk menangkap semua variasi LaTeX termasuk $...$ dan $$...$$
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
@@ -27,6 +30,11 @@ const MathText = ({ content }: { content: string }) => {
         if (part.startsWith('\\[')) return <div key={i} className="my-2"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         
+        // Penanganan jika ada simbol matematika yang tidak terbungkus delimiter (fall-back)
+        if (part.includes('\\text') || part.includes('\\frac') || part.includes('^')) {
+            return <InlineMath key={i} math={part} />;
+        }
+
         return (
             <ReactMarkdown 
                 key={i} 
@@ -61,7 +69,6 @@ const toRoman = (num: number) => {
 };
 
 export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }: any) {
-    // Group questions by type for standardized sections
     const sections = React.useMemo(() => {
         const groups: { type: string; questions: any[] }[] = [];
         let currentGroup: { type: string; questions: any[] } | null = null;
@@ -81,22 +88,24 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
 
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center">
-            {/* Component Level Print Styles for spacing and isolation */}
             <style jsx global>{`
               @page {
                 size: A4;
-                margin: 20mm 15mm 20mm 20mm !important; /* Top, Right, Bottom, Left */
+                margin: 0 !important; /* Margin ditangani oleh padding kontainer agar presisi */
               }
               
               @media print {
                 html, body {
                   background: white !important;
+                  width: 210mm !important;
+                  height: 297mm !important;
                 }
                 .print-area {
-                  padding: 0 !important;
+                  padding: 15mm 15mm 15mm 20mm !important; /* Top, Right, Bottom, Left */
                   margin: 0 !important;
-                  width: 100% !important;
+                  width: 210mm !important;
                   box-shadow: none !important;
+                  border: none !important;
                 }
                 .no-print {
                   display: none !important;
@@ -107,6 +116,11 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                 page-break-inside: avoid;
                 break-inside: avoid;
               }
+
+              /* Fix untuk Android Chrome agar tidak menciutkan font */
+              .math-text-render {
+                -webkit-text-size-adjust: none;
+              }
             `}</style>
 
             <header className="no-print sticky top-0 z-[200] w-full bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
@@ -114,7 +128,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                     <ArrowLeft className="h-4 w-4" /> Kembali
                 </Button>
                 <div className="text-center">
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs">NASHAH SOAL V75.0</div>
+                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs">NASKAH SOAL V76.0</div>
                     <p className="text-[9px] text-indigo-300 font-bold uppercase">{isKunci ? 'MODE KUNCI JAWABAN' : 'MODE NASKAH SOAL'}</p>
                 </div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-6 shadow-lg">
@@ -122,12 +136,21 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                 </Button>
             </header>
 
-            <main className="flex-1 w-full p-4 sm:p-10 print:p-0 print:bg-white overflow-y-auto">
-                <div className="print-area bg-white mx-auto shadow-2xl print:shadow-none p-[10mm] print:p-0" 
-                     style={{ width: '210mm', minHeight: '297mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '12pt', lineHeight: '1.5' }}>
+            <main className="flex-1 w-full p-4 sm:p-10 print:p-0 print:bg-white overflow-y-auto flex justify-center">
+                <div className="print-area bg-white shadow-2xl print:shadow-none" 
+                     style={{ 
+                        width: '210mm', 
+                        minHeight: '297mm', 
+                        padding: '20mm', 
+                        boxSizing: 'border-box', 
+                        fontFamily: '"Times New Roman", Times, serif', 
+                        fontSize: '12pt', 
+                        lineHeight: '1.6',
+                        color: 'black'
+                     }}>
                     
-                    {/* Professional Header / Kop Surat */}
-                    <div className="mb-8 pb-1 border-b-[3pt] border-double border-black">
+                    {/* Header / Kop Surat */}
+                    <div className="mb-6 pb-1 border-b-[3pt] border-double border-black">
                         <div className="flex items-center gap-8">
                             <div className="w-[28mm] h-[28mm] flex items-center justify-center shrink-0">
                                 {schoolProfile?.school_logo_url ? (
@@ -180,7 +203,6 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                     const isTrueFalse = q.question_type === 'true_false';
                                     const isMatching = q.question_type === 'matching';
                                     
-                                    // Robust Matching Parsing
                                     let matchingItems: string[] = [];
                                     let matchingIntro = q.question_text;
                                     let rowCount = 0;
@@ -196,8 +218,6 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                                 matchingIntro = lines[0];
                                                 matchingItems = lines.slice(1);
                                             }
-                                        } else {
-                                          matchingIntro = q.question_text;
                                         }
                                         rowCount = Math.max(matchingItems.length, options.length);
                                     }
@@ -214,7 +234,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                                     {q.visual_svg && (
                                                         <div className="my-6 flex justify-center">
                                                             <div className="border border-slate-200 p-4 rounded-xl bg-slate-50/20"
-                                                                 style={{ maxWidth: '60mm', width: '100%' }}
+                                                                 style={{ maxWidth: '70mm', width: '100%' }}
                                                                  dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') }} />
                                                         </div>
                                                     )}
