@@ -143,7 +143,7 @@
 }
 
 /* 
-  Sistem Cetak LakuKelas V29.0 (Anti-Blank Solution)
+  Sistem Cetak LakuKelas V30.0 (Isolasi Visibilitas Berbasis Saran Guru)
 */
 @media print {
   @page {
@@ -151,46 +151,47 @@
     margin: 0mm;
   }
 
-  /* Sembunyikan elemen utama aplikasi agar tidak mengganggu layout cetak */
-  html, body {
-    height: auto !important;
-    overflow: visible !important;
-    background: #fff !important;
+  /* Sembunyikan SEMUA elemen secara default */
+  body * {
+    visibility: hidden;
   }
 
-  /* Sembunyikan seluruh UI kecuali area cetak */
-  body > *:not(.print-container-root) {
+  /* Munculkan HANYA area cetak dan seluruh turunannya */
+  #print-area,
+  #print-area * {
+    visibility: visible;
+  }
+
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm; /* Kunci lebar A4 */
+    height: auto;
+    overflow: visible;
+    background: white;
+    z-index: 99999;
+  }
+
+  /* Pastikan elemen non-print benar-benar hilang dari tata letak */
+  .no-print, 
+  [data-sidebar="sidebar"], 
+  header, 
+  aside, 
+  nav, 
+  button {
     display: none !important;
-    visibility: hidden !important;
   }
 
-  .print-container-root {
-    display: block !important;
-    visibility: visible !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 210mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-    z-index: 99999 !important;
-  }
-
-  .print-container-root * {
-    visibility: visible !important;
-  }
-
-  /* Reset Sidebar & Overflows */
-  [data-sidebar="sidebar"], header, aside, nav, button {
-    display: none !important;
+  /* Cegah soal terpotong di sela halaman */
+  .print-question-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 2rem !important;
   }
 }
 
-/* 
-  Container render di luar layar (Off-screen) 
-  Digunakan untuk html2canvas dan penyiapan sebelum window.print()
-*/
+/* Container Render Off-screen untuk persiapan */
 .print-container-root {
   position: absolute;
   left: -9999px;
@@ -202,7 +203,6 @@
   pointer-events: none;
 }
 
-/* Saat aktif merender untuk cetak, kita jaga tetap invisible ke user tapi visible ke browser */
 .print-container-root.rendering {
   opacity: 1;
 }

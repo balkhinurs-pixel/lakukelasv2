@@ -66,7 +66,7 @@ import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
 
 /**
- * MathText Component V29.0
+ * MathText Component V30.0
  */
 const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boolean }) => {
   if (!content) return null;
@@ -109,7 +109,7 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
 };
 
 /**
- * NaskahPrintTemplate V29.0
+ * NaskahPrintTemplate V30.0 (Anti-Cut Block System)
  */
 const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: any) => {
     return (
@@ -160,7 +160,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                     const isLongOptions = options.some(([, v]) => v.length > 50);
                     
                     return (
-                        <div key={q.id} className="mb-6" style={{ breakInside: 'avoid' }}>
+                        <div key={q.id} className="print-question-block mb-8">
                             <div className="flex gap-4">
                                 <span className="font-bold min-w-[20px]">{idx + 1}.</span>
                                 <div className="flex-1 text-justify">
@@ -207,7 +207,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
 };
 
 /**
- * LjkPrintTemplate V29.0
+ * LjkPrintTemplate V30.0 (Vektor Ready)
  */
 const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
     return (
@@ -216,7 +216,6 @@ const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
             className="bg-white text-slate-900 relative mx-auto" 
             style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', fontFamily: 'Arial, sans-serif' }}
         >
-            {/* Anchor Points for Scanner */}
             <div className="absolute top-4 left-4 w-5 h-5 bg-black" />
             <div className="absolute top-4 right-4 w-5 h-5 bg-black" />
             <div className="absolute bottom-4 left-4 w-5 h-5 bg-black" />
@@ -307,8 +306,7 @@ export default function NaskahRepositoryClient({
     const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
 
     /**
-     * Logika Ekspor PDF (V29.0)
-     * Solusi untuk Blank PDF
+     * Logika Ekspor PDF (Continuous Raster Snapshot)
      */
     const handleExecuteCetak = async (docId: string, mode: 'soal' | 'kunci' | 'ljk', title: string) => {
         setDownloading(true);
@@ -318,10 +316,8 @@ export default function NaskahRepositoryClient({
             const result = await getNaskahDetailsAction(docId);
             if (!result.success || !result.questions || !result.doc) throw new Error(result.error);
             
-            // 1. Render elemen ke area khusus cetak di root
             setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
             
-            // 2. Polling DOM sampai konten muncul
             const elementId = mode === 'ljk' ? `ljk-target-${docId}` : `print-target-${docId}`;
             let element = null;
             for (let i = 0; i < 20; i++) {
@@ -332,10 +328,9 @@ export default function NaskahRepositoryClient({
             
             if (!element) throw new Error("Sistem gagal memuat area cetak. Silakan muat ulang halaman.");
 
-            // Jeda tambahan untuk KaTeX rendering
+            // Tunggu render KaTeX
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // 3. Capture Snapshot
             const canvas = await html2canvas(element, { 
                 scale: 2, 
                 useCORS: true, 
@@ -370,8 +365,8 @@ export default function NaskahRepositoryClient({
     };
 
     /**
-     * Logika Cetak Langsung (Direct Print)
-     * Solusi untuk hasil blank putih di pratinjau sistem
+     * Logika Cetak Langsung Vektor (Saran Guru)
+     * HTML -> CSS Print -> window.print()
      */
     const handleDirectPrint = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
         setDownloading(true);
@@ -380,18 +375,25 @@ export default function NaskahRepositoryClient({
             const result = await getNaskahDetailsAction(docId);
             if (!result.success || !result.questions || !result.doc) throw new Error(result.error);
             
-            // Set target render untuk memunculkan portal cetak
+            // 1. Tampilkan kontainer cetak di portal root
             setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
             
-            // Tunggu ekstra lama (1.5 detik) agar mesin cetak browser menangkap elemen
-            setTimeout(() => {
+            // 2. Berikan waktu untuk Rendering DOM + Font Loading
+            setTimeout(async () => {
+                // Pastikan font (KaTeX dll) sudah siap
+                if (typeof document !== 'undefined' && (document as any).fonts) {
+                    await (document as any).fonts.ready;
+                }
+                
+                // 3. Panggil jendela cetak browser
                 window.print();
                 
-                // Cleanup setelah dialog cetak ditutup
+                // 4. Cleanup setelah dialog cetak ditutup
                 setLoadingId(null);
                 setRenderTarget(null);
                 setDownloading(false);
-            }, 1500);
+            }, 1000); // 1 detik buffer aman
+            
         } catch (e: any) {
             toast({ variant: "destructive", title: "Gagal", description: e.message });
             setLoadingId(null);
@@ -419,8 +421,8 @@ export default function NaskahRepositoryClient({
                             <Loader2 className="h-16 w-16 animate-spin text-indigo-600" />
                         </div>
                         <div className="text-center">
-                            <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyiapkan Naskah...</p>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Optimalisasi Vektor & Tata Letak</p>
+                            <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyiapkan Dokumen...</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Vektor & Font sedang disinkronkan</p>
                         </div>
                     </Card>
                 </div>
@@ -460,7 +462,7 @@ export default function NaskahRepositoryClient({
                 </div>
             </div>
 
-            {/* Area Render Khusus Cetak V29.0 (Portal Root) */}
+            {/* Portal Root Cetak V30.0 */}
             <div id="print-area" className={cn("print-container-root", renderTarget && "rendering")}>
                 {renderTarget && (
                     renderTarget.mode === 'ljk' ? (
