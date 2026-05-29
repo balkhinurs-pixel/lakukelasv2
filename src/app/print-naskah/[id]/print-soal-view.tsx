@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V77.0 (Android & Print Ultimate Optimized)
+ * MathText Component V78.0 (Print & Android Ultimate Optimized)
  * Mesin deteksi LaTeX yang sangat kuat untuk menangani berbagai gaya output AI.
  */
 const MathText = ({ content }: { content: string }) => {
@@ -32,9 +32,8 @@ const MathText = ({ content }: { content: string }) => {
         if (part.startsWith('\\[')) return <div key={i} className="my-2"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         
-        // Fallback: Jika ada simbol matematika mentah yang tidak terbungkus (sering terjadi pada Android/AI)
+        // Deteksi simbol matematika mentah yang tidak terbungkus
         if (part.includes('\\text') || part.includes('\\frac') || part.includes('^') || part.includes('_')) {
-            // Kita coba render sebagai inline math jika mengandung karakter kontrol LaTeX
             return <InlineMath key={i} math={part} />;
         }
 
@@ -92,42 +91,22 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center">
             <style jsx global>{`
-              @page {
-                size: A4 portrait;
-                margin: 0 !important;
-              }
-              
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: #ffffff !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-
-              .print-root {
-                width: 210mm;
-                margin: 0 auto;
-                background: white;
-                color: black;
-              }
-
-              /* Section utama yang menangani flow halaman */
-              .print-content-wrapper {
-                width: 210mm;
-                padding: 12mm 15mm;
-                box-sizing: border-box;
-                background: white;
-              }
-
               @media print {
+                @page {
+                  size: A4 portrait;
+                  margin: 18mm 14mm 16mm 14mm !important;
+                }
+
                 html, body {
-                  width: auto !important;
-                  height: auto !important;
                   margin: 0 !important;
                   padding: 0 !important;
                   background: white !important;
+                  color: black !important;
+                  width: auto !important;
+                  height: auto !important;
                   overflow: visible !important;
+                  font-family: "Times New Roman", Times, serif !important;
+                  -webkit-print-color-adjust: exact !important;
                 }
 
                 .no-print {
@@ -135,39 +114,58 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                 }
 
                 .print-root {
-                  width: 210mm !important;
+                  width: 100% !important;
                   margin: 0 !important;
                   padding: 0 !important;
                   box-shadow: none !important;
+                  background: white !important;
                 }
 
                 .print-content-wrapper {
-                  width: 210mm !important;
-                  padding: 12mm 15mm !important;
-                  margin: 0 !important;
                   box-sizing: border-box !important;
+                  padding: 12mm 0 0 0 !important; /* Jarak atas setelah pindah halaman */
+                  width: 100% !important;
                 }
 
-                .print-question-block,
-                table,
-                img,
-                svg {
+                /* Halaman pertama tidak butuh padding extra karena sudah ada Kop */
+                .print-content-wrapper:first-of-type {
+                  padding-top: 0 !important;
+                }
+
+                .print-question-block {
                   break-inside: avoid !important;
                   page-break-inside: avoid !important;
+                  margin-bottom: 10mm !important;
+                  display: block !important;
                 }
 
-                img, svg {
-                  max-width: 100%;
-                  height: auto;
+                img, table, svg, .math-text-render {
+                  break-inside: avoid !important;
+                  page-break-inside: avoid !important;
+                  max-width: 100% !important;
                 }
 
                 * {
                   box-shadow: none !important;
                   transform: none !important;
+                  text-shadow: none !important;
                 }
               }
 
-              /* Font Optimization for Android Chrome */
+              /* Web View Styles */
+              .print-root {
+                width: 210mm;
+                margin: 0 auto;
+                background: white;
+                color: black;
+              }
+
+              .print-content-wrapper {
+                width: 210mm;
+                padding: 15mm 20mm;
+                box-sizing: border-box;
+              }
+
               .math-text-render {
                 -webkit-text-size-adjust: none;
               }
@@ -178,7 +176,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                     <ArrowLeft className="h-4 w-4" /> Kembali
                 </Button>
                 <div className="text-center">
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs">NASKAH SOAL OPTIMASI ANDROID</div>
+                    <div className="font-black uppercase tracking-widest text-[10px] sm:text-xs">NASKAH SOAL PROFESIONAL</div>
                     <p className="text-[9px] text-indigo-300 font-bold uppercase">{isKunci ? 'MODE KUNCI JAWABAN' : 'MODE NASKAH SOAL'}</p>
                 </div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-6 shadow-lg">
