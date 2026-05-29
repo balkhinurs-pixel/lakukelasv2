@@ -66,7 +66,7 @@ import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
 
 /**
- * MathText Component V30.0
+ * MathText Component V31.0
  */
 const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boolean }) => {
   if (!content) return null;
@@ -75,7 +75,7 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
   return (
     <div className={cn(
         "math-text-render w-full overflow-hidden", 
-        isPrint ? "overflow-visible" : "custom-scrollbar pb-1"
+        isPrint ? "overflow-visible text-justify" : "custom-scrollbar pb-1"
     )}>
       {parts.map((part, i) => {
         if (part.startsWith('\\[')) return (
@@ -91,12 +91,12 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
                 remarkPlugins={[remarkGfm]}
                 components={{
                     table: ({node, ...props}) => (
-                        <div className="overflow-x-auto my-4 border rounded-xl overflow-hidden shadow-sm">
-                            <table className="w-full border-collapse text-xs text-center" {...props} />
+                        <div className="overflow-x-auto my-4 border border-black overflow-hidden shadow-sm">
+                            <table className="w-full border-collapse text-xs text-center border-black" {...props} />
                         </div>
                     ),
-                    th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-2 font-bold" {...props} />,
-                    td: ({node, ...props}) => <td className="border border-slate-200 p-2" {...props} />,
+                    th: ({node, ...props}) => <th className="border border-black bg-slate-50 p-2 font-bold" {...props} />,
+                    td: ({node, ...props}) => <td className="border border-black p-2" {...props} />,
                     p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed" {...props} />
                 }}
             >
@@ -109,7 +109,7 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
 };
 
 /**
- * NaskahPrintTemplate V30.0 (Anti-Cut Block System)
+ * NaskahPrintTemplate V31.0 (Professional Academic Standard)
  */
 const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: any) => {
     return (
@@ -118,129 +118,159 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
             className="bg-white text-slate-900 mx-auto" 
             style={{ 
                 width: '210mm', 
-                padding: '20mm',
+                padding: '10mm 20mm',
                 boxSizing: 'border-box',
                 fontFamily: '"Times New Roman", Times, serif', 
                 fontSize: '11pt', 
                 lineHeight: '1.45' 
             }}
         >
-            <div className="print-header-block mb-4 pb-4 border-b-[2.5pt] border-double border-black">
-                <div className="flex items-center gap-6">
-                    <div className="w-[22mm] h-[22mm] flex items-center justify-center shrink-0">
+            {/* Kop Surat Profesional */}
+            <div className="print-header-block mb-6 pb-2 border-b-[3pt] border-double border-black">
+                <div className="flex items-center gap-8">
+                    <div className="w-[25mm] h-[25mm] flex items-center justify-center shrink-0">
                         {schoolProfile?.school_logo_url ? (
                             <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" />
                         ) : (
-                            <AppLogo className="opacity-20 w-full h-full" />
+                            <AppLogo className="opacity-20 w-full h-full text-slate-300" />
                         )}
                     </div>
-                    <div className="flex-1 text-center pr-[22mm]">
-                        <h1 className="text-[14pt] font-bold uppercase leading-tight">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h1>
-                        {schoolProfile?.npsn && <p className="text-[10pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
-                        <p className="text-[9pt] italic leading-tight">{schoolProfile?.school_address || "Alamat sekolah belum diatur"}</p>
+                    <div className="flex-1 text-center pr-[25mm]">
+                        <h1 className="text-[14pt] font-bold uppercase leading-tight">{schoolProfile?.school_name || "PEMERINTAH KOTA / KABUPATEN"}</h1>
+                        <h2 className="text-[16pt] font-black uppercase leading-tight">{schoolProfile?.school_name || "DINAS PENDIDIKAN"}</h2>
+                        {schoolProfile?.npsn && <p className="text-[10pt] font-bold mt-1">NPSN: {schoolProfile.npsn}</p>}
+                        <p className="text-[9pt] italic leading-tight mt-1">{schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"}</p>
                     </div>
                 </div>
             </div>
 
-            <div className="text-center mb-6">
-                <h2 className="text-[12pt] font-bold uppercase underline leading-tight">NASKAH SOAL {docMetadata.title}</h2>
-                <p className="text-[11pt] font-bold uppercase mt-1">Mata Pelajaran: {docMetadata.subject}</p>
+            {/* Judul Naskah */}
+            <div className="text-center mb-8">
+                <h3 className="text-[12pt] font-bold uppercase underline leading-tight">NASKAH SOAL {docMetadata.title}</h3>
+                <div className="flex justify-center gap-10 mt-2 text-[11pt] font-bold uppercase">
+                    <p>Mata Pelajaran: {docMetadata.subject}</p>
+                    <p>Kelas: {docMetadata.class_level}</p>
+                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[10.5pt] mb-8 border border-black p-4 rounded-lg">
-                <div className="flex justify-between border-b border-black/10 pb-1"><span className="font-bold">Kelas / Semester</span><span>: {docMetadata.class_level} / Ganjil</span></div>
-                <div className="flex justify-between border-b border-black/10 pb-1"><span className="font-bold">Waktu Pengerjaan</span><span>: 90 Menit</span></div>
-                <div className="flex justify-between pt-1"><span className="font-bold">Hari / Tanggal</span><span>: {format(new Date(), 'eeee, dd MMMM yyyy', { locale: id })}</span></div>
-                <div className="flex justify-between pt-1"><span className="font-bold">Tahun Pelajaran</span><span>: 2024/2025</span></div>
-            </div>
-
+            {/* Aturan Tata Letak Soal */}
             <div className="questions-container">
                 {questions.map((q: any, idx: number) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
-                    const isLongOptions = options.some(([, v]) => v.length > 50);
                     
                     return (
-                        <div key={q.id} className="print-question-block mb-8">
-                            <div className="flex gap-4">
-                                <span className="font-bold min-w-[20px]">{idx + 1}.</span>
-                                <div className="flex-1 text-justify">
+                        <div key={q.id} className="print-question-block mb-10">
+                            {/* Hanging Indent Wrapper */}
+                            <div className="flex gap-4 items-start">
+                                <span className="font-bold min-w-[28pt] text-left">{idx + 1}.</span>
+                                <div className="flex-1">
                                     <MathText content={q.question_text} isPrint />
+                                    
+                                    {/* Visual Diagram SVG (Optimized Size) */}
                                     {q.visual_svg && (
-                                        <div className="my-4 flex justify-center">
+                                        <div className="my-6 flex justify-center">
                                             <div 
-                                                style={{ maxWidth: '50mm' }}
+                                                className="border border-slate-100 p-2 rounded-lg"
+                                                style={{ maxWidth: '50mm', width: '100%' }}
                                                 dangerouslySetInnerHTML={{ 
                                                     __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') 
                                                 }} 
                                             />
                                         </div>
                                     )}
+
+                                    {/* Grid Opsi (A-C, B-D) */}
+                                    {options.length > 0 && (
+                                        <div className={cn(
+                                            "mt-4 grid grid-cols-2 gap-x-12 items-start",
+                                            options.length === 4 ? "grid-rows-2" : "grid-rows-3",
+                                            "grid-flow-col"
+                                        )}>
+                                            {options.map(([k, v]) => (
+                                                <div key={k} className="flex gap-2 items-start py-1">
+                                                    <span className="font-bold min-w-[18pt]">{k}.</span>
+                                                    <div className="flex-1"><MathText content={v} isPrint /></div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Kunci/Pembahasan (Hanya jika mode Kunci aktif) */}
+                                    {config.showDiscussion && (
+                                        <div className="mt-4 p-4 border-l-[3pt] border-indigo-200 bg-slate-50 text-[10pt] italic rounded-r-lg">
+                                            <p className="font-bold text-indigo-800 not-italic uppercase text-[8.5pt] mb-2 tracking-widest">Analisis Jawaban (Kunci: {q.correct_answer})</p>
+                                            <MathText content={q.explanation} isPrint />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                            
-                            {options.length > 0 && (
-                                <div className={cn(
-                                    "ml-[36px] mt-2",
-                                    isLongOptions ? "flex flex-col gap-1" : "grid grid-cols-2 gap-x-16 gap-y-1"
-                                )}>
-                                    {options.map(([k, v]) => (
-                                        <div key={k} className="flex gap-2 items-start py-0.5">
-                                            <span className="font-bold min-w-[15px]">{k}.</span>
-                                            <div className="flex-1"><MathText content={v} isPrint /></div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {config.showDiscussion && (
-                                <div className="ml-[36px] mt-4 p-4 border-l-4 border-indigo-200 bg-slate-50 text-[10.5pt] italic rounded-r-lg">
-                                    <p className="font-bold text-indigo-700 not-italic uppercase text-[9pt] mb-1">Kunci: {q.correct_answer}</p>
-                                    <MathText content={q.explanation} isPrint />
-                                </div>
-                            )}
                         </div>
                     );
                 })}
+            </div>
+
+            {/* Footer Penutup Naskah */}
+            <div className="mt-12 text-center border-t border-black pt-4 italic text-[9pt]">
+                <p>*** Selamat Mengerjakan & Utamakan Kejujuran ***</p>
             </div>
         </div>
     );
 };
 
 /**
- * LjkPrintTemplate V30.0 (Vektor Ready)
+ * LjkPrintTemplate V31.0 (Professional OMR Standard)
  */
 const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
     return (
         <div 
             id={`ljk-target-${docMetadata.id}`} 
             className="bg-white text-slate-900 relative mx-auto" 
-            style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', fontFamily: 'Arial, sans-serif' }}
+            style={{ 
+                width: '210mm', 
+                minHeight: '297mm', 
+                padding: '15mm', 
+                boxSizing: 'border-box', 
+                fontFamily: 'Arial, sans-serif' 
+            }}
         >
-            <div className="absolute top-4 left-4 w-5 h-5 bg-black" />
-            <div className="absolute top-4 right-4 w-5 h-5 bg-black" />
-            <div className="absolute bottom-4 left-4 w-5 h-5 bg-black" />
-            <div className="absolute bottom-4 right-4 w-5 h-5 bg-black" />
+            {/* OMR Anchor Points for AI Vision */}
+            <div className="absolute top-6 left-6 w-6 h-6 bg-black" />
+            <div className="absolute top-6 right-6 w-6 h-6 bg-black" />
+            <div className="absolute bottom-6 left-6 w-6 h-6 bg-black" />
+            <div className="absolute bottom-6 right-6 w-6 h-6 bg-black" />
 
-            <div className="text-center border-b-2 border-black pb-4 mb-6">
-                <h1 className="text-xl font-bold uppercase">LEMBAR JAWAB KOMPUTER (LJK) AI</h1>
-                <p className="text-sm font-bold uppercase">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</p>
+            <div className="text-center border-b-[2pt] border-black pb-4 mb-8">
+                <h1 className="text-2xl font-black uppercase tracking-tight">LEMBAR JAWAB KOMPUTER (LJK) AI</h1>
+                <p className="text-sm font-bold uppercase mt-1 tracking-widest">{schoolProfile?.school_name || "SISTEM ADMINISTRASI SEKOLAH LAKUKELAS"}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-10 mb-8">
-                <div className="space-y-4">
-                    <div className="border-2 border-black p-3 rounded-lg">
-                        <p className="text-[10px] font-bold mb-2 uppercase">KOLOM IDENTITAS SISWA</p>
-                        <div className="h-10 border-b border-black/20 flex items-end pb-1 text-sm font-bold italic text-slate-300 uppercase">Nama: ...........................................................</div>
+            <div className="grid grid-cols-2 gap-12 mb-10">
+                <div className="space-y-6">
+                    <div className="border-2 border-black p-4 rounded-xl">
+                        <p className="text-[10px] font-black mb-3 uppercase text-slate-500">Data Diri Peserta</p>
+                        <div className="space-y-4">
+                            <div className="h-10 border-b-2 border-black/10 flex items-end pb-1 text-sm font-black text-slate-300">NAMA: ...........................................................</div>
+                            <div className="h-10 border-b-2 border-black/10 flex items-end pb-1 text-sm font-black text-slate-300">KELAS: ...........................................................</div>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                        <p className="text-[9px] font-black uppercase text-slate-400 mb-2">Instruksi Penting:</p>
+                        <ul className="text-[8.5pt] space-y-1.5 font-medium leading-tight">
+                            <li>1. Gunakan Pensil 2B atau Bolpoin Hitam pekat.</li>
+                            <li>2. Bulatkan penuh huruf jawaban yang Anda pilih.</li>
+                            <li>3. Bersihkan coretan di luar area bulatan.</li>
+                            <li>4. JANGAN melipat atau merobek kertas ini.</li>
+                        </ul>
                     </div>
                 </div>
-                <div className="border-2 border-black p-3 rounded-lg">
-                    <p className="text-[10px] font-bold mb-2 uppercase text-center">KOLOM NIS (5 DIGIT)</p>
-                    <div className="flex justify-center gap-1.5">
+                <div className="border-2 border-black p-4 rounded-xl">
+                    <p className="text-[10px] font-black mb-4 uppercase text-center text-slate-500 tracking-widest">KOLOM NIS (5 DIGIT)</p>
+                    <div className="flex justify-center gap-2">
                         {[1,2,3,4,5].map(col => (
-                            <div key={col} className="space-y-1">
-                                <div className="w-8 h-8 border border-black flex items-center justify-center font-bold text-xs" />
+                            <div key={col} className="space-y-1.5">
+                                <div className="w-10 h-10 border-2 border-black flex items-center justify-center font-black text-sm" />
                                 {[0,1,2,3,4,5,6,7,8,9].map(num => (
-                                    <div key={num} className="w-6 h-6 rounded-full border border-black flex items-center justify-center text-[9px] font-bold">{num}</div>
+                                    <div key={num} className="w-7 h-7 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[10px] font-black">{num}</div>
                                 ))}
                             </div>
                         ))}
@@ -248,28 +278,23 @@ const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
                 </div>
             </div>
 
-            <div className="border-2 border-black p-6 rounded-xl">
-                 <p className="text-[10px] font-bold mb-4 uppercase text-center bg-slate-100 py-1">KOLOM JAWABAN (PILIHAN GANDA / BENAR-SALAH)</p>
-                 <div className="grid grid-cols-2 gap-x-12 gap-y-2">
+            <div className="border-[2.5pt] border-black p-8 rounded-3xl">
+                 <p className="text-[11px] font-black mb-6 uppercase text-center bg-slate-900 text-white py-2 rounded-lg tracking-[0.3em]">Lembar Jawaban Objektif</p>
+                 <div className="grid grid-cols-2 gap-x-16 gap-y-3">
                     {questions.map((q: any, idx: number) => {
                         const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
                         return (
-                            <div key={q.id} className="flex items-center gap-3 py-1 border-b border-slate-50">
-                                <span className="w-6 font-bold text-xs">{idx + 1}.</span>
-                                <div className="flex gap-2.5">
+                            <div key={q.id} className="flex items-center gap-4 py-1.5 border-b border-slate-100">
+                                <span className="w-8 font-black text-sm text-slate-400">{idx + 1}.</span>
+                                <div className="flex gap-3">
                                     {options.map(opt => (
-                                        <div key={opt} className="w-6 h-6 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[10px] font-black">{opt}</div>
+                                        <div key={opt} className="w-7 h-7 rounded-full border-[2pt] border-black flex items-center justify-center text-[11px] font-black">{opt}</div>
                                     ))}
                                 </div>
                             </div>
                         );
                     })}
                  </div>
-            </div>
-
-            <div className="mt-8 p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                <p className="text-[9px] font-bold uppercase text-slate-400 mb-1">Petunjuk Pengisian:</p>
-                <p className="text-[9px] text-slate-500 italic leading-tight">1. Gunakan Pensil 2B atau Bolpoin Hitam yang pekat. 2. Bulatkan secara penuh di dalam lingkaran huruf. 3. Jangan melipat atau merobek kertas ini.</p>
             </div>
         </div>
     );
@@ -365,8 +390,7 @@ export default function NaskahRepositoryClient({
     };
 
     /**
-     * Logika Cetak Langsung Vektor (Saran Guru)
-     * HTML -> CSS Print -> window.print()
+     * Logika Cetak Langsung Vektor (Standard HTML Print)
      */
     const handleDirectPrint = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
         setDownloading(true);
@@ -375,24 +399,17 @@ export default function NaskahRepositoryClient({
             const result = await getNaskahDetailsAction(docId);
             if (!result.success || !result.questions || !result.doc) throw new Error(result.error);
             
-            // 1. Tampilkan kontainer cetak di portal root
             setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
             
-            // 2. Berikan waktu untuk Rendering DOM + Font Loading
             setTimeout(async () => {
-                // Pastikan font (KaTeX dll) sudah siap
                 if (typeof document !== 'undefined' && (document as any).fonts) {
                     await (document as any).fonts.ready;
                 }
-                
-                // 3. Panggil jendela cetak browser
                 window.print();
-                
-                // 4. Cleanup setelah dialog cetak ditutup
                 setLoadingId(null);
                 setRenderTarget(null);
                 setDownloading(false);
-            }, 1000); // 1 detik buffer aman
+            }, 1000); 
             
         } catch (e: any) {
             toast({ variant: "destructive", title: "Gagal", description: e.message });
@@ -421,8 +438,8 @@ export default function NaskahRepositoryClient({
                             <Loader2 className="h-16 w-16 animate-spin text-indigo-600" />
                         </div>
                         <div className="text-center">
-                            <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyiapkan Dokumen...</p>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Vektor & Font sedang disinkronkan</p>
+                            <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyiapkan Naskah...</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Font & Vektor Sedang Dimuat</p>
                         </div>
                     </Card>
                 </div>
@@ -462,7 +479,7 @@ export default function NaskahRepositoryClient({
                 </div>
             </div>
 
-            {/* Portal Root Cetak V30.0 */}
+            {/* Portal Root Cetak V31.0 */}
             <div id="print-area" className={cn("print-container-root", renderTarget && "rendering")}>
                 {renderTarget && (
                     renderTarget.mode === 'ljk' ? (
@@ -509,7 +526,7 @@ export default function NaskahRepositoryClient({
                                         <FileCard formatFile="pdf" className="scale-90" />
                                     </div>
                                     <div className="flex flex-col items-end gap-1 pr-10">
-                                        <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100">Vektor Ready</Badge>
+                                        <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm">Professional Layout</Badge>
                                     </div>
                                 </div>
                                 <CardTitle className="text-lg font-black text-slate-900 mt-4 leading-tight group-hover:text-indigo-600 transition-colors">

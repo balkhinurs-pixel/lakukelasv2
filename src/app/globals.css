@@ -143,12 +143,12 @@
 }
 
 /* 
-  Sistem Cetak LakuKelas V30.0 (Isolasi Visibilitas Berbasis Saran Guru)
+  Sistem Cetak LakuKelas V31.0 (Professional Academic Standard)
 */
 @media print {
   @page {
     size: A4;
-    margin: 0mm;
+    margin: 15mm 20mm; /* Standard Academic Margins */
   }
 
   /* Sembunyikan SEMUA elemen secara default */
@@ -166,11 +166,19 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 210mm; /* Kunci lebar A4 */
+    width: 210mm; /* Lock A4 width */
     height: auto;
     overflow: visible;
     background: white;
     z-index: 99999;
+    padding: 0;
+    font-family: "Times New Roman", Times, serif !important;
+  }
+
+  /* Gunakan font Serif untuk naskah profesional */
+  .math-text-render, 
+  .math-text-render * {
+    font-family: "Times New Roman", Times, serif !important;
   }
 
   /* Pastikan elemen non-print benar-benar hilang dari tata letak */
@@ -183,11 +191,24 @@
     display: none !important;
   }
 
-  /* Cegah soal terpotong di sela halaman */
+  /* Cegah soal terpotong di sela halaman (Hanging Indent protection) */
   .print-question-block {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     margin-bottom: 2rem !important;
+    display: block;
+    width: 100%;
+  }
+
+  /* Table rendering within print */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  
+  th, td {
+    border: 1px solid black !important;
+    padding: 4pt !important;
   }
 }
 
