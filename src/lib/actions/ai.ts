@@ -319,7 +319,7 @@ export async function deleteQuestionsAction(ids: string[]) {
 export async function createNaskahUjianAction(
     title: string, 
     selectedQuestionIds: string[], 
-    metadata: { jenjang: string, class: string, subject: string, schoolName: string, examType: string }
+    metadata: { jenjang: string, class: string, subject: string, schoolName: string, examType: string, examDate?: string, examTime?: string }
 ) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -356,6 +356,8 @@ export async function createNaskahUjianAction(
             class_level: metadata.class,
             subject: metadata.subject,
             question_ids: sortedQuestionIds,
+            exam_date: metadata.examDate || null,
+            exam_time: metadata.examTime || null,
             status: 'created',
             is_public: false
         });

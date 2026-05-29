@@ -169,7 +169,9 @@ export default function BankSoalClient({
         jenjang: 'SMP / MTs',
         kelas: '7',
         subject: 'Bahasa Indonesia',
-        examType: "Penilaian Harian"
+        examType: "Penilaian Harian",
+        examDate: "",
+        examTime: ""
     });
 
     React.useEffect(() => {
@@ -268,7 +270,9 @@ export default function BankSoalClient({
                 class: naskahConfig.kelas,
                 subject: naskahConfig.subject,
                 schoolName: naskahConfig.schoolName || "Sekolah LakuKelas",
-                examType: naskahConfig.examType
+                examType: naskahConfig.examType,
+                examDate: naskahConfig.examDate,
+                examTime: naskahConfig.examTime
             };
 
             const result = await createNaskahUjianAction(
@@ -655,6 +659,16 @@ export default function BankSoalClient({
                                         <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold text-xs"><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-xl">{examTypes.map(t => <SelectItem key={t} value={t} className="font-bold">{t}</SelectItem>)}</SelectContent>
                                     </Select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400">Tanggal Ujian</Label>
+                                        <Input type="date" value={naskahConfig.examDate} onChange={e => setNaskahConfig({...naskahConfig, examDate: e.target.value})} className="h-11 rounded-xl bg-white border-slate-200 font-bold shadow-sm" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400">Waktu / Durasi</Label>
+                                        <Input placeholder="e.g. 90 Menit" value={naskahConfig.examTime} onChange={e => setNaskahConfig({...naskahConfig, examTime: e.target.value})} className="h-11 rounded-xl bg-white border-slate-200 font-bold shadow-sm" />
+                                    </div>
                                 </div>
                             </div>
                         </ScrollArea>

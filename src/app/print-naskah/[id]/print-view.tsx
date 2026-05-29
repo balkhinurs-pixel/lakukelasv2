@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
@@ -199,6 +199,11 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     <div className="flex justify-center gap-10 mt-2 text-[11pt] font-bold uppercase">
                         <p>Mata Pelajaran: {doc.subject}</p>
                         <p>Kelas: {doc.class_level}</p>
+                    </div>
+                    {/* Exam Date & Time V46.0 */}
+                    <div className="flex justify-center gap-10 mt-1 text-[10pt] font-bold">
+                        {doc.exam_date && <p>Hari/Tanggal: {format(parseISO(doc.exam_date), 'EEEE, d MMMM yyyy', { locale: id })}</p>}
+                        {doc.exam_time && <p>Waktu: {doc.exam_time}</p>}
                     </div>
                 </div>
 

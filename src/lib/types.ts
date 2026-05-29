@@ -203,6 +203,8 @@ export interface AiDocument {
   is_public: boolean;
   lkpd_prompt?: string | null;
   question_ids?: string[] | null;
+  exam_date?: string | null;
+  exam_time?: string | null;
   status: string;
   created_at: string;
   updated_at: string;
