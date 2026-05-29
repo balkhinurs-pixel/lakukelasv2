@@ -40,6 +40,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 
 interface ScannedResult {
     id: string;
@@ -50,6 +51,50 @@ interface ScannedResult {
     studentAnswers: any[];
     analysis: string;
     timestamp: number;
+}
+
+/**
+ * Helper function to compress and resize image on client side
+ * V65.0 Optimized for Stability
+ */
+async function optimizeImage(base64: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = base64;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1600; // Optimal for Gemini Vision
+            const MAX_HEIGHT = 1600;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject("Could not get canvas context");
+                return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to JPEG with 80% quality (High compression, excellent detail)
+            const compressed = canvas.toDataURL('image/jpeg', 0.8);
+            resolve(compressed);
+        };
+        img.onerror = (e) => reject(e);
+    });
 }
 
 export default function KoreksiClient({ 
@@ -86,10 +131,14 @@ export default function KoreksiClient({
         setLoading(true);
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const base64 = event.target?.result as string;
+            const rawBase64 = event.target?.result as string;
             
             try {
-                const result = await correctExamAction(selectedNaskahId, base64);
+                // Step 1: Optimize Image (Resize & Compress) before sending to server
+                const optimizedBase64 = await optimizeImage(rawBase64);
+                
+                // Step 2: Send to Next.js Server Action -> Gemini Vision AI
+                const result = await correctExamAction(selectedNaskahId, optimizedBase64);
                 
                 if (result.success && result.data) {
                     const newResult: ScannedResult = {
@@ -98,8 +147,6 @@ export default function KoreksiClient({
                         timestamp: Date.now()
                     };
                     
-                    // Jika NIS sudah ada di daftar sesi ini, tanya atau timpa? 
-                    // Sementara kita tambahkan saja dulu.
                     setResultsList(prev => [newResult, ...prev]);
                     setCurrentScan(newResult);
                     toast({ title: "Scan Berhasil", description: `Lembar milik ${newResult.studentName} terdeteksi.` });
@@ -107,7 +154,8 @@ export default function KoreksiClient({
                     toast({ title: "Scan Gagal", description: result.error || "AI kesulitan membaca LJK. Pastikan foto tegak lurus dan jelas.", variant: "destructive" });
                 }
             } catch (err) {
-                toast({ title: "Error", description: "Terjadi kesalahan sistem saat memproses gambar.", variant: "destructive" });
+                console.error("Scanning Error:", err);
+                toast({ title: "Error", description: "Terjadi kesalahan saat memproses gambar. Pastikan format file benar.", variant: "destructive" });
             } finally {
                 setLoading(false);
                 if (fileInputRef.current) fileInputRef.current.value = "";
@@ -136,8 +184,8 @@ export default function KoreksiClient({
 
             const formData = new FormData();
             formData.append('date', format(new Date(), 'yyyy-MM-dd'));
-            formData.append('class_id', naskah.drive_folder_id || ""); // dummy class_id handling
-            formData.append('subject_id', naskah.drive_file_id || ""); // dummy subject_id handling
+            formData.append('class_id', naskah.class_level || ""); 
+            formData.append('subject_id', naskah.subject || ""); 
             formData.append('assessment_type', `Koreksi AI: ${naskah.title}`);
             
             const records = validResults.map(r => ({
@@ -178,7 +226,7 @@ export default function KoreksiClient({
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-1">
-                {/* 1. Kontrol & Scanner (Sisi Kiri/Atas) */}
+                {/* 1. Kontrol & Scanner */}
                 <div className="lg:col-span-4 space-y-6">
                     <Card className="border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden">
                         <CardHeader className="bg-slate-50/50 border-b p-6 sm:p-8">
@@ -213,7 +261,10 @@ export default function KoreksiClient({
                                     {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
                                     Ambil Foto LJK
                                 </Button>
-                                <p className="text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest">Mendukung Batch Scanning</p>
+                                <div className="flex items-center justify-center gap-2 text-slate-400">
+                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                    <p className="text-[9px] font-black uppercase tracking-widest">Smart Image Optimizer Active</p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -240,7 +291,7 @@ export default function KoreksiClient({
                     </div>
                 </div>
 
-                {/* 2. Daftar Hasil Scan (Sisi Kanan) */}
+                {/* 2. Daftar Hasil Scan */}
                 <div className="lg:col-span-8 space-y-6">
                     <div className="flex items-center justify-between px-3">
                         <div className="flex items-center gap-3">
@@ -343,12 +394,12 @@ export default function KoreksiClient({
                 </div>
             </div>
 
-            {/* Results Review Dialog (Deep Detail) */}
+            {/* Results Review Dialog */}
             <Dialog open={!!currentScan} onOpenChange={(open) => !open && setCurrentScan(null)}>
                 <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                     {currentScan && (
                         <div className="flex flex-col h-[85vh]">
-                            <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white shrink-0">
+                            <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-8 text-white shrink-0">
                                 <DialogHeader>
                                     <DialogTitle className="text-2xl font-black tracking-tight uppercase text-white">Analisis Lembar Jawab</DialogTitle>
                                     <p className="text-indigo-100 font-bold text-xs uppercase tracking-widest mt-1">{currentScan.studentName} • NIS {currentScan.detectedNis}</p>
