@@ -307,7 +307,7 @@ export async function deleteQuestionsAction(ids: string[]) {
 
 /**
  * Server Action untuk menyusun naskah ujian.
- * Sekarang hanya menyimpan "Resep" metadata soal untuk diproses render di client.
+ * Sekarang memiliki kecerdasan otomatis untuk mengurutkan soal berdasarkan JENIS SOAL.
  */
 export async function createNaskahUjianAction(
     title: string, 
@@ -318,8 +318,31 @@ export async function createNaskahUjianAction(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
     
-    // Bangun Konten Ringkasan (Markdown) untuk Drive draf
-    let content = `
+    try {
+        // 1. Ambil data tipe soal untuk semua ID yang dipilih
+        const { data: questionsData } = await supabase
+            .from('questions')
+            .select('id, question_type')
+            .in('id', selectedQuestionIds);
+            
+        if (!questionsData) throw new Error("Gagal memproses urutan soal.");
+
+        // 2. Tentukan Urutan Tipe Soal Standar Ujian
+        const typeOrder: Record<string, number> = {
+            'multiple_choice': 1, // Pilihan Ganda
+            'true_false': 2,      // Benar / Salah
+            'matching': 3,        // Menjodohkan
+            'short_answer': 4,    // Isian Singkat
+            'essay': 5            // Uraian / Esai
+        };
+
+        // 3. Urutkan ID soal berdasarkan tipe standar di atas
+        const sortedQuestionIds = [...questionsData]
+            .sort((a, b) => (typeOrder[a.question_type] || 99) - (typeOrder[b.question_type] || 99))
+            .map(q => q.id);
+
+        // 4. Bangun Konten Ringkasan (Markdown) untuk Drive draf
+        let content = `
 ${metadata.schoolName.toUpperCase()}
 ${metadata.examType.toUpperCase()}
 ==========================================
@@ -328,25 +351,28 @@ Kelas          : ${metadata.class}
 Penyusun       : ${user.user_metadata?.full_name || 'Guru LakuKelas'}
 ==========================================
 
-Daftar ID Soal (Tersinkron dengan Database):
-${selectedQuestionIds.join('\n')}
+Daftar ID Soal (Telah diurutkan otomatis):
+${sortedQuestionIds.join('\n')}
 
 _Gunakan tombol 'Cetak' di aplikasi LakuKelas untuk menghasilkan PDF dengan rumus matematika yang rapi._
 `;
 
-    // Simpan metadata "Resep" soal ke ai_documents
-    const result = await saveGenericDocumentToDrive(
-        title, 
-        content, 
-        metadata, 
-        'Bank Soal', 
-        'doc', 
-        undefined, 
-        selectedQuestionIds
-    );
-    
-    revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
-    return result;
+        // 5. Simpan metadata "Resep" soal ke ai_documents dengan ID yang sudah TERURUT
+        const result = await saveGenericDocumentToDrive(
+            title, 
+            content, 
+            metadata, 
+            'Bank Soal', 
+            'doc', 
+            undefined, 
+            sortedQuestionIds
+        );
+        
+        revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
+        return result;
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }
 
 export async function saveMaterialToDriveAction(title: string, content: string, metadata: { jenjang: string, class: string, subject: string }) {

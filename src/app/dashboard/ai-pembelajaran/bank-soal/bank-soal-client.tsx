@@ -20,7 +20,9 @@ import {
     Info,
     ChevronDown,
     ChevronUp,
-    Plus
+    Plus,
+    BrainCircuit,
+    Tag
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,7 +99,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
   );
 };
 
-const ITEMS_PER_PAGE = 5; 
+const ITEMS_PER_PAGE = 8; 
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
@@ -289,7 +291,6 @@ export default function BankSoalClient({
                 examType: naskahConfig.examType
             };
 
-            // Mengirim "Resep" metadata dan ID soal saja ke server (Ringan)
             const result = await createNaskahUjianAction(
                 naskahConfig.title, 
                 selectedOrderedIds, 
@@ -462,11 +463,21 @@ export default function BankSoalClient({
                                     </div>
 
                                     <div className="flex-1 space-y-5 min-w-0">
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-2 items-center">
                                             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
                                                 <BookOpen className="w-3 h-3 mr-1.5 opacity-60" />
                                                 {q.subject}
                                             </Badge>
+                                            <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
+                                                <Tag className="w-3 h-3 mr-1.5 opacity-60" />
+                                                {q.topic}
+                                            </Badge>
+                                            {q.cognitive_level && (
+                                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
+                                                    <BrainCircuit className="w-3 h-3 mr-1.5 opacity-60" />
+                                                    Level {q.cognitive_level}
+                                                </Badge>
+                                            )}
                                         </div>
 
                                         <div className="text-slate-800 font-bold text-lg leading-relaxed break-words overflow-hidden min-w-0">
@@ -516,12 +527,40 @@ export default function BankSoalClient({
                     })}
                 </div>
 
+                <div className="flex justify-center mt-10">
+                    {totalPages > 1 && (
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                                className="rounded-xl font-bold"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <div className="flex items-center px-4 bg-white rounded-xl border text-sm font-black">
+                                {currentPage} / {totalPages}
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                className="rounded-xl font-bold"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                </div>
+
                 {/* Simplified Naskah Config Dialog */}
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                     <DialogContent className="rounded-xl p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white text-center">
                             <DialogTitle className="text-2xl font-black tracking-tight text-white uppercase">Susun Naskah Baru</DialogTitle>
-                            <DialogDescription className="text-indigo-100 font-bold mt-1 uppercase text-[10px] tracking-widest">Identitas Dokumen & Penyimpanan Drive</DialogDescription>
+                            <DialogDescription className="text-indigo-100 font-bold mt-1 uppercase text-[10px] tracking-widest">Sistem otomatis mengelompokkan jenis soal</DialogDescription>
                         </div>
 
                         <ScrollArea className="max-h-[55vh] p-8">
@@ -578,7 +617,7 @@ export default function BankSoalClient({
                         <div className="p-10 flex flex-col items-center text-center">
                             <LottieSuccess size={200} />
                             <h3 className="text-2xl font-black text-slate-900 mt-2">Berhasil Disusun!</h3>
-                            <p className="text-sm text-slate-500 mt-2 font-medium">Resep naskah telah disimpan. Anda dapat mengunduh PDF, LJK, dan Kisi-kisi di menu Naskah Soal.</p>
+                            <p className="text-sm text-slate-500 mt-2 font-medium">Soal telah diurutkan otomatis berdasarkan jenisnya. Anda dapat mengunduh PDF, LJK, dan Kisi-kisi di menu Naskah Soal.</p>
                             <Button asChild className="w-full h-12 mt-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold gap-2">
                                 <Link href="/dashboard/ai-pembelajaran/naskah-soal">
                                     Buka Daftar Naskah
