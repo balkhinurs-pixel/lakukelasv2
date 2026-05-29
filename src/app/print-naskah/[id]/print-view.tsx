@@ -15,7 +15,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 /**
- * MathText Component V64.0 (Print Optimized)
+ * MathText Component V65.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -70,7 +70,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const [generating, setGenerating] = React.useState(false);
     const printRef = React.useRef<HTMLDivElement>(null);
 
-    // Grouping questions for stable rendering without render-time side effects
     const sections = React.useMemo(() => {
         const groups: { type: string; questions: any[] }[] = [];
         let currentGroup: { type: string; questions: any[] } | null = null;
@@ -110,19 +109,30 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         setGenerating(true);
 
         try {
+            // Force temporary scroll to top to prevent white space in canvas
+            window.scrollTo(0, 0);
+
             const canvas = await html2canvas(printRef.current, {
                 scale: 2, 
                 useCORS: true,
                 logging: false,
                 backgroundColor: "#ffffff",
-                windowWidth: 794,
-                windowHeight: 1123,
+                width: 794, // A4 width in px at 96 DPI
+                height: 1123, // A4 height in px at 96 DPI
                 onclone: (clonedDoc) => {
-                    const element = clonedDoc.querySelector('.print-area') as HTMLElement;
-                    if (element) {
-                        element.style.transform = 'none';
-                        element.style.margin = '0';
+                    const area = clonedDoc.querySelector('.print-area') as HTMLElement;
+                    if (area) {
+                        area.style.transform = 'none';
+                        area.style.margin = '0';
+                        area.style.position = 'relative';
+                        area.style.left = '0';
+                        area.style.top = '0';
                     }
+                    // Fix for text overlapping in canvas: ensure absolute rigid line-heights
+                    const allText = clonedDoc.querySelectorAll('.print-area *');
+                    allText.forEach((el: any) => {
+                        el.style.lineHeight = '1.2';
+                    });
                 }
             });
 
@@ -139,7 +149,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
             
         } catch (error) {
             console.error("PDF Generation Error:", error);
-            alert("Gagal membuat PDF. Silakan coba Cetak Langsung.");
+            alert("Gagal membuat PDF. Silakan gunakan tombol Print (Browser) atau coba lagi.");
         } finally {
             setGenerating(false);
         }
@@ -152,16 +162,15 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                         <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
                     </Button>
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">Lembar Jawab AI (HQ Mode)</div>
+                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">LJK AI • HQ Export</div>
                     <div className="flex gap-2">
                         <Button 
                             onClick={handleDownloadLjkPdf} 
                             disabled={generating}
-                            className="bg-emerald-600 hover:bg-emerald-700 font-bold gap-2 px-3 sm:px-5 shadow-lg"
+                            className="bg-emerald-600 hover:bg-emerald-700 font-bold gap-2 px-3 sm:px-5 shadow-lg min-w-[120px]"
                         >
                             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                            <span className="hidden sm:inline">Simpan PDF</span>
-                            <span className="sm:hidden">PDF</span>
+                            <span>Simpan PDF</span>
                         </Button>
                         <Button onClick={handlePrint} variant="outline" className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold gap-2 hidden sm:flex">
                             <Printer className="h-4 w-4" /> Print
@@ -169,7 +178,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     </div>
                 </header>
 
-                <main className="flex-1 flex justify-center items-start print:p-0 relative p-4 sm:p-8 bg-white">
+                <main className="flex-1 flex justify-center items-start print:p-0 relative p-4 sm:p-8 bg-slate-50 overflow-auto">
                     {!isReady && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white z-10 no-print">
                             <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
@@ -185,7 +194,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     >
                         <div 
                             ref={printRef}
-                            className="print-area bg-white relative print:shadow-none shadow-sm mx-auto overflow-hidden" 
+                            className="print-area bg-white relative print:shadow-none shadow-2xl mx-auto overflow-hidden text-black" 
                             style={{ 
                                 width: '210mm', 
                                 height: '297mm',
@@ -194,7 +203,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 fontFamily: 'Arial, sans-serif'
                             }}
                         >
-                            {/* Anchor Points */}
+                            {/* OMR Anchor Points */}
                             <div className="absolute top-[5mm] left-[5mm] w-6 h-6 bg-black" />
                             <div className="absolute top-[5mm] right-[5mm] w-6 h-6 bg-black" />
                             <div className="absolute bottom-[5mm] left-[5mm] w-6 h-6 bg-black" />
@@ -205,29 +214,29 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                     <div className="w-14 h-14 flex items-center justify-center">
                                         {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />}
                                     </div>
-                                    <div>
-                                        <h1 className="text-[14pt] font-black uppercase leading-tight">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
-                                        <p className="text-[8pt] font-bold uppercase text-slate-500 tracking-tight">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
+                                    <div style={{ lineHeight: '1' }}>
+                                        <h1 className="text-[14pt] font-black uppercase m-0 p-0">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
+                                        <p className="text-[8pt] font-bold uppercase text-slate-500 tracking-tight mt-1">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <h2 className="text-[12pt] font-black uppercase underline">LJK Ujian</h2>
-                                    <p className="text-[8pt] font-bold text-slate-500">{doc.subject} | KELAS {doc.class_level}</p>
+                                <div className="text-right" style={{ lineHeight: '1' }}>
+                                    <h2 className="text-[12pt] font-black uppercase underline m-0 p-0">LJK Ujian</h2>
+                                    <p className="text-[8pt] font-bold text-slate-500 mt-1">{doc.subject} | KELAS {doc.class_level}</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-[1.5fr_1fr] gap-6 mb-8">
-                                <div className="space-y-4">
+                            <div className="flex gap-6 mb-8">
+                                <div className="w-[60%] space-y-4">
                                     <div className="border-2 border-black p-4 rounded-xl">
-                                        <p className="text-[8pt] font-black mb-3 uppercase text-slate-600">IDENTITAS PESERTA</p>
-                                        <div className="space-y-5">
-                                            <div className="h-8 border-b-2 border-black flex items-end pb-1 text-[10pt] font-bold text-slate-400">NAMA: ..............................................................</div>
-                                            <div className="h-8 border-b-2 border-black flex items-end pb-1 text-[10pt] font-bold text-slate-400">KELAS: .............................................................</div>
+                                        <p className="text-[8pt] font-black mb-3 uppercase text-slate-600" style={{ lineHeight: '1' }}>IDENTITAS PESERTA</p>
+                                        <div className="space-y-6">
+                                            <div className="h-8 border-b-2 border-black flex items-end pb-1 text-[10pt] font-bold text-slate-300">NAMA: ..............................................................</div>
+                                            <div className="h-8 border-b-2 border-black flex items-end pb-1 text-[10pt] font-bold text-slate-300">KELAS: .............................................................</div>
                                         </div>
                                     </div>
                                     <div className="border-2 border-black p-4 rounded-xl bg-slate-50">
                                         <p className="text-[8pt] font-black mb-1 uppercase text-slate-600">PETUNJUK</p>
-                                        <p className="text-[7.5pt] font-bold leading-relaxed">
+                                        <p className="text-[7.5pt] font-bold leading-relaxed m-0">
                                             1. Gunakan Pensil 2B atau Pulpen Hitam.<br/>
                                             2. Hitamkan bulatan secara penuh dan jelas.<br/>
                                             3. Jaga lembar tetap bersih, tidak basah/terlipat.
@@ -235,14 +244,14 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                     </div>
                                 </div>
 
-                                <div className="border-2 border-black p-4 rounded-xl text-center">
+                                <div className="w-[40%] border-2 border-black p-4 rounded-xl text-center">
                                     <p className="text-[8pt] font-black mb-3 uppercase text-slate-600 tracking-wider">KOLOM NIS (5 DIGIT)</p>
                                     <div className="flex justify-center gap-2">
                                         {[1,2,3,4,5].map(col => (
                                             <div key={col} className="space-y-1">
                                                 <div className="w-8 h-8 border-2 border-black flex items-center justify-center font-bold text-[10pt] mb-1 text-slate-200 rounded-sm" />
                                                 {[0,1,2,3,4,5,6,7,8,9].map(num => (
-                                                    <div key={num} className="w-5 h-5 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[7pt] font-black">{num}</div>
+                                                    <div key={num} className="w-5 h-5 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[7pt] font-black" style={{ lineHeight: '1' }}>{num}</div>
                                                 ))}
                                             </div>
                                         ))}
@@ -251,10 +260,10 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             </div>
 
                             <div className="border-[2pt] border-black p-6 rounded-3xl flex-1 bg-white">
-                                <div className="grid grid-cols-2 gap-x-12 gap-y-8 items-start">
-                                    <div className="space-y-6">
+                                <div className="flex gap-12 items-start">
+                                    <div className="w-1/2 space-y-6">
                                         <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Jawaban Objektif</p>
-                                        <div className="grid grid-cols-1 gap-y-2.5">
+                                        <div className="space-y-2.5">
                                             {questions.filter((q:any) => q.question_type === 'multiple_choice' || q.question_type === 'true_false').map((q: any, idx: number) => {
                                                 const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
                                                 return (
@@ -262,7 +271,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                                         <span className="w-6 font-black text-[10pt] text-right text-slate-400">{idx + 1}.</span>
                                                         <div className="flex gap-2">
                                                             {options.map(opt => (
-                                                                <div key={opt} className="w-7 h-7 rounded-full border-[1.8pt] border-black flex items-center justify-center text-[9pt] font-black">{opt}</div>
+                                                                <div key={opt} className="w-7 h-7 rounded-full border-[1.8pt] border-black flex items-center justify-center text-[9pt] font-black" style={{ lineHeight: '1' }}>{opt}</div>
                                                             ))}
                                                         </div>
                                                     </div>
@@ -271,11 +280,11 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                         </div>
                                     </div>
 
-                                    <div className="space-y-8">
+                                    <div className="w-1/2 space-y-8">
                                         {sections.find(s => s.type === 'matching') && (
                                             <div className="space-y-3">
                                                 <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Menjodohkan</p>
-                                                <div className="grid grid-cols-1 gap-2.5">
+                                                <div className="space-y-2.5">
                                                     {(sections.find(s => s.type === 'matching')?.questions || []).map((q: any, idx: number) => (
                                                         <div key={q.id} className="flex items-center gap-3">
                                                             <span className="w-6 font-black text-[10pt] text-right text-slate-400">{idx + 1}.</span>
@@ -289,7 +298,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                         {(sections.find(s => s.type === 'short_answer') || sections.find(s => s.type === 'essay')) && (
                                             <div className="space-y-3">
                                                 <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Isian / Uraian</p>
-                                                <div className="grid grid-cols-1 gap-3">
+                                                <div className="space-y-3">
                                                     {questions.filter((q:any) => q.question_type === 'short_answer' || q.question_type === 'essay').map((q: any, idx: number) => (
                                                         <div key={q.id} className="space-y-1">
                                                             <div className="flex items-center gap-3">
