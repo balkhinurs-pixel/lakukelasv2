@@ -22,7 +22,8 @@ import {
     CheckCircle2,
     Settings2,
     SquareChartGantt,
-    AlertCircle
+    AlertCircle,
+    ScanQrCode
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,8 +66,7 @@ import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
 
 /**
- * MathText Component V26.0
- * Optimal rendering for both screen and high-fidelity printing.
+ * MathText Component V27.0
  */
 const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boolean }) => {
   if (!content) return null;
@@ -109,8 +109,7 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
 };
 
 /**
- * NaskahPrintTemplate V26.0
- * Professional layout mimicking official school examination papers.
+ * NaskahPrintTemplate V27.0
  */
 const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: any) => {
     return (
@@ -119,14 +118,13 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
             className="bg-white text-slate-900" 
             style={{ 
                 width: '210mm', 
-                padding: '20mm', // Fixed padding for all sides
+                padding: '20mm',
                 boxSizing: 'border-box',
                 fontFamily: '"Times New Roman", Times, serif', 
                 fontSize: '11pt', 
                 lineHeight: '1.45' 
             }}
         >
-            {/* Header / Kop Surat */}
             <div className="print-header-block mb-4 pb-4 border-b-[2.5pt] border-double border-black">
                 <div className="flex items-center gap-6">
                     <div className="w-[22mm] h-[22mm] flex items-center justify-center shrink-0">
@@ -140,21 +138,15 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                         <h1 className="text-[14pt] font-bold uppercase leading-tight">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h1>
                         {schoolProfile?.npsn && <p className="text-[10pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
                         <p className="text-[9pt] italic leading-tight">{schoolProfile?.school_address || "Alamat sekolah belum diatur"}</p>
-                        <p className="text-[9pt] italic leading-tight">
-                            {schoolProfile?.school_email && `Email: ${schoolProfile.school_email}`} 
-                            {schoolProfile?.school_website && ` | Web: ${schoolProfile.school_website}`}
-                        </p>
                     </div>
                 </div>
             </div>
 
-            {/* Judul Ujian */}
             <div className="text-center mb-6">
                 <h2 className="text-[12pt] font-bold uppercase underline leading-tight">NASKAH SOAL {docMetadata.title}</h2>
                 <p className="text-[11pt] font-bold uppercase mt-1">Mata Pelajaran: {docMetadata.subject}</p>
             </div>
 
-            {/* Tabel Metadata Naskah */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[10.5pt] mb-8 border border-black p-4 rounded-lg">
                 <div className="flex justify-between border-b border-black/10 pb-1"><span className="font-bold">Kelas / Semester</span><span>: {docMetadata.class_level} / Ganjil</span></div>
                 <div className="flex justify-between border-b border-black/10 pb-1"><span className="font-bold">Waktu Pengerjaan</span><span>: 90 Menit</span></div>
@@ -162,15 +154,13 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                 <div className="flex justify-between pt-1"><span className="font-bold">Tahun Pelajaran</span><span>: 2024/2025</span></div>
             </div>
 
-            {/* Daftar Pertanyaan */}
             <div className="questions-container">
                 {questions.map((q: any, idx: number) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
                     const isLongOptions = options.some(([, v]) => v.length > 50);
-                    const optionCount = options.length;
                     
                     return (
-                        <div key={q.id} className="print-item-block mb-6" style={{ breakInside: 'avoid' }}>
+                        <div key={q.id} className="mb-6" style={{ breakInside: 'avoid' }}>
                             <div className="flex gap-4">
                                 <span className="font-bold min-w-[20px]">{idx + 1}.</span>
                                 <div className="flex-1 text-justify">
@@ -178,9 +168,9 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                                     {q.visual_svg && (
                                         <div className="my-4 flex justify-center">
                                             <div 
-                                                style={{ maxWidth: '60mm', maxHeight: '50mm' }}
+                                                style={{ maxWidth: '50mm' }}
                                                 dangerouslySetInnerHTML={{ 
-                                                    __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto; max-height:50mm;" preserveAspectRatio="xMidYMid meet"') 
+                                                    __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') 
                                                 }} 
                                             />
                                         </div>
@@ -189,13 +179,10 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                             </div>
                             
                             {options.length > 0 && (
-                                <div 
-                                    className={cn(
-                                        "ml-[36px] mt-2",
-                                        isLongOptions ? "flex flex-col gap-1" : "grid grid-cols-2 gap-x-16 gap-y-1.5"
-                                    )}
-                                    style={!isLongOptions ? { gridAutoFlow: 'column', gridTemplateRows: `repeat(${Math.ceil(optionCount / 2)}, auto)` } : {}}
-                                >
+                                <div className={cn(
+                                    "ml-[36px] mt-2",
+                                    isLongOptions ? "flex flex-col gap-1" : "grid grid-cols-2 gap-x-16 gap-y-1"
+                                )}>
                                     {options.map(([k, v]) => (
                                         <div key={k} className="flex gap-2 items-start py-0.5">
                                             <span className="font-bold min-w-[15px]">{k}.</span>
@@ -207,9 +194,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
 
                             {config.showDiscussion && (
                                 <div className="ml-[36px] mt-4 p-4 border-l-4 border-indigo-200 bg-slate-50 text-[10.5pt] italic rounded-r-lg">
-                                    <p className="font-bold text-indigo-700 not-italic uppercase text-[9pt] mb-2 flex items-center gap-2">
-                                        <CheckCircle2 className="h-3.5 w-3.5" /> Kunci: {q.correct_answer}
-                                    </p>
+                                    <p className="font-bold text-indigo-700 not-italic uppercase text-[9pt] mb-1">Kunci: {q.correct_answer}</p>
                                     <MathText content={q.explanation} isPrint />
                                 </div>
                             )}
@@ -217,9 +202,75 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                     );
                 })}
             </div>
-            
-            <div className="text-center italic text-slate-400 text-[10pt] py-10 mt-8 border-t border-dashed border-slate-200">
-                <p>-- Akhir dari Naskah Soal. Selamat Mengerjakan! --</p>
+        </div>
+    );
+};
+
+/**
+ * LjkPrintTemplate V27.0
+ */
+const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
+    return (
+        <div 
+            id={`ljk-target-${docMetadata.id}`} 
+            className="bg-white text-slate-900 relative" 
+            style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', fontFamily: 'Arial, sans-serif' }}
+        >
+            {/* Anchor Points for Scanner */}
+            <div className="absolute top-4 left-4 w-5 h-5 bg-black" />
+            <div className="absolute top-4 right-4 w-5 h-5 bg-black" />
+            <div className="absolute bottom-4 left-4 w-5 h-5 bg-black" />
+            <div className="absolute bottom-4 right-4 w-5 h-5 bg-black" />
+
+            <div className="text-center border-b-2 border-black pb-4 mb-6">
+                <h1 className="text-xl font-bold uppercase">LEMBAR JAWAB KOMPUTER (LJK) AI</h1>
+                <p className="text-sm font-bold uppercase">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-10 mb-8">
+                <div className="space-y-4">
+                    <div className="border-2 border-black p-3 rounded-lg">
+                        <p className="text-[10px] font-bold mb-2 uppercase">KOLOM IDENTITAS SISWA</p>
+                        <div className="h-10 border-b border-black/20 flex items-end pb-1 text-sm font-bold italic text-slate-300 uppercase">Nama: ...........................................................</div>
+                    </div>
+                </div>
+                <div className="border-2 border-black p-3 rounded-lg">
+                    <p className="text-[10px] font-bold mb-2 uppercase text-center">KOLOM NIS (5 DIGIT)</p>
+                    <div className="flex justify-center gap-1.5">
+                        {[1,2,3,4,5].map(col => (
+                            <div key={col} className="space-y-1">
+                                <div className="w-8 h-8 border border-black flex items-center justify-center font-bold text-xs" />
+                                {[0,1,2,3,4,5,6,7,8,9].map(num => (
+                                    <div key={num} className="w-6 h-6 rounded-full border border-black flex items-center justify-center text-[9px] font-bold">{num}</div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <div className="border-2 border-black p-6 rounded-xl">
+                 <p className="text-[10px] font-bold mb-4 uppercase text-center bg-slate-100 py-1">KOLOM JAWABAN (PILIHAN GANDA / BENAR-SALAH)</p>
+                 <div className="grid grid-cols-2 gap-x-12 gap-y-2">
+                    {questions.map((q: any, idx: number) => {
+                        const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
+                        return (
+                            <div key={q.id} className="flex items-center gap-3 py-1 border-b border-slate-50">
+                                <span className="w-6 font-bold text-xs">{idx + 1}.</span>
+                                <div className="flex gap-2.5">
+                                    {options.map(opt => (
+                                        <div key={opt} className="w-6 h-6 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[10px] font-black">{opt}</div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                 </div>
+            </div>
+
+            <div className="mt-8 p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                <p className="text-[9px] font-bold uppercase text-slate-400 mb-1">Petunjuk Pengisian:</p>
+                <p className="text-[9px] text-slate-500 italic leading-tight">1. Gunakan Pensil 2B atau Bolpoin Hitam yang pekat. 2. Bulatkan secara penuh di dalam lingkaran huruf. 3. Jangan melipat atau merobek kertas ini.</p>
             </div>
         </div>
     );
@@ -240,7 +291,6 @@ export default function NaskahRepositoryClient({
     const [loadingId, setLoadingId] = React.useState<string | null>(null);
     const [downloading, setDownloading] = React.useState(false);
 
-    // Rendering State
     const [renderTarget, setRenderTarget] = React.useState<{ mode: 'soal' | 'kunci' | 'ljk', doc: AiDocument, questions: any[] } | null>(null);
 
     const filteredDocs = React.useMemo(() => {
@@ -256,41 +306,6 @@ export default function NaskahRepositoryClient({
     const uniqueClasses = Array.from(new Set(initialDocuments.map(d => d.class_level).filter(Boolean))).sort();
     const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
 
-    /**
-     * handleDirectPrint V26.0
-     * Triggers the native browser print dialog for perfect vector quality.
-     */
-    const handleDirectPrint = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
-        setDownloading(true);
-        setLoadingId(docId);
-        try {
-            const result = await getNaskahDetailsAction(docId);
-            if (result.success && result.questions && result.doc) {
-                setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
-                
-                // Wait for DOM to sync KaTeX and CSS before printing
-                setTimeout(() => {
-                    window.print();
-                    setLoadingId(null);
-                    setRenderTarget(null);
-                    setDownloading(false);
-                    toast({ title: "Cetak Selesai", description: "Dialog cetak berhasil dibuka." });
-                }, 1000);
-            } else {
-                toast({ variant: "destructive", title: "Gagal", description: result.error });
-                setLoadingId(null);
-                setDownloading(false);
-            }
-        } catch (e) {
-            setLoadingId(null);
-            setDownloading(false);
-        }
-    };
-
-    /**
-     * handleExecuteCetak V26.0 (Optimized)
-     * Creates a high-fidelity continuous PDF matching content height.
-     */
     const handleExecuteCetak = async (docId: string, mode: 'soal' | 'kunci' | 'ljk', title: string) => {
         setDownloading(true);
         setLoadingId(docId);
@@ -299,15 +314,21 @@ export default function NaskahRepositoryClient({
             const result = await getNaskahDetailsAction(docId);
             if (!result.success || !result.questions || !result.doc) throw new Error(result.error);
             
+            // 1. Set Target untuk di-render ke DOM (tersembunyi)
             setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
             
-            // Allow DOM to settle
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // 2. Beri jeda agar React selesai merender elemen baru ke DOM
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             const elementId = mode === 'ljk' ? `ljk-target-${docId}` : `print-target-${docId}`;
             const element = document.getElementById(elementId);
-            if (!element) throw new Error("Renderer target not found");
+            
+            if (!element) {
+                console.error("DEBUG: Element with ID not found:", elementId);
+                throw new Error("Sistem gagal menyiapkan area cetak. Silakan coba lagi.");
+            }
 
+            // 3. Ambil Screenshot Vektor Tinggi
             const canvas = await html2canvas(element, { 
                 scale: 2, 
                 useCORS: true, 
@@ -316,10 +337,9 @@ export default function NaskahRepositoryClient({
             });
 
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
-            const imgWidth = 210; // A4 Width in mm
+            const imgWidth = 210; 
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-            // Create PDF with dynamic height (Continuous mode)
             const pdf = new jsPDF('p', 'mm', [imgWidth, imgHeight]);
             pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
 
@@ -328,7 +348,7 @@ export default function NaskahRepositoryClient({
             
             toast({ 
                 title: "Unduh Berhasil!", 
-                description: `File ${mode.toUpperCase()} sudah tersimpan di perangkat Anda.`,
+                description: `File ${mode.toUpperCase()} naskah '${title}' siap dibuka.`,
                 icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />
             });
 
@@ -341,11 +361,35 @@ export default function NaskahRepositoryClient({
         }
     };
 
+    const handleDirectPrint = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
+        setDownloading(true);
+        setLoadingId(docId);
+        try {
+            const result = await getNaskahDetailsAction(docId);
+            if (result.success && result.questions && result.doc) {
+                setRenderTarget({ mode, doc: result.doc as any, questions: result.questions });
+                setTimeout(() => {
+                    window.print();
+                    setLoadingId(null);
+                    setRenderTarget(null);
+                    setDownloading(false);
+                }, 1200);
+            } else {
+                toast({ variant: "destructive", title: "Gagal", description: result.error });
+                setLoadingId(null);
+                setDownloading(false);
+            }
+        } catch (e) {
+            setLoadingId(null);
+            setDownloading(false);
+        }
+    };
+
     const handleDelete = async (id: string) => {
         setLoadingId(id);
         const result = await deleteAiDocumentAction(id);
         if (result.success) {
-            toast({ title: "Dihapus", description: "Naskah berhasil dihapus dari sistem." });
+            toast({ title: "Dihapus", description: "Naskah berhasil dihapus." });
             router.refresh();
         }
         setLoadingId(null);
@@ -353,17 +397,16 @@ export default function NaskahRepositoryClient({
 
     return (
         <div className="space-y-6">
-            {/* Premium Loading Overlay */}
+            {/* Loading Overlay */}
             {downloading && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/70 backdrop-blur-md animate-in fade-in duration-300">
                     <Card className="p-10 rounded-[3rem] border-0 shadow-2xl flex flex-col items-center gap-6 bg-white/90">
                         <div className="relative">
                             <Loader2 className="h-16 w-16 animate-spin text-indigo-600" />
-                            <FileText className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-indigo-400" />
                         </div>
-                        <div className="text-center space-y-2">
+                        <div className="text-center">
                             <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyiapkan Naskah...</p>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Optimalisasi Kualitas Vektor & Margin</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Optimalisasi Vektor & Tata Letak</p>
                         </div>
                     </Card>
                 </div>
@@ -407,10 +450,7 @@ export default function NaskahRepositoryClient({
             <div className="print-only">
                 {renderTarget && (
                     renderTarget.mode === 'ljk' ? (
-                        <div id={`ljk-target-${renderTarget.doc.id}`} className="bg-white">
-                             {/* LJK Template can be added here if needed, or reused from Naskah logic */}
-                             <p className="p-10 text-center font-bold">Fungsi LJK AI Sedang Dioptimasi untuk Vektor</p>
-                        </div>
+                        <LjkPrintTemplate docMetadata={renderTarget.doc} questions={renderTarget.questions} schoolProfile={schoolProfile} />
                     ) : (
                         <NaskahPrintTemplate 
                             questions={renderTarget.questions} 
@@ -438,7 +478,7 @@ export default function NaskahRepositoryClient({
                                         <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle className="text-xl font-bold">Hapus Naskah?</AlertDialogTitle>
-                                                <AlertDialogDescription className="font-medium">Dokumen akan dihapus permanen dari sistem LakuKelas.</AlertDialogDescription>
+                                                <AlertDialogDescription className="font-medium">Dokumen akan dihapus permanen.</AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter className="flex flex-row gap-2 mt-4">
                                                 <AlertDialogCancel className="flex-1 rounded-xl h-11 border-slate-200 font-bold">Batal</AlertDialogCancel>
@@ -454,7 +494,6 @@ export default function NaskahRepositoryClient({
                                     </div>
                                     <div className="flex flex-col items-end gap-1 pr-10">
                                         <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100">Vektor Ready</Badge>
-                                        <div className="p-1 rounded-lg opacity-30"><AppLogo className="w-5 h-5" /></div>
                                     </div>
                                 </div>
                                 <CardTitle className="text-lg font-black text-slate-900 mt-4 leading-tight group-hover:text-indigo-600 transition-colors">
@@ -472,19 +511,13 @@ export default function NaskahRepositoryClient({
                                         <span className="text-[10px] font-black uppercase truncate">{doc.subject || 'Umum'}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 text-slate-400 pl-1">
-                                    <Calendar className="h-3.5 w-3.5" />
-                                    <span className="text-[10px] font-bold uppercase tracking-tight">
-                                        {format(parseISO(doc.created_at), 'dd MMM yyyy', { locale: id })}
-                                    </span>
-                                </div>
                             </CardContent>
                             <CardFooter className="pt-0 flex flex-col gap-2">
                                 <div className="grid grid-cols-2 gap-2 w-full">
                                     <Button 
                                         onClick={() => handleDirectPrint(doc.id, 'soal')} 
                                         disabled={loadingId === doc.id}
-                                        className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-xl shadow-indigo-100"
+                                        className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold gap-2 shadow-xl"
                                     >
                                         <Printer className="h-4 w-4" /> Cetak Soal
                                     </Button>
@@ -500,21 +533,28 @@ export default function NaskahRepositoryClient({
                                 <div className="grid grid-cols-2 gap-2 w-full">
                                     <Button 
                                         variant="outline"
-                                        onClick={() => handleDirectPrint(doc.id, 'kunci')}
-                                        className="h-11 border-amber-100 text-amber-700 bg-amber-50/20 hover:bg-amber-100 rounded-2xl font-bold gap-2 text-xs"
+                                        onClick={() => handleExecuteCetak(doc.id, 'kunci', doc.title)}
+                                        className="h-11 border-amber-100 text-amber-700 bg-amber-50/20 hover:bg-amber-100 rounded-2xl font-bold gap-2 text-[10px] uppercase tracking-tighter"
                                     >
-                                        <CheckCircle2 className="h-4 w-4" /> Kunci/Pembahasan
+                                        <CheckCircle2 className="h-4 w-4" /> Kunci & Pembahasan
                                     </Button>
                                     <Button 
-                                        variant="ghost" 
-                                        asChild
-                                        className="h-11 border border-dashed border-slate-200 rounded-2xl font-bold gap-2 text-xs"
+                                        variant="outline"
+                                        onClick={() => handleExecuteCetak(doc.id, 'ljk', doc.title)}
+                                        className="h-11 border-emerald-100 text-emerald-700 bg-emerald-50/20 hover:bg-emerald-100 rounded-2xl font-bold gap-2 text-[10px] uppercase tracking-tighter"
                                     >
-                                        <a href={doc.drive_file_url || "#"} target="_blank">
-                                            <ExternalLink className="h-3.5 w-3.5" /> Edit Google Doc
-                                        </a>
+                                        <ScanQrCode className="h-4 w-4" /> Cetak LJK AI
                                     </Button>
                                 </div>
+                                <Button 
+                                    variant="ghost" 
+                                    asChild
+                                    className="w-full h-11 border border-dashed border-slate-200 rounded-2xl font-bold gap-2 text-xs"
+                                >
+                                    <a href={doc.drive_file_url || "#"} target="_blank">
+                                        <ExternalLink className="h-3.5 w-3.5" /> Edit Google Doc
+                                    </a>
+                                </Button>
                             </CardFooter>
                         </Card>
                     ))
