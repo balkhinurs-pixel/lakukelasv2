@@ -20,7 +20,7 @@ const QuestionSchema = z.object({
   cognitive_level: z.string().optional().describe('Level kognitif C1-C6'),
   language_direction: z.enum(['ltr', 'rtl']).default('ltr').describe('Arah teks'),
   image_prompt: z.string().optional().describe('Detailed English description for an educational image related to this question.'),
-  visual_svg: z.string().optional().describe('Kode SVG minimalis untuk ilustrasi soal jika diperlukan. Gunakan viewBox 0 0 400 400, stroke hitam (#333), dan isi transparan/berwarna lembut.'),
+  visual_svg: z.string().optional().describe('Kode SVG minimalis untuk ilustrasi soal. HANYA SERTAKAN jika soal benar-benar membutuhkan bantuan visual (seperti bangun datar, grafik, atau diagram). Jika soal bersifat tekstual murni, kosongkan field ini.'),
 });
 
 const GenerateQuestionsInputSchema = z.object({
@@ -99,37 +99,22 @@ Buatlah ${input.count} soal dengan tipe "${input.question_type}" untuk:
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
 
-ATURAN KHUSUS TIPE SOAL:
-1. Pilihan Ganda (multiple_choice): Sediakan ${optionCount} opsi (A-${isHighSchool ? 'E' : 'D'}).
-2. Benar/Salah (true_false): Opsi hanya A. Benar dan B. Salah.
-3. Isian Singkat (short_answer): Tanpa opsi. Jawaban berupa kata atau frasa pendek.
-4. Menjodohkan (matching): Pertanyaan berisi daftar item kiri, opsi berisi daftar item kanan yang diacak. Kunci jawaban berisi pasangan yang benar (misal: 1-C, 2-A).
-5. Uraian (essay): Soal analisis mendalam yang membutuhkan jawaban panjang terstruktur.
+ATURAN KHUSUS PENGGUNAAN SVG (PENTING):
+1. BERSIKAPLAH SELEKTIF: Jangan sertakan "visual_svg" untuk setiap soal.
+2. GUNAKAN SVG HANYA JIKA: Soal tersebut menanyakan tentang geometri (bangun datar/ruang), membaca grafik/diagram batang/lingkaran, atau membutuhkan ilustrasi visual spesifik untuk dapat dijawab.
+3. KOSONGKAN SVG JIKA: Soal hanya berupa teks (analisis kalimat, sejarah, teori, atau pemahaman konsep umum).
 
-ATURAN VISUALISASI SVG (SANGAT PENTING):
+ATURAN TEKNIS SVG:
 1. Gunakan viewBox="0 0 400 400" agar gambar simetris dan luas.
 2. DIAGRAM LINGKARAN (Pie Chart):
-   - Jika membuat pie chart, pastikan setiap slice menggunakan elemen <path>.
-   - Perhitungan busur (arc) HARUS akurat. Rumus: M cx,cy L x1,y1 A r,r 0 largeArcFlag,1 x2,y2 Z.
-   - Pastikan cx (pusat x) dan cy (pusat y) adalah (200, 200). Radius r = 150.
-   - Segmen dilarang tumpang tindih. Gunakan warna lembut (fill="rgba(...,0.3)").
-   - Tambahkan label teks (<text>) di luar/dalam segmen yang sesuai.
-3. GEOMETRI & DIAGRAM:
-   - Gunakan stroke-width="2" dan stroke="#333".
-   - Untuk bangun datar, beri label pada setiap sudut atau sisi.
-   - Jika diagram batang, gunakan rect dengan jarak (spacing) yang proporsional.
+   - Gunakan elemen <path> dengan kalkulasi busur yang akurat.
+   - Gunakan warna lembut (fill="rgba(...,0.3)") dan tambahkan label <text>.
+3. GEOMETRI: Gunakan stroke-width="2" dan stroke="#333". Beri label pada sudut atau sisi.
 
 ATURAN PENULISAN:
-1. MATEMATIKA/SAINS: WAJIB menggunakan LaTeX valid.
-   - Pembungkus Inline: Gunakan \\( ... \\). Contoh: \\( x^2 + y^2 = r^2 \\).
-   - Pembungkus Blok: Gunakan \\[ ... \\]. Contoh: \\[ \frac{-b \pm \sqrt{b^2-4ac}}{2a} \\].
-
-2. DATA TABEL: WAJIB menggunakan format Markdown Table.
-
-3. BAHASA ARAB: WAJIB menggunakan Unicode asli Arab. Set field "language_direction" ke "rtl".
-
-4. KUALITAS SOAL:
-   - Berikan pembahasan (explanation) yang logis dan edukatif.
+1. MATEMATIKA/SAINS: WAJIB menggunakan LaTeX valid \( ... \) atau \[ ... \].
+2. DATA TABEL: Gunakan format Markdown Table jika ada data yang perlu disajikan dalam tabel.
+3. Tipe Soal ${input.question_type}: Sediakan ${optionCount} opsi untuk PG jika jenjang menengah ke atas.
 
 Output harus berupa JSON valid sesuai skema.` }
     ]
