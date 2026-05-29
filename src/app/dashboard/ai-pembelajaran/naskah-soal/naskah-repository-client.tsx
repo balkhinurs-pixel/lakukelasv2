@@ -64,7 +64,8 @@ export default function NaskahRepositoryClient({
     const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
 
     const handlePrintNav = (id: string, mode: 'soal' | 'kunci' | 'ljk') => {
-        const url = `/dashboard/ai-pembelajaran/naskah-soal/${id}/print?mode=${mode}`;
+        // PERUBAHAN: Navigasi ke rute terisolasi total di luar dashboard
+        const url = `/print-naskah/${id}?mode=${mode}`;
         window.open(url, '_blank');
     };
 

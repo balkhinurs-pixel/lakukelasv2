@@ -143,7 +143,8 @@
 }
 
 /* 
-  Dedicated Print Styles V42.0 
+  DEDICATED PRINT STYLES V43.0 
+  Pembaruan total untuk standar naskah profesional dan anti-dashboard-leak.
 */
 @media print {
   @page {
@@ -151,8 +152,12 @@
     margin: 15mm 20mm;
   }
 
-  body {
+  /* Reset total untuk memastikan elemen website tidak bocor */
+  body, html {
     background: white !important;
+    color: black !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .no-print {
@@ -165,27 +170,34 @@
     margin: 0 !important;
     padding: 0 !important;
     font-family: "Times New Roman", Times, serif !important;
+    box-shadow: none !important;
   }
 
-  /* Prevent question splitting across pages */
+  /* Mencegah soal terpotong di tengah (Anti-Cut) */
   .print-question-block {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     display: block;
     width: 100%;
+    margin-bottom: 2rem !important;
   }
 
-  .math-text-render, 
-  .math-text-render * {
-    font-family: "Times New Roman", Times, serif !important;
-  }
-
+  /* Standardisasi tabel hitam putih */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
+    border: 1pt solid black !important;
   }
   
   th, td {
-    border: 1px solid black !important;
+    border: 1pt solid black !important;
+    color: black !important;
+  }
+
+  /* Memastikan elemen math-text terlihat jelas */
+  .math-text-render, 
+  .math-text-render * {
+    font-family: "Times New Roman", Times, serif !important;
+    color: black !important;
   }
 }
