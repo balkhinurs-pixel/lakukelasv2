@@ -143,13 +143,14 @@
 }
 
 /* 
-  ULTIMATE PRINT ISOLATION V73.0 
+  ULTIMATE PRINT ISOLATION V81.0 
   Pemisahan logika antara naskah (flowing) dan LJK (rigid).
+  Menghilangkan !important agar komponen bisa menentukan margin kertas sendiri.
 */
 @media print {
   @page {
     size: A4;
-    margin: 0 !important;
+    margin: 0;
   }
 
   html, body {

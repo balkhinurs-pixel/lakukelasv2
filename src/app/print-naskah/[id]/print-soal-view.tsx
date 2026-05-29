@@ -13,30 +13,21 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V79.0 (Print & Standard National Optimized)
- * Mesin deteksi LaTeX yang sangat kuat untuk menangani berbagai gaya output AI.
+ * MathText Component V81.0 (Rigid Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
-  
-  // Deteksi blok matematika standar
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
     <div className="math-text-render w-full text-justify print:text-black">
       {parts.map((part, i) => {
         if (!part) return null;
-
         if (part.startsWith('$$')) return <div key={i} className="my-2"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('$')) return <InlineMath key={i} math={part.slice(1, -1)} />;
         if (part.startsWith('\\[')) return <div key={i} className="my-2"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         
-        // Deteksi simbol matematika mentah yang tidak terbungkus
-        if (part.includes('\\text') || part.includes('\\frac') || part.includes('^') || part.includes('_') || part.includes('\\pi')) {
-            return <InlineMath key={i} math={part} />;
-        }
-
         return (
             <ReactMarkdown 
                 key={i} 
@@ -94,7 +85,8 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
               @media print {
                 @page {
                   size: A4 portrait;
-                  margin: 18mm 14mm 16mm 14mm !important;
+                  /* KUNCI PERBAIKAN: Margin fisik kaku (20mm atas, 15mm samping) */
+                  margin: 20mm 15mm !important;
                 }
 
                 html, body {
@@ -107,6 +99,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                   overflow: visible !important;
                   font-family: "Times New Roman", Times, serif !important;
                   -webkit-print-color-adjust: exact !important;
+                  -webkit-text-size-adjust: none !important;
                 }
 
                 .no-print {
@@ -114,7 +107,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                 }
 
                 .print-root {
-                  width: 100% !important;
+                  width: 210mm !important;
                   margin: 0 !important;
                   padding: 0 !important;
                   box-shadow: none !important;
@@ -122,13 +115,8 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                 }
 
                 .print-content-wrapper {
-                  box-sizing: border-box !important;
-                  padding: 12mm 0 0 0 !important; 
                   width: 100% !important;
-                }
-
-                .print-content-wrapper:first-of-type {
-                  padding-top: 0 !important;
+                  padding: 0 !important;
                 }
 
                 .print-question-block {
@@ -138,7 +126,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                   display: block !important;
                 }
 
-                img, table, svg, .math-text-render, .identity-box {
+                .identity-box {
                   break-inside: avoid !important;
                   page-break-inside: avoid !important;
                 }
@@ -146,26 +134,21 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                 * {
                   box-shadow: none !important;
                   transform: none !important;
-                  text-shadow: none !important;
                 }
               }
 
               .print-root {
                 width: 210mm;
-                margin: 0 auto;
+                margin: 20px auto;
                 background: white;
                 color: black;
                 min-height: 297mm;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.1);
               }
 
               .print-content-wrapper {
-                width: 210mm;
                 padding: 15mm 20mm;
                 box-sizing: border-box;
-              }
-
-              .math-text-render {
-                -webkit-text-size-adjust: none;
               }
             `}</style>
 
@@ -178,15 +161,15 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                     <p className="text-[9px] text-indigo-300 font-bold uppercase">{isKunci ? 'MODE KUNCI JAWABAN' : 'MODE NASKAH SOAL'}</p>
                 </div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-6 shadow-lg">
-                    <Printer className="h-4 w-4" /> CETAK / PDF
+                    <Printer className="h-4 w-4" /> CETAK SEKARANG
                 </Button>
             </header>
 
             <main className="flex-1 w-full p-4 sm:p-10 print:p-0 print:bg-white overflow-y-auto flex justify-center">
-                <div className="print-root shadow-2xl print:shadow-none">
+                <div className="print-root">
                     <div className="print-content-wrapper" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.4' }}>
                         
-                        {/* KOP SURAT PROFESIONAL (V79 STYLED) */}
+                        {/* KOP SURAT PROFESIONAL */}
                         <div className="mb-6 pb-2 border-b-[3pt] border-double border-black">
                             <div className="flex items-center gap-8">
                                 <div className="w-[24mm] h-[24mm] flex items-center justify-center shrink-0">
@@ -201,12 +184,11 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                     <h1 className="text-[15pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
                                     {schoolProfile?.npsn && <p className="text-[9pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
                                     <p className="text-[9pt] italic leading-tight mt-1">{schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"}</p>
-                                    {schoolProfile?.school_website && <p className="text-[8.5pt] font-bold mt-0.5">{schoolProfile.school_website}</p>}
                                 </div>
                             </div>
                         </div>
 
-                        {/* IDENTITY BOX (V79 STYLED) */}
+                        {/* IDENTITY BOX */}
                         <div className="border-[1.2pt] border-black p-3 mb-8 rounded-sm identity-box">
                             <div className="grid grid-cols-2 gap-x-8 text-[10.5pt]">
                                 <div className="space-y-1">
