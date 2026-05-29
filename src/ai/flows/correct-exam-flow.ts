@@ -1,7 +1,7 @@
 'use server';
 /**
- * @fileOverview Flow Genkit untuk Koreksi LJK (OMR Vision).
- * Mendeteksi bulatan NIS dan Jawaban Siswa dari foto LJK Baku.
+ * @fileOverview Flow Genkit untuk Koreksi LJK (OMR Vision) - V58.0 Optimized.
+ * Mendeteksi bulatan NIS dan Jawaban Siswa dari foto LJK Baku LakuKelas.
  */
 
 import { z, genkit } from 'genkit';
@@ -60,25 +60,34 @@ export async function correctExam(input: CorrectExamInput): Promise<CorrectExamO
     output: { schema: CorrectExamOutputSchema },
     prompt: [
         { media: { url: input.photoDataUri, contentType: 'image/jpeg' } },
-        { text: `Anda adalah mesin OMR (Optical Mark Recognition) tingkat tinggi.
-Tugas Anda adalah memeriksa Lembar Jawab Komputer (LJK) ini.
+        { text: `Anda adalah mesin OMR (Optical Mark Recognition) tingkat tinggi berbasis Vision AI.
+Tugas Anda adalah memeriksa Lembar Jawab Komputer (LJK) Standard LakuKelas ini secara presisi.
+
+KONTEKS LAYOUT LJK (V57.0):
+1. ANCHOR POINTS: Ada 4 kotak hitam solid di setiap pojok kertas. Gunakan kotak ini untuk kalibrasi koordinat dan koreksi kemiringan (perspective warp).
+2. KOLOM NIS: Terletak di sisi kanan atas (Blok C). Berisi 5 kolom, masing-masing kolom memiliki bulatan angka 0-9. Deteksi angka mana yang dihitamkan di setiap kolom untuk mendapatkan NIS siswa.
+3. BLOK JAWABAN:
+   - Jawaban dikelompokkan berdasarkan tipe soal (Pilihan Ganda, Benar/Salah, Menjodohkan).
+   - Penomoran soal tetap berlanjut secara sekuensial (1, 2, 3, dst) meskipun berada di blok berbeda.
+   - Pilihan Ganda: Bulatan A-E.
+   - Benar/Salah: Bulatan B-S.
+   - Menjodohkan: Siswa menulis teks di dalam kotak bergaris putus-putus.
 
 KUNCI JAWABAN REFERENSI:
-${input.correctAnswers.map(k => `No ${k.sort_order}: ${k.correct_answer}`).join(', ')}
+${input.correctAnswers.map(k => `No ${k.sort_order} [Tipe: ${k.question_type}]: ${k.correct_answer}`).join('\n')}
 
-INSTRUKSI DETEKSI:
-1. IDENTIFIKASI NIS: Cari blok "KOLOM NIS" di sisi kanan atas. Deteksi digit mana yang dibulatkan hitam. Gabungkan menjadi satu string nomor.
-2. IDENTIFIKASI JAWABAN: Periksa kolom jawaban di bawah. Cari bulatan (A, B, C, D, E) atau (B, S) yang paling gelap.
-3. ALIGNMENT: Gunakan 4 kotak hitam (Anchor Points) di setiap pojok kertas untuk menstabilkan perspektif gambar.
-4. PERHITUNGAN SKOR: Bandingkan jawaban terdeteksi dengan kunci jawaban yang diberikan. Hitung skor dalam skala 0-100.
-5. ANALISIS: Jika gambar buram atau bulatan tidak jelas, berikan catatan di field analysis.
+INSTRUKSI ANALISIS:
+1. DETEKSI NIS: Ambil 5 digit dari kolom NIS di kanan atas. Jika kosong atau tidak terbaca, laporkan di analysis.
+2. DETEKSI JAWABAN: Untuk setiap nomor soal, cari bulatan (atau teks di blok Menjodohkan) yang paling gelap/diisi.
+3. PERHITUNGAN SKOR: Bandingkan jawaban terdeteksi dengan KUNCI JAWABAN. Hitung skor total dalam skala 0-100.
+4. VALIDASI: Jika ada nomor yang dicoret atau diisi lebih dari satu bulatan, anggap salah.
 
-Pastikan hasil deteksi sangat akurat.` }
+Berikan hasil dalam JSON yang sangat akurat. Field analysis harus berisi info jika ada kendala kualitas gambar (blur/miring).` }
     ]
   });
 
   const result = response.output;
-  if (!result) throw new Error("AI gagal membaca LJK. Pastikan foto jelas dan cahaya cukup.");
+  if (!result) throw new Error("AI gagal membaca LJK. Pastikan foto jelas, tegak lurus, dan 4 kotak hitam di pojok terlihat.");
   
   return result;
 }
