@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
 
 interface ScannedResult {
     id: string;
@@ -114,6 +115,11 @@ export default function KoreksiClient({
     const [resultsList, setResultsList] = React.useState<ScannedResult[]>([]);
     const [currentScan, setCurrentScan] = React.useState<ScannedResult | null>(null);
 
+    // AI Error Handling
+    const [isErrorOpen, setIsErrorOpen] = React.useState(false);
+    const [errorType, setErrorType] = React.useState<AiErrorType>(null);
+    const [errorMsg, setErrorMsg] = React.useState("");
+
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const handleStartScan = () => {
@@ -134,10 +140,10 @@ export default function KoreksiClient({
             const rawBase64 = event.target?.result as string;
             
             try {
-                // Step 1: Optimize Image (Resize & Compress) before sending to server
+                // Step 1: Optimize Image
                 const optimizedBase64 = await optimizeImage(rawBase64);
                 
-                // Step 2: Send to Next.js Server Action -> Gemini Vision AI
+                // Step 2: Send to Server Action
                 const result = await correctExamAction(selectedNaskahId, optimizedBase64);
                 
                 if (result.success && result.data) {
@@ -151,11 +157,22 @@ export default function KoreksiClient({
                     setCurrentScan(newResult);
                     toast({ title: "Scan Berhasil", description: `Lembar milik ${newResult.studentName} terdeteksi.` });
                 } else {
-                    toast({ title: "Scan Gagal", description: result.error || "AI kesulitan membaca LJK. Pastikan foto tegak lurus dan jelas.", variant: "destructive" });
+                    // Handle AI Errors (Quota/Busy/Generic)
+                    const err = result.error || "";
+                    let type: AiErrorType = 'generic';
+                    if (err.includes('429') || err.includes('RESOURCE_EXHAUSTED')) type = 'quota';
+                    else if (err.includes('503')) type = 'overloaded';
+                    else if (err.toLowerCase().includes('api key')) type = 'api_key';
+
+                    setErrorType(type);
+                    setErrorMsg(err);
+                    setIsErrorOpen(true);
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Scanning Error:", err);
-                toast({ title: "Error", description: "Terjadi kesalahan saat memproses gambar. Pastikan format file benar.", variant: "destructive" });
+                setErrorType('generic');
+                setErrorMsg(err.message || "Terjadi kesalahan sistem saat memproses gambar.");
+                setIsErrorOpen(true);
             } finally {
                 setLoading(false);
                 if (fileInputRef.current) fileInputRef.current.value = "";
@@ -216,6 +233,14 @@ export default function KoreksiClient({
 
     return (
         <div className="space-y-8 pb-32">
+            <AiErrorDialog 
+                open={isErrorOpen} 
+                onOpenChange={setIsErrorOpen} 
+                errorType={errorType} 
+                errorMessage={errorMsg}
+                onRetry={handleStartScan}
+            />
+
             <input 
                 type="file" 
                 ref={fileInputRef} 

@@ -29,6 +29,7 @@ export async function generateContentAction(input: EducationContentInput) {
 
 /**
  * Server Action khusus untuk Koreksi LJK AI.
+ * Update V66.0: Penanganan error kuota yang lebih bersih.
  */
 export async function correctExamAction(naskahId: string, photoDataUri: string) {
     const supabase = await createClient();
@@ -75,7 +76,18 @@ export async function correctExamAction(naskahId: string, photoDataUri: string) 
             } 
         };
     } catch (error: any) {
-        return { success: false, error: error.message };
+        console.error("Scoring Error:", error.message);
+        const errStr = error.message || "";
+        
+        // Bersihkan pesan error kuota untuk UI
+        if (errStr.includes("429") || errStr.includes("RESOURCE_EXHAUSTED")) {
+            return { success: false, error: "429: Batas kuota API terlampaui. Silakan tunggu 1 menit lalu coba lagi." };
+        }
+        if (errStr.includes("503")) {
+            return { success: false, error: "503: Server AI sedang sibuk. Silakan coba lagi nanti." };
+        }
+        
+        return { success: false, error: errStr };
     }
 }
 
@@ -365,8 +377,8 @@ export async function createNaskahUjianAction(
             class_level: metadata.class,
             subject: metadata.subject,
             question_ids: sortedQuestionIds,
-            exam_date: metadata.examDate || null,
-            exam_time: metadata.examTime || null,
+            exam_date: metadata.exam_date || null,
+            exam_time: metadata.exam_time || null,
             status: 'created',
             is_public: false
         });
