@@ -1,9 +1,8 @@
-
 import { createClient } from '@/lib/supabase/server';
 import WhatsAppSettingsClient from './whatsapp-settings-client';
 
 export default async function WhatsAppSettingsPage() {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Fetch all relevant settings
     const { data: settingsData } = await supabase
