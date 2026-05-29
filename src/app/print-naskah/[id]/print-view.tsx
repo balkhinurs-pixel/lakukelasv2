@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V48.0 (Print Optimized)
+ * MathText Component V49.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -76,7 +76,17 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const handlePrint = () => window.print();
     const handleClose = () => window.close();
 
-    // LJK VIEW
+    // -- LJK Dynamic Layout Logic --
+    const groupedQuestions = React.useMemo(() => {
+        const groups: Record<string, any[]> = {};
+        questions.forEach((q: any) => {
+            if (!groups[q.question_type]) groups[q.question_type] = [];
+            groups[q.question_type].push(q);
+        });
+        return groups;
+    }, [questions]);
+
+    // -- LJK VIEW (V49.0 Standard OMR) --
     if (isLjk) {
         return (
             <div className="min-h-screen bg-white">
@@ -84,41 +94,77 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     <Button variant="ghost" onClick={handleClose} className="text-white gap-2">
                         <ArrowLeft className="h-4 w-4" /> Kembali
                     </Button>
-                    <div className="font-bold uppercase tracking-widest text-xs">Cetak Lembar Jawab Komputer</div>
+                    <div className="font-bold uppercase tracking-widest text-xs">Cetak LJK AI OMR Standard</div>
                     <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2">
                         <Printer className="h-4 w-4" /> Simpan PDF / Print
                     </Button>
                 </header>
 
-                <main className="print-area bg-white mx-auto" style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', fontFamily: 'Arial, sans-serif', position: 'relative' }}>
-                    <div className="absolute top-6 left-6 w-6 h-6 bg-black" />
-                    <div className="absolute top-6 right-6 w-6 h-6 bg-black" />
-                    <div className="absolute bottom-6 left-6 w-6 h-6 bg-black" />
-                    <div className="absolute bottom-6 right-6 w-6 h-6 bg-black" />
+                <main className="print-area bg-white mx-auto relative overflow-hidden" style={{ width: '210mm', minHeight: '297mm', padding: '15mm 15mm', boxSizing: 'border-box', fontFamily: 'Arial, sans-serif' }}>
+                    
+                    {/* Anchor Points (Critical for AI Vision) */}
+                    <div className="absolute top-4 left-4 w-8 h-8 bg-black z-50" />
+                    <div className="absolute top-4 right-4 w-8 h-8 bg-black z-50" />
+                    <div className="absolute bottom-4 left-4 w-8 h-8 bg-black z-50" />
+                    <div className="absolute bottom-4 right-4 w-8 h-8 bg-black z-50" />
 
-                    <div className="text-center border-b-[2pt] border-black pb-4 mb-8">
-                        <h1 className="text-2xl font-black uppercase tracking-tight">LEMBAR JAWAB KOMPUTER (LJK) AI</h1>
-                        <p className="text-sm font-bold uppercase mt-1 tracking-widest">{schoolProfile?.school_name || "SISTEM ADMINISTRASI SEKOLAH LAKUKELAS"}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-12 mb-10">
-                        <div className="space-y-6">
-                            <div className="border-2 border-black p-4 rounded-xl">
-                                <p className="text-[10px] font-black mb-3 uppercase text-slate-500">Data Diri Peserta</p>
-                                <div className="space-y-4">
-                                    <div className="h-10 border-b-2 border-black/10 flex items-end pb-1 text-sm font-black text-slate-300 uppercase">NAMA: ...........................................................</div>
-                                    <div className="h-10 border-b-2 border-black/10 flex items-end pb-1 text-sm font-black text-slate-300 uppercase">KELAS: ...........................................................</div>
-                                </div>
+                    {/* Kop Surat (V48.0 Consistent) */}
+                    <div className="mb-6 pb-2 border-b-[3pt] border-double border-black">
+                        <div className="flex items-center gap-6">
+                            <div className="w-[28mm] h-[25mm] flex items-center justify-center shrink-0">
+                                {schoolProfile?.school_logo_url ? (
+                                    <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
+                                ) : (
+                                    <div className="p-2 opacity-20 w-full h-full"><AppLogo /></div>
+                                )}
+                            </div>
+                            <div className="flex-1 text-center pr-[28mm]">
+                                <p className="text-[10pt] font-bold uppercase leading-tight tracking-wide">Yayasan / Dinas Pendidikan Terkait</p>
+                                <h1 className="text-[16pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
+                                <p className="text-[8pt] font-bold mt-1">
+                                    {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
+                                    {schoolProfile?.npsn && ` | NPSN: ${schoolProfile.npsn}`}
+                                </p>
                             </div>
                         </div>
-                        <div className="border-2 border-black p-4 rounded-xl text-center">
-                            <p className="text-[10px] font-black mb-4 uppercase text-slate-500 tracking-widest">KOLOM NIS (5 DIGIT)</p>
-                            <div className="flex justify-center gap-2">
+                    </div>
+
+                    <div className="text-center mb-6">
+                        <h2 className="text-[14pt] font-black uppercase underline tracking-tighter">LEMBAR JAWAB KOMPUTER (LJK) AI</h2>
+                        <p className="text-[10pt] font-bold uppercase mt-1">SISTEM PENILAIAN DIGITAL LAKUKELAS</p>
+                    </div>
+
+                    {/* Section 1: Identitas & Petunjuk */}
+                    <div className="grid grid-cols-[1.5fr_1fr] gap-6 mb-8">
+                        <div className="space-y-4">
+                            <div className="border-[1.5pt] border-black p-4 rounded-xl">
+                                <p className="text-[8pt] font-black mb-3 uppercase text-slate-500 tracking-widest">A. IDENTITAS PESERTA UJIAN</p>
+                                <div className="space-y-4">
+                                    <div className="h-9 border-b border-black flex items-end pb-1 text-[10pt] font-bold">NAMA : ............................................................................</div>
+                                    <div className="h-9 border-b border-black flex items-end pb-1 text-[10pt] font-bold">KELAS : ...........................................................................</div>
+                                    <div className="h-9 border-b border-black flex items-end pb-1 text-[10pt] font-bold">MATA PELAJARAN : <span className="uppercase">{doc.subject}</span></div>
+                                </div>
+                            </div>
+                            <div className="border-[1.5pt] border-black p-4 rounded-xl bg-slate-50">
+                                <p className="text-[8pt] font-black mb-2 uppercase text-slate-500 tracking-widest">B. PETUNJUK PENGISIAN</p>
+                                <ul className="text-[7.5pt] font-bold space-y-1">
+                                    <li>1. Gunakan Pensil 2B atau Pulpen Hitam.</li>
+                                    <li>2. Hitamkan/Silang pada bulatan jawaban yang benar.</li>
+                                    <li>3. Contoh pengisian: <span className="inline-flex items-center gap-1 mx-2"> Benar: <span className="w-3.5 h-3.5 rounded-full bg-black"></span> Salah: <span className="w-3.5 h-3.5 rounded-full border border-black flex items-center justify-center text-[5pt] font-black">X</span></span></li>
+                                    <li>4. Jaga lembar ini agar tidak kotor, basah, atau terlipat.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* NIS Block OMR Style */}
+                        <div className="border-[1.5pt] border-black p-4 rounded-xl text-center">
+                            <p className="text-[8pt] font-black mb-3 uppercase text-slate-500 tracking-widest">C. KOLOM NIS (5 DIGIT)</p>
+                            <div className="flex justify-center gap-1.5">
                                 {[1,2,3,4,5].map(col => (
-                                    <div key={col} className="space-y-1">
-                                        <div className="w-10 h-10 border-2 border-black flex items-center justify-center font-black text-sm mb-1" />
+                                    <div key={col} className="space-y-0.5">
+                                        <div className="w-7 h-7 border border-black flex items-center justify-center font-bold text-[9pt] mb-1" />
                                         {[0,1,2,3,4,5,6,7,8,9].map(num => (
-                                            <div key={num} className="w-7 h-7 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[10px] font-black">{num}</div>
+                                            <div key={num} className="w-5 h-5 rounded-full border-[1pt] border-black flex items-center justify-center text-[7pt] font-bold">{num}</div>
                                         ))}
                                     </div>
                                 ))}
@@ -126,30 +172,89 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         </div>
                     </div>
 
-                    <div className="border-[2.5pt] border-black p-8 rounded-3xl">
-                         <p className="text-[11px] font-black mb-6 uppercase text-center bg-slate-900 text-white py-2 rounded-lg tracking-[0.3em]">Lembar Jawaban Objektif</p>
-                         <div className="grid grid-cols-2 gap-x-16 gap-y-3">
-                            {questions.map((q: any, idx: number) => {
-                                const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
-                                return (
-                                    <div key={q.id} className="flex items-center gap-4 py-1.5 border-b border-slate-100">
-                                        <span className="w-8 font-black text-sm text-slate-400">{idx + 1}.</span>
-                                        <div className="flex gap-3">
-                                            {options.map(opt => (
-                                                <div key={opt} className="w-7 h-7 rounded-full border-[2pt] border-black flex items-center justify-center text-[11px] font-black">{opt}</div>
+                    {/* Section 2: Dinamis Jawaban Berkelompok */}
+                    <div className="border-[2pt] border-black p-6 rounded-3xl min-h-[150mm]">
+                        <div className="grid grid-cols-2 gap-x-12 gap-y-10 items-start">
+                            
+                            {/* Pilihan Ganda / True False Group */}
+                            <div className="space-y-6">
+                                {(groupedQuestions.multiple_choice || groupedQuestions.true_false) && (
+                                    <div className="space-y-3">
+                                        <p className="text-[9pt] font-black uppercase text-center bg-slate-100 py-1.5 rounded-md tracking-widest mb-4">Jawaban Objektif (PG/BS)</p>
+                                        <div className="grid grid-cols-1 gap-y-2.5">
+                                            {questions.filter((q:any) => q.question_type === 'multiple_choice' || q.question_type === 'true_false').map((q: any, idx: number) => {
+                                                const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
+                                                return (
+                                                    <div key={q.id} className="flex items-center gap-4">
+                                                        <span className="w-6 font-bold text-[9pt] text-right">{idx + 1}.</span>
+                                                        <div className="flex gap-2">
+                                                            {options.map(opt => (
+                                                                <div key={opt} className="w-6 h-6 rounded-full border-[1.2pt] border-black flex items-center justify-center text-[8pt] font-black">{opt}</div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Matching & Short Answer Group */}
+                            <div className="space-y-8">
+                                {groupedQuestions.matching && (
+                                    <div className="space-y-3">
+                                        <p className="text-[9pt] font-black uppercase text-center bg-slate-100 py-1.5 rounded-md tracking-widest mb-4">Jawaban Menjodohkan</p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {groupedQuestions.matching.map((q: any, idx: number) => (
+                                                <div key={q.id} className="flex items-center gap-3">
+                                                    <span className="w-6 font-bold text-[9pt] text-right">{idx + 1}.</span>
+                                                    <div className="flex-1 h-8 border-[1pt] border-black border-dashed rounded-md flex items-center px-3 text-[8pt] font-bold text-slate-300">Tulis Pasangan (Misal: 1-C, 2-A)</div>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
-                                );
-                            })}
-                         </div>
+                                )}
+
+                                {(groupedQuestions.short_answer || groupedQuestions.essay) && (
+                                    <div className="space-y-3">
+                                        <p className="text-[9pt] font-black uppercase text-center bg-slate-100 py-1.5 rounded-md tracking-widest mb-4">Jawaban Isian / Uraian</p>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {questions.filter((q:any) => q.question_type === 'short_answer' || q.question_type === 'essay').map((q: any, idx: number) => (
+                                                <div key={q.id} className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-[9pt]">{idx + 1}.</span>
+                                                        <div className="flex-1 h-[12mm] border-[1pt] border-black rounded-lg" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
+
+                    {/* Bottom Signature Area */}
+                    <div className="mt-8 flex justify-between text-[9pt] px-10">
+                        <div className="text-center">
+                            <p>Tanda Tangan Pengawas</p>
+                            <div className="h-14" />
+                            <p>( .................................... )</p>
+                        </div>
+                        <div className="text-center">
+                            <p>Tanda Tangan Siswa</p>
+                            <div className="h-14" />
+                            <p>( .................................... )</p>
+                        </div>
+                    </div>
+
                 </main>
             </div>
         );
     }
 
-    // SOAL & KUNCI VIEW
+    // -- SOAL & KUNCI VIEW (V48.0 Standard) --
     let currentRomanIdx = 0;
     let lastRenderedType = "";
 
@@ -166,10 +271,9 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
             </header>
 
             <main className="print-area mx-auto" style={{ width: '210mm', padding: '15mm 20mm', boxSizing: 'border-box', fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45', position: 'relative', zIndex: 1 }}>
-                {/* Kop Surat Refined (V48.0) */}
+                
                 <div className="print-header-block mb-6 pb-2 border-b-[3pt] border-double border-black">
                     <div className="flex items-center gap-6">
-                        {/* Logo Sekolah */}
                         <div className="w-[30mm] h-[28mm] flex items-center justify-center shrink-0">
                             {schoolProfile?.school_logo_url ? (
                                 <img 
@@ -182,10 +286,8 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 <div className="p-2 opacity-20 w-full h-full"><AppLogo /></div>
                             )}
                         </div>
-                        
-                        {/* Identitas Sekolah */}
                         <div className="flex-1 text-center pr-[30mm]">
-                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Kota / Yayasan Pendidikan</p>
+                            <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Yayasan / Dinas Pendidikan Terkait</p>
                             <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
                             <p className="text-[9pt] font-bold mt-1">
                                 {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
