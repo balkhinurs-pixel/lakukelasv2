@@ -74,10 +74,8 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         prepareAndPrint();
 
         const handleResize = () => {
-            // Lebar standar A4 pada 96dpi adalah sekitar 794px
             const A4_WIDTH_PX = 794;
             if (window.innerWidth < A4_WIDTH_PX) {
-                // Skala menyusut proporsional dengan padding 16px di setiap sisi
                 const newScale = (window.innerWidth - 32) / A4_WIDTH_PX;
                 setScale(newScale);
             } else {
@@ -143,7 +141,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                         ) : null}
                                     </div>
                                     <div className="flex-1 text-center pr-[28mm]">
-                                        <p className="text-[10pt] font-bold uppercase leading-tight tracking-wide">Yayasan / Dinas Pendidikan Terkait</p>
+                                        <p className="text-[10pt] font-bold uppercase leading-tight tracking-wide">Dinas Pendidikan / Pemerintah Daerah Terkait</p>
                                         <h1 className="text-[16pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
                                         <p className="text-[8pt] font-bold mt-1">
                                             {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
@@ -298,7 +296,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         className="print-area bg-white mx-auto shadow-2xl" 
                         style={{ 
                             width: '210mm', 
-                            padding: '15mm 20mm', 
+                            padding: '15mm 15mm', 
                             boxSizing: 'border-box', 
                             fontFamily: '"Times New Roman", Times, serif', 
                             fontSize: '11pt', 
@@ -314,7 +312,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 </div>
                                 <div className="flex-1 text-center pr-[28mm]">
                                     <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">
-                                        {schoolProfile?.jabatan || "Kementerian Pendidikan / Agama"} Terkait
+                                        Pemerintah Daerah / Yayasan Pendidikan Terkait
                                     </p>
                                     <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
                                     <p className="text-[9.5pt] font-bold mt-1">
