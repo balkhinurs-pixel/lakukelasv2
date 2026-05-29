@@ -8,12 +8,12 @@ import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V56.0 (Print Optimized)
+ * MathText Component V57.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -64,19 +64,25 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const isLjk = mode === 'ljk';
     const isKunci = mode === 'kunci';
     const [scale, setScale] = React.useState(1);
+    const [isReady, setIsReady] = React.useState(false);
 
     React.useEffect(() => {
         const handleResize = () => {
-            const A4_WIDTH_PX = 794;
+            const A4_WIDTH_PX = 794; // approx 210mm at 96dpi
             if (window.innerWidth < A4_WIDTH_PX) {
+                // Beri sedikit padding (32px) agar naskah tidak menempel ke pinggir layar
                 const newScale = (window.innerWidth - 32) / A4_WIDTH_PX;
                 setScale(newScale);
             } else {
                 setScale(1);
             }
+            setIsReady(true);
         };
 
+        // Jalankan sekali saat mount
         handleResize();
+        
+        // Daftarkan listener resize untuk rotasi layar
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -107,9 +113,18 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     </Button>
                 </header>
 
-                <main className="flex-1 p-4 sm:p-8 flex justify-center items-start print:p-0 print-area-container">
+                <main className="flex-1 p-4 sm:p-8 flex justify-center items-start print:p-0 print-area-container relative">
+                    {!isReady && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-50 z-10 no-print">
+                            <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+                        </div>
+                    )}
+                    
                     <div 
-                        className="preview-scale-wrapper" 
+                        className={cn(
+                            "preview-scale-wrapper transition-opacity duration-500 will-change-transform",
+                            isReady ? "opacity-100" : "opacity-0"
+                        )}
                         style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                     >
                         <div 
@@ -283,9 +298,18 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                 </Button>
             </header>
 
-            <main className="flex-1 p-4 sm:p-8 flex justify-center items-start print:p-0 print-area-container">
+            <main className="flex-1 p-4 sm:p-8 flex justify-center items-start print:p-0 print-area-container relative">
+                {!isReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-50 z-10 no-print">
+                        <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+                    </div>
+                )}
+
                 <div 
-                    className="preview-scale-wrapper"
+                    className={cn(
+                        "preview-scale-wrapper transition-opacity duration-500 will-change-transform",
+                        isReady ? "opacity-100" : "opacity-0"
+                    )}
                     style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                 >
                     <div 
@@ -480,6 +504,14 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     </div>
                 </div>
             </main>
+            
+            <style jsx>{`
+                @media (max-width: 793px) {
+                    .preview-scale-wrapper:not(.opacity-100) {
+                        transform: scale(0.45); /* Estimated scale for early mobile render */
+                    }
+                }
+            `}</style>
         </div>
     );
 }
