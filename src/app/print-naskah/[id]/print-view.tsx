@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V57.0 (Print Optimized)
+ * MathText Component V60.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -95,7 +95,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         return groups;
     }, [questions]);
 
-    // Template LJK OMR Profesional (FIX 1 PAGE V59.0)
+    // Template LJK OMR Profesional (Update V60.0 - Edge to Edge Stabilization)
     if (isLjk) {
         return (
             <div className="min-h-screen bg-slate-50 flex flex-col print:bg-white">
@@ -103,13 +103,13 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                         <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
                     </Button>
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">LJK AI OMR (Single Page Layout)</div>
+                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">LJK AI OMR (Single Page Stable)</div>
                     <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4 shadow-lg">
-                        <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF / Print</span>
+                        <Printer className="h-4 w-4" /> <span className="hidden sm:inline">Cetak / Simpan</span>
                     </Button>
                 </header>
 
-                <main className="flex-1 p-4 sm:p-8 flex justify-center items-start print:p-0 print-area-container relative">
+                <main className="flex-1 flex justify-center items-start print:p-0 print-area-container relative">
                     {!isReady && (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-50 z-10 no-print">
                             <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
@@ -118,7 +118,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     
                     <div 
                         className={cn(
-                            "preview-scale-wrapper transition-opacity duration-500 will-change-transform",
+                            "preview-scale-wrapper transition-opacity duration-500 will-change-transform print:transform-none",
                             isReady ? "opacity-100" : "opacity-0"
                         )}
                         style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
@@ -127,23 +127,22 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             className="print-area bg-white relative print:shadow-none shadow-xl mx-auto overflow-hidden" 
                             style={{ 
                                 width: '210mm', 
-                                height: '297mm', // Fixed height to prevent 2nd page
-                                padding: '12mm 15mm', 
+                                height: '297mm',
+                                padding: '10mm 15mm', // Padding ditingkatkan sedikit agar tidak kena potong printer
                                 boxSizing: 'border-box', 
                                 fontFamily: 'Arial, sans-serif'
                             }}
                         >
-                            {/* Anchor Points for Vision AI OMR (Extremely Critical) */}
-                            <div className="absolute top-2 left-2 w-6 h-6 bg-black z-50" />
-                            <div className="absolute top-2 right-2 w-6 h-6 bg-black z-50" />
-                            <div className="absolute bottom-2 left-2 w-6 h-6 bg-black z-50" />
-                            <div className="absolute bottom-2 right-2 w-6 h-6 bg-black z-50" />
+                            {/* Anchor Points - Reposisi agar tidak terkena clipping fisik printer (5mm dari tepi div) */}
+                            <div className="absolute top-[5mm] left-[5mm] w-6 h-6 bg-black z-50" />
+                            <div className="absolute top-[5mm] right-[5mm] w-6 h-6 bg-black z-50" />
+                            <div className="absolute bottom-[5mm] left-[5mm] w-6 h-6 bg-black z-50" />
+                            <div className="absolute bottom-[5mm] right-[5mm] w-6 h-6 bg-black z-50" />
 
-                            {/* Minimalist Header for LJK to save space */}
                             <div className="flex items-center justify-between border-b-[1.5pt] border-black pb-2 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 flex items-center justify-center">
-                                        {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" />}
+                                        {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />}
                                     </div>
                                     <div>
                                         <h1 className="text-[12pt] font-black uppercase leading-tight">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
@@ -161,8 +160,8 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                     <div className="border border-black p-3 rounded-lg">
                                         <p className="text-[7pt] font-black mb-2 uppercase text-slate-500">IDENTITAS PESERTA</p>
                                         <div className="space-y-3">
-                                            <div className="h-7 border-b border-black flex items-end pb-0.5 text-[9pt] font-bold">NAMA: ................................................................</div>
-                                            <div className="h-7 border-b border-black flex items-end pb-0.5 text-[9pt] font-bold">KELAS: ...............................................................</div>
+                                            <div className="h-7 border-b border-black flex items-end pb-0.5 text-[9pt] font-bold text-slate-300">NAMA: ................................................................</div>
+                                            <div className="h-7 border-b border-black flex items-end pb-0.5 text-[9pt] font-bold text-slate-300">KELAS: ...............................................................</div>
                                         </div>
                                     </div>
                                     <div className="border border-black p-3 rounded-lg bg-slate-50">
@@ -180,7 +179,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                     <div className="flex justify-center gap-1.5">
                                         {[1,2,3,4,5].map(col => (
                                             <div key={col} className="space-y-0.5">
-                                                <div className="w-6 h-6 border border-black flex items-center justify-center font-bold text-[8pt] mb-1" />
+                                                <div className="w-6 h-6 border border-black flex items-center justify-center font-bold text-[8pt] mb-1 text-slate-200" />
                                                 {[0,1,2,3,4,5,6,7,8,9].map(num => (
                                                     <div key={num} className="w-4 h-4 rounded-full border-[1pt] border-black flex items-center justify-center text-[6pt] font-bold">{num}</div>
                                                 ))}
@@ -190,8 +189,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 </div>
                             </div>
 
-                            {/* Main Answer Area - Optimized for large question counts */}
-                            <div className="border-[1.5pt] border-black p-4 rounded-2xl flex-1">
+                            <div className="border-[1.5pt] border-black p-4 rounded-2xl flex-1 bg-white">
                                 <div className="grid grid-cols-2 gap-x-8 gap-y-6 items-start">
                                     <div className="space-y-4">
                                         <p className="text-[8pt] font-black uppercase text-center bg-slate-100 py-1 rounded tracking-widest mb-2">Jawaban Objektif</p>
@@ -203,7 +201,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                                         <span className="w-5 font-bold text-[8pt] text-right">{idx + 1}.</span>
                                                         <div className="flex gap-1.5">
                                                             {options.map(opt => (
-                                                                <div key={opt} className="w-5 h-5 rounded-full border-[1pt] border-black flex items-center justify-center text-[7pt] font-black">{opt}</div>
+                                                                <div key={opt} className="w-5 h-5 rounded-full border-[1pt] border-black flex items-center justify-center text-[6pt] font-black">{opt}</div>
                                                             ))}
                                                         </div>
                                                     </div>
@@ -220,7 +218,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                                     {groupedQuestions.matching.map((q: any, idx: number) => (
                                                         <div key={q.id} className="flex items-center gap-2">
                                                             <span className="w-5 font-bold text-[8pt] text-right">{idx + 1}.</span>
-                                                            <div className="flex-1 h-7 border-[1pt] border-black border-dashed rounded flex items-center px-2 text-[7pt] font-bold text-slate-300">Tulis Pasangan (e.g. 1-C)</div>
+                                                            <div className="flex-1 h-7 border-[1pt] border-black border-dashed rounded flex items-center px-2 text-[6pt] font-bold text-slate-300">Tulis Pasangan (e.g. 1-C)</div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -246,7 +244,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 </div>
                             </div>
 
-                            <div className="absolute bottom-10 left-15 right-15 flex justify-between text-[8pt] px-10">
+                            <div className="absolute bottom-[15mm] left-[20mm] right-[20mm] flex justify-between text-[8pt]">
                                 <div className="text-center">
                                     <p>Tanda Tangan Pengawas</p>
                                     <div className="h-10" />
@@ -261,6 +259,13 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         </div>
                     </div>
                 </main>
+                <style jsx global>{`
+                    @media print {
+                        @page { 
+                            margin: 0 !important; 
+                        }
+                    }
+                `}</style>
             </div>
         );
     }
@@ -292,7 +297,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
 
                 <div 
                     className={cn(
-                        "preview-scale-wrapper transition-opacity duration-500 will-change-transform",
+                        "preview-scale-wrapper transition-opacity duration-500 will-change-transform print:transform-none",
                         isReady ? "opacity-100" : "opacity-0"
                     )}
                     style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
