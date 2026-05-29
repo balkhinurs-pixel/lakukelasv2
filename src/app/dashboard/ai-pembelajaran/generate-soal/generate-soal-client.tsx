@@ -199,7 +199,6 @@ export default function GenerateSoalClient({
             const { output } = await streamQuestionsAction({ 
                 ...form, 
                 subject: finalSubject,
-                count: 5,
                 mediaDataUri: uploadedFile?.uri, 
                 mediaMimeType: uploadedFile?.mime 
             });
@@ -210,7 +209,7 @@ export default function GenerateSoalClient({
                 }
             }
 
-            toast({ title: "Berhasil", description: `5 butir soal telah dihasilkan.` });
+            toast({ title: "Berhasil", description: `${questions.length || form.count} butir soal telah dihasilkan.` });
         } catch (err: any) {
             setIsPreviewOpen(false);
             const errStr = err.message || "";
@@ -456,7 +455,7 @@ export default function GenerateSoalClient({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Soal</Label>
                                         <Select value={form.question_type} onValueChange={(v: any) => setForm(prev => ({...prev, question_type: v}))}>
@@ -470,6 +469,17 @@ export default function GenerateSoalClient({
                                             </SelectContent>
                                         </Select>
                                     </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jumlah Soal (Maks. 5)</Label>
+                                        <Input 
+                                            type="number" 
+                                            min={1} 
+                                            max={5} 
+                                            value={form.count} 
+                                            onChange={(e) => setForm(prev => ({...prev, count: Math.min(5, Math.max(1, parseInt(e.target.value) || 1))}))}
+                                            className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -479,7 +489,7 @@ export default function GenerateSoalClient({
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/50 p-6 border-t">
-                            <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 transition-all active:scale-95">
+                            <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 transition-all active:scale-95 shadow-xl shadow-indigo-100">
                                 {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Wand2 className="h-6 w-6" />}
                                 Generate Sekarang
                             </Button>

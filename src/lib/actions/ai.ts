@@ -157,13 +157,20 @@ export async function streamMaterialAction(input: MaterialGenerationInput) {
 
 /**
  * Server Action untuk memanggil flow AI Generate Soal Terstruktur dengan STREAMING.
+ * Memiliki proteksi limit maksimal 5 soal.
  */
 export async function streamQuestionsAction(input: QuestionGenerationInput) {
     const stream = createStreamableValue();
 
     (async () => {
         try {
-            const result = await generateQuestions(input);
+            // Enforce limit 5 soal pada server action
+            const safeInput = {
+                ...input,
+                count: Math.min(input.count, 5)
+            };
+
+            const result = await generateQuestions(safeInput);
             stream.update(result);
             stream.done();
         } catch (error: any) {
