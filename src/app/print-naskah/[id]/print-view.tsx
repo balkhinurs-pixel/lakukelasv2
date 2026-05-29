@@ -8,18 +8,15 @@ import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
-import { Printer, ArrowLeft, Loader2, FileDown } from "lucide-react";
+import { Printer, ArrowLeft, Loader2, FileDown, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 /**
- * MathText Component V65.0 (Print Optimized)
+ * MathText Component V66.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
-  
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
@@ -67,8 +64,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const isKunci = mode === 'kunci';
     const [scale, setScale] = React.useState(1);
     const [isReady, setIsReady] = React.useState(false);
-    const [generating, setGenerating] = React.useState(false);
-    const printRef = React.useRef<HTMLDivElement>(null);
 
     const sections = React.useMemo(() => {
         const groups: { type: string; questions: any[] }[] = [];
@@ -104,214 +99,148 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const handlePrint = () => window.print();
     const handleClose = () => window.close();
 
-    const handleDownloadLjkPdf = async () => {
-        if (!printRef.current) return;
-        setGenerating(true);
-
-        try {
-            // Force temporary scroll to top to prevent white space in canvas
-            window.scrollTo(0, 0);
-
-            const canvas = await html2canvas(printRef.current, {
-                scale: 2, 
-                useCORS: true,
-                logging: false,
-                backgroundColor: "#ffffff",
-                width: 794, // A4 width in px at 96 DPI
-                height: 1123, // A4 height in px at 96 DPI
-                onclone: (clonedDoc) => {
-                    const area = clonedDoc.querySelector('.print-area') as HTMLElement;
-                    if (area) {
-                        area.style.transform = 'none';
-                        area.style.margin = '0';
-                        area.style.position = 'relative';
-                        area.style.left = '0';
-                        area.style.top = '0';
-                    }
-                    // Fix for text overlapping in canvas: ensure absolute rigid line-heights
-                    const allText = clonedDoc.querySelectorAll('.print-area *');
-                    allText.forEach((el: any) => {
-                        el.style.lineHeight = '1.2';
-                    });
-                }
-            });
-
-            const imgData = canvas.toDataURL("image/jpeg", 0.9);
-            const pdf = new jsPDF({
-                orientation: "portrait",
-                unit: "mm",
-                format: "a4",
-                compress: true
-            });
-
-            pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, 'FAST');
-            pdf.save(`LJK_AI_${doc.title.replace(/\s+/g, '_')}.pdf`);
-            
-        } catch (error) {
-            console.error("PDF Generation Error:", error);
-            alert("Gagal membuat PDF. Silakan gunakan tombol Print (Browser) atau coba lagi.");
-        } finally {
-            setGenerating(false);
-        }
-    };
-
     if (isLjk) {
         return (
-            <div className="min-h-screen bg-white flex flex-col">
-                <header className="no-print sticky top-0 z-[100] bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
-                    <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
-                        <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
+            <div className="min-h-screen bg-slate-100 flex flex-col items-center">
+                <header className="no-print sticky top-0 z-[100] w-full bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
+                    <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-4">
+                        <ArrowLeft className="h-4 w-4" /> Kembali
                     </Button>
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">LJK AI • HQ Export</div>
-                    <div className="flex gap-2">
-                        <Button 
-                            onClick={handleDownloadLjkPdf} 
-                            disabled={generating}
-                            className="bg-emerald-600 hover:bg-emerald-700 font-bold gap-2 px-3 sm:px-5 shadow-lg min-w-[120px]"
-                        >
-                            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                            <span>Simpan PDF</span>
-                        </Button>
-                        <Button onClick={handlePrint} variant="outline" className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold gap-2 hidden sm:flex">
-                            <Printer className="h-4 w-4" /> Print
-                        </Button>
+                    <div className="flex flex-col items-center">
+                        <div className="font-black uppercase tracking-widest text-xs">LJK OMR PRECISION ENGINE</div>
+                        <p className="text-[9px] font-bold text-slate-400 mt-0.5">V71.0 RIGID COORDINATE LAYOUT</p>
                     </div>
+                    <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-black gap-2 px-6 shadow-lg shadow-indigo-500/20">
+                        <Printer className="h-4 w-4" /> CETAK / SIMPAN PDF
+                    </Button>
                 </header>
 
-                <main className="flex-1 flex justify-center items-start print:p-0 relative p-4 sm:p-8 bg-slate-50 overflow-auto">
-                    {!isReady && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white z-10 no-print">
-                            <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
-                        </div>
-                    )}
-                    
+                <main className="flex-1 w-full flex justify-center p-4 sm:p-10 overflow-auto">
                     <div 
                         className={cn(
-                            "transition-opacity duration-500 will-change-transform print:transform-none",
-                            isReady ? "opacity-100" : "opacity-0"
+                            "transition-all duration-700 print:transform-none",
+                            isReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                         )}
                         style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                     >
+                        {/* 
+                            RIGID LJK LAYOUT V71.0 
+                            Using position: absolute for 100% precision in OMR detection.
+                        */}
                         <div 
-                            ref={printRef}
-                            className="print-area bg-white relative print:shadow-none shadow-2xl mx-auto overflow-hidden text-black" 
+                            className="ljk-rigid-container bg-white relative print:shadow-none shadow-2xl overflow-hidden text-black" 
                             style={{ 
-                                width: '210mm', 
-                                height: '297mm',
-                                padding: '10mm 15mm',
+                                width: '794px', // Standard A4 width at 96 DPI
+                                height: '1123px', // Standard A4 height at 96 DPI
                                 boxSizing: 'border-box', 
-                                fontFamily: 'Arial, sans-serif'
+                                fontFamily: 'Arial, Helvetica, sans-serif'
                             }}
                         >
-                            {/* OMR Anchor Points */}
-                            <div className="absolute top-[5mm] left-[5mm] w-6 h-6 bg-black" />
-                            <div className="absolute top-[5mm] right-[5mm] w-6 h-6 bg-black" />
-                            <div className="absolute bottom-[5mm] left-[5mm] w-6 h-6 bg-black" />
-                            <div className="absolute bottom-[5mm] right-[5mm] w-6 h-6 bg-black" />
+                            {/* OMR ANCHOR POINTS (4 CORNERS) */}
+                            <div className="absolute top-[20px] left-[20px] w-8 h-8 bg-black" />
+                            <div className="absolute top-[20px] right-[20px] w-8 h-8 bg-black" />
+                            <div className="absolute bottom-[20px] left-[20px] w-8 h-8 bg-black" />
+                            <div className="absolute bottom-[20px] right-[20px] w-8 h-8 bg-black" />
 
-                            <div className="flex items-center justify-between border-b-[2pt] border-black pb-3 mb-6">
+                            {/* HEADER RIGID */}
+                            <div className="absolute top-[60px] left-[60px] right-[60px] border-b-2 border-black pb-3">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 flex items-center justify-center">
-                                        {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />}
+                                    <div className="w-16 h-16 flex items-center justify-center">
+                                        {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" />}
                                     </div>
-                                    <div style={{ lineHeight: '1' }}>
-                                        <h1 className="text-[14pt] font-black uppercase m-0 p-0">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
-                                        <p className="text-[8pt] font-bold uppercase text-slate-500 tracking-tight mt-1">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
+                                    <div className="flex-1">
+                                        <h1 className="text-[16pt] font-black uppercase m-0 leading-tight">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
+                                        <p className="text-[8pt] font-bold uppercase tracking-tight text-slate-500 mt-1">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
                                     </div>
-                                </div>
-                                <div className="text-right" style={{ lineHeight: '1' }}>
-                                    <h2 className="text-[12pt] font-black uppercase underline m-0 p-0">LJK Ujian</h2>
-                                    <p className="text-[8pt] font-bold text-slate-500 mt-1">{doc.subject} | KELAS {doc.class_level}</p>
+                                    <div className="text-right">
+                                        <h2 className="text-[14pt] font-black uppercase underline">LJK Ujian</h2>
+                                        <p className="text-[9pt] font-bold mt-1 uppercase">{doc.subject} | KELAS {doc.class_level}</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-6 mb-8">
-                                <div className="w-[60%] space-y-4">
-                                    <div className="border-2 border-black p-4 rounded-xl">
-                                        <p className="text-[8pt] font-black mb-3 uppercase text-slate-600" style={{ lineHeight: '1' }}>IDENTITAS PESERTA</p>
-                                        <div className="space-y-6">
-                                            <div className="h-8 border-b-2 border-black flex items-end pb-1 text-[10pt] font-bold text-slate-300">NAMA: ..............................................................</div>
-                                            <div className="h-8 border-b-2 border-black flex items-end pb-1 text-[10pt] font-bold text-slate-300">KELAS: .............................................................</div>
+                            {/* IDENTITY BOX (ABSOLUTE) */}
+                            <div className="absolute top-[160px] left-[60px] w-[450px] border-2 border-black p-5 rounded-2xl">
+                                <p className="text-[9pt] font-black mb-4 uppercase text-slate-600">Identitas Peserta</p>
+                                <div className="space-y-6">
+                                    <div className="h-10 border-b-2 border-black flex items-end pb-1 text-[11pt] font-bold text-slate-200">NAMA: ..............................................................</div>
+                                    <div className="h-10 border-b-2 border-black flex items-end pb-1 text-[11pt] font-bold text-slate-200">KELAS: .............................................................</div>
+                                </div>
+                            </div>
+
+                            {/* NIS BOX (ABSOLUTE) */}
+                            <div className="absolute top-[160px] right-[60px] w-[180px] border-2 border-black p-5 rounded-2xl text-center">
+                                <p className="text-[8pt] font-black mb-4 uppercase text-slate-600 tracking-wider">NIS (5 DIGIT)</p>
+                                <div className="flex justify-center gap-2">
+                                    {[1,2,3,4,5].map(col => (
+                                        <div key={col} className="space-y-1">
+                                            <div className="w-8 h-8 border-2 border-black flex items-center justify-center font-bold text-[10pt] mb-1 text-slate-100 rounded-sm" />
+                                            {[0,1,2,3,4,5,6,7,8,9].map(num => (
+                                                <div key={num} className="w-5 h-5 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[7.5pt] font-black">{num}</div>
+                                            ))}
                                         </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* PETUNJUK (ABSOLUTE) */}
+                            <div className="absolute top-[370px] left-[60px] w-[450px] p-5 border-2 border-dashed border-black/30 rounded-2xl bg-slate-50">
+                                <p className="text-[8pt] font-black mb-2 uppercase text-slate-600">PETUNJUK PENGISIAN</p>
+                                <ul className="text-[8pt] font-bold space-y-1 text-slate-700">
+                                    <li>1. Gunakan Pensil 2B atau Pulpen Hitam pekat.</li>
+                                    <li>2. Hitamkan bulatan secara penuh dan tidak meluber keluar garis.</li>
+                                    <li>3. Pastikan lembar tetap bersih dan tidak terlipat agar terbaca AI.</li>
+                                </ul>
+                            </div>
+
+                            {/* ANSWER AREA (ABSOLUTE RIGID) */}
+                            <div className="absolute top-[510px] left-[60px] right-[60px] bottom-[60px] border-[2.5pt] border-black p-8 rounded-[40px]">
+                                <p className="text-[11pt] font-black uppercase text-center bg-black text-white py-2 rounded-xl tracking-[0.4em] mb-8">Matriks Jawaban Objektif</p>
+                                
+                                <div className="flex gap-20">
+                                    {/* COLUMN 1 */}
+                                    <div className="flex-1 space-y-3">
+                                        {questions.slice(0, 15).map((q: any, idx: number) => {
+                                            const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
+                                            return (
+                                                <div key={q.id} className="flex items-center gap-4">
+                                                    <span className="w-7 text-right font-black text-[10.5pt] text-slate-400">{idx + 1}.</span>
+                                                    <div className="flex gap-2.5">
+                                                        {options.map(opt => (
+                                                            <div key={opt} className="w-[28px] h-[28px] rounded-full border-[2pt] border-black flex items-center justify-center text-[10pt] font-black">{opt}</div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                    <div className="border-2 border-black p-4 rounded-xl bg-slate-50">
-                                        <p className="text-[8pt] font-black mb-1 uppercase text-slate-600">PETUNJUK</p>
-                                        <p className="text-[7.5pt] font-bold leading-relaxed m-0">
-                                            1. Gunakan Pensil 2B atau Pulpen Hitam.<br/>
-                                            2. Hitamkan bulatan secara penuh dan jelas.<br/>
-                                            3. Jaga lembar tetap bersih, tidak basah/terlipat.
+
+                                    {/* COLUMN 2 */}
+                                    <div className="flex-1 space-y-3">
+                                        {questions.slice(15, 30).map((q: any, idx: number) => {
+                                            const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
+                                            return (
+                                                <div key={q.id} className="flex items-center gap-4">
+                                                    <span className="w-7 text-right font-black text-[10.5pt] text-slate-400">{idx + 16}.</span>
+                                                    <div className="flex gap-2.5">
+                                                        {options.map(opt => (
+                                                            <div key={opt} className="w-[28px] h-[28px] rounded-full border-[2pt] border-black flex items-center justify-center text-[10pt] font-black">{opt}</div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                
+                                {questions.length > 30 && (
+                                    <div className="mt-8 p-4 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-3">
+                                        <Info className="h-5 w-5 text-amber-600" />
+                                        <p className="text-[8pt] font-bold text-amber-800">
+                                            Perhatian: LJK standar hanya menampung 30 soal objektif. Gunakan lembar tambahan untuk soal esai/uraian.
                                         </p>
                                     </div>
-                                </div>
-
-                                <div className="w-[40%] border-2 border-black p-4 rounded-xl text-center">
-                                    <p className="text-[8pt] font-black mb-3 uppercase text-slate-600 tracking-wider">KOLOM NIS (5 DIGIT)</p>
-                                    <div className="flex justify-center gap-2">
-                                        {[1,2,3,4,5].map(col => (
-                                            <div key={col} className="space-y-1">
-                                                <div className="w-8 h-8 border-2 border-black flex items-center justify-center font-bold text-[10pt] mb-1 text-slate-200 rounded-sm" />
-                                                {[0,1,2,3,4,5,6,7,8,9].map(num => (
-                                                    <div key={num} className="w-5 h-5 rounded-full border-[1.5pt] border-black flex items-center justify-center text-[7pt] font-black" style={{ lineHeight: '1' }}>{num}</div>
-                                                ))}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="border-[2pt] border-black p-6 rounded-3xl flex-1 bg-white">
-                                <div className="flex gap-12 items-start">
-                                    <div className="w-1/2 space-y-6">
-                                        <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Jawaban Objektif</p>
-                                        <div className="space-y-2.5">
-                                            {questions.filter((q:any) => q.question_type === 'multiple_choice' || q.question_type === 'true_false').map((q: any, idx: number) => {
-                                                const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
-                                                return (
-                                                    <div key={q.id} className="flex items-center gap-4 py-0.5">
-                                                        <span className="w-6 font-black text-[10pt] text-right text-slate-400">{idx + 1}.</span>
-                                                        <div className="flex gap-2">
-                                                            {options.map(opt => (
-                                                                <div key={opt} className="w-7 h-7 rounded-full border-[1.8pt] border-black flex items-center justify-center text-[9pt] font-black" style={{ lineHeight: '1' }}>{opt}</div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    <div className="w-1/2 space-y-8">
-                                        {sections.find(s => s.type === 'matching') && (
-                                            <div className="space-y-3">
-                                                <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Menjodohkan</p>
-                                                <div className="space-y-2.5">
-                                                    {(sections.find(s => s.type === 'matching')?.questions || []).map((q: any, idx: number) => (
-                                                        <div key={q.id} className="flex items-center gap-3">
-                                                            <span className="w-6 font-black text-[10pt] text-right text-slate-400">{idx + 1}.</span>
-                                                            <div className="flex-1 h-9 border-[1.5pt] border-black border-dashed rounded-lg flex items-center px-3 text-[8pt] font-bold text-slate-300">Pasangan (Contoh: 1-C)</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {(sections.find(s => s.type === 'short_answer') || sections.find(s => s.type === 'essay')) && (
-                                            <div className="space-y-3">
-                                                <p className="text-[10pt] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg tracking-widest mb-4">Isian / Uraian</p>
-                                                <div className="space-y-3">
-                                                    {questions.filter((q:any) => q.question_type === 'short_answer' || q.question_type === 'essay').map((q: any, idx: number) => (
-                                                        <div key={q.id} className="space-y-1">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="font-black text-[10pt] text-slate-400">{idx + 1}.</span>
-                                                                <div className="flex-1 h-[14mm] border-[1.5pt] border-black rounded-xl" />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>
