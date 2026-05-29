@@ -148,7 +148,6 @@ export default function BankSoalClient({
 }) {
     const { toast } = useToast();
     const router = useRouter();
-    const supabase = createClient();
     const [searchTerm, setSearchTerm] = React.useState("");
     const [filterClass, setFilterClass] = React.useState("all");
     const [filterSubject, setFilterSubject] = React.useState("all");
@@ -163,8 +162,6 @@ export default function BankSoalClient({
     const [deletingId, setDeletingId] = React.useState<string | null>(null);
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = React.useState(false);
-    const [isDriveAuthDialogOpen, setIsDriveAuthDialogOpen] = React.useState(false);
-    const [successFileUrl, setSuccessFileUrl] = React.useState("");
     
     const [naskahConfig, setNaskahConfig] = React.useState({
         title: "",
@@ -255,27 +252,9 @@ export default function BankSoalClient({
         setDeletingId(null);
     };
 
-    const handleConnectDrive = async () => {
-        if (!supabase) return;
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: "google",
-            options: {
-                redirectTo: window.location.href,
-                scopes: "openid email profile https://www.googleapis.com/auth/drive.file",
-                queryParams: { access_type: "offline", prompt: "consent" },
-            },
-        });
-        if (error) toast({ title: "Gagal", description: "Kesalahan OAuth.", variant: "destructive" });
-    };
-
     const handleCreateNaskah = async () => {
         if (selectedOrderedIds.length === 0) return;
         
-        if (userProvider === 'google' && (!driveIntegration || driveIntegration.status !== 'connected')) {
-            setIsDriveAuthDialogOpen(true);
-            return;
-        }
-
         if (!naskahConfig.title) {
             toast({ title: "Judul Wajib", description: "Harap masukkan nama naskah.", variant: "destructive" });
             return;
@@ -299,7 +278,6 @@ export default function BankSoalClient({
             );
 
             if (result.success) {
-                setSuccessFileUrl(result.file_url || "#");
                 setIsExportDialogOpen(false);
                 setIsSuccessDialogOpen(true);
                 setSelectedOrderedIds([]);
@@ -705,23 +683,6 @@ export default function BankSoalClient({
                                     Buka Daftar Naskah
                                 </Link>
                             </Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-
-                <Dialog open={isDriveAuthDialogOpen} onOpenChange={setIsDriveAuthDialogOpen}>
-                    <DialogContent className="rounded-xl p-0 max-w-sm overflow-hidden bg-white">
-                        <DialogHeader className="sr-only">
-                            <DialogTitle>Koneksi Google Drive</DialogTitle>
-                            <DialogDescription>Otentikasi Google Drive diperlukan untuk melanjutkan.</DialogDescription>
-                        </DialogHeader>
-                        <div className="p-8 text-center space-y-6">
-                            <Database className="mx-auto h-12 w-12 text-indigo-600" />
-                            <div className="space-y-2">
-                                <h3 className="text-xl font-bold">Koneksi Drive Diperlukan</h3>
-                                <p className="text-sm text-slate-500">Hubungkan akun Google untuk menyimpan naskah.</p>
-                            </div>
-                            <Button onClick={handleConnectDrive} className="w-full h-12 bg-indigo-600 text-white font-bold">Hubungkan Akun Google</Button>
                         </div>
                     </DialogContent>
                 </Dialog>

@@ -306,15 +306,15 @@ export async function deleteQuestionsAction(ids: string[]) {
     try {
         await supabase.from('questions').delete().in('id', ids).eq('created_by', user.id);
         revalidatePath('/dashboard/ai-pembelajaran/bank-soal');
-        return { success: true };
+        return { true: true };
     } catch (error: any) {
         return { success: false, error: "Gagal menghapus data soal." };
     }
 }
 
 /**
- * Server Action untuk menyusun naskah ujian.
- * Sekarang memiliki kecerdasan otomatis untuk mengurutkan soal berdasarkan JENIS SOAL.
+ * Server Action untuk menyusun naskah ujian (Local Implementation V44.0).
+ * Melepaskan ketergantungan dari Google Drive untuk naskah soal.
  */
 export async function createNaskahUjianAction(
     title: string, 
@@ -348,35 +348,22 @@ export async function createNaskahUjianAction(
             .sort((a, b) => (typeOrder[a.question_type] || 99) - (typeOrder[b.question_type] || 99))
             .map(q => q.id);
 
-        // 4. Bangun Konten Ringkasan (Markdown) untuk Drive draf
-        let content = `
-${metadata.schoolName.toUpperCase()}
-${metadata.examType.toUpperCase()}
-==========================================
-Mata Pelajaran : ${metadata.subject}
-Kelas          : ${metadata.class}
-Penyusun       : ${user.user_metadata?.full_name || 'Guru LakuKelas'}
-==========================================
+        // 4. Simpan metadata "Resep" soal ke ai_documents secara lokal
+        const { error } = await supabase.from('ai_documents').insert({
+            user_id: user.id,
+            document_type: 'naskah_ujian',
+            title: title,
+            class_level: metadata.class,
+            subject: metadata.subject,
+            question_ids: sortedQuestionIds,
+            status: 'created',
+            is_public: false
+        });
 
-Daftar ID Soal (Telah diurutkan otomatis):
-${sortedQuestionIds.join('\n')}
-
-_Gunakan tombol 'Cetak' di aplikasi LakuKelas untuk menghasilkan PDF dengan rumus matematika yang rapi._
-`;
-
-        // 5. Simpan metadata "Resep" soal ke ai_documents dengan ID yang sudah TERURUT
-        const result = await saveGenericDocumentToDrive(
-            title, 
-            content, 
-            metadata, 
-            'Bank Soal', 
-            'doc', 
-            undefined, 
-            sortedQuestionIds
-        );
+        if (error) throw error;
         
         revalidatePath('/dashboard/ai-pembelajaran/naskah-soal');
-        return result;
+        return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };
     }

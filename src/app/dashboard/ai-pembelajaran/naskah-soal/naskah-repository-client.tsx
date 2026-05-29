@@ -130,7 +130,7 @@ export default function NaskahRepositoryClient({
                                     <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
                                         <AlertDialogHeader>
                                             <AlertDialogTitle className="text-xl font-bold">Hapus Naskah?</AlertDialogTitle>
-                                            <AlertDialogDescription className="font-medium">Dokumen akan dihapus permanen dari sistem dan Drive.</AlertDialogDescription>
+                                            <AlertDialogDescription className="font-medium">Dokumen akan dihapus permanen dari sistem.</AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter className="flex flex-row gap-2 mt-4">
                                             <AlertDialogCancel className="flex-1 rounded-xl h-11 border-slate-200 font-bold">Batal</AlertDialogCancel>
@@ -189,9 +189,6 @@ export default function NaskahRepositoryClient({
                                     <ScanQrCode className="h-4 w-4" /> Cetak LJK AI
                                 </Button>
                             </div>
-                            <Button variant="ghost" asChild className="w-full h-11 border border-dashed border-slate-200 rounded-2xl font-bold gap-2 text-xs">
-                                <a href={doc.drive_file_url || "#"} target="_blank"><ExternalLink className="h-3.5 w-3.5" /> Edit Google Doc</a>
-                            </Button>
                         </CardFooter>
                     </Card>
                 ))}
