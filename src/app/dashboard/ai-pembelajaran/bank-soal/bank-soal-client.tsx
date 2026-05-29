@@ -24,7 +24,8 @@ import {
     Plus,
     BrainCircuit,
     Tag,
-    ArrowUp
+    ArrowUp,
+    ArrowRightLeft
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -320,6 +321,17 @@ export default function BankSoalClient({
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const getQuestionTypeLabel = (type: string) => {
+        switch(type) {
+            case 'multiple_choice': return 'PG';
+            case 'essay': return 'Uraian';
+            case 'short_answer': return 'Isian';
+            case 'true_false': return 'B/S';
+            case 'matching': return 'Jodohkan';
+            default: return type;
+        }
+    };
+
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
             {/* Loading Overlay */}
@@ -427,6 +439,17 @@ export default function BankSoalClient({
                         const selectionIdx = getSelectionIndex(q.id);
                         const isSelected = selectionIdx !== null;
                         
+                        // Logic parsing khusus untuk tampilan Menjodohkan
+                        const isMatching = q.question_type === 'matching';
+                        let matchingItems: string[] = [];
+                        let matchingIntro = q.question_text;
+
+                        if (isMatching) {
+                            const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
+                            matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
+                            matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
+                        }
+
                         return (
                             <Card key={q.id} className={cn(
                                 "relative border-2 rounded-xl bg-white overflow-hidden transition-all shadow-sm",
@@ -493,7 +516,7 @@ export default function BankSoalClient({
                                         </div>
 
                                         <div className="text-slate-800 font-bold text-lg leading-relaxed break-words overflow-hidden min-w-0">
-                                            <MathText content={q.question_text} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
+                                            <MathText content={matchingIntro} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
                                         </div>
 
                                         {q.visual_svg && (
@@ -505,15 +528,45 @@ export default function BankSoalClient({
                                             </div>
                                         )}
 
-                                        {q.options_json && (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
-                                                    <div key={k} className="p-4 rounded-xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm min-w-0 overflow-hidden">
-                                                        <span className="text-indigo-600 font-black shrink-0">{k}.</span>
-                                                        <div className="flex-1 min-w-0 overflow-hidden"><MathText content={v} /></div>
+                                        {isMatching ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 shadow-inner">
+                                                <div className="space-y-3">
+                                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                                                        <Info className="w-3 h-3" /> Pernyataan / Soal
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {matchingItems.map((item, i) => (
+                                                            <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 text-xs font-bold shadow-sm">
+                                                                <MathText content={item} />
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                                                        <ArrowRightLeft className="w-3 h-3" /> Pilihan Jawaban
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {q.options_json && Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
+                                                            <div key={k} className="p-3 bg-white rounded-xl border border-slate-100 text-xs font-bold flex gap-3 shadow-sm">
+                                                                <span className="text-emerald-600 font-black">{k}.</span>
+                                                                <div className="flex-1 overflow-hidden"><MathText content={v} /></div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
+                                        ) : (
+                                            q.options_json && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
+                                                        <div key={k} className="p-4 rounded-xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm min-w-0 overflow-hidden">
+                                                            <span className="text-indigo-600 font-black shrink-0">{k}.</span>
+                                                            <div className="flex-1 min-w-0 overflow-hidden"><MathText content={v} /></div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )
                                         )}
 
                                         <div className="pt-5 flex flex-wrap justify-between items-center gap-4 border-t border-slate-100">
@@ -567,7 +620,7 @@ export default function BankSoalClient({
                     )}
                 </div>
 
-                {/* Simplified Naskah Config Dialog */}
+                {/* simplified Naskah Config Dialog */}
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                     <DialogContent className="rounded-xl p-0 max-w-lg border-0 shadow-2xl overflow-hidden bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                         <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white text-center">
