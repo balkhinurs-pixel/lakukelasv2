@@ -1,7 +1,7 @@
 'use server';
 /**
- * @fileOverview Flow Genkit untuk Koreksi LJK (OMR Vision) - V58.0 Optimized.
- * Mendeteksi bulatan NIS dan Jawaban Siswa dari foto LJK Baku LakuKelas.
+ * @fileOverview Flow Genkit untuk Koreksi LJK (OMR Vision) - V67.0 Optimized.
+ * Meringkas instruksi teks (Prompt) untuk menghemat kuota Token (TPM) Gemini Free Tier.
  */
 
 import { z, genkit } from 'genkit';
@@ -21,15 +21,15 @@ const CorrectExamInputSchema = z.object({
 export type CorrectExamInput = z.infer<typeof CorrectExamInputSchema>;
 
 const CorrectExamOutputSchema = z.object({
-  detectedNis: z.string().describe("Nomor NIS yang terdeteksi dari bulatan LJK"),
+  detectedNis: z.string().describe("NIS 5 digit dari bulatan LJK"),
   studentAnswers: z.array(z.object({
     questionNum: z.number(),
     studentChoice: z.string(),
     isCorrect: z.boolean(),
     correctValue: z.string()
-  })).describe("Hasil deteksi jawaban per nomor"),
-  totalScore: z.number().describe("Skor akhir (0-100)"),
-  analysis: z.string().describe("Catatan singkat AI mengenai kualitas scan atau kesalahan umum")
+  })).describe("Hasil deteksi jawaban"),
+  totalScore: z.number().describe("Skor 0-100"),
+  analysis: z.string().describe("Catatan singkat kualitas foto")
 });
 
 export type CorrectExamOutput = z.infer<typeof CorrectExamOutputSchema>;
@@ -47,10 +47,9 @@ export async function correctExam(input: CorrectExamInput): Promise<CorrectExamO
     .single();
 
   if (!profile?.gemini_api_key) {
-    throw new Error("API Key Gemini diperlukan untuk fitur Vision AI.");
+    throw new Error("API Key Gemini diperlukan.");
   }
 
-  // Gunakan model Flash 2.5 karena paling cepat dan akurat untuk tugas Vision OMR
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
     model: googleAI.model('gemini-2.5-flash-image'),
@@ -60,34 +59,26 @@ export async function correctExam(input: CorrectExamInput): Promise<CorrectExamO
     output: { schema: CorrectExamOutputSchema },
     prompt: [
         { media: { url: input.photoDataUri, contentType: 'image/jpeg' } },
-        { text: `Anda adalah mesin OMR (Optical Mark Recognition) tingkat tinggi berbasis Vision AI.
-Tugas Anda adalah memeriksa Lembar Jawab Komputer (LJK) Standard LakuKelas ini secara presisi.
+        { text: `Act as a high-precision OMR Scanner. 
+LAYOUT:
+- Use 4 black corner squares for alignment.
+- NIS Column: Right side (5 columns of 0-9 bubbles).
+- Answers: Sequentially numbered bubbles (A-E or B-S).
 
-KONTEKS LAYOUT LJK (V57.0):
-1. ANCHOR POINTS: Ada 4 kotak hitam solid di setiap pojok kertas. Gunakan kotak ini untuk kalibrasi koordinat dan koreksi kemiringan (perspective warp).
-2. KOLOM NIS: Terletak di sisi kanan atas (Blok C). Berisi 5 kolom, masing-masing kolom memiliki bulatan angka 0-9. Deteksi angka mana yang dihitamkan di setiap kolom untuk mendapatkan NIS siswa.
-3. BLOK JAWABAN:
-   - Jawaban dikelompokkan berdasarkan tipe soal (Pilihan Ganda, Benar/Salah, Menjodohkan).
-   - Penomoran soal tetap berlanjut secara sekuensial (1, 2, 3, dst) meskipun berada di blok berbeda.
-   - Pilihan Ganda: Bulatan A-E.
-   - Benar/Salah: Bulatan B-S.
-   - Menjodohkan: Siswa menulis teks di dalam kotak bergaris putus-putus.
+KEYS:
+${input.correctAnswers.map(k => `No ${k.sort_order}: ${k.correct_answer}`).join('\n')}
 
-KUNCI JAWABAN REFERENSI:
-${input.correctAnswers.map(k => `No ${k.sort_order} [Tipe: ${k.question_type}]: ${k.correct_answer}`).join('\n')}
-
-INSTRUKSI ANALISIS:
-1. DETEKSI NIS: Ambil 5 digit dari kolom NIS di kanan atas. Jika kosong atau tidak terbaca, laporkan di analysis.
-2. DETEKSI JAWABAN: Untuk setiap nomor soal, cari bulatan (atau teks di blok Menjodohkan) yang paling gelap/diisi.
-3. PERHITUNGAN SKOR: Bandingkan jawaban terdeteksi dengan KUNCI JAWABAN. Hitung skor total dalam skala 0-100.
-4. VALIDASI: Jika ada nomor yang dicoret atau diisi lebih dari satu bulatan, anggap salah.
-
-Berikan hasil dalam JSON yang sangat akurat. Field analysis harus berisi info jika ada kendala kualitas gambar (blur/miring).` }
+TASK:
+1. Extract 5-digit NIS from bubbles.
+2. Detect filled bubbles for each question number.
+3. Compare with KEYS and calculate score (0-100).
+4. Identify multiple marks as wrong.
+5. Report blur/angle issues in analysis field.` }
     ]
   });
 
   const result = response.output;
-  if (!result) throw new Error("AI gagal membaca LJK. Pastikan foto jelas, tegak lurus, dan 4 kotak hitam di pojok terlihat.");
+  if (!result) throw new Error("AI failed to process image. Ensure 4 corner anchors are visible.");
   
   return result;
 }
