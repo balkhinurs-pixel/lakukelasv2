@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V49.0 (Print Optimized)
+ * MathText Component V50.0 (Print Optimized & Clean)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -86,7 +86,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         return groups;
     }, [questions]);
 
-    // -- LJK VIEW (V49.0 Standard OMR) --
+    // -- LJK VIEW (Standard OMR) --
     if (isLjk) {
         return (
             <div className="min-h-screen bg-white">
@@ -108,15 +108,13 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     <div className="absolute bottom-4 left-4 w-8 h-8 bg-black z-50" />
                     <div className="absolute bottom-4 right-4 w-8 h-8 bg-black z-50" />
 
-                    {/* Kop Surat (V48.0 Consistent) */}
+                    {/* Kop Surat */}
                     <div className="mb-6 pb-2 border-b-[3pt] border-double border-black">
                         <div className="flex items-center gap-6">
                             <div className="w-[28mm] h-[25mm] flex items-center justify-center shrink-0">
                                 {schoolProfile?.school_logo_url ? (
                                     <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
-                                ) : (
-                                    <div className="p-2 opacity-20 w-full h-full"><AppLogo /></div>
-                                )}
+                                ) : null}
                             </div>
                             <div className="flex-1 text-center pr-[28mm]">
                                 <p className="text-[10pt] font-bold uppercase leading-tight tracking-wide">Yayasan / Dinas Pendidikan Terkait</p>
@@ -254,7 +252,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         );
     }
 
-    // -- SOAL & KUNCI VIEW (V48.0 Standard) --
+    // -- SOAL & KUNCI VIEW --
     let currentRomanIdx = 0;
     let lastRenderedType = "";
 
@@ -282,9 +280,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                     alt="Logo Sekolah" 
                                     crossOrigin="anonymous" 
                                 />
-                            ) : (
-                                <div className="p-2 opacity-20 w-full h-full"><AppLogo /></div>
-                            )}
+                            ) : null}
                         </div>
                         <div className="flex-1 text-center pr-[30mm]">
                             <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Yayasan / Dinas Pendidikan Terkait</p>
