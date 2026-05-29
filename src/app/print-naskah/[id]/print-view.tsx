@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -71,6 +70,10 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const [generating, setGenerating] = React.useState(false);
     const printRef = React.useRef<HTMLDivElement>(null);
 
+    // Context for section headers
+    let lastRenderedType = "";
+    let currentRomanIdx = 0;
+
     React.useEffect(() => {
         const handleResize = () => {
             const A4_WIDTH_PX = 794; 
@@ -96,7 +99,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         setGenerating(true);
 
         try {
-            // Optimasi V63.0: Gunakan resolusi 794x1123 (A4 96DPI) sebagai base capture
             const canvas = await html2canvas(printRef.current, {
                 scale: 2, 
                 useCORS: true,
@@ -105,7 +107,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                 windowWidth: 794,
                 windowHeight: 1123,
                 onclone: (clonedDoc) => {
-                    // Reset transform pada elemen kloning agar tidak miring/kecil saat dicapture
                     const element = clonedDoc.querySelector('.print-area') as HTMLElement;
                     if (element) {
                         element.style.transform = 'none';
@@ -299,19 +300,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            </div>
-
-                            <div className="absolute bottom-[10mm] left-[20mm] right-[20mm] flex justify-between text-[9pt] font-black">
-                                <div className="text-center">
-                                    <p>Tanda Tangan Pengawas</p>
-                                    <div className="h-14" />
-                                    <p>( .................................... )</p>
-                                </div>
-                                <div className="text-center">
-                                    <p>Tanda Tangan Siswa</p>
-                                    <div className="h-14" />
-                                    <p>( .................................... )</p>
                                 </div>
                             </div>
                         </div>
