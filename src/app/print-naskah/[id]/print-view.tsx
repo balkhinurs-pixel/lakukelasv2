@@ -68,9 +68,8 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
 
     React.useEffect(() => {
         const handleResize = () => {
-            const A4_WIDTH_PX = 794; // approx 210mm at 96dpi
+            const A4_WIDTH_PX = 794; 
             if (window.innerWidth < A4_WIDTH_PX) {
-                // Beri sedikit padding (32px) agar naskah tidak menempel ke pinggir layar
                 const newScale = (window.innerWidth - 32) / A4_WIDTH_PX;
                 setScale(newScale);
             } else {
@@ -79,10 +78,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
             setIsReady(true);
         };
 
-        // Jalankan sekali saat mount
         handleResize();
-        
-        // Daftarkan listener resize untuk rotasi layar
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -99,7 +95,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         return groups;
     }, [questions]);
 
-    // Template LJK OMR Profesional
+    // Template LJK OMR Profesional (FIX 1 PAGE V59.0)
     if (isLjk) {
         return (
             <div className="min-h-screen bg-slate-50 flex flex-col print:bg-white">
@@ -107,8 +103,8 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                     <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                         <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
                     </Button>
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">LJK AI OMR Standard</div>
-                    <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4 shadow-lg shadow-indigo-600/20">
+                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">LJK AI OMR (Single Page Layout)</div>
+                    <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4 shadow-lg">
                         <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF / Print</span>
                     </Button>
                 </header>
@@ -128,73 +124,65 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                         style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                     >
                         <div 
-                            className="print-area bg-white relative print:shadow-none shadow-xl mx-auto" 
+                            className="print-area bg-white relative print:shadow-none shadow-xl mx-auto overflow-hidden" 
                             style={{ 
                                 width: '210mm', 
-                                minHeight: '297mm', 
-                                padding: '15mm 15mm', 
+                                height: '297mm', // Fixed height to prevent 2nd page
+                                padding: '12mm 15mm', 
                                 boxSizing: 'border-box', 
                                 fontFamily: 'Arial, sans-serif'
                             }}
                         >
-                            {/* Anchor Points for Vision AI */}
-                            <div className="absolute top-4 left-4 w-8 h-8 bg-black z-50" />
-                            <div className="absolute top-4 right-4 w-8 h-8 bg-black z-50" />
-                            <div className="absolute bottom-4 left-4 w-8 h-8 bg-black z-50" />
-                            <div className="absolute bottom-4 right-4 w-8 h-8 bg-black z-50" />
+                            {/* Anchor Points for Vision AI OMR (Extremely Critical) */}
+                            <div className="absolute top-2 left-2 w-6 h-6 bg-black z-50" />
+                            <div className="absolute top-2 right-2 w-6 h-6 bg-black z-50" />
+                            <div className="absolute bottom-2 left-2 w-6 h-6 bg-black z-50" />
+                            <div className="absolute bottom-2 right-2 w-6 h-6 bg-black z-50" />
 
-                            <div className="mb-6 pb-2 border-b-[3pt] border-double border-black">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-[28mm] h-[25mm] flex items-center justify-center shrink-0">
-                                        {schoolProfile?.school_logo_url ? (
-                                            <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
-                                        ) : null}
+                            {/* Minimalist Header for LJK to save space */}
+                            <div className="flex items-center justify-between border-b-[1.5pt] border-black pb-2 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 flex items-center justify-center">
+                                        {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" />}
                                     </div>
-                                    <div className="flex-1 text-center pr-[28mm]">
-                                        <p className="text-[10pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Daerah / Yayasan Pendidikan Terkait</p>
-                                        <h1 className="text-[16pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
-                                        <p className="text-[8pt] font-bold mt-1">
-                                            {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
-                                            {schoolProfile?.npsn && ` | NPSN: ${schoolProfile.npsn}`}
+                                    <div>
+                                        <h1 className="text-[12pt] font-black uppercase leading-tight">{schoolProfile?.school_name || "NAMA SEKOLAH"}</h1>
+                                        <p className="text-[7pt] font-bold uppercase text-slate-500">LEMBAR JAWAB KOMPUTER AI Standard LakuKelas</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <h2 className="text-[10pt] font-black uppercase underline">LJK Ujian Siswa</h2>
+                                    <p className="text-[7pt] font-bold text-slate-500">{doc.subject} | KELAS {doc.class_level}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-[1.4fr_1fr] gap-4 mb-6">
+                                <div className="space-y-3">
+                                    <div className="border border-black p-3 rounded-lg">
+                                        <p className="text-[7pt] font-black mb-2 uppercase text-slate-500">IDENTITAS PESERTA</p>
+                                        <div className="space-y-3">
+                                            <div className="h-7 border-b border-black flex items-end pb-0.5 text-[9pt] font-bold">NAMA: ................................................................</div>
+                                            <div className="h-7 border-b border-black flex items-end pb-0.5 text-[9pt] font-bold">KELAS: ...............................................................</div>
+                                        </div>
+                                    </div>
+                                    <div className="border border-black p-3 rounded-lg bg-slate-50">
+                                        <p className="text-[7pt] font-black mb-1 uppercase text-slate-500">PETUNJUK</p>
+                                        <p className="text-[6.5pt] font-bold leading-tight">
+                                            1. Gunakan Pensil 2B atau Pulpen Hitam.<br/>
+                                            2. Hitamkan bulatan secara penuh.<br/>
+                                            3. Jaga lembar tetap bersih dan tidak terlipat.
                                         </p>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="text-center mb-6">
-                                <h2 className="text-[14pt] font-black uppercase underline tracking-tighter">LEMBAR JAWAB KOMPUTER (LJK) AI</h2>
-                                <p className="text-[10pt] font-bold uppercase mt-1">SISTEM PENILAIAN DIGITAL LAKUKELAS</p>
-                            </div>
-
-                            <div className="grid grid-cols-[1.5fr_1fr] gap-6 mb-8">
-                                <div className="space-y-4">
-                                    <div className="border-[1.5pt] border-black p-4 rounded-xl">
-                                        <p className="text-[8pt] font-black mb-3 uppercase text-slate-500 tracking-widest">A. IDENTITAS PESERTA UJIAN</p>
-                                        <div className="space-y-4">
-                                            <div className="h-9 border-b border-black flex items-end pb-1 text-[10pt] font-bold">NAMA : ............................................................................</div>
-                                            <div className="h-9 border-b border-black flex items-end pb-1 text-[10pt] font-bold">KELAS : ...........................................................................</div>
-                                            <div className="h-9 border-b border-black flex items-end pb-1 text-[10pt] font-bold">MATA PELAJARAN : <span className="uppercase">{doc.subject}</span></div>
-                                        </div>
-                                    </div>
-                                    <div className="border-[1.5pt] border-black p-4 rounded-xl bg-slate-50">
-                                        <p className="text-[8pt] font-black mb-2 uppercase text-slate-500 tracking-widest">B. PETUNJUK PENGISIAN</p>
-                                        <ul className="text-[7.5pt] font-bold space-y-1">
-                                            <li>1. Gunakan Pensil 2B atau Pulpen Hitam.</li>
-                                            <li>2. Hitamkan/Silang pada bulatan jawaban yang benar.</li>
-                                            <li>3. Contoh pengisian: <span className="inline-flex items-center gap-1 mx-2"> Benar: <span className="w-3.5 h-3.5 rounded-full bg-black"></span> Salah: <span className="w-3.5 h-3.5 rounded-full border border-black flex items-center justify-center text-[5pt] font-black">X</span></span></li>
-                                            <li>4. Jaga lembar ini agar tidak kotor, basah, atau terlipat.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <div className="border-[1.5pt] border-black p-4 rounded-xl text-center">
-                                    <p className="text-[8pt] font-black mb-3 uppercase text-slate-500 tracking-widest">C. KOLOM NIS (5 DIGIT)</p>
+                                <div className="border border-black p-3 rounded-lg text-center">
+                                    <p className="text-[7pt] font-black mb-2 uppercase text-slate-500">KOLOM NIS (5 DIGIT)</p>
                                     <div className="flex justify-center gap-1.5">
                                         {[1,2,3,4,5].map(col => (
                                             <div key={col} className="space-y-0.5">
-                                                <div className="w-7 h-7 border border-black flex items-center justify-center font-bold text-[9pt] mb-1" />
+                                                <div className="w-6 h-6 border border-black flex items-center justify-center font-bold text-[8pt] mb-1" />
                                                 {[0,1,2,3,4,5,6,7,8,9].map(num => (
-                                                    <div key={num} className="w-5 h-5 rounded-full border-[1pt] border-black flex items-center justify-center text-[7pt] font-bold">{num}</div>
+                                                    <div key={num} className="w-4 h-4 rounded-full border-[1pt] border-black flex items-center justify-center text-[6pt] font-bold">{num}</div>
                                                 ))}
                                             </div>
                                         ))}
@@ -202,40 +190,37 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 </div>
                             </div>
 
-                            <div className="border-[2pt] border-black p-6 rounded-3xl min-h-[150mm]">
-                                <div className="grid grid-cols-2 gap-x-12 gap-y-10 items-start">
-                                    <div className="space-y-6">
-                                        {(groupedQuestions.multiple_choice || groupedQuestions.true_false) && (
-                                            <div className="space-y-3">
-                                                <p className="text-[9pt] font-black uppercase text-center bg-slate-100 py-1.5 rounded-md tracking-widest mb-4">Jawaban Objektif (PG/BS)</p>
-                                                <div className="grid grid-cols-1 gap-y-2.5">
-                                                    {questions.filter((q:any) => q.question_type === 'multiple_choice' || q.question_type === 'true_false').map((q: any, idx: number) => {
-                                                        const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
-                                                        return (
-                                                            <div key={q.id} className="flex items-center gap-4">
-                                                                <span className="w-6 font-bold text-[9pt] text-right">{idx + 1}.</span>
-                                                                <div className="flex gap-2">
-                                                                    {options.map(opt => (
-                                                                        <div key={opt} className="w-6 h-6 rounded-full border-[1.2pt] border-black flex items-center justify-center text-[8pt] font-black">{opt}</div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
+                            {/* Main Answer Area - Optimized for large question counts */}
+                            <div className="border-[1.5pt] border-black p-4 rounded-2xl flex-1">
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-6 items-start">
+                                    <div className="space-y-4">
+                                        <p className="text-[8pt] font-black uppercase text-center bg-slate-100 py-1 rounded tracking-widest mb-2">Jawaban Objektif</p>
+                                        <div className="grid grid-cols-1 gap-y-1.5">
+                                            {questions.filter((q:any) => q.question_type === 'multiple_choice' || q.question_type === 'true_false').map((q: any, idx: number) => {
+                                                const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
+                                                return (
+                                                    <div key={q.id} className="flex items-center gap-3 py-0.5">
+                                                        <span className="w-5 font-bold text-[8pt] text-right">{idx + 1}.</span>
+                                                        <div className="flex gap-1.5">
+                                                            {options.map(opt => (
+                                                                <div key={opt} className="w-5 h-5 rounded-full border-[1pt] border-black flex items-center justify-center text-[7pt] font-black">{opt}</div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-8">
+                                    <div className="space-y-6">
                                         {groupedQuestions.matching && (
-                                            <div className="space-y-3">
-                                                <p className="text-[9pt] font-black uppercase text-center bg-slate-100 py-1.5 rounded-md tracking-widest mb-4">Jawaban Menjodohkan</p>
-                                                <div className="grid grid-cols-1 gap-2">
+                                            <div className="space-y-2">
+                                                <p className="text-[8pt] font-black uppercase text-center bg-slate-100 py-1 rounded tracking-widest mb-2">Menjodohkan</p>
+                                                <div className="grid grid-cols-1 gap-1.5">
                                                     {groupedQuestions.matching.map((q: any, idx: number) => (
-                                                        <div key={q.id} className="flex items-center gap-3">
-                                                            <span className="w-6 font-bold text-[9pt] text-right">{idx + 1}.</span>
-                                                            <div className="flex-1 h-8 border-[1pt] border-black border-dashed rounded-md flex items-center px-3 text-[8pt] font-bold text-slate-300">Tulis Pasangan (Misal: 1-C, 2-A)</div>
+                                                        <div key={q.id} className="flex items-center gap-2">
+                                                            <span className="w-5 font-bold text-[8pt] text-right">{idx + 1}.</span>
+                                                            <div className="flex-1 h-7 border-[1pt] border-black border-dashed rounded flex items-center px-2 text-[7pt] font-bold text-slate-300">Tulis Pasangan (e.g. 1-C)</div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -243,14 +228,14 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                         )}
 
                                         {(groupedQuestions.short_answer || groupedQuestions.essay) && (
-                                            <div className="space-y-3">
-                                                <p className="text-[9pt] font-black uppercase text-center bg-slate-100 py-1.5 rounded-md tracking-widest mb-4">Jawaban Isian / Uraian</p>
-                                                <div className="grid grid-cols-1 gap-3">
+                                            <div className="space-y-2">
+                                                <p className="text-[8pt] font-black uppercase text-center bg-slate-100 py-1 rounded tracking-widest mb-2">Isian / Uraian</p>
+                                                <div className="grid grid-cols-1 gap-2">
                                                     {questions.filter((q:any) => q.question_type === 'short_answer' || q.question_type === 'essay').map((q: any, idx: number) => (
                                                         <div key={q.id} className="space-y-1">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="font-bold text-[9pt]">{idx + 1}.</span>
-                                                                <div className="flex-1 h-[12mm] border-[1pt] border-black rounded-lg" />
+                                                                <span className="font-bold text-[8pt]">{idx + 1}.</span>
+                                                                <div className="flex-1 h-[10mm] border-[1pt] border-black rounded-md" />
                                                             </div>
                                                         </div>
                                                     ))}
@@ -261,15 +246,15 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex justify-between text-[9pt] px-10">
+                            <div className="absolute bottom-10 left-15 right-15 flex justify-between text-[8pt] px-10">
                                 <div className="text-center">
                                     <p>Tanda Tangan Pengawas</p>
-                                    <div className="h-14" />
+                                    <div className="h-10" />
                                     <p>( .................................... )</p>
                                 </div>
                                 <div className="text-center">
                                     <p>Tanda Tangan Siswa</p>
-                                    <div className="h-14" />
+                                    <div className="h-10" />
                                     <p>( .................................... )</p>
                                 </div>
                             </div>
@@ -508,7 +493,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
             <style jsx>{`
                 @media (max-width: 793px) {
                     .preview-scale-wrapper:not(.opacity-100) {
-                        transform: scale(0.45); /* Estimated scale for early mobile render */
+                        transform: scale(0.45); 
                     }
                 }
             `}</style>
