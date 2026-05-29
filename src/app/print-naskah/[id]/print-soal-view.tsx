@@ -13,25 +13,28 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V76.0 (Ultimate Android & Print Optimized)
- * Mendukung deteksi LaTeX yang lebih luas termasuk $...$ dan raw text symbols.
+ * MathText Component V77.0 (Android & Print Ultimate Optimized)
+ * Mesin deteksi LaTeX yang sangat kuat untuk menangani berbagai gaya output AI.
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
   
-  // Regex diperluas untuk menangkap semua variasi LaTeX termasuk $...$ dan $$...$$
+  // Deteksi blok matematika standar
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
     <div className="math-text-render w-full text-justify print:text-black">
       {parts.map((part, i) => {
+        if (!part) return null;
+
         if (part.startsWith('$$')) return <div key={i} className="my-2"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('$')) return <InlineMath key={i} math={part.slice(1, -1)} />;
         if (part.startsWith('\\[')) return <div key={i} className="my-2"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         
-        // Penanganan jika ada simbol matematika yang tidak terbungkus delimiter (fall-back)
-        if (part.includes('\\text') || part.includes('\\frac') || part.includes('^')) {
+        // Fallback: Jika ada simbol matematika mentah yang tidak terbungkus (sering terjadi pada Android/AI)
+        if (part.includes('\\text') || part.includes('\\frac') || part.includes('^') || part.includes('_')) {
+            // Kita coba render sebagai inline math jika mengandung karakter kontrol LaTeX
             return <InlineMath key={i} math={part} />;
         }
 
@@ -90,34 +93,81 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
         <div className="min-h-screen bg-slate-100 flex flex-col items-center">
             <style jsx global>{`
               @page {
-                size: A4;
-                margin: 0 !important; /* Margin ditangani oleh padding kontainer agar presisi */
+                size: A4 portrait;
+                margin: 0 !important;
               }
               
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+
+              .print-root {
+                width: 210mm;
+                margin: 0 auto;
+                background: white;
+                color: black;
+              }
+
+              /* Section utama yang menangani flow halaman */
+              .print-content-wrapper {
+                width: 210mm;
+                padding: 12mm 15mm;
+                box-sizing: border-box;
+                background: white;
+              }
+
               @media print {
                 html, body {
-                  background: white !important;
-                  width: 210mm !important;
-                  height: 297mm !important;
-                }
-                .print-area {
-                  padding: 15mm 15mm 15mm 20mm !important; /* Top, Right, Bottom, Left */
+                  width: auto !important;
+                  height: auto !important;
                   margin: 0 !important;
-                  width: 210mm !important;
-                  box-shadow: none !important;
-                  border: none !important;
+                  padding: 0 !important;
+                  background: white !important;
+                  overflow: visible !important;
                 }
+
                 .no-print {
                   display: none !important;
                 }
+
+                .print-root {
+                  width: 210mm !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  box-shadow: none !important;
+                }
+
+                .print-content-wrapper {
+                  width: 210mm !important;
+                  padding: 12mm 15mm !important;
+                  margin: 0 !important;
+                  box-sizing: border-box !important;
+                }
+
+                .print-question-block,
+                table,
+                img,
+                svg {
+                  break-inside: avoid !important;
+                  page-break-inside: avoid !important;
+                }
+
+                img, svg {
+                  max-width: 100%;
+                  height: auto;
+                }
+
+                * {
+                  box-shadow: none !important;
+                  transform: none !important;
+                }
               }
 
-              .print-question-block {
-                page-break-inside: avoid;
-                break-inside: avoid;
-              }
-
-              /* Fix untuk Android Chrome agar tidak menciutkan font */
+              /* Font Optimization for Android Chrome */
               .math-text-render {
                 -webkit-text-size-adjust: none;
               }
@@ -128,7 +178,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                     <ArrowLeft className="h-4 w-4" /> Kembali
                 </Button>
                 <div className="text-center">
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs">NASKAH SOAL V76.0</div>
+                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs">NASKAH SOAL OPTIMASI ANDROID</div>
                     <p className="text-[9px] text-indigo-300 font-bold uppercase">{isKunci ? 'MODE KUNCI JAWABAN' : 'MODE NASKAH SOAL'}</p>
                 </div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-6 shadow-lg">
@@ -137,178 +187,170 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
             </header>
 
             <main className="flex-1 w-full p-4 sm:p-10 print:p-0 print:bg-white overflow-y-auto flex justify-center">
-                <div className="print-area bg-white shadow-2xl print:shadow-none" 
-                     style={{ 
-                        width: '210mm', 
-                        minHeight: '297mm', 
-                        padding: '20mm', 
-                        boxSizing: 'border-box', 
-                        fontFamily: '"Times New Roman", Times, serif', 
-                        fontSize: '12pt', 
-                        lineHeight: '1.6',
-                        color: 'black'
-                     }}>
-                    
-                    {/* Header / Kop Surat */}
-                    <div className="mb-6 pb-1 border-b-[3pt] border-double border-black">
-                        <div className="flex items-center gap-8">
-                            <div className="w-[28mm] h-[28mm] flex items-center justify-center shrink-0">
-                                {schoolProfile?.school_logo_url ? (
-                                    <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
-                                ) : (
-                                    <AppLogo className="opacity-10 w-full h-full text-slate-300" />
-                                )}
-                            </div>
-                            <div className="flex-1 text-center pr-[28mm]">
-                                <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Daerah / Yayasan Pendidikan Terkait</p>
-                                <h1 className="text-[16pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
-                                {schoolProfile?.npsn && <p className="text-[10pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
-                                <p className="text-[9.5pt] italic leading-tight mt-1">{schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"}</p>
-                                {schoolProfile?.school_website && <p className="text-[9pt] font-bold mt-0.5">{schoolProfile.school_website}</p>}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Identity Box */}
-                    <div className="border-[1.5pt] border-black p-4 mb-8 rounded-sm">
-                        <div className="grid grid-cols-2 gap-x-8 text-[11pt]">
-                            <div className="space-y-1.5">
-                                <div className="grid grid-cols-[110px_10px_1fr] items-baseline font-bold"><span>Hari / Tanggal</span><span>:</span><span>{doc.exam_date ? format(parseISO(doc.exam_date), 'EEEE, d MMMM yyyy', { locale: id }) : '..........................'}</span></div>
-                                <div className="grid grid-cols-[110px_10px_1fr] items-baseline font-bold"><span>Waktu</span><span>:</span><span>{doc.exam_time || '..........................'}</span></div>
-                            </div>
-                            <div className="space-y-1.5 border-l-[1.5pt] border-black/10 pl-8">
-                                <div className="grid grid-cols-[120px_10px_1fr] items-baseline font-bold"><span>Mata Pelajaran</span><span>:</span><span className="uppercase">{doc.subject}</span></div>
-                                <div className="grid grid-cols-[120px_10px_1fr] items-baseline font-bold"><span>Kelas</span><span>:</span><span>{doc.class_level}</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="text-center mb-8">
-                        <h3 className="text-[13pt] font-black uppercase underline tracking-tight">{isKunci ? 'KUNCI JAWABAN: ' : ''}{doc.title}</h3>
-                    </div>
-
-                    {/* Questions Flow */}
-                    <div className="questions-container">
-                        {sections.map((section, sIdx) => (
-                            <div key={sIdx} className="mb-6">
-                                <div className="mt-6 mb-4 border-b-2 border-black/30 pb-1" style={{ breakAfter: 'avoid' }}>
-                                    <p className="text-[12pt] font-black uppercase tracking-tight">
-                                        {toRoman(sIdx + 1)}. {typeLabels[section.type] || section.type.toUpperCase()}
-                                    </p>
+                <div className="print-root shadow-2xl print:shadow-none">
+                    <div className="print-content-wrapper" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '12pt', lineHeight: '1.5' }}>
+                        
+                        {/* KOP SURAT PROFESIONAL */}
+                        <div className="mb-6 pb-1 border-b-[3pt] border-double border-black">
+                            <div className="flex items-center gap-8">
+                                <div className="w-[26mm] h-[26mm] flex items-center justify-center shrink-0">
+                                    {schoolProfile?.school_logo_url ? (
+                                        <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
+                                    ) : (
+                                        <AppLogo className="opacity-10 w-full h-full text-slate-300" />
+                                    )}
                                 </div>
-                                
-                                {section.questions.map((q: any) => {
-                                    const globalIdx = questions.indexOf(q);
-                                    const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
-                                    const isTrueFalse = q.question_type === 'true_false';
-                                    const isMatching = q.question_type === 'matching';
+                                <div className="flex-1 text-center pr-[26mm]">
+                                    <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Daerah / Yayasan Pendidikan Terkait</p>
+                                    <h1 className="text-[16pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
+                                    {schoolProfile?.npsn && <p className="text-[10pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
+                                    <p className="text-[9.5pt] italic leading-tight mt-1">{schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"}</p>
+                                    {schoolProfile?.school_website && <p className="text-[9pt] font-bold mt-0.5">{schoolProfile.school_website}</p>}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* IDENTITY BOX */}
+                        <div className="border-[1.5pt] border-black p-4 mb-8 rounded-sm">
+                            <div className="grid grid-cols-2 gap-x-8 text-[11pt]">
+                                <div className="space-y-1.5">
+                                    <div className="grid grid-cols-[110px_10px_1fr] items-baseline font-bold"><span>Hari / Tanggal</span><span>:</span><span>{doc.exam_date ? format(parseISO(doc.exam_date), 'EEEE, d MMMM yyyy', { locale: id }) : '..........................'}</span></div>
+                                    <div className="grid grid-cols-[110px_10px_1fr] items-baseline font-bold"><span>Waktu</span><span>:</span><span>{doc.exam_time || '..........................'}</span></div>
+                                </div>
+                                <div className="space-y-1.5 border-l-[1.5pt] border-black/10 pl-8">
+                                    <div className="grid grid-cols-[120px_10px_1fr] items-baseline font-bold"><span>Mata Pelajaran</span><span>:</span><span className="uppercase">{doc.subject}</span></div>
+                                    <div className="grid grid-cols-[120px_10px_1fr] items-baseline font-bold"><span>Kelas</span><span>:</span><span>{doc.class_level}</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="text-center mb-8">
+                            <h3 className="text-[13pt] font-black uppercase underline tracking-tight">{isKunci ? 'KUNCI JAWABAN: ' : ''}{doc.title}</h3>
+                        </div>
+
+                        {/* QUESTIONS FLOW */}
+                        <div className="questions-container">
+                            {sections.map((section, sIdx) => (
+                                <div key={sIdx} className="mb-6">
+                                    <div className="mt-6 mb-4 border-b-2 border-black/30 pb-1" style={{ breakAfter: 'avoid' }}>
+                                        <p className="text-[12pt] font-black uppercase tracking-tight">
+                                            {toRoman(sIdx + 1)}. {typeLabels[section.type] || section.type.toUpperCase()}
+                                        </p>
+                                    </div>
                                     
-                                    let matchingItems: string[] = [];
-                                    let matchingIntro = q.question_text;
-                                    let rowCount = 0;
+                                    {section.questions.map((q: any) => {
+                                        const globalIdx = questions.indexOf(q);
+                                        const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
+                                        const isTrueFalse = q.question_type === 'true_false';
+                                        const isMatching = q.question_type === 'matching';
+                                        
+                                        let matchingItems: string[] = [];
+                                        let matchingIntro = q.question_text;
+                                        let rowCount = 0;
 
-                                    if (isMatching) {
-                                        const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
-                                        if (lines.length > 1) {
-                                            const hasNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
-                                            if (hasNumberedLines) {
-                                                matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
-                                                matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
-                                            } else {
-                                                matchingIntro = lines[0];
-                                                matchingItems = lines.slice(1);
+                                        if (isMatching) {
+                                            const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
+                                            if (lines.length > 1) {
+                                                const hasNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
+                                                if (hasNumberedLines) {
+                                                    matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
+                                                    matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
+                                                } else {
+                                                    matchingIntro = lines[0];
+                                                    matchingItems = lines.slice(1);
+                                                }
                                             }
+                                            rowCount = Math.max(matchingItems.length, options.length);
                                         }
-                                        rowCount = Math.max(matchingItems.length, options.length);
-                                    }
 
-                                    return (
-                                        <div key={q.id} className="print-question-block mb-8">
-                                            <div className="flex gap-4 items-start">
-                                                <span className="font-bold min-w-[32pt] text-left">{globalIdx + 1}.</span>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="mb-4">
-                                                        <MathText content={isMatching ? matchingIntro : q.question_text} />
-                                                    </div>
-                                                    
-                                                    {q.visual_svg && (
-                                                        <div className="my-6 flex justify-center">
-                                                            <div className="border border-slate-200 p-4 rounded-xl bg-slate-50/20"
-                                                                 style={{ maxWidth: '70mm', width: '100%' }}
-                                                                 dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') }} />
+                                        return (
+                                            <div key={q.id} className="print-question-block mb-8">
+                                                <div className="flex gap-4 items-start">
+                                                    <span className="font-bold min-w-[32pt] text-left">{globalIdx + 1}.</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="mb-4">
+                                                            <MathText content={isMatching ? (matchingIntro || q.question_text) : q.question_text} />
                                                         </div>
-                                                    )}
+                                                        
+                                                        {q.visual_svg && (
+                                                            <div className="my-6 flex justify-center">
+                                                                <div className="border border-slate-200 p-4 rounded-xl bg-slate-50/20"
+                                                                     style={{ maxWidth: '70mm', width: '100%' }}
+                                                                     dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') }} />
+                                                            </div>
+                                                        )}
 
-                                                    {isTrueFalse ? (
-                                                        <div className="mt-4 flex gap-12 items-center font-bold">
-                                                            {options.map(([k, v]) => (
-                                                                <div key={k} className="flex gap-2 items-center">
-                                                                    <span>{k}.</span><span className="uppercase tracking-widest">{v}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : isMatching ? (
-                                                        <div className="mt-6 border-2 border-black rounded-lg overflow-hidden">
-                                                            <table className="w-full border-collapse">
-                                                                <thead>
-                                                                    <tr className="bg-gray-100 border-b-2 border-black">
-                                                                        <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase w-10 text-center">No</th>
-                                                                        <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase text-left">Pernyataan / Soal</th>
-                                                                        <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase w-14 text-center">Pilih</th>
-                                                                        <th className="p-2 font-black text-[9pt] uppercase text-left">Pilihan Jawaban</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {Array.from({ length: rowCount }).map((_, i) => (
-                                                                        <tr key={i} className="border-b-2 border-black last:border-b-0">
-                                                                            <td className="p-2 border-r-2 border-black text-center font-bold text-[11pt]">{i + 1}</td>
-                                                                            <td className="p-2 border-r-2 border-black text-[10.5pt] min-w-[70mm]">
-                                                                                {matchingItems[i] ? <MathText content={matchingItems[i].replace(/^\d+[\.\)]\s*/, '')} /> : <div className="h-6 italic text-slate-300">...</div>}
-                                                                            </td>
-                                                                            <td className="p-2 border-r-2 border-black text-center font-bold text-slate-200">[.....]</td>
-                                                                            <td className="p-2 text-[10.5pt] min-w-[50mm]">
-                                                                                {options[i] ? (
-                                                                                    <div className="flex gap-2 items-start">
-                                                                                        <span className="font-bold min-w-[15pt]">{options[i][0]}.</span>
-                                                                                        <div className="flex-1"><MathText content={options[i][1]} /></div>
-                                                                                    </div>
-                                                                                ) : <div className="h-6 italic text-slate-300">...</div>}
-                                                                            </td>
-                                                                        </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    ) : (
-                                                        options.length > 0 && (
-                                                            <div className={cn("mt-4 grid grid-cols-2 gap-x-12 items-start", options.length === 4 ? "grid-rows-2" : "grid-rows-3", "grid-flow-col")}>
+                                                        {isTrueFalse ? (
+                                                            <div className="mt-4 flex gap-12 items-center font-bold">
                                                                 {options.map(([k, v]) => (
-                                                                    <div key={k} className="flex gap-3 items-start py-1.5">
-                                                                        <span className="font-bold min-w-[22pt]">{k}.</span>
-                                                                        <div className="flex-1"><MathText content={v} /></div>
+                                                                    <div key={k} className="flex gap-2 items-center">
+                                                                        <span>{k}.</span><span className="uppercase tracking-widest">{v}</span>
                                                                     </div>
                                                                 ))}
                                                             </div>
-                                                        )
-                                                    )}
+                                                        ) : isMatching ? (
+                                                            <div className="mt-6 border-2 border-black rounded-lg overflow-hidden">
+                                                                <table className="w-full border-collapse">
+                                                                    <thead>
+                                                                        <tr className="bg-gray-100 border-b-2 border-black">
+                                                                            <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase w-10 text-center">No</th>
+                                                                            <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase text-left">Pernyataan / Soal</th>
+                                                                            <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase w-14 text-center">Pilih</th>
+                                                                            <th className="p-2 font-black text-[9pt] uppercase text-left">Pilihan Jawaban</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {Array.from({ length: rowCount }).map((_, i) => (
+                                                                            <tr key={i} className="border-b-2 border-black last:border-b-0">
+                                                                                <td className="p-2 border-r-2 border-black text-center font-bold text-[11pt]">{i + 1}</td>
+                                                                                <td className="p-2 border-r-2 border-black text-[10.5pt] min-w-[70mm]">
+                                                                                    {matchingItems[i] ? <MathText content={matchingItems[i].replace(/^\d+[\.\)]\s*/, '')} /> : <div className="h-6 italic text-slate-300">...</div>}
+                                                                                </td>
+                                                                                <td className="p-2 border-r-2 border-black text-center font-bold text-slate-200">[.....]</td>
+                                                                                <td className="p-2 text-[10.5pt] min-w-[50mm]">
+                                                                                    {options[i] ? (
+                                                                                        <div className="flex gap-2 items-start">
+                                                                                            <span className="font-bold min-w-[15pt]">{options[i][0]}.</span>
+                                                                                            <div className="flex-1"><MathText content={options[i][1]} /></div>
+                                                                                        </div>
+                                                                                    ) : <div className="h-6 italic text-slate-300">...</div>}
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        ) : (
+                                                            options.length > 0 && (
+                                                                <div className={cn("mt-4 grid grid-cols-2 gap-x-12 items-start", options.length === 4 ? "grid-rows-2" : "grid-rows-3", "grid-flow-col")}>
+                                                                    {options.map(([k, v]) => (
+                                                                        <div key={k} className="flex gap-3 items-start py-1.5">
+                                                                            <span className="font-bold min-w-[22pt]">{k}.</span>
+                                                                            <div className="flex-1"><MathText content={v} /></div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )
+                                                        )}
 
-                                                    {isKunci && (
-                                                        <div className="mt-5 p-5 border-l-[4pt] border-indigo-600 bg-indigo-50/30 text-[11.5pt] italic rounded-r-2xl shadow-inner">
-                                                            <p className="font-black text-indigo-900 not-italic uppercase text-[9pt] mb-2 flex items-center gap-2">Kunci: {q.correct_answer}</p>
-                                                            <MathText content={q.explanation} />
-                                                        </div>
-                                                    )}
+                                                        {isKunci && (
+                                                            <div className="mt-5 p-5 border-l-[4pt] border-indigo-600 bg-indigo-50/30 text-[11.5pt] italic rounded-r-2xl shadow-inner">
+                                                                <p className="font-black text-indigo-900 not-italic uppercase text-[9pt] mb-2 flex items-center gap-2">Kunci: {q.correct_answer}</p>
+                                                                <MathText content={q.explanation} />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
-                    </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
 
-                    <div className="mt-16 text-center border-t-2 border-black pt-6 italic text-[11pt] font-bold text-slate-400">
-                        <p>*** Selamat Mengerjakan & Utamakan Kejujuran ***</p>
+                        <div className="mt-16 text-center border-t-2 border-black pt-6 italic text-[11pt] font-bold text-slate-400">
+                            <p>*** Selamat Mengerjakan & Utamakan Kejujuran ***</p>
+                        </div>
                     </div>
                 </div>
             </main>
