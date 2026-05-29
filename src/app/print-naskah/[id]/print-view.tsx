@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/icons";
 
 /**
- * MathText Component V52.0 (Print Optimized & Robust LaTeX)
+ * MathText Component V56.0 (Print Optimized)
  */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
@@ -66,13 +66,6 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
     const [scale, setScale] = React.useState(1);
 
     React.useEffect(() => {
-        const prepareAndPrint = async () => {
-            if (typeof document !== 'undefined' && (document as any).fonts) {
-                await (document as any).fonts.ready;
-            }
-        };
-        prepareAndPrint();
-
         const handleResize = () => {
             const A4_WIDTH_PX = 794;
             if (window.innerWidth < A4_WIDTH_PX) {
@@ -100,26 +93,27 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         return groups;
     }, [questions]);
 
+    // Template LJK OMR Profesional
     if (isLjk) {
         return (
-            <div className="min-h-screen bg-gray-100 flex flex-col">
+            <div className="min-h-screen bg-slate-50 flex flex-col print:bg-white">
                 <header className="no-print sticky top-0 z-[100] bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
                     <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                         <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
                     </Button>
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs">LJK AI OMR Standard</div>
-                    <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4">
+                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">LJK AI OMR Standard</div>
+                    <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4 shadow-lg shadow-indigo-600/20">
                         <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF / Print</span>
                     </Button>
                 </header>
 
-                <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-8 flex justify-center items-start">
+                <main className="flex-1 p-4 sm:p-8 flex justify-center items-start print:p-0 print-area-container">
                     <div 
                         className="preview-scale-wrapper" 
                         style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                     >
                         <div 
-                            className="print-area bg-white relative shadow-2xl" 
+                            className="print-area bg-white relative print:shadow-none shadow-xl mx-auto" 
                             style={{ 
                                 width: '210mm', 
                                 minHeight: '297mm', 
@@ -128,6 +122,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                 fontFamily: 'Arial, sans-serif'
                             }}
                         >
+                            {/* Anchor Points for Vision AI */}
                             <div className="absolute top-4 left-4 w-8 h-8 bg-black z-50" />
                             <div className="absolute top-4 right-4 w-8 h-8 bg-black z-50" />
                             <div className="absolute bottom-4 left-4 w-8 h-8 bg-black z-50" />
@@ -141,7 +136,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                                         ) : null}
                                     </div>
                                     <div className="flex-1 text-center pr-[28mm]">
-                                        <p className="text-[10pt] font-bold uppercase leading-tight tracking-wide">Dinas Pendidikan / Pemerintah Daerah Terkait</p>
+                                        <p className="text-[10pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Daerah / Yayasan Pendidikan Terkait</p>
                                         <h1 className="text-[16pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
                                         <p className="text-[8pt] font-bold mt-1">
                                             {schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"} 
@@ -270,11 +265,12 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
         );
     }
 
+    // Template Naskah Soal / Kunci Jawaban
     let currentRomanIdx = 0;
     let lastRenderedType = "";
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="min-h-screen bg-slate-50 flex flex-col print:bg-white">
             <header className="no-print sticky top-0 z-[100] bg-slate-900 text-white p-4 flex items-center justify-between shadow-xl">
                 <Button variant="ghost" onClick={handleClose} className="text-white gap-2 px-2 sm:px-4">
                     <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Kembali</span>
@@ -282,18 +278,18 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                 <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-center flex-1 mx-2">
                     {isKunci ? 'Kunci Jawaban' : 'Naskah Soal'}
                 </div>
-                <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4">
+                <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-2 sm:px-4 shadow-lg shadow-indigo-600/20">
                     <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF / Print</span>
                 </Button>
             </header>
 
-            <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-8 flex justify-center items-start">
+            <main className="flex-1 p-4 sm:p-8 flex justify-center items-start print:p-0 print-area-container">
                 <div 
                     className="preview-scale-wrapper"
                     style={{ transform: scale < 1 ? `scale(${scale})` : 'none', transformOrigin: 'top center' }}
                 >
                     <div 
-                        className="print-area bg-white mx-auto shadow-2xl" 
+                        className="print-area bg-white mx-auto print:shadow-none shadow-2xl" 
                         style={{ 
                             width: '210mm', 
                             padding: '15mm 15mm', 
@@ -303,6 +299,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             lineHeight: '1.45'
                         }}
                     >
+                        {/* Kop Surat Profesional */}
                         <div className="print-header-block mb-4 pb-2 border-b-[3pt] border-double border-black">
                             <div className="flex items-center gap-6">
                                 <div className="w-[28mm] h-[28mm] flex items-center justify-center shrink-0">
@@ -325,6 +322,7 @@ export default function PrintView({ doc, questions, schoolProfile, mode }: any) 
                             </div>
                         </div>
 
+                        {/* Metadata Box */}
                         <div className="border-[1.5pt] border-black p-4 mb-6 rounded-sm bg-slate-50/20">
                             <div className="grid grid-cols-2 gap-x-12">
                                 <div className="space-y-1.5">
