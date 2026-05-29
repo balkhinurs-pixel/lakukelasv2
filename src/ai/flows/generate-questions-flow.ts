@@ -99,28 +99,22 @@ Buatlah ${input.count} soal dengan tipe "${input.question_type}" untuk:
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
 
+ATURAN PENULISAN MATEMATIKA/SAINS (SANGAT PENTING):
+1. WAJIB menggunakan LaTeX valid.
+2. Gunakan \\( ... \\) untuk rumus di dalam kalimat (inline).
+3. Gunakan \\[ ... \\] untuk rumus di baris tersendiri (block).
+4. JANGAN PERNAH melewatkan backslash (\\) untuk perintah seperti \\frac, \\times, \\sqrt, \\cap, \\cup, dll.
+5. JANGAN menggunakan kurung biasa ( ) untuk membungkus rumus matematika, gunakan delimiter LaTeX di atas.
+
 ATURAN KHUSUS TIPIKAL SOAL:
 1. MENJODOHKAN (matching):
    - Field 'question' WAJIB berisi instruksi diikuti daftar pernyataan (list) yang harus dijodohkan, masing-masing di baris baru dan diberi nomor (1., 2., 3., dst).
    - Field 'options' berisi pilihan jawaban (A, B, C, dst) yang menjadi pasangan dari pernyataan tersebut.
    - Field 'answer' berisi pemetaan yang benar, contoh: "1-B, 2-A, 3-C".
 
-ATURAN KHUSUS PENGGUNAAN SVG (PENTING):
+ATURAN KHUSUS PENGGUNAAN SVG:
 1. BERSIKAPLAH SELEKTIF: Jangan sertakan "visual_svg" untuk setiap soal.
-2. GUNAKAN SVG HANYA JIKA: Soal tersebut menanyakan tentang geometri (bangun datar/ruang), membaca grafik/diagram batang/lingkaran, atau membutuhkan ilustrasi visual spesifik untuk dapat dijawab.
-3. KOSONGKAN SVG JIKA: Soal hanya berupa teks (analisis kalimat, sejarah, teori, atau pemahaman konsep umum).
-
-ATURAN TEKNIS SVG:
-1. Gunakan viewBox="0 0 400 400" agar gambar simetris dan luas.
-2. DIAGRAM LINGKARAN (Pie Chart):
-   - Gunakan elemen <path> dengan kalkulasi busur yang akurat.
-   - Gunakan warna lembut (fill="rgba(...,0.3)") dan tambahkan label <text>.
-3. GEOMETRI: Gunakan stroke-width="2" dan stroke="#333". Beri label pada sudut atau sisi.
-
-ATURAN PENULISAN:
-1. MATEMATIKA/SAINS: WAJIB menggunakan LaTeX valid \( ... \) atau \[ ... \].
-2. DATA TABEL: Gunakan format Markdown Table jika ada data yang perlu disajikan dalam tabel.
-3. Tipe Soal ${input.question_type}: Sediakan ${optionCount} opsi untuk PG jika jenjang menengah ke atas.
+2. GUNAKAN SVG HANYA JIKA: Soal tersebut menanyakan tentang geometri, membaca grafik, atau membutuhkan ilustrasi visual spesifik.
 
 Output harus berupa JSON valid sesuai skema.` }
     ]

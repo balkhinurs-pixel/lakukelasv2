@@ -42,6 +42,7 @@ import { useRouter } from "next/navigation";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -555,7 +556,9 @@ export default function GenerateSoalClient({
                             <div className="relative z-10 flex flex-col items-center text-center">
                                 <DialogHeader>
                                     <DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">AI Streaming Preview</DialogTitle>
-                                    <p className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-3 opacity-90">{form.subject === "Lainnya (Tulis Manual)" ? customSubject : form.subject} Kelas {form.kelas}</p>
+                                    <DialogDescription className="text-indigo-100 font-bold text-[10px] sm:text-sm uppercase tracking-[0.2em] mt-3 opacity-90">
+                                        {form.subject === "Lainnya (Tulis Manual)" ? customSubject : form.subject} Kelas {form.kelas}
+                                    </DialogDescription>
                                 </DialogHeader>
                             </div>
                         </div>
