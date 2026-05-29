@@ -109,7 +109,7 @@ const MathText = ({ content, isPrint = false }: { content: string, isPrint?: boo
 };
 
 /**
- * NaskahPrintTemplate V31.0 (Professional Academic Standard)
+ * NaskahPrintTemplate V32.0 (Optimized for Multi-Type Questions)
  */
 const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: any) => {
     return (
@@ -157,16 +157,17 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
             <div className="questions-container">
                 {questions.map((q: any, idx: number) => {
                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
+                    const isTrueFalse = q.question_type === 'true_false';
+                    const isMatching = q.question_type === 'matching';
                     
                     return (
                         <div key={q.id} className="print-question-block mb-10">
-                            {/* Hanging Indent Wrapper */}
                             <div className="flex gap-4 items-start">
                                 <span className="font-bold min-w-[28pt] text-left">{idx + 1}.</span>
                                 <div className="flex-1">
                                     <MathText content={q.question_text} isPrint />
                                     
-                                    {/* Visual Diagram SVG (Optimized Size) */}
+                                    {/* Visual Diagram SVG */}
                                     {q.visual_svg && (
                                         <div className="my-6 flex justify-center">
                                             <div 
@@ -179,23 +180,63 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                                         </div>
                                     )}
 
-                                    {/* Grid Opsi (A-C, B-D) */}
-                                    {options.length > 0 && (
-                                        <div className={cn(
-                                            "mt-4 grid grid-cols-2 gap-x-12 items-start",
-                                            options.length === 4 ? "grid-rows-2" : "grid-rows-3",
-                                            "grid-flow-col"
-                                        )}>
+                                    {/* Layout Opsi Berdasarkan Tipe */}
+                                    {isTrueFalse ? (
+                                        /* Benar/Salah: Horizontal Sejajar */
+                                        <div className="mt-4 flex gap-12 items-center">
                                             {options.map(([k, v]) => (
-                                                <div key={k} className="flex gap-2 items-start py-1">
-                                                    <span className="font-bold min-w-[18pt]">{k}.</span>
-                                                    <div className="flex-1"><MathText content={v} isPrint /></div>
+                                                <div key={k} className="flex gap-2 items-center">
+                                                    <span className="font-bold">{k}.</span>
+                                                    <div className="font-bold uppercase tracking-wide">{v}</div>
                                                 </div>
                                             ))}
                                         </div>
+                                    ) : isMatching ? (
+                                        /* Menjodohkan: Format Tabel Korespondensi */
+                                        <div className="mt-6 border border-black rounded-lg overflow-hidden max-w-2xl">
+                                            <table className="w-full border-collapse">
+                                                <thead>
+                                                    <tr className="bg-slate-50 border-b border-black">
+                                                        <th className="p-2 border-r border-black font-bold text-[10pt] uppercase text-center w-12">No</th>
+                                                        <th className="p-2 border-r border-black font-bold text-[10pt] uppercase text-left">Pernyataan / Soal</th>
+                                                        <th className="p-2 border-r border-black font-bold text-[10pt] uppercase text-center w-12">Pilih</th>
+                                                        <th className="p-2 font-bold text-[10pt] uppercase text-left">Pilihan Jawaban</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {options.map(([k, v], i) => (
+                                                        <tr key={k} className="border-b border-black last:border-b-0">
+                                                            <td className="p-2 border-r border-black text-center font-bold">{i + 1}</td>
+                                                            <td className="p-2 border-r border-black italic text-slate-400">................................................</td>
+                                                            <td className="p-2 border-r border-black text-center font-bold opacity-20">[{k}]</td>
+                                                            <td className="p-2 flex gap-2 items-start">
+                                                                <span className="font-bold min-w-[15pt]">{k}.</span>
+                                                                <MathText content={v} isPrint />
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        /* Pilihan Ganda Standar: Grid 2 Kolom */
+                                        options.length > 0 && (
+                                            <div className={cn(
+                                                "mt-4 grid grid-cols-2 gap-x-12 items-start",
+                                                options.length === 4 ? "grid-rows-2" : "grid-rows-3",
+                                                "grid-flow-col"
+                                            )}>
+                                                {options.map(([k, v]) => (
+                                                    <div key={k} className="flex gap-2 items-start py-1">
+                                                        <span className="font-bold min-w-[18pt]">{k}.</span>
+                                                        <div className="flex-1"><MathText content={v} isPrint /></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )
                                     )}
 
-                                    {/* Kunci/Pembahasan (Hanya jika mode Kunci aktif) */}
+                                    {/* Kunci/Pembahasan */}
                                     {config.showDiscussion && (
                                         <div className="mt-4 p-4 border-l-[3pt] border-indigo-200 bg-slate-50 text-[10pt] italic rounded-r-lg">
                                             <p className="font-bold text-indigo-800 not-italic uppercase text-[8.5pt] mb-2 tracking-widest">Analisis Jawaban (Kunci: {q.correct_answer})</p>
@@ -209,7 +250,7 @@ const NaskahPrintTemplate = ({ questions, docMetadata, config, schoolProfile }: 
                 })}
             </div>
 
-            {/* Footer Penutup Naskah */}
+            {/* Footer Penutup */}
             <div className="mt-12 text-center border-t border-black pt-4 italic text-[9pt]">
                 <p>*** Selamat Mengerjakan & Utamakan Kejujuran ***</p>
             </div>
@@ -233,7 +274,6 @@ const LjkPrintTemplate = ({ docMetadata, questions, schoolProfile }: any) => {
                 fontFamily: 'Arial, sans-serif' 
             }}
         >
-            {/* OMR Anchor Points for AI Vision */}
             <div className="absolute top-6 left-6 w-6 h-6 bg-black" />
             <div className="absolute top-6 right-6 w-6 h-6 bg-black" />
             <div className="absolute bottom-6 left-6 w-6 h-6 bg-black" />
@@ -330,9 +370,6 @@ export default function NaskahRepositoryClient({
     const uniqueClasses = Array.from(new Set(initialDocuments.map(d => d.class_level).filter(Boolean))).sort();
     const uniqueSubjects = Array.from(new Set(initialDocuments.map(d => d.subject).filter(Boolean))).sort();
 
-    /**
-     * Logika Ekspor PDF (Continuous Raster Snapshot)
-     */
     const handleExecuteCetak = async (docId: string, mode: 'soal' | 'kunci' | 'ljk', title: string) => {
         setDownloading(true);
         setLoadingId(docId);
@@ -352,8 +389,6 @@ export default function NaskahRepositoryClient({
             }
             
             if (!element) throw new Error("Sistem gagal memuat area cetak. Silakan muat ulang halaman.");
-
-            // Tunggu render KaTeX
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             const canvas = await html2canvas(element, { 
@@ -374,14 +409,10 @@ export default function NaskahRepositoryClient({
             const fileName = `${mode.toUpperCase()}_${title.replace(/\s+/g, '_')}.pdf`;
             pdf.save(fileName);
             
-            toast({ 
-                title: "Unduh Berhasil!", 
-                description: `File ${mode.toUpperCase()} siap dibuka.`,
-                icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-            });
+            toast({ title: "Unduh Berhasil!", description: `File ${mode.toUpperCase()} siap dibuka.` });
 
         } catch (e: any) {
-            toast({ variant: "destructive", title: "Gagal", description: e.message || "Terjadi kesalahan sistem." });
+            toast({ variant: "destructive", title: "Gagal", description: e.message });
         } finally {
             setLoadingId(null);
             setRenderTarget(null);
@@ -389,9 +420,6 @@ export default function NaskahRepositoryClient({
         }
     };
 
-    /**
-     * Logika Cetak Langsung Vektor (Standard HTML Print)
-     */
     const handleDirectPrint = async (docId: string, mode: 'soal' | 'kunci' | 'ljk') => {
         setDownloading(true);
         setLoadingId(docId);
@@ -430,13 +458,10 @@ export default function NaskahRepositoryClient({
 
     return (
         <div className="space-y-6">
-            {/* Loading Overlay Premium */}
             {downloading && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/70 backdrop-blur-md animate-in fade-in duration-300">
                     <Card className="p-10 rounded-[3rem] border-0 shadow-2xl flex flex-col items-center gap-6 bg-white/90">
-                        <div className="relative">
-                            <Loader2 className="h-16 w-16 animate-spin text-indigo-600" />
-                        </div>
+                        <Loader2 className="h-16 w-16 animate-spin text-indigo-600" />
                         <div className="text-center">
                             <p className="text-2xl font-black text-slate-900 tracking-tight uppercase">Menyiapkan Naskah...</p>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Font & Vektor Sedang Dimuat</p>
@@ -445,7 +470,6 @@ export default function NaskahRepositoryClient({
                 </div>
             )}
 
-            {/* Filter Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between px-1">
                 <div className="relative flex-1 w-full max-w-md group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600" />
@@ -479,7 +503,6 @@ export default function NaskahRepositoryClient({
                 </div>
             </div>
 
-            {/* Portal Root Cetak V31.0 */}
             <div id="print-area" className={cn("print-container-root", renderTarget && "rendering")}>
                 {renderTarget && (
                     renderTarget.mode === 'ljk' ? (
@@ -495,7 +518,6 @@ export default function NaskahRepositoryClient({
                 )}
             </div>
 
-            {/* Kartu Naskah */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
                 {filteredDocs.length > 0 ? (
                     filteredDocs.map((doc) => (
@@ -525,9 +547,7 @@ export default function NaskahRepositoryClient({
                                     <div className="w-16 h-16 shrink-0 flex items-center justify-center">
                                         <FileCard formatFile="pdf" className="scale-90" />
                                     </div>
-                                    <div className="flex flex-col items-end gap-1 pr-10">
-                                        <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm">Professional Layout</Badge>
-                                    </div>
+                                    <Badge variant="outline" className="text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-100">V32.0 Multi-Type</Badge>
                                 </div>
                                 <CardTitle className="text-lg font-black text-slate-900 mt-4 leading-tight group-hover:text-indigo-600 transition-colors">
                                     {doc.title}
@@ -579,21 +599,15 @@ export default function NaskahRepositoryClient({
                                         <ScanQrCode className="h-4 w-4" /> Cetak LJK AI
                                     </Button>
                                 </div>
-                                <Button 
-                                    variant="ghost" 
-                                    asChild
-                                    className="w-full h-11 border border-dashed border-slate-200 rounded-2xl font-bold gap-2 text-xs"
-                                >
-                                    <a href={doc.drive_file_url || "#"} target="_blank">
-                                        <ExternalLink className="h-3.5 w-3.5" /> Edit Google Doc
-                                    </a>
+                                <Button variant="ghost" asChild className="w-full h-11 border border-dashed border-slate-200 rounded-2xl font-bold gap-2 text-xs">
+                                    <a href={doc.drive_file_url || "#"} target="_blank"><ExternalLink className="h-3.5 w-3.5" /> Edit Google Doc</a>
                                 </Button>
                             </CardFooter>
                         </Card>
                     ))
                 ) : (
-                    <div className="col-span-full py-20 text-center flex flex-col items-center opacity-20">
-                        <div className="p-10 rounded-[3rem] bg-slate-50 mb-4"><FileText className="h-16 w-16" /></div>
+                    <div className="col-span-full py-20 text-center flex flex-col items-center opacity-20 group">
+                        <Network className="h-16 w-16 mb-4" />
                         <p className="font-black uppercase tracking-[0.2em] text-sm">Belum ada naskah tersimpan</p>
                     </div>
                 )}
@@ -603,11 +617,7 @@ export default function NaskahRepositoryClient({
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-                
-                .math-text-render svg {
-                    max-width: 100%;
-                    height: auto;
-                }
+                .math-text-render svg { max-width: 100%; height: auto; }
             `}</style>
         </div>
     );
