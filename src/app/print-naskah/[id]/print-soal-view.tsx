@@ -82,7 +82,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                     <ArrowLeft className="h-4 w-4" /> Kembali
                 </Button>
                 <div className="text-center">
-                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs">NASHAH SOAL FLOW V73.0</div>
+                    <div className="font-bold uppercase tracking-widest text-[10px] sm:text-xs">NASHAH SOAL FLOW V74.0</div>
                     <p className="text-[9px] text-indigo-300 font-bold uppercase">{isKunci ? 'MODE KUNCI JAWABAN' : 'MODE NASKAH SOAL'}</p>
                 </div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 px-6 shadow-lg">
@@ -97,7 +97,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                     <div className="mb-8 pb-2 border-b-[3pt] border-double border-black">
                         <div className="flex items-center gap-8">
                             <div className="w-[30mm] h-[30mm] flex items-center justify-center shrink-0">
-                                {schoolProfile?.school_logo_url ? <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" /> : <AppLogo className="opacity-10 w-full h-full text-slate-300" />}
+                                {schoolProfile?.school_logo_url ? <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" /> : <AppLogo className="opacity-10 w-full h-full text-slate-300" />}
                             </div>
                             <div className="flex-1 text-center pr-[30mm]">
                                 <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Daerah / Yayasan Pendidikan Terkait</p>
@@ -140,13 +140,33 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                     const isTrueFalse = q.question_type === 'true_false';
                                     const isMatching = q.question_type === 'matching';
                                     
+                                    // Logic Parsing Menjodohkan
+                                    let matchingItems: string[] = [];
+                                    let matchingIntro = q.question_text;
+                                    let rowCount = 0;
+
+                                    if (isMatching) {
+                                        const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
+                                        if (lines.length > 1) {
+                                            const hasNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
+                                            if (hasNumberedLines) {
+                                                matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
+                                                matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
+                                            } else {
+                                                matchingIntro = lines[0];
+                                                matchingItems = lines.slice(1);
+                                            }
+                                        }
+                                        rowCount = Math.max(matchingItems.length, options.length);
+                                    }
+
                                     return (
                                         <div key={q.id} className="print-question-block mb-8" style={{ breakInside: 'avoid' }}>
                                             <div className="flex gap-4 items-start">
                                                 <span className="font-bold min-w-[32pt] text-left">{globalIdx + 1}.</span>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="mb-4">
-                                                        <MathText content={q.question_text} />
+                                                        <MathText content={isMatching ? matchingIntro : q.question_text} />
                                                     </div>
                                                     
                                                     {q.visual_svg && (
@@ -177,9 +197,23 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    <tr className="border-b-2 border-black last:border-b-0">
-                                                                        <td colSpan={4} className="p-4 italic text-slate-400 text-center">Tabel menjodohkan otomatis berdasarkan konten...</td>
-                                                                    </tr>
+                                                                    {Array.from({ length: rowCount }).map((_, i) => (
+                                                                        <tr key={i} className="border-b-2 border-black last:border-b-0">
+                                                                            <td className="p-2 border-r-2 border-black text-center font-bold text-[11pt]">{i + 1}</td>
+                                                                            <td className="p-2 border-r-2 border-black text-[10pt] min-w-[70mm]">
+                                                                                {matchingItems[i] ? <MathText content={matchingItems[i].replace(/^\d+[\.\)]\s*/, '')} /> : <div className="h-6 italic text-slate-300">...</div>}
+                                                                            </td>
+                                                                            <td className="p-2 border-r-2 border-black text-center font-bold text-slate-200">[.....]</td>
+                                                                            <td className="p-2 text-[10pt] min-w-[50mm]">
+                                                                                {options[i] ? (
+                                                                                    <div className="flex gap-2 items-start">
+                                                                                        <span className="font-bold min-w-[15pt]">{options[i][0]}.</span>
+                                                                                        <div className="flex-1"><MathText content={options[i][1]} /></div>
+                                                                                    </div>
+                                                                                ) : <div className="h-6 italic text-slate-300">...</div>}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
                                                                 </tbody>
                                                             </table>
                                                         </div>
