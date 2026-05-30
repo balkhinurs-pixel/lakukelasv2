@@ -1,12 +1,47 @@
+
 "use client";
 
 import * as React from "react";
 import { Printer, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/**
+ * Helper untuk menghitung jumlah baris yang dibutuhkan sebuah soal di LJK
+ */
+const getSubRowCount = (q: any) => {
+    if (q.question_type !== 'matching') return 1;
+    // Deteksi baris yang diawali angka (misal: "1. Ibukota Indonesia")
+    const lines = q.question_text.split('\n').filter((l: string) => /^\d+[\.\)]/.test(l.trim()));
+    return lines.length > 0 ? lines.length : 1;
+};
+
 export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
     const handlePrint = () => window.print();
     const handleClose = () => window.close();
+
+    // Bangun daftar baris LJK yang akan dirender
+    const ljkRows = React.useMemo(() => {
+        const rows: { label: string; questionId: string; type: string }[] = [];
+        questions.forEach((q: any, idx: number) => {
+            const count = getSubRowCount(q);
+            if (count > 1) {
+                for (let i = 1; i <= count; i++) {
+                    rows.push({
+                        label: `${idx + 1}.${i}`,
+                        questionId: q.id,
+                        type: q.question_type
+                    });
+                }
+            } else {
+                rows.push({
+                    label: `${idx + 1}`,
+                    questionId: q.id,
+                    type: q.question_type
+                });
+            }
+        });
+        return rows;
+    }, [questions]);
 
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center">
@@ -15,8 +50,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                     <ArrowLeft className="h-4 w-4" /> Kembali
                 </Button>
                 <div className="text-center">
-                    <div className="font-black uppercase tracking-widest text-[10px] sm:text-xs">LJK OMR RIGID V73.0</div>
-                    <p className="text-[9px] font-bold text-indigo-400 uppercase">Fixed Layout untuk AI Scanner</p>
+                    <div className="font-black uppercase tracking-widest text-[10px] sm:text-xs">LJK OMR RIGID V85.0</div>
+                    <p className="text-[9px] font-bold text-indigo-400 uppercase">Sub-Row Matching Support</p>
                 </div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-black gap-2 px-6 shadow-lg">
                     <Printer className="h-4 w-4" /> CETAK LJK
@@ -73,34 +108,34 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         </div>
                     </div>
 
-                    {/* BUBBLE MATRIX */}
+                    {/* BUBBLE MATRIX (30 Rows Capacity) */}
                     <div className="absolute top-[520px] left-[70px] right-[70px] bottom-[70px] border-[3pt] border-black p-10 rounded-[50px]">
-                        <p className="text-[12pt] font-black uppercase text-center bg-black text-white py-3 rounded-2xl tracking-[0.5em] mb-10">Matriks Jawaban</p>
+                        <p className="text-[11pt] font-black uppercase text-center bg-black text-white py-2 rounded-2xl tracking-[0.4em] mb-10">Matriks Jawaban</p>
                         <div className="flex gap-20">
-                            <div className="flex-1 space-y-4">
-                                {questions.slice(0, 15).map((q: any, idx: number) => {
-                                    const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
+                            <div className="flex-1 space-y-3.5">
+                                {ljkRows.slice(0, 15).map((row, idx) => {
+                                    const options = row.type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
                                     return (
-                                        <div key={q.id} className="flex items-center gap-5">
-                                            <span className="w-8 text-right font-black text-[11pt] text-slate-400">{idx + 1}.</span>
-                                            <div className="flex gap-3">
+                                        <div key={idx} className="flex items-center gap-5">
+                                            <span className="w-10 text-right font-black text-[10pt] text-slate-400">{row.label}.</span>
+                                            <div className="flex gap-2.5">
                                                 {options.map(opt => (
-                                                    <div key={opt} className="w-[30px] h-[30px] rounded-full border-[2pt] border-black flex items-center justify-center text-[10pt] font-black">{opt}</div>
+                                                    <div key={opt} className="w-[28px] h-[28px] rounded-full border-[2pt] border-black flex items-center justify-center text-[9pt] font-black">{opt}</div>
                                                 ))}
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
-                            <div className="flex-1 space-y-4">
-                                {questions.slice(15, 30).map((q: any, idx: number) => {
-                                    const options = q.question_type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
+                            <div className="flex-1 space-y-3.5">
+                                {ljkRows.slice(15, 30).map((row, idx) => {
+                                    const options = row.type === 'true_false' ? ['B', 'S'] : ['A', 'B', 'C', 'D', 'E'];
                                     return (
-                                        <div key={q.id} className="flex items-center gap-5">
-                                            <span className="w-8 text-right font-black text-[11pt] text-slate-400">{idx + 16}.</span>
-                                            <div className="flex gap-3">
+                                        <div key={idx + 15} className="flex items-center gap-5">
+                                            <span className="w-10 text-right font-black text-[10pt] text-slate-400">{row.label}.</span>
+                                            <div className="flex gap-2.5">
                                                 {options.map(opt => (
-                                                    <div key={opt} className="w-[30px] h-[30px] rounded-full border-[2pt] border-black flex items-center justify-center text-[10pt] font-black">{opt}</div>
+                                                    <div key={opt} className="w-[28px] h-[28px] rounded-full border-[2pt] border-black flex items-center justify-center text-[9pt] font-black">{opt}</div>
                                                 ))}
                                             </div>
                                         </div>

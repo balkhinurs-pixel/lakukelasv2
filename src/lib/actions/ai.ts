@@ -1,3 +1,4 @@
+
 'use server';
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
@@ -14,8 +15,19 @@ import { saveGenericDocumentToDrive } from './google-drive';
 import { createStreamableValue } from 'ai/rsc';
 
 /**
- * Server Action untuk Koreksi LJK Hybrid - V84.0.
- * Menangani identifikasi NIS dan penskoran berdasarkan kunci di database.
+ * Helper untuk menghitung jumlah baris yang dibutuhkan sebuah soal di LJK
+ * Harus sama persis logikanya dengan print-ljk-view.tsx
+ */
+const getSubRowCount = (q: any) => {
+    if (q.question_type !== 'matching') return 1;
+    // Deteksi baris yang diawali angka (misal: "1. Ibukota Indonesia")
+    const lines = q.question_text?.split('\n').filter((l: string) => /^\d+[\.\)]/.test(l.trim()));
+    return lines?.length > 0 ? lines.length : 1;
+};
+
+/**
+ * Server Action untuk Koreksi LJK Hybrid - V85.0.
+ * Menangani identifikasi NIS dan penskoran proporsional (Matching & Multi-row).
  */
 export async function correctExamAction(
     naskahId: string, 
@@ -24,58 +36,94 @@ export async function correctExamAction(
 ) {
     const supabase = await createClient();
     try {
-        // 1. Ambil Kunci & Tipe Soal dari Database
+        // 1. Ambil Detail Naskah & Urutan Soal
         const { data: naskah } = await supabase
             .from('ai_documents')
             .select('question_ids')
             .eq('id', naskahId)
             .single();
 
-        if (!naskah?.question_ids) throw new Error("Detail naskah hilang dari database.");
+        if (!naskah?.question_ids) throw new Error("Detail naskah tidak ditemukan.");
 
-        const { data: questionRecords } = await supabase
+        // Ambil butir soal mentah dan urutkan sesuai question_ids
+        const { data: rawQuestions } = await supabase
             .from('questions')
-            .select('id, sort_order, correct_answer, question_type')
+            .select('id, sort_order, correct_answer, question_type, question_text')
             .in('id', naskah.question_ids);
 
-        if (!questionRecords) throw new Error("Kunci jawaban gagal dimuat.");
+        if (!rawQuestions) throw new Error("Gagal memuat kunci jawaban.");
 
-        // 2. LOGIKA PENSKORAN DENGAN BOBOT POIN MANUAL
+        // Urutkan questions sesuai naskah
+        const questions = naskah.question_ids.map(id => rawQuestions.find(q => q.id === id)).filter(Boolean);
+
+        // 2. LOGIKA PENSKORAN BERJENJANG (SUB-ROW)
         let totalWeightedScore = 0;
         let maxPossibleScore = 0;
+        let scanIdx = 0; // Pointer untuk membaca baris scanRaw.studentAnswers
         
-        const processedAnswers = scanRaw.studentAnswers.map(ans => {
-            const record = questionRecords.find(k => k.sort_order === ans.questionNum);
-            
-            // Perbaiki: Bersihkan spasi atau karakter tak terlihat pada kunci/jawaban
-            const cleanAnswer = ans.studentChoice?.trim().toUpperCase();
-            const cleanKey = record?.correct_answer?.trim().toUpperCase();
-            
-            const isCorrect = record ? (cleanAnswer === cleanKey) : false;
-            
-            // Tentukan poin berdasarkan tipe soal
-            const itemType = record?.question_type || 'multiple_choice';
+        const results = questions.map((q: any) => {
+            const rowCount = getSubRowCount(q);
+            const itemType = q.question_type;
             const itemPoint = pointRules[itemType as keyof typeof pointRules] || 0;
             
-            if (isCorrect) totalWeightedScore += itemPoint;
-            maxPossibleScore += itemPoint;
-            
+            let itemCorrectCount = 0;
+            const subResults = [];
+
+            // Jika soal memiliki sub-row (menjodohkan)
+            if (q.question_type === 'matching' && rowCount > 1) {
+                // Parsing kunci jawaban AI: "1-A, 2-B, 3-C"
+                const keys = q.correct_answer.split(',').map((s: string) => s.trim().split('-')[1]?.toUpperCase());
+
+                for (let i = 0; i < rowCount; i++) {
+                    const studentChoice = scanRaw.studentAnswers[scanIdx]?.studentChoice?.trim().toUpperCase();
+                    const correctKey = keys[i];
+                    const isSubCorrect = studentChoice === correctKey;
+                    
+                    if (isSubCorrect) itemCorrectCount++;
+                    
+                    subResults.push({
+                        subLabel: `${q.sort_order}.${i+1}`,
+                        studentChoice,
+                        correctKey,
+                        isCorrect: isSubCorrect
+                    });
+                    scanIdx++;
+                }
+
+                // Skor untuk matching adalah (jumlah benar / total pasangan) * poin soal
+                const weightedItemScore = (itemCorrectCount / rowCount) * itemPoint;
+                totalWeightedScore += weightedItemScore;
+                maxPossibleScore += itemPoint;
+
+            } else {
+                // Soal Standar (PG, B/S, Isian)
+                const studentChoice = scanRaw.studentAnswers[scanIdx]?.studentChoice?.trim().toUpperCase();
+                const correctKey = q.correct_answer?.trim().toUpperCase();
+                const isCorrect = studentChoice === correctKey;
+
+                if (isCorrect) totalWeightedScore += itemPoint;
+                maxPossibleScore += itemPoint;
+
+                subResults.push({
+                    studentChoice,
+                    correctKey,
+                    isCorrect
+                });
+                scanIdx++;
+            }
+
             return {
-                questionNum: ans.questionNum,
-                studentChoice: cleanAnswer,
-                isCorrect: isCorrect,
-                pointEarned: isCorrect ? itemPoint : 0,
-                type: itemType
+                questionNum: q.sort_order,
+                type: itemType,
+                isCorrect: itemCorrectCount === rowCount, // Hanya true jika benar semua untuk ringkasan UI
+                subResults
             };
         });
 
-        // Konversi poin ke skala 0-100 (Round)
         const finalScore = maxPossibleScore > 0 ? Math.round((totalWeightedScore / maxPossibleScore) * 100) : 0;
 
-        // 3. Identifikasi Siswa di Database (NIS 5 Digit)
-        // Ambil NIS yang terdeteksi, hapus karakter '?' jika ada
+        // 3. Identifikasi Siswa
         const cleanNis = scanRaw.detectedNis.replace(/\?/g, '0');
-        
         const { data: student } = await supabase
             .from('students')
             .select('id, name')
@@ -88,9 +136,9 @@ export async function correctExamAction(
                 detectedNis: cleanNis,
                 studentName: student?.name || `Siswa NIS ${cleanNis} (Belum Terdaftar)`,
                 studentId: student?.id,
-                studentAnswers: processedAnswers,
+                studentAnswers: results, // Format baru yang lebih detail
                 totalScore: finalScore,
-                analysis: "Koreksi Lokal (V84) Berhasil."
+                analysis: `Koreksi Lokal V85. Scan ${scanIdx} baris.`
             } 
         };
     } catch (error: any) {
@@ -259,3 +307,4 @@ export async function createNaskahUjianAction(
         return { success: false, error: e.message };
     }
 }
+
