@@ -30,10 +30,10 @@ export async function GET(request: Request) {
       .select('key, value')
       .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'app_url']);
 
-    if (settingsError || !settingsData) {
+    if (settingsError || !settingsData || settingsData.length === 0) {
         return NextResponse.json({ 
             success: false, 
-            message: 'Gagal mengakses data settings. Pastikan RLS diizinkan untuk akses publik (Anon) jika tidak menggunakan Service Role.' 
+            message: 'Gagal membaca tabel settings. Pastikan RLS diizinkan untuk akses publik (Anon SELECT) atau isi SERVICE_ROLE_KEY di Vercel.' 
         }, { status: 403 });
     }
 
@@ -44,11 +44,11 @@ export async function GET(request: Request) {
     };
 
     if (!settings.enabled) {
-        return NextResponse.json({ success: true, message: 'Fitur pengingat sedang dinonaktifkan.' });
+        return NextResponse.json({ success: true, message: 'WhatsApp Reminder is currently disabled in Admin Settings.' });
     }
 
     if (!settings.token) {
-        return NextResponse.json({ success: false, message: 'Token WhatsApp belum diatur.' });
+        return NextResponse.json({ success: false, message: 'Fonnte Token is missing in database.' });
     }
 
     const nowIndo = getIndonesianTime();
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     if (scheduleError) throw scheduleError;
     
     if (!schedules || schedules.length === 0) {
-        return NextResponse.json({ success: true, message: `Tidak ada jadwal mengajar untuk hari ${dayName}.` });
+        return NextResponse.json({ success: true, message: `No teaching schedules found for ${dayName}.` });
     }
 
     const teacherMessages = schedules.reduce((acc, item: any) => {
@@ -93,7 +93,7 @@ export async function GET(request: Request) {
     const teacherIds = Object.keys(teacherMessages);
 
     if (teacherIds.length === 0) {
-        return NextResponse.json({ success: true, message: 'Jadwal ditemukan, tetapi tidak ada nomor HP guru yang terdaftar.' });
+        return NextResponse.json({ success: true, message: 'Schedules found, but no teacher phone numbers are registered.' });
     }
 
     for (const teacherId in teacherMessages) {
