@@ -6,30 +6,36 @@ import { format } from 'date-fns';
 
 /**
  * API Route untuk mengirimkan pengingat jadwal harian (06:00 WIB).
- * V90.0: Proteksi terhadap missing Service Role Key.
+ * V91.0: Hybrid Key Logic (Flexible Database Support).
  */
 export async function GET(request: Request) {
   console.log('[CRON-WA] Starting daily schedule reminder...');
   
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Gunakan Service Role jika ada, jika tidak fallback ke Anon Key (Fleksibel)
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    console.error('[CRON-WA] Error: Missing SUPABASE_SERVICE_ROLE_KEY in environment variables.');
+  if (!supabaseUrl || !supabaseKey) {
     return NextResponse.json({ 
         success: false, 
-        message: 'Konfigurasi server belum lengkap. Harap tambahkan SUPABASE_SERVICE_ROLE_KEY di Environment Variables Vercel Anda.' 
+        message: 'Konfigurasi database (URL/Key) tidak ditemukan.' 
     }, { status: 500 });
   }
 
-  // Menggunakan Service Role Key untuk bypass RLS (Sistem otomatis tidak memiliki sesi login)
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const supabase = createClient(supabaseUrl, supabaseKey);
   
   try {
-    const { data: settingsData } = await supabase
+    const { data: settingsData, error: settingsError } = await supabase
       .from('settings')
       .select('key, value')
       .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'app_url']);
+
+    if (settingsError || !settingsData) {
+        return NextResponse.json({ 
+            success: false, 
+            message: 'Gagal mengakses data settings. Pastikan RLS diizinkan untuk akses publik (Anon) jika tidak menggunakan Service Role.' 
+        }, { status: 403 });
+    }
 
     const settings = {
         token: settingsData?.find(s => s.key === 'fonnte_api_token')?.value?.trim(),
@@ -38,17 +44,11 @@ export async function GET(request: Request) {
     };
 
     if (!settings.enabled) {
-        return NextResponse.json({ 
-            success: false, 
-            message: 'WhatsApp Reminder is currently DISABLED in admin settings.' 
-        });
+        return NextResponse.json({ success: true, message: 'Fitur pengingat sedang dinonaktifkan.' });
     }
 
     if (!settings.token) {
-        return NextResponse.json({ 
-            success: false, 
-            message: 'Fonnte API Token is MISSING in database. Please set it in Admin > WhatsApp Settings.' 
-        });
+        return NextResponse.json({ success: false, message: 'Token WhatsApp belum diatur.' });
     }
 
     const nowIndo = getIndonesianTime();
@@ -70,10 +70,7 @@ export async function GET(request: Request) {
     if (scheduleError) throw scheduleError;
     
     if (!schedules || schedules.length === 0) {
-        return NextResponse.json({ 
-            success: true, 
-            message: `No teaching schedules found for today (${dayName}). System idle.` 
-        });
+        return NextResponse.json({ success: true, message: `Tidak ada jadwal mengajar untuk hari ${dayName}.` });
     }
 
     const teacherMessages = schedules.reduce((acc, item: any) => {
@@ -96,10 +93,7 @@ export async function GET(request: Request) {
     const teacherIds = Object.keys(teacherMessages);
 
     if (teacherIds.length === 0) {
-        return NextResponse.json({ 
-            success: true, 
-            message: 'Schedules found, but no teachers have valid phone numbers registered.' 
-        });
+        return NextResponse.json({ success: true, message: 'Jadwal ditemukan, tetapi tidak ada nomor HP guru yang terdaftar.' });
     }
 
     for (const teacherId in teacherMessages) {
@@ -136,7 +130,7 @@ _Sistem Notifikasi LakuKelas_`;
                 })
             });
             const resData = await response.json();
-            results.push({ teacher: teacher.name, success: resData.status, reason: resData.reason || 'OK' });
+            results.push({ teacher: teacher.name, success: resData.status });
         } catch (err: any) {
             results.push({ teacher: teacher.name, success: false, error: err.message });
         }
@@ -144,7 +138,6 @@ _Sistem Notifikasi LakuKelas_`;
 
     return NextResponse.json({ 
         success: true, 
-        day: dayName,
         processed_count: results.length, 
         details: results 
     });

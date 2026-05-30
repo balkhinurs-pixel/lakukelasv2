@@ -6,30 +6,37 @@ import { format } from 'date-fns';
 
 /**
  * Cron Job untuk mengingatkan guru yang belum absen (jam 08:00 WIB).
- * V90.0: Proteksi terhadap missing Service Role Key.
+ * V91.0: Hybrid Key Logic (Flexible Database Support).
  */
 export async function GET(request: Request) {
   console.log('[CRON-ATTENDANCE] Checking for missing attendance...');
   
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Gunakan Service Role jika ada, jika tidak fallback ke Anon Key (Fleksibel)
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    console.error('[CRON-ATTENDANCE] Error: Missing SUPABASE_SERVICE_ROLE_KEY in environment variables.');
+  if (!supabaseUrl || !supabaseKey) {
     return NextResponse.json({ 
         success: false, 
-        message: 'Konfigurasi server belum lengkap. Harap tambahkan SUPABASE_SERVICE_ROLE_KEY di Environment Variables Vercel Anda.' 
+        message: 'Konfigurasi database (URL/Key) tidak ditemukan di Environment Variables.' 
     }, { status: 500 });
   }
 
-  // Menggunakan Service Role Key untuk bypass RLS (Sistem otomatis tidak memiliki sesi login)
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { data: settingsData } = await supabase
+    // Ambil pengaturan WhatsApp
+    const { data: settingsData, error: settingsError } = await supabase
       .from('settings')
       .select('key, value')
       .in('key', ['fonnte_api_token', 'wa_reminder_enabled', 'attendance_policy', 'app_url']);
+
+    if (settingsError || !settingsData) {
+        return NextResponse.json({ 
+            success: false, 
+            message: 'Gagal membaca tabel settings. Jika Anda tidak menggunakan Service Role Key, pastikan RLS pada tabel settings mengizinkan akses publik (Anon).' 
+        }, { status: 403 });
+    }
 
     const settings = {
         token: settingsData?.find(s => s.key === 'fonnte_api_token')?.value?.trim(),
@@ -39,17 +46,11 @@ export async function GET(request: Request) {
     };
 
     if (!settings.enabled) {
-        return NextResponse.json({ 
-            success: false, 
-            message: 'Attendance Reminder is currently DISABLED in admin settings.' 
-        });
+        return NextResponse.json({ success: false, message: 'Fitur pengingat sedang dinonaktifkan di menu Admin.' });
     }
 
     if (!settings.token) {
-        return NextResponse.json({ 
-            success: false, 
-            message: 'Fonnte API Token is MISSING. Please configure it in Admin Panel.' 
-        });
+        return NextResponse.json({ success: false, message: 'Token Fonnte belum diatur di database.' });
     }
 
     const nowIndo = getIndonesianTime();
@@ -74,26 +75,19 @@ export async function GET(request: Request) {
     }
 
     if (expectedTeacherIds.length === 0) {
-        return NextResponse.json({ 
-            success: true, 
-            message: `No teachers are scheduled or expected to work today (${dayName}).` 
-        });
+        return NextResponse.json({ success: true, message: `Tidak ada jadwal wajib hadir untuk hari ${dayName}.` });
     }
 
     const { data: currentAttendance } = await supabase
         .from('teacher_attendance')
-        .select('teacher_id, status')
+        .select('teacher_id')
         .eq('date', todayStr);
 
     const attendedTeacherIds = new Set(currentAttendance?.map(a => a.teacher_id) || []);
     const missingTeacherIds = expectedTeacherIds.filter(id => !attendedTeacherIds.has(id));
 
     if (missingTeacherIds.length === 0) {
-        console.log('[CRON-ATTENDANCE] All expected teachers have attended.');
-        return NextResponse.json({ 
-            success: true, 
-            message: 'Perfect! All expected teachers have already checked in for today.' 
-        });
+        return NextResponse.json({ success: true, message: 'Luar biasa! Semua guru sudah melakukan absensi hari ini.' });
     }
 
     const { data: missingProfiles } = await supabase
@@ -102,10 +96,7 @@ export async function GET(request: Request) {
         .in('id', missingTeacherIds);
 
     if (!missingProfiles || missingProfiles.length === 0) {
-        return NextResponse.json({ 
-            success: true, 
-            message: 'Teachers are missing check-in, but none of them have phone numbers registered.' 
-        });
+        return NextResponse.json({ success: true, message: 'Ada guru belum absen, tapi tidak ada nomor WhatsApp yang terdaftar.' });
     }
 
     const results = [];
@@ -137,7 +128,7 @@ _Sistem Monitoring LakuKelas_`;
                 })
             });
             const resData = await response.json();
-            results.push({ teacher: teacher.full_name, success: resData.status, reason: resData.reason || 'Sent' });
+            results.push({ teacher: teacher.full_name, success: resData.status });
         } catch (err: any) {
             results.push({ teacher: teacher.full_name, success: false, error: err.message });
         }
@@ -145,13 +136,11 @@ _Sistem Monitoring LakuKelas_`;
 
     return NextResponse.json({ 
       success: true, 
-      day: dayName,
       missing_count: missingProfiles.length,
-      results 
+      details: results 
     });
 
   } catch (error: any) {
-    console.error('[CRON-ATTENDANCE] Fatal Error:', error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
