@@ -1,7 +1,7 @@
 
 /**
- * @fileOverview OMR Processor Engine V85.0 (Perspective Transform + Hybrid Logic)
- * Menangani pelurusan gambar otomatis dan deteksi kepadatan tinta lokal.
+ * @fileOverview OMR Processor Engine V86.0 (COMPACT 3-Column Support)
+ * Menangani pelurusan gambar dan deteksi bulatan pada tata letak LJK ringkas.
  */
 
 declare const cv: any;
@@ -13,7 +13,7 @@ export interface OMRResult {
 
 /**
  * Koordinat Tetap LJK (Berdasarkan Canvas 794x1123 - A4 96DPI)
- * Jarak (gap) dan koordinat telah dikalibrasi untuk Update V85.0
+ * DISINKRONKAN DENGAN PrintLjkView V86.0
  */
 const CONFIG = {
     targetWidth: 794,
@@ -25,17 +25,19 @@ const CONFIG = {
         0, 1123
     ],
     nis: {
-        startX: 565,
-        startY: 235,
-        gapX: 34,
-        gapY: 26,
+        startX: 575, // Disesuaikan untuk posisi right-[60px]
+        startY: 185, // Disesuaikan untuk top-[140px]
+        gapX: 28,   // Lebih rapat
+        gapY: 20,   // Lebih rapat
         rows: 10,
         cols: 5
     },
     answers: {
-        col1: { startX: 145, startY: 605, gapX: 41, gapY: 43 },
-        col2: { startX: 470, startY: 605, gapX: 41, gapY: 43 },
-        questionsPerCol: 15,
+        // Tiga Kolom Konfigurasi
+        col1: { startX: 135, startY: 485, gapX: 30, gapY: 28.5 }, // gapY diperkecil
+        col2: { startX: 368, startY: 485, gapX: 30, gapY: 28.5 }, 
+        col3: { startX: 602, startY: 485, gapX: 30, gapY: 28.5 },
+        questionsPerCol: 20,
         options: ['A', 'B', 'C', 'D', 'E']
     }
 };
@@ -47,7 +49,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
     let gray = new cv.Mat();
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-    // 1. PERSPECTIVE WARP (Meluruskan Foto)
+    // 1. PERSPECTIVE WARP
     let blurred = new cv.Mat();
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
     
@@ -66,7 +68,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
         let approx = new cv.Mat();
         cv.approxPolyDP(cnt, approx, 0.02 * perimeter, true);
 
-        if (approx.rows === 4 && area > 500 && area < 12000) {
+        if (approx.rows === 4 && area > 400 && area < 15000) {
             let rect = cv.boundingRect(cnt);
             corners.push({
                 x: rect.x + rect.width / 2,
@@ -98,17 +100,18 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
         cv.resize(gray, warped, new cv.Size(CONFIG.targetWidth, CONFIG.targetHeight), 0, 0, cv.INTER_AREA);
     }
 
-    // 2. SCANNING (Deteksi Intensitas)
+    // 2. SCANNING
     let binary = new cv.Mat();
     cv.adaptiveThreshold(warped, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 15, 10);
 
     const isFilled = (img: any, x: number, y: number) => {
-        const radius = 10;
+        const radius = 8; // Radius diperkecil untuk bulatan compact
         try {
-            let rect = new cv.Rect(x - radius, y - radius, radius * 2, radius * 2);
+            let rect = new cv.Rect(Math.round(x - radius), Math.round(y - radius), radius * 2, radius * 2);
             let roi = img.roi(rect);
             let count = cv.countNonZero(roi);
             roi.delete();
+            // Threshold deteksi 35% terisi
             return count > (radius * 2 * radius * 2) * 0.35;
         } catch (e) {
             return false;
@@ -130,35 +133,39 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
         nis += detected;
     }
 
-    // Scan Jawaban (Total 30 Baris tetap)
     const studentAnswers = [];
     
-    // Column 1
+    // Scan Kolom 1 (1-20)
     for (let r = 0; r < CONFIG.answers.questionsPerCol; r++) {
         let choice = "EMPTY";
         for (let o = 0; o < CONFIG.answers.options.length; o++) {
             const x = CONFIG.answers.col1.startX + (o * CONFIG.answers.col1.gapX);
             const y = CONFIG.answers.col1.startY + (r * CONFIG.answers.col1.gapY);
-            if (isFilled(binary, x, y)) {
-                choice = CONFIG.answers.options[o];
-                break;
-            }
+            if (isFilled(binary, x, y)) { choice = CONFIG.answers.options[o]; break; }
         }
         studentAnswers.push({ questionNum: r + 1, studentChoice: choice });
     }
 
-    // Column 2
+    // Scan Kolom 2 (21-40)
     for (let r = 0; r < CONFIG.answers.questionsPerCol; r++) {
         let choice = "EMPTY";
         for (let o = 0; o < CONFIG.answers.options.length; o++) {
             const x = CONFIG.answers.col2.startX + (o * CONFIG.answers.col2.gapX);
             const y = CONFIG.answers.col2.startY + (r * CONFIG.answers.col2.gapY);
-            if (isFilled(binary, x, y)) {
-                choice = CONFIG.answers.options[o];
-                break;
-            }
+            if (isFilled(binary, x, y)) { choice = CONFIG.answers.options[o]; break; }
         }
-        studentAnswers.push({ questionNum: r + 16, studentChoice: choice });
+        studentAnswers.push({ questionNum: r + 21, studentChoice: choice });
+    }
+
+    // Scan Kolom 3 (41-60)
+    for (let r = 0; r < CONFIG.answers.questionsPerCol; r++) {
+        let choice = "EMPTY";
+        for (let o = 0; o < CONFIG.answers.options.length; o++) {
+            const x = CONFIG.answers.col3.startX + (o * CONFIG.answers.col3.gapX);
+            const y = CONFIG.answers.col3.startY + (r * CONFIG.answers.col3.gapY);
+            if (isFilled(binary, x, y)) { choice = CONFIG.answers.options[o]; break; }
+        }
+        studentAnswers.push({ questionNum: r + 41, studentChoice: choice });
     }
 
     src.delete(); gray.delete(); blurred.delete(); thresh.delete(); 
