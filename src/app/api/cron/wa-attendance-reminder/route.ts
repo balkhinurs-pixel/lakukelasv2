@@ -6,19 +6,26 @@ import { format } from 'date-fns';
 
 /**
  * Cron Job untuk mengingatkan guru yang belum absen (jam 08:00 WIB).
- * V89.0: Menggunakan Service Role untuk bypass RLS dan Strict Device Token.
+ * V90.0: Proteksi terhadap missing Service Role Key.
  */
 export async function GET(request: Request) {
   console.log('[CRON-ATTENDANCE] Checking for missing attendance...');
   
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error('[CRON-ATTENDANCE] Error: Missing SUPABASE_SERVICE_ROLE_KEY in environment variables.');
+    return NextResponse.json({ 
+        success: false, 
+        message: 'Konfigurasi server belum lengkap. Harap tambahkan SUPABASE_SERVICE_ROLE_KEY di Environment Variables Vercel Anda.' 
+    }, { status: 500 });
+  }
+
   // Menggunakan Service Role Key untuk bypass RLS (Sistem otomatis tidak memiliki sesi login)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    // 1. Ambil Pengaturan
     const { data: settingsData } = await supabase
       .from('settings')
       .select('key, value')
@@ -49,7 +56,6 @@ export async function GET(request: Request) {
     const dayName = getIndonesianDayName();
     const todayStr = format(nowIndo, 'yyyy-MM-dd');
 
-    // 2. Tentukan Guru yang Wajib Hadir Hari Ini
     let expectedTeacherIds: string[] = [];
 
     if (settings.policy === 'daily_based') {
@@ -74,15 +80,12 @@ export async function GET(request: Request) {
         });
     }
 
-    // 3. Cek Siapa yang Sudah Absen
     const { data: currentAttendance } = await supabase
         .from('teacher_attendance')
         .select('teacher_id, status')
         .eq('date', todayStr);
 
     const attendedTeacherIds = new Set(currentAttendance?.map(a => a.teacher_id) || []);
-    
-    // Saring guru yang BELUM absen
     const missingTeacherIds = expectedTeacherIds.filter(id => !attendedTeacherIds.has(id));
 
     if (missingTeacherIds.length === 0) {
@@ -93,7 +96,6 @@ export async function GET(request: Request) {
         });
     }
 
-    // 4. Ambil data profil guru yang belum absen
     const { data: missingProfiles } = await supabase
         .from('profiles')
         .select('id, full_name, phone_number')
@@ -106,7 +108,6 @@ export async function GET(request: Request) {
         });
     }
 
-    // 5. Kirim Pesan Teguran Sopan (Strict Device Token Mode)
     const results = [];
     for (const teacher of missingProfiles) {
         if (!teacher.phone_number) continue;
@@ -127,7 +128,6 @@ Terima kasih atas kerja samanya. Selamat beraktivitas! ✨
 _Sistem Monitoring LakuKelas_`;
 
         try {
-            // Strict Device Token: Token hanya ditaruh di body
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
                 body: new URLSearchParams({

@@ -6,16 +6,24 @@ import { format } from 'date-fns';
 
 /**
  * API Route untuk mengirimkan pengingat jadwal harian (06:00 WIB).
- * V89.0: Menggunakan Service Role untuk bypass RLS dan Strict Device Token.
+ * V90.0: Proteksi terhadap missing Service Role Key.
  */
 export async function GET(request: Request) {
   console.log('[CRON-WA] Starting daily schedule reminder...');
   
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error('[CRON-WA] Error: Missing SUPABASE_SERVICE_ROLE_KEY in environment variables.');
+    return NextResponse.json({ 
+        success: false, 
+        message: 'Konfigurasi server belum lengkap. Harap tambahkan SUPABASE_SERVICE_ROLE_KEY di Environment Variables Vercel Anda.' 
+    }, { status: 500 });
+  }
+
   // Menggunakan Service Role Key untuk bypass RLS (Sistem otomatis tidak memiliki sesi login)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
   
   try {
     const { data: settingsData } = await supabase
@@ -119,7 +127,6 @@ Selamat beraktivitas dan semoga harinya menyenangkan!
 _Sistem Notifikasi LakuKelas_`;
 
         try {
-            // Strict Device Token: Tanpa Auth Header
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
                 body: new URLSearchParams({
