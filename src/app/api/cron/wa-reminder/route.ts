@@ -6,25 +6,27 @@ import { format } from 'date-fns';
 
 /**
  * API Route untuk mengirimkan pengingat jadwal harian (06:00 WIB).
- * V91.0: Hybrid Key Logic (Flexible Database Support).
+ * V91.0: Hybrid Key Logic (Mendukung Service Role atau Anon Key dengan RLS Publik).
+ * V89.0: Strict Device Token (Token dikirim di body, bukan header).
  */
 export async function GET(request: Request) {
   console.log('[CRON-WA] Starting daily schedule reminder...');
   
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  // Gunakan Service Role jika ada, jika tidak fallback ke Anon Key (Fleksibel)
+  // Gunakan Service Role jika ada di Vercel, jika tidak ada fallback ke Anon Key (Fleksibel)
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return NextResponse.json({ 
         success: false, 
-        message: 'Konfigurasi database (URL/Key) tidak ditemukan.' 
+        message: 'Konfigurasi database (URL/Key) tidak ditemukan di Environment Variables.' 
     }, { status: 500 });
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
   
   try {
+    // 1. Ambil pengaturan WhatsApp dari database
     const { data: settingsData, error: settingsError } = await supabase
       .from('settings')
       .select('key, value')
@@ -33,8 +35,8 @@ export async function GET(request: Request) {
     if (settingsError || !settingsData || settingsData.length === 0) {
         return NextResponse.json({ 
             success: false, 
-            message: 'Gagal membaca tabel settings. Pastikan RLS diizinkan untuk akses publik (Anon SELECT) atau isi SERVICE_ROLE_KEY di Vercel.' 
-        }, { status: 403 });
+            message: 'WhatsApp Reminder dianggap nonaktif atau tidak terbaca. Jika tidak menggunakan Service Role Key, pastikan RLS pada tabel settings mengizinkan akses publik (Anon).' 
+        }, { status: 200 });
     }
 
     const settings = {
@@ -44,17 +46,18 @@ export async function GET(request: Request) {
     };
 
     if (!settings.enabled) {
-        return NextResponse.json({ success: true, message: 'WhatsApp Reminder is currently disabled in Admin Settings.' });
+        return NextResponse.json({ success: true, message: 'Fitur pengingat sedang dinonaktifkan melalui menu Admin.' });
     }
 
     if (!settings.token) {
-        return NextResponse.json({ success: false, message: 'Fonnte Token is missing in database.' });
+        return NextResponse.json({ success: false, message: 'Token Fonnte belum diatur di tabel settings.' });
     }
 
     const nowIndo = getIndonesianTime();
     const dayName = getIndonesianDayName();
     const todayStr = format(nowIndo, 'dd MMMM yyyy');
 
+    // 2. Ambil jadwal hari ini
     const { data: schedules, error: scheduleError } = await supabase
         .from('schedule')
         .select(`
@@ -67,12 +70,15 @@ export async function GET(request: Request) {
         `)
         .eq('day', dayName);
 
-    if (scheduleError) throw scheduleError;
+    if (scheduleError) {
+        return NextResponse.json({ success: false, message: 'Gagal membaca tabel jadwal. Cek izin RLS untuk publik.', error: scheduleError.message });
+    }
     
     if (!schedules || schedules.length === 0) {
-        return NextResponse.json({ success: true, message: `No teaching schedules found for ${dayName}.` });
+        return NextResponse.json({ success: true, message: `Tidak ada jadwal mengajar yang ditemukan untuk hari ${dayName}.` });
     }
 
+    // 3. Kelompokkan jadwal per guru agar hanya mengirim 1 pesan per orang
     const teacherMessages = schedules.reduce((acc, item: any) => {
         const teacherId = item.teacher_id;
         const phone = item.profiles?.phone_number;
@@ -93,9 +99,10 @@ export async function GET(request: Request) {
     const teacherIds = Object.keys(teacherMessages);
 
     if (teacherIds.length === 0) {
-        return NextResponse.json({ success: true, message: 'Schedules found, but no teacher phone numbers are registered.' });
+        return NextResponse.json({ success: true, message: 'Ada jadwal, namun tidak ada guru dengan nomor WA terdaftar.' });
     }
 
+    // 4. Proses pengiriman via Fonnte (API Device Mode)
     for (const teacherId in teacherMessages) {
         const teacher = teacherMessages[teacherId];
         let scheduleText = teacher.schedules.map((s: any) => `🔹 *${s.subject}* (${s.class}) jam ${s.time}`).join('\n');
@@ -121,6 +128,7 @@ Selamat beraktivitas dan semoga harinya menyenangkan!
 _Sistem Notifikasi LakuKelas_`;
 
         try {
+            // Mengirim token dalam body (Strict Device Mode)
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
                 body: new URLSearchParams({

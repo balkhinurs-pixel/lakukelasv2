@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 
 /**
  * Cron Job untuk mengingatkan guru yang belum absen (jam 08:00 WIB).
- * V91.0: Hybrid Key Logic (Flexible Database Support).
+ * V91.0: Hybrid Key Logic (Bypass RLS via Service Role atau Anon Key dengan RLS Terbuka).
  */
 export async function GET(request: Request) {
   console.log('[CRON-ATTENDANCE] Checking for missing attendance...');
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // Ambil pengaturan WhatsApp
+    // 1. Ambil pengaturan sistem
     const { data: settingsData, error: settingsError } = await supabase
       .from('settings')
       .select('key, value')
@@ -34,8 +34,8 @@ export async function GET(request: Request) {
     if (settingsError || !settingsData) {
         return NextResponse.json({ 
             success: false, 
-            message: 'Gagal membaca tabel settings. Jika Anda tidak menggunakan Service Role Key, pastikan RLS pada tabel settings mengizinkan akses publik (Anon).' 
-        }, { status: 403 });
+            message: 'Gagal membaca tabel settings. Pastikan RLS diizinkan untuk akses publik (Anon SELECT) atau isi SERVICE_ROLE_KEY di Vercel.' 
+        }, { status: 200 });
     }
 
     const settings = {
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     };
 
     if (!settings.enabled) {
-        return NextResponse.json({ success: false, message: 'Fitur pengingat sedang dinonaktifkan di menu Admin.' });
+        return NextResponse.json({ success: true, message: 'Fitur pengingat sedang dinonaktifkan di menu Admin.' });
     }
 
     if (!settings.token) {
@@ -57,6 +57,7 @@ export async function GET(request: Request) {
     const dayName = getIndonesianDayName();
     const todayStr = format(nowIndo, 'yyyy-MM-dd');
 
+    // 2. Tentukan siapa saja yang SEHARUSNYA hadir hari ini
     let expectedTeacherIds: string[] = [];
 
     if (settings.policy === 'daily_based') {
@@ -75,30 +76,35 @@ export async function GET(request: Request) {
     }
 
     if (expectedTeacherIds.length === 0) {
-        return NextResponse.json({ success: true, message: `Tidak ada jadwal wajib hadir untuk hari ${dayName}.` });
+        return NextResponse.json({ success: true, message: `Tidak ada kewajiban hadir (jadwal kosong) untuk hari ${dayName}.` });
     }
 
+    // 3. Cek siapa yang SUDAH absen hari ini
     const { data: currentAttendance } = await supabase
         .from('teacher_attendance')
         .select('teacher_id')
         .eq('date', todayStr);
 
     const attendedTeacherIds = new Set(currentAttendance?.map(a => a.teacher_id) || []);
+    
+    // 4. Cari yang BELUM absen
     const missingTeacherIds = expectedTeacherIds.filter(id => !attendedTeacherIds.has(id));
 
     if (missingTeacherIds.length === 0) {
-        return NextResponse.json({ success: true, message: 'Luar biasa! Semua guru sudah melakukan absensi hari ini.' });
+        return NextResponse.json({ success: true, message: 'Luar biasa! Semua guru yang mengajar hari ini sudah melakukan absensi.' });
     }
 
+    // 5. Ambil data profil (Nama & Nomor WA) guru yang belum absen
     const { data: missingProfiles } = await supabase
         .from('profiles')
         .select('id, full_name, phone_number')
         .in('id', missingTeacherIds);
 
     if (!missingProfiles || missingProfiles.length === 0) {
-        return NextResponse.json({ success: true, message: 'Ada guru belum absen, tapi tidak ada nomor WhatsApp yang terdaftar.' });
+        return NextResponse.json({ success: true, message: 'Ada guru belum absen, tapi tidak ada nomor WhatsApp yang terdaftar di profil mereka.' });
     }
 
+    // 6. Kirim peringatan ke masing-masing guru (Strict Device Token)
     const results = [];
     for (const teacher of missingProfiles) {
         if (!teacher.phone_number) continue;
@@ -106,11 +112,11 @@ export async function GET(request: Request) {
         const message = `📢 *PENGINGAT ABSENSI LAKUKELAS* 📢
 
 Halo Bapak/Ibu *${teacher.full_name}* 👋
-Mohon maaf mengganggu waktunya.
+Mohon maaf mengganggu waktunya sebentar.
 
 Sistem mencatat Bapak/Ibu belum melakukan *Absensi Masuk* untuk hari ini, ${dayName}, ${format(nowIndo, 'dd MMMM yyyy')}.
 
-Demi tertib administrasi, mohon segera melakukan absensi melalui aplikasi LakuKelas di lokasi sekolah.
+Demi tertib administrasi sekolah, mohon segera melakukan absensi melalui aplikasi LakuKelas segera setelah tiba di lokasi.
 
 🔗 *Klik Link Untuk Absen:*
 ${settings.appUrl}/dashboard/teacher-attendance
