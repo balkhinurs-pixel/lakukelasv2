@@ -1,7 +1,6 @@
-
 /**
- * @fileOverview OMR Processor Engine V88.0 (CALIBRATED FOR 18-SLOT MATRIX)
- * Menangani deteksi bulatan pada tata letak grid 3-kolom yang mendukung pindah kolom otomatis.
+ * @fileOverview OMR Processor Engine V92.0 (CALIBRATED FOR 20-SLOT RIGID GRID)
+ * Menangani deteksi bulatan pada tata letak kaku 3-kolom dengan tinggi baris tetap 32px.
  */
 
 declare const cv: any;
@@ -16,21 +15,21 @@ const CONFIG = {
     targetHeight: 1123,
     targetPoints: [0, 0, 794, 0, 794, 1123, 0, 1123],
     nis: {
-        startX: 575,
-        startY: 185,
+        startX: 578,
+        startY: 157, // Bergeser ke atas sesuai layout baru
         gapX: 28,
-        gapY: 20,
+        gapY: 18.2, // Gap vertikal diperkecil agar pas dengan NIS 4px circles
         rows: 10,
         cols: 5
     },
     answers: {
-        // Tiga Kolom Konfigurasi Grid - Kalibrasi V88.0
-        // startX: Koordinat X bulatan pertama di setiap kolom
-        // startY: Koordinat Y bulatan pertama (setelah header Matriks Jawaban)
-        col1: { startX: 130, startY: 508, gapX: 31, gapY: 31.8 }, 
-        col2: { startX: 374, startY: 508, gapX: 31, gapY: 31.8 }, 
-        col3: { startX: 618, startY: 508, gapX: 31, gapY: 31.8 },
-        rowsPerCol: 18, // Harus sama dengan MAX_PER_COL di PrintLjkView agar sinkron
+        // Tiga Kolom Konfigurasi Grid - Kalibrasi V92.0
+        // startX: Sesuai dengan padding penyesuaian di UI
+        // startY: Dihitung dari top:360px + padding:8px + title:40px + center-offset
+        col1: { startX: 128, startY: 454, gapX: 30.5, gapY: 32 }, 
+        col2: { startX: 374, startY: 454, gapX: 30.5, gapY: 32 }, 
+        col3: { startX: 622, startY: 454, gapX: 30.5, gapY: 32 },
+        rowsPerCol: 20, // Kapasitas baru V92.0
         options: ['A', 'B', 'C', 'D', 'E']
     }
 };
@@ -82,14 +81,14 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
     cv.adaptiveThreshold(warped, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 15, 10);
 
     const isFilled = (img: any, x: number, y: number) => {
-        const radius = 6.5; // Ukuran sensor disesuaikan dengan bulatan 23px
+        const radius = 6.0; // Ukuran sensor disesuaikan untuk bulatan 22px
         try {
-            let rect = new cv.Rect(Math.round(x - radius), Math.round(y - radius), radius * 2, radius * 2);
+            let rect = new cv.Rect(Math.round(x - radius), Math.round(y - radius), Math.round(radius * 2), Math.round(radius * 2));
             let roi = img.roi(rect);
             let count = cv.countNonZero(roi);
             roi.delete();
-            // Threshold 30% (jika area hitam > 30%, dianggap diisi)
-            return count > (radius * 2 * radius * 2) * 0.30;
+            // Threshold 28% (sedikit lebih sensitif untuk pemindaian HP)
+            return count > (radius * 2 * radius * 2) * 0.28;
         } catch (e) { return false; }
     };
 
@@ -106,7 +105,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
     const studentAnswers = [];
     const cols = [CONFIG.answers.col1, CONFIG.answers.col2, CONFIG.answers.col3];
     
-    // Scan Total 54 Slot (18 baris x 3 kolom)
+    // Scan Total 60 Slot (20 baris x 3 kolom)
     let globalIndex = 0;
     cols.forEach(col => {
         for (let r = 0; r < CONFIG.answers.rowsPerCol; r++) {

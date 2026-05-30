@@ -1,4 +1,3 @@
-
 'use server';
 
 import { generateEducationContent, type EducationContentInput, type EducationContentOutput } from '@/ai/flows/generate-education-content';
@@ -21,7 +20,7 @@ const getSubRowCount = (q: any) => {
 };
 
 /**
- * Server Action untuk Koreksi LJK V87.0 (Support Grouping & Header).
+ * Server Action untuk Koreksi LJK V92.0 (Rigid 20-Slot Support).
  */
 export async function correctExamAction(
     naskahId: string, 
@@ -38,13 +37,13 @@ export async function correctExamAction(
 
         const sortedQuestions = naskah.question_ids.map(id => rawQuestions.find(q => q.id === id)).filter(Boolean);
 
-        // 1. REKONSTRUKSI GRID LJK (Harus Identik dengan PrintLjkView)
+        // 1. REKONSTRUKSI GRID LJK (Harus Identik dengan PrintLjkView V92.0)
         const gridItems: any[] = [];
         let currentType = "";
         sortedQuestions.forEach((q: any) => {
             if (q.question_type !== currentType) {
                 currentType = q.question_type;
-                gridItems.push({ type: 'header' }); // Header memakan 1 slot
+                gridItems.push({ type: 'header' }); // Header memakan 1 slot rigid
             }
             const rowCount = getSubRowCount(q);
             if (rowCount > 1) {
@@ -61,8 +60,6 @@ export async function correctExamAction(
         let totalWeightedScore = 0;
         let maxPossibleScore = 0;
         const studentAnalysis: any[] = [];
-
-        // Map untuk mengumpulkan hasil sub-row agar bisa dihitung rata-rata skornya per nomor
         const questionResults = new Map();
 
         scanRaw.studentAnswers.forEach((scanSlot, idx) => {
@@ -115,7 +112,7 @@ export async function correctExamAction(
                 studentId: student?.id,
                 studentAnswers: studentAnalysis,
                 totalScore: finalScore,
-                analysis: `Koreksi Lokal V87. Grouped Flow Support.`
+                analysis: `Koreksi Lokal V92. Rigid 20-Slot Matrix Support.`
             } 
         };
     } catch (error: any) {
