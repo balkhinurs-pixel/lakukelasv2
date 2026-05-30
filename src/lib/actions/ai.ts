@@ -14,8 +14,8 @@ import { saveGenericDocumentToDrive } from './google-drive';
 import { createStreamableValue } from 'ai/rsc';
 
 /**
- * Server Action untuk Koreksi LJK Hybrid - V83.0.
- * Sekarang hanya melakukan pencocokan data dari OpenCV lokal dengan Kunci di DB.
+ * Server Action untuk Koreksi LJK Hybrid - V84.0.
+ * Menangani identifikasi NIS dan penskoran berdasarkan kunci di database.
  */
 export async function correctExamAction(
     naskahId: string, 
@@ -31,7 +31,7 @@ export async function correctExamAction(
             .eq('id', naskahId)
             .single();
 
-        if (!naskah?.question_ids) throw new Error("Detail naskah hilang.");
+        if (!naskah?.question_ids) throw new Error("Detail naskah hilang dari database.");
 
         const { data: questionRecords } = await supabase
             .from('questions')
@@ -46,7 +46,12 @@ export async function correctExamAction(
         
         const processedAnswers = scanRaw.studentAnswers.map(ans => {
             const record = questionRecords.find(k => k.sort_order === ans.questionNum);
-            const isCorrect = record ? (ans.studentChoice === record.correct_answer) : false;
+            
+            // Perbaiki: Bersihkan spasi atau karakter tak terlihat pada kunci/jawaban
+            const cleanAnswer = ans.studentChoice?.trim().toUpperCase();
+            const cleanKey = record?.correct_answer?.trim().toUpperCase();
+            
+            const isCorrect = record ? (cleanAnswer === cleanKey) : false;
             
             // Tentukan poin berdasarkan tipe soal
             const itemType = record?.question_type || 'multiple_choice';
@@ -57,40 +62,41 @@ export async function correctExamAction(
             
             return {
                 questionNum: ans.questionNum,
-                studentChoice: ans.studentChoice,
+                studentChoice: cleanAnswer,
                 isCorrect: isCorrect,
                 pointEarned: isCorrect ? itemPoint : 0,
                 type: itemType
             };
         });
 
-        // Konversi poin ke skala 0-100
+        // Konversi poin ke skala 0-100 (Round)
         const finalScore = maxPossibleScore > 0 ? Math.round((totalWeightedScore / maxPossibleScore) * 100) : 0;
 
-        // 3. Identifikasi Siswa di Database
+        // 3. Identifikasi Siswa di Database (NIS 5 Digit)
+        // Ambil NIS yang terdeteksi, hapus karakter '?' jika ada
+        const cleanNis = scanRaw.detectedNis.replace(/\?/g, '0');
+        
         const { data: student } = await supabase
             .from('students')
             .select('id, name')
-            .eq('nis', scanRaw.detectedNis)
+            .eq('nis', cleanNis)
             .maybeSingle();
 
         return { 
             success: true, 
             data: {
-                detectedNis: scanRaw.detectedNis,
-                studentName: student?.name || "Siswa Tidak Dikenal",
+                detectedNis: cleanNis,
+                studentName: student?.name || `Siswa NIS ${cleanNis} (Belum Terdaftar)`,
                 studentId: student?.id,
                 studentAnswers: processedAnswers,
                 totalScore: finalScore,
-                analysis: "Scan lokal OpenCV berhasil."
+                analysis: "Koreksi Lokal (V84) Berhasil."
             } 
         };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
 }
-
-// ... rest of actions unchanged ...
 
 export async function generateContentAction(input: EducationContentInput) {
     try {
