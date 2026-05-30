@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { LottieAiProcess } from "@/components/ui/lottie-ai-process";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
 import Script from "next/script";
 import { processLJK } from "@/lib/omr/processor";
@@ -428,4 +429,3 @@ export default function KoreksiClient({
         </div>
     );
 }
-
