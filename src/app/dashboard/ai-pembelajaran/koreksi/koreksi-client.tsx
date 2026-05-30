@@ -40,6 +40,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
 import Script from "next/script";
+import { processLJK } from "@/lib/omr/processor";
 
 interface ScannedResult {
     id: string;
@@ -70,7 +71,7 @@ export default function KoreksiClient({
     const [resultsList, setResultsList] = React.useState<ScannedResult[]>([]);
     const [currentScan, setCurrentScan] = React.useState<ScannedResult | null>(null);
 
-    // Scoring Settings
+    // Scoring Settings (Manual Control)
     const [points, setPoints] = React.useState({
         multiple_choice: 2,
         matching: 5,
@@ -84,6 +85,7 @@ export default function KoreksiClient({
     const [errorMsg, setErrorMsg] = React.useState("");
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const hiddenImageRef = React.useRef<HTMLImageElement>(null);
 
     const handleStartCapture = () => {
         if (!selectedNaskahId) {
@@ -106,12 +108,15 @@ export default function KoreksiClient({
     };
 
     const handleStartCorrection = async () => {
-        if (!pendingPhoto || !selectedNaskahId) return;
+        if (!pendingPhoto || !selectedNaskahId || !hiddenImageRef.current) return;
 
         setLoading(true);
         try {
-            // Kita kirim bobot nilai ke Server Action
-            const result = await correctExamAction(selectedNaskahId, pendingPhoto, points);
+            // 1. PROSES LOKAL DENGAN OPENCV (GRATIS)
+            const scanRaw = await processLJK(hiddenImageRef.current);
+            
+            // 2. KIRIM HASIL SCAN KE SERVER UNTUK PENCOCOKAN & SKORING
+            const result = await correctExamAction(selectedNaskahId, scanRaw, points);
             
             if (result.success && result.data) {
                 const newResult: ScannedResult = {
@@ -123,19 +128,17 @@ export default function KoreksiClient({
                 setResultsList(prev => [newResult, ...prev]);
                 setCurrentScan(newResult);
                 setPendingPhoto(null);
-                toast({ title: "Berhasil!", description: "Koreksi Selesai." });
+                toast({ title: "Scan Berhasil!", description: "Data NIS dan bulatan terbaca lokal." });
             } else {
                 const err = result.error || "";
-                let type: AiErrorType = 'generic';
-                if (err.includes('429')) type = 'quota';
-                else if (err.includes('503')) type = 'overloaded';
-                setErrorType(type);
+                setErrorType('generic');
                 setErrorMsg(err);
                 setIsErrorOpen(true);
             }
         } catch (err: any) {
+            console.error("OpenCV Error:", err);
             setErrorType('generic');
-            setErrorMsg(err.message || "Gagal memproses gambar.");
+            setErrorMsg("Gagal memproses gambar. Pastikan kualitas foto baik dan terang.");
             setIsErrorOpen(true);
         } finally {
             setLoading(false);
@@ -197,6 +200,9 @@ export default function KoreksiClient({
             <AiErrorDialog open={isErrorOpen} onOpenChange={setIsErrorOpen} errorType={errorType} errorMessage={errorMsg} onRetry={handleStartCorrection} />
 
             <input type="file" ref={fileInputRef} accept="image/*" capture="environment" className="hidden" onChange={handleFileCapture} />
+            
+            {/* Hidden Image untuk OpenCV Source */}
+            {pendingPhoto && <img ref={hiddenImageRef} src={pendingPhoto} className="hidden" alt="hidden-source" />}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-1">
                 <div className="lg:col-span-5 space-y-6">
@@ -205,7 +211,7 @@ export default function KoreksiClient({
                         <CardHeader className="bg-indigo-50/50 border-b p-6">
                             <CardTitle className="text-lg font-black flex items-center gap-2">
                                 <Settings2 className="h-5 w-5 text-indigo-600" />
-                                Pengaturan Poin
+                                Pengaturan Poin (Manual)
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 grid grid-cols-2 gap-4">
@@ -226,6 +232,9 @@ export default function KoreksiClient({
                                 <Input type="number" value={points.essay} onChange={e => setPoints({...points, essay: parseInt(e.target.value) || 0})} className="h-10 rounded-xl font-bold" />
                             </div>
                         </CardContent>
+                        <CardFooter className="bg-slate-50/50 p-4">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase italic text-center w-full">Bobot nilai ini digunakan untuk menghitung skor akhir secara otomatis.</p>
+                        </CardFooter>
                     </Card>
 
                     <Card className="border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden">
@@ -259,7 +268,7 @@ export default function KoreksiClient({
                                             className="w-full h-20 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-4 shadow-xl shadow-indigo-100 transition-all active:scale-95 text-lg"
                                         >
                                             {!cvLoaded ? <Loader2 className="h-7 w-7 animate-spin" /> : <Camera className="h-7 w-7" />}
-                                            {!cvLoaded ? "Memuat CV..." : "Ambil Foto LJK"}
+                                            {!cvLoaded ? "Memuat OpenCV..." : "Ambil Foto LJK"}
                                         </Button>
                                     </motion.div>
                                 ) : (
@@ -269,7 +278,7 @@ export default function KoreksiClient({
                                             {loading && (
                                                 <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 gap-4">
                                                     <LottieAiProcess size={120} />
-                                                    <p className="font-black text-indigo-950 uppercase tracking-tight">Memproses LJK...</p>
+                                                    <p className="font-black text-indigo-950 uppercase tracking-tight">OpenCV Sedang Membaca...</p>
                                                 </div>
                                             )}
                                         </div>
@@ -289,11 +298,11 @@ export default function KoreksiClient({
                     <div className="flex items-center justify-between px-3">
                         <div className="flex items-center gap-3">
                             <History className="h-5 w-5 text-indigo-600" />
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Antrean Hasil</h3>
+                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hasil Scan Lokal</h3>
                         </div>
                         {resultsList.length > 0 && (
                             <Button onClick={handleSaveAll} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl h-10 font-bold gap-2">
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Simpan Rekap ({resultsList.length})
+                                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Simpan Rekap ({resultsList.length})
                             </Button>
                         )}
                     </div>
@@ -331,8 +340,8 @@ export default function KoreksiClient({
                             ) : (
                                 <div className="h-[500px] flex flex-col items-center justify-center text-center opacity-30">
                                     <div className="p-16 rounded-[4rem] bg-slate-50 shadow-inner mb-8"><ScanLine className="h-20 w-20 text-slate-200" /></div>
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Siap Memindai</h3>
-                                    <p className="text-sm font-bold text-slate-400 mt-2">Pastikan LJK difoto dalam kondisi terang dan tegak lurus.</p>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Siap Memindai Gratis</h3>
+                                    <p className="text-sm font-bold text-slate-400 mt-2">OpenCV akan membaca LJK langsung di browser Anda.</p>
                                 </div>
                             )}
                         </AnimatePresence>
@@ -346,7 +355,7 @@ export default function KoreksiClient({
                         <div className="flex flex-col h-[85vh]">
                             <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-8 text-white shrink-0">
                                 <DialogHeader>
-                                    <DialogTitle className="text-2xl font-black tracking-tight uppercase text-white">Review Hybrid Koreksi</DialogTitle>
+                                    <DialogTitle className="text-2xl font-black tracking-tight uppercase text-white">Review Hasil Scan OpenCV</DialogTitle>
                                     <p className="text-indigo-100 font-bold text-xs uppercase tracking-widest mt-1">{currentScan.studentName} • NIS {currentScan.detectedNis}</p>
                                 </DialogHeader>
                             </div>
@@ -362,7 +371,7 @@ export default function KoreksiClient({
                                         </div>
                                     </div>
                                     <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Analisis Per Butir</h4>
+                                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Kecocokan Jawaban</h4>
                                         <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5">
                                             {currentScan.studentAnswers.map((item: any, idx: number) => (
                                                 <div key={idx} className={cn("aspect-square rounded-2xl flex flex-col items-center justify-center border-2 transition-all shadow-sm", item.isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700")}>

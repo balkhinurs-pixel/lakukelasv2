@@ -14,20 +14,17 @@ import { saveGenericDocumentToDrive } from './google-drive';
 import { createStreamableValue } from 'ai/rsc';
 
 /**
- * Server Action untuk Koreksi LJK Hybrid (OpenCV + Gemini) - V82.0.
- * Mendukung penskoran manual berdasarkan poin per tipe soal.
+ * Server Action untuk Koreksi LJK Hybrid - V83.0.
+ * Sekarang hanya melakukan pencocokan data dari OpenCV lokal dengan Kunci di DB.
  */
 export async function correctExamAction(
     naskahId: string, 
-    photoDataUri: string, 
+    scanRaw: { detectedNis: string, studentAnswers: { questionNum: number, studentChoice: string }[] }, 
     pointRules: { multiple_choice: number, matching: number, true_false: number, short_answer: number, essay: number }
 ) {
     const supabase = await createClient();
     try {
-        // 1. Deteksi Visual (Saat ini masih pakai Gemini scanner, kedepan dipindah ke client-side OpenCV 100%)
-        const scanResult = await correctExam({ photoDataUri });
-
-        // 2. Ambil Kunci & Tipe Soal dari Database
+        // 1. Ambil Kunci & Tipe Soal dari Database
         const { data: naskah } = await supabase
             .from('ai_documents')
             .select('question_ids')
@@ -43,11 +40,11 @@ export async function correctExamAction(
 
         if (!questionRecords) throw new Error("Kunci jawaban gagal dimuat.");
 
-        // 3. LOGIKA PENSKORAN DENGAN BOBOT POIN MANUAL
+        // 2. LOGIKA PENSKORAN DENGAN BOBOT POIN MANUAL
         let totalWeightedScore = 0;
         let maxPossibleScore = 0;
         
-        const processedAnswers = scanResult.detectedAnswers.map(ans => {
+        const processedAnswers = scanRaw.studentAnswers.map(ans => {
             const record = questionRecords.find(k => k.sort_order === ans.questionNum);
             const isCorrect = record ? (ans.studentChoice === record.correct_answer) : false;
             
@@ -70,22 +67,22 @@ export async function correctExamAction(
         // Konversi poin ke skala 0-100
         const finalScore = maxPossibleScore > 0 ? Math.round((totalWeightedScore / maxPossibleScore) * 100) : 0;
 
-        // 4. Identifikasi Siswa
+        // 3. Identifikasi Siswa di Database
         const { data: student } = await supabase
             .from('students')
             .select('id, name')
-            .eq('nis', scanResult.detectedNis)
+            .eq('nis', scanRaw.detectedNis)
             .maybeSingle();
 
         return { 
             success: true, 
             data: {
-                detectedNis: scanResult.detectedNis,
+                detectedNis: scanRaw.detectedNis,
                 studentName: student?.name || "Siswa Tidak Dikenal",
                 studentId: student?.id,
                 studentAnswers: processedAnswers,
                 totalScore: finalScore,
-                analysis: scanResult.analysis
+                analysis: "Scan lokal OpenCV berhasil."
             } 
         };
     } catch (error: any) {
@@ -93,9 +90,8 @@ export async function correctExamAction(
     }
 }
 
-/**
- * Server Action lainnya (RPP, Soal, Materi, dll) tetap dipertahankan...
- */
+// ... rest of actions unchanged ...
+
 export async function generateContentAction(input: EducationContentInput) {
     try {
         const result = await generateEducationContent(input);
