@@ -1,18 +1,23 @@
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getIndonesianDayName, getIndonesianTime } from '@/lib/timezone';
 import { format } from 'date-fns';
 
 /**
  * Cron Job untuk mengingatkan guru yang belum absen (jam 08:00 WIB).
+ * V89.0: Menggunakan Service Role untuk bypass RLS dan Strict Device Token.
  */
 export async function GET(request: Request) {
   console.log('[CRON-ATTENDANCE] Checking for missing attendance...');
   
+  // Menggunakan Service Role Key untuk bypass RLS (Sistem otomatis tidak memiliki sesi login)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   try {
-    const supabase = await createClient();
-    
     // 1. Ambil Pengaturan
     const { data: settingsData } = await supabase
       .from('settings')
@@ -27,7 +32,7 @@ export async function GET(request: Request) {
     };
 
     if (!settings.enabled || !settings.token) {
-        return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing.' });
+        return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing in database settings.' });
     }
 
     const nowIndo = getIndonesianTime();
@@ -41,7 +46,8 @@ export async function GET(request: Request) {
         const { data: allStaff } = await supabase
             .from('profiles')
             .select('id')
-            .in('role', ['teacher', 'headmaster']);
+            .in('role', ['teacher', 'headmaster'])
+            .eq('is_activated', true);
         expectedTeacherIds = allStaff?.map(s => s.id) || [];
     } else {
         const { data: schedules } = await supabase
@@ -81,7 +87,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ message: 'No profiles found for missing teachers.' });
     }
 
-    // 5. Kirim Pesan Teguran Sopan
+    // 5. Kirim Pesan Teguran Sopan (Strict Device Token Mode)
     const results = [];
     for (const teacher of missingProfiles) {
         if (!teacher.phone_number) continue;
@@ -102,9 +108,9 @@ Terima kasih atas kerja samanya. Selamat beraktivitas! ✨
 _Sistem Monitoring LakuKelas_`;
 
         try {
+            // Strict Device Token: Token hanya ditaruh di body, tanpa Auth Header
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
-                headers: { 'Authorization': settings.token },
                 body: new URLSearchParams({
                     'token': settings.token,
                     'target': teacher.phone_number,

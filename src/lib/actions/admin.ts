@@ -381,11 +381,19 @@ export async function saveWhatsAppSettings(token: string, enabled: boolean, time
 
 /**
  * Kirim pesan tes WhatsApp.
+ * V89.0: Menggunakan Strict Device Token (Tanpa Authorization Header).
  */
 export async function sendTestWhatsApp(token: string, target: string) {
     const msg = "🌟 *LAKUKELAS TEST* 🌟\nKoneksi WA Gateway Berhasil!";
     try {
-        const res = await fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': token.trim() }, body: new URLSearchParams({ 'token': token.trim(), 'target': target.trim(), 'message': msg }) });
+        const res = await fetch('https://api.fonnte.com/send', { 
+            method: 'POST', 
+            body: new URLSearchParams({ 
+                'token': token.trim(), 
+                'target': target.trim(), 
+                'message': msg 
+            }) 
+        });
         const resData = await res.json();
         return resData.status ? { success: true, message: 'Terkirim.' } : { success: false, error: resData.reason };
     } catch (e) { return { success: false, error: 'Gagal menghubungi Fonnte.' }; }

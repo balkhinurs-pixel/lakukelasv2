@@ -15,14 +15,14 @@ jobs:
       - name: Trigger WA Daily Schedule Reminder (06:00 WIB)
         if: github.event.schedule == '0 23 * * *' || github.event_name == 'workflow_dispatch'
         run: |
-          curl -X GET "https://app.lakukelas.my.id/api/cron/wa-reminder"
+          curl -X GET "https://lakukelasv2.vercel.app/api/cron/wa-reminder"
 
       - name: Trigger WA Attendance Reminder (08:00 WIB)
         if: github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch'
         run: |
-          curl -X GET "https://app.lakukelas.my.id/api/cron/wa-attendance-reminder"
+          curl -X GET "https://lakukelasv2.vercel.app/api/cron/wa-attendance-reminder"
 
       - name: Trigger Weekly Keep-Alive (Minggu)
         if: github.event.schedule == '0 0 * * 0' || github.event_name == 'workflow_dispatch'
         run: |
-          curl -X GET "https://app.lakukelas.my.id/api/keep-alive"
+          curl -X GET "https://lakukelasv2.vercel.app/api/keep-alive"

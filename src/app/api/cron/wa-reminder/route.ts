@@ -1,18 +1,23 @@
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getIndonesianDayName, getIndonesianTime } from '@/lib/timezone';
 import { format } from 'date-fns';
 
 /**
  * API Route untuk mengirimkan pengingat jadwal harian (06:00 WIB).
+ * V89.0: Menggunakan Service Role untuk bypass RLS dan Strict Device Token.
  */
 export async function GET(request: Request) {
   console.log('[CRON-WA] Starting daily schedule reminder...');
   
+  // Menggunakan Service Role Key untuk bypass RLS (Sistem otomatis tidak memiliki sesi login)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  
   try {
-    const supabase = await createClient();
-    
     const { data: settingsData } = await supabase
       .from('settings')
       .select('key, value')
@@ -25,7 +30,7 @@ export async function GET(request: Request) {
     };
 
     if (!settings.enabled || !settings.token) {
-        return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing.' });
+        return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing in database settings.' });
     }
 
     const nowIndo = getIndonesianTime();
@@ -89,9 +94,9 @@ Selamat beraktivitas dan semoga harinya menyenangkan!
 _Sistem Notifikasi LakuKelas_`;
 
         try {
+            // Strict Device Token: Tanpa Auth Header
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
-                headers: { 'Authorization': settings.token },
                 body: new URLSearchParams({
                     'token': settings.token,
                     'target': teacher.phone,
