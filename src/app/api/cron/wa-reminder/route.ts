@@ -29,8 +29,18 @@ export async function GET(request: Request) {
         appUrl: settingsData?.find(s => s.key === 'app_url')?.value || 'https://app.lakukelas.my.id'
     };
 
-    if (!settings.enabled || !settings.token) {
-        return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing in database settings.' });
+    if (!settings.enabled) {
+        return NextResponse.json({ 
+            success: false, 
+            message: 'WhatsApp Reminder is currently DISABLED in admin settings.' 
+        });
+    }
+
+    if (!settings.token) {
+        return NextResponse.json({ 
+            success: false, 
+            message: 'Fonnte API Token is MISSING in database. Please set it in Admin > WhatsApp Settings.' 
+        });
     }
 
     const nowIndo = getIndonesianTime();
@@ -50,7 +60,13 @@ export async function GET(request: Request) {
         .eq('day', dayName);
 
     if (scheduleError) throw scheduleError;
-    if (!schedules || schedules.length === 0) return NextResponse.json({ message: `No schedules for ${dayName}.` });
+    
+    if (!schedules || schedules.length === 0) {
+        return NextResponse.json({ 
+            success: true, 
+            message: `No teaching schedules found for today (${dayName}). System idle.` 
+        });
+    }
 
     const teacherMessages = schedules.reduce((acc, item: any) => {
         const teacherId = item.teacher_id;
@@ -69,6 +85,15 @@ export async function GET(request: Request) {
     }, {} as Record<string, any>);
 
     const results = [];
+    const teacherIds = Object.keys(teacherMessages);
+
+    if (teacherIds.length === 0) {
+        return NextResponse.json({ 
+            success: true, 
+            message: 'Schedules found, but no teachers have valid phone numbers registered.' 
+        });
+    }
+
     for (const teacherId in teacherMessages) {
         const teacher = teacherMessages[teacherId];
         let scheduleText = teacher.schedules.map((s: any) => `🔹 *${s.subject}* (${s.class}) jam ${s.time}`).join('\n');
@@ -104,14 +129,19 @@ _Sistem Notifikasi LakuKelas_`;
                 })
             });
             const resData = await response.json();
-            results.push({ teacher: teacher.name, success: resData.status });
+            results.push({ teacher: teacher.name, success: resData.status, reason: resData.reason || 'OK' });
         } catch (err: any) {
             results.push({ teacher: teacher.name, success: false, error: err.message });
         }
     }
 
-    return NextResponse.json({ success: true, processed: results.length, results });
+    return NextResponse.json({ 
+        success: true, 
+        day: dayName,
+        processed_count: results.length, 
+        details: results 
+    });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

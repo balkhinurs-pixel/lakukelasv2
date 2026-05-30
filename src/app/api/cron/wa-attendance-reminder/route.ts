@@ -31,8 +31,18 @@ export async function GET(request: Request) {
         appUrl: settingsData?.find(s => s.key === 'app_url')?.value || 'https://app.lakukelas.my.id'
     };
 
-    if (!settings.enabled || !settings.token) {
-        return NextResponse.json({ message: 'WhatsApp Reminder is disabled or token missing in database settings.' });
+    if (!settings.enabled) {
+        return NextResponse.json({ 
+            success: false, 
+            message: 'Attendance Reminder is currently DISABLED in admin settings.' 
+        });
+    }
+
+    if (!settings.token) {
+        return NextResponse.json({ 
+            success: false, 
+            message: 'Fonnte API Token is MISSING. Please configure it in Admin Panel.' 
+        });
     }
 
     const nowIndo = getIndonesianTime();
@@ -58,7 +68,10 @@ export async function GET(request: Request) {
     }
 
     if (expectedTeacherIds.length === 0) {
-        return NextResponse.json({ message: 'No teachers expected today.' });
+        return NextResponse.json({ 
+            success: true, 
+            message: `No teachers are scheduled or expected to work today (${dayName}).` 
+        });
     }
 
     // 3. Cek Siapa yang Sudah Absen
@@ -74,7 +87,10 @@ export async function GET(request: Request) {
 
     if (missingTeacherIds.length === 0) {
         console.log('[CRON-ATTENDANCE] All expected teachers have attended.');
-        return NextResponse.json({ message: 'All teachers attended.' });
+        return NextResponse.json({ 
+            success: true, 
+            message: 'Perfect! All expected teachers have already checked in for today.' 
+        });
     }
 
     // 4. Ambil data profil guru yang belum absen
@@ -84,7 +100,10 @@ export async function GET(request: Request) {
         .in('id', missingTeacherIds);
 
     if (!missingProfiles || missingProfiles.length === 0) {
-        return NextResponse.json({ message: 'No profiles found for missing teachers.' });
+        return NextResponse.json({ 
+            success: true, 
+            message: 'Teachers are missing check-in, but none of them have phone numbers registered.' 
+        });
     }
 
     // 5. Kirim Pesan Teguran Sopan (Strict Device Token Mode)
@@ -108,7 +127,7 @@ Terima kasih atas kerja samanya. Selamat beraktivitas! ✨
 _Sistem Monitoring LakuKelas_`;
 
         try {
-            // Strict Device Token: Token hanya ditaruh di body, tanpa Auth Header
+            // Strict Device Token: Token hanya ditaruh di body
             const response = await fetch('https://api.fonnte.com/send', {
                 method: 'POST',
                 body: new URLSearchParams({
@@ -118,7 +137,7 @@ _Sistem Monitoring LakuKelas_`;
                 })
             });
             const resData = await response.json();
-            results.push({ teacher: teacher.full_name, success: resData.status });
+            results.push({ teacher: teacher.full_name, success: resData.status, reason: resData.reason || 'Sent' });
         } catch (err: any) {
             results.push({ teacher: teacher.full_name, success: false, error: err.message });
         }
@@ -126,12 +145,13 @@ _Sistem Monitoring LakuKelas_`;
 
     return NextResponse.json({ 
       success: true, 
-      processed_count: missingProfiles.length,
+      day: dayName,
+      missing_count: missingProfiles.length,
       results 
     });
 
   } catch (error: any) {
     console.error('[CRON-ATTENDANCE] Fatal Error:', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
