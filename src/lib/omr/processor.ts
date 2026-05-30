@@ -1,5 +1,5 @@
 /**
- * @fileOverview OMR Processor Engine V92.0 (CALIBRATED FOR 20-SLOT RIGID GRID)
+ * @fileOverview OMR Processor Engine V93.0 (PRECISION CALIBRATED FOR V92.0 RIGID GRID)
  * Menangani deteksi bulatan pada tata letak kaku 3-kolom dengan tinggi baris tetap 32px.
  */
 
@@ -16,32 +16,31 @@ const CONFIG = {
     targetPoints: [0, 0, 794, 0, 794, 1123, 0, 1123],
     nis: {
         startX: 578,
-        startY: 157, // Bergeser ke atas sesuai layout baru
+        // KALIBRASI V93: top:120px + title_area:23px + half_circle:8px = 151
+        startY: 151, 
         gapX: 28,
-        gapY: 18.2, // Gap vertikal diperkecil agar pas dengan NIS 4px circles
+        gapY: 18.2, 
         rows: 10,
         cols: 5
     },
     answers: {
-        // Tiga Kolom Konfigurasi Grid - Kalibrasi V92.0
-        // startX: Sesuai dengan padding penyesuaian di UI
-        // startY: Dihitung dari top:360px + padding:8px + title:40px + center-offset
-        col1: { startX: 128, startY: 454, gapX: 30.5, gapY: 32 }, 
-        col2: { startX: 374, startY: 454, gapX: 30.5, gapY: 32 }, 
-        col3: { startX: 622, startY: 454, gapX: 30.5, gapY: 32 },
-        rowsPerCol: 20, // Kapasitas baru V92.0
+        // KALIBRASI V93: MatrixTop:360px + padding:32px + title_area:36px + half_row:16px - small_nudge:2px = 442
+        col1: { startX: 128, startY: 442, gapX: 30.5, gapY: 32 }, 
+        col2: { startX: 374, startY: 442, gapX: 30.5, gapY: 32 }, 
+        col3: { startX: 622, startY: 442, gapX: 30.5, gapY: 32 },
+        rowsPerCol: 20,
         options: ['A', 'B', 'C', 'D', 'E']
     }
 };
 
 export async function processLJK(imageElement: HTMLImageElement): Promise<OMRResult> {
-    if (typeof cv === 'undefined') throw new Error("OpenCV belum siap.");
+    if (typeof cv === 'undefined') throw new Error("Mesin OpenCV belum siap.");
 
     let src = cv.imread(imageElement);
     let gray = new cv.Mat();
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-    // 1. PERSPECTIVE WARP (Meluruskan Foto)
+    // 1. PERSPECTIVE WARP (Meluruskan Foto berdasarkan Anchor 4 Titik)
     let blurred = new cv.Mat();
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
     let thresh = new cv.Mat();
@@ -55,7 +54,8 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
         let cnt = contours.get(i);
         let approx = new cv.Mat();
         cv.approxPolyDP(cnt, approx, 0.02 * cv.arcLength(cnt, true), true);
-        if (approx.rows === 4 && cv.contourArea(cnt) > 400 && cv.contourArea(cnt) < 15000) {
+        // Deteksi kotak anchor hitam di pojok
+        if (approx.rows === 4 && cv.contourArea(cnt) > 300 && cv.contourArea(cnt) < 15000) {
             let rect = cv.boundingRect(cnt);
             corners.push({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
         }
@@ -64,6 +64,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
 
     let warped = new cv.Mat();
     if (corners.length >= 4) {
+        // Sortir titik: top-left, top-right, bottom-right, bottom-left
         corners.sort((a, b) => a.y - b.y);
         let top = corners.slice(0, 2).sort((a, b) => a.x - b.x);
         let bottom = corners.slice(corners.length - 2).sort((a, b) => a.x - b.x);
@@ -73,39 +74,49 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
         cv.warpPerspective(gray, warped, M, new cv.Size(CONFIG.targetWidth, CONFIG.targetHeight));
         srcPts.delete(); dstPts.delete(); M.delete();
     } else {
+        // Fallback jika anchor tidak ketemu: resize paksa (kurang akurat)
         cv.resize(gray, warped, new cv.Size(CONFIG.targetWidth, CONFIG.targetHeight), 0, 0, cv.INTER_AREA);
     }
 
-    // 2. SCANNING GRID
+    // 2. SCANNING GRID DENGAN PRE-PROCESSING KUAT
     let binary = new cv.Mat();
-    cv.adaptiveThreshold(warped, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 15, 10);
+    // Threshold lebih tebal untuk deteksi pulpen/pensil tipis
+    cv.adaptiveThreshold(warped, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 19, 12);
 
     const isFilled = (img: any, x: number, y: number) => {
-        const radius = 6.0; // Ukuran sensor disesuaikan untuk bulatan 22px
+        const radius = 8.5; // Radius sensor lebih besar (V93)
         try {
-            let rect = new cv.Rect(Math.round(x - radius), Math.round(y - radius), Math.round(radius * 2), Math.round(radius * 2));
+            let rect = new cv.Rect(
+                Math.round(x - radius), 
+                Math.round(y - radius), 
+                Math.round(radius * 2), 
+                Math.round(radius * 2)
+            );
             let roi = img.roi(rect);
             let count = cv.countNonZero(roi);
             roi.delete();
-            // Threshold 28% (sedikit lebih sensitif untuk pemindaian HP)
-            return count > (radius * 2 * radius * 2) * 0.28;
+            // Threshold 24%: Lebih sensitif terhadap isian siswa (V93)
+            return count > (radius * 2 * radius * 2) * 0.24;
         } catch (e) { return false; }
     };
 
     // Scan NIS
     let nis = "";
     for (let c = 0; c < CONFIG.nis.cols; c++) {
-        let d = "?";
+        let detectedDigit = "?";
         for (let r = 0; r < CONFIG.nis.rows; r++) {
-            if (isFilled(binary, CONFIG.nis.startX + (c * CONFIG.nis.gapX), CONFIG.nis.startY + (r * CONFIG.nis.gapY))) { d = String(r); break; }
+            if (isFilled(binary, CONFIG.nis.startX + (c * CONFIG.nis.gapX), CONFIG.nis.startY + (r * CONFIG.nis.gapY))) { 
+                detectedDigit = String(r); 
+                break; 
+            }
         }
-        nis += d;
+        nis += detectedDigit;
     }
 
     const studentAnswers = [];
     const cols = [CONFIG.answers.col1, CONFIG.answers.col2, CONFIG.answers.col3];
     
-    // Scan Total 60 Slot (20 baris x 3 kolom)
+    // Scan Total 60 Slot (20 baris x 3 kolom kaku)
     let globalIndex = 0;
     cols.forEach(col => {
         for (let r = 0; r < CONFIG.answers.rowsPerCol; r++) {
