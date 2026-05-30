@@ -1,7 +1,7 @@
 
 /**
- * @fileOverview OMR Processor Engine V87.0 (GROUPED MATRIX SUPPORT)
- * Menangani deteksi bulatan pada tata letak grid 3-kolom yang mendukung header.
+ * @fileOverview OMR Processor Engine V88.0 (CALIBRATED FOR 18-SLOT MATRIX)
+ * Menangani deteksi bulatan pada tata letak grid 3-kolom yang mendukung pindah kolom otomatis.
  */
 
 declare const cv: any;
@@ -24,11 +24,13 @@ const CONFIG = {
         cols: 5
     },
     answers: {
-        // Tiga Kolom Konfigurasi Grid
-        col1: { startX: 135, startY: 488, gapX: 31, gapY: 25.5 }, // gapY disesuaikan dengan CSS flex
-        col2: { startX: 375, startY: 488, gapX: 31, gapY: 25.5 }, 
-        col3: { startX: 615, startY: 488, gapX: 31, gapY: 25.5 },
-        rowsPerCol: 24, // Sama dengan MAX_PER_COL di PrintLjkView
+        // Tiga Kolom Konfigurasi Grid - Kalibrasi V88.0
+        // startX: Koordinat X bulatan pertama di setiap kolom
+        // startY: Koordinat Y bulatan pertama (setelah header Matriks Jawaban)
+        col1: { startX: 130, startY: 508, gapX: 31, gapY: 31.8 }, 
+        col2: { startX: 374, startY: 508, gapX: 31, gapY: 31.8 }, 
+        col3: { startX: 618, startY: 508, gapX: 31, gapY: 31.8 },
+        rowsPerCol: 18, // Harus sama dengan MAX_PER_COL di PrintLjkView agar sinkron
         options: ['A', 'B', 'C', 'D', 'E']
     }
 };
@@ -40,7 +42,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
     let gray = new cv.Mat();
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-    // 1. PERSPECTIVE WARP (Sama seperti V84)
+    // 1. PERSPECTIVE WARP (Meluruskan Foto)
     let blurred = new cv.Mat();
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
     let thresh = new cv.Mat();
@@ -80,13 +82,14 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
     cv.adaptiveThreshold(warped, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 15, 10);
 
     const isFilled = (img: any, x: number, y: number) => {
-        const radius = 7; // Lebih kecil untuk grid padat
+        const radius = 6.5; // Ukuran sensor disesuaikan dengan bulatan 23px
         try {
             let rect = new cv.Rect(Math.round(x - radius), Math.round(y - radius), radius * 2, radius * 2);
             let roi = img.roi(rect);
             let count = cv.countNonZero(roi);
             roi.delete();
-            return count > (radius * 2 * radius * 2) * 0.30; // Threshold 30%
+            // Threshold 30% (jika area hitam > 30%, dianggap diisi)
+            return count > (radius * 2 * radius * 2) * 0.30;
         } catch (e) { return false; }
     };
 
@@ -103,7 +106,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
     const studentAnswers = [];
     const cols = [CONFIG.answers.col1, CONFIG.answers.col2, CONFIG.answers.col3];
     
-    // Scan All Slots in 3 Columns
+    // Scan Total 54 Slot (18 baris x 3 kolom)
     let globalIndex = 0;
     cols.forEach(col => {
         for (let r = 0; r < CONFIG.answers.rowsPerCol; r++) {
@@ -114,7 +117,6 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
                     break;
                 }
             }
-            // Simpan indeks slot ini. Server Action akan memetakan ini ke No. Soal atau Header
             studentAnswers.push({ questionNum: globalIndex + 1, studentChoice: choice });
             globalIndex++;
         }

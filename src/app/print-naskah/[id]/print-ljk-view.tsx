@@ -59,9 +59,9 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
         return items;
     }, [questions]);
 
-    // 2. PEMBAGIAN KOLOM (Auto-Flow)
-    // Kapasitas max per kolom (misal 24 baris agar pas di A4)
-    const MAX_PER_COL = 24;
+    // 2. PEMBAGIAN KOLOM (Auto-Flow V88.0)
+    // Kapasitas per kolom diturunkan ke 18 agar tidak menabrak footer (sesuai gambar user)
+    const MAX_PER_COL = 18;
     const col1 = displayItems.slice(0, MAX_PER_COL);
     const col2 = displayItems.slice(MAX_PER_COL, MAX_PER_COL * 2);
     const col3 = displayItems.slice(MAX_PER_COL * 2, MAX_PER_COL * 3);
@@ -94,8 +94,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                     <ArrowLeft className="h-4 w-4" /> Kembali
                 </Button>
                 <div className="text-center">
-                    <div className="font-black uppercase tracking-widest text-[10px] sm:text-xs">LJK GROUPED FLOW V87.0</div>
-                    <p className="text-[9px] font-bold text-indigo-400 uppercase">Auto-Splitting Section Matrix</p>
+                    <div className="font-black uppercase tracking-widest text-[10px] sm:text-xs">LJK AUTO-FLOW V88.0</div>
+                    <p className="text-[9px] font-bold text-indigo-400 uppercase">18-Slot Column Management</p>
                 </div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-black gap-2 px-6 shadow-lg">
                     <Printer className="h-4 w-4" /> CETAK LJK
@@ -160,9 +160,9 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                             {renderColumn(col3)}
                         </div>
                         
-                        {displayItems.length > 72 && (
+                        {displayItems.length > 54 && (
                             <div className="absolute bottom-4 left-0 right-0 text-center">
-                                <p className="text-[7pt] font-bold text-rose-500 uppercase tracking-widest">Hanya 72 baris (incl. header) yang ditampilkan.</p>
+                                <p className="text-[7pt] font-bold text-rose-500 uppercase tracking-widest">Maksimal 54 baris (termasuk judul kelompok) per halaman.</p>
                             </div>
                         )}
                     </div>
