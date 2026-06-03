@@ -89,10 +89,10 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                 @media print {
                     @page {
                         size: A4 portrait;
-                        margin: 15mm 20mm; /* Atur margin standar di level printer */
+                        margin: 15mm 20mm;
                     }
                     .print-area {
-                        padding: 0 !important; /* Hapus padding kontainer karena sudah ada margin @page */
+                        padding: 0 !important;
                     }
                 }
             `}</style>
@@ -191,7 +191,14 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                                 <span className="font-bold min-w-[32pt] text-left">{globalIdx + 1}.</span>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="mb-4">
-                                                        <MathText content={q.question_text} />
+                                                        {isMatching ? (
+                                                            <MathText content={(() => {
+                                                                const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
+                                                                return lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
+                                                            })()} />
+                                                        ) : (
+                                                            <MathText content={q.question_text} />
+                                                        )}
                                                     </div>
                                                     
                                                     {q.visual_svg && (
@@ -222,9 +229,29 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="text-[10.5pt]">
-                                                                    <tr className="border-b-2 border-black last:border-b-0">
-                                                                        <td colSpan={4} className="p-4 italic text-slate-400 text-center">Tabel menjodohkan otomatis berdasarkan konten...</td>
-                                                                    </tr>
+                                                                    {(() => {
+                                                                        const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
+                                                                        const matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
+                                                                        const rowCount = Math.max(matchingItems.length, options.length);
+                                                                        
+                                                                        return Array.from({ length: rowCount }).map((_, i) => (
+                                                                            <tr key={i} className="border-b-2 border-black last:border-b-0">
+                                                                                <td className="p-2 border-r-2 border-black text-center font-bold">{i + 1}</td>
+                                                                                <td className="p-2 border-r-2 border-black min-w-[70mm]">
+                                                                                    {matchingItems[i] ? <MathText content={matchingItems[i].replace(/^\d+[\.\)]\s*/, '')} /> : <div className="h-6 italic text-slate-300">...</div>}
+                                                                                </td>
+                                                                                <td className="p-2 border-r-2 border-black text-center font-bold text-slate-200">[.....]</td>
+                                                                                <td className="p-2 min-w-[50mm]">
+                                                                                    {options[i] ? (
+                                                                                        <div className="flex gap-2 items-start">
+                                                                                            <span className="font-bold min-w-[15pt]">{options[i][0]}.</span>
+                                                                                            <MathText content={options[i][1]} />
+                                                                                        </div>
+                                                                                    ) : <div className="h-6 italic text-slate-300">...</div>}
+                                                                                </td>
+                                                                            </tr>
+                                                                        ));
+                                                                    })()}
                                                                 </tbody>
                                                             </table>
                                                         </div>
