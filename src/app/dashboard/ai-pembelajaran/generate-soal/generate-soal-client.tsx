@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -26,7 +27,11 @@ import {
     Zap,
     Cpu,
     Users,
-    TrendingUp
+    TrendingUp,
+    ArrowRight,
+    ImageIcon,
+    Copy,
+    ClipboardCheck
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,23 +63,46 @@ import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog
 import { readStreamableValue } from 'ai/rsc';
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
+/**
+ * Robust MathText Component V119 (Scroll Protected)
+ * Ensures both block and inline math scroll horizontally on small screens.
+ */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
+  
+  // Standardized regex for all LaTeX formats
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
         if (!part) return null;
-        if (part.startsWith('$$')) return <div key={i} className="my-3 overflow-x-auto custom-scrollbar pb-2"><BlockMath math={part.slice(2, -2)} /></div>;
-        if (part.startsWith('$')) return <InlineMath key={i} math={part.slice(1, -1)} />;
-        if (part.startsWith('\\[')) return (
-            <div key={i} className="my-3 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2">
-                <BlockMath math={part.slice(2, -2)} />
-            </div>
-        );
-        if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
         
+        // Block Math Rendering (with horizontal scroll)
+        if (part.startsWith('$$') || part.startsWith('\\[')) {
+          const isDoubleDollar = part.startsWith('$$');
+          const math = isDoubleDollar ? part.slice(2, -2) : part.slice(2, -2);
+          return (
+            <div key={i} className="my-3 overflow-x-auto custom-scrollbar pb-2">
+              <div className="min-w-min">
+                <BlockMath math={math} />
+              </div>
+            </div>
+          );
+        }
+        
+        // Inline Math Rendering (with horizontal scroll protection)
+        if (part.startsWith('$') || part.startsWith('\\(')) {
+          const isDollar = part.startsWith('$');
+          const math = isDollar ? part.slice(1, -1) : part.slice(2, -2);
+          return (
+            <span key={i} className="inline-block max-w-full overflow-x-auto custom-scrollbar align-middle py-0.5">
+               <InlineMath math={math} />
+            </span>
+          );
+        }
+        
+        // Regular Text and Tables
         return (
             <ReactMarkdown 
                 key={i} 
@@ -99,20 +127,6 @@ const MathText = ({ content, className }: { content: string, className?: string 
   );
 };
 
-const mapelByJenjang: Record<string, string[]> = {
-    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
-    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
-    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
-    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
-};
-
-const getClassOptions = (jenjang: string) => {
-    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
-    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
-    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
-    return [];
-};
-
 export default function GenerateSoalClient({ 
     classes: _classes, 
     subjects: _subjects 
@@ -135,7 +149,6 @@ export default function GenerateSoalClient({
     
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [uploadedFile, setUploadedFile] = React.useState<{ name: string, uri: string, mime: string } | null>(null);
-
     const [customSubject, setCustomSubject] = React.useState("");
 
     const [form, setForm] = React.useState<QuestionGenerationInput>({
@@ -155,6 +168,7 @@ export default function GenerateSoalClient({
         difficulty: 'sedang'
     });
 
+    // Countdown Logic for Visual Feedback
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
         if (loading && questions.length === 0) {
@@ -530,7 +544,7 @@ export default function GenerateSoalClient({
                         </ScrollArea>
                         <div className="p-4 sm:p-10 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe">
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 sm:h-16 rounded-2xl font-black uppercase tracking-widest"><ArrowLeft className="h-5 w-5" /> Kembali</Button>
-                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-14 sm:h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-100 transition-all active:scale-95">{saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal</Button>
+                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-14 sm:h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95">{saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal</Button>
                         </div>
                     </div>
                 </DialogContent>
@@ -543,4 +557,11 @@ export default function GenerateSoalClient({
             `}</style>
         </div>
     );
+}
+
+function getClassOptions(jenjang: string) {
+    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
+    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
+    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
+    return [];
 }

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -55,41 +56,52 @@ import { readStreamableValue } from 'ai/rsc';
 import { useRouter } from "next/navigation";
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
-const mapelByJenjang: Record<string, string[]> = {
-    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
-    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
-    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
-    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
-};
-
-const getClassOptions = (jenjang: string) => {
-    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
-    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
-    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
-    return [];
-};
-
+/**
+ * Robust MathText Component V119 (Scroll Protected)
+ * Optimized for large content and tables.
+ */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-  const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
-        if (part.startsWith('\\[')) return <div key={i} className="my-4 overflow-x-auto"><BlockMath math={part.slice(2, -2)} /></div>;
-        if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
+        if (!part) return null;
+
+        if (part.startsWith('$$') || part.startsWith('\\[')) {
+          const isDoubleDollar = part.startsWith('$$');
+          const math = isDoubleDollar ? part.slice(2, -2) : part.slice(2, -2);
+          return (
+            <div key={i} className="my-4 overflow-x-auto custom-scrollbar pb-2">
+                <div className="min-w-min">
+                    <BlockMath math={math} />
+                </div>
+            </div>
+          );
+        }
+
+        if (part.startsWith('$') || part.startsWith('\\(')) {
+          const isDollar = part.startsWith('$');
+          const math = isDollar ? part.slice(1, -1) : part.slice(2, -2);
+          return (
+            <span key={i} className="inline-block max-w-full overflow-x-auto custom-scrollbar align-middle py-0.5">
+               <InlineMath math={math} />
+            </span>
+          );
+        }
         
         return (
             <ReactMarkdown 
                 key={i} 
                 remarkPlugins={[remarkGfm]}
                 components={{
-                    table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="w-full border-collapse border border-slate-200 text-sm" {...props} /></div>,
+                    table: ({node, ...props}) => <div className="overflow-x-auto my-6 custom-scrollbar"><table className="w-full border-collapse border border-slate-200 text-sm" {...props} /></div>,
                     th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-2 font-bold" {...props} />,
                     td: ({node, ...props}) => <td className="border border-slate-200 p-2" {...props} />,
                     h1: ({node, ...props}) => <h1 className="text-xl font-black uppercase text-indigo-700 mt-8 mb-4 border-b pb-2" {...props} />,
                     h2: ({node, ...props}) => <h2 className="text-lg font-bold text-slate-800 mt-6 mb-3" {...props} />,
-                    p: ({node, ...props}) => <p className="mb-4 leading-relaxed text-slate-600" {...props} />
+                    p: ({node, ...props}) => <p className="mb-4 leading-relaxed text-slate-600 break-words" {...props} />
                 }}
             >
                 {part}
@@ -415,3 +427,17 @@ export default function GenerateMateriClient({
         </div>
     );
 }
+
+function getClassOptions(jenjang: string) {
+    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
+    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
+    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
+    return [];
+}
+
+const mapelByJenjang: Record<string, string[]> = {
+    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
+    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
+    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
+};

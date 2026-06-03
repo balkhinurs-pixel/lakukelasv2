@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -63,19 +64,40 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+/**
+ * Robust MathText Component V119 (Unified)
+ * Ensures math formulas scroll horizontally on mobile.
+ */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-  const parts = content.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
-    <div className={cn("math-text-render w-full max-w-full overflow-hidden", className)}>
+    <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
-        if (part.startsWith('\\[')) return (
-            <div key={i} className="my-3 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2">
-                <BlockMath math={part.slice(2, -2)} />
+        if (!part) return null;
+        
+        if (part.startsWith('$$') || part.startsWith('\\[')) {
+          const isDoubleDollar = part.startsWith('$$');
+          const math = isDoubleDollar ? part.slice(2, -2) : part.slice(2, -2);
+          return (
+            <div key={i} className="my-3 overflow-x-auto custom-scrollbar pb-2">
+                <div className="min-w-min">
+                    <BlockMath math={math} />
+                </div>
             </div>
-        );
-        if (part.startsWith('\\(')) return <InlineMath key={i} math={part.slice(2, -2)} />;
+          );
+        }
+        
+        if (part.startsWith('$') || part.startsWith('\\(')) {
+          const isDollar = part.startsWith('$');
+          const math = isDollar ? part.slice(1, -1) : part.slice(2, -2);
+          return (
+            <span key={i} className="inline-block max-w-full overflow-x-auto custom-scrollbar align-middle py-0.5">
+               <InlineMath math={math} />
+            </span>
+          );
+        }
         
         return (
             <ReactMarkdown 
@@ -83,14 +105,14 @@ const MathText = ({ content, className }: { content: string, className?: string 
                 remarkPlugins={[remarkGfm]}
                 components={{
                     table: ({node, ...props}) => (
-                        <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm custom-scrollbar">
                             <table className="w-full border-collapse text-sm text-center" {...props} />
                         </div>
                     ),
                     th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-3 font-black text-slate-900 uppercase tracking-tight" {...props} />,
                     td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
                     tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
-                    p: ({node, ...props}) => <span className="whitespace-pre-wrap" {...props} />
+                    p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed break-words" {...props} />
                 }}
             >
                 {part}
@@ -301,17 +323,6 @@ export default function BankSoalClient({
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const getQuestionTypeLabel = (type: string) => {
-        switch(type) {
-            case 'multiple_choice': return 'PG';
-            case 'essay': return 'Uraian';
-            case 'short_answer': return 'Isian';
-            case 'true_false': return 'B/S';
-            case 'matching': return 'Jodohkan';
-            default: return type;
-        }
-    };
-
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
             {exporting && (
@@ -502,7 +513,7 @@ export default function BankSoalClient({
                                             </Badge>
                                             {q.cognitive_level && (
                                                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 uppercase font-black text-[9px] tracking-widest px-2.5 py-1">
-                                                    <BrainCircuit className="w-3 h-3 mr-1.5 opacity-60" />
+                                                    <BrainCircuit className="w-3 h-3 mr-1 opacity-60" />
                                                     Level {q.cognitive_level}
                                                 </Badge>
                                             )}
@@ -709,4 +720,15 @@ export default function BankSoalClient({
             `}</style>
         </div>
     );
+}
+
+function getQuestionTypeLabel(type: string) {
+    switch(type) {
+        case 'multiple_choice': return 'PG';
+        case 'essay': return 'Uraian';
+        case 'short_answer': return 'Isian';
+        case 'true_false': return 'B/S';
+        case 'matching': return 'Jodohkan';
+        default: return type;
+    }
 }
