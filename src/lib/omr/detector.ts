@@ -32,7 +32,7 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
   let gray = new cv.Mat();
   let blurred = new cv.Mat();
   let thresh = new cv.Mat();
-  let contours = new cv.TypedVector(cv.Mat);
+  let contours = new cv.MatVector(); // Perbaikan: Gunakan MatVector sebagai pengganti TypedVector
   let hierarchy = new cv.Mat();
 
   try {
