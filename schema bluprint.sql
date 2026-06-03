@@ -30,7 +30,7 @@ BEGIN
 END $$;
 
 -- =========================================================================
--- 3. TABLES (Sesuai Struktur Asli Mentah)
+-- 3. TABLES (Sesuai Struktur Asli Mentah & Konfigurasi Google Drive)
 -- =========================================================================
 
 -- MASTER: Tahun Ajaran (Sudah ditambahkan teacher_id agar tidak error cache)
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS public.school_years (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
     name text NOT NULL UNIQUE,
     is_active boolean DEFAULT false,
-    teacher_id uuid -- Dibuat tanpa fkey dulu agar tidak melingkar saat profiles dibuat
+    teacher_id uuid
 );
 COMMENT ON TABLE public.school_years IS 'Stores school year information.';
 
@@ -66,9 +66,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     gemini_api_key text,
     npsn text,
     school_email text,
-    school_website text
+    school_website text,
+    ai_model text DEFAULT 'gemini-2.5-flash'
 );
 COMMENT ON TABLE public.profiles IS 'Stores user profile information.';
+COMMENT ON COLUMN public.profiles.ai_model IS 'Menyimpan identifier model Gemini yang dipilih pengguna (misal: gemini-2.5-flash atau gemini-3-flash-preview)';
 
 -- Sambungkan FKey school_years ke profiles setelah profiles terbuat
 ALTER TABLE public.school_years DROP CONSTRAINT IF EXISTS school_years_teacher_id_fkey;
@@ -98,23 +100,59 @@ CREATE TABLE IF NOT EXISTS public.agendas (
 );
 COMMENT ON TABLE public.agendas IS 'Stores personal teacher agendas and reminders.';
 
--- AI Documents (Asli: Mengarah langsung ke auth.users)
+-- TABEL INTEGRASI GOOGLE DRIVE
+CREATE TABLE IF NOT EXISTS public.google_drive_integrations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL DEFAULT 'google',
+    drive_email TEXT,
+    folder_id TEXT,
+    folder_url TEXT,
+    folder_name TEXT DEFAULT 'LakuKelas AI',
+    status TEXT NOT NULL DEFAULT 'connected',
+    connected_at TIMESTAMPTZ DEFAULT now(),
+    disconnected_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(user_id)
+);
+
+-- TABEL REPOSITORY DOKUMEN AI
 CREATE TABLE IF NOT EXISTS public.ai_documents (
-    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    document_type text NOT NULL,
-    title text NOT NULL,
-    subject text,
-    class_level text,
-    semester text,
-    drive_file_id text,
-    drive_file_url text,
-    drive_folder_id text,
-    mime_type text,
-    is_public boolean DEFAULT false,
-    status text DEFAULT 'created'::text,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    document_type TEXT NOT NULL, -- 'rpp', 'soal', 'naskah_ujian'
+    title TEXT NOT NULL,
+    subject TEXT,
+    class_level TEXT,
+    semester TEXT,
+    drive_file_id TEXT,
+    drive_file_url TEXT,
+    drive_folder_id TEXT,
+    mime_type TEXT,
+    is_public BOOLEAN DEFAULT false,
+    status TEXT DEFAULT 'created',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    lkpd_prompt TEXT, -- Menyimpan instruksi visual pembuatan LKPD via AI Image
+    question_ids UUID[] DEFAULT '{}', -- Menyimpan daftar ID bank soal terkait dokumen ini
+    exam_date DATE, -- Tanggal pelaksanaan ujian
+    exam_time TEXT -- Waktu/durasi pelaksanaan ujian
+);
+COMMENT ON COLUMN public.ai_documents.lkpd_prompt IS 'Menyimpan instruksi visual untuk pembuatan Lembar Kerja Peserta Didik via AI Image';
+
+-- TABEL REPOSITORY CP / ATP 
+CREATE TABLE IF NOT EXISTS public.cp_atp (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    phase TEXT NOT NULL, 
+    class_level TEXT NOT NULL,
+    drive_file_id TEXT,
+    drive_file_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- MASTER: Classes
@@ -145,7 +183,7 @@ CREATE TABLE IF NOT EXISTS public.students (
 );
 COMMENT ON TABLE public.students IS 'Stores student information.';
 
--- Attendance Records
+-- Attendance Records (Tabel Utama Absen)
 CREATE TABLE IF NOT EXISTS public.attendance_records (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
     student_id uuid NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
@@ -159,23 +197,10 @@ CREATE TABLE IF NOT EXISTS public.attendance_records (
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT attendance_records_status_check CHECK ((status = ANY (ARRAY['Hadir'::text, 'Sakit'::text, 'Izin'::text, 'Alpha'::text])))
 );
-COMMENT ON TABLE public.attendance_records IS 'Tabel individual untuk setiap entri absensi siswa.';
 
--- Google Drive Integrations (Asli: Mengarah langsung ke auth.users)
-CREATE TABLE IF NOT EXISTS public.google_drive_integrations (
-    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
-    user_id uuid NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-    provider text DEFAULT 'google'::text NOT NULL,
-    drive_email text,
-    folder_id text,
-    folder_url text,
-    folder_name text DEFAULT 'LakuKelas AI'::text,
-    status text DEFAULT 'connected'::text NOT NULL,
-    connected_at timestamp with time zone DEFAULT now(),
-    disconnected_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
-);
+-- ALIAS VIEW: Mengantisipasi jika kodingan lama memanggil tabel "attendance"
+CREATE OR REPLACE VIEW public.attendance AS 
+SELECT * FROM public.attendance_records;
 
 -- Grade Records
 CREATE TABLE IF NOT EXISTS public.grade_records (
@@ -190,7 +215,6 @@ CREATE TABLE IF NOT EXISTS public.grade_records (
     score numeric(5,2) NOT NULL,
     created_at timestamp with time zone DEFAULT now()
 );
-COMMENT ON TABLE public.grade_records IS 'Tabel individual untuk setiap entri nilai siswa.';
 
 -- Holidays
 CREATE TABLE IF NOT EXISTS public.holidays (
@@ -216,7 +240,6 @@ CREATE TABLE IF NOT EXISTS public.journal_entries (
     teacher_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     school_year_id uuid NOT NULL REFERENCES public.school_years(id) ON DELETE RESTRICT
 );
-COMMENT ON TABLE public.journal_entries IS 'Stores teaching journal entries.';
 
 -- Materials
 CREATE TABLE IF NOT EXISTS public.materials (
@@ -230,7 +253,7 @@ CREATE TABLE IF NOT EXISTS public.materials (
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Questions (Asli: Mengarah langsung ke auth.users)
+-- Questions
 CREATE TABLE IF NOT EXISTS public.questions (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
     created_by uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -256,7 +279,8 @@ CREATE TABLE IF NOT EXISTS public.questions (
     needs_review boolean DEFAULT true,
     status text DEFAULT 'draft'::text,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    visual_svg text -- Menyimpan ilustrasi vektor matematika untuk soal
 );
 
 -- Schedule
@@ -269,14 +293,12 @@ CREATE TABLE IF NOT EXISTS public.schedule (
     subject_id uuid NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
     teacher_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
-COMMENT ON TABLE public.schedule IS 'Stores weekly teaching schedule.';
 
 -- Settings
 CREATE TABLE IF NOT EXISTS public.settings (
     key text NOT NULL PRIMARY KEY,
     value text
 );
-COMMENT ON TABLE public.settings IS 'Stores application-wide settings.';
 
 -- Student Notes
 CREATE TABLE IF NOT EXISTS public.student_notes (
@@ -287,7 +309,6 @@ CREATE TABLE IF NOT EXISTS public.student_notes (
     note text NOT NULL,
     type text DEFAULT 'neutral'::text NOT NULL
 );
-COMMENT ON TABLE public.student_notes IS 'Stores notes about students from teachers.';
 
 -- Teacher Attendance
 CREATE TABLE IF NOT EXISTS public.teacher_attendance (
@@ -299,7 +320,6 @@ CREATE TABLE IF NOT EXISTS public.teacher_attendance (
     status text NOT NULL,
     reason text
 );
-COMMENT ON TABLE public.teacher_attendance IS 'Stores daily teacher attendance records.';
 
 -- =========================================================================
 -- 4. INDEXES
@@ -319,21 +339,26 @@ CREATE INDEX IF NOT EXISTS idx_questions_user ON public.questions USING btree (c
 -- =========================================================================
 -- 5. VIEWS
 -- =========================================================================
-CREATE OR REPLACE VIEW public.attendance_history AS
- SELECT ar.id, ar.date, ar.meeting_number, ar.class_id, ar.subject_id, ar.teacher_id, ar.school_year_id, ar.status, ar.student_id,
-    c.name AS class_name, s.name AS subject_name, p.full_name AS teacher_name
-   FROM public.attendance_records ar
-     JOIN public.classes c ON ar.class_id = c.id
-     JOIN public.subjects s ON ar.subject_id = s.id
-     JOIN public.profiles p ON ar.teacher_id = p.id;
 
+-- 1. VIEW UNTUK RIWAYAT PRESENSI (JOIN NAMA KELAS & MAPEL)
+CREATE OR REPLACE VIEW public.attendance_history AS
+SELECT 
+    ar.id, ar.date, ar.meeting_number, ar.status, ar.class_id, ar.subject_id, ar.teacher_id, ar.student_id, ar.school_year_id,
+    c.name as class_name, s.name as subject_name, p.full_name as teacher_name
+FROM public.attendance_records ar
+JOIN public.classes c ON ar.class_id = c.id
+JOIN public.subjects s ON ar.subject_id = s.id
+JOIN public.profiles p ON ar.teacher_id = p.id;
+
+-- 2. VIEW UNTUK RIWAYAT NILAI (JOIN NAMA KELAS & MAPEL)
 CREATE OR REPLACE VIEW public.grades_history AS
- SELECT gr.id, gr.date, gr.assessment_type, gr.class_id, gr.subject_id, gr.teacher_id, gr.school_year_id, gr.score, gr.student_id,
-    c.name AS class_name, s.name AS subject_name, s.kkm AS subject_kkm, p.full_name AS teacher_name
-   FROM public.grade_records gr
-     JOIN public.classes c ON gr.class_id = c.id
-     JOIN public.subjects s ON gr.subject_id = s.id
-     JOIN public.profiles p ON gr.teacher_id = p.id;
+SELECT 
+    gr.id, gr.date, gr.assessment_type, gr.score, gr.class_id, gr.subject_id, gr.teacher_id, gr.student_id, gr.school_year_id,
+    c.name as class_name, s.name as subject_name, s.kkm as subject_kkm, p.full_name as teacher_name
+FROM public.grade_records gr
+JOIN public.classes c ON gr.class_id = c.id
+JOIN public.subjects s ON gr.subject_id = s.id
+JOIN public.profiles p ON gr.teacher_id = p.id;
 
 CREATE OR REPLACE VIEW public.journal_entries_with_names AS
  SELECT je.id, je.date, je.class_id, je.subject_id, je.meeting_number, je.learning_objectives, je.learning_activities, je.assessment, je.reflection, je.teacher_id, je.school_year_id,
@@ -416,6 +441,77 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.get_teacher_attendance_summary(p_date DATE)
+RETURNS TABLE (
+    total_expected BIGINT, total_present BIGINT, total_late BIGINT, total_absent BIGINT, attendance_rate NUMERIC
+) LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    v_policy TEXT; v_expected_count BIGINT; v_present_count BIGINT; v_late_count BIGINT; v_day_name TEXT;
+BEGIN
+    SELECT value INTO v_policy FROM settings WHERE key = 'attendance_policy';
+    v_policy := COALESCE(v_policy, 'schedule_based');
+    v_day_name := CASE extract(dow from p_date)
+        WHEN 0 THEN 'Minggu' WHEN 1 THEN 'Senin' WHEN 2 THEN 'Selasa'
+        WHEN 3 THEN 'Rabu' WHEN 4 THEN 'Kamis' WHEN 5 THEN 'Jumat'
+        WHEN 6 THEN 'Sabtu' END;
+    IF v_policy = 'daily_based' THEN
+        SELECT count(*) INTO v_expected_count FROM profiles WHERE role IN ('teacher', 'headmaster') AND is_activated = true;
+    ELSE
+        SELECT count(DISTINCT teacher_id) INTO v_expected_count FROM schedule WHERE day = v_day_name;
+    END IF;
+    SELECT count(*) INTO v_present_count FROM teacher_attendance WHERE date = p_date AND status IN ('Tepat Waktu', 'Terlambat');
+    SELECT count(*) INTO v_late_count FROM teacher_attendance WHERE date = p_date AND status = 'Terlambat';
+    RETURN QUERY SELECT v_expected_count, v_present_count, v_late_count, (v_expected_count - v_present_count),
+        CASE WHEN v_expected_count = 0 THEN 100 ELSE ROUND((v_present_count::NUMERIC / v_expected_count::NUMERIC) * 100, 1) END;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_teacher_activity_counts()
+RETURNS TABLE (
+    teacher_id UUID,
+    teacher_name TEXT,
+    attendance_count BIGINT,
+    grades_count BIGINT,
+    journal_count BIGINT,
+    classes_handled_count BIGINT
+) LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        p.id as teacher_id,
+        p.full_name as teacher_name,
+        COALESCE(att.cnt, 0) as attendance_count,
+        COALESCE(grd.cnt, 0) as grades_count,
+        COALESCE(jrn.cnt, 0) as journal_count,
+        COALESCE(sch.cnt, 0) as classes_handled_count
+    FROM public.profiles p
+    LEFT JOIN (
+        SELECT ar.teacher_id, count(DISTINCT (ar.date, ar.class_id, ar.subject_id, ar.meeting_number)) as cnt 
+        FROM public.attendance_records ar 
+        GROUP BY ar.teacher_id
+    ) att ON p.id = att.teacher_id
+    LEFT JOIN (
+        SELECT gr.teacher_id, count(DISTINCT (gr.date, gr.class_id, gr.subject_id, gr.assessment_type)) as cnt 
+        FROM public.grade_records gr 
+        GROUP BY gr.teacher_id
+    ) grd ON p.id = grd.teacher_id
+    LEFT JOIN (
+        SELECT je.teacher_id, count(*) as cnt 
+        FROM public.journal_entries je 
+        GROUP BY je.teacher_id
+    ) jrn ON p.id = jrn.teacher_id
+    LEFT JOIN (
+        SELECT s.teacher_id, count(DISTINCT s.class_id) as cnt 
+        FROM public.schedule s 
+        GROUP BY s.teacher_id
+    ) sch ON p.id = sch.teacher_id
+    WHERE p.role IN ('teacher', 'headmaster') AND p.is_activated = true
+    ORDER BY p.full_name ASC;
+END;
+$$;
+
+COMMENT ON FUNCTION public.get_teacher_activity_counts() IS 'Fungsi untuk dashboard monitoring kepala sekolah';
+
 -- =========================================================================
 -- 7. TRIGGERS
 -- =========================================================================
@@ -426,72 +522,99 @@ CREATE TRIGGER on_auth_user_created
   EXECUTE FUNCTION public.handle_new_user();
 
 -- =========================================================================
--- 8. ROW LEVEL SECURITY (RLS) & POLICIES (Berdasarkan skrip awal Anda)
+-- 8. ROW LEVEL SECURITY (RLS) & POLICIES (Sudah Diperbarui via Snippet Anda)
 -- =========================================================================
--- Kebijakan dasar bawaan skrip awal yang disesuaikan agar aman & lancar
-CREATE POLICY "Profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
+
+-- PROFILES POLICIES
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
+CREATE POLICY "Allow public read for profiles" ON public.profiles FOR SELECT TO anon USING (true); -- BARU: Untuk bot WA eksternal
 CREATE POLICY "Pengguna dapat memperbarui profil mereka sendiri" ON public.profiles FOR UPDATE USING ((auth.uid() = id)) WITH CHECK ((auth.uid() = id));
 CREATE POLICY "Admin dapat mengelola semua profil" ON public.profiles USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+-- AGENDAS POLICIES
 CREATE POLICY "Guru dapat mengelola agenda mereka sendiri" ON public.agendas USING ((auth.uid() = teacher_id)) WITH CHECK ((auth.uid() = teacher_id));
 CREATE POLICY "Admin dapat mengelola agenda" ON public.agendas USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-CREATE POLICY "Users can view own AI documents" ON public.ai_documents FOR SELECT USING ((auth.uid() = user_id));
-CREATE POLICY "Users can insert own AI documents" ON public.ai_documents FOR INSERT WITH CHECK ((auth.uid() = user_id));
-CREATE POLICY "Users can update own AI documents" ON public.ai_documents FOR UPDATE USING ((auth.uid() = user_id));
-CREATE POLICY "Users can delete own AI documents" ON public.ai_documents FOR DELETE USING ((auth.uid() = user_id));
-CREATE POLICY "Users can manage own AI documents" ON public.ai_documents USING ((auth.uid() = user_id));
-
+-- CLASSES POLICIES
 CREATE POLICY "Guru dapat melihat semua kelas" ON public.classes FOR SELECT USING ((auth.role() = 'authenticated'::text));
 CREATE POLICY "Admin dapat mengelola kelas" ON public.classes USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+-- SUBJECTS POLICIES
 CREATE POLICY "Guru dapat melihat semua mapel" ON public.subjects FOR SELECT USING ((auth.role() = 'authenticated'::text));
 CREATE POLICY "Admin dapat mengelola mapel" ON public.subjects USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-CREATE POLICY "Guru dapat melihat siswa di kelasnya" ON public.students FOR SELECT USING (((auth.role() = 'authenticated'::text) AND ((EXISTS ( SELECT 1 FROM public.schedule WHERE ((schedule.class_id = students.class_id) AND (schedule.teacher_id = auth.uid())))) OR (EXISTS ( SELECT 1 FROM public.classes WHERE ((classes.id = students.class_id) AND (classes.teacher_id = auth.uid())))))));
+-- STUDENTS POLICIES
+CREATE POLICY "Guru dapat melihat siswa di kelasnya" ON public.students FOR SELECT USING (((auth.role() = 'authenticated'::text) AND ((EXISTS ( SELECT 1 FROM public.schedule WHERE ((schedule.class_id = students.class_id) Wolf (schedule.teacher_id = auth.uid())))) OR (EXISTS ( SELECT 1 FROM public.classes WHERE ((classes.id = students.class_id) AND (classes.teacher_id = auth.uid())))))));
 CREATE POLICY "Admin dapat mengelola siswa" ON public.students USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-CREATE POLICY "Users can view own drive integration" ON public.google_drive_integrations FOR SELECT USING ((auth.uid() = user_id));
-CREATE POLICY "Users can insert own drive integration" ON public.google_drive_integrations FOR INSERT WITH CHECK ((auth.uid() = user_id));
-CREATE POLICY "Users can update own drive integration" ON public.google_drive_integrations FOR UPDATE USING ((auth.uid() = user_id));
-CREATE POLICY "Users can manage own drive integration" ON public.google_drive_integrations USING ((auth.uid() = user_id));
-
-CREATE POLICY "Allow public read holidays" ON public.holidays FOR SELECT USING ((auth.role() = 'authenticated'::text));
+-- HOLIDAYS POLICIES
+ALTER TABLE public.holidays ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read holidays" ON public.holidays;
+CREATE POLICY "Allow public read for holidays" ON public.holidays FOR SELECT TO anon USING (true); -- BARU: Akses anonim cek hari libur
 CREATE POLICY "Allow admin manage holidays" ON public.holidays USING ((EXISTS ( SELECT 1 FROM public.profiles WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text)))));
 
+-- JOURNAL POLICIES
 CREATE POLICY "Guru dapat mengelola jurnal mereka sendiri" ON public.journal_entries USING ((auth.uid() = teacher_id)) WITH CHECK ((auth.uid() = teacher_id));
 CREATE POLICY "Admin dapat melihat semua jurnal" ON public.journal_entries FOR SELECT USING (public.is_admin());
 
+-- MATERIALS POLICIES
 CREATE POLICY "Teachers can view their own materials" ON public.materials FOR SELECT USING ((auth.uid() = teacher_id));
 CREATE POLICY "Teachers can insert their own materials" ON public.materials FOR INSERT WITH CHECK ((auth.uid() = teacher_id));
 CREATE POLICY "Teachers can update their own materials" ON public.materials FOR UPDATE USING ((auth.uid() = teacher_id));
 CREATE POLICY "Teachers can delete their own materials" ON public.materials FOR DELETE USING ((auth.uid() = teacher_id));
 
+-- QUESTIONS POLICIES
 CREATE POLICY "Users can manage own questions" ON public.questions USING ((auth.uid() = created_by));
 
-CREATE POLICY "Guru dapat melihat jadwal mereka" ON public.schedule FOR SELECT USING ((auth.uid() = teacher_id));
-CREATE POLICY "Schedules are viewable by owners and admins" ON public.schedule FOR SELECT USING (((auth.uid() = teacher_id) OR (EXISTS ( SELECT 1 FROM public.profiles WHERE ((profiles.id = auth.uid()) AND (profiles.role = ANY (ARRAY['admin'::text, 'headmaster'::text])))))));
+-- SCHEDULE POLICIES
+ALTER TABLE public.schedule ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Guru dapat melihat jadwal mereka" ON public.schedule;
+DROP POLICY IF EXISTS "Schedules are viewable by owners and admins" ON public.schedule;
+CREATE POLICY "Allow public read for schedules" ON public.schedule FOR SELECT TO anon USING (true); -- BARU: Deteksi siapa mengajar hari ini
 CREATE POLICY "Admin dapat mengelola semua jadwal" ON public.schedule USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-CREATE POLICY "Pengguna terautentikasi dapat melihat pengaturan" ON public.settings FOR SELECT USING ((auth.role() = 'authenticated'::text));
+-- SETTINGS POLICIES
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat pengaturan" ON public.settings;
+CREATE POLICY "Allow public read for settings" ON public.settings FOR SELECT TO anon USING (true); -- BARU: Token WA & Status ON/OFF
 CREATE POLICY "Admin dapat mengelola pengaturan" ON public.settings USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+-- SCHOOL YEARS POLICIES
 CREATE POLICY "Pengguna terautentikasi dapat melihat tahun ajaran" ON public.school_years FOR SELECT USING ((auth.role() = 'authenticated'::text));
 CREATE POLICY "Admin dapat mengelola tahun ajaran" ON public.school_years USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+-- STUDENT NOTES POLICIES
 CREATE POLICY "Guru dapat membuat catatan untuk siswa" ON public.student_notes FOR INSERT WITH CHECK ((auth.role() = 'authenticated'::text));
 CREATE POLICY "Admin dan wali kelas dapat melihat semua catatan" ON public.student_notes FOR SELECT USING ((public.is_admin() OR (EXISTS ( SELECT 1 FROM public.classes c WHERE ((c.id = ( SELECT s.class_id FROM public.students s WHERE (s.id = student_notes.student_id))) AND (c.teacher_id = auth.uid()))))));
 CREATE POLICY "Guru dapat melihat catatan siswa yang mereka ajar" ON public.student_notes FOR SELECT USING ((EXISTS ( SELECT 1 FROM public.schedule sch WHERE ((sch.class_id = ( SELECT s.class_id FROM public.students s WHERE (s.id = student_notes.student_id))) AND (sch.teacher_id = auth.uid())))));
 
-CREATE POLICY "Teachers can manage their own attendance" ON public.teacher_attendance USING ((auth.uid() = teacher_id));
-CREATE POLICY "Attendance viewable by owners and admins" ON public.teacher_attendance FOR SELECT USING (((auth.uid() = teacher_id) OR (EXISTS ( SELECT 1 FROM public.profiles WHERE ((profiles.id = auth.uid()) AND (profiles.role = ANY (ARRAY['admin'::text, 'headmaster'::text])))))));
+-- TEACHER ATTENDANCE POLICIES
+ALTER TABLE public.teacher_attendance ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Teachers can manage their own attendance" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "Attendance viewable by owners and admins" ON public.teacher_attendance;
+CREATE POLICY "Allow public read for attendance" ON public.teacher_attendance FOR SELECT TO anon USING (true); -- BARU: Pantau absen yang belum masuk
+CREATE POLICY "Teachers can manage their own attendance" ON public.teacher_attendance FOR ALL TO authenticated USING ((auth.uid() = teacher_id)) WITH CHECK ((auth.uid() = teacher_id));
 CREATE POLICY "Admin can manage all teacher attendance" ON public.teacher_attendance USING (public.is_admin()) WITH CHECK (public.is_admin());
 
--- Perbaikan penginputan nilai/absen agar terdeteksi RLS seadanya
+-- MAIN TRANSACTIONAL RECORDS POLICIES
 ALTER TABLE public.grade_records FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance_records FORCE ROW LEVEL SECURITY;
 CREATE POLICY "Guru/Admin manage grades" ON public.grade_records TO authenticated USING (auth.uid() = teacher_id OR public.is_admin()) WITH CHECK (auth.uid() = teacher_id OR public.is_admin());
 CREATE POLICY "Guru/Admin manage attendance" ON public.attendance_records TO authenticated USING (auth.uid() = teacher_id OR public.is_admin()) WITH CHECK (auth.uid() = teacher_id OR public.is_admin());
+
+-- INTEGRATION POLICIES
+ALTER TABLE public.google_drive_integrations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage own drive integration" ON public.google_drive_integrations;
+CREATE POLICY "Users can manage own drive integration" ON public.google_drive_integrations FOR ALL USING (auth.uid() = user_id);
+
+ALTER TABLE public.ai_documents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage own AI documents" ON public.ai_documents;
+CREATE POLICY "Users can manage own AI documents" ON public.ai_documents FOR ALL USING (auth.uid() = user_id);
+
+ALTER TABLE public.cp_atp ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage own CP/ATP" ON public.cp_atp;
+CREATE POLICY "Users can manage own CP/ATP" ON public.cp_atp FOR ALL USING (auth.uid() = user_id);
 
 -- =========================================================================
 -- 9. GRANTS & CACHE REFRESH
@@ -502,6 +625,20 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
 
+-- HAK AKSES KHUSUS
+GRANT ALL ON public.google_drive_integrations TO authenticated;
+GRANT ALL ON public.ai_documents TO authenticated;
+GRANT ALL ON public.cp_atp TO authenticated; 
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.attendance TO authenticated; 
+GRANT SELECT ON public.attendance TO anon;
+
+GRANT EXECUTE ON FUNCTION public.get_teacher_attendance_summary(DATE) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_teacher_activity_counts() TO authenticated;
+
+GRANT SELECT ON public.attendance_history TO authenticated;
+GRANT SELECT ON public.grades_history TO authenticated;
+GRANT SELECT ON public.journal_entries_with_names TO authenticated;
+
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO anon;
@@ -509,5 +646,5 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO anon;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO postgres, service_role, authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO postgres, service_role, authenticated;
 
--- Memaksa API Supabase membaca ulang schema baru
+-- Memaksa PostgREST menyegarkan seluruh struktur baru
 NOTIFY pgrst, 'reload schema';
