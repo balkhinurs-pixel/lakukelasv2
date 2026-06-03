@@ -1,6 +1,6 @@
 /**
- * @fileOverview OMR Processor Engine V101 (PRECISION CALIBRATED FOR SIDE-BY-SIDE LAYOUT)
- * Menangani deteksi bulatan dengan kalibrasi koordinat yang singkron dengan desain UI V101.
+ * @fileOverview OMR Processor Engine V109 (PERFECT ALIGNMENT CALIBRATION)
+ * Menangani deteksi bulatan dengan kalibrasi koordinat yang sinkron dengan PrintLjkView V109.
  */
 
 declare const cv: any;
@@ -10,12 +10,12 @@ export interface OMRResult {
     studentAnswers: { questionNum: number; studentChoice: string }[];
 }
 
-// CONFIGURATION SYNCED WITH UI (V101 - 3 Column Rigid + Side Identity)
+// CONFIGURATION SYNCED WITH UI (V109 - Precision 3-Column Grid)
 const OMR_UI_CONFIG = {
-    page: { width: 794, height: 1123, padding: 40 },
+    page: { width: 794, height: 1123 },
     nis: {
-        top: 212, // Disesuaikan dengan posisi visual NIS yang baru
-        left: 80, // Sesuai OMR_CONFIG.nis.left
+        top: 215, // Disesuaikan dengan V109
+        left: 80, 
         digitWidth: 32,
         bubbleSize: 18,
         gapY: 19,
@@ -23,10 +23,10 @@ const OMR_UI_CONFIG = {
         rows: 10
     },
     matrix: {
-        top: 450, // Diangkat dari 520 sesuai UI baru
+        top: 450, // Disesuaikan dengan V109
         left: 50,
-        rowHeight: 28, // Sesuai UI baru
-        colWidth: 235,
+        rowHeight: 28, 
+        colWidth: 230,
         bubbleSize: 19,
         bubbleGapX: 24,
         colGap: 20
@@ -103,7 +103,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
                 const bubbleY = startY + (OMR_UI_CONFIG.matrix.bubbleSize / 2) + 3;
                 
                 if (isFilled(binary, bubbleX, bubbleY)) {
-                    choice = String.fromCharCode(65 + o); // Convert 0-4 to A-E
+                    choice = String.fromCharCode(65 + o); 
                     break;
                 }
             }

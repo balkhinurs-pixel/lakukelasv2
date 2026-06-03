@@ -5,11 +5,21 @@ import { Printer, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
-// OMR RIGID CONFIG V107 (Strict Pixel-Perfect Layout)
+/**
+ * OMR RIGID CONFIG V109 (Precision Calibrated with Safe-Margins)
+ * Semua unit dalam Pixel (96 DPI). A4 = 794 x 1123px.
+ * Anchors digeser ke 30px agar aman dari Non-Printable Area printer (8-10mm).
+ */
 const OMR_UI_CONFIG = {
-    page: { width: 794, height: 1123, padding: 40 },
+    page: { width: 794, height: 1123 },
+    anchors: { offset: 30, size: 32 },
+    content: {
+        marginLeft: 75,
+        marginRight: 75,
+        marginTop: 80,
+    },
     nis: {
-        top: 212, 
+        top: 215, 
         left: 80, 
         digitWidth: 32,
         bubbleSize: 18,
@@ -19,9 +29,9 @@ const OMR_UI_CONFIG = {
     },
     matrix: {
         top: 450, 
-        left: 50,
+        left: 60,
         rowHeight: 28, 
-        colWidth: 235,
+        colWidth: 230,
         bubbleSize: 19,
         bubbleGapX: 24,
         colGap: 20
@@ -86,7 +96,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                 {items.map((item, idx) => (
                     item.type === 'header' ? (
                         <div key={idx} className="w-full bg-slate-100 py-1 px-2 rounded-md border-l-4 border-indigo-600 mb-1 mt-2 first:mt-0" style={{ WebkitPrintColorAdjust: 'exact' }}>
-                            <span className="text-[7.5pt] font-black text-indigo-900 tracking-tight uppercase truncate block">{item.label}</span>
+                            <span className="text-[7pt] font-black text-indigo-900 tracking-tight uppercase truncate block">{item.label}</span>
                         </div>
                     ) : (
                         <div key={idx} className="flex items-center gap-2 w-full border-b border-slate-50" style={{ height: `${OMR_UI_CONFIG.matrix.rowHeight}px` }}>
@@ -109,8 +119,9 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                 @media print {
                     @page {
                         size: A4 portrait;
-                        margin: 0 !important; /* LJK wajib 0 margin untuk akurasi OMR */
+                        margin: 0 !important;
                     }
+                    body { margin: 0 !important; padding: 0 !important; }
                 }
             `}</style>
 
@@ -120,7 +131,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         <ArrowLeft className="h-4 w-4" /> Kembali
                     </Button>
                     <div className="hidden sm:block">
-                        <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">OMR RIGID CALIBRATION</p>
+                        <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">OMR PRECISION V109</p>
                         <h2 className="text-sm font-black uppercase tracking-tight">Lembar Jawab Komputer (LJK)</h2>
                     </div>
                 </div>
@@ -138,16 +149,16 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
             </header>
 
             <main className="a4-canvas" style={{ transform: `scale(${zoom / 100})`, width: '794px', height: '1123px' }}>
-                <div className="print-area relative h-full w-full bg-white text-black" style={{ padding: '40px' }}>
+                <div className="print-area relative h-full w-full bg-white text-black overflow-hidden">
                     
-                    {/* Anchor Markers (Using Border to force print visibility) */}
-                    <div className="absolute top-[20px] left-[20px] w-8 h-8 bg-black border-4 border-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
-                    <div className="absolute top-[20px] right-[20px] w-8 h-8 bg-black border-4 border-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
-                    <div className="absolute bottom-[20px] left-[20px] w-8 h-8 bg-black border-4 border-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
-                    <div className="absolute bottom-[20px] right-[20px] w-8 h-8 bg-black border-4 border-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
+                    {/* Anchor Markers (Fixed Offset for Accuracy) */}
+                    <div className="absolute w-8 h-8 bg-black border-4 border-black" style={{ top: '30px', left: '30px', WebkitPrintColorAdjust: 'exact' }} />
+                    <div className="absolute w-8 h-8 bg-black border-4 border-black" style={{ top: '30px', right: '30px', WebkitPrintColorAdjust: 'exact' }} />
+                    <div className="absolute w-8 h-8 bg-black border-4 border-black" style={{ bottom: '30px', left: '30px', WebkitPrintColorAdjust: 'exact' }} />
+                    <div className="absolute w-8 h-8 bg-black border-4 border-black" style={{ bottom: '30px', right: '30px', WebkitPrintColorAdjust: 'exact' }} />
 
-                    {/* Header */}
-                    <div className="border-b-2 border-black pb-4 flex justify-between items-center mb-6" style={{ margin: '0 40px' }}>
+                    {/* Header (Visual Margin Applied) */}
+                    <div className="absolute left-[75px] right-[75px] top-[75px] border-b-2 border-black pb-4 flex justify-between items-center">
                         <div className="flex gap-4 items-center">
                             {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-12 h-12 object-contain" crossOrigin="anonymous" />}
                             <div>
@@ -161,8 +172,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         </div>
                     </div>
 
-                    {/* Content Section */}
-                    <div className="flex gap-10" style={{ padding: '0 40px' }}>
+                    {/* Content Section (Absolute Grid Calibration) */}
+                    <div className="absolute left-[75px] right-[75px] top-[195px] flex gap-10">
                         {/* NIS Input */}
                         <div className="shrink-0 space-y-2">
                             <p className="text-[7.5pt] font-black uppercase text-center text-slate-400">NIS (5 Digit)</p>
@@ -179,8 +190,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         </div>
 
                         {/* Identity Fields */}
-                        <div className="flex-1 space-y-6 pt-8">
-                            <div className="border-b border-black border-dotted h-10 flex items-end pb-1 text-[10pt] font-bold text-slate-200">NAMA PESERTA: ...........................................</div>
+                        <div className="flex-1 space-y-6 pt-6">
+                            <div className="border-b border-black border-dotted h-10 flex items-end pb-1 text-[10pt] font-bold text-slate-200">NAMA PESERTA: .....................................................</div>
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="border-b border-black border-dotted h-8 flex items-end pb-1 text-[9pt] font-bold text-slate-200">TANGGAL: .....................</div>
                                 <div className="border-b border-black border-dotted h-8 flex items-end pb-1 text-[9pt] font-bold text-slate-200">RUANG/KELAS: ...........</div>
@@ -189,8 +200,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         </div>
                     </div>
 
-                    {/* Answers Grid */}
-                    <div className="flex gap-5" style={{ marginTop: '60px', padding: '0 10px' }}>
+                    {/* Answers Grid (Rigid Matrix Position) */}
+                    <div className="absolute left-[50px] right-[50px] top-[450px] flex gap-5">
                         {renderColumn(displayItems.slice(0, 20))}
                         <div className="w-px bg-slate-200 self-stretch" />
                         {renderColumn(displayItems.slice(20, 40))}
@@ -198,7 +209,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         {renderColumn(displayItems.slice(40, 60))}
                     </div>
 
-                    <div className="absolute bottom-12 left-0 right-0 text-center opacity-30">
+                    <div className="absolute bottom-10 left-0 right-0 text-center opacity-30">
                          <p className="text-[7pt] font-bold uppercase tracking-[0.4em]">Sistem Administrasi Guru LakuKelas</p>
                     </div>
                 </div>
