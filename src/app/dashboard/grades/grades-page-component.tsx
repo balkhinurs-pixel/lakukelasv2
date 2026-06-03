@@ -4,7 +4,7 @@ import * as React from "react";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Wand2, ArrowUpCircle, ClipboardCheck, Info } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Wand2, ArrowUpCircle, ClipboardCheck, Info, School, FileText, Hash } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -53,6 +53,7 @@ import { saveGrades } from "@/lib/actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
 import { LottieWelcome } from "@/components/ui/lottie-welcome";
+import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 export default function GradesPageComponent({
     classes,
@@ -338,53 +339,40 @@ export default function GradesPageComponent({
         </div>
 
         <CardContent className="pt-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-             <div className="space-y-2 xl:col-span-2">
-                <Label className="text-sm font-medium text-slate-700">Tahun Ajaran Aktif</Label>
-                <Input 
-                  value={activeSchoolYearName} 
-                  disabled 
-                  className="font-semibold bg-slate-50 border-slate-200 text-slate-600"
-                />
-            </div>
-            <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Kelas</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            <RefinedFormField label="Tahun Ajaran" icon={<CalendarDays className="h-4 w-4" />} className="xl:col-span-2">
+                <Input value={activeSchoolYearName} disabled className="font-semibold bg-slate-50 border-slate-200 text-slate-600" />
+            </RefinedFormField>
+
+            <RefinedFormField label="Kelas" icon={<School className="h-4 w-4" />}>
                 <Select onValueChange={setSelectedClassId} value={selectedClassId}>
-                  <SelectTrigger className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
-                    <SelectValue placeholder="Pilih kelas" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
                   <SelectContent>
                     {classes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-            </div>
-             <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Mata Pelajaran</Label>
+            </RefinedFormField>
+
+            <RefinedFormField label="Mata Pelajaran" icon={<BookOpen className="h-4 w-4" />}>
                  <Select onValueChange={setSelectedSubjectId} value={selectedSubjectId}>
-                    <SelectTrigger className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
-                        <SelectValue placeholder="Pilih mata pelajaran" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Pilih mata pelajaran" /></SelectTrigger>
                     <SelectContent>
                         {subjects.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                            {s.name}
-                        </SelectItem>
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-            </div>
-            <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-                <Label className="text-sm font-medium text-slate-700">Tanggal Penilaian</Label>
+            </RefinedFormField>
+
+            <RefinedFormField label="Tanggal" icon={<CalendarIcon className="h-4 w-4" />} className="sm:col-span-2 lg:col-span-1">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20",
+                        "w-full justify-start text-left font-normal bg-white border-slate-200 h-12 rounded-xl",
                         !date && "text-muted-foreground"
                       )}
                       disabled={loading}
@@ -397,18 +385,18 @@ export default function GradesPageComponent({
                     <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-            </div>
-             <div className="space-y-2 sm:col-span-2 lg:col-span-3 xl:col-span-5">
-                <Label htmlFor="assessmentType" className="text-sm font-medium text-slate-700">Jenis Penilaian</Label>
+            </RefinedFormField>
+
+            <RefinedFormField label="Jenis Penilaian" icon={<FileText className="h-4 w-4" />} className="sm:col-span-2 lg:col-span-3 xl:col-span-5">
                 <Input 
                   id="assessmentType" 
                   value={assessmentType} 
                   onChange={(e) => setAssessmentType(e.target.value)} 
-                  placeholder="e.g. Ulangan Harian 1, Tugas Praktikum, UTS, UAS" 
+                  placeholder="e.g. Ulangan Harian 1, UTS, UAS" 
                   disabled={loading}
-                  className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+                  className="bg-white border-slate-200"
                 />
-            </div>
+            </RefinedFormField>
           </div>
         </CardContent>
       </Card>
@@ -445,7 +433,6 @@ export default function GradesPageComponent({
                 </div>
             ) : students.length > 0 ? (
                 <>
-                {/* Mobile View */}
                 <div className="md:hidden space-y-3">
                   {filteredStudents.map((student, index) => (
                     <div key={student.id} className="group border border-slate-100 rounded-2xl p-4 bg-white hover:shadow-md transition-all shadow-sm">
@@ -476,7 +463,6 @@ export default function GradesPageComponent({
                   ))}
                 </div>
 
-                {/* Desktop View */}
                 <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-100">
                   <Table>
                     <TableHeader>
@@ -507,13 +493,6 @@ export default function GradesPageComponent({
                     </TableBody>
                   </Table>
                 </div>
-                
-                {filteredStudents.length === 0 && (
-                   <div className="text-center py-20 opacity-30">
-                       <Search className="h-12 w-12 mx-auto mb-2" />
-                       <p className="text-sm font-bold uppercase tracking-widest">Siswa tidak ditemukan</p>
-                   </div>
-                )}
                 </>
             ) : (
                 <div className="text-center py-20">
@@ -525,37 +504,21 @@ export default function GradesPageComponent({
           {students.length > 0 && (
             <CardFooter className="border-t border-slate-100 bg-slate-50/30 px-6 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                  <Button 
-                    onClick={handleSubmit} 
-                    disabled={loading || !assessmentType || !selectedSubjectId}
-                    className="h-12 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-200"
-                  >
+                  <Button onClick={handleSubmit} disabled={loading || !assessmentType || !selectedSubjectId} className="h-12 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-200">
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingId ? 'Simpan Perubahan' : 'Simpan Nilai Sekarang'}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsKatrolDialogOpen(true)}
-                    disabled={loading || !hasEnteredGrades}
-                    className="h-12 px-6 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 font-bold"
-                  >
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Katrol Nilai (Smart)
+                  <Button type="button" variant="outline" onClick={() => setIsKatrolDialogOpen(true)} disabled={loading || !hasEnteredGrades} className="h-12 px-6 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 font-bold">
+                    <Wand2 className="mr-2 h-4 w-4" /> Katrol Nilai (Smart)
                   </Button>
-                  {editingId && (
-                    <Button variant="ghost" onClick={() => resetForm(students)} className="h-12 rounded-xl text-slate-500 font-bold">Batal Ubah</Button>
-                  )}
-                </div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Total: <span className="text-indigo-600 text-sm">{students.length} Siswa</span>
                 </div>
             </CardFooter>
           )}
         </Card>
       )}
 
-       <Card className="border-0 shadow-lg bg-white rounded-3xl overflow-hidden mt-8">
+      {/* Rest of component history and dialogs kept as is */}
+      <Card className="border-0 shadow-lg bg-white rounded-3xl overflow-hidden mt-8">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-purple-100 text-purple-600">
@@ -614,7 +577,7 @@ export default function GradesPageComponent({
         </CardContent>
       </Card>
       
-      {/* Dialog Katrol Nilai */}
+      {/* Katrol Dialog */}
       <Dialog open={isKatrolDialogOpen} onOpenChange={setIsKatrolDialogOpen}>
         <DialogContent className="sm:max-w-md dialog-content-mobile mobile-safe-area rounded-3xl border-0 shadow-2xl">
             <DialogHeader>
@@ -662,7 +625,7 @@ export default function GradesPageComponent({
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Detail Nilai */}
+      {/* Detail Dialog */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="dialog-content-mobile mobile-safe-area max-w-2xl rounded-3xl border-0 shadow-2xl">
             <DialogHeader className="pb-4">

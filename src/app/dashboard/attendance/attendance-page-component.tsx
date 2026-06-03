@@ -1,10 +1,9 @@
-
 "use client";
 
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, ArrowUpCircle, AlertTriangle } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Eye, Loader2, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, ArrowUpCircle, AlertTriangle, School, BookOpen } from "lucide-react";
 import { useSearchParams, useRouter } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -72,6 +71,7 @@ import { LottieWhatsApp } from "@/components/ui/lottie-whatsapp";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
 import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
 import { LottieWelcome } from "@/components/ui/lottie-welcome";
+import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 const attendanceOptions: { value: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha', label: string, icon: React.ReactNode, className: string, selectedClassName: string }[] = [
     { 
@@ -284,7 +284,7 @@ export default function AttendancePageComponent({
   const isScheduledToday = React.useMemo(() => {
     if (!date || !selectedClassId || !selectedSubjectId || teacherSchedule.length === 0) return true;
     
-    const dayName = getIndonesianDayFromDate(format(date, 'yyyy-MM-dd'));
+    const dayName = getIndonesianDayName();
     return teacherSchedule.some(item => 
         item.day === dayName && 
         item.class_id === selectedClassId && 
@@ -603,53 +603,40 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
         </div>
 
         <CardContent className="pt-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <div className="space-y-2 xl:col-span-2">
-                <Label className="text-sm font-medium text-slate-700">Tahun Ajaran Aktif</Label>
-                <Input 
-                  value={activeSchoolYearName} 
-                  disabled 
-                  className="font-semibold bg-slate-50 border-slate-200 text-slate-600"
-                />
-            </div>
-            <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Kelas</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            <RefinedFormField label="Tahun Ajaran" icon={<CalendarDays className="h-4 w-4" />} className="xl:col-span-2">
+                <Input value={activeSchoolYearName} disabled className="font-semibold bg-slate-50 border-slate-200 text-slate-600" />
+            </RefinedFormField>
+            
+            <RefinedFormField label="Kelas" icon={<School className="h-4 w-4" />}>
                 <Select onValueChange={setSelectedClassId} value={selectedClassId}>
-                  <SelectTrigger className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
-                    <SelectValue placeholder="Pilih kelas" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
                   <SelectContent>
                     {classes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-            </div>
-             <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Mata Pelajaran</Label>
+            </RefinedFormField>
+
+            <RefinedFormField label="Mata Pelajaran" icon={<BookOpen className="h-4 w-4" />}>
                  <Select onValueChange={setSelectedSubjectId} value={selectedSubjectId}>
-                    <SelectTrigger className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
-                        <SelectValue placeholder="Pilih mata pelajaran" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Pilih mata pelajaran" /></SelectTrigger>
                     <SelectContent>
                         {subjects.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                            {s.name}
-                        </SelectItem>
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-            </div>
-            <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-                <Label className="text-sm font-medium text-slate-700">Tanggal</Label>
+            </RefinedFormField>
+
+            <RefinedFormField label="Tanggal" icon={<CalendarIcon className="h-4 w-4" />} className="sm:col-span-2 lg:col-span-1">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20",
+                        "w-full justify-start text-left font-normal bg-white border-slate-200 h-12 rounded-xl",
                         !date && "text-muted-foreground"
                       )}
                     >
@@ -658,17 +645,12 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      initialFocus
-                    />
+                    <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-            </div>
-             <div className="space-y-2 sm:col-span-1 lg:col-span-1 xl:col-span-1">
-                <Label htmlFor="pertemuan" className="text-sm font-medium text-slate-700">Pertemuan Ke</Label>
+            </RefinedFormField>
+
+             <RefinedFormField label="Pertemuan" icon={<Hash className="h-4 w-4" />} className="sm:col-span-1 lg:col-span-1 xl:col-span-1">
                 <Input 
                   id="pertemuan" 
                   type="number" 
@@ -676,16 +658,16 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
                   value={meetingNumber} 
                   onChange={(e) => setMeetingNumber(Number(e.target.value))}
                   disabled={!!currentHoliday}
-                  className="bg-white border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+                  className="bg-white border-slate-200"
                 />
-            </div>
+            </RefinedFormField>
           </div>
           
           {selectedClassId && selectedSubjectId && !currentHoliday && !isScheduledToday && !editingId && (
-            <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1.5 py-1.5 px-4 rounded-xl shadow-sm w-full sm:w-fit">
+            <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1.5 py-2 px-4 rounded-2xl shadow-sm w-full sm:w-fit">
                     <AlertTriangle className="w-4 h-4" />
-                    <span className="font-semibold">Perhatian: Anda tidak memiliki jadwal mengajar Mapel ini di Kelas ini pada hari {date ? getIndonesianDayFromDate(format(date, 'yyyy-MM-dd')) : 'tersebut'}.</span>
+                    <span className="font-semibold text-xs uppercase tracking-tight">Perhatian: Anda tidak memiliki jadwal hari ini.</span>
                 </Badge>
             </div>
           )}

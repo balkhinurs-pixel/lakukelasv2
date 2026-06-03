@@ -86,6 +86,26 @@
 }
 
 @layer utilities {
+  .form-input-shadow {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .input-refined-focus {
+    @apply border-[#4B7EFC] ring-1 ring-[#4B7EFC] !important;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+  }
+
   input[type="text"],
   input[type="email"],
   input[type="password"],
