@@ -21,7 +21,8 @@ import {
     School,
     CalendarDays,
     Tag,
-    TrendingUp
+    TrendingUp,
+    Users
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -365,7 +366,6 @@ export default function GenerateMateriClient({
                             </div>
                         </div>
 
-                        {/* Mobile Swipeable Preview Container */}
                         <div className="flex-1 overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
