@@ -208,6 +208,17 @@ export async function streamMaterialAction(input: MaterialGenerationInput) {
     return { output: stream.value };
 }
 
+/**
+ * Server Action untuk menyimpan Materi Belajar ke Google Drive.
+ */
+export async function saveMaterialToDriveAction(
+    title: string, 
+    content: string, 
+    metadata: { jenjang: string, class: string, subject: string }
+) {
+    return saveGenericDocumentToDrive(title, content, metadata, 'Materi Belajar', 'doc');
+}
+
 export async function streamQuestionsAction(input: QuestionGenerationInput) {
     const stream = createStreamableValue();
     (async () => {

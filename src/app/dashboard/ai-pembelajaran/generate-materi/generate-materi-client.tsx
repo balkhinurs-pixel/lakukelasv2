@@ -17,7 +17,11 @@ import {
     ImageIcon,
     X,
     Cpu,
-    ArrowLeft
+    ArrowLeft,
+    School,
+    CalendarDays,
+    Tag,
+    TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +52,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 import { AiErrorDialog, type AiErrorType } from "@/components/ui/ai-error-dialog";
 import { readStreamableValue } from 'ai/rsc';
 import { useRouter } from "next/navigation";
+import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 const mapelByJenjang: Record<string, string[]> = {
     'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
@@ -251,7 +256,9 @@ export default function GenerateMateriClient({
                         </CardHeader>
                         <CardContent className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar pr-4">
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Sumber (Opsional)</Label>
+                                <Label className="text-[14px] sm:text-[15px] font-semibold text-gray-700 px-1 flex items-center gap-2">
+                                    <FileUp className="h-4 w-4 text-indigo-600" /> Materi Sumber (Opsional)
+                                </Label>
                                 <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf, image/*" onChange={handleFileChange} />
                                 {uploadedFile ? (
                                     <div className="p-4 rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-between shadow-inner">
@@ -270,57 +277,51 @@ export default function GenerateMateriClient({
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenjang</Label>
+                                <RefinedFormField label="Jenjang" icon={<School className="h-4 w-4" />}>
                                     <Select value={form.jenjang} onValueChange={handleJenjangChange}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl">
                                             {Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kelas</Label>
+                                </RefinedFormField>
+                                <RefinedFormField label="Kelas" icon={<Users className="h-4 w-4" />}>
                                     <Select value={form.kelas} onValueChange={v => setForm({...form, kelas: v})}>
-                                        <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent className="rounded-2xl">
                                             {getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
-                                </div>
+                                </RefinedFormField>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mata Pelajaran</Label>
+                            <RefinedFormField label="Mata Pelajaran" icon={<BookOpen className="h-4 w-4" />}>
                                 <Select value={form.subject} onValueChange={v => setForm({...form, subject: v})}>
-                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
                                     <SelectContent className="rounded-2xl">
                                         {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </RefinedFormField>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Materi Pokok / Bab</Label>
-                                <Input placeholder="e.g. Hukum Newton, Tajwid" className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-inner" value={form.topic} onChange={e => setForm({...form, topic: e.target.value})} required />
-                            </div>
+                            <RefinedFormField label="Materi Pokok / Bab" icon={<Tag className="h-4 w-4" />}>
+                                <Input placeholder="e.g. Hukum Newton, Tajwid" value={form.topic} onChange={e => setForm({...form, topic: e.target.value})} required />
+                            </RefinedFormField>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tingkat Kedalaman</Label>
+                            <RefinedFormField label="Tingkat Kedalaman" icon={<TrendingUp className="h-4 w-4" />}>
                                 <Select value={form.depth} onValueChange={(v: any) => setForm({...form, depth: v})}>
-                                    <SelectTrigger className="rounded-xl bg-slate-50 border-0 h-11 font-bold shadow-sm"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent className="rounded-xl">
                                         <SelectItem value="dasar" className="font-bold">Dasar (Pengenalan)</SelectItem>
                                         <SelectItem value="menengah" className="font-bold">Menengah (Standar)</SelectItem>
-                                        <SelectItem value="mendalam" className="font-bold">Mendalam (Analisis)</SelectItem>
+                                        <SelectItem value="mendalam" className="font-bold text-indigo-600">Mendalam (Analisis)</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </RefinedFormField>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Instruksi Khusus (Opsional)</Label>
+                            <RefinedFormField label="Instruksi Khusus (Opsional)" icon={<Wand2 className="h-4 w-4" />}>
                                 <Textarea placeholder="e.g. Fokus pada rumus percepatan..." className="rounded-2xl bg-slate-50 border-0 min-h-[100px] font-medium resize-none shadow-inner" value={form.instruction} onChange={e => setForm({...form, instruction: e.target.value})} />
-                            </div>
+                            </RefinedFormField>
                         </CardContent>
                         <CardFooter className="bg-slate-50/50 p-6 border-t">
                             <Button type="submit" disabled={loading} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-indigo-100">
@@ -335,8 +336,8 @@ export default function GenerateMateriClient({
                     <div className="p-16 rounded-[5rem] bg-slate-100 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
                         <BookOpen className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">AI Content Summarizer</h3>
-                    <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed">
+                    <h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase">AI Content Summarizer</h3>
+                    <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed italic">
                         Konfigurasi bab materi di samping, atau unggah file PDF/Foto buku paket Anda. AI akan merangkumnya secara sistematis untuk bahan ajar siswa.
                     </p>
                 </Card>
@@ -350,14 +351,14 @@ export default function GenerateMateriClient({
                                 <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8">
                                      <LottieAiProcess size={220} />
                                      <div className="space-y-2">
-                                        <p className="text-3xl font-black text-slate-900 tracking-tight uppercase">Menyusun Materi...</p>
+                                        <p className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Menyusun Materi...</p>
                                         <p className="text-xl font-mono font-black text-indigo-600">{countdown}s</p>
                                      </div>
                                 </div>
                             </div>
                         )}
 
-                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-600 p-8 text-white shrink-0">
+                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-8 text-white shrink-0">
                             <div className="flex flex-col items-center text-center">
                                 <DialogHeader><DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">Pratinjau Materi AI</DialogTitle></DialogHeader>
                                 <p className="text-indigo-100 font-bold text-xs uppercase tracking-[0.2em] mt-3">{form.subject} • {form.topic}</p>
