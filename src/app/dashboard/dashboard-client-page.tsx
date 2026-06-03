@@ -30,8 +30,6 @@ import type { ScheduleItem, Agenda, Holiday, GoogleDriveIntegration } from "@/li
 import { cn, formatTime } from "@/lib/utils";
 import { MiniCalendar } from "@/components/ui/mini-calendar";
 import { motion, AnimatePresence } from "framer-motion";
-import { setupGoogleDriveFolder } from "@/lib/actions/google-drive";
-import { createClient } from "@/lib/supabase/client";
 
 type DashboardPageProps = {
   todaySchedule: ScheduleItem[];
@@ -214,31 +212,16 @@ export default function DashboardClientPage({
 }: DashboardPageProps) {
     const [now, setNow] = React.useState<Date>(new Date());
     const [showAll, setShowAll] = React.useState(false);
-    const supabase = createClient();
 
-    // 1. Timer Jam
+    // 1. Timer Jam - Hanya visual lokal, tidak memicu Invocations Server
     React.useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    // 2. Auto-Initialize Google Drive (Hanya jika login via Google)
-    React.useEffect(() => {
-        const checkAndSetupDrive = async () => {
-            if (!supabase) return;
-            const { data: { user } } = await supabase.auth.getUser();
-            
-            // Hanya jalankan jika:
-            // - Login via Google
-            // - Belum ada data integrasi atau belum ada folder_id
-            if (user?.app_metadata?.provider === 'google' && (!driveIntegration || !driveIntegration.folder_id)) {
-                console.log("[AUTO-DRIVE] Initializing Google Drive folder in background...");
-                await setupGoogleDriveFolder();
-            }
-        };
-
-        checkAndSetupDrive();
-    }, [driveIntegration, supabase]);
+    // CATATAN V121: Pengecekan otomatis Google Drive dihapus dari Dashboard 
+    // untuk mencegah Invocations Loop. Pengguna dapat melakukan integrasi 
+    // melalui menu Pengaturan secara manual.
 
     const sortedSchedule = React.useMemo(() => {
         return [...todaySchedule].sort((a,b) => a.start_time.localeCompare(b.start_time));
@@ -260,7 +243,6 @@ export default function DashboardClientPage({
         <div className="space-y-6 pb-24">
             {/* 1. Hero Welcome Section */}
             <div className="relative overflow-hidden bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-row items-center justify-between gap-4 min-h-[160px] sm:min-h-[200px]">
-                {/* Background GIF Asset */}
                 <div className="absolute top-0 right-0 w-full h-full opacity-[0.15] sm:opacity-[0.25] pointer-events-none z-0">
                      <Image 
                         src="/asset/icon dashboard.gif" 
@@ -271,7 +253,6 @@ export default function DashboardClientPage({
                      />
                 </div>
                 
-                {/* Visual Decoration Blur */}
                 <div className="absolute -right-10 top-0 w-64 h-64 bg-indigo-100/40 rounded-full blur-3xl -z-10 animate-pulse" />
 
                 <div className="space-y-3 flex-1 text-left min-w-0 relative z-10">
