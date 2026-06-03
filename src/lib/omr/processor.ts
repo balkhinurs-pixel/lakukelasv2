@@ -7,138 +7,117 @@ declare const cv: any;
 
 export interface OMRResult {
     detectedNis: string;
-    studentAnswers: { questionNum: number; subNum?: number; studentChoice: string }[];
+    studentAnswers: { questionNum: number; studentChoice: string }[];
 }
 
-// CONFIGURATION SYNCED WITH UI (src/app/print-naskah/[id]/print-ljk-view.tsx)
+// CONFIGURATION SYNCED WITH UI (V92.0)
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123, padding: 40 },
-    anchors: { size: 30, offset: 20 },
     nis: {
-        top: 200, // Matches UI top
-        left: 60, // Matches UI left
-        digitWidth: 32, // Manual estimate from UI gap + box
+        top: 151, // Start Y for NIS (Calibrated to V92.0 Grid)
+        left: 566, // Right side grid
+        digitWidth: 32,
         bubbleSize: 18,
-        gapX: 35, // Measured distance between digit columns
-        gapY: 19, // Sycned with OMR_CONFIG.nis.gapY
+        gapY: 19,
         cols: 5,
         rows: 10
     },
     matrix: {
-        top: 450, // SYNCED with UI
-        left: 50, // SYNCED with UI
-        rowHeight: 25, // SYNCED with UI
-        colWidth: 235, // SYNCED with UI
+        top: 442, // Start Y for Answers (Calibrated to V92.0 Grid)
+        left: 50,
+        rowHeight: 32, // Fixed Rigid Height
+        colWidth: 235,
         bubbleSize: 19,
-        bubbleGapX: 24, // SYNCED with OMR_CONFIG.matrix.bubbleGapX
-        colGap: 20     // SYNCED with Answers Grid flex gap
+        bubbleGapX: 24,
+        colGap: 20
     }
 };
 
-export async function processLJK(imageElement: HTMLImageElement, questionsMetadata: any[]): Promise<OMRResult> {
+/**
+ * Memproses gambar LJK mentah menjadi data OMR.
+ */
+export async function processLJK(imageElement: HTMLImageElement): Promise<OMRResult> {
     if (typeof cv === 'undefined') throw new Error("Mesin OpenCV belum siap.");
 
     let src = cv.imread(imageElement);
     let gray = new cv.Mat();
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-    // 1. PERSPECTIVE WARP
     let warped = new cv.Mat();
-    const targetPoints = [0, 0, OMR_UI_CONFIG.page.width, 0, OMR_UI_CONFIG.page.width, OMR_UI_CONFIG.page.height, 0, OMR_UI_CONFIG.page.height];
-    
-    // Logic deteksi anchor... (kita asumsikan anchor sudah ketemu karena ukuran tetap)
-    // Untuk efisiensi, kita bisa pakai deteksi kontur anchor hitam 30x30
-    cv.resize(gray, warped, new cv.Size(OMR_UI_CONFIG.page.width, OMR_UI_CONFIG.page.height), 0, 0, cv.INTER_AREA);
-
-    // 2. BINARIZATION
     let binary = new cv.Mat();
-    cv.adaptiveThreshold(warped, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 19, 12);
 
-    const isFilled = (img: any, x: number, y: number, radius: number = 8) => {
-        try {
-            let rect = new cv.Rect(
-                Math.round(x - radius), 
-                Math.round(y - radius), 
-                Math.round(radius * 2), 
-                Math.round(radius * 2)
-            );
-            let roi = img.roi(rect);
-            let count = cv.countNonZero(roi);
-            roi.delete();
-            return count > (radius * 2 * radius * 2) * 0.25;
-        } catch (e) { return false; }
-    };
-
-    // 3. SCAN NIS
-    let nis = "";
-    // Kalkulasi Start Y NIS: top + entry_box + padding
-    const nisBaseY = OMR_UI_CONFIG.nis.top + 34; // 34px is offset to first bubble
-    for (let c = 0; c < OMR_UI_CONFIG.nis.cols; c++) {
-        let detectedDigit = "?";
-        for (let r = 0; r < OMR_UI_CONFIG.nis.rows; r++) {
-            const centerX = OMR_UI_CONFIG.nis.left + (c * OMR_UI_CONFIG.nis.gapX) + (OMR_UI_CONFIG.nis.bubbleSize / 2);
-            const centerY = nisBaseY + (r * OMR_UI_CONFIG.nis.gapY) + (OMR_UI_CONFIG.nis.bubbleSize / 2);
-            if (isFilled(binary, centerX, centerY)) { 
-                detectedDigit = String(r); 
-                break; 
-            }
-        }
-        nis += detectedDigit;
-    }
-
-    // 4. SCAN ANSWERS (DYNAMIC MAPPING)
-    const studentAnswers: any[] = [];
-    
-    // Rekonstruksi layout yang sama dengan UI untuk mendapatkan koordinat
-    const displayItems: any[] = [];
-    let qCount = 0;
-    questionsMetadata.forEach((q: any) => {
-        qCount++;
-        // Simulation of row span
-        const rowSpan = q.question_type === 'matching' ? (q.question_text?.split('\n').filter((l: any) => /^[a-z0-9][\.\)]/i.test(l.trim())).length || 4) : 1;
+    try {
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
         
-        for (let i = 1; i <= rowSpan; i++) {
-            displayItems.push({
-                questionNum: qCount,
-                subNum: rowSpan > 1 ? i : undefined,
-                type: q.question_type
+        // 1. Perspective Correction (Warp to A4 proportions)
+        // Note: Untuk auto-capture, kita asumsikan gambar sudah sejajar frame
+        cv.resize(gray, warped, new cv.Size(OMR_UI_CONFIG.page.width, OMR_UI_CONFIG.page.height), 0, 0, cv.INTER_AREA);
+
+        // 2. Binarization (Thresholding)
+        cv.adaptiveThreshold(warped, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 19, 12);
+
+        const isFilled = (img: any, x: number, y: number, radius: number = 8.5) => {
+            try {
+                let rect = new cv.Rect(
+                    Math.round(x - radius), 
+                    Math.round(y - radius), 
+                    Math.round(radius * 2), 
+                    Math.round(radius * 2)
+                );
+                let roi = img.roi(rect);
+                let count = cv.countNonZero(roi);
+                roi.delete();
+                // Sensitivitas deteksi: minimal 24% area terisi hitam
+                return count > (radius * 2 * radius * 2) * 0.24;
+            } catch (e) { return false; }
+        };
+
+        // 3. Scan NIS (5 Digits)
+        let nis = "";
+        const nisStartY = OMR_UI_CONFIG.nis.top + 34; // Offset to first digit bubble
+        for (let c = 0; c < OMR_UI_CONFIG.nis.cols; c++) {
+            let detectedDigit = "?";
+            for (let r = 0; r < OMR_UI_CONFIG.nis.rows; r++) {
+                const centerX = OMR_UI_CONFIG.nis.left + (c * OMR_UI_CONFIG.nis.digitWidth) + (OMR_UI_CONFIG.nis.bubbleSize / 2);
+                const centerY = nisStartY + (r * OMR_UI_CONFIG.nis.gapY) + (OMR_UI_CONFIG.nis.bubbleSize / 2);
+                if (isFilled(binary, centerX, centerY)) { 
+                    detectedDigit = String(r); 
+                    break; 
+                }
+            }
+            nis += detectedDigit;
+        }
+
+        // 4. Scan Answers Grid (Rigid 60 Slots)
+        const studentAnswers: { questionNum: number, studentChoice: string }[] = [];
+        const rowsPerCol = 20;
+
+        for (let idx = 0; idx < 60; idx++) {
+            const colIdx = Math.floor(idx / rowsPerCol);
+            const rowIdx = idx % rowsPerCol;
+
+            const startX = OMR_UI_CONFIG.matrix.left + (colIdx * (OMR_UI_CONFIG.matrix.colWidth + OMR_UI_CONFIG.matrix.colGap));
+            const startY = OMR_UI_CONFIG.matrix.top + (rowIdx * OMR_UI_CONFIG.matrix.rowHeight);
+            
+            let choice = "EMPTY";
+            // Scan 5 bubbles (A-E)
+            for (let o = 0; o < 5; o++) {
+                const bubbleX = startX + 38 + (o * OMR_UI_CONFIG.matrix.bubbleGapX); // Offset for number label
+                const bubbleY = startY + (OMR_UI_CONFIG.matrix.bubbleSize / 2) + 6; // Center align
+                
+                if (isFilled(binary, bubbleX, bubbleY)) {
+                    choice = String.fromCharCode(65 + o); // Convert 0-4 to A-E
+                    break;
+                }
+            }
+            
+            studentAnswers.push({ 
+                questionNum: idx + 1, 
+                studentChoice: choice 
             });
         }
-    });
 
-    const itemsPerCol = Math.ceil(displayItems.length / 3);
-    
-    displayItems.forEach((item, index) => {
-        const colIdx = Math.floor(index / itemsPerCol);
-        const rowIdx = index % itemsPerCol;
-        
-        // Kalkulasi Koordinat
-        const startX = OMR_UI_CONFIG.matrix.left + (colIdx * (OMR_UI_CONFIG.matrix.colWidth + OMR_UI_CONFIG.matrix.colGap));
-        const startY = OMR_UI_CONFIG.matrix.top + (rowIdx * OMR_UI_CONFIG.matrix.rowHeight);
-        
-        // Scan Opsi
-        let choice = "EMPTY";
-        const options = item.type === 'true_false' ? ['B', 'S'] : 
-                        item.type === 'matching' ? ['P', 'Q', 'R', 'S', 'T'] : ['A', 'B', 'C', 'D', 'E'];
+        return { detectedNis: nis, studentAnswers };
 
-        for (let o = 0; o < options.length; o++) {
-            const bubbleX = startX + 35 + (o * OMR_UI_CONFIG.matrix.bubbleGapX); // 35px is label width offset
-            const bubbleY = startY + (OMR_UI_CONFIG.matrix.bubbleSize / 2);
-            
-            if (isFilled(binary, bubbleX, bubbleY)) {
-                choice = options[o];
-                break;
-            }
-        }
-        
-        studentAnswers.push({ 
-            questionNum: item.questionNum, 
-            subNum: item.subNum,
-            studentChoice: choice 
-        });
-    });
-
-    // Cleanup
-    src.delete(); gray.delete(); warped.delete(); binary.delete();
-    return { detectedNis: nis, studentAnswers };
+    } finally {
+        src.delete(); gray.delete(); warped.delete(); binary.delete();
+    }
 }
