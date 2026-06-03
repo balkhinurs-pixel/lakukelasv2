@@ -66,7 +66,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
         if (!part) return null;
-        if (part.startsWith('$$')) return <div key={i} className="my-3 overflow-x-auto"><BlockMath math={part.slice(2, -2)} /></div>;
+        if (part.startsWith('$$')) return <div key={i} className="my-3 overflow-x-auto custom-scrollbar pb-2"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('$')) return <InlineMath key={i} math={part.slice(1, -1)} />;
         if (part.startsWith('\\[')) return (
             <div key={i} className="my-3 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2">
@@ -81,14 +81,14 @@ const MathText = ({ content, className }: { content: string, className?: string 
                 remarkPlugins={[remarkGfm]}
                 components={{
                     table: ({node, ...props}) => (
-                        <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm custom-scrollbar">
                             <table className="w-full border-collapse text-sm text-center" {...props} />
                         </div>
                     ),
                     th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-3 font-black text-slate-900 uppercase tracking-tight" {...props} />,
                     td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
                     tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
-                    p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed" {...props} />
+                    p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed break-words" {...props} />
                 }}
             >
                 {part}
@@ -310,13 +310,13 @@ export default function GenerateSoalClient({
                                 <RefinedFormField label="Jenjang" icon={<School className="h-4 w-4" />}>
                                     <Select value={form.jenjang} onValueChange={handleJenjangChange}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>{Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}</SelectContent>
+                                        <SelectContent className="rounded-2xl">{Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}</SelectContent>
                                     </Select>
                                 </RefinedFormField>
                                 <RefinedFormField label="Semester" icon={<CalendarDays className="h-4 w-4" />}>
                                     <Select value={form.semester} onValueChange={(v) => setForm(prev => ({...prev, semester: v}))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent><SelectItem value="Ganjil" className="font-bold">Ganjil</SelectItem><SelectItem value="Genap" className="font-bold">Genap</SelectItem></SelectContent>
+                                        <SelectContent className="rounded-2xl"><SelectItem value="Ganjil" className="font-bold">Ganjil</SelectItem><SelectItem value="Genap" className="font-bold">Genap</SelectItem></SelectContent>
                                     </Select>
                                 </RefinedFormField>
                             </div>
@@ -324,7 +324,7 @@ export default function GenerateSoalClient({
                             <RefinedFormField label="Mata Pelajaran" icon={<BookOpen className="h-4 w-4" />}>
                                 <Select value={form.subject} onValueChange={(v) => setForm(prev => ({...prev, subject: v}))}>
                                     <SelectTrigger><SelectValue placeholder="Pilih Mapel" /></SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="rounded-2xl">
                                         {(mapelByJenjang[form.jenjang] || []).map(m => <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>)}
                                         <SelectItem value="Lainnya (Tulis Manual)" className="font-bold text-indigo-600"><Plus className="h-3 w-3 mr-1 inline" /> Lainnya (Tulis Manual)</SelectItem>
                                     </SelectContent>
@@ -345,13 +345,13 @@ export default function GenerateSoalClient({
                                 <RefinedFormField label="Kelas" icon={<Users className="h-4 w-4" />}>
                                     <Select value={form.kelas} onValueChange={(v) => setForm(prev => ({...prev, kelas: v}))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>{getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}</SelectContent>
+                                        <SelectContent className="rounded-2xl">{getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}</SelectContent>
                                     </Select>
                                 </RefinedFormField>
                                 <RefinedFormField label="Kurikulum" icon={<Layers className="h-4 w-4" />}>
                                     <Select value={form.curriculum} onValueChange={(v) => setForm(prev => ({...prev, curriculum: v}))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="rounded-2xl">
                                             <SelectItem value="Kurikulum Merdeka" className="font-bold">Kurikulum Merdeka</SelectItem>
                                             <SelectItem value="K-13" className="font-bold">K-13 (2013)</SelectItem>
                                             <SelectItem value="Kurikulum Kemenag" className="font-bold text-indigo-600">Kurikulum Kemenag</SelectItem>
@@ -368,7 +368,7 @@ export default function GenerateSoalClient({
                                 <RefinedFormField label="Level Kognitif" icon={<Cpu className="h-4 w-4" />}>
                                     <Select value={form.cognitive_level} onValueChange={(v) => setForm(prev => ({...prev, cognitive_level: v}))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="rounded-2xl">
                                             <SelectItem value="Variatif" className="font-bold">Variatif</SelectItem>
                                             <SelectItem value="C1-C3 (Dasar)" className="font-bold">C1-C3 (Dasar)</SelectItem>
                                             <SelectItem value="C4-C6 (HOTS)" className="font-bold text-indigo-600">C4-C6 (HOTS)</SelectItem>
@@ -378,7 +378,7 @@ export default function GenerateSoalClient({
                                 <RefinedFormField label="Kesulitan" icon={<TrendingUp className="h-4 w-4" />}>
                                     <Select value={form.difficulty} onValueChange={(v: any) => setForm(prev => ({...prev, difficulty: v}))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="rounded-2xl">
                                             <SelectItem value="mudah" className="font-bold text-emerald-600">Mudah</SelectItem>
                                             <SelectItem value="sedang" className="font-bold text-blue-600">Sedang</SelectItem>
                                             <SelectItem value="sulit" className="font-bold text-rose-600">Sulit / HOTS</SelectItem>
@@ -392,7 +392,7 @@ export default function GenerateSoalClient({
                                 <RefinedFormField label="Jenis Soal" icon={<Zap className="h-4 w-4" />}>
                                     <Select value={form.question_type} onValueChange={(v: any) => setForm(prev => ({...prev, question_type: v}))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="rounded-2xl">
                                             <SelectItem value="multiple_choice" className="font-bold">Pilihan Ganda</SelectItem>
                                             <SelectItem value="essay" className="font-bold">Uraian / Esai</SelectItem>
                                             <SelectItem value="short_answer" className="font-bold text-indigo-600">Isian Singkat</SelectItem>
@@ -428,12 +428,37 @@ export default function GenerateSoalClient({
                 <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                     <div className="flex flex-col h-[90vh] relative">
                         {loading && questions.length === 0 && (
-                            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
+                            <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
                                 <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8 max-w-[90vw] overflow-hidden">
-                                     <LottieAiProcess size={220} />
-                                     <div className="space-y-2">
-                                        <p className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>Soal Terbaik</p>
-                                        <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
+                                     <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 blur-3xl rounded-full animate-pulse" />
+                                     <div className="relative">
+                                         <LottieAiProcess size={220} />
+                                     </div>
+                                     <div className="space-y-6">
+                                         <div className="space-y-2">
+                                            <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>Soal Terbaik</p>
+                                            <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
+                                         </div>
+                                         
+                                         <div className="flex flex-col items-center gap-3">
+                                            <div className="relative w-20 h-20 flex items-center justify-center">
+                                                <svg className="w-full h-full -rotate-90">
+                                                    <circle cx="40" cy="40" r="36" className="stroke-slate-100 fill-none" strokeWidth="6" />
+                                                    <motion.circle 
+                                                        cx="40" cy="40" r="36" 
+                                                        className="stroke-indigo-600 fill-none" 
+                                                        strokeWidth="6" 
+                                                        strokeLinecap="round"
+                                                        strokeDasharray="226"
+                                                        initial={{ strokeDashoffset: 226 }}
+                                                        animate={{ strokeDashoffset: 226 - (226 * (30 - countdown) / 30) }}
+                                                        transition={{ duration: 1, ease: "linear" }}
+                                                    />
+                                                </svg>
+                                                <span className="absolute font-mono font-black text-indigo-600 text-xl">{countdown}s</span>
+                                            </div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Selesai</p>
+                                         </div>
                                      </div>
                                 </div>
                             </div>
@@ -444,10 +469,10 @@ export default function GenerateSoalClient({
                         <ScrollArea className="flex-1 p-4 sm:p-10">
                             <div className="space-y-6 sm:space-y-12 pb-10">
                                 {questions.map((q, idx) => (
-                                    <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50 group hover:shadow-md transition-all">
-                                        <div className="flex items-center justify-between mb-8">
+                                    <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-5 sm:p-10 border border-slate-100/50 group hover:shadow-md transition-all">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{idx + 1}</div>
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shrink-0">{idx + 1}</div>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500")}>
                                                         {q.difficulty}
@@ -460,7 +485,7 @@ export default function GenerateSoalClient({
                                                     )}
                                                 </div>
                                             </div>
-                                            <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{getQuestionTypeLabel(q.type)}</Badge>
+                                            <Badge className="w-fit bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{getQuestionTypeLabel(q.type)}</Badge>
                                         </div>
                                         
                                         <div className="text-lg font-bold text-slate-800 leading-relaxed mb-6">
@@ -470,9 +495,9 @@ export default function GenerateSoalClient({
                                         {q.options && (
                                             <div className="grid grid-cols-1 gap-3 mt-8">
                                                 {Object.entries(q.options).sort().map(([k, v]) => (
-                                                    <div key={k} className="p-5 rounded-xl border border-slate-50 bg-slate-50/30 flex gap-4">
+                                                    <div key={k} className="p-4 sm:p-5 rounded-xl border border-slate-50 bg-slate-50/30 flex gap-4">
                                                         <span className="font-black text-indigo-600">{k}.</span>
-                                                        <div className="flex-1"><MathText content={v} /></div>
+                                                        <div className="flex-1 overflow-hidden"><MathText content={v} /></div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -503,13 +528,19 @@ export default function GenerateSoalClient({
                                 ))}
                             </div>
                         </ScrollArea>
-                        <div className="p-6 sm:p-10 bg-white border-t flex gap-4 shrink-0 pb-safe">
-                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-16 rounded-2xl font-black uppercase tracking-widest"><ArrowLeft className="h-5 w-5" /> Kembali</Button>
-                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl">{saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal</Button>
+                        <div className="p-4 sm:p-10 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe">
+                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-14 sm:h-16 rounded-2xl font-black uppercase tracking-widest"><ArrowLeft className="h-5 w-5" /> Kembali</Button>
+                            <Button onClick={handleSaveToBankSoal} disabled={saving || loading || questions.length === 0} className="flex-[2] h-14 sm:h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-100 transition-all active:scale-95">{saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Bank Soal</Button>
                         </div>
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+            `}</style>
         </div>
     );
 }
