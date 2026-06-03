@@ -65,6 +65,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
+        if (!part) return null;
         if (part.startsWith('$$')) return <div key={i} className="my-3 overflow-x-auto"><BlockMath math={part.slice(2, -2)} /></div>;
         if (part.startsWith('$')) return <InlineMath key={i} math={part.slice(1, -1)} />;
         if (part.startsWith('\\[')) return (
@@ -242,6 +243,15 @@ export default function GenerateSoalClient({
             toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
         }
         setSaving(false);
+    };
+
+    const toggleExplanation = (idx: number) => {
+        setExpandedExplanations(prev => {
+            const next = new Set(prev);
+            if (next.has(idx)) next.delete(idx);
+            else next.add(idx);
+            return next;
+        });
     };
 
     const getQuestionTypeLabel = (type: string) => {
@@ -436,11 +446,59 @@ export default function GenerateSoalClient({
                                 {questions.map((q, idx) => (
                                     <Card key={idx} className="border-0 shadow-sm rounded-xl bg-white p-6 sm:p-10 border border-slate-100/50 group hover:shadow-md transition-all">
                                         <div className="flex items-center justify-between mb-8">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{idx + 1}</div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg">{idx + 1}</div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500")}>
+                                                        {q.difficulty}
+                                                    </Badge>
+                                                    {q.cognitive_level && (
+                                                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 uppercase font-black text-[9px] tracking-widest px-2 py-0.5">
+                                                            <BrainCircuit className="w-3 h-3 mr-1 opacity-60" />
+                                                            {q.cognitive_level}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
                                             <Badge className="bg-indigo-50 text-indigo-700 border-0 px-3 py-1 font-black text-[10px] uppercase tracking-widest">{getQuestionTypeLabel(q.type)}</Badge>
                                         </div>
-                                        <MathText content={q.question} className="text-lg font-bold text-slate-800" />
-                                        {q.options && <div className="grid grid-cols-1 gap-3 mt-8">{Object.entries(q.options).map(([k, v]) => <div key={k} className="p-5 rounded-xl border border-slate-50 bg-slate-50/30 flex gap-4"><span className="font-black text-indigo-600">{k}.</span><MathText content={v} /></div>)}</div>}
+                                        
+                                        <div className="text-lg font-bold text-slate-800 leading-relaxed mb-6">
+                                            <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
+                                        </div>
+
+                                        {q.options && (
+                                            <div className="grid grid-cols-1 gap-3 mt-8">
+                                                {Object.entries(q.options).sort().map(([k, v]) => (
+                                                    <div key={k} className="p-5 rounded-xl border border-slate-50 bg-slate-50/30 flex gap-4">
+                                                        <span className="font-black text-indigo-600">{k}.</span>
+                                                        <div className="flex-1"><MathText content={v} /></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="pt-6 mt-8 border-t border-slate-100 flex flex-wrap justify-between items-center gap-4">
+                                            <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">KUNCI: {q.answer}</p>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                onClick={() => toggleExplanation(idx)} 
+                                                className="text-[10px] font-black uppercase text-indigo-600 tracking-widest h-10 px-4 rounded-xl hover:bg-indigo-50"
+                                            >
+                                                {expandedExplanations.has(idx) ? "Tutup Pembahasan" : "Lihat Pembahasan"}
+                                            </Button>
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {expandedExplanations.has(idx) && (
+                                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-4">
+                                                    <div className="p-6 rounded-xl bg-slate-50 text-sm italic text-slate-600 border border-slate-100 leading-relaxed shadow-inner">
+                                                        <MathText content={q.explanation} />
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </Card>
                                 ))}
                             </div>
