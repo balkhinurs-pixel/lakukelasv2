@@ -5,7 +5,7 @@ import { Printer, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
-// OMR RIGID CONFIG V101
+// OMR RIGID CONFIG V102 (Optimized for Printing)
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123, padding: 40 },
     nis: {
@@ -85,7 +85,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
             <div className="flex flex-col" style={{ width: `${OMR_UI_CONFIG.matrix.colWidth}px` }}>
                 {items.map((item, idx) => (
                     item.type === 'header' ? (
-                        <div key={idx} className="w-full bg-slate-100 py-1 px-2 rounded-md border-l-4 border-indigo-600 mb-1 mt-2 first:mt-0">
+                        <div key={idx} className="w-full bg-slate-100 py-1 px-2 rounded-md border-l-4 border-indigo-600 mb-1 mt-2 first:mt-0" style={{ WebkitPrintColorAdjust: 'exact' }}>
                             <span className="text-[7.5pt] font-black text-indigo-900 tracking-tight uppercase truncate block">{item.label}</span>
                         </div>
                     ) : (
@@ -93,7 +93,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                             <span className="w-8 text-right font-bold text-[8pt] text-slate-500">{item.displayLabel}.</span>
                             <div className="flex gap-2">
                                 {(questionTypeConfig[item.questionType]?.options || ['A', 'B', 'C', 'D', 'E']).map(opt => (
-                                    <div key={opt} className="rounded-full border-[1.2pt] border-black flex items-center justify-center text-[6.5pt] font-black" style={{ width: '19px', height: '19px' }}>{opt}</div>
+                                    <div key={opt} className="rounded-full border-[1.2pt] border-black flex items-center justify-center text-[6.5pt] font-black" style={{ width: '19px', height: '19px', WebkitPrintColorAdjust: 'exact' }}>{opt}</div>
                                 ))}
                             </div>
                         </div>
@@ -131,16 +131,16 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
             <main className="a4-canvas" style={{ transform: `scale(${zoom / 100})`, width: '794px', height: '1123px' }}>
                 <div className="print-area relative h-full w-full bg-white text-black" style={{ padding: '40px' }}>
                     
-                    {/* Anchor Markers */}
-                    <div className="absolute top-[20px] left-[20px] w-8 h-8 bg-black" />
-                    <div className="absolute top-[20px] right-[20px] w-8 h-8 bg-black" />
-                    <div className="absolute bottom-[20px] left-[20px] w-8 h-8 bg-black" />
-                    <div className="absolute bottom-[20px] right-[20px] w-8 h-8 bg-black" />
+                    {/* Anchor Markers (Using Border to force print visibility) */}
+                    <div className="absolute top-[20px] left-[20px] w-8 h-8 bg-black border-4 border-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
+                    <div className="absolute top-[20px] right-[20px] w-8 h-8 bg-black border-4 border-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
+                    <div className="absolute bottom-[20px] left-[20px] w-8 h-8 bg-black border-4 border-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
+                    <div className="absolute bottom-[20px] right-[20px] w-8 h-8 bg-black border-4 border-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
 
                     {/* Header */}
                     <div className="border-b-2 border-black pb-4 flex justify-between items-center mb-6" style={{ margin: '0 40px' }}>
                         <div className="flex gap-4 items-center">
-                            {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-12 h-12 object-contain" />}
+                            {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-12 h-12 object-contain" crossOrigin="anonymous" />}
                             <div>
                                 <h1 className="text-lg font-black uppercase leading-tight">{schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}</h1>
                                 <p className="text-[8pt] font-bold text-slate-500 uppercase tracking-widest">Lembar Jawab Komputer AI</p>
@@ -162,7 +162,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                                     <div key={c} className="flex flex-col gap-1">
                                         <div className="w-7 h-7 border-2 border-black rounded-md" />
                                         {[0,1,2,3,4,5,6,7,8,9].map(n => (
-                                            <div key={n} className="w-5 h-5 rounded-full border-[1pt] border-black flex items-center justify-center text-[6pt] font-black">{n}</div>
+                                            <div key={n} className="w-5 h-5 rounded-full border-[1pt] border-black flex items-center justify-center text-[6pt] font-black" style={{ WebkitPrintColorAdjust: 'exact' }}>{n}</div>
                                         ))}
                                     </div>
                                 ))}

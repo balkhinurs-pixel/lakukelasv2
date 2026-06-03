@@ -143,7 +143,7 @@
 }
 
 /* 
-  ULTIMATE PRINT & PREVIEW SYSTEM V105 
+  ULTIMATE PRINT & PREVIEW SYSTEM V106
   Isolasi total antara tampilan Web Preview (A4 Sim) dan Hasil Cetak asli.
 */
 
@@ -181,8 +181,9 @@
     margin: 0 !important;
     padding: 0 !important;
     width: 210mm !important;
-    height: 297mm !important;
     overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .no-print {
@@ -192,17 +193,28 @@
   .preview-wrapper {
     padding: 0 !important;
     background: transparent !important;
+    display: block !important;
+    min-height: auto !important;
   }
 
   .a4-canvas {
     width: 210mm !important;
-    height: 297mm !important;
+    min-height: 297mm !important;
     margin: 0 !important;
+    padding: 0 !important;
     box-shadow: none !important;
-    transform: none !important; /* WAJIB: Matikan zoom saat print */
+    transform: none !important;
+    overflow: visible !important;
   }
 
   .print-area {
-    padding: 10mm !important; /* Margin cetak minimal */
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Force background colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

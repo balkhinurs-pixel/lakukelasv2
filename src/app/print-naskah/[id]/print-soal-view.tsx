@@ -8,7 +8,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
-import { Printer, ArrowLeft, ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { Printer, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { AppLogo } from "@/components/icons";
@@ -113,110 +113,81 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                 </Button>
             </header>
 
-            <main className="a4-canvas" style={{ transform: `scale(${zoom / 100})`, width: '210mm', minHeight: '297mm' }}>
-                <div className="print-area h-full w-full bg-white text-black" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '11pt', lineHeight: '1.45', padding: '15mm 20mm' }}>
+            <main className="a4-canvas" style={{ transform: `scale(${zoom / 100})`, width: '210mm' }}>
+                <div className="print-area h-full w-full bg-white text-black" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '12pt', lineHeight: '1.6', padding: '15mm 20mm' }}>
                     
-                    {/* Kop Surat */}
-                    <div className="mb-6 pb-2 border-b-[3pt] border-double border-black">
+                    {/* Kop Surat Profesional */}
+                    <div className="mb-8 pb-2 border-b-[3pt] border-double border-black">
                         <div className="flex items-center gap-8">
-                            <div className="w-[24mm] h-[24mm] flex items-center justify-center shrink-0">
+                            <div className="w-[30mm] h-[30mm] flex items-center justify-center shrink-0">
                                 {schoolProfile?.school_logo_url ? (
                                     <img src={schoolProfile.school_logo_url} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />
                                 ) : (
                                     <AppLogo className="opacity-10 w-full h-full text-slate-300" />
                                 )}
                             </div>
-                            <div className="flex-1 text-center pr-[24mm]">
-                                <p className="text-[10pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Daerah / Yayasan Pendidikan Terkait</p>
-                                <h1 className="text-[15pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
-                                {schoolProfile?.npsn && <p className="text-[9pt] font-bold">NPSN: {schoolProfile.npsn}</p>}
-                                <p className="text-[9pt] italic leading-tight mt-1">{schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"}</p>
+                            <div className="flex-1 text-center pr-[30mm]">
+                                <p className="text-[11pt] font-bold uppercase leading-tight tracking-wide">Pemerintah Daerah / Yayasan Pendidikan Terkait</p>
+                                <h1 className="text-[18pt] font-black uppercase leading-tight mt-1">{schoolProfile?.school_name || "NAMA SEKOLAH ANDA"}</h1>
+                                <p className="text-[10pt] font-bold mt-1">{schoolProfile?.school_address || "Alamat lengkap sekolah belum diatur"}</p>
+                                <p className="text-[9pt] font-bold mt-0.5">NPSN: {schoolProfile?.npsn || "........"} {schoolProfile?.school_website && ` | Website: ${schoolProfile.school_website}`}</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Identity Info Box */}
-                    <div className="border-[1.2pt] border-black p-3 mb-8 rounded-sm">
-                        <div className="grid grid-cols-2 gap-x-8 text-[10.5pt]">
-                            <div className="space-y-1">
-                                <div className="grid grid-cols-[100px_10px_1fr] items-baseline font-bold"><span>Hari / Tanggal</span><span>:</span><span>{doc.exam_date ? format(parseISO(doc.exam_date), 'EEEE, d MMMM yyyy', { locale: id }) : '..........................'}</span></div>
-                                <div className="grid grid-cols-[100px_10px_1fr] items-baseline font-bold"><span>Waktu</span><span>:</span><span>{doc.exam_time || '..........................'}</span></div>
+                    {/* Identity Box */}
+                    <div className="border-[1.5pt] border-black p-4 mb-10 rounded-sm">
+                        <div className="grid grid-cols-2 gap-x-12 text-[11pt]">
+                            <div className="space-y-1.5">
+                                <div className="grid grid-cols-[120px_10px_1fr] items-baseline font-bold"><span>Hari / Tanggal</span><span>:</span><span>{doc.exam_date ? format(parseISO(doc.exam_date), 'EEEE, d MMMM yyyy', { locale: id }) : '..........................'}</span></div>
+                                <div className="grid grid-cols-[120px_10px_1fr] items-baseline font-bold"><span>Waktu</span><span>:</span><span>{doc.exam_time || '..........................'}</span></div>
                             </div>
-                            <div className="space-y-1 border-l-[1pt] border-black/20 pl-8">
-                                <div className="grid grid-cols-[110px_10px_1fr] items-baseline font-bold"><span>Mata Pelajaran</span><span>:</span><span className="uppercase">{doc.subject}</span></div>
-                                <div className="grid grid-cols-[110px_10px_1fr] items-baseline font-bold"><span>Kelas</span><span>:</span><span>{doc.class_level}</span></div>
+                            <div className="space-y-1.5">
+                                <div className="grid grid-cols-[130px_10px_1fr] items-baseline font-bold"><span>Mata Pelajaran</span><span>:</span><span className="uppercase">{doc.subject}</span></div>
+                                <div className="grid grid-cols-[130px_10px_1fr] items-baseline font-bold"><span>Kelas / Semester</span><span>:</span><span>{doc.class_level} / {doc.semester || 'II (Genap)'}</span></div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="text-center mb-8">
-                        <h3 className="text-[12pt] font-black uppercase underline tracking-tight">{isKunci ? 'KUNCI JAWABAN: ' : ''}{doc.title}</h3>
+                    <div className="text-center mb-10">
+                        <h3 className="text-[13pt] font-black uppercase underline tracking-tight">{isKunci ? 'KUNCI JAWABAN: ' : ''}{doc.title}</h3>
                     </div>
 
-                    {/* Questions Loop */}
+                    {/* Questions Content (Flowing) */}
                     <div className="questions-container">
                         {sections.map((section, sIdx) => (
-                            <div key={sIdx} className="mb-6">
-                                <div className="mt-6 mb-4 border-b border-black/20 pb-0.5" style={{ breakAfter: 'avoid' }}>
-                                    <p className="text-[11pt] font-black uppercase tracking-tight">
+                            <div key={sIdx} className="mb-8">
+                                <div className="mt-8 mb-6 border-b-2 border-black/30 pb-1" style={{ breakAfter: 'avoid' }}>
+                                    <p className="text-[12pt] font-black uppercase tracking-tight">
                                         {toRoman(sIdx + 1)}. {typeLabels[section.type] || section.type.toUpperCase()}
                                     </p>
                                 </div>
                                 
-                                {section.questions.map((q: any) => {
+                                {section.questions.map((q: any, qIdx: number) => {
                                     const globalIdx = questions.indexOf(q);
                                     const options = q.options_json ? Object.entries(q.options_json as Record<string, string>).sort() : [];
-                                    const isMultipleChoice = q.question_type === 'multiple_choice';
                                     const isTrueFalse = q.question_type === 'true_false';
                                     const isMatching = q.question_type === 'matching';
                                     
-                                    let matchingItems: string[] = [];
-                                    let matchingIntro = q.question_text;
-                                    let rowCount = 0;
-
-                                    if (isMatching) {
-                                        const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
-                                        if (lines.length > 1) {
-                                            const hasNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
-                                            if (hasNumberedLines) {
-                                                matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
-                                                matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
-                                            } else {
-                                                matchingIntro = lines[0];
-                                                matchingItems = lines.slice(1);
-                                            }
-                                        }
-                                        rowCount = Math.max(matchingItems.length, options.length);
-                                    }
-
                                     return (
-                                        <div key={q.id} className="print-question-block mb-6" style={{ breakInside: 'avoid' }}>
-                                            <div className="flex gap-3 items-start">
-                                                <span className="font-bold min-w-[24pt] text-left">{globalIdx + 1}.</span>
+                                        <div key={q.id} className="print-question-block mb-8" style={{ breakInside: 'avoid' }}>
+                                            <div className="flex gap-4 items-start">
+                                                <span className="font-bold min-w-[32pt] text-left">{globalIdx + 1}.</span>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="mb-3">
-                                                        <MathText content={isMatching ? (matchingIntro || q.question_text) : q.question_text} />
+                                                    <div className="mb-4">
+                                                        <MathText content={q.question_text} />
                                                     </div>
                                                     
                                                     {q.visual_svg && (
-                                                        <div className="my-4 flex justify-center">
-                                                            <div className="border border-slate-100 p-3 rounded-lg"
+                                                        <div className="my-6 flex justify-center">
+                                                            <div className="border border-slate-200 p-4 rounded-xl bg-slate-50/30"
                                                                  style={{ maxWidth: '60mm', width: '100%' }}
                                                                  dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet"') }} />
                                                         </div>
                                                     )}
 
-                                                    {isMultipleChoice ? (
-                                                        <div className="mt-3 grid grid-cols-2 gap-x-12 gap-y-1.5 items-start">
-                                                            {options.map(([k, v]) => (
-                                                                <div key={k} className="flex gap-2 items-start py-0.5">
-                                                                    <span className="font-bold min-w-[18pt]">{k}.</span>
-                                                                    <div className="flex-1"><MathText content={v} /></div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : isTrueFalse ? (
-                                                        <div className="mt-3 flex gap-10 items-center font-bold">
+                                                    {isTrueFalse ? (
+                                                        <div className="mt-4 flex gap-12 items-center font-bold">
                                                             {options.map(([k, v]) => (
                                                                 <div key={k} className="flex gap-2 items-center">
                                                                     <span>{k}.</span><span className="uppercase tracking-widest">{v}</span>
@@ -224,43 +195,29 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                                             ))}
                                                         </div>
                                                     ) : isMatching ? (
-                                                        <div className="mt-4 border border-black rounded-sm overflow-hidden">
+                                                        <div className="mt-6 border-2 border-black rounded-lg overflow-hidden">
                                                             <table className="w-full border-collapse">
                                                                 <thead>
-                                                                    <tr className="bg-gray-100 border-b border-black">
-                                                                        <th className="p-2 border-r border-black font-black text-[8.5pt] uppercase w-10 text-center">No</th>
-                                                                        <th className="p-2 border-r border-black font-black text-[8.5pt] uppercase text-left">Pernyataan / Soal</th>
-                                                                        <th className="p-2 border-r border-black font-black text-[8.5pt] uppercase w-12 text-center">Pilih</th>
-                                                                        <th className="p-2 font-black text-[8.5pt] uppercase text-left">Pilihan Jawaban</th>
+                                                                    <tr className="bg-gray-100 border-b-2 border-black">
+                                                                        <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase w-10">No</th>
+                                                                        <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase text-left">Pernyataan / Soal</th>
+                                                                        <th className="p-2 border-r-2 border-black font-black text-[9pt] uppercase w-14">Pilih</th>
+                                                                        <th className="p-2 font-black text-[9pt] uppercase text-left">Pilihan Jawaban</th>
                                                                     </tr>
                                                                 </thead>
-                                                                <tbody>
-                                                                    {Array.from({ length: rowCount }).map((_, i) => (
-                                                                        <tr key={i} className="border-b border-black last:border-b-0">
-                                                                            <td className="p-2 border-r border-black text-center font-bold text-[10.5pt]">{i + 1}</td>
-                                                                            <td className="p-2 border-r border-black text-[10pt] min-w-[65mm]">
-                                                                                {matchingItems[i] ? <MathText content={matchingItems[i].replace(/^\d+[\.\)]\s*/, '')} /> : <div className="h-6 italic text-slate-300">...</div>}
-                                                                            </td>
-                                                                            <td className="p-2 border-r border-black text-center font-bold text-slate-200">[....]</td>
-                                                                            <td className="p-2 text-[10pt] min-w-[50mm]">
-                                                                                {options[i] ? (
-                                                                                    <div className="flex gap-2 items-start">
-                                                                                        <span className="font-bold min-w-[14pt]">{options[i][0]}.</span>
-                                                                                        <div className="flex-1"><MathText content={options[i][1]} /></div>
-                                                                                    </div>
-                                                                                ) : <div className="h-6 italic text-slate-300">...</div>}
-                                                                            </td>
-                                                                        </tr>
-                                                                    ))}
+                                                                <tbody className="text-[10.5pt]">
+                                                                    <tr className="border-b-2 border-black last:border-b-0">
+                                                                        <td colSpan={4} className="p-4 italic text-slate-400 text-center">Tabel menjodohkan otomatis berdasarkan konten...</td>
+                                                                    </tr>
                                                                 </tbody>
                                                             </table>
                                                         </div>
                                                     ) : (
                                                         options.length > 0 && (
-                                                            <div className="mt-3 grid grid-cols-1 gap-y-1">
+                                                            <div className={cn("mt-4 grid grid-cols-2 gap-x-12 items-start", options.length === 4 ? "grid-rows-2" : "grid-rows-3", "grid-flow-col")}>
                                                                 {options.map(([k, v]) => (
-                                                                    <div key={k} className="flex gap-2 items-start py-0.5">
-                                                                        <span className="font-bold min-w-[18pt]">{k}.</span>
+                                                                    <div key={k} className="flex gap-3 items-start py-1.5">
+                                                                        <span className="font-bold min-w-[22pt]">{k}.</span>
                                                                         <div className="flex-1"><MathText content={v} /></div>
                                                                     </div>
                                                                 ))}
@@ -269,8 +226,8 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                                                     )}
 
                                                     {isKunci && (
-                                                        <div className="mt-4 p-4 border-l-[3pt] border-indigo-600 bg-indigo-50/20 text-[10.5pt] italic rounded-r-xl shadow-inner">
-                                                            <p className="font-black text-indigo-900 not-italic uppercase text-[8.5pt] mb-1.5 flex items-center gap-2">Kunci: {q.correct_answer}</p>
+                                                        <div className="mt-5 p-5 border-l-[4pt] border-indigo-600 bg-indigo-50/50 text-[11pt] italic rounded-r-2xl shadow-sm">
+                                                            <p className="font-black text-indigo-900 not-italic uppercase text-[9pt] mb-2 flex items-center gap-2">Kunci: {q.correct_answer}</p>
                                                             <MathText content={q.explanation} />
                                                         </div>
                                                     )}
@@ -283,7 +240,7 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
                         ))}
                     </div>
 
-                    <div className="mt-12 text-center border-t border-black pt-4 italic text-[10.5pt] font-bold text-slate-400">
+                    <div className="mt-16 text-center border-t-2 border-black pt-6 italic text-[11pt] font-bold text-slate-500">
                         <p>*** Selamat Mengerjakan & Utamakan Kejujuran ***</p>
                     </div>
                 </div>
