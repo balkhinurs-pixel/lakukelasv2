@@ -5,7 +5,7 @@ import { Printer, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
-// OMR RIGID CONFIG V102 (Optimized for Printing)
+// OMR RIGID CONFIG V107 (Strict Pixel-Perfect Layout)
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123, padding: 40 },
     nis: {
@@ -105,6 +105,15 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
 
     return (
         <div className="preview-wrapper">
+            <style jsx global>{`
+                @media print {
+                    @page {
+                        size: A4 portrait;
+                        margin: 0 !important; /* LJK wajib 0 margin untuk akurasi OMR */
+                    }
+                }
+            `}</style>
+
             <header className="no-print fixed top-0 left-0 right-0 z-[200] bg-slate-900 text-white h-16 flex items-center justify-between px-4 shadow-2xl">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" onClick={handleClose} className="text-white hover:bg-white/10 rounded-xl font-bold">

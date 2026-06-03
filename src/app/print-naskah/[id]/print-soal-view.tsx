@@ -13,6 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { AppLogo } from "@/components/icons";
 
+/**
+ * MathText Component V107 (Print-Optimized)
+ * Mengangani LaTeX dan Markdown dengan pemisahan baris yang cerdas.
+ */
 const MathText = ({ content }: { content: string }) => {
   if (!content) return null;
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
@@ -81,6 +85,18 @@ export default function PrintSoalView({ doc, questions, schoolProfile, isKunci }
 
     return (
         <div className="preview-wrapper">
+            <style jsx global>{`
+                @media print {
+                    @page {
+                        size: A4 portrait;
+                        margin: 15mm 20mm; /* Atur margin standar di level printer */
+                    }
+                    .print-area {
+                        padding: 0 !important; /* Hapus padding kontainer karena sudah ada margin @page */
+                    }
+                }
+            `}</style>
+
             <header className="no-print fixed top-0 left-0 right-0 z-[200] bg-slate-900/95 backdrop-blur-md text-white h-16 flex items-center justify-between px-4 shadow-2xl">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" onClick={handleClose} className="text-white hover:bg-white/10 rounded-xl h-10 gap-2 font-bold">
