@@ -6,20 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
 /**
- * OMR RIGID CONFIG V109 (Precision Calibrated with Safe-Margins)
+ * OMR RIGID CONFIG V110 (Overlap Fix & Header Safety)
  * Semua unit dalam Pixel (96 DPI). A4 = 794 x 1123px.
- * Anchors digeser ke 30px agar aman dari Non-Printable Area printer (8-10mm).
  */
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123 },
     anchors: { offset: 30, size: 32 },
     content: {
-        marginLeft: 75,
-        marginRight: 75,
+        marginLeft: 80, // Tambah margin agar teks tidak kena anchor
+        marginRight: 80,
         marginTop: 80,
     },
     nis: {
-        top: 215, 
+        top: 185, // Diangkat 30px (dari 215)
         left: 80, 
         digitWidth: 32,
         bubbleSize: 18,
@@ -28,8 +27,8 @@ const OMR_UI_CONFIG = {
         rows: 10
     },
     matrix: {
-        top: 450, 
-        left: 60,
+        top: 480, // Diturunkan 30px (dari 450)
+        left: 50,
         rowHeight: 28, 
         colWidth: 230,
         bubbleSize: 19,
@@ -131,7 +130,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         <ArrowLeft className="h-4 w-4" /> Kembali
                     </Button>
                     <div className="hidden sm:block">
-                        <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">OMR PRECISION V109</p>
+                        <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">OMR PRECISION V110</p>
                         <h2 className="text-sm font-black uppercase tracking-tight">Lembar Jawab Komputer (LJK)</h2>
                     </div>
                 </div>
@@ -157,8 +156,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                     <div className="absolute w-8 h-8 bg-black border-4 border-black" style={{ bottom: '30px', left: '30px', WebkitPrintColorAdjust: 'exact' }} />
                     <div className="absolute w-8 h-8 bg-black border-4 border-black" style={{ bottom: '30px', right: '30px', WebkitPrintColorAdjust: 'exact' }} />
 
-                    {/* Header (Visual Margin Applied) */}
-                    <div className="absolute left-[75px] right-[75px] top-[75px] border-b-2 border-black pb-4 flex justify-between items-center">
+                    {/* Header (More Centered Padding for Anchor Safety) */}
+                    <div className="absolute left-[80px] right-[80px] top-[80px] border-b-2 border-black pb-4 flex justify-between items-center">
                         <div className="flex gap-4 items-center">
                             {schoolProfile?.school_logo_url && <img src={schoolProfile.school_logo_url} className="w-12 h-12 object-contain" crossOrigin="anonymous" />}
                             <div>
@@ -172,8 +171,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         </div>
                     </div>
 
-                    {/* Content Section (Absolute Grid Calibration) */}
-                    <div className="absolute left-[75px] right-[75px] top-[195px] flex gap-10">
+                    {/* Content Section (NIS & Identity moved up to top-165px) */}
+                    <div className="absolute left-[80px] right-[80px] top-[165px] flex gap-10">
                         {/* NIS Input */}
                         <div className="shrink-0 space-y-2">
                             <p className="text-[7.5pt] font-black uppercase text-center text-slate-400">NIS (5 Digit)</p>
@@ -200,8 +199,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         </div>
                     </div>
 
-                    {/* Answers Grid (Rigid Matrix Position) */}
-                    <div className="absolute left-[50px] right-[50px] top-[450px] flex gap-5">
+                    {/* Answers Grid (Matrix pushed down to top-480px to clear NIS) */}
+                    <div className="absolute left-[50px] right-[50px] top-[480px] flex gap-5">
                         {renderColumn(displayItems.slice(0, 20))}
                         <div className="w-px bg-slate-200 self-stretch" />
                         {renderColumn(displayItems.slice(20, 40))}

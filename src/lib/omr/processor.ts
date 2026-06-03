@@ -1,6 +1,6 @@
 /**
- * @fileOverview OMR Processor Engine V109 (PERFECT ALIGNMENT CALIBRATION)
- * Menangani deteksi bulatan dengan kalibrasi koordinat yang sinkron dengan PrintLjkView V109.
+ * @fileOverview OMR Processor Engine V110 (OVERLAP FIX & CALIBRATION)
+ * Menangani deteksi bulatan dengan kalibrasi koordinat yang sinkron dengan PrintLjkView V110.
  */
 
 declare const cv: any;
@@ -10,11 +10,11 @@ export interface OMRResult {
     studentAnswers: { questionNum: number; studentChoice: string }[];
 }
 
-// CONFIGURATION SYNCED WITH UI (V109 - Precision 3-Column Grid)
+// CONFIGURATION SYNCED WITH UI (V110 - Lifted NIS, Pushed Matrix)
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123 },
     nis: {
-        top: 215, // Disesuaikan dengan V109
+        top: 185, // Sinkron dengan V110 (Pusat baris 0 naik ke 185)
         left: 80, 
         digitWidth: 32,
         bubbleSize: 18,
@@ -23,7 +23,7 @@ const OMR_UI_CONFIG = {
         rows: 10
     },
     matrix: {
-        top: 450, // Disesuaikan dengan V109
+        top: 480, // Sinkron dengan V110 (Mulai baris 1 turun ke 480)
         left: 50,
         rowHeight: 28, 
         colWidth: 230,
