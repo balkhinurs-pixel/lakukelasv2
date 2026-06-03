@@ -63,6 +63,23 @@ import { readStreamableValue } from 'ai/rsc';
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 /**
+ * KONFIGURASI DATA STATIS (Diletakkan di atas untuk mencegah ReferenceError)
+ */
+const mapelByJenjang: Record<string, string[]> = {
+    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
+    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab', 'Bahasa Jawa'],
+    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist', 'Bahasa Jawa'],
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan', 'Bahasa Jawa']
+};
+
+const getClassOptions = (jenjang: string) => {
+    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
+    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
+    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
+    return [];
+};
+
+/**
  * Robust MathText Component V124 (Aksara Jawa & Scroll Support)
  * Merender LaTeX, Markdown, dan Aksara Jawa dengan deteksi otomatis.
  */
@@ -445,7 +462,13 @@ export default function GenerateSoalClient({
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-lg shrink-0">{idx + 1}</div>
                                                 <div className="flex flex-wrap gap-1.5">
-                                                    <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500")}>
+                                                    <Badge className={cn(
+                                                        "font-black text-[9px] uppercase tracking-widest px-2 py-0.5", 
+                                                        q.difficulty === 'sulit' ? "bg-rose-500" : 
+                                                        q.difficulty === 'sedang' ? "bg-amber-500" : 
+                                                        q.difficulty === 'campuran' ? "bg-indigo-600" :
+                                                        "bg-emerald-500"
+                                                    )}>
                                                         {q.difficulty}
                                                     </Badge>
                                                     {q.cognitive_level && (
@@ -525,9 +548,13 @@ export default function GenerateSoalClient({
     );
 }
 
-function getClassOptions(jenjang: string) {
-    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
-    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
-    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
-    return [];
+function getQuestionTypeLabel(type: string) {
+    switch(type) {
+        case 'multiple_choice': return 'PG';
+        case 'essay': return 'Uraian';
+        case 'short_answer': return 'Isian';
+        case 'true_false': return 'B/S';
+        case 'matching': return 'Jodohkan';
+        default: return type;
+    }
 }
