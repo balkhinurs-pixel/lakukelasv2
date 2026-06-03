@@ -4,7 +4,7 @@
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, CalendarDays, Edit, Eye, Loader2, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, ArrowUpCircle, AlertTriangle, School, BookOpen, Hash } from "lucide-react";
+import { Calendar as CalendarIcon, CalendarDays, Edit, Eye, Loader2, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, ArrowUpCircle, AlertTriangle, School, BookOpen, Hash, Filter, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSearchParams, useRouter } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -487,6 +487,11 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
         (!selectedSubjectId || h.entry.subject_id === selectedSubjectId)
       );
   }, [groupedHistory, selectedClassId, selectedSubjectId]);
+
+  // Pagination Effect: Reset to page 1 on filter change
+  React.useEffect(() => {
+      setCurrentPage(1);
+  }, [selectedClassId, selectedSubjectId]);
   
   const pageCount = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE);
   const paginatedHistory = filteredHistory.slice(
