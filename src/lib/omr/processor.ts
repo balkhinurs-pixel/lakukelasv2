@@ -1,6 +1,6 @@
 /**
- * @fileOverview OMR Processor Engine V100 (PRECISION CALIBRATED FOR DYNAMIC LJK)
- * Menangani deteksi bulatan dengan kalibrasi koordinat yang singkron dengan desain UI.
+ * @fileOverview OMR Processor Engine V101 (PRECISION CALIBRATED FOR SIDE-BY-SIDE LAYOUT)
+ * Menangani deteksi bulatan dengan kalibrasi koordinat yang singkron dengan desain UI V101.
  */
 
 declare const cv: any;
@@ -10,12 +10,12 @@ export interface OMRResult {
     studentAnswers: { questionNum: number; studentChoice: string }[];
 }
 
-// CONFIGURATION SYNCED WITH UI (V100 - 3 Column Rigid)
+// CONFIGURATION SYNCED WITH UI (V101 - 3 Column Rigid + Side Identity)
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123, padding: 40 },
     nis: {
-        top: 200, // Start Y for NIS
-        left: 60,
+        top: 212, // Disesuaikan dengan posisi visual NIS yang baru
+        left: 80, // Sesuai OMR_CONFIG.nis.left
         digitWidth: 32,
         bubbleSize: 18,
         gapY: 19,
@@ -23,9 +23,9 @@ const OMR_UI_CONFIG = {
         rows: 10
     },
     matrix: {
-        top: 450, // Start Y for Answers Grid
+        top: 450, // Diangkat dari 520 sesuai UI baru
         left: 50,
-        rowHeight: 25,
+        rowHeight: 28, // Sesuai UI baru
         colWidth: 235,
         bubbleSize: 19,
         bubbleGapX: 24,
@@ -71,7 +71,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
 
         // 3. Scan NIS (5 Digits)
         let nis = "";
-        const nisStartY = OMR_UI_CONFIG.nis.top + 32; 
+        const nisStartY = OMR_UI_CONFIG.nis.top; 
         for (let c = 0; c < OMR_UI_CONFIG.nis.cols; c++) {
             let detectedDigit = "?";
             for (let r = 0; r < OMR_UI_CONFIG.nis.rows; r++) {

@@ -11,8 +11,8 @@ const OMR_CONFIG = {
     page: { width: 794, height: 1123, padding: 40 },
     anchors: { size: 30, offset: 20 },
     nis: {
-        top: 200,
-        left: 60,
+        top: 180, 
+        left: 80,
         digitWidth: 32,
         bubbleSize: 18,
         gapY: 19,
@@ -20,12 +20,13 @@ const OMR_CONFIG = {
         rows: 10
     },
     matrix: {
-        top: 450,
+        top: 450, // Diangkat dari 520 agar lebih lega
         left: 50,
-        rowHeight: 25,
+        rowHeight: 28, // Sedikit lebih tinggi agar teks tidak berdempetan
         colWidth: 235,
         bubbleSize: 19,
-        bubbleGapX: 24
+        bubbleGapX: 24,
+        colGap: 20
     }
 };
 
@@ -39,9 +40,8 @@ const questionTypeConfig: Record<string, { label: string; options: string[] }> =
 
 const getQuestionRowSpan = (q: any) => {
     if (q.question_type !== 'matching') return 1;
-    // Hitung baris pernyataan yang diawali angka. Contoh: "1. Teks..."
     const lines = q.question_text?.split('\n').filter((l: string) => /^\d+[\.\)]/.test(l.trim()));
-    return lines?.length > 0 ? lines.length : 4; // Default ke 4 baris jika gagal parsing
+    return lines?.length > 0 ? lines.length : 4; 
 };
 
 const renderColumn = (items: any[], config: typeof questionTypeConfig) => {
@@ -84,7 +84,7 @@ const renderColumn = (items: any[], config: typeof questionTypeConfig) => {
 const renderNisInput = () => {
     const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     return (
-        <div className="flex flex-col items-center" style={{ marginLeft: `${OMR_CONFIG.nis.left - OMR_CONFIG.page.padding}px` }}>
+        <div className="flex flex-col items-center">
             <span className="text-[7.5pt] font-black uppercase mb-1 tracking-widest text-slate-700">NIS</span>
             <div className="flex" style={{ gap: '8px' }}>
                 {[...Array(OMR_CONFIG.nis.cols)].map((_, digitIndex) => (
@@ -146,7 +146,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
         return items;
     }, [questions]);
 
-    const itemsPerCol = 20; // 20 baris per kolom (Rigid)
+    const itemsPerCol = 20; 
     const col1 = displayItems.slice(0, itemsPerCol);
     const col2 = displayItems.slice(itemsPerCol, itemsPerCol * 2);
     const col3 = displayItems.slice(itemsPerCol * 2, itemsPerCol * 3);
@@ -158,7 +158,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                     <ArrowLeft className="h-4 w-4" /> Kembali
                 </Button>
                 <div className="text-center">
-                    <div className="font-black uppercase tracking-widest text-[10px] sm:text-xs">LJK OMR PRECISION V100</div>
+                    <div className="font-black uppercase tracking-widest text-[10px] sm:text-xs">LJK OMR PRECISION V101</div>
                     <p className="text-[9px] font-bold text-indigo-400 uppercase">AI-READY CALIBRATED LAYOUT</p>
                 </div>
                 <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 font-black gap-2 px-6 shadow-lg">
@@ -182,8 +182,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                     <div className="absolute bg-black" style={{ bottom: '20px', left: '20px', width: '30px', height: '30px' }} />
                     <div className="absolute bg-black" style={{ bottom: '20px', right: '20px', width: '30px', height: '30px' }} />
 
-                    {/* SCHOOL KOP */}
-                    <div className="border-b-2 border-black pb-3 flex justify-between items-start mb-4">
+                    {/* SCHOOL KOP - CENTERED PADDING (Prevent Anchor Coverage) */}
+                    <div className="border-b-2 border-black pb-3 flex justify-between items-start mb-4" style={{ margin: '0 50px' }}>
                         <div className="flex gap-4 items-center">
                             {schoolProfile?.school_logo_url && (
                                 <img src={schoolProfile.school_logo_url} className="w-12 h-12 object-contain" alt="Logo" />
@@ -203,31 +203,38 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                         </div>
                     </div>
 
-                    {/* IDENTITY GRID */}
-                    <div className="grid grid-cols-2 gap-6 mb-4">
-                        <div className="space-y-2">
-                            <div className="flex flex-col gap-0.5">
-                                <span className="text-[8pt] font-black uppercase">NAMA :</span>
-                                <div className="h-6 border-b border-black border-dotted w-full" />
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                                <span className="text-[8pt] font-black uppercase">UJIAN :</span>
-                                <div className="h-6 border-b border-black border-dotted w-full" />
-                            </div>
+                    {/* TOP SECTION: NIS & IDENTITY SIDE-BY-SIDE */}
+                    <div className="flex items-start gap-12" style={{ marginTop: '30px', padding: '0 40px' }}>
+                        {/* LEFT: NIS SECTION */}
+                        <div className="shrink-0">
+                            {renderNisInput()}
                         </div>
-                        <div className="flex flex-col gap-0.5">
-                            <span className="text-[8pt] font-black uppercase">TANGGAL :</span>
-                            <div className="h-6 border-b border-black border-dotted w-full" />
+
+                        {/* RIGHT: IDENTITY GRID (Dotted Fields) */}
+                        <div className="flex-1 space-y-5 pt-8">
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-[8pt] font-black uppercase tracking-wider text-slate-400">NAMA PESERTA :</span>
+                                <div className="h-10 border-b border-black border-dotted w-full flex items-end pb-1 text-[11pt] font-bold" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-[8pt] font-black uppercase tracking-wider text-slate-400">TANGGAL UJIAN :</span>
+                                    <div className="h-8 border-b border-black border-dotted w-full flex items-end pb-1 text-[10pt] font-bold" />
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-[8pt] font-black uppercase tracking-wider text-slate-400">RUANG / KELAS :</span>
+                                    <div className="h-8 border-b border-black border-dotted w-full flex items-end pb-1 text-[10pt] font-bold" />
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-[8pt] font-black uppercase tracking-wider text-slate-400">MATA PELAJARAN / PAKET :</span>
+                                <div className="h-8 border-b border-black border-dotted w-full flex items-end pb-1 text-[10pt] font-bold uppercase">{doc.subject}</div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* NIS SECTION */}
-                    <div className="flex justify-start mb-6" style={{ marginTop: '10px' }}>
-                        {renderNisInput()}
-                    </div>
-
-                    {/* ANSWERS GRID */}
-                    <div className="flex" style={{ gap: '20px', marginTop: '20px' }}>
+                    {/* ANSWERS GRID - ELEVATED Y (matrix.top) */}
+                    <div className="flex" style={{ gap: '20px', marginTop: '60px' }}>
                         <div style={{ width: `${OMR_CONFIG.matrix.colWidth}px` }}>{renderColumn(col1, questionTypeConfig)}</div>
                         <div className="w-[1pt] bg-slate-200 self-stretch" />
                         <div style={{ width: `${OMR_CONFIG.matrix.colWidth}px` }}>{renderColumn(col2, questionTypeConfig)}</div>
@@ -243,6 +250,10 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                             </span>
                         </div>
                     )}
+
+                    <div className="absolute bottom-12 left-0 right-0 text-center opacity-30">
+                         <p className="text-[7pt] font-bold uppercase tracking-[0.4em]">Sistem Administrasi Guru LakuKelas</p>
+                    </div>
                 </div>
             </main>
         </div>
