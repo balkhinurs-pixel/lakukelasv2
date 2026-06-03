@@ -1,19 +1,28 @@
-
-import { getTeacherAttendanceHistory, getAllUsers, getUserProfile, getHolidays, getAttendanceSettings, getSchedule } from "@/lib/data";
+import { getTeacherAttendanceHistory, getUserProfile, getHolidays, getAttendanceSettings, getSchedule } from "@/lib/data";
 import TeacherAttendanceClient from "./attendance-client";
 import { format } from "date-fns";
 import { getIndonesianTime, getIndonesianDayName } from "@/lib/timezone";
 import type { Holiday } from "@/lib/types";
+import { redirect } from "next/navigation";
 
+/**
+ * Page Teacher Attendance (Server Component) - V122
+ * Optimized: Only fetches personal records to save Invocations/CPU.
+ */
 export default async function TeacherAttendancePage() {
+    const profile = await getUserProfile();
+    
+    if (!profile) {
+        redirect('/login');
+    }
+
     const nowIndo = getIndonesianTime();
     const todayStr = format(nowIndo, 'yyyy-MM-dd');
     const dayNameIndo = getIndonesianDayName();
     
-    const [initialAttendanceHistory, users, profile, holidays, settings, schedule] = await Promise.all([
-        getTeacherAttendanceHistory(),
-        getAllUsers(),
-        getUserProfile(),
+    // Targeted Fetching: Pass profile.id to get only this teacher's history
+    const [initialAttendanceHistory, holidays, settings, schedule] = await Promise.all([
+        getTeacherAttendanceHistory(profile.id),
         getHolidays(),
         getAttendanceSettings(),
         getSchedule()
@@ -45,14 +54,10 @@ export default async function TeacherAttendancePage() {
         }
     }
 
-    // Filter riwayat untuk user ini saja
-    const userHistory = profile ? initialAttendanceHistory.filter(h => h.teacherId === profile.id) : [];
-
     return (
         <div className="min-h-screen -m-4 sm:-m-6 lg:-m-8 bg-slate-50">
             <TeacherAttendanceClient 
-                initialHistory={userHistory} 
-                users={users} 
+                initialHistory={initialAttendanceHistory} 
                 profile={profile}
                 todayHoliday={todayHoliday}
             />

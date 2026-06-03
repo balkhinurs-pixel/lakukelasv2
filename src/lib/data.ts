@@ -845,12 +845,36 @@ export async function getStudentLedgerData(studentId: string) {
     };
 }
 
-export async function getTeacherAttendanceHistory(): Promise<TeacherAttendance[]> {
+/**
+ * Mengambil riwayat absensi guru.
+ * @param teacherId (Opsional) Filter untuk guru tertentu (hemat CPU/Invocations).
+ */
+export async function getTeacherAttendanceHistory(teacherId?: string): Promise<TeacherAttendance[]> {
     noStore();
     const supabase = await createClient();
-    const { data } = await supabase.from('teacher_attendance').select('*, teacherName:profiles(full_name)').order('date', { ascending: false });
+    
+    let query = supabase
+        .from('teacher_attendance')
+        .select('id, teacher_id, date, check_in, check_out, status, reason, profiles(full_name)')
+        .order('date', { ascending: false });
+
+    if (teacherId) {
+        query = query.eq('teacher_id', teacherId);
+    }
+
+    const { data } = await query;
     if (!data) return [];
-    return data.map((item: any) => ({ id: item.id, teacherId: item.teacher_id, teacherName: item.teacherName?.full_name || 'Unknown', date: item.date, checkIn: item.check_in, checkOut: item.check_out, status: item.status, reason: item.reason }));
+
+    return data.map((item: any) => ({
+        id: item.id,
+        teacherId: item.teacher_id,
+        teacherName: item.profiles?.full_name || 'Unknown',
+        date: item.date,
+        checkIn: item.check_in,
+        checkOut: item.check_out,
+        status: item.status,
+        reason: item.reason
+    }));
 }
 
 export async function getTeacherActivityStats() {

@@ -214,7 +214,7 @@ export async function deleteJournal(journalId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase.from('journal_entries').delete().eq('id', journalId);
+    const { error = null } = await supabase.from('journal_entries').delete().eq('id', journalId);
 
     if (error) {
         console.error("Error deleting journal:", error);
@@ -264,7 +264,7 @@ export async function deleteAgenda(agendaId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase.from('agendas').delete().eq('id', agendaId);
+    const { error = null } = await supabase.from('agendas').delete().eq('id', agendaId);
 
     if (error) {
         console.error("Error deleting agenda:", error);
@@ -304,7 +304,7 @@ export async function saveAttendance(formData: FormData) {
             meeting_number: Number(formData.get('original_meeting_number')),
         };
         
-        const { error: deleteError } = await supabase.from('attendance_records')
+        const { error: deleteError = null } = await supabase.from('attendance_records')
             .delete()
             .eq('date', originalData.date)
             .eq('class_id', originalData.class_id)
@@ -405,7 +405,7 @@ export async function updateProfile(profileData: { fullName: string, nip: string
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase.from('profiles').update({
+    const { error = null } = await supabase.from('profiles').update({
         full_name: profileData.fullName,
         nip: profileData.nip,
         pangkat: profileData.pangkat,
@@ -469,7 +469,7 @@ export async function uploadProfileImage(formData: FormData, type: 'avatar') {
 
         const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
 
-        const { error: dbError } = await supabase.from('profiles').update({
+        const { error: dbError = null } = await supabase.from('profiles').update({
             avatar_url: publicUrl
         }).eq('id', user.id);
 
@@ -492,7 +492,7 @@ export async function addStudentNote(data: { studentId: string; note: string; ty
 
     const { studentId, note, type } = data;
     
-    const { error } = await supabase.from('student_notes').insert({
+    const { error = null } = await supabase.from('student_notes').insert({
         student_id: studentId,
         teacher_id: user.id,
         note,
@@ -560,7 +560,7 @@ export async function importStudents(classId: string, students: StudentImport[])
     }
 
     if (studentsToInsert.length > 0) {
-        const { error } = await supabase.from('students').insert(studentsToInsert);
+        const { error = null } = await supabase.from('students').insert(studentsToInsert);
 
         if (error) {
             report.failureCount += studentsToInsert.length;
@@ -585,7 +585,7 @@ export async function saveStudent(formData: FormData) {
         status: 'active' as const,
     };
 
-    const { error } = await supabase.from('students').insert(data);
+    const { error = null } = await supabase.from('students').insert(data);
     if (error) return { success: false, error: "Gagal menyimpan data siswa." };
 
     revalidatePath('/admin/roster/students');
@@ -602,7 +602,7 @@ export async function updateStudent(formData: FormData) {
         status: formData.get('status') as any,
     };
 
-    const { error } = await supabase.from('students').update(data).eq('id', id);
+    const { error = null } = await supabase.from('students').update(data).eq('id', id);
     if (error) return { success: false, error: "Gagal memperbarui data siswa." };
 
     revalidatePath('/admin/roster/students');
@@ -617,7 +617,7 @@ export async function updateStudentsStatus(studentIds: string[], status: 'dropou
         return { success: false, error: "Status tidak valid." };
     }
 
-    const { error } = await supabase
+    const { error = null } = await supabase
         .from('students')
         .update({ status: status })
         .in('id', studentIds);
@@ -640,7 +640,7 @@ export async function createSchoolYear(startYear: number) {
     const ganjilName = `${startYear}/${startYear + 1} - Ganjil`;
     const genapName = `${startYear}/${startYear + 1} - Genap`;
 
-    const { error } = await supabase.from('school_years').insert([
+    const { error = null } = await supabase.from('school_years').insert([
         { name: ganjilName, teacher_id: user.id },
         { name: genapName, teacher_id: user.id }
     ]);
@@ -655,7 +655,7 @@ export async function createSchoolYear(startYear: number) {
 
 export async function setActiveSchoolYear(schoolYearId: string) {
     const supabase = await createClient();
-    const { error } = await supabase
+    const { error = null } = await supabase
         .from('settings')
         .upsert({ key: 'active_school_year_id', value: schoolYearId });
 
@@ -668,6 +668,10 @@ export async function setActiveSchoolYear(schoolYearId: string) {
     return { success: true };
 }
 
+/**
+ * Mencatat absensi guru (Masuk/Pulang/Izin).
+ * Optimized V122: Pengurangan beban revalidasi jalur Admin yang berat.
+ */
 export async function recordTeacherAttendance(formData: FormData) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -690,7 +694,7 @@ export async function recordTeacherAttendance(formData: FormData) {
         const reason = formData.get('reason') as string;
         
         if (existingAttendance) {
-             const { error: updateError } = await supabase
+             const { error: updateError = null } = await supabase
                 .from('teacher_attendance')
                 .update({
                     status: leaveType,
@@ -813,9 +817,8 @@ export async function recordTeacherAttendance(formData: FormData) {
             }
         }
 
+        // Revalidasi Scoped: Hanya perbarui tampilan guru yang sedang aktif
         revalidatePath('/dashboard/teacher-attendance');
-        revalidatePath('/admin');
-        revalidatePath('/admin/teacher-attendance');
         
         return { 
             success: true, 
@@ -823,7 +826,7 @@ export async function recordTeacherAttendance(formData: FormData) {
             status: status
         };
     } catch (error) {
-        return { success: false, error: "Terjadi kesalahan saat menyimpang absensi." };
+        return { success: false, error: "Terjadi kesalahan saat menyimpan absensi." };
     }
 }
 
@@ -873,7 +876,7 @@ export async function deleteMaterial(materialId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Tidak terautentikasi" };
 
-    const { error } = await supabase.from('materials').delete().eq('id', materialId);
+    const { error = null } = await supabase.from('materials').delete().eq('id', materialId);
 
     if (error) {
         return { success: false, error: "Gagal menghapus materi." };
