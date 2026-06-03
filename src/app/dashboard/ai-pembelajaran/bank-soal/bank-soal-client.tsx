@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -25,7 +24,10 @@ import {
     BrainCircuit,
     Tag,
     ArrowUp,
-    ArrowRightLeft
+    ArrowRightLeft,
+    Cpu,
+    Zap,
+    TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,8 +67,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 /**
- * Robust MathText Component V119 (Unified)
- * Ensures math formulas scroll horizontally on mobile.
+ * Robust MathText Component V124 (Aksara Jawa & Scroll Support)
+ * Merender LaTeX, Markdown, dan Aksara Jawa dengan deteksi otomatis.
  */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
@@ -112,7 +114,10 @@ const MathText = ({ content, className }: { content: string, className?: string 
                     th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-3 font-black text-slate-900 uppercase tracking-tight" {...props} />,
                     td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
                     tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
-                    p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed break-words" {...props} />
+                    p: ({node, ...props}) => {
+                        const hasJavanese = /[\uA980-\uA9DF]/.test(String(props.children || ''));
+                        return <span className={cn("whitespace-pre-wrap leading-relaxed break-words", hasJavanese && "aksara-jawa")} {...props} />;
+                    }
                 }}
             >
                 {part}
@@ -330,7 +335,7 @@ export default function BankSoalClient({
                     <div className="p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8">
                          <LottieAiProcess size={220} />
                          <div className="space-y-2">
-                            <p className="text-3xl font-black text-slate-900 tracking-tight uppercase">Menyusun Naskah...</p>
+                            <p className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Menyusun Naskah...</p>
                             <p className="text-xl font-mono font-black text-indigo-600">{countdown}s</p>
                          </div>
                     </div>
@@ -428,7 +433,6 @@ export default function BankSoalClient({
                     {paginatedQuestions.map((q) => {
                         const selectionIdx = getSelectionIndex(q.id);
                         const isSelected = selectionIdx !== null;
-                        
                         const isMatching = q.question_type === 'matching';
                         let matchingItems: string[] = [];
                         let matchingIntro = q.question_text;
@@ -437,7 +441,6 @@ export default function BankSoalClient({
                             const lines = q.question_text.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
                             if (lines.length > 1) {
                                 const hasNumberedLines = lines.slice(1).some(l => /^\d+[\.\)]/.test(l));
-                                
                                 if (hasNumberedLines) {
                                     matchingItems = lines.filter((l: string) => /^\d+[\.\)]/.test(l));
                                     matchingIntro = lines.filter((l: string) => !/^\d+[\.\)]/.test(l)).join('\n');
@@ -445,9 +448,6 @@ export default function BankSoalClient({
                                     matchingIntro = lines[0];
                                     matchingItems = lines.slice(1);
                                 }
-                            } else {
-                                matchingIntro = q.question_text;
-                                matchingItems = [];
                             }
                         }
 
@@ -492,7 +492,7 @@ export default function BankSoalClient({
                                             </AlertDialog>
 
                                             <div className="flex flex-wrap gap-1.5 justify-end md:justify-start">
-                                                <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : "bg-emerald-500")}>{q.difficulty}</Badge>
+                                                <Badge className={cn("font-black text-[9px] uppercase tracking-widest px-2 py-0.5", q.difficulty === 'sulit' ? "bg-rose-500" : q.difficulty === 'sedang' ? "bg-amber-500" : q.difficulty === 'campuran' ? "bg-indigo-500" : "bg-emerald-500")}>{q.difficulty}</Badge>
                                                 <Badge variant="outline" className="font-black text-[9px] uppercase border-slate-200 text-slate-400">Kelas {q.kelas}</Badge>
                                                 <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black text-[9px] uppercase tracking-widest px-2 py-0.5">
                                                     {getQuestionTypeLabel(q.question_type)}

@@ -63,13 +63,12 @@ import { readStreamableValue } from 'ai/rsc';
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 /**
- * Robust MathText Component V123 (Aksara Jawa Support)
+ * Robust MathText Component V124 (Aksara Jawa & Scroll Support)
  * Merender LaTeX, Markdown, dan Aksara Jawa dengan deteksi otomatis.
  */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
   
-  // Standardized regex for all LaTeX formats
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
   
   return (
@@ -77,7 +76,6 @@ const MathText = ({ content, className }: { content: string, className?: string 
       {parts.map((part, i) => {
         if (!part) return null;
         
-        // Block Math Rendering (with horizontal scroll)
         if (part.startsWith('$$') || part.startsWith('\\[')) {
           const isDoubleDollar = part.startsWith('$$');
           const math = isDoubleDollar ? part.slice(2, -2) : part.slice(2, -2);
@@ -90,7 +88,6 @@ const MathText = ({ content, className }: { content: string, className?: string 
           );
         }
         
-        // Inline Math Rendering
         if (part.startsWith('$') || part.startsWith('\\(')) {
           const isDollar = part.startsWith('$');
           const math = isDollar ? part.slice(1, -1) : part.slice(2, -2);
@@ -101,7 +98,6 @@ const MathText = ({ content, className }: { content: string, className?: string 
           );
         }
         
-        // Regular Text (Supports Aksara Jawa auto-styling via CSS)
         return (
             <ReactMarkdown 
                 key={i} 
@@ -116,7 +112,6 @@ const MathText = ({ content, className }: { content: string, className?: string 
                     td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
                     tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
                     p: ({node, ...props}) => {
-                        // Check if text contains Javanese characters to apply Aksara Jawa class
                         const hasJavanese = /[\uA980-\uA9DF]/.test(String(props.children || ''));
                         return <span className={cn("whitespace-pre-wrap leading-relaxed break-words", hasJavanese && "aksara-jawa")} {...props} />;
                     }
@@ -128,13 +123,6 @@ const MathText = ({ content, className }: { content: string, className?: string 
       })}
     </div>
   );
-};
-
-const mapelByJenjang: Record<string, string[]> = {
-    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Bahasa Jawa', 'Bahasa Inggris'],
-    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'Bahasa Jawa', 'Informatika', 'Prakarya', 'Bahasa Arab'],
-    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Bahasa Jawa', 'Pendidikan Pancasila', 'Bahasa Arab'],
-    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Bahasa Jawa', 'Produk Kreatif & Kewirausahaan']
 };
 
 export default function GenerateSoalClient({ 
@@ -279,7 +267,7 @@ export default function GenerateSoalClient({
                 <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
                     <div className="space-y-2">
                         <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">Generate Soal</h1>
-                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">AI Question Engine (vStream)</p>
+                        <p className="text-indigo-100/80 text-sm sm:text-xl font-black uppercase tracking-[0.3em] mt-2 opacity-80">AI Question Engine</p>
                     </div>
                 </div>
             </div>
@@ -367,6 +355,7 @@ export default function GenerateSoalClient({
                                             <SelectItem value="mudah" className="font-bold text-emerald-600">Mudah</SelectItem>
                                             <SelectItem value="sedang" className="font-bold text-blue-600">Sedang</SelectItem>
                                             <SelectItem value="sulit" className="font-bold text-rose-600">Sulit / HOTS</SelectItem>
+                                            <SelectItem value="campuran" className="font-bold text-indigo-600">Campuran</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </RefinedFormField>
@@ -473,6 +462,15 @@ export default function GenerateSoalClient({
                                         <div className="text-lg font-bold text-slate-800 leading-relaxed mb-6">
                                             <MathText content={q.question} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
                                         </div>
+
+                                        {q.visual_svg && (
+                                            <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center gap-3">
+                                                <div 
+                                                    className="w-full max-w-[400px] aspect-[1/1] flex items-center justify-center overflow-hidden"
+                                                    dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%;height:100%;max-width:400px;max-height:400px;" preserveAspectRatio="xMidYMid meet"') }}
+                                                />
+                                            </div>
+                                        )}
 
                                         {q.options && (
                                             <div className="grid grid-cols-1 gap-3 mt-8">

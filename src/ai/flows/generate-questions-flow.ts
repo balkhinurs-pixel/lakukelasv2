@@ -74,7 +74,6 @@ export async function generateQuestions(input: GenerateQuestionsInput): Promise<
     model: googleAI.model(selectedModel),
   });
 
-  const isHighSchool = input.jenjang.includes('SMA') || input.jenjang.includes('SMK') || input.jenjang.includes('MA');
   const isJavanese = input.subject.toLowerCase().includes('jawa');
 
   const response = await ai.generate({
@@ -109,6 +108,7 @@ ATURAN PENULISAN MATEMATIKA/SAINS (SANGAT PENTING):
 2. Gunakan \\( ... \\) untuk rumus di dalam kalimat (inline).
 3. Gunakan \\[ ... \\] untuk rumus di baris tersendiri (block).
 4. JANGAN PERNAH melewatkan backslash (\\) untuk perintah seperti \\frac, \\times, \\sqrt, \\cap, \\cup, dll.
+5. Jika soal membutuhkan visual (bangun datar, grafik, diagram), sertakan kode SVG minimalis di field 'visual_svg'.
 
 ATURAN KHUSUS TIPIKAL SOAL:
 1. MENJODOHKAN (matching):
