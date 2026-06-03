@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -64,8 +63,8 @@ import { readStreamableValue } from 'ai/rsc';
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 /**
- * Robust MathText Component V119 (Scroll Protected)
- * Ensures both block and inline math scroll horizontally on small screens.
+ * Robust MathText Component V123 (Aksara Jawa Support)
+ * Merender LaTeX, Markdown, dan Aksara Jawa dengan deteksi otomatis.
  */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
@@ -91,7 +90,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
           );
         }
         
-        // Inline Math Rendering (with horizontal scroll protection)
+        // Inline Math Rendering
         if (part.startsWith('$') || part.startsWith('\\(')) {
           const isDollar = part.startsWith('$');
           const math = isDollar ? part.slice(1, -1) : part.slice(2, -2);
@@ -102,7 +101,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
           );
         }
         
-        // Regular Text and Tables
+        // Regular Text (Supports Aksara Jawa auto-styling via CSS)
         return (
             <ReactMarkdown 
                 key={i} 
@@ -116,7 +115,11 @@ const MathText = ({ content, className }: { content: string, className?: string 
                     th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-3 font-black text-slate-900 uppercase tracking-tight" {...props} />,
                     td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
                     tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
-                    p: ({node, ...props}) => <span className="whitespace-pre-wrap leading-relaxed break-words" {...props} />
+                    p: ({node, ...props}) => {
+                        // Check if text contains Javanese characters to apply Aksara Jawa class
+                        const hasJavanese = /[\uA980-\uA9DF]/.test(String(props.children || ''));
+                        return <span className={cn("whitespace-pre-wrap leading-relaxed break-words", hasJavanese && "aksara-jawa")} {...props} />;
+                    }
                 }}
             >
                 {part}
@@ -125,6 +128,13 @@ const MathText = ({ content, className }: { content: string, className?: string 
       })}
     </div>
   );
+};
+
+const mapelByJenjang: Record<string, string[]> = {
+    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Bahasa Jawa', 'Bahasa Inggris'],
+    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'Bahasa Jawa', 'Informatika', 'Prakarya', 'Bahasa Arab'],
+    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Bahasa Jawa', 'Pendidikan Pancasila', 'Bahasa Arab'],
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Bahasa Jawa', 'Produk Kreatif & Kewirausahaan']
 };
 
 export default function GenerateSoalClient({ 
@@ -168,7 +178,6 @@ export default function GenerateSoalClient({
         difficulty: 'sedang'
     });
 
-    // Countdown Logic for Visual Feedback
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
         if (loading && questions.length === 0) {
@@ -189,12 +198,6 @@ export default function GenerateSoalClient({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const MAX_FILE_SIZE = 3 * 1024 * 1024; 
-        if (file.size > MAX_FILE_SIZE) {
-            toast({ title: "File Terlalu Besar", description: "Maksimal ukuran file adalah 3MB.", variant: "destructive" });
-            if (fileInputRef.current) fileInputRef.current.value = "";
-            return;
-        }
         const reader = new FileReader();
         reader.onload = (event) => {
             setUploadedFile({ name: file.name, uri: event.target?.result as string, mime: file.type });
@@ -246,8 +249,7 @@ export default function GenerateSoalClient({
         if (questions.length === 0) return;
         setSaving(true);
         const finalSubject = form.subject === "Lainnya (Tulis Manual)" ? customSubject : form.subject;
-        const finalConfig = { ...form, subject: finalSubject };
-        const result = await saveQuestionsAction(finalConfig, questions);
+        const result = await saveQuestionsAction({ ...form, subject: finalSubject }, questions);
         if (result.success) {
             toast({ title: "Berhasil Disimpan", description: "Soal-soal telah masuk ke Bank Soal Anda." });
             setQuestions([]);
@@ -266,17 +268,6 @@ export default function GenerateSoalClient({
             else next.add(idx);
             return next;
         });
-    };
-
-    const getQuestionTypeLabel = (type: string) => {
-        switch(type) {
-            case 'multiple_choice': return 'PG';
-            case 'essay': return 'Uraian';
-            case 'short_answer': return 'Isian';
-            case 'true_false': return 'B/S';
-            case 'matching': return 'Jodohkan';
-            default: return type;
-        }
     };
 
     return (
@@ -315,7 +306,6 @@ export default function GenerateSoalClient({
                                     <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full p-6 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-2 hover:border-indigo-400 hover:bg-indigo-50 transition-all text-slate-400 hover:text-indigo-600 group">
                                         <FileUp className="h-8 w-8 opacity-40 group-hover:opacity-100" />
                                         <p className="text-[10px] font-black uppercase tracking-widest">Unggah PDF / Foto Buku</p>
-                                        <p className="text-[9px] font-medium opacity-60">Max 3MB • AI akan membaca materi Anda</p>
                                     </button>
                                 )}
                             </div>
@@ -327,10 +317,10 @@ export default function GenerateSoalClient({
                                         <SelectContent className="rounded-2xl">{Object.keys(mapelByJenjang).map(j => <SelectItem key={j} value={j} className="font-bold">{j}</SelectItem>)}</SelectContent>
                                     </Select>
                                 </RefinedFormField>
-                                <RefinedFormField label="Semester" icon={<CalendarDays className="h-4 w-4" />}>
-                                    <Select value={form.semester} onValueChange={(v) => setForm(prev => ({...prev, semester: v}))}>
+                                <RefinedFormField label="Kelas" icon={<Users className="h-4 w-4" />}>
+                                    <Select value={form.kelas} onValueChange={(v) => setForm(prev => ({...prev, kelas: v}))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl"><SelectItem value="Ganjil" className="font-bold">Ganjil</SelectItem><SelectItem value="Genap" className="font-bold">Genap</SelectItem></SelectContent>
+                                        <SelectContent className="rounded-2xl">{getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}</SelectContent>
                                     </Select>
                                 </RefinedFormField>
                             </div>
@@ -349,33 +339,14 @@ export default function GenerateSoalClient({
                                 {form.subject === "Lainnya (Tulis Manual)" && (
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                         <RefinedFormField label="Nama Mapel Mulok" icon={<Tag className="h-4 w-4" />}>
-                                            <Input placeholder="Misal: BTQ, Bahasa Jawa..." value={customSubject} onChange={(e) => setCustomSubject(e.target.value)} required />
+                                            <Input placeholder="Misal: Bahasa Jawa, BTQ..." value={customSubject} onChange={(e) => setCustomSubject(e.target.value)} required />
                                         </RefinedFormField>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <RefinedFormField label="Kelas" icon={<Users className="h-4 w-4" />}>
-                                    <Select value={form.kelas} onValueChange={(v) => setForm(prev => ({...prev, kelas: v}))}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl">{getClassOptions(form.jenjang).map(k => <SelectItem key={k} value={k} className="font-bold">Kelas {k}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                </RefinedFormField>
-                                <RefinedFormField label="Kurikulum" icon={<Layers className="h-4 w-4" />}>
-                                    <Select value={form.curriculum} onValueChange={(v) => setForm(prev => ({...prev, curriculum: v}))}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-2xl">
-                                            <SelectItem value="Kurikulum Merdeka" className="font-bold">Kurikulum Merdeka</SelectItem>
-                                            <SelectItem value="K-13" className="font-bold">K-13 (2013)</SelectItem>
-                                            <SelectItem value="Kurikulum Kemenag" className="font-bold text-indigo-600">Kurikulum Kemenag</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </RefinedFormField>
-                            </div>
-
                             <RefinedFormField label="Topik / Materi Pokok" icon={<Tag className="h-4 w-4" />}>
-                                <Input placeholder="Misal: Sistem Tata Surya" value={form.topic} onChange={(e) => setForm(prev => ({...prev, topic: e.target.value}))} required />
+                                <Input placeholder="Misal: Sistem Tata Surya, Aksara Jawa" value={form.topic} onChange={(e) => setForm(prev => ({...prev, topic: e.target.value}))} required />
                             </RefinedFormField>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -396,7 +367,6 @@ export default function GenerateSoalClient({
                                             <SelectItem value="mudah" className="font-bold text-emerald-600">Mudah</SelectItem>
                                             <SelectItem value="sedang" className="font-bold text-blue-600">Sedang</SelectItem>
                                             <SelectItem value="sulit" className="font-bold text-rose-600">Sulit / HOTS</SelectItem>
-                                            <SelectItem value="campuran" className="font-bold">Campuran</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </RefinedFormField>
@@ -434,7 +404,7 @@ export default function GenerateSoalClient({
                         <Sparkles className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
                     <h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase">AI Soal Engine</h3>
-                    <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed italic">Atur parameter di samping dan saksikan AI merumuskan butir soal terbaik untuk siswa Anda.</p>
+                    <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed italic">Atur parameter di samping dan saksikan AI merumuskan butir soal terbaik (termasuk Aksara Jawa) untuk siswa Anda.</p>
                 </Card>
             </div>
 
@@ -453,7 +423,6 @@ export default function GenerateSoalClient({
                                             <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-tight">Merumuskan<br/>Soal Terbaik</p>
                                             <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">AI Pedagogis Sedang Berpikir</p>
                                          </div>
-                                         
                                          <div className="flex flex-col items-center gap-3">
                                             <div className="relative w-20 h-20 flex items-center justify-center">
                                                 <svg className="w-full h-full -rotate-90">
@@ -471,7 +440,6 @@ export default function GenerateSoalClient({
                                                 </svg>
                                                 <span className="absolute font-mono font-black text-indigo-600 text-xl">{countdown}s</span>
                                             </div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Selesai</p>
                                          </div>
                                      </div>
                                 </div>

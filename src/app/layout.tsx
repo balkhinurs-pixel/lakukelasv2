@@ -2,12 +2,19 @@ import type {Metadata} from 'next';
 import { cn } from "@/lib/utils";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans, Noto_Sans_Javanese } from 'next/font/google';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-plus-jakarta-sans',
   display: 'swap',
+});
+
+const notoJavanese = Noto_Sans_Javanese({
+  subsets: ['javanese'],
+  variable: '--font-javanese',
+  display: 'swap',
+  weight: ['400', '700'],
 });
 
 export const metadata: Metadata = {
@@ -79,7 +86,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={cn(plusJakartaSans.variable, "antialiased")} suppressHydrationWarning>
+    <html lang="id" className={cn(plusJakartaSans.variable, notoJavanese.variable, "antialiased")} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         {/* Warna tema Indigo-600 untuk Splash Screen dan UI browser */}

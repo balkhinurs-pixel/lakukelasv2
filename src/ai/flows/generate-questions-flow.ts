@@ -2,7 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan soal secara terstruktur (JSON).
  * Menggunakan model dinamis sesuai pilihan guru di database.
- * Dioptimalkan untuk LaTeX (Matematika), Unicode Arab, Tabel Markdown, dan Ilustrasi SVG Geometri.
+ * Dioptimalkan untuk LaTeX (Matematika), Unicode Arab, Aksara Jawa, Tabel Markdown, dan Ilustrasi SVG Geometri.
  */
 
 import { z, genkit } from 'genkit';
@@ -75,7 +75,7 @@ export async function generateQuestions(input: GenerateQuestionsInput): Promise<
   });
 
   const isHighSchool = input.jenjang.includes('SMA') || input.jenjang.includes('SMK') || input.jenjang.includes('MA');
-  const optionCount = isHighSchool ? 5 : 4;
+  const isJavanese = input.subject.toLowerCase().includes('jawa');
 
   const response = await ai.generate({
     output: { schema: GenerateQuestionsOutputSchema },
@@ -99,22 +99,22 @@ Buatlah ${input.count} soal dengan tipe "${input.question_type}" untuk:
 
 ${input.mediaDataUri ? `PENTING: Gunakan materi yang ada di file lampiran sebagai sumber utama pembuatan soal.` : ''}
 
+${isJavanese ? `ATURAN KHUSUS BAHASA JAWA (AKSARA JAWA):
+1. Jika soal menanyakan tentang transliterasi, WAJIB sertakan teks dalam Unicode AKSARA JAWA (Contoh: ꦲꦏꦱꦫꦗꦧ).
+2. Gunakan penulisan Aksara Jawa yang benar sesuai paugeran Sriwedari (sandhangan, pasangan, dll).
+3. Campurkan penulisan Latin dan Aksara Jawa di kolom 'question' atau 'options' untuk variasi soal.` : ''}
+
 ATURAN PENULISAN MATEMATIKA/SAINS (SANGAT PENTING):
 1. WAJIB menggunakan LaTeX valid.
 2. Gunakan \\( ... \\) untuk rumus di dalam kalimat (inline).
 3. Gunakan \\[ ... \\] untuk rumus di baris tersendiri (block).
 4. JANGAN PERNAH melewatkan backslash (\\) untuk perintah seperti \\frac, \\times, \\sqrt, \\cap, \\cup, dll.
-5. JANGAN menggunakan kurung biasa ( ) untuk membungkus rumus matematika, gunakan delimiter LaTeX di atas.
 
 ATURAN KHUSUS TIPIKAL SOAL:
 1. MENJODOHKAN (matching):
    - Field 'question' WAJIB berisi instruksi diikuti daftar pernyataan (list) yang harus dijodohkan, masing-masing di baris baru dan diberi nomor (1., 2., 3., dst).
    - Field 'options' berisi pilihan jawaban (A, B, C, dst) yang menjadi pasangan dari pernyataan tersebut.
    - Field 'answer' berisi pemetaan yang benar, contoh: "1-B, 2-A, 3-C".
-
-ATURAN KHUSUS PENGGUNAAN SVG:
-1. BERSIKAPLAH SELEKTIF: Jangan sertakan "visual_svg" untuk setiap soal.
-2. GUNAKAN SVG HANYA JIKA: Soal tersebut menanyakan tentang geometri, membaca grafik, atau membutuhkan ilustrasi visual spesifik.
 
 Output harus berupa JSON valid sesuai skema.` }
     ]
