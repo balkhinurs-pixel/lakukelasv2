@@ -10,12 +10,12 @@ export interface OMRResult {
     studentAnswers: { questionNum: number; studentChoice: string }[];
 }
 
-// CONFIGURATION SYNCED WITH UI (V92.0)
+// CONFIGURATION SYNCED WITH UI (V100 - 3 Column Rigid)
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123, padding: 40 },
     nis: {
-        top: 151, // Start Y for NIS (Calibrated to V92.0 Grid)
-        left: 566, // Right side grid
+        top: 200, // Start Y for NIS
+        left: 60,
         digitWidth: 32,
         bubbleSize: 18,
         gapY: 19,
@@ -23,9 +23,9 @@ const OMR_UI_CONFIG = {
         rows: 10
     },
     matrix: {
-        top: 442, // Start Y for Answers (Calibrated to V92.0 Grid)
+        top: 450, // Start Y for Answers Grid
         left: 50,
-        rowHeight: 32, // Fixed Rigid Height
+        rowHeight: 25,
         colWidth: 235,
         bubbleSize: 19,
         bubbleGapX: 24,
@@ -48,7 +48,6 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
         
         // 1. Perspective Correction (Warp to A4 proportions)
-        // Note: Untuk auto-capture, kita asumsikan gambar sudah sejajar frame
         cv.resize(gray, warped, new cv.Size(OMR_UI_CONFIG.page.width, OMR_UI_CONFIG.page.height), 0, 0, cv.INTER_AREA);
 
         // 2. Binarization (Thresholding)
@@ -72,7 +71,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
 
         // 3. Scan NIS (5 Digits)
         let nis = "";
-        const nisStartY = OMR_UI_CONFIG.nis.top + 34; // Offset to first digit bubble
+        const nisStartY = OMR_UI_CONFIG.nis.top + 32; 
         for (let c = 0; c < OMR_UI_CONFIG.nis.cols; c++) {
             let detectedDigit = "?";
             for (let r = 0; r < OMR_UI_CONFIG.nis.rows; r++) {
@@ -86,7 +85,7 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
             nis += detectedDigit;
         }
 
-        // 4. Scan Answers Grid (Rigid 60 Slots)
+        // 4. Scan Answers Grid (Rigid 60 Slots - 3 Columns)
         const studentAnswers: { questionNum: number, studentChoice: string }[] = [];
         const rowsPerCol = 20;
 
@@ -98,10 +97,10 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
             const startY = OMR_UI_CONFIG.matrix.top + (rowIdx * OMR_UI_CONFIG.matrix.rowHeight);
             
             let choice = "EMPTY";
-            // Scan 5 bubbles (A-E)
+            // Scan 5 possible bubbles (A-E)
             for (let o = 0; o < 5; o++) {
-                const bubbleX = startX + 38 + (o * OMR_UI_CONFIG.matrix.bubbleGapX); // Offset for number label
-                const bubbleY = startY + (OMR_UI_CONFIG.matrix.bubbleSize / 2) + 6; // Center align
+                const bubbleX = startX + 32 + (o * OMR_UI_CONFIG.matrix.bubbleGapX) + (OMR_UI_CONFIG.matrix.bubbleSize / 2);
+                const bubbleY = startY + (OMR_UI_CONFIG.matrix.bubbleSize / 2) + 3;
                 
                 if (isFilled(binary, bubbleX, bubbleY)) {
                     choice = String.fromCharCode(65 + o); // Convert 0-4 to A-E

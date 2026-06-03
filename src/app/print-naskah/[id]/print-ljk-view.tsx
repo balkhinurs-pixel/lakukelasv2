@@ -32,15 +32,16 @@ const OMR_CONFIG = {
 const questionTypeConfig: Record<string, { label: string; options: string[] }> = {
     'multiple_choice': { label: 'PILIHAN GANDA', options: ['A', 'B', 'C', 'D', 'E'] },
     'true_false': { label: 'BENAR / SALAH', options: ['B', 'S'] },
-    'matching': { label: 'MENJODOHKAN', options: ['P', 'Q', 'R', 'S', 'T'] },
+    'matching': { label: 'MENJODOHKAN', options: ['A', 'B', 'C', 'D', 'E'] },
     'short_answer': { label: 'ISIAN SINGKAT', options: ['A', 'B', 'C', 'D'] }, 
     'essay': { label: 'URAIAN / ESAI', options: [] }
 };
 
 const getQuestionRowSpan = (q: any) => {
     if (q.question_type !== 'matching') return 1;
-    const lines = q.question_text?.split('\n').filter((l: string) => /^[a-z0-9][\.\)]/i.test(l.trim()));
-    return lines?.length > 0 ? lines.length : 4; 
+    // Hitung baris pernyataan yang diawali angka. Contoh: "1. Teks..."
+    const lines = q.question_text?.split('\n').filter((l: string) => /^\d+[\.\)]/.test(l.trim()));
+    return lines?.length > 0 ? lines.length : 4; // Default ke 4 baris jika gagal parsing
 };
 
 const renderColumn = (items: any[], config: typeof questionTypeConfig) => {
@@ -145,10 +146,10 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
         return items;
     }, [questions]);
 
-    const itemsPerCol = Math.ceil(displayItems.length / 3);
+    const itemsPerCol = 20; // 20 baris per kolom (Rigid)
     const col1 = displayItems.slice(0, itemsPerCol);
     const col2 = displayItems.slice(itemsPerCol, itemsPerCol * 2);
-    const col3 = displayItems.slice(itemsPerCol * 2);
+    const col3 = displayItems.slice(itemsPerCol * 2, itemsPerCol * 3);
 
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center">
@@ -180,10 +181,6 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                     <div className="absolute bg-black" style={{ top: '20px', right: '20px', width: '30px', height: '30px' }} />
                     <div className="absolute bg-black" style={{ bottom: '20px', left: '20px', width: '30px', height: '30px' }} />
                     <div className="absolute bg-black" style={{ bottom: '20px', right: '20px', width: '30px', height: '30px' }} />
-                    
-                    {/* Side markers for row alignment */}
-                    <div className="absolute bg-black" style={{ top: '50%', left: '20px', width: '25px', height: '4px', transform: 'translateY(-50%)' }} />
-                    <div className="absolute bg-black" style={{ top: '50%', right: '20px', width: '25px', height: '4px', transform: 'translateY(-50%)' }} />
 
                     {/* SCHOOL KOP */}
                     <div className="border-b-2 border-black pb-3 flex justify-between items-start mb-4">
@@ -193,7 +190,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                             )}
                             <div>
                                 <h1 className="text-lg font-black uppercase tracking-tight leading-none mb-1">
-                                    {schoolProfile?.school_name || "RIBATH ISLAMIC SCHOOL"}
+                                    {schoolProfile?.school_name || "SEKOLAH LAKUKELAS"}
                                 </h1>
                                 <p className="text-[8pt] font-bold text-slate-500 uppercase tracking-widest">Lembar Jawab Komputer</p>
                             </div>
@@ -239,10 +236,10 @@ export default function PrintLjkView({ doc, questions, schoolProfile }: any) {
                     </div>
 
                     {/* CAPACITY WARNING */}
-                    {displayItems.length > 90 && (
+                    {displayItems.length > 60 && (
                         <div className="absolute bottom-10 left-0 right-0 text-center">
                             <span className="bg-red-500 text-white text-[7pt] font-black px-4 py-1 rounded-full uppercase animate-pulse">
-                                Kapasitas halaman terlampaui.
+                                Kapasitas halaman terlampaui. Gunakan lembar kedua.
                             </span>
                         </div>
                     )}

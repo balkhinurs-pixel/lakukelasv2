@@ -20,7 +20,7 @@ const getSubRowCount = (q: any) => {
 };
 
 /**
- * Server Action untuk Koreksi LJK V93.0 (Precision Calibration).
+ * Server Action untuk Koreksi LJK V100 (3-Column Rigid Alignment).
  */
 export async function correctExamAction(
     naskahId: string, 
@@ -39,25 +39,17 @@ export async function correctExamAction(
         const sortedQuestions = naskah.question_ids.map(id => rawQuestions.find(q => q.id === id)).filter(Boolean);
 
         // 1. REKONSTRUKSI GRID LJK (WAJIB IDENTIK DENGAN PRINT-LJK-VIEW)
-        const typeLabels: Record<string, string> = {
-            'multiple_choice': 'I. PILIHAN GANDA',
-            'true_false': 'II. BENAR / SALAH',
-            'matching': 'III. MENJODOHKAN',
-            'short_answer': 'IV. ISIAN SINGKAT',
-            'essay': 'V. URAIAN / ESAI'
-        };
-
         const gridItems: any[] = [];
         let currentType = "";
         sortedQuestions.forEach((q: any, qIdx: number) => {
             if (q.question_type !== currentType) {
                 currentType = q.question_type;
-                gridItems.push({ type: 'header', label: typeLabels[currentType] }); // Header memakan 1 slot rigid
+                gridItems.push({ type: 'header', label: currentType }); 
             }
             
             const count = getSubRowCount(q);
             if (count > 1) {
-                // Untuk matching, kunci biasanya dipisah koma: "1-A, 2-C"
+                // Untuk matching, mapping sub-kunci (misal: "1-A, 2-B")
                 const keys = q.correct_answer.split(',').map((s: string) => s.trim().split('-')[1]?.toUpperCase());
                 for (let i = 0; i < count; i++) {
                     gridItems.push({ 
@@ -70,10 +62,17 @@ export async function correctExamAction(
                     });
                 }
             } else {
+                let key = q.correct_answer?.trim().toUpperCase();
+                // Normalisasi B/S
+                if (q.question_type === 'true_false') {
+                    if (key === 'TRUE' || key === 'BENAR') key = 'B';
+                    if (key === 'FALSE' || key === 'SALAH') key = 'S';
+                }
+
                 gridItems.push({ 
                     type: 'row', 
                     questionId: q.id, 
-                    correctKey: q.correct_answer?.trim().toUpperCase(), 
+                    correctKey: key, 
                     displayNum: String(q.sort_order || qIdx + 1), 
                     itemType: q.question_type, 
                     rowCount: 1 
@@ -81,13 +80,12 @@ export async function correctExamAction(
             }
         });
 
-        // 2. PEMETAAN HASIL SCAN KE SOAL BERDASARKAN INDEKS RIGID
+        // 2. PEMETAAN HASIL SCAN (60 SLOT)
         let totalWeightedScore = 0;
         let maxPossibleScore = 0;
         const studentAnalysis: any[] = [];
         const questionResults = new Map();
 
-        // Loop melalui hasil scan mentah (60 slot)
         scanRaw.studentAnswers.forEach((scanSlot, idx) => {
             const item = gridItems[idx];
             if (!item || item.type === 'header') return;
@@ -116,7 +114,7 @@ export async function correctExamAction(
             });
         });
 
-        // 3. KALKULASI SKOR AKHIR (PEMBOBOTAN)
+        // 3. KALKULASI SKOR
         questionResults.forEach((res) => {
             const weightedScore = (res.correctCount / res.rowCount) * res.pointValue;
             totalWeightedScore += weightedScore;
@@ -126,28 +124,27 @@ export async function correctExamAction(
 
         const finalScore = maxPossibleScore > 0 ? Math.round((totalWeightedScore / maxPossibleScore) * 100) : 0;
 
-        // 4. IDENTIFIKASI SISWA BERDASARKAN NIS (Dukungan wildcard ?)
+        // 4. IDENTIFIKASI SISWA
         const cleanNis = scanRaw.detectedNis.replace(/\?/g, '0');
         const { data: student } = await supabase
             .from('students')
             .select('id, name')
             .eq('nis', cleanNis)
-            .eq('class_id', naskah.class_level) // Batasi pencarian di kelas yang sama
+            .eq('class_id', naskah.class_level)
             .maybeSingle();
 
         return { 
             success: true, 
             data: {
-                detectedNis: scanRaw.detectedNis, // Biarkan tetap ada ? untuk info user
+                detectedNis: scanRaw.detectedNis,
                 studentName: student?.name || `Siswa Tidak Ditemukan (NIS: ${scanRaw.detectedNis})`,
                 studentId: student?.id,
                 studentAnswers: studentAnalysis,
                 totalScore: finalScore,
-                analysis: `Koreksi V93. Calibration Active.`
+                analysis: `Koreksi V100. Professional 3-Column Calibration.`
             } 
         };
     } catch (error: any) {
-        console.error("[CORRECTION_ACTION_ERR]", error);
         return { success: false, error: error.message };
     }
 }
