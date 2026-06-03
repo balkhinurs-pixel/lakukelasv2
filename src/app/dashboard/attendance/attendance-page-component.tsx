@@ -1,9 +1,10 @@
+
 "use client";
 
 import * as React from "react";
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, ArrowUpCircle, AlertTriangle, School, BookOpen } from "lucide-react";
+import { Calendar as CalendarIcon, CalendarDays, Edit, Eye, Loader2, Users, CheckCircle2, XCircle, AlertCircle, Clock, MessageSquarePlus, TrendingUp, TrendingDown, ArrowUpCircle, AlertTriangle, School, BookOpen, Hash } from "lucide-react";
 import { useSearchParams, useRouter } from 'next/navigation';
 
 import { cn } from "@/lib/utils";
@@ -66,7 +67,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { AnimatedText } from "@/components/ui/animated-underline-text-one";
-import { getIndonesianDayFromDate } from "@/lib/timezone";
+import { getIndonesianDayName } from "@/lib/timezone";
 import { LottieWhatsApp } from "@/components/ui/lottie-whatsapp";
 import { LottieCalendar } from "@/components/ui/lottie-calendar";
 import { LottieSchoolHoliday } from "@/components/ui/lottie-school-holiday";
@@ -165,49 +166,51 @@ const AddNoteDialog = ({ student, onNoteSaved, disabled }: { student: Student | 
     if (!student) return null;
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={disabled} className="h-10 w-10 shrink-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
-                    <MessageSquarePlus className="h-6 w-6" />
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="dialog-content-mobile mobile-safe-area rounded-3xl">
-                <DialogHeader>
-                    <DialogTitle>Catatan untuk {student.name}</DialogTitle>
-                    <DialogDescription>Catatan ini akan dapat dilihat oleh wali kelas.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="note-content">Isi Catatan</Label>
-                        <Textarea id="note-content" value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Tidak mengerjakan PR, sangat aktif di kelas, dll." />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Jenis Catatan</Label>
-                        <RadioGroup value={noteType} onValueChange={(value: StudentNote['type']) => setNoteType(value)} className="flex gap-4">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="positive" id="r-positive" />
-                                <Label htmlFor="r-positive" className="flex items-center gap-1"><TrendingUp className="h-4 w-4 text-green-500"/> Positif</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="improvement" id="r-improvement" />
-                                <Label htmlFor="r-improvement" className="flex items-center gap-1"><TrendingDown className="h-4 w-4 text-yellow-500"/> Perbaikan</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="neutral" id="r-neutral" />
-                                <Label htmlFor="r-neutral" className="flex items-center gap-1">Netral</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-                </div>
-                <DialogFooter className="flex flex-row gap-2">
-                    <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setIsOpen(false)}>Batal</Button>
-                    <Button className="flex-1 rounded-xl" onClick={handleSaveNote} disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        Simpan Catatan
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <div className="flex-shrink-0">
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" disabled={disabled} className="h-10 w-10 shrink-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
+                      <MessageSquarePlus className="h-6 w-6" />
+                  </Button>
+              </DialogTrigger>
+              <DialogContent className="dialog-content-mobile mobile-safe-area rounded-3xl">
+                  <DialogHeader>
+                      <DialogTitle>Catatan untuk {student.name}</DialogTitle>
+                      <DialogDescription>Catatan ini akan dapat dilihat oleh wali kelas.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="note-content">Isi Catatan</Label>
+                          <Textarea id="note-content" value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Tidak mengerjakan PR, sangat aktif di kelas, dll." />
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Jenis Catatan</Label>
+                          <RadioGroup value={noteType} onValueChange={(value: StudentNote['type']) => setNoteType(value)} className="flex gap-4">
+                              <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="positive" id="r-positive" />
+                                  <Label htmlFor="r-positive" className="flex items-center gap-1"><TrendingUp className="h-4 w-4 text-green-500"/> Positif</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="improvement" id="r-improvement" />
+                                  <Label htmlFor="r-improvement" className="flex items-center gap-1"><TrendingDown className="h-4 w-4 text-yellow-500"/> Perbaikan</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="neutral" id="r-neutral" />
+                                  <Label htmlFor="r-neutral" className="flex items-center gap-1">Netral</Label>
+                              </div>
+                          </RadioGroup>
+                      </div>
+                  </div>
+                  <DialogFooter className="flex flex-row gap-2">
+                      <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setIsOpen(false)}>Batal</Button>
+                      <Button className="flex-1 rounded-xl" onClick={handleSaveNote} disabled={loading}>
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                          Simpan Catatan
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+        </div>
     )
 }
 
@@ -490,76 +493,6 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
-
-  const handlePageChange = (page: number) => {
-      setCurrentPage(page);
-  };
-
-  const renderPagination = () => {
-    if (pageCount <= 1) return null;
-    const pageNumbers = [];
-    const ellipsis = <PaginationItem key="ellipsis"><PaginationEllipsis /></PaginationItem>;
-
-    if (pageCount <= 7) {
-        for (let i = 1; i <= pageCount; i++) {
-            pageNumbers.push(
-                <PaginationItem key={i}>
-                    <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(i); }}>{i}</PaginationLink>
-                </PaginationItem>
-            );
-        }
-    } else {
-        pageNumbers.push(
-            <PaginationItem key={1}>
-                <PaginationLink href="#" isActive={1 === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(1); }}>1</PaginationLink>
-            </PaginationItem>
-        );
-
-        if (currentPage > 3) pageNumbers.push(React.cloneElement(ellipsis, {key: "start-ellipsis"}));
-
-        let startPage = Math.max(2, currentPage - 1);
-        let endPage = Math.min(pageCount - 1, currentPage + 1);
-        
-        if (currentPage <= 3) {
-           startPage = 2;
-           endPage = 4;
-        }
-        if (currentPage >= pageCount - 2) {
-            startPage = pageCount - 3;
-            endPage = pageCount -1;
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            pageNumbers.push(
-                <PaginationItem key={i}>
-                    <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(i); }}>{i}</PaginationLink>
-                </PaginationItem>
-            );
-        }
-        
-        if (currentPage < pageCount - 2) pageNumbers.push(React.cloneElement(ellipsis, {key: "end-ellipsis"}));
-
-        pageNumbers.push(
-            <PaginationItem key={pageCount}>
-                <PaginationLink href="#" isActive={pageCount === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(pageCount); }}>{pageCount}</PaginationLink>
-            </PaginationItem>
-        );
-    }
-
-    return (
-        <Pagination>
-            <PaginationContent>
-                <PaginationItem>
-                    <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); handlePageChange(Math.max(1, currentPage - 1)); }} />
-                </PaginationItem>
-                {pageNumbers}
-                <PaginationItem>
-                    <PaginationNext href="#" onClick={(e) => { e.preventDefault(); handlePageChange(Math.min(pageCount, currentPage + 1)); }} />
-                </PaginationItem>
-            </PaginationContent>
-        </Pagination>
-    );
-  };
 
   const getStatusBadgeVariant = (status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpha') => {
     switch (status) {
@@ -1049,7 +982,21 @@ _Laporan ini dibuat otomatis melalui LakuKelas_`;
           </CardContent>
           {pageCount > 1 && (
             <CardFooter className="flex justify-center border-t pt-4">
-                {renderPagination()}
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(Math.max(1, currentPage - 1)); }} />
+                        </PaginationItem>
+                        {Array.from({ length: pageCount }, (_, i) => i + 1).map((i) => (
+                            <PaginationItem key={i}>
+                                <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(i); }}>{i}</PaginationLink>
+                            </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                            <PaginationNext href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(Math.min(pageCount, currentPage + 1)); }} />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
             </CardFooter>
           )}
         </Card>

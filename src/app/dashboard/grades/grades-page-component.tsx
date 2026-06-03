@@ -1,10 +1,11 @@
+
 "use client";
 
 import * as React from "react";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Calendar as CalendarIcon, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Wand2, ArrowUpCircle, ClipboardCheck, Info, School, FileText, Hash } from "lucide-react";
+import { Calendar as CalendarIcon, CalendarDays, Edit, Eye, Loader2, Search, BookOpen, Award, TrendingUp, Users, Target, Plus, Wand2, ArrowUpCircle, ClipboardCheck, Info, School, FileText, Hash } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -535,7 +536,7 @@ export default function GradesPageComponent({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredHistory.map(({entry, records}) => {
                     const scores = records.map(r => Number(r.score));
-                    const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '0';
+                    const average = scores.length > 0 ? (scores.reduce((a, b) => a + Number(b), 0) / scores.length).toFixed(1) : '0';
                     const kkm = getSubjectKkm(entry.subject_id);
                     const passingCount = scores.filter(score => score >= kkm).length;
                     const passingRate = scores.length > 0 ? ((passingCount / scores.length) * 100).toFixed(0) : '0';
