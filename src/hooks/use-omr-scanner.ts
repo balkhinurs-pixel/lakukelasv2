@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { detectMarkers, typePoint, type DetectionResult } from '@/lib/omr/detector';
+import { detectMarkers, type DetectionResult } from '@/lib/omr/detector';
 
 export function useOmrScanner(active: boolean) {
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -21,6 +21,9 @@ export function useOmrScanner(active: boolean) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stabilityCounter = useRef(0);
   const requestRef = useRef<number>(null);
+  
+  // Gunakan ref untuk isCapturing agar tidak memicu re-render loop
+  const isCapturingRef = useRef(false);
 
   const stopStream = useCallback(() => {
     if (stream) {
@@ -33,7 +36,10 @@ export function useOmrScanner(active: boolean) {
   }, [stream]);
 
   const processFrame = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current || !active || isCapturing) return;
+    if (!videoRef.current || !canvasRef.current || !active || isCapturingRef.current) {
+      requestRef.current = requestAnimationFrame(processFrame);
+      return;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -53,12 +59,18 @@ export function useOmrScanner(active: boolean) {
       // Logika Kunci 4 Titik & Auto-Capture
       if (result.found && result.isBrightEnough) {
         stabilityCounter.current += 1;
-        // Butuh ~25 frame (~1 detik) posisi stabil untuk trigger capture
         const progress = Math.min(100, (stabilityCounter.current / 25) * 100);
         setCaptureProgress(progress);
 
         if (stabilityCounter.current >= 25) {
-          handleAutoCapture();
+          isCapturingRef.current = true;
+          setIsCapturing(true);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+          setCapturedImage(dataUrl);
+          
+          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
+          }
         }
       } else {
         stabilityCounter.current = Math.max(0, stabilityCounter.current - 1.5);
@@ -67,43 +79,52 @@ export function useOmrScanner(active: boolean) {
     }
 
     requestRef.current = requestAnimationFrame(processFrame);
-  }, [active, isCapturing]);
+  }, [active]);
 
-  const handleAutoCapture = () => {
-    if (!canvasRef.current) return;
-    setIsCapturing(true);
-    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.9);
-    setCapturedImage(dataUrl);
-    
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate([100, 50, 100]); // Efek getar sukses
-    }
-  };
-
+  // Effect 1: Handle Hardware Stream (Kamera)
+  // Hanya berjalan saat 'active' berubah, tidak bergantung pada processFrame
   useEffect(() => {
+    let currentStream: MediaStream | null = null;
+
     if (active) {
       navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
           width: { ideal: 1280 },
-          height: { ideal: 960 } // Aspect ratio lebih dekat ke LJK
+          height: { ideal: 960 }
         } 
       })
       .then(s => {
+        currentStream = s;
         setStream(s);
-        if (videoRef.current) videoRef.current.srcObject = s;
-        requestRef.current = requestAnimationFrame(processFrame);
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+        }
       })
       .catch(err => {
         console.error("Camera access denied:", err);
         setStatus(prev => ({ ...prev, message: "Akses Kamera Ditolak" }));
       });
-    } else {
-      stopStream();
     }
 
-    return () => stopStream();
-  }, [active, processFrame, stopStream]);
+    return () => {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [active]);
+
+  // Effect 2: Handle Detection Loop
+  useEffect(() => {
+    if (active) {
+      requestRef.current = requestAnimationFrame(processFrame);
+    } else {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    }
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [active, processFrame]);
 
   return {
     videoRef,
@@ -114,6 +135,7 @@ export function useOmrScanner(active: boolean) {
     resetScanner: () => {
       setCapturedImage(null);
       setIsCapturing(false);
+      isCapturingRef.current = false;
       stabilityCounter.current = 0;
       setCaptureProgress(0);
     },

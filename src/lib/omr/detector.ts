@@ -39,9 +39,9 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
     // 1. Preprocessing
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     
-    // Cek Kecerahan
+    // Cek Kecerahan - Lower threshold for better stability
     let mean = cv.mean(gray)[0];
-    const isBrightEnough = mean > 50; 
+    const isBrightEnough = mean > 40; 
 
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
     cv.adaptiveThreshold(blurred, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 11, 2);
@@ -84,8 +84,8 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
       
       resultCorners[0] = top[0]; // TL
       resultCorners[1] = top[1]; // TR
-      resultCorners[2] = bottom[0]; // BR
-      resultCorners[3] = bottom[1]; // BL
+      resultCorners[2] = bottom[1]; // BR (sorted bottom by x)
+      resultCorners[3] = bottom[0]; // BL
     }
 
     const foundAll = resultCorners.every(c => c !== null);
@@ -93,7 +93,7 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
     return {
       found: foundAll,
       corners: resultCorners,
-      message: foundAll ? (isBrightEnough ? "Posisi Terkunci..." : "Kurang Cahaya") : "Arahkan ke Target",
+      message: foundAll ? (isBrightEnough ? "Posisi Terkunci..." : "Kurang Cahaya") : "Luruskan Posisi LJK",
       isStable: foundAll,
       isBrightEnough
     };
