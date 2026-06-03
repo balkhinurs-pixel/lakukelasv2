@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { detectMarkers, type Point, type DetectionResult } from '@/lib/omr/detector';
+import { detectMarkers, typePoint, type DetectionResult } from '@/lib/omr/detector';
 
 export function useOmrScanner(active: boolean) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [status, setStatus] = useState<DetectionResult>({
     found: false,
-    corners: null,
+    corners: [null, null, null, null],
     message: "Memulai Kamera...",
     isStable: false,
     isBrightEnough: false
@@ -40,7 +40,6 @@ export function useOmrScanner(active: boolean) {
     const context = canvas.getContext('2d', { willReadFrequently: true });
 
     if (context && video.readyState === video.HAVE_ENOUGH_DATA) {
-      // Set canvas size match video
       if (canvas.width !== video.videoWidth) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -48,21 +47,21 @@ export function useOmrScanner(active: boolean) {
 
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      // Run Detection
       const result = detectMarkers(canvas);
       setStatus(result);
 
+      // Logika Kunci 4 Titik & Auto-Capture
       if (result.found && result.isBrightEnough) {
         stabilityCounter.current += 1;
-        // Progress bar logic (butuh ~1 detik stabil)
-        const progress = Math.min(100, (stabilityCounter.current / 30) * 100);
+        // Butuh ~25 frame (~1 detik) posisi stabil untuk trigger capture
+        const progress = Math.min(100, (stabilityCounter.current / 25) * 100);
         setCaptureProgress(progress);
 
-        if (stabilityCounter.current >= 30) {
+        if (stabilityCounter.current >= 25) {
           handleAutoCapture();
         }
       } else {
-        stabilityCounter.current = Math.max(0, stabilityCounter.current - 2);
+        stabilityCounter.current = Math.max(0, stabilityCounter.current - 1.5);
         setCaptureProgress(0);
       }
     }
@@ -75,9 +74,9 @@ export function useOmrScanner(active: boolean) {
     setIsCapturing(true);
     const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.9);
     setCapturedImage(dataUrl);
-    // Feedback haptic if supported
+    
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(200);
+      navigator.vibrate([100, 50, 100]); // Efek getar sukses
     }
   };
 
@@ -87,7 +86,7 @@ export function useOmrScanner(active: boolean) {
         video: { 
           facingMode: 'environment',
           width: { ideal: 1280 },
-          height: { ideal: 720 }
+          height: { ideal: 960 } // Aspect ratio lebih dekat ke LJK
         } 
       })
       .then(s => {
@@ -97,7 +96,7 @@ export function useOmrScanner(active: boolean) {
       })
       .catch(err => {
         console.error("Camera access denied:", err);
-        setStatus(prev => ({ ...prev, message: "Kamera Ditolak" }));
+        setStatus(prev => ({ ...prev, message: "Akses Kamera Ditolak" }));
       });
     } else {
       stopStream();

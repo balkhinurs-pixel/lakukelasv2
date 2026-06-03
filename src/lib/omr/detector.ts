@@ -12,7 +12,7 @@ export interface Point {
 
 export interface DetectionResult {
   found: boolean;
-  corners: Point[] | null;
+  corners: (Point | null)[]; // [TL, TR, BR, BL]
   message: string;
   isStable: boolean;
   isBrightEnough: boolean;
@@ -21,10 +21,11 @@ export interface DetectionResult {
 
 /**
  * Mendeteksi 4 marker kotak di pojok LJK.
+ * Memastikan urutan: Top-Left, Top-Right, Bottom-Right, Bottom-Left.
  */
 export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
   if (typeof cv === 'undefined' || !cv.Mat) {
-    return { found: false, corners: null, message: "Memuat Mesin...", isStable: false, isBrightEnough: false };
+    return { found: false, corners: [null, null, null, null], message: "Memuat Mesin...", isStable: false, isBrightEnough: false };
   }
 
   let src = cv.imread(canvas);
@@ -40,7 +41,7 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
     
     // Cek Kecerahan
     let mean = cv.mean(gray)[0];
-    const isBrightEnough = mean > 60; // Ambang batas cahaya
+    const isBrightEnough = mean > 50; 
 
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
     cv.adaptiveThreshold(blurred, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 11, 2);
@@ -49,7 +50,7 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
     cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
     let markers: Point[] = [];
-    const minArea = (canvas.width * canvas.height) * 0.0005; // Ukuran minimal kotak marker
+    const minArea = (canvas.width * canvas.height) * 0.0003; 
 
     for (let i = 0; i < contours.size(); ++i) {
       let cnt = contours.get(i);
@@ -58,12 +59,12 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
       let approx = new cv.Mat();
       cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-      // Cari kotak (4 sudut) dengan area yang masuk akal
+      // Cari kotak (4 sudut)
       if (approx.rows === 4 && area > minArea) {
         let rect = cv.boundingRect(approx);
         let aspectRatio = rect.width / rect.height;
         
-        if (aspectRatio > 0.8 && aspectRatio < 1.2) {
+        if (aspectRatio > 0.7 && aspectRatio < 1.3) {
           markers.push({
             x: rect.x + rect.width / 2,
             y: rect.y + rect.height / 2
@@ -73,37 +74,32 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
       approx.delete();
     }
 
-    if (markers.length < 4) {
-      return { 
-        found: false, 
-        corners: null, 
-        message: markers.length === 0 ? "Arahkan ke LJK" : `Marker terdeteksi: ${markers.length}/4`, 
-        isStable: false, 
-        isBrightEnough 
-      };
+    // 3. Map to 4 Corners
+    const resultCorners: (Point | null)[] = [null, null, null, null];
+    if (markers.length >= 4) {
+      // Sort by Y to separate Top and Bottom
+      markers.sort((a, b) => a.y - b.y);
+      let top = markers.slice(0, 2).sort((a, b) => a.x - b.x);
+      let bottom = markers.slice(markers.length - 2).sort((a, b) => b.x - a.x);
+      
+      resultCorners[0] = top[0]; // TL
+      resultCorners[1] = top[1]; // TR
+      resultCorners[2] = bottom[0]; // BR
+      resultCorners[3] = bottom[1]; // BL
     }
 
-    // 3. Sort Corners (Top-Left, Top-Right, Bottom-Right, Bottom-Left)
-    // Urutkan berdasarkan Y untuk pisahkan atas dan bawah, lalu X untuk kiri dan kanan
-    markers.sort((a, b) => a.y - b.y);
-    let top = markers.slice(0, 2).sort((a, b) => a.x - b.x);
-    let bottom = markers.slice(markers.length - 2).sort((a, b) => b.x - a.x);
-    
-    const corners = [top[0], top[1], bottom[0], bottom[1]];
+    const foundAll = resultCorners.every(c => c !== null);
 
-    // 4. Check Stability (Simplifikasi: jarak antar marker tidak terlalu ekstrem berubah)
-    // Untuk deteksi live, kita kembalikan corners dan biarkan hook menangani stabilitas temporal
-    
     return {
-      found: true,
-      corners,
-      message: isBrightEnough ? "Posisikan Stabil..." : "Kurang Cahaya",
-      isStable: true,
+      found: foundAll,
+      corners: resultCorners,
+      message: foundAll ? (isBrightEnough ? "Posisi Terkunci..." : "Kurang Cahaya") : "Arahkan ke Target",
+      isStable: foundAll,
       isBrightEnough
     };
 
   } catch (e: any) {
-    return { found: false, corners: null, message: "Error", isStable: false, isBrightEnough: false, error: e.message };
+    return { found: false, corners: [null, null, null, null], message: "Error", isStable: false, isBrightEnough: false, error: e.message };
   } finally {
     src.delete(); gray.delete(); blurred.delete(); thresh.delete(); contours.delete(); hierarchy.delete();
   }

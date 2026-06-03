@@ -3,9 +3,8 @@
 import * as React from "react";
 import { useOmrScanner } from "@/hooks/use-omr-scanner";
 import { cn } from "@/lib/utils";
-import { X, Camera, Zap, Sun, AlertCircle, RefreshCw } from "lucide-react";
+import { X, Camera, Sun, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 
 interface OmrScannerViewProps {
@@ -15,7 +14,7 @@ interface OmrScannerViewProps {
 }
 
 export function OmrScannerView({ onCapture, onClose, isOpen }: OmrScannerViewProps) {
-  const { videoRef, canvasRef, status, captureProgress, capturedImage, resetScanner } = useOmrScanner(isOpen);
+  const { videoRef, canvasRef, status, captureProgress, capturedImage } = useOmrScanner(isOpen);
 
   React.useEffect(() => {
     if (capturedImage) {
@@ -26,119 +25,139 @@ export function OmrScannerView({ onCapture, onClose, isOpen }: OmrScannerViewPro
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center overflow-hidden">
-      {/* 1. Video Feed */}
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center overflow-hidden font-sans">
+      {/* 1. Live Camera Feed */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        className="absolute inset-0 w-full h-full object-cover opacity-60"
+        className="absolute inset-0 w-full h-full object-cover opacity-70"
       />
 
-      {/* 2. Processing Canvas (Hidden or Debug) */}
+      {/* Hidden processing canvas */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* 3. Overlay & Guidelines */}
+      {/* 2. Scanning UI Overlay */}
       <div className="relative z-10 w-full h-full flex flex-col items-center justify-between p-6">
         
-        {/* Top UI */}
+        {/* Top Navigation */}
         <div className="w-full flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/10 rounded-full h-12 w-12">
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/10 rounded-full h-12 w-12 backdrop-blur-md">
             <X className="h-6 w-6" />
           </Button>
-          <div className="flex flex-col items-center gap-1">
-             <Badge className="bg-indigo-600 text-white border-0 px-3 py-1 font-black uppercase text-[10px] tracking-widest shadow-lg animate-pulse">
-                Live OMR Scanner
-             </Badge>
+          <div className="flex flex-col items-center">
+             <div className="bg-indigo-600/90 backdrop-blur-md text-white border-0 px-4 py-1.5 rounded-full font-black uppercase text-[10px] tracking-widest shadow-xl flex items-center gap-2">
+                <Zap className="h-3 w-3 fill-current" />
+                Live AI Scanner
+             </div>
           </div>
-          <div className="w-12" /> {/* Spacer */}
+          <div className="w-12" />
         </div>
 
-        {/* Scanner Frame */}
-        <div className="relative w-full max-w-sm aspect-[3/4] border-2 border-white/20 rounded-[2rem] flex items-center justify-center">
-            {/* Corner Brackets */}
-            <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-white rounded-tl-[2rem]" />
-            <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-white rounded-tr-[2rem]" />
-            <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-white rounded-bl-[2rem]" />
-            <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-white rounded-br-[2rem]" />
+        {/* The Frame / Target Area */}
+        <div className="relative w-full max-w-sm aspect-[3/4.2] flex items-center justify-center">
+            {/* 4 Corner Target Boxes (Visual Guidelines) */}
+            {/* Top Left */}
+            <div className={cn(
+                "absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 rounded-tl-[1.5rem] transition-all duration-300",
+                status.corners[0] ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.5)]" : "border-white/30"
+            )} />
+            {/* Top Right */}
+            <div className={cn(
+                "absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 rounded-tr-[1.5rem] transition-all duration-300",
+                status.corners[1] ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.5)]" : "border-white/30"
+            )} />
+            {/* Bottom Right */}
+            <div className={cn(
+                "absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 rounded-br-[1.5rem] transition-all duration-300",
+                status.corners[2] ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.5)]" : "border-white/30"
+            )} />
+            {/* Bottom Left */}
+            <div className={cn(
+                "absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 rounded-bl-[1.5rem] transition-all duration-300",
+                status.corners[3] ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.5)]" : "border-white/30"
+            )} />
 
-            {/* Scanning Laser Line */}
+            {/* Scanning Laser Animation */}
             <motion.div 
-                animate={{ top: ['5%', '95%', '5%'] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="absolute left-4 right-4 h-1 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.8)] z-20 rounded-full"
+                animate={{ top: ['2%', '98%', '2%'] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                className="absolute left-6 right-6 h-0.5 bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,1)] z-10 opacity-50"
             />
 
-            {/* Center Feedback */}
-            <div className="text-center space-y-4 px-6 relative z-30">
+            {/* Central Progress Circle */}
+            <div className="relative flex items-center justify-center">
+                <svg className="w-24 h-24 transform -rotate-90">
+                    <circle
+                        cx="48"
+                        cy="48"
+                        r="38"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        fill="transparent"
+                        className="text-white/10"
+                    />
+                    <motion.circle
+                        cx="48"
+                        cy="48"
+                        r="38"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        fill="transparent"
+                        strokeDasharray={238}
+                        initial={{ strokeDashoffset: 238 }}
+                        animate={{ strokeDashoffset: 238 - (238 * captureProgress) / 100 }}
+                        className={cn(
+                            "transition-all duration-100",
+                            status.found ? "text-emerald-500" : "text-white/40"
+                        )}
+                    />
+                </svg>
                 <div className={cn(
-                    "mx-auto w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-500",
-                    status.found ? "bg-emerald-500 text-white rotate-0" : "bg-white/10 text-white/40 rotate-45"
+                    "absolute inset-0 flex items-center justify-center transition-all duration-500",
+                    status.found ? "scale-110" : "scale-100"
                 )}>
-                    {status.found ? <CheckCircle2 className="h-8 w-8" /> : <Camera className="h-8 w-8" />}
-                </div>
-                <div className="space-y-1">
-                    <p className={cn(
-                        "text-lg font-black uppercase tracking-tight",
-                        status.found ? "text-white" : "text-white/60"
+                    <div className={cn(
+                        "w-14 h-14 rounded-full flex items-center justify-center shadow-lg",
+                        status.found ? "bg-emerald-500 text-white" : "bg-white/10 text-white/40 backdrop-blur-sm"
                     )}>
-                        {status.message}
-                    </p>
-                    {!status.isBrightEnough && (
-                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center justify-center gap-1">
-                           <Sun className="h-3 w-3" /> Cari Tempat Terang
-                        </p>
-                    )}
+                        {status.found ? <CheckCircle2 className="h-8 w-8" /> : <Camera className="h-7 w-7" />}
+                    </div>
                 </div>
             </div>
-
-            {/* Corner Markers Visual (Debug Only if needed) */}
-            {status.corners?.map((p, i) => (
-                <div key={i} className="absolute w-4 h-4 bg-emerald-500/50 rounded-full border border-white" style={{ left: `${(p.x / canvasRef.current!.width) * 100}%`, top: `${(p.y / canvasRef.current!.height) * 100}%` }} />
-            ))}
         </div>
 
-        {/* Bottom Actions & Progress */}
-        <div className="w-full max-w-sm space-y-8">
-            <AnimatePresence>
-                {captureProgress > 0 && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="space-y-2">
-                        <div className="flex justify-between items-center px-1">
-                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Memotret Otomatis...</span>
-                            <span className="text-[10px] font-black text-white">{Math.round(captureProgress)}%</span>
-                        </div>
-                        <Progress value={captureProgress} className="h-2 bg-white/10" />
-                    </motion.div>
+        {/* Status Messaging */}
+        <div className="w-full max-w-sm mb-12 space-y-6">
+            <div className="text-center space-y-2">
+                <p className={cn(
+                    "text-xl font-black uppercase tracking-tight transition-colors",
+                    status.found ? "text-emerald-400" : "text-white/70"
+                )}>
+                    {status.message}
+                </p>
+                {!status.isBrightEnough && (
+                    <motion.p 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                       <Sun className="h-3.5 w-3.5" /> Ruangan Terlalu Gelap
+                    </motion.p>
                 )}
-            </AnimatePresence>
+            </div>
 
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex justify-center">
                 <Button 
                     variant="outline" 
-                    className="rounded-2xl border-white/20 text-white bg-white/5 h-14 px-8 font-bold"
+                    className="rounded-2xl border-white/20 text-white bg-white/5 h-14 px-10 font-black uppercase tracking-widest backdrop-blur-md active:scale-95"
                     onClick={onClose}
                 >
-                    Batalkan
+                    Batalkan Scan
                 </Button>
             </div>
         </div>
       </div>
-
-      <style jsx global>{`
-        .lucide-badge {
-            display: inline-flex;
-            align-items: center;
-            border-radius: 9999px;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-      `}</style>
     </div>
   );
-}
-
-function Badge({ children, className }: any) {
-    return <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>{children}</div>
 }
