@@ -61,7 +61,7 @@ import { useRouter } from "next/navigation";
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 /**
- * Robust MathText Component V126 (Enhanced for Zoom & High-DPI)
+ * Robust MathText Component V127 (Enhanced for Zoom & High-DPI)
  */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
@@ -124,7 +124,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
 };
 
 const mapelByJenjang: Record<string, string[]> = {
-    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
+    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris', 'Bahasa Jawa'],
     'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab', 'Bahasa Jawa'],
     'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist', 'Bahasa Jawa'],
     'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan', 'Bahasa Jawa']
@@ -213,7 +213,7 @@ export default function GenerateMateriClient({
         setLoading(true);
         setGeneratedResult(null);
         setCountdown(30);
-        setZoom(100); // Reset zoom on new generation
+        setZoom(100); 
         setIsPreviewOpen(true);
 
         try {
@@ -259,7 +259,7 @@ export default function GenerateMateriClient({
                 action: <Button variant="outline" size="sm" asChild><a href={result.file_url || "#"} target="_blank">Buka File</a></Button>
             });
             setIsPreviewOpen(false);
-            router.push('/dashboard/ai-pembelajaran/arsip-rpp'); // Or relevant repo
+            router.push('/dashboard/ai-pembelajaran/arsip-rpp'); 
         } else {
             toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
         }
@@ -383,7 +383,7 @@ export default function GenerateMateriClient({
             </div>
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-[95vw] sm:max-w-5xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
+                <DialogContent className="max-w-[98vw] sm:max-w-5xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                     <div className="flex flex-col h-[90vh] relative">
                         {loading && !generatedResult && (
                             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
@@ -397,19 +397,19 @@ export default function GenerateMateriClient({
                             </div>
                         )}
 
-                        {/* Integrated Zoom Toolbar */}
-                        <div className="no-print bg-slate-900 text-white p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-indigo-600 rounded-xl">
+                        {/* Toolbar Controls */}
+                        <div className="no-print bg-slate-900 text-white p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shrink-0">
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <div className="p-2 bg-indigo-600 rounded-xl shrink-0">
                                     <FileText className="h-4 w-4" />
                                 </div>
-                                <div className="text-left">
-                                    <h3 className="text-sm font-black uppercase tracking-tight leading-none">Pratinjau Materi AI</h3>
-                                    <p className="text-[9px] text-indigo-300 font-bold uppercase tracking-widest mt-1">{form.subject} • {form.topic}</p>
+                                <div className="text-left min-w-0">
+                                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-tight leading-none truncate">Pratinjau Materi AI</h3>
+                                    <p className="text-[8px] sm:text-[9px] text-indigo-300 font-bold uppercase tracking-widest mt-1 truncate">{form.subject} • {form.topic}</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-6 bg-white/5 px-4 py-2 rounded-2xl border border-white/10 min-w-[200px] sm:min-w-[300px]">
+                            <div className="flex items-center gap-4 sm:gap-6 bg-white/5 px-4 py-2 rounded-2xl border border-white/10 w-full sm:w-auto min-w-[240px]">
                                 <button onClick={() => setZoom(prev => Math.max(50, prev - 5))} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
                                     <ZoomOut className="h-4 w-4 text-slate-400" />
                                 </button>
@@ -424,19 +424,19 @@ export default function GenerateMateriClient({
                                 <button onClick={() => setZoom(prev => Math.min(150, prev + 5))} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
                                     <ZoomIn className="h-4 w-4 text-slate-400" />
                                 </button>
-                                <span className="text-[10px] font-black w-8 text-center">{zoom}%</span>
+                                <span className="text-[10px] font-black w-10 text-center">{zoom}%</span>
                             </div>
                         </div>
 
-                        {/* Scrollable Preview Area */}
-                        <div className="flex-1 overflow-auto bg-slate-100 p-4 sm:p-10 custom-scrollbar flex justify-center">
+                        {/* Responsive Scroll Viewport */}
+                        <div className="flex-1 overflow-auto bg-slate-200/50 p-4 sm:p-10 custom-scrollbar flex justify-start sm:justify-center items-start">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
                                     <motion.div 
                                         key="result"
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="shrink-0 origin-top center pb-20"
+                                        className="shrink-0 origin-top pb-20"
                                         style={{ 
                                             width: '210mm', 
                                             transform: `scale(${zoom / 100})`,
@@ -444,11 +444,15 @@ export default function GenerateMateriClient({
                                         }}
                                     >
                                         <div 
-                                            className="bg-white p-10 sm:p-14 shadow-2xl rounded-sm min-h-[297mm] text-black" 
+                                            className="bg-white p-8 sm:p-14 shadow-2xl border border-slate-200 min-h-[297mm] text-black rounded-sm" 
                                             style={{ fontFamily: '"Times New Roman", Times, serif' }}
                                         >
-                                            <h1 className="text-2xl sm:text-3xl font-black border-b-4 border-indigo-600 pb-4 mb-8 text-indigo-700 uppercase tracking-tight text-center">{generatedResult.title}</h1>
-                                            <MathText content={generatedResult.content} />
+                                            <h1 className="text-xl sm:text-3xl font-black border-b-4 border-indigo-600 pb-5 mb-10 text-indigo-700 uppercase tracking-tight text-center leading-tight">
+                                                {generatedResult.title}
+                                            </h1>
+                                            <div className="content-area">
+                                                <MathText content={generatedResult.content} />
+                                            </div>
                                         </div>
                                     </motion.div>
                                 ) : !loading ? (
@@ -459,7 +463,7 @@ export default function GenerateMateriClient({
                             </AnimatePresence>
                         </div>
 
-                        {/* Bottom Actions */}
+                        {/* Action Buttons */}
                         <div className="p-4 sm:p-8 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
                             <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="h-14 sm:h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2 flex-1">
                                 <ArrowLeft className="h-5 w-5" /> Kembali
@@ -477,6 +481,10 @@ export default function GenerateMateriClient({
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+                
+                .content-area table { width: 100% !important; border-collapse: collapse; }
+                .content-area td, .content-area th { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+                .content-area th { background: #f8fafc; font-weight: bold; }
             `}</style>
         </div>
     );
