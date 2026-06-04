@@ -57,18 +57,18 @@ import { useRouter } from "next/navigation";
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 /**
- * Robust MathText Component V119 (Scroll Protected)
- * Optimized for large content and tables.
+ * Robust MathText Component V125 (Scroll & Mobile Protected)
+ * Merender LaTeX, Markdown, dan Aksara Jawa dengan deteksi otomatis.
  */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-  const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
-  
+  const parts = content.split(/(\$\$[\s\S]*?\$$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
         if (!part) return null;
-
+        
         if (part.startsWith('$$') || part.startsWith('\\[')) {
           const isDoubleDollar = part.startsWith('$$');
           const math = isDoubleDollar ? part.slice(2, -2) : part.slice(2, -2);
@@ -80,7 +80,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
             </div>
           );
         }
-
+        
         if (part.startsWith('$') || part.startsWith('\\(')) {
           const isDollar = part.startsWith('$');
           const math = isDollar ? part.slice(1, -1) : part.slice(2, -2);
@@ -96,12 +96,20 @@ const MathText = ({ content, className }: { content: string, className?: string 
                 key={i} 
                 remarkPlugins={[remarkGfm]}
                 components={{
-                    table: ({node, ...props}) => <div className="overflow-x-auto my-6 custom-scrollbar"><table className="w-full border-collapse border border-slate-200 text-sm" {...props} /></div>,
-                    th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-2 font-bold" {...props} />,
-                    td: ({node, ...props}) => <td className="border border-slate-200 p-2" {...props} />,
-                    h1: ({node, ...props}) => <h1 className="text-xl font-black uppercase text-indigo-700 mt-8 mb-4 border-b pb-2" {...props} />,
+                    table: ({node, ...props}) => (
+                        <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm custom-scrollbar">
+                            <table className="w-full border-collapse text-sm text-center" {...props} />
+                        </div>
+                    ),
+                    th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-3 font-black text-slate-900 uppercase tracking-tight" {...props} />,
+                    td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
+                    tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="text-xl font-black uppercase text-indigo-700 mt-8 mb-4 border-b-2 border-indigo-100 pb-2" {...props} />,
                     h2: ({node, ...props}) => <h2 className="text-lg font-bold text-slate-800 mt-6 mb-3" {...props} />,
-                    p: ({node, ...props}) => <p className="mb-4 leading-relaxed text-slate-600 break-words" {...props} />
+                    p: ({node, ...props}) => {
+                        const hasJavanese = /[\uA980-\uA9DF]/.test(String(props.children || ''));
+                        return <p className={cn("mb-4 leading-relaxed text-slate-600 break-words", hasJavanese && "aksara-jawa")} {...props} />;
+                    }
                 }}
             >
                 {part}
@@ -110,6 +118,20 @@ const MathText = ({ content, className }: { content: string, className?: string 
       })}
     </div>
   );
+};
+
+const mapelByJenjang: Record<string, string[]> = {
+    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
+    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab', 'Bahasa Jawa'],
+    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist', 'Bahasa Jawa'],
+    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan', 'Bahasa Jawa']
+};
+
+const getClassOptions = (jenjang: string) => {
+    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
+    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
+    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
+    return [];
 };
 
 export default function GenerateMateriClient({ 
@@ -125,7 +147,6 @@ export default function GenerateMateriClient({
 }) {
     const { toast } = useToast();
     const router = useRouter();
-    const supabase = createClient();
     const [loading, setLoading] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
     const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string } | null>(null);
@@ -345,12 +366,12 @@ export default function GenerateMateriClient({
                     </form>
                 </Card>
 
-                <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[600px] flex flex-col items-center justify-center text-center px-10">
-                    <div className="p-16 rounded-[5rem] bg-slate-100 mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
-                        <BookOpen className="h-24 w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
+                <Card className="lg:col-span-3 border-0 shadow-2xl rounded-[2.5rem] bg-white overflow-hidden min-h-[400px] sm:min-h-[600px] flex flex-col items-center justify-center text-center p-6 sm:px-10">
+                    <div className="p-10 sm:p-16 rounded-[3rem] sm:rounded-[5rem] bg-slate-100 mb-6 sm:mb-8 shadow-inner group hover:bg-indigo-50 transition-all duration-700">
+                        <BookOpen className="h-16 w-16 sm:h-24 sm:w-24 text-slate-200 group-hover:text-indigo-200 transition-all duration-700 group-hover:rotate-12" />
                     </div>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase">AI Content Summarizer</h3>
-                    <p className="text-slate-400 font-bold text-sm max-w-sm mt-4 leading-relaxed italic">
+                    <h3 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase">AI Content Summarizer</h3>
+                    <p className="text-slate-400 font-bold text-xs sm:text-sm max-w-sm mt-3 sm:mt-4 leading-relaxed italic">
                         Konfigurasi bab materi di samping, atau unggah file PDF/Foto buku paket Anda. AI akan merangkumnya secara sistematis untuk bahan ajar siswa.
                     </p>
                 </Card>
@@ -361,24 +382,24 @@ export default function GenerateMateriClient({
                     <div className="flex flex-col h-[90vh] relative">
                         {loading && !generatedResult && (
                             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
-                                <div className="relative p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8">
-                                     <LottieAiProcess size={220} />
+                                <div className="relative p-8 sm:p-14 rounded-[2.5rem] sm:rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-6 sm:gap-8">
+                                     <LottieAiProcess size={180} />
                                      <div className="space-y-2">
-                                        <p className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Menyusun Materi...</p>
-                                        <p className="text-xl font-mono font-black text-indigo-600">{countdown}s</p>
+                                        <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Menyusun Materi...</p>
+                                        <p className="text-lg font-mono font-black text-indigo-600">{countdown}s</p>
                                      </div>
                                 </div>
                             </div>
                         )}
 
-                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-8 text-white shrink-0">
+                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-6 sm:p-8 text-white shrink-0">
                             <div className="flex flex-col items-center text-center">
-                                <DialogHeader><DialogTitle className="text-2xl sm:text-4xl font-black tracking-tight text-white uppercase">Pratinjau Materi AI</DialogTitle></DialogHeader>
-                                <p className="text-indigo-100 font-bold text-xs uppercase tracking-[0.2em] mt-3">{form.subject} • {form.topic}</p>
+                                <DialogHeader><DialogTitle className="text-xl sm:text-4xl font-black tracking-tight text-white uppercase">Pratinjau Materi AI</DialogTitle></DialogHeader>
+                                <p className="text-indigo-100 font-bold text-[10px] sm:text-xs uppercase tracking-[0.2em] mt-2">{form.subject} • {form.topic}</p>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar">
+                        <div className="flex-1 overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar bg-slate-50/30">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
                                     <motion.div 
@@ -388,14 +409,14 @@ export default function GenerateMateriClient({
                                         className="w-full flex justify-start lg:justify-center"
                                     >
                                         <div 
-                                            className="bg-white p-8 sm:p-12 shadow-sm border rounded-2xl shrink-0" 
+                                            className="bg-white p-6 sm:p-12 shadow-sm border rounded-2xl shrink-0" 
                                             style={{ 
                                                 width: '210mm', 
                                                 minHeight: '297mm',
                                                 fontFamily: '"Times New Roman", Times, serif'
                                             }}
                                         >
-                                            <h1 className="text-3xl font-black border-b-4 border-indigo-600 pb-4 mb-8 text-indigo-700 uppercase tracking-tight text-center">{generatedResult.title}</h1>
+                                            <h1 className="text-2xl sm:text-3xl font-black border-b-4 border-indigo-600 pb-4 mb-8 text-indigo-700 uppercase tracking-tight text-center">{generatedResult.title}</h1>
                                             <MathText content={generatedResult.content} />
                                         </div>
                                     </motion.div>
@@ -407,11 +428,11 @@ export default function GenerateMateriClient({
                             </AnimatePresence>
                         </div>
 
-                        <div className="p-6 sm:p-10 bg-slate-50 border-t flex flex-col sm:flex-row gap-4 shrink-0 pb-safe">
-                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="flex-1 h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2">
+                        <div className="p-4 sm:p-10 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe">
+                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="h-14 sm:h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2">
                                 <ArrowLeft className="h-5 w-5" /> Kembali
                             </Button>
-                            <Button onClick={handleSaveToDrive} disabled={saving || loading || !generatedResult} className="flex-[2] h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200">
+                            <Button onClick={handleSaveToDrive} disabled={saving || loading || !generatedResult} className="h-14 sm:h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200">
                                 {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Google Drive
                             </Button>
                         </div>
@@ -427,17 +448,3 @@ export default function GenerateMateriClient({
         </div>
     );
 }
-
-function getClassOptions(jenjang: string) {
-    if (jenjang === 'SD / MI') return ['1', '2', '3', '4', '5', '6'];
-    if (jenjang === 'SMP / MTs') return ['7', '8', '9'];
-    if (jenjang === 'SMA / MA' || jenjang === 'SMK / MAK') return ['10', '11', '12'];
-    return [];
-}
-
-const mapelByJenjang: Record<string, string[]> = {
-    'SD / MI': ['Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Bahasa Inggris'],
-    'SMP / MTs': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'IPA', 'IPS', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Budaya', 'Informatika', 'Prakarya', 'Bahasa Arab'],
-    'SMA / MA': ['Bahasa Indonesia', 'Matematika Umum', 'Matematika Tingkat Lanjut', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'Seni Budaya', 'TIK', 'Bahasa Arab', 'Fiqih', 'Akidah Akhlak', 'Quran Hadist'],
-    'SMK / MAK': ['Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Informatika', 'Pendidikan Pancasila', 'PAI & Budi Pekerti', 'PJOK', 'Seni Culture', 'Dasar-dasar Kejuruan', 'Produk Kreatif & Kewirausahaan']
-};
