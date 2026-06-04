@@ -23,7 +23,10 @@ import {
     CalendarDays,
     Tag,
     TrendingUp,
-    Users
+    Users,
+    ZoomIn,
+    ZoomOut,
+    Move
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { streamMaterialAction, saveMaterialToDriveAction } from "@/lib/actions/ai";
 import type { Class, Subject, GoogleDriveIntegration, MaterialGenerationInput } from "@/lib/types";
@@ -57,15 +61,14 @@ import { useRouter } from "next/navigation";
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 /**
- * Robust MathText Component V125 (Scroll & Mobile Protected)
- * Merender LaTeX, Markdown, dan Aksara Jawa dengan deteksi otomatis.
+ * Robust MathText Component V126 (Enhanced for Zoom & High-DPI)
  */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-  const parts = content.split(/(\$\$[\s\S]*?\$$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
-    <div className={cn("math-text-render w-full overflow-hidden", className)}>
+    <div className={cn("math-text-render w-full overflow-hidden text-justify", className)}>
       {parts.map((part, i) => {
         if (!part) return null;
         
@@ -152,6 +155,7 @@ export default function GenerateMateriClient({
     const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string } | null>(null);
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
     const [countdown, setCountdown] = React.useState(30);
+    const [zoom, setZoom] = React.useState(100);
 
     const [isErrorOpen, setIsErrorOpen] = React.useState(false);
     const [errorType, setErrorType] = React.useState<AiErrorType>(null);
@@ -209,6 +213,7 @@ export default function GenerateMateriClient({
         setLoading(true);
         setGeneratedResult(null);
         setCountdown(30);
+        setZoom(100); // Reset zoom on new generation
         setIsPreviewOpen(true);
 
         try {
@@ -254,7 +259,7 @@ export default function GenerateMateriClient({
                 action: <Button variant="outline" size="sm" asChild><a href={result.file_url || "#"} target="_blank">Buka File</a></Button>
             });
             setIsPreviewOpen(false);
-            router.push('/dashboard/materials');
+            router.push('/dashboard/ai-pembelajaran/arsip-rpp'); // Or relevant repo
         } else {
             toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
         }
@@ -378,7 +383,7 @@ export default function GenerateMateriClient({
             </div>
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-white dialog-content-mobile mobile-safe-area">
+                <DialogContent className="max-w-[95vw] sm:max-w-5xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
                     <div className="flex flex-col h-[90vh] relative">
                         {loading && !generatedResult && (
                             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
@@ -392,29 +397,55 @@ export default function GenerateMateriClient({
                             </div>
                         )}
 
-                        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-6 sm:p-8 text-white shrink-0">
-                            <div className="flex flex-col items-center text-center">
-                                <DialogHeader><DialogTitle className="text-xl sm:text-4xl font-black tracking-tight text-white uppercase">Pratinjau Materi AI</DialogTitle></DialogHeader>
-                                <p className="text-indigo-100 font-bold text-[10px] sm:text-xs uppercase tracking-[0.2em] mt-2">{form.subject} • {form.topic}</p>
+                        {/* Integrated Zoom Toolbar */}
+                        <div className="no-print bg-slate-900 text-white p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-600 rounded-xl">
+                                    <FileText className="h-4 w-4" />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="text-sm font-black uppercase tracking-tight leading-none">Pratinjau Materi AI</h3>
+                                    <p className="text-[9px] text-indigo-300 font-bold uppercase tracking-widest mt-1">{form.subject} • {form.topic}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-6 bg-white/5 px-4 py-2 rounded-2xl border border-white/10 min-w-[200px] sm:min-w-[300px]">
+                                <button onClick={() => setZoom(prev => Math.max(50, prev - 5))} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                                    <ZoomOut className="h-4 w-4 text-slate-400" />
+                                </button>
+                                <Slider 
+                                    value={[zoom]} 
+                                    onValueChange={(val) => setZoom(val[0])} 
+                                    min={50} 
+                                    max={150} 
+                                    step={5} 
+                                    className="flex-1"
+                                />
+                                <button onClick={() => setZoom(prev => Math.min(150, prev + 5))} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                                    <ZoomIn className="h-4 w-4 text-slate-400" />
+                                </button>
+                                <span className="text-[10px] font-black w-8 text-center">{zoom}%</span>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-x-auto overflow-y-auto px-4 py-6 sm:px-10 sm:py-10 custom-scrollbar bg-slate-50/30">
+                        {/* Scrollable Preview Area */}
+                        <div className="flex-1 overflow-auto bg-slate-100 p-4 sm:p-10 custom-scrollbar flex justify-center">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
                                     <motion.div 
                                         key="result"
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="w-full flex justify-start lg:justify-center"
+                                        className="shrink-0 origin-top center pb-20"
+                                        style={{ 
+                                            width: '210mm', 
+                                            transform: `scale(${zoom / 100})`,
+                                            transition: 'transform 0.2s ease-out'
+                                        }}
                                     >
                                         <div 
-                                            className="bg-white p-6 sm:p-12 shadow-sm border rounded-2xl shrink-0" 
-                                            style={{ 
-                                                width: '210mm', 
-                                                minHeight: '297mm',
-                                                fontFamily: '"Times New Roman", Times, serif'
-                                            }}
+                                            className="bg-white p-10 sm:p-14 shadow-2xl rounded-sm min-h-[297mm] text-black" 
+                                            style={{ fontFamily: '"Times New Roman", Times, serif' }}
                                         >
                                             <h1 className="text-2xl sm:text-3xl font-black border-b-4 border-indigo-600 pb-4 mb-8 text-indigo-700 uppercase tracking-tight text-center">{generatedResult.title}</h1>
                                             <MathText content={generatedResult.content} />
@@ -428,11 +459,12 @@ export default function GenerateMateriClient({
                             </AnimatePresence>
                         </div>
 
-                        <div className="p-4 sm:p-10 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe">
-                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="h-14 sm:h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2">
+                        {/* Bottom Actions */}
+                        <div className="p-4 sm:p-8 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="h-14 sm:h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2 flex-1">
                                 <ArrowLeft className="h-5 w-5" /> Kembali
                             </Button>
-                            <Button onClick={handleSaveToDrive} disabled={saving || loading || !generatedResult} className="h-14 sm:h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200">
+                            <Button onClick={handleSaveToDrive} disabled={saving || loading || !generatedResult} className="h-14 sm:h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200 flex-[2]">
                                 {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Google Drive
                             </Button>
                         </div>
@@ -441,9 +473,10 @@ export default function GenerateMateriClient({
             </Dialog>
 
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
             `}</style>
         </div>
     );
