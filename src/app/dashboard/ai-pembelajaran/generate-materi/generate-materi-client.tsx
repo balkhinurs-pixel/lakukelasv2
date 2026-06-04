@@ -6,29 +6,25 @@ import {
     Sparkles, 
     Loader2, 
     Save, 
-    Database, 
     RefreshCw,
-    ArrowRight,
     Wand2,
     Settings2,
-    CheckCircle2,
     BookOpen,
     FileText,
     FileUp,
     ImageIcon,
     X,
-    Cpu,
-    ArrowLeft,
     School,
-    CalendarDays,
     Tag,
     TrendingUp,
     Users,
     ZoomIn,
     ZoomOut,
-    Move
+    Smartphone,
+    Layout,
+    ArrowLeft
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +43,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -61,14 +56,14 @@ import { useRouter } from "next/navigation";
 import { RefinedFormField } from "@/components/ui/refined-form-field";
 
 /**
- * Robust MathText Component V127 (Enhanced for Zoom & High-DPI)
+ * Robust MathText Component V128 (Enhanced for Dual-Mode Preview)
  */
-const MathText = ({ content, className }: { content: string, className?: string }) => {
+const MathText = ({ content, isMobile }: { content: string, isMobile?: boolean }) => {
   if (!content) return null;
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
-    <div className={cn("math-text-render w-full overflow-hidden text-justify", className)}>
+    <div className={cn("math-text-render w-full", isMobile ? "text-left" : "text-justify")}>
       {parts.map((part, i) => {
         if (!part) return null;
         
@@ -107,8 +102,8 @@ const MathText = ({ content, className }: { content: string, className?: string 
                     th: ({node, ...props}) => <th className="border border-slate-200 bg-slate-50 p-3 font-black text-slate-900 uppercase tracking-tight" {...props} />,
                     td: ({node, ...props}) => <td className="border border-slate-200 p-3 font-bold text-slate-700" {...props} />,
                     tr: ({node, ...props}) => <tr className="even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" {...props} />,
-                    h1: ({node, ...props}) => <h1 className="text-xl font-black uppercase text-indigo-700 mt-8 mb-4 border-b-2 border-indigo-100 pb-2" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-lg font-bold text-slate-800 mt-6 mb-3" {...props} />,
+                    h1: ({node, ...props}) => <h1 className={cn("font-black uppercase text-indigo-700 mt-8 mb-4 border-b-2 border-indigo-100 pb-2", isMobile ? "text-xl" : "text-2xl")} {...props} />,
+                    h2: ({node, ...props}) => <h2 className={cn("font-bold text-slate-800 mt-6 mb-3", isMobile ? "text-lg" : "text-xl")} {...props} />,
                     p: ({node, ...props}) => {
                         const hasJavanese = /[\uA980-\uA9DF]/.test(String(props.children || ''));
                         return <p className={cn("mb-4 leading-relaxed text-slate-600 break-words", hasJavanese && "aksara-jawa")} {...props} />;
@@ -137,11 +132,14 @@ const getClassOptions = (jenjang: string) => {
     return [];
 };
 
+const PAPER_WIDTH_PX = 794;
+const PAPER_HEIGHT_PX = 1123;
+
 export default function GenerateMateriClient({ 
     classes, 
     subjects,
-    driveIntegration,
-    userProvider
+    driveIntegration: _driveIntegration,
+    userProvider: _userProvider
 }: { 
     classes: Class[], 
     subjects: Subject[],
@@ -154,14 +152,16 @@ export default function GenerateMateriClient({
     const [saving, setSaving] = React.useState(false);
     const [generatedResult, setGeneratedResult] = React.useState<{ title: string, content: string } | null>(null);
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
+    const [previewMode, setPreviewMode] = React.useState<'mobile' | 'a4'>('mobile');
+    const [zoom, setZoom] = React.useState(60);
     const [countdown, setCountdown] = React.useState(30);
-    const [zoom, setZoom] = React.useState(100);
 
     const [isErrorOpen, setIsErrorOpen] = React.useState(false);
     const [errorType, setErrorType] = React.useState<AiErrorType>(null);
     const [errorMsg, setErrorMsg] = React.useState("");
     
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const paperScrollRef = React.useRef<HTMLDivElement>(null);
     const [uploadedFile, setUploadedFile] = React.useState<{ name: string, uri: string, mime: string } | null>(null);
 
     const [form, setForm] = React.useState<MaterialGenerationInput>({
@@ -203,6 +203,22 @@ export default function GenerateMateriClient({
         reader.readAsDataURL(file);
     };
 
+    const fitPaperToScreen = React.useCallback(() => {
+        if (paperScrollRef.current && previewMode === 'a4') {
+            const availableWidth = paperScrollRef.current.clientWidth - 28;
+            const scale = Math.min(availableWidth / PAPER_WIDTH_PX, 1);
+            setZoom(Math.max(35, Math.round(scale * 100)));
+        }
+    }, [previewMode]);
+
+    React.useEffect(() => {
+        if (previewMode === 'a4') {
+            fitPaperToScreen();
+            window.addEventListener('resize', fitPaperToScreen);
+        }
+        return () => window.removeEventListener('resize', fitPaperToScreen);
+    }, [previewMode, fitPaperToScreen]);
+
     const handleGenerate = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!form.topic) {
@@ -213,7 +229,7 @@ export default function GenerateMateriClient({
         setLoading(true);
         setGeneratedResult(null);
         setCountdown(30);
-        setZoom(100); 
+        setPreviewMode('mobile');
         setIsPreviewOpen(true);
 
         try {
@@ -383,96 +399,147 @@ export default function GenerateMateriClient({
             </div>
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-[98vw] sm:max-w-5xl p-0 overflow-hidden rounded-3xl border-0 shadow-2xl bg-[#F8FAFF] dialog-content-mobile mobile-safe-area">
-                    <div className="flex flex-col h-[90vh] relative">
+                <DialogContent className="max-w-[98vw] sm:max-w-5xl p-0 overflow-hidden rounded-[26px] border border-white/12 shadow-2xl bg-[#0f172a] dialog-content-mobile mobile-safe-area flex flex-col h-[94vh]">
+                    {/* Header Premium */}
+                    <header className="flex-none flex items-center justify-between p-4 sm:p-6 bg-[#111827] text-white">
+                        <div className="flex items-center gap-4 min-w-0">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-lg">
+                                <FileText className="h-6 w-6 sm:h-7 sm:w-7" />
+                            </div>
+                            <div className="min-w-0">
+                                <h2 className="text-base sm:text-lg font-black uppercase tracking-tight leading-tight truncate">Pratinjau Materi AI</h2>
+                                <p className="text-[10px] sm:text-[11px] font-extrabold tracking-widest uppercase text-indigo-300 mt-1 truncate">
+                                    {form.subject} • {form.topic}
+                                </p>
+                            </div>
+                        </div>
+                        <button onClick={() => setIsPreviewOpen(false)} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
+                            <X className="h-8 w-8" />
+                        </button>
+                    </header>
+
+                    {/* Toolbar Controls */}
+                    <section className="flex-none flex flex-col gap-3 p-3 sm:p-4 bg-[#111827] border-y border-white/10">
+                        <div className="grid grid-cols-2 gap-2 w-full max-w-sm mx-auto">
+                            <button 
+                                onClick={() => setPreviewMode('mobile')}
+                                className={cn(
+                                    "h-10 rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+                                    previewMode === 'mobile' ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg" : "bg-[#1f2937] text-slate-400 hover:text-white"
+                                )}
+                            >
+                                <Smartphone className="h-4 w-4" /> Mobile
+                            </button>
+                            <button 
+                                onClick={() => setPreviewMode('a4')}
+                                className={cn(
+                                    "h-10 rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+                                    previewMode === 'a4' ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg" : "bg-[#1f2937] text-slate-400 hover:text-white"
+                                )}
+                            >
+                                <Layout className="h-4 w-4" /> A4 Preview
+                            </button>
+                        </div>
+
+                        {previewMode === 'a4' && (
+                            <div className="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-2xl border border-white/10 w-full max-w-md mx-auto animate-in slide-in-from-top-2">
+                                <button onClick={() => setZoom(prev => Math.max(35, prev - 10))} className="w-8 h-8 rounded-full bg-[#1f2937] text-white flex items-center justify-center font-bold">
+                                    <ZoomOut className="h-4 w-4" />
+                                </button>
+                                <Slider 
+                                    value={[zoom]} 
+                                    onValueChange={(val) => setZoom(val[0])} 
+                                    min={35} 
+                                    max={120} 
+                                    step={5} 
+                                    className="flex-1"
+                                />
+                                <button onClick={() => setZoom(prev => Math.min(120, prev + 10))} className="w-8 h-8 rounded-full bg-[#1f2937] text-white flex items-center justify-center font-bold">
+                                    <ZoomIn className="h-4 w-4" />
+                                </button>
+                                <span className="text-[11px] font-black text-slate-300 w-10 text-right">{zoom}%</span>
+                            </div>
+                        )}
+                    </section>
+
+                    {/* Main Content Viewport */}
+                    <main className="flex-1 overflow-hidden bg-[#e5e7eb] relative">
                         {loading && !generatedResult && (
-                            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl animate-in fade-in duration-700">
-                                <div className="relative p-8 sm:p-14 rounded-[2.5rem] sm:rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-6 sm:gap-8">
-                                     <LottieAiProcess size={180} />
+                            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-xl">
+                                <div className="flex flex-col items-center text-center gap-6 p-10 bg-white/80 rounded-[3rem] shadow-2xl">
+                                     <LottieAiProcess size={160} />
                                      <div className="space-y-2">
-                                        <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Menyusun Materi...</p>
+                                        <p className="text-2xl font-black text-slate-900 uppercase">Menyusun Materi...</p>
                                         <p className="text-lg font-mono font-black text-indigo-600">{countdown}s</p>
                                      </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Toolbar Controls */}
-                        <div className="no-print bg-slate-900 text-white p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shrink-0">
-                            <div className="flex items-center gap-3 w-full sm:w-auto">
-                                <div className="p-2 bg-indigo-600 rounded-xl shrink-0">
-                                    <FileText className="h-4 w-4" />
-                                </div>
-                                <div className="text-left min-w-0">
-                                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-tight leading-none truncate">Pratinjau Materi AI</h3>
-                                    <p className="text-[8px] sm:text-[9px] text-indigo-300 font-bold uppercase tracking-widest mt-1 truncate">{form.subject} • {form.topic}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 sm:gap-6 bg-white/5 px-4 py-2 rounded-2xl border border-white/10 w-full sm:w-auto min-w-[240px]">
-                                <button onClick={() => setZoom(prev => Math.max(50, prev - 5))} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
-                                    <ZoomOut className="h-4 w-4 text-slate-400" />
-                                </button>
-                                <Slider 
-                                    value={[zoom]} 
-                                    onValueChange={(val) => setZoom(val[0])} 
-                                    min={50} 
-                                    max={150} 
-                                    step={5} 
-                                    className="flex-1"
-                                />
-                                <button onClick={() => setZoom(prev => Math.min(150, prev + 5))} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
-                                    <ZoomIn className="h-4 w-4 text-slate-400" />
-                                </button>
-                                <span className="text-[10px] font-black w-10 text-center">{zoom}%</span>
-                            </div>
-                        </div>
-
-                        {/* Responsive Scroll Viewport */}
-                        <div className="flex-1 overflow-auto bg-slate-200/50 p-4 sm:p-10 custom-scrollbar flex justify-start sm:justify-center items-start">
+                        <div ref={paperScrollRef} className="h-full w-full overflow-auto p-4 sm:p-10 custom-scrollbar flex justify-start sm:justify-center items-start">
                             <AnimatePresence mode="wait">
                                 {generatedResult ? (
                                     <motion.div 
-                                        key="result"
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="shrink-0 origin-top pb-20"
-                                        style={{ 
-                                            width: '210mm', 
+                                        key={previewMode}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className={cn(
+                                            "shrink-0 origin-top bg-white transition-all duration-300",
+                                            previewMode === 'mobile' ? "w-full max-w-xl rounded-3xl p-6 sm:p-10 shadow-lg" : "w-[794px] min-h-[1123px] p-[72px_70px] shadow-2xl"
+                                        )}
+                                        style={previewMode === 'a4' ? { 
                                             transform: `scale(${zoom / 100})`,
-                                            transition: 'transform 0.2s ease-out'
+                                            fontFamily: '"Times New Roman", Times, serif',
+                                            marginBottom: `${(1123 * (zoom/100)) - 1123}px`
+                                        } : {
+                                            fontFamily: 'var(--font-sans), sans-serif'
                                         }}
                                     >
-                                        <div 
-                                            className="bg-white p-8 sm:p-14 shadow-2xl border border-slate-200 min-h-[297mm] text-black rounded-sm" 
-                                            style={{ fontFamily: '"Times New Roman", Times, serif' }}
-                                        >
-                                            <h1 className="text-xl sm:text-3xl font-black border-b-4 border-indigo-600 pb-5 mb-10 text-indigo-700 uppercase tracking-tight text-center leading-tight">
+                                        <article className={cn("text-slate-900", previewMode === 'mobile' ? "text-base" : "text-[20px]")}>
+                                            <h1 className={cn(
+                                                "font-black uppercase tracking-tight text-center text-indigo-700 leading-tight",
+                                                previewMode === 'mobile' ? "text-xl mb-6 text-left" : "text-[31px] mb-[38px]"
+                                            )}>
                                                 {generatedResult.title}
                                             </h1>
-                                            <div className="content-area">
-                                                <MathText content={generatedResult.content} />
+                                            
+                                            <div className={cn(
+                                                "bg-indigo-600 rounded-full",
+                                                previewMode === 'mobile' ? "h-1 mb-8" : "h-1.5 mb-[54px]"
+                                            )} />
+
+                                            <div className="content-area leading-relaxed">
+                                                <MathText content={generatedResult.content} isMobile={previewMode === 'mobile'} />
                                             </div>
-                                        </div>
+                                        </article>
                                     </motion.div>
                                 ) : !loading ? (
-                                    <div className="flex flex-col items-center justify-center h-full opacity-30 w-full">
-                                        <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+                                    <div className="flex flex-col items-center justify-center h-full opacity-20 w-full text-indigo-950">
+                                        <Loader2 className="h-12 w-12 animate-spin" />
                                     </div>
                                 ) : null}
                             </AnimatePresence>
                         </div>
+                    </main>
 
-                        {/* Action Buttons */}
-                        <div className="p-4 sm:p-8 bg-white border-t flex flex-col sm:flex-row gap-3 shrink-0 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-                            <Button variant="outline" onClick={() => setIsPreviewOpen(false)} className="h-14 sm:h-16 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest gap-2 flex-1">
-                                <ArrowLeft className="h-5 w-5" /> Kembali
-                            </Button>
-                            <Button onClick={handleSaveToDrive} disabled={saving || loading || !generatedResult} className="h-14 sm:h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-emerald-200 flex-[2]">
-                                {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} Simpan ke Google Drive
-                            </Button>
-                        </div>
-                    </div>
+                    {/* Footer Actions */}
+                    <footer className="flex-none flex flex-row gap-3 p-4 sm:p-6 bg-slate-50 border-t border-slate-200">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setIsPreviewOpen(false)}
+                            className="flex-1 h-14 rounded-2xl border-indigo-100 bg-indigo-50 text-indigo-900 font-black uppercase tracking-widest text-sm"
+                        >
+                            Kembali
+                        </Button>
+                        <Button 
+                            onClick={handleSaveToDrive} 
+                            disabled={saving || loading || !generatedResult}
+                            className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-emerald-200 gap-3"
+                        >
+                            {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
+                            Simpan ke Drive
+                        </Button>
+                    </footer>
                 </DialogContent>
             </Dialog>
 
@@ -480,12 +547,21 @@ export default function GenerateMateriClient({
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
                 
-                .content-area table { width: 100% !important; border-collapse: collapse; }
-                .content-area td, .content-area th { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
-                .content-area th { background: #f8fafc; font-weight: bold; }
+                .content-area table { width: 100% !important; border-collapse: collapse; margin: 20px 0; }
+                .content-area td, .content-area th { border: 1px solid #cbd5e1; padding: 10px; vertical-align: top; }
+                .content-area th { background: #eef2ff; font-weight: 800; }
+                
+                @media (max-width: 640px) {
+                    .content-area table {
+                        font-size: 14px;
+                        display: block;
+                        overflow-x: auto;
+                        white-space: nowrap;
+                    }
+                }
             `}</style>
         </div>
     );
 }
+
