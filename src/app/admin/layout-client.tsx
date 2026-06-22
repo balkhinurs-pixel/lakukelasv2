@@ -356,10 +356,10 @@ export default function AdminLayoutClient({
                             </div>
                             {isMonitoringExpanded && (
                                 <div className="grid grid-cols-4 gap-y-6 gap-x-2 animate-in fade-in duration-300">
-                                    <MobileGridItem href="/monitoring" iconName="solar:monitor-bold-duotone" label="Statistik" />
-                                    <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:chart-bold-duotone" label="Grafik Tren" />
-                                    <MobileGridItem href="/monitoring/teacher-attendance" iconName="solar:user-check-bold-duotone" label="Absensi" />
-                                    <MobileGridItem href="/monitoring/teacher-activity" iconName="nrk:live-activity" label="Aktivitas" />
+                                    <MobileGridItem href="/monitoring" iconName="solar:chart-2-bold-duotone" label="Statistik" />
+                                    <MobileGridItem href="/monitoring/weekly-chart" iconName="solar:graph-up-bold-duotone" label="Grafik Tren" />
+                                    <MobileGridItem href="/monitoring/teacher-attendance" iconName="solar:user-check-rounded-bold-duotone" label="Absensi" />
+                                    <MobileGridItem href="/monitoring/teacher-activity" iconName="solar:running-round-bold-duotone" label="Aktivitas" />
                                 </div>
                             )}
                         </div>
@@ -368,7 +368,7 @@ export default function AdminLayoutClient({
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] px-1">Manajemen Staf</p>
                                 <div className="grid grid-cols-4 gap-y-6 gap-x-2">
-                                    <MobileGridItem href="/admin/users" iconName="solar:users-group-rounded-bold-duotone" label="Approval" />
+                                    <MobileGridItem href="/admin/users" iconName="solar:user-check-rounded-bold-duotone" label="Approval" />
                                 </div>
                             </div>
 
@@ -378,7 +378,7 @@ export default function AdminLayoutClient({
                                     <MobileGridItem href="/admin/roster/school-year" iconName="solar:calendar-bold-duotone" label="Tahun Ajaran" />
                                     <MobileGridItem href="/admin/roster/classes" iconName="solar:school-bold-duotone" label="Kelas" />
                                     <MobileGridItem href="/admin/roster/subjects" iconName="solar:book-2-bold-duotone" label="Mapel" />
-                                    <MobileGridItem href="/admin/roster/students" iconName="solar:user-rounded-bold-duotone" label="Siswa" />
+                                    <MobileGridItem href="/admin/roster/students" iconName="solar:users-group-rounded-bold-duotone" label="Siswa" />
                                     <MobileGridItem href="/admin/roster/promotion" iconName="solar:transfer-horizontal-bold-duotone" label="Promosi" />
                                     <MobileGridItem href="/admin/roster/alumni" iconName="solar:graduation-cap-bold-duotone" label="Alumni" />
                                 </div>
@@ -390,7 +390,7 @@ export default function AdminLayoutClient({
                                     <MobileGridItem href="/admin/settings/school" iconName="solar:city-bold-duotone" label="Sekolah" />
                                     <MobileGridItem href="/admin/settings/location" iconName="solar:map-point-bold-duotone" label="Lokasi" />
                                     <MobileGridItem href="/admin/settings/whatsapp" iconName="solar:chat-round-dots-bold-duotone" label="WhatsApp" />
-                                    <MobileGridItem href="/admin/settings/schedule" iconName="ph:alarm-duotone" label="Jadwal" />
+                                    <MobileGridItem href="/admin/settings/schedule" iconName="solar:alarm-bold-duotone" label="Jadwal" />
                                     <MobileGridItem href="/admin/settings/holidays" iconName="solar:calendar-mark-bold-duotone" label="Libur" />
                                 </div>
                             </div>
