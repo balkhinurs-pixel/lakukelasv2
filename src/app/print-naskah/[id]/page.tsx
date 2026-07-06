@@ -5,10 +5,12 @@ import PrintSoalView from "./print-soal-view";
 import PrintLjkView from "./print-ljk-view";
 
 /**
- * Halaman Cetak Terisolasi Total (V73.0)
- * Memisahkan perenderan berdasarkan 'mode' untuk isolasi tata letak yang sempurna.
+ * Halaman Cetak Terisolasi (V130 - Personalized LJK Support)
  */
-export default async function NaskahPrintPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ mode?: string }> }) {
+export default async function NaskahPrintPage(props: { 
+    params: Promise<{ id: string }>, 
+    searchParams: Promise<{ mode?: string, class_id?: string }> 
+}) {
     const params = await props.params;
     const searchParams = await props.searchParams;
     const supabase = await createClient();
@@ -23,28 +25,37 @@ export default async function NaskahPrintPage(props: { params: Promise<{ id: str
         .eq('id', params.id)
         .single();
 
-    if (!doc) return <div className="p-10 text-center font-bold text-rose-600">Naskah tidak ditemukan di database.</div>;
+    if (!doc) return <div className="p-10 text-center font-bold text-rose-600">Naskah tidak ditemukan.</div>;
 
-    // 2. Ambil Butir Soal Mentah
+    // 2. Ambil Butir Soal
     const { data: rawQuestions } = await supabase
         .from('questions')
         .select('*')
         .in('id', doc.question_ids || []);
 
-    // 3. Urutkan kembali hasil query agar SAMA PERSIS dengan urutan question_ids di naskah
     const questions = doc.question_ids?.map(id => rawQuestions?.find(q => q.id === id)).filter(Boolean) || [];
 
-    // 4. Ambil Profil Sekolah untuk Kop Surat
-    const schoolProfile = await getAdminProfile();
-
-    const mode = searchParams.mode || 'soal';
-
-    // RENDER LJK (RIGID ABSOLUTE)
-    if (mode === 'ljk') {
-        return <PrintLjkView doc={doc} questions={questions} schoolProfile={schoolProfile} />;
+    // 3. Ambil Data Siswa jika Mode LJK
+    let students: any[] = [];
+    if (searchParams.mode === 'ljk') {
+        // Ambil siswa berdasarkan class_level string (fallback) atau class_id jika ada
+        const { data: studentList } = await supabase
+            .from('students')
+            .select('*')
+            .eq('class_id', doc.class_level) // Asumsi class_level menyimpan class_id
+            .eq('status', 'active')
+            .order('name');
+        
+        students = studentList || [];
     }
 
-    // RENDER SOAL / KUNCI (FLOWING)
+    const schoolProfile = await getAdminProfile();
+    const mode = searchParams.mode || 'soal';
+
+    if (mode === 'ljk') {
+        return <PrintLjkView doc={doc} questions={questions} schoolProfile={schoolProfile} students={students} />;
+    }
+
     return (
         <PrintSoalView 
             doc={doc} 

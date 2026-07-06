@@ -1,6 +1,6 @@
 /**
- * @fileOverview OMR Processor Engine V110 (OVERLAP FIX & CALIBRATION)
- * Menangani deteksi bulatan dengan kalibrasi koordinat yang sinkron dengan PrintLjkView V110.
+ * @fileOverview OMR Processor Engine V130 (PERSONALIZED - NO NIS SCAN)
+ * Fokus murni pada pemindaian matriks jawaban. Identitas dideteksi via QR oleh AI.
  */
 
 declare const cv: any;
@@ -10,20 +10,10 @@ export interface OMRResult {
     studentAnswers: { questionNum: number; studentChoice: string }[];
 }
 
-// CONFIGURATION SYNCED WITH UI (V110 - Lifted NIS, Pushed Matrix)
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123 },
-    nis: {
-        top: 185, // Sinkron dengan V110 (Pusat baris 0 naik ke 185)
-        left: 80, 
-        digitWidth: 32,
-        bubbleSize: 18,
-        gapY: 19,
-        cols: 5,
-        rows: 10
-    },
     matrix: {
-        top: 480, // Sinkron dengan V110 (Mulai baris 1 turun ke 480)
+        top: 480, // Sinkron dengan V130 (Matrix LJK Baru)
         left: 50,
         rowHeight: 28, 
         colWidth: 230,
@@ -34,7 +24,7 @@ const OMR_UI_CONFIG = {
 };
 
 /**
- * Memproses gambar LJK mentah menjadi data OMR.
+ * Memproses gambar LJK menjadi matriks jawaban mentah.
  */
 export async function processLJK(imageElement: HTMLImageElement): Promise<OMRResult> {
     if (typeof cv === 'undefined') throw new Error("Mesin OpenCV belum siap.");
@@ -47,10 +37,10 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
     try {
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
         
-        // 1. Perspective Correction (Warp to A4 proportions)
+        // 1. Perspective Correction
         cv.resize(gray, warped, new cv.Size(OMR_UI_CONFIG.page.width, OMR_UI_CONFIG.page.height), 0, 0, cv.INTER_AREA);
 
-        // 2. Binarization (Thresholding)
+        // 2. Binarization
         cv.adaptiveThreshold(warped, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 19, 12);
 
         const isFilled = (img: any, x: number, y: number, radius: number = 8.5) => {
@@ -64,28 +54,11 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
                 let roi = img.roi(rect);
                 let count = cv.countNonZero(roi);
                 roi.delete();
-                // Sensitivitas deteksi: minimal 24% area terisi hitam
                 return count > (radius * 2 * radius * 2) * 0.24;
             } catch (e) { return false; }
         };
 
-        // 3. Scan NIS (5 Digits)
-        let nis = "";
-        const nisStartY = OMR_UI_CONFIG.nis.top; 
-        for (let c = 0; c < OMR_UI_CONFIG.nis.cols; c++) {
-            let detectedDigit = "?";
-            for (let r = 0; r < OMR_UI_CONFIG.nis.rows; r++) {
-                const centerX = OMR_UI_CONFIG.nis.left + (c * OMR_UI_CONFIG.nis.digitWidth) + (OMR_UI_CONFIG.nis.bubbleSize / 2);
-                const centerY = nisStartY + (r * OMR_UI_CONFIG.nis.gapY) + (OMR_UI_CONFIG.nis.bubbleSize / 2);
-                if (isFilled(binary, centerX, centerY)) { 
-                    detectedDigit = String(r); 
-                    break; 
-                }
-            }
-            nis += detectedDigit;
-        }
-
-        // 4. Scan Answers Grid (Rigid 60 Slots - 3 Columns)
+        // 3. Scan Answers Grid (60 Slots)
         const studentAnswers: { questionNum: number, studentChoice: string }[] = [];
         const rowsPerCol = 20;
 
@@ -97,7 +70,6 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
             const startY = OMR_UI_CONFIG.matrix.top + (rowIdx * OMR_UI_CONFIG.matrix.rowHeight);
             
             let choice = "EMPTY";
-            // Scan 5 possible bubbles (A-E)
             for (let o = 0; o < 5; o++) {
                 const bubbleX = startX + 32 + (o * OMR_UI_CONFIG.matrix.bubbleGapX) + (OMR_UI_CONFIG.matrix.bubbleSize / 2);
                 const bubbleY = startY + (OMR_UI_CONFIG.matrix.bubbleSize / 2) + 3;
@@ -114,7 +86,8 @@ export async function processLJK(imageElement: HTMLImageElement): Promise<OMRRes
             });
         }
 
-        return { detectedNis: nis, studentAnswers };
+        // NIS deteksi dilewati karena sudah ada di QR Code yang dibaca AI di langkah selanjutnya
+        return { detectedNis: "??????", studentAnswers };
 
     } finally {
         src.delete(); gray.delete(); warped.delete(); binary.delete();

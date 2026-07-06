@@ -1,8 +1,7 @@
 'use server';
 /**
- * @fileOverview Flow Genkit untuk Deteksi LJK (Vision Only) - V69.0.
- * Gemini hanya bertugas sebagai scanner visual untuk mengubah bulatan menjadi JSON.
- * Logika koreksi dipindahkan ke Server Action untuk akurasi maksimal.
+ * @fileOverview Flow Genkit untuk Deteksi LJK V130 (QR Identity Support).
+ * Gemini mendeteksi identitas siswa via QR Code atau teks di bagian atas LJK.
  */
 
 import { z, genkit } from 'genkit';
@@ -16,12 +15,9 @@ const CorrectExamInputSchema = z.object({
 export type CorrectExamInput = z.infer<typeof CorrectExamInputSchema>;
 
 const CorrectExamOutputSchema = z.object({
-  detectedNis: z.string().describe("NIS 5 digit yang terdeteksi dari bulatan"),
-  detectedAnswers: z.array(z.object({
-    questionNum: z.number().describe("Nomor soal"),
-    studentChoice: z.string().describe("Huruf yang dihitamkan (A/B/C/D/E atau B/S)")
-  })).describe("Daftar jawaban mentah hasil deteksi visual"),
-  analysis: z.string().describe("Catatan kualitas foto (gelap, miring, dsb)")
+  detectedNis: z.string().describe("NIS siswa yang ditemukan dari QR Code atau teks identitas di bagian atas"),
+  detectedStudentName: z.string().describe("Nama siswa yang tertulis di kertas"),
+  analysis: z.string().describe("Catatan kualitas scan")
 });
 
 export type CorrectExamOutput = z.infer<typeof CorrectExamOutputSchema>;
@@ -51,21 +47,19 @@ export async function correctExam(input: CorrectExamInput): Promise<CorrectExamO
     output: { schema: CorrectExamOutputSchema },
     prompt: [
         { media: { url: input.photoDataUri, contentType: 'image/jpeg' } },
-        { text: `Act as a high-precision LJK/OMR Scanner.
-Your ONLY task is to convert the visual marks into JSON.
+        { text: `Act as a Professional Exam Proctor. 
+Your primary task is to identify the STUDENT IDENTITY from the provided image.
 
-1. Detect the 4 corner squares to align the perspective.
-2. EXTRACT 5-digit NIS: Look at the grid on the right. Identify which digit (0-9) is filled in each of the 5 columns.
-3. DETECT ANSWERS: Scan all numbered question rows. Identify the filled bubble (A-E or B-S).
-4. If multiple bubbles are filled in one row, mark studentChoice as "MULTIPLE".
-5. If no bubble is filled, mark studentChoice as "EMPTY".
+1. Find the QR Code on the left side. Decode it to get the NIS and Student Name.
+2. If QR is unreadable, read the printed text next to "NAMA LENGKAP" and "NIS".
+3. Return the detected NIS and full name.
 
-Return ONLY the detected data. Do NOT perform any scoring.` }
+Do NOT scan the bubbles, only identify who owns this paper.` }
     ]
   });
 
   const result = response.output;
-  if (!result) throw new Error("AI gagal membaca gambar. Pastikan 4 kotak di pojok terlihat jelas.");
+  if (!result) throw new Error("AI gagal mengidentifikasi siswa. Pastikan bagian atas LJK terlihat jelas.");
   
   return result;
 }
