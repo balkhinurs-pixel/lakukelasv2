@@ -1,5 +1,5 @@
 /**
- * @fileOverview OMR Live Detector Logic (V100)
+ * @fileOverview OMR Live Detector Logic (V101 - Relaxed Rules)
  * Uses OpenCV to find 4 anchor markers in real-time.
  */
 
@@ -32,16 +32,16 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
   let gray = new cv.Mat();
   let blurred = new cv.Mat();
   let thresh = new cv.Mat();
-  let contours = new cv.MatVector(); // Perbaikan: Gunakan MatVector sebagai pengganti TypedVector
+  let contours = new cv.MatVector();
   let hierarchy = new cv.Mat();
 
   try {
     // 1. Preprocessing
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     
-    // Cek Kecerahan - Lower threshold for better stability
+    // Cek Kecerahan - Diturunkan ke 25 agar lebih toleran di ruangan redup
     let mean = cv.mean(gray)[0];
-    const isBrightEnough = mean > 40; 
+    const isBrightEnough = mean > 25; 
 
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
     cv.adaptiveThreshold(blurred, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 11, 2);
@@ -50,21 +50,22 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
     cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
     let markers: Point[] = [];
-    const minArea = (canvas.width * canvas.height) * 0.0003; 
+    const minArea = (canvas.width * canvas.height) * 0.0002; // Mengecilkan minArea agar marker kecil tetap terdeteksi
 
     for (let i = 0; i < contours.size(); ++i) {
       let cnt = contours.get(i);
       let area = cv.contourArea(cnt);
       let peri = cv.arcLength(cnt, true);
       let approx = new cv.Mat();
-      cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+      cv.approxPolyDP(cnt, approx, 0.03 * peri, true); // Meningkatkan toleransi bentuk (0.02 -> 0.03)
 
       // Cari kotak (4 sudut)
       if (approx.rows === 4 && area > minArea) {
         let rect = cv.boundingRect(approx);
         let aspectRatio = rect.width / rect.height;
         
-        if (aspectRatio > 0.7 && aspectRatio < 1.3) {
+        // Memperluas rentang aspect ratio (0.6 - 1.4) agar marker yang terdistorsi tetap kena
+        if (aspectRatio > 0.6 && aspectRatio < 1.4) {
           markers.push({
             x: rect.x + rect.width / 2,
             y: rect.y + rect.height / 2
@@ -84,7 +85,7 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
       
       resultCorners[0] = top[0]; // TL
       resultCorners[1] = top[1]; // TR
-      resultCorners[2] = bottom[1]; // BR (sorted bottom by x)
+      resultCorners[2] = bottom[1]; // BR
       resultCorners[3] = bottom[0]; // BL
     }
 
@@ -93,7 +94,7 @@ export function detectMarkers(canvas: HTMLCanvasElement): DetectionResult {
     return {
       found: foundAll,
       corners: resultCorners,
-      message: foundAll ? (isBrightEnough ? "Posisi Terkunci..." : "Kurang Cahaya") : "Luruskan Posisi LJK",
+      message: foundAll ? "Posisi Terdeteksi" : "Luruskan Posisi LJK",
       isStable: foundAll,
       isBrightEnough
     };

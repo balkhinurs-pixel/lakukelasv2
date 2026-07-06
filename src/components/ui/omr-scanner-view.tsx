@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useOmrScanner } from "@/hooks/use-omr-scanner";
 import { cn } from "@/lib/utils";
-import { X, Camera, Sun, CheckCircle2, Zap, ArrowUp } from "lucide-react";
+import { X, Camera, Sun, CheckCircle2, Zap, ArrowUp, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
@@ -14,7 +14,7 @@ interface OmrScannerViewProps {
 }
 
 export function OmrScannerView({ onCapture, onClose, isOpen }: OmrScannerViewProps) {
-  const { videoRef, canvasRef, status, captureProgress, capturedImage } = useOmrScanner(isOpen);
+  const { videoRef, canvasRef, status, captureProgress, capturedImage, manualCapture } = useOmrScanner(isOpen);
 
   React.useEffect(() => {
     if (capturedImage) {
@@ -32,14 +32,14 @@ export function OmrScannerView({ onCapture, onClose, isOpen }: OmrScannerViewPro
         autoPlay
         playsInline
         muted
-        className="absolute inset-0 w-full h-full object-cover opacity-80"
+        className="absolute inset-0 w-full h-full object-cover opacity-90"
       />
 
       {/* Hidden processing canvas */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* 2. Scanning UI Overlay */}
-      <div className="relative z-10 w-full h-full flex flex-col items-center justify-between p-6">
+      <div className="relative z-10 w-full h-full flex flex-col items-center justify-between p-6 pb-12">
         
         {/* Top Navigation & Status */}
         <div className="w-full flex flex-col items-center gap-4">
@@ -58,53 +58,42 @@ export function OmrScannerView({ onCapture, onClose, isOpen }: OmrScannerViewPro
           
           <div className="flex items-center gap-2 text-indigo-400 font-black text-sm uppercase tracking-[0.3em] animate-pulse">
             <ArrowUp className="w-4 h-4" />
-            <span>Bagian Atas</span>
+            <span>Sisi Atas LJK</span>
           </div>
         </div>
 
-        {/* The Frame / Target Area */}
+        {/* The Frame / Target Area (Relaxed) */}
         <div className="relative w-full max-w-sm aspect-[3/4.2] flex items-center justify-center">
-            {/* 4 Square Target Boxes (Strict Visual Guidelines) */}
-            {/* Top Left */}
+            {/* 4 Square Target Boxes - Larger and clearer */}
             <div className={cn(
-                "absolute top-0 left-0 w-16 h-16 border-2 transition-all duration-300 rounded-xl",
+                "absolute top-0 left-0 w-20 h-20 border-2 transition-all duration-300 rounded-2xl",
                 status.corners[0] 
-                    ? "border-emerald-500 bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.6)] scale-110" 
-                    : "border-indigo-600 bg-indigo-600/5 shadow-inner"
+                    ? "border-emerald-500 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.8)] scale-110" 
+                    : "border-white/20 bg-white/5"
             )} />
             
-            {/* Top Right */}
             <div className={cn(
-                "absolute top-0 right-0 w-16 h-16 border-2 transition-all duration-300 rounded-xl",
+                "absolute top-0 right-0 w-20 h-20 border-2 transition-all duration-300 rounded-2xl",
                 status.corners[1] 
-                    ? "border-emerald-500 bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.6)] scale-110" 
-                    : "border-indigo-600 bg-indigo-600/5 shadow-inner"
+                    ? "border-emerald-500 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.8)] scale-110" 
+                    : "border-white/20 bg-white/5"
             )} />
             
-            {/* Bottom Right */}
             <div className={cn(
-                "absolute bottom-0 right-0 w-16 h-16 border-2 transition-all duration-300 rounded-xl",
+                "absolute bottom-0 right-0 w-20 h-20 border-2 transition-all duration-300 rounded-2xl",
                 status.corners[2] 
-                    ? "border-emerald-500 bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.6)] scale-110" 
-                    : "border-indigo-600 bg-indigo-600/5 shadow-inner"
+                    ? "border-emerald-500 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.8)] scale-110" 
+                    : "border-white/20 bg-white/5"
             )} />
             
-            {/* Bottom Left */}
             <div className={cn(
-                "absolute bottom-0 left-0 w-16 h-16 border-2 transition-all duration-300 rounded-xl",
+                "absolute bottom-0 left-0 w-20 h-20 border-2 transition-all duration-300 rounded-2xl",
                 status.corners[3] 
-                    ? "border-emerald-500 bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.6)] scale-110" 
-                    : "border-indigo-600 bg-indigo-600/5 shadow-inner"
+                    ? "border-emerald-500 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.8)] scale-110" 
+                    : "border-white/20 bg-white/5"
             )} />
 
-            {/* Scanning Laser Animation */}
-            <motion.div 
-                animate={{ top: ['2%', '98%', '2%'] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="absolute left-10 right-10 h-0.5 bg-indigo-400/30 shadow-[0_0_15px_rgba(129,140,248,0.8)] z-10"
-            />
-
-            {/* Central Progress Ring (Reference Style) */}
+            {/* Central Progress Ring */}
             <div className="relative flex items-center justify-center z-20">
                 <svg className="w-24 h-24 transform -rotate-90">
                     <circle
@@ -128,7 +117,7 @@ export function OmrScannerView({ onCapture, onClose, isOpen }: OmrScannerViewPro
                         animate={{ strokeDashoffset: 264 - (264 * captureProgress) / 100 }}
                         className={cn(
                             "transition-all duration-100",
-                            status.found ? "text-emerald-500" : "text-indigo-500"
+                            status.found ? "text-emerald-500" : "text-white"
                         )}
                         strokeLinecap="round"
                     />
@@ -138,24 +127,24 @@ export function OmrScannerView({ onCapture, onClose, isOpen }: OmrScannerViewPro
                     status.found ? "scale-110" : "scale-100"
                 )}>
                     <div className={cn(
-                        "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
-                        status.found ? "bg-emerald-500 text-white" : "bg-white text-indigo-600"
+                        "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-colors",
+                        status.found ? "bg-emerald-500 text-white" : "bg-white/10 backdrop-blur-md text-white"
                     )}>
                         {status.found ? (
                             <CheckCircle2 className="h-9 w-9 animate-in zoom-in-50" />
                         ) : (
-                            <div className="w-12 h-12 rounded-full border-4 border-indigo-100 bg-white" />
+                            <Camera className="h-8 w-8 opacity-50" />
                         )}
                     </div>
                 </div>
             </div>
         </div>
 
-        {/* Status Messaging */}
-        <div className="w-full max-w-sm mb-12 space-y-6">
+        {/* BOTTOM CONTROLS: Manual Capture Button */}
+        <div className="w-full max-w-sm space-y-8">
             <div className="text-center space-y-2">
                 <p className={cn(
-                    "text-xl font-black uppercase tracking-tight transition-colors drop-shadow-md",
+                    "text-xl font-black uppercase tracking-tight transition-colors drop-shadow-lg",
                     status.found ? "text-emerald-400" : "text-white"
                 )}>
                     {status.message}
@@ -163,17 +152,31 @@ export function OmrScannerView({ onCapture, onClose, isOpen }: OmrScannerViewPro
                 {!status.isBrightEnough && (
                     <motion.p 
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center justify-center gap-2 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm"
+                        className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center justify-center gap-2 bg-black/60 px-4 py-1.5 rounded-full backdrop-blur-md mx-auto w-fit"
                     >
-                       <Sun className="h-3.5 w-3.5" /> Ruangan Terlalu Gelap
+                       <Sun className="h-3.5 w-3.5" /> Ruangan Agak Gelap (Butuh Cahaya)
                     </motion.p>
                 )}
             </div>
 
-            <div className="flex justify-center">
+            {/* Manual Shutter Button */}
+            <div className="flex flex-col items-center gap-6">
+                <div className="relative group">
+                    <div className="absolute inset-0 bg-white/20 rounded-full blur-xl group-active:scale-150 transition-transform" />
+                    <button 
+                        onClick={manualCapture}
+                        className="relative h-20 w-20 rounded-full bg-white border-[6px] border-indigo-600 shadow-2xl flex items-center justify-center active:scale-90 transition-all overflow-hidden"
+                    >
+                        <div className="h-full w-full bg-slate-50 flex items-center justify-center">
+                            <Camera className="h-8 w-8 text-indigo-600" />
+                        </div>
+                    </button>
+                    <p className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-white/50 uppercase tracking-widest whitespace-nowrap">Potret Manual</p>
+                </div>
+
                 <Button 
-                    variant="outline" 
-                    className="rounded-2xl border-white/30 text-white bg-white/10 h-14 px-10 font-black uppercase tracking-widest backdrop-blur-md active:scale-95 hover:bg-white/20 transition-all"
+                    variant="ghost" 
+                    className="text-white/40 hover:text-white font-black uppercase tracking-widest text-[11px]"
                     onClick={onClose}
                 >
                     Batalkan

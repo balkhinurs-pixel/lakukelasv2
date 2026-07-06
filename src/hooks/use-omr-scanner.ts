@@ -22,7 +22,6 @@ export function useOmrScanner(active: boolean) {
   const stabilityCounter = useRef(0);
   const requestRef = useRef<number>(null);
   
-  // Gunakan ref untuk isCapturing agar tidak memicu re-render loop
   const isCapturingRef = useRef(false);
 
   const stopStream = useCallback(() => {
@@ -34,6 +33,20 @@ export function useOmrScanner(active: boolean) {
       cancelAnimationFrame(requestRef.current);
     }
   }, [stream]);
+
+  // Fungsi untuk pengambilan manual (Manual Snap)
+  const manualCapture = useCallback(() => {
+    if (!canvasRef.current || isCapturingRef.current) return;
+    
+    isCapturingRef.current = true;
+    setIsCapturing(true);
+    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.9);
+    setCapturedImage(dataUrl);
+
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(100);
+    }
+  }, []);
 
   const processFrame = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || !active || isCapturingRef.current) {
@@ -56,13 +69,13 @@ export function useOmrScanner(active: boolean) {
       const result = detectMarkers(canvas);
       setStatus(result);
 
-      // Logika Kunci 4 Titik & Auto-Capture
+      // Logika Kunci 4 Titik & Auto-Capture (Dipercepat dari 25 ke 12 frame)
       if (result.found && result.isBrightEnough) {
         stabilityCounter.current += 1;
-        const progress = Math.min(100, (stabilityCounter.current / 25) * 100);
+        const progress = Math.min(100, (stabilityCounter.current / 12) * 100);
         setCaptureProgress(progress);
 
-        if (stabilityCounter.current >= 25) {
+        if (stabilityCounter.current >= 12) {
           isCapturingRef.current = true;
           setIsCapturing(true);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
@@ -81,8 +94,6 @@ export function useOmrScanner(active: boolean) {
     requestRef.current = requestAnimationFrame(processFrame);
   }, [active]);
 
-  // Effect 1: Handle Hardware Stream (Kamera)
-  // Hanya berjalan saat 'active' berubah, tidak bergantung pada processFrame
   useEffect(() => {
     let currentStream: MediaStream | null = null;
 
@@ -114,7 +125,6 @@ export function useOmrScanner(active: boolean) {
     };
   }, [active]);
 
-  // Effect 2: Handle Detection Loop
   useEffect(() => {
     if (active) {
       requestRef.current = requestAnimationFrame(processFrame);
@@ -132,6 +142,7 @@ export function useOmrScanner(active: boolean) {
     status,
     captureProgress,
     capturedImage,
+    manualCapture,
     resetScanner: () => {
       setCapturedImage(null);
       setIsCapturing(false);
