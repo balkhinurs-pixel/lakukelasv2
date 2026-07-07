@@ -1,3 +1,4 @@
+
 import { createClient } from "@/lib/supabase/server";
 import { getAdminProfile } from "@/lib/data";
 import { redirect } from "next/navigation";
@@ -5,11 +6,11 @@ import PrintSoalView from "./print-soal-view";
 import PrintLjkView from "./print-ljk-view";
 
 /**
- * Halaman Cetak Terisolasi (V130 - Personalized LJK Support)
+ * Halaman Cetak Terisolasi (V131 - Optimized Student Fetching)
  */
 export default async function NaskahPrintPage(props: { 
     params: Promise<{ id: string }>, 
-    searchParams: Promise<{ mode?: string, class_id?: string }> 
+    searchParams: Promise<{ mode?: string }> 
 }) {
     const params = await props.params;
     const searchParams = await props.searchParams;
@@ -35,14 +36,14 @@ export default async function NaskahPrintPage(props: {
 
     const questions = doc.question_ids?.map(id => rawQuestions?.find(q => q.id === id)).filter(Boolean) || [];
 
-    // 3. Ambil Data Siswa jika Mode LJK
+    // 3. Ambil Data Siswa (Personalized LJK)
     let students: any[] = [];
-    if (searchParams.mode === 'ljk') {
-        // Ambil siswa berdasarkan class_level string (fallback) atau class_id jika ada
+    if (searchParams.mode === 'ljk' && doc.class_level) {
+        // class_level sekarang menyimpan class_id (V131 Logic)
         const { data: studentList } = await supabase
             .from('students')
             .select('*')
-            .eq('class_id', doc.class_level) // Asumsi class_level menyimpan class_id
+            .eq('class_id', doc.class_level) 
             .eq('status', 'active')
             .order('name');
         

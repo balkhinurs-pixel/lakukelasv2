@@ -1,6 +1,6 @@
 
 import { createClient } from "@/lib/supabase/server";
-import { getAdminProfile, getActiveSchoolYearName, getGoogleDriveIntegration } from "@/lib/data";
+import { getAdminProfile, getActiveSchoolYearName, getGoogleDriveIntegration, getClasses } from "@/lib/data";
 import BankSoalClient from "./bank-soal-client";
 
 export default async function BankSoalPage() {
@@ -9,8 +9,8 @@ export default async function BankSoalPage() {
 
     if (!user) return <div>Akses ditolak.</div>;
 
-    // Ambil data soal, profil sekolah, tahun ajaran aktif, dan integrasi drive secara bersamaan
-    const [questionsRes, schoolProfile, activeYearName, driveIntegration] = await Promise.all([
+    // Ambil data soal, profil sekolah, tahun ajaran aktif, daftar kelas, dan integrasi drive
+    const [questionsRes, schoolProfile, activeYearName, driveIntegration, teacherClasses] = await Promise.all([
         supabase
             .from('questions')
             .select('*')
@@ -18,7 +18,8 @@ export default async function BankSoalPage() {
             .order('created_at', { ascending: false }),
         getAdminProfile(),
         getActiveSchoolYearName(),
-        getGoogleDriveIntegration()
+        getGoogleDriveIntegration(),
+        getClasses() // Mengambil daftar kelas asli milik guru
     ]);
 
     const qList = questionsRes.data || [];
@@ -40,19 +41,20 @@ export default async function BankSoalPage() {
 
     const subjects = getUniqueNormalized(qList.map(q => q.subject));
     const topics = getUniqueNormalized(qList.map(q => q.topic));
-    const classes = Array.from(new Set(qList.map(q => q.kelas))).sort((a,b) => Number(a) - Number(b));
+    const classesLevels = Array.from(new Set(qList.map(q => q.kelas))).sort((a,b) => Number(a) - Number(b));
 
     return (
         <div className="p-0">
             <BankSoalClient 
                 initialQuestions={qList} 
                 uniqueSubjects={subjects}
-                uniqueClasses={classes}
+                uniqueClasses={classesLevels}
                 uniqueTopics={topics}
                 schoolProfile={schoolProfile}
                 activeSchoolYearName={activeYearName}
                 driveIntegration={driveIntegration}
                 userProvider={user.app_metadata?.provider}
+                teacherClasses={teacherClasses}
             />
         </div>
     );
