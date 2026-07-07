@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -206,7 +207,7 @@
   /* Aturan Kertas A4 Standar */
   @page {
     size: A4 portrait;
-    margin: 0; /* Margin akan ditangani secara internal atau via @page spesifik di komponen */
+    margin: 0; 
   }
 
   html, body {
@@ -235,10 +236,11 @@
   /* Reset Transform/Zoom agar hasil cetak 1:1 */
   .a4-canvas {
     width: 210mm !important;
+    height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
-    transform: none !important; /* KRITIKAL: Hilangkan efek zoom slider */
+    transform: none !important; 
     overflow: visible !important;
   }
 

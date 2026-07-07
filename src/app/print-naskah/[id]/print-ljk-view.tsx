@@ -8,10 +8,10 @@ import { Slider } from "@/components/ui/slider";
 import { QRCodeSVG } from "qrcode.react";
 
 /**
- * OMR RIGID CONFIG V133 (REFINED PROPORTIONS - PROFESSIONAL SCALING)
+ * OMR RIGID CONFIG V134 (PHYSICAL ALIGNMENT - MM PRECISION)
  */
 const OMR_UI_CONFIG = {
-    page: { width: 794, height: 1123 },
+    page: { width: '210mm', height: '297mm' },
     matrix: {
         top: 380, 
         left: 50,
@@ -108,7 +108,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                         <ArrowLeft className="h-4 w-4" /> Kembali
                     </Button>
                     <div>
-                        <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">Personalized LJK V133</p>
+                        <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">Personalized LJK V134</p>
                         <h2 className="text-sm font-black uppercase tracking-tight">QR Smart Identity</h2>
                     </div>
                 </div>
@@ -129,19 +129,19 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                 {printList.map((student: any) => (
                     <main 
                         key={student.id}
-                        className="a4-canvas bg-white relative overflow-hidden text-black" 
+                        className="a4-canvas bg-white relative text-black" 
                         style={{ 
                             transform: `scale(${zoom / 100})`, 
-                            width: '794px', 
-                            height: '1123px',
+                            width: OMR_UI_CONFIG.page.width, 
+                            height: OMR_UI_CONFIG.page.height,
                             breakAfter: 'page'
                         }}
                     >
-                        {/* Anchor Markers */}
-                        <div className="absolute top-[30px] left-[30px] w-8 h-8 bg-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
-                        <div className="absolute top-[30px] right-[30px] w-8 h-8 bg-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
-                        <div className="absolute bottom-[30px] left-[30px] w-8 h-8 bg-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
-                        <div className="absolute bottom-[30px] right-[30px] w-8 h-8 bg-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
+                        {/* Anchor Markers (Moved slightly inward for safe printing) */}
+                        <div className="absolute top-[40px] left-[40px] w-8 h-8 bg-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
+                        <div className="absolute top-[40px] right-[40px] w-8 h-8 bg-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
+                        <div className="absolute bottom-[40px] left-[40px] w-8 h-8 bg-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
+                        <div className="absolute bottom-[40px] right-[40px] w-8 h-8 bg-black" style={{ WebkitPrintColorAdjust: 'exact' }} />
 
                         {/* Header Section */}
                         <div className="absolute left-[80px] right-[80px] top-[80px] border-b-[2.5pt] border-black pb-5 flex justify-between items-center">
@@ -158,9 +158,8 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                             </div>
                         </div>
 
-                        {/* QR & Identity Section - V133 Refined Scaling */}
+                        {/* QR & Identity Section */}
                         <div className="absolute left-[80px] right-[80px] top-[180px] flex gap-10 items-start">
-                            {/* QR CODE - Identitas Terenkripsi (Slightly Smaller) */}
                             <div className="p-3 border-2 border-black rounded-3xl bg-white shadow-sm shrink-0">
                                 <QRCodeSVG 
                                     value={JSON.stringify({ n: student.name, s: student.id, i: student.nis })}
@@ -171,7 +170,6 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                                 <p className="text-[6.5pt] font-black text-center mt-2 uppercase tracking-tighter opacity-70">Scan QR Identity</p>
                             </div>
 
-                            {/* Personalized Data (Refined Font Sizes) */}
                             <div className="flex-1 space-y-4 pt-1">
                                 <div className="space-y-0.5">
                                     <p className="text-[8pt] font-black uppercase text-slate-400 tracking-widest">Nama Lengkap Peserta</p>
