@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { QRCodeSVG } from "qrcode.react";
 
 /**
- * OMR RIGID CONFIG V132 (REFINED LAYOUT - CLEAN CLASS)
+ * OMR RIGID CONFIG V133 (REFINED PROPORTIONS - PROFESSIONAL SCALING)
  */
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123 },
@@ -108,7 +108,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                         <ArrowLeft className="h-4 w-4" /> Kembali
                     </Button>
                     <div>
-                        <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">Personalized LJK V132</p>
+                        <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">Personalized LJK V133</p>
                         <h2 className="text-sm font-black uppercase tracking-tight">QR Smart Identity</h2>
                     </div>
                 </div>
@@ -158,40 +158,40 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                             </div>
                         </div>
 
-                        {/* QR & Identity Section */}
+                        {/* QR & Identity Section - V133 Refined Scaling */}
                         <div className="absolute left-[80px] right-[80px] top-[180px] flex gap-10 items-start">
-                            {/* QR CODE - Identitas Terenkripsi */}
-                            <div className="p-3 border-2 border-black rounded-3xl bg-white shadow-sm">
+                            {/* QR CODE - Identitas Terenkripsi (Slightly Smaller) */}
+                            <div className="p-3 border-2 border-black rounded-3xl bg-white shadow-sm shrink-0">
                                 <QRCodeSVG 
                                     value={JSON.stringify({ n: student.name, s: student.id, i: student.nis })}
-                                    size={110}
+                                    size={95}
                                     level="H"
                                     includeMargin={false}
                                 />
-                                <p className="text-[7pt] font-black text-center mt-2 uppercase tracking-tighter">Scan QR Identity</p>
+                                <p className="text-[6.5pt] font-black text-center mt-2 uppercase tracking-tighter opacity-70">Scan QR Identity</p>
                             </div>
 
-                            {/* Personalized Data */}
-                            <div className="flex-1 space-y-5 pt-2">
-                                <div className="space-y-1">
-                                    <p className="text-[9pt] font-black uppercase text-slate-400 tracking-widest">Nama Lengkap Peserta</p>
-                                    <p className="text-2xl font-black uppercase tracking-tight border-b-2 border-slate-100 pb-1">{student.name}</p>
+                            {/* Personalized Data (Refined Font Sizes) */}
+                            <div className="flex-1 space-y-4 pt-1">
+                                <div className="space-y-0.5">
+                                    <p className="text-[8pt] font-black uppercase text-slate-400 tracking-widest">Nama Lengkap Peserta</p>
+                                    <p className="text-lg font-black uppercase tracking-tight border-b-2 border-slate-100 pb-0.5">{student.name}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-8">
-                                    <div className="space-y-1">
-                                        <p className="text-[9pt] font-black uppercase text-slate-400 tracking-widest">Nomor Induk (NIS)</p>
-                                        <p className="text-xl font-black tracking-widest border-b-2 border-slate-100 pb-1">{student.nis}</p>
+                                    <div className="space-y-0.5">
+                                        <p className="text-[8pt] font-black uppercase text-slate-400 tracking-widest">Nomor Induk (NIS)</p>
+                                        <p className="text-base font-black tracking-widest border-b-2 border-slate-100 pb-0.5">{student.nis}</p>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[9pt] font-black uppercase text-slate-400 tracking-widest">Ruang / Kelas</p>
-                                        <p className="text-xl font-black uppercase border-b-2 border-slate-100 pb-1">{actualClassName}</p>
+                                    <div className="space-y-0.5">
+                                        <p className="text-[8pt] font-black uppercase text-slate-400 tracking-widest">Ruang / Kelas</p>
+                                        <p className="text-base font-black uppercase border-b-2 border-slate-100 pb-0.5">{actualClassName}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Instructions */}
-                        <div className="absolute left-[80px] right-[80px] top-[375px] bg-slate-50 p-4 rounded-2xl border border-slate-200 text-[8pt] leading-snug">
+                        <div className="absolute left-[80px] right-[80px] top-[350px] bg-slate-50 p-4 rounded-2xl border border-slate-200 text-[8pt] leading-snug">
                              <p className="font-black uppercase mb-1 flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-indigo-600" /> Petunjuk Pengerjaan:</p>
                              <ul className="list-disc pl-5 font-bold text-slate-600">
                                  <li>Gunakan pensil 2B atau pulpen hitam. Hitamkan bulatan secara penuh.</li>
