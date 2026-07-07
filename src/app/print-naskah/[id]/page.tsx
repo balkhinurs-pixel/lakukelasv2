@@ -6,7 +6,7 @@ import PrintSoalView from "./print-soal-view";
 import PrintLjkView from "./print-ljk-view";
 
 /**
- * Halaman Cetak Terisolasi (V131 - Optimized Student Fetching)
+ * Halaman Cetak Terisolasi (V132 - Enhanced Class Name Fetching)
  */
 export default async function NaskahPrintPage(props: { 
     params: Promise<{ id: string }>, 
@@ -36,10 +36,20 @@ export default async function NaskahPrintPage(props: {
 
     const questions = doc.question_ids?.map(id => rawQuestions?.find(q => q.id === id)).filter(Boolean) || [];
 
-    // 3. Ambil Data Siswa (Personalized LJK)
+    // 3. Ambil Nama Kelas yang Sebenarnya
+    let actualClassName = doc.class_level || "Umum";
+    if (doc.class_level && doc.class_level.length > 20) { // Check if it looks like a UUID
+        const { data: classData } = await supabase
+            .from('classes')
+            .select('name')
+            .eq('id', doc.class_level)
+            .maybeSingle();
+        if (classData) actualClassName = classData.name;
+    }
+
+    // 4. Ambil Data Siswa (Personalized LJK)
     let students: any[] = [];
     if (searchParams.mode === 'ljk' && doc.class_level) {
-        // class_level sekarang menyimpan class_id (V131 Logic)
         const { data: studentList } = await supabase
             .from('students')
             .select('*')
@@ -54,7 +64,15 @@ export default async function NaskahPrintPage(props: {
     const mode = searchParams.mode || 'soal';
 
     if (mode === 'ljk') {
-        return <PrintLjkView doc={doc} questions={questions} schoolProfile={schoolProfile} students={students} />;
+        return (
+            <PrintLjkView 
+                doc={doc} 
+                questions={questions} 
+                schoolProfile={schoolProfile} 
+                students={students} 
+                actualClassName={actualClassName}
+            />
+        );
     }
 
     return (
@@ -63,6 +81,7 @@ export default async function NaskahPrintPage(props: {
             questions={questions} 
             schoolProfile={schoolProfile} 
             isKunci={mode === 'kunci'} 
+            actualClassName={actualClassName}
         />
     );
 }

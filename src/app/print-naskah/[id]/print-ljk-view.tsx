@@ -1,18 +1,19 @@
+
 "use client";
 
 import * as React from "react";
-import { Printer, ArrowLeft, ZoomIn, ZoomOut, UserCheck, ShieldCheck } from "lucide-react";
+import { Printer, ArrowLeft, ZoomIn, ZoomOut, UserCheck, ShieldCheck, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { QRCodeSVG } from "qrcode.react";
 
 /**
- * OMR RIGID CONFIG V130 (PERSONALIZED - NO NIS GRID)
+ * OMR RIGID CONFIG V132 (REFINED LAYOUT - CLEAN CLASS)
  */
 const OMR_UI_CONFIG = {
     page: { width: 794, height: 1123 },
     matrix: {
-        top: 380, // Dinaikkan karena grid NIS dihapus
+        top: 380, 
         left: 50,
         rowHeight: 28, 
         colWidth: 230,
@@ -36,7 +37,7 @@ const getQuestionRowSpan = (q: any) => {
     return lines?.length > 0 ? lines.length : 4; 
 };
 
-export default function PrintLjkView({ doc, questions, schoolProfile, students = [] }: any) {
+export default function PrintLjkView({ doc, questions, schoolProfile, students = [], actualClassName }: any) {
     const [zoom, setZoom] = React.useState(100);
     const handlePrint = () => window.print();
     const handleClose = () => window.close();
@@ -97,7 +98,6 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
         );
     };
 
-    // Jika tidak ada siswa, buat satu halaman kosong (Generic)
     const printList = students.length > 0 ? students : [{ id: 'generic', name: '...................................', nis: '..........' }];
 
     return (
@@ -108,7 +108,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                         <ArrowLeft className="h-4 w-4" /> Kembali
                     </Button>
                     <div>
-                        <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">Personalized LJK V130</p>
+                        <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-1">Personalized LJK V132</p>
                         <h2 className="text-sm font-black uppercase tracking-tight">QR Smart Identity</h2>
                     </div>
                 </div>
@@ -154,7 +154,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                             </div>
                             <div className="text-right">
                                 <h2 className="text-lg font-black uppercase underline decoration-2 underline-offset-4">LJK UJIAN PERSONAL</h2>
-                                <p className="text-[9pt] font-black mt-1 uppercase text-indigo-600">{doc.subject} | KELAS {doc.class_level}</p>
+                                <p className="text-[9pt] font-black mt-1 uppercase text-indigo-600">{doc.subject} | KELAS {actualClassName}</p>
                             </div>
                         </div>
 
@@ -184,7 +184,7 @@ export default function PrintLjkView({ doc, questions, schoolProfile, students =
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-[9pt] font-black uppercase text-slate-400 tracking-widest">Ruang / Kelas</p>
-                                        <p className="text-xl font-black uppercase border-b-2 border-slate-100 pb-1">{doc.class_level}</p>
+                                        <p className="text-xl font-black uppercase border-b-2 border-slate-100 pb-1">{actualClassName}</p>
                                     </div>
                                 </div>
                             </div>
