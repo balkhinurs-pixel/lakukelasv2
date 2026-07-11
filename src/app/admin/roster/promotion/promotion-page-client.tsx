@@ -36,6 +36,7 @@ import type { Class, Student } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { moveStudents, graduateStudents, updateStudentsStatus } from "@/lib/actions";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -327,7 +328,7 @@ export default function PromotionPageClient({
                     <CardDescription className="font-medium">Pindahkan siswa secara kolektif dan buat arsip riwayat kelasnya.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-8 items-start p-8 pt-4">
-                    {/* Source Class Column */}
+                    {/* Source Class Column --- */}
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">1. Pilih Kelas Asal</Label>
@@ -349,7 +350,7 @@ export default function PromotionPageClient({
                             />
                         )}
                     </div>
-                    {/* Destination Class Column */}
+                    {/* Destination Class Column --- */}
                      <div className="space-y-4">
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">2. Pilih Kelas Tujuan</Label>
@@ -373,7 +374,7 @@ export default function PromotionPageClient({
                                         className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all active:scale-95 gap-3"
                                         disabled={loading || selectedStudentIds.size === 0 || !destinationClassId}
                                     >
-                                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ArrowRight className="mr-2 h-5 w-5" />}
+                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
                                         Proses Kenaikan ({selectedStudentIds.size}) Siswa
                                     </Button>
                                 </AlertDialogTrigger>
@@ -497,16 +498,16 @@ export default function PromotionPageClient({
                                         className="w-full h-14 rounded-2xl font-black uppercase tracking-widest bg-rose-600 hover:bg-rose-700 text-white shadow-xl shadow-rose-100 transition-all active:scale-95 gap-3"
                                         disabled={loading || selectedGraduationIds.size === 0}
                                     >
-                                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <GraduationCap className="mr-2 h-5 w-5" />}
+                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GraduationCap className="mr-2 h-5 w-5" />}
                                         Luluskan ({selectedGraduationIds.size}) Siswa Terpilih
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="rounded-[2.5rem] border-0 shadow-2xl p-10">
                                     <AlertDialogHeader className="space-y-4">
-                                        <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center">
+                                        <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mx-auto">
                                             <GraduationCap className="h-8 w-8" />
                                         </div>
-                                        <AlertDialogTitle className="text-2xl font-black tracking-tight text-center text-rose-600">Konfirmasi Kelulusan</AlertDialogTitle>
+                                        <AlertDialogTitle className="text-2xl font-black text-center tracking-tight text-rose-600">Konfirmasi Kelulusan</AlertDialogTitle>
                                         <AlertDialogDescription className="space-y-4 text-center">
                                             <p className="font-medium text-slate-600 text-base">Anda akan meluluskan <span className="font-black text-slate-900">{selectedGraduationIds.size} siswa</span>. Siswa ini akan dipindahkan ke daftar Alumni.</p>
                                             <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 text-rose-800 text-xs font-bold leading-relaxed text-left">
