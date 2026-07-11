@@ -1,39 +1,38 @@
 'use server';
 /**
- * @fileOverview Flow Genkit untuk pembuatan Modul Ajar (RPP) Profesional.
- * Mendukung Kurikulum Merdeka (Kemdikbud) dan Kurikulum Kemenag (KBC & PPRA).
- * Output dioptimalkan menggunakan tabel Markdown untuk tampilan standar kedinasan.
- * Menghasilkan prompt visual LKPD yang disesuaikan dengan jenjang kelas.
+ * @fileOverview Flow Genkit untuk pembuatan Modul Ajar Terintegrasi.
+ * Versi 1.x dengan Agent Awareness.
  */
 
 import { z, genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { createClient } from '@/lib/supabase/server';
+import { LAKUKELAS_SYSTEM_PROMPT } from '../system-prompt';
 
 const ModulAjarInputSchema = z.object({
-  kurikulumPath: z.enum(['dikbud', 'kemenag']).describe('Jalur kurikulum (Kemdikbud atau Kemenag)'),
-  jenjang: z.string().describe('Jenjang sekolah (SD, SMP, SMA, dll)'),
-  kelas: z.string().describe('Tingkat kelas'),
-  subject: z.string().describe('Mata pelajaran'),
-  topic: z.string().describe('Materi pokok atau Bab'),
-  alokasiWaktu: z.string().describe('Jumlah Jam Pelajaran (JP)'),
-  jumlahPertemuan: z.number().default(1).describe('Jumlah pertemuan yang direncanakan'),
-  profilPancasila: z.array(z.string()).describe('Dimensi Profil Pelajar Pancasila'),
-  profilRahmatanLilAlamin: z.array(z.string()).optional().describe('Dimensi Profil Pelajar Rahmatan Lil Alamin (Khusus Kemenag)'),
-  modelPembelajaran: z.string().describe('Model seperti PBL, PjBL, atau Inkuiri'),
-  saranaPrasarana: z.string().optional().describe('Fasilitas pendukung di sekolah'),
-  targetSiswa: z.string().optional().describe('Karakteristik peserta didik'),
-  atpContent: z.string().optional().describe('Konten referensi CP & ATP'),
-  pedagogicalPractice: z.string().optional().describe('Praktik pedagogis utama'),
-  deepLearningType: z.string().optional().describe('Kategori Deep Learning (Mindful, Meaningful, Joyful)'),
+  kurikulumPath: z.enum(['dikbud', 'kemenag']),
+  jenjang: z.string(),
+  kelas: z.string(),
+  subject: z.string(),
+  topic: z.string(),
+  alokasiWaktu: z.string(),
+  jumlahPertemuan: z.number().default(1),
+  profilPancasila: z.array(z.string()),
+  profilRahmatanLilAlamin: z.array(z.string()).optional(),
+  modelPembelajaran: z.string(),
+  saranaPrasarana: z.string().optional(),
+  targetSiswa: z.string().optional(),
+  atpContent: z.string().optional(),
+  pedagogicalPractice: z.string().optional(),
+  deepLearningType: z.string().optional(),
 });
 
 export type ModulAjarInput = z.infer<typeof ModulAjarInputSchema>;
 
 const ModulAjarOutputSchema = z.object({
-  title: z.string().describe('Judul Modul Ajar'),
-  content: z.string().describe('Konten lengkap Modul Ajar dalam format Markdown dengan Tabel'),
-  lkpdPrompt: z.string().describe('Prompt visual detail dalam bahasa Inggris untuk generator gambar AI (nanobana) guna membuat LKPD yang estetik, dengan konten teks tetap berbahasa Indonesia.'),
+  title: z.string(),
+  content: z.string().describe('Markdown dengan Tabel untuk Identitas & Kegiatan'),
+  lkpdPrompt: z.string(),
 });
 
 export type ModulAjarOutput = z.infer<typeof ModulAjarOutputSchema>;
@@ -42,7 +41,7 @@ export async function generateModulAjar(input: ModulAjarInput): Promise<ModulAja
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) throw new Error("Sesi login berakhir.");
+  if (!user) throw new Error("Sesi berakhir.");
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -50,71 +49,27 @@ export async function generateModulAjar(input: ModulAjarInput): Promise<ModulAja
     .eq('id', user.id)
     .single();
 
-  if (!profile?.gemini_api_key) {
-    throw new Error("API Key Gemini belum diatur di Pengaturan > Integrasi.");
-  }
+  if (!profile?.gemini_api_key) throw new Error("API Key belum diatur.");
 
-  const selectedModel = profile.ai_model || 'gemini-2.5-flash';
-
+  const selectedModel = profile.ai_model || 'gemini-1.5-flash';
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
-    model: googleAI.model(selectedModel),
   });
 
-  const isKemenag = input.kurikulumPath === 'kemenag';
-
   const response = await ai.generate({
+    model: googleAI.model(selectedModel),
+    system: LAKUKELAS_SYSTEM_PROMPT,
     output: { schema: ModulAjarOutputSchema },
-    prompt: `Anda adalah pakar pengembang kurikulum senior di Indonesia (Widyaiswara) yang sangat ahli dalam menyusun Modul Ajar Kurikulum Merdeka yang rapi, sistematis, dan profesional.
-
-Tugas Anda adalah menyusun "Modul Ajar" (RPP) yang sangat detail untuk ${input.jumlahPertemuan} kali pertemuan.
-
-KONTEKS KURIKULUM:
-- Jalur: ${isKemenag ? 'KEMENTERIAN AGAMA (Kemenag) - Fokus pada Kurikulum Berbasis Cinta (KBC)' : 'KEMDIKBUDRISTEK (Kemdikbud)'}
-- Nama Sekolah: ${profile.school_name || 'Sekolah Terkait'}
-- Nama Guru: ${profile.full_name}
-- Mata Pelajaran: ${input.subject}
-- Kelas: ${input.kelas} (${input.jenjang})
-- Materi/Bab: ${input.topic}
-- Alokasi Waktu: ${input.alokasiWaktu}
-- Model Pembelajaran: ${input.modelPembelajaran}
-- Profil Pelajar Pancasila: ${input.profilPancasila.join(', ')}
-${isKemenag ? `- Profil Pelajar Rahmatan Lil Alamin (PPRA): ${input.profilRahmatanLilAlamin?.join(', ')}` : ''}
-- Fokus Praktik Pedagogis: ${input.pedagogicalPractice}
-- Pendekatan Deep Learning: ${input.deepLearningType}
-
-${input.atpContent ? `REFERENSI ALUR TUJUAN PEMBELAJARAN (WAJIB DISINKRONKAN):
-${input.atpContent}` : ''}
-
-ATURAN FORMAT (SANGAT PENTING):
-1. GUNAKAN TABEL MARKDOWN untuk bagian "Informasi Umum" (Identitas) dan "Kegiatan Pembelajaran".
-2. GUNAKAN HURUF NORMAL (Sentence case). JANGAN kapital semua.
-3. TUJUAN PEMBELAJARAN: Wajib mengandung unsur ABCD (Audience, Behavior, Condition, Degree).
-4. KEGIATAN PEMBELAJARAN: Harus merinci langkah per pertemuan (Pertemuan 1, 2, dst). 
-   - Masukkan tabel kegiatan dengan kolom: Tahap, Kegiatan (Detail Guru & Siswa), Alokasi Waktu.
-   - Integrasikan pilar Deep Learning (${input.deepLearningType}) dan praktik ${input.pedagogicalPractice} secara eksplisit dalam instruksi guru.
-
-STRUKTUR MODUL:
-1. INFORMASI UMUM: (Gunakan TABEL untuk identitas guru, sekolah, kompetensi awal, sarana, dll).
-2. KOMPONEN INTI: Tujuan Pembelajaran, Pemahaman Bermakna, Pertanyaan Pemantik.
-3. KEGIATAN PEMBELAJARAN (DETAIL PER PERTEMUAN):
-   Buat TABEL untuk setiap pertemuan. Sertakan detail Pendahuluan, Inti (sesuai sintaks model ${input.modelPembelajaran}), dan Penutup.
-4. ASESMEN: (Gunakan TABEL untuk kriteria penilaian formatif dan sumatif).
-5. LAMPIRAN: Ringkasan LKPD, Bahan Bacaan, Glosarium, Daftar Pustaka.
-
-PROMPT LKPD VISUAL (OUTPUT FIELD lkpdPrompt):
-Buatlah satu prompt dalam bahasa Inggris yang sangat detail untuk generator gambar AI.
-INSTRUKSI KHUSUS PROMPT:
-1. Format: Lembar kerja ukuran A4 vertikal yang estetik dan bersih.
-2. Konten Teks: Pastikan Anda menuliskan teks instruksi dan judul di dalam gambar harus menggunakan Bahasa Indonesia yang mudah dimengerti.
-3. Gaya Visual Sesuai Kelas:
-   - Jika SD (Kelas 1-6): Gunakan gaya "Colorful educational worksheet for kids, cute illustrations, friendly characters, soft colors, playful vibe".
-   - Jika SMP/SMA (Kelas 7-12): Gunakan gaya "Modern infographic style, professional academic layout, clean diagrams, minimalist typography, mature educational aesthetic".
-4. Topik Spesifik: Visual harus relevan dengan materi ${input.topic}.
-5. Detail Tambahan: Minimalist borders, organized spaces for student names, and sections for writing or activities.`,
+    prompt: `Tugas: Susun Modul Ajar profesional untuk ${profile.school_name || 'Sekolah'} oleh ${profile.full_name}.
+    Konteks: ${input.subject} Kelas ${input.kelas}, Materi: ${input.topic}.
+    Kurikulum: ${input.kurikulumPath === 'kemenag' ? 'Kemenag (KBC)' : 'Kemdikbud'}.
+    Metode: ${input.deepLearningType} dengan praktik ${input.pedagogicalPractice}.
+    ${input.atpContent ? `Referensi ATP: ${input.atpContent}` : ''}
+    
+    Wajib menggunakan tabel Markdown untuk identitas dan langkah pembelajaran per pertemuan.`
   });
 
   const result = response.output;
-  if (!result) throw new Error("Gagal menghasilkan modul. Periksa kuota API Key Anda.");
+  if (!result) throw new Error("Gagal merumuskan modul.");
   return result;
 }

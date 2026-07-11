@@ -1,12 +1,13 @@
 'use server';
 /**
  * @fileOverview Flow Genkit untuk pembuatan konten pendidikan (RPP & Soal).
- * Menggunakan API Key pribadi dan model pilihan guru yang disimpan di profil database.
+ * Dimodernisasi ke Genkit 1.x dengan Agent Awareness LakuKelas.
  */
 
 import { z, genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { createClient } from '@/lib/supabase/server';
+import { LAKUKELAS_SYSTEM_PROMPT } from '../system-prompt';
 
 const EducationContentInputSchema = z.object({
   type: z.enum(['rpp', 'soal']).describe('Jenis dokumen yang ingin dibuat'),
@@ -30,9 +31,8 @@ export async function generateEducationContent(input: EducationContentInput): Pr
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) throw new Error("Sesi login berakhir. Harap masuk kembali.");
+  if (!user) throw new Error("Sesi berakhir.");
 
-  // Ambil API Key dan preferensi model dari profil guru
   const { data: profile } = await supabase
     .from('profiles')
     .select('gemini_api_key, ai_model')
@@ -40,56 +40,31 @@ export async function generateEducationContent(input: EducationContentInput): Pr
     .single();
 
   if (!profile?.gemini_api_key) {
-    throw new Error("API Key Gemini belum diatur. Harap isi di menu Pengaturan > Integrasi.");
+    throw new Error("API Key belum diatur di Pengaturan.");
   }
 
-  // Gunakan model pilihan user atau fallback ke 2.5-flash jika belum diatur
-  const selectedModel = profile.ai_model || 'gemini-2.5-flash';
+  const selectedModel = profile.ai_model || 'gemini-1.5-flash';
 
-  // Inisialisasi instance Genkit lokal dengan model dinamis
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
-    model: googleAI.model(selectedModel),
   });
 
   const response = await ai.generate({
+    model: googleAI.model(selectedModel),
+    system: LAKUKELAS_SYSTEM_PROMPT,
     output: { schema: EducationContentOutputSchema },
-    prompt: `Anda adalah asisten AI guru profesional di Indonesia yang ahli dalam kurikulum terbaru (Kurikulum Merdeka).
-Tugas Anda adalah membantu guru membuat dokumen pembelajaran yang sangat detail, sistematis, dan siap pakai.
-
-${input.type === 'rpp' ? `
-Buatlah Modul Ajar / RPP (Rencana Pelaksanaan Pembelajaran) yang komprehensif untuk:
-- Mata Pelajaran: ${input.subject}
+    prompt: `Tugas: Buat dokumen ${input.type === 'rpp' ? 'Modul Ajar / RPP' : 'Bank Soal'} profesional.
+Detail Input:
+- Mapel: ${input.subject}
 - Kelas: ${input.classLevel}
-- Materi: ${input.topic}
-- Instruksi Khusus: ${input.additionalInfo || 'Tidak ada'}
+- Topik: ${input.topic}
+- Instruksi Tambahan: ${input.additionalInfo || 'Tidak ada'}
+${input.type === 'soal' ? `- Jumlah: ${input.count || 10} soal` : ''}
 
-Struktur Dokumen harus mengikuti urutan berikut:
-1. INFORMASI UMUM: Identitas (Nama Guru, Sekolah, Tahun), Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana, Target Peserta Didik, Model Pembelajaran yang digunakan.
-2. KOMPONEN INTI: Tujuan Pembelajaran, Pemahaman Bermakna, Pertanyaan Pemantik, Persiapan Pembelajaran.
-3. KEGIATAN PEMBELAJARAN: Langkah-langkah detail (Pendahuluan, Inti - menggunakan sintaks model tertentu, Penutup).
-4. ASESMEN: Rencana Asesmen Formatif dan Sumatif.
-5. LAMPIRAN: Lembar Kerja Peserta Didik (LKPD), Bahan Bacaan Guru & Siswa, Glosarium, Daftar Pustaka.
-
-Gunakan bahasa yang formal, inspiratif, dan mudah dipahami.` : `
-Buatlah Bank Soal yang mendalam dan bervariasi untuk:
-- Mata Pelajaran: ${input.subject}
-- Kelas: ${input.classLevel}
-- Materi: ${input.topic}
-- Jumlah Soal: ${input.count || 10} soal
-- Instruksi Khusus: ${input.additionalInfo || 'Tidak ada'}
-
-Struktur Dokumen harus mencakup:
-1. KISI-KISI SINGKAT: Capaian Pembelajaran, Alur Tujuan Pembelajaran, dan Level Kognitif (C1-C6).
-2. PILIHAN GANDA: Sajikan ${input.count || 10} soal pilihan ganda dengan 5 opsi (A, B, C, D, E). Sertakan kunci jawaban di bawah setiap soal.
-3. SOAL ESAI: Sajikan 5 soal esai yang melatih kemampuan berpikir kritis (HOTS). Sertakan pedoman penskoran/rubrik penilaian untuk setiap soal esai.
-
-Pastikan soal kontekstual dengan kehidupan sehari-hari di Indonesia.`}
-
-Gunakan format Markdown yang rapi dengan heading, list, dan tabel jika diperlukan agar mudah dibaca di Google Docs.`,
+Pastikan struktur dokumen lengkap, menggunakan tabel Markdown untuk identitas, dan rumus menggunakan LaTeX.`
   });
 
   const result = response.output;
-  if (!result) throw new Error("Gagal menghasilkan konten AI. Pastikan API Key Anda valid dan memiliki sisa kuota.");
+  if (!result) throw new Error("AI gagal merespon. Periksa kuota API Key Anda.");
   return result;
 }
