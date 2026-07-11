@@ -1,6 +1,7 @@
 'use server';
 /**
- * @fileOverview Flow Genkit untuk pembuatan ilustrasi soal menggunakan Imagen 4.
+ * @fileOverview Flow Genkit untuk pembuatan ilustrasi soal menggunakan Gemini 2.5 Flash Image.
+ * Menggunakan model multimodal untuk efisiensi kuota gratis di Google AI Studio.
  */
 
 import { z, genkit } from 'genkit';
@@ -33,25 +34,33 @@ export async function generateQuestionImage(input: GenerateImageInput): Promise<
     .single();
 
   if (!profile?.gemini_api_key) {
-    throw new Error("API Key Gemini diperlukan untuk akses Imagen.");
+    throw new Error("API Key Gemini diperlukan di Pengaturan.");
   }
 
   const ai = genkit({
     plugins: [googleAI({ apiKey: profile.gemini_api_key })],
   });
 
-  // Generate Image using Imagen 4
+  // Generate Image using Gemini 2.5 Flash Image (Nano-Banana)
+  // Penting: Wajib menyertakan TEXT dan IMAGE dalam responseModalities
   const response = await ai.generate({
-    model: 'googleai/imagen-4.0-fast-generate-001',
-    prompt: `Educational illustration for a school question about: ${input.questionText}. 
+    model: googleAI.model('gemini-2.5-flash-image'),
+    config: {
+      responseModalities: ['TEXT', 'IMAGE'],
+    },
+    prompt: `Act as an educational illustrator. Generate a professional, clean 2D 
+    illustration for a school exam question. 
+    
+    Topic: ${input.questionText}. 
     Subject: ${input.subject}. 
-    Style: Professional clean 2D educational illustration, bright lighting, high quality, suitable for exam paper. 
-    Avoid text in the image.`,
+    
+    Style: Minimalist educational drawing, suitable for print on A4 paper, bright colors, 
+    no text inside the image, simple for students to understand.`,
   });
 
   const media = response.media;
   if (!media || !media.url) {
-    throw new Error("AI gagal menghasilkan gambar. Periksa kuota Imagen Anda.");
+    throw new Error("AI gagal menghasilkan gambar. Periksa kuota Gemini 2.5 Anda.");
   }
 
   return { imageUrl: media.url };
