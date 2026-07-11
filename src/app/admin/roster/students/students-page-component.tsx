@@ -41,7 +41,23 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UserPlus, Download, Upload, FileText, Sparkles, Edit, UserRoundCog, Loader2, CheckCircle, XCircle, School } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+    UserPlus, 
+    Download, 
+    Upload, 
+    FileText, 
+    Sparkles, 
+    Edit, 
+    UserRoundCog, 
+    Loader2, 
+    CheckCircle, 
+    XCircle, 
+    School, 
+    ClipboardPaste,
+    FileUp,
+    Info
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, Class } from "@/lib/types";
 import Link from "next/link";
@@ -190,8 +206,10 @@ export default function StudentsPageComponent({
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = React.useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
   const [editingStudent, setEditingStudent] = React.useState<Student | null>(null);
   const [importReport, setImportReport] = React.useState<ImportReport | null>(null);
+  const [pastedCsv, setPastedCsv] = React.useState("");
   
   const [loading, setLoading] = React.useState(false);
   
@@ -269,51 +287,48 @@ export default function StudentsPageComponent({
       saveAs(blob, `daftar_siswa_${className}.csv`);
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const processDataToImport = async (parsedData: any[]) => {
+    const studentsToImport = parsedData.map(row => {
+        const genderRaw = (row.gender || '').toUpperCase();
+        const gender = genderRaw === 'L' ? 'Laki-laki' : genderRaw === 'P' ? 'Perempuan' : null;
+        return {
+            name: row.name,
+            nis: row.nis,
+            gender: gender
+        };
+    }).filter(s => s.name && s.nis && s.gender);
+
+    if (studentsToImport.length === 0) {
+        toast({ title: "Gagal Impor", description: "Data tidak valid atau tidak berisi data yang benar. Pastikan kolom adalah nis, name, gender (L/P).", variant: "destructive" });
+        setLoading(false);
+        return;
+    }
+
+    const result = await importStudents(selectedClassId, studentsToImport as { name: string, nis: string, gender: 'Laki-laki' | 'Perempuan' }[]);
+    
+    setLoading(false);
+    if (result.success && result.results) {
+        setImportReport(result.results);
+        setIsImportDialogOpen(false);
+        setIsReportDialogOpen(true);
+        if (result.results.successCount > 0) {
+            router.refresh();
+        }
+    } else {
+        toast({ title: "Gagal Impor", description: result.error, variant: "destructive" });
+    }
+  }
 
   const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (!file) {
-          return;
-      }
+      if (!file) return;
       setLoading(true);
 
       Papa.parse(file, {
           header: true,
           skipEmptyLines: true,
-          complete: async (results) => {
-              const parsedData = results.data as any[];
-              
-              const studentsToImport = parsedData.map(row => {
-                  const genderRaw = (row.gender || '').toUpperCase();
-                  const gender = genderRaw === 'L' ? 'Laki-laki' : genderRaw === 'P' ? 'Perempuan' : null;
-                  return {
-                      name: row.name,
-                      nis: row.nis,
-                      gender: gender
-                  };
-              }).filter(s => s.name && s.nis && s.gender);
-
-              if (studentsToImport.length === 0) {
-                  toast({ title: "Gagal Impor", description: "File CSV tidak valid atau tidak berisi data yang benar. Pastikan kolom adalah nis, name, gender (L/P).", variant: "destructive" });
-                  setLoading(false);
-                  return;
-              }
-
-              const result = await importStudents(selectedClassId, studentsToImport as { name: string, nis: string, gender: 'Laki-laki' | 'Perempuan' }[]);
-              
-              setLoading(false);
-              if (result.success && result.results) {
-                  setImportReport(result.results);
-                  setIsReportDialogOpen(true);
-                  if (result.results.successCount > 0) {
-                      router.refresh();
-                  }
-              } else {
-                  toast({ title: "Gagal Impor", description: result.error, variant: "destructive" });
-              }
+          complete: (results) => {
+              processDataToImport(results.data);
           },
           error: (error) => {
               setLoading(false);
@@ -321,6 +336,26 @@ export default function StudentsPageComponent({
           }
       });
       event.target.value = '';
+  };
+
+  const handlePastedImport = () => {
+    if (!pastedCsv.trim()) {
+        toast({ title: "Teks Kosong", description: "Silakan tempelkan data CSV Anda terlebih dahulu.", variant: "destructive" });
+        return;
+    }
+    setLoading(true);
+
+    Papa.parse(pastedCsv, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+            processDataToImport(results.data);
+        },
+        error: (error) => {
+            setLoading(false);
+            toast({ title: "Gagal Memproses Teks", description: error.message, variant: "destructive" });
+        }
+    });
   };
   
   if (classes.length === 0) {
@@ -352,7 +387,7 @@ export default function StudentsPageComponent({
             </div>
              <div className="flex gap-2 flex-wrap">
                 <Button variant="outline" onClick={handleDownloadTemplate} disabled={loading}><FileText className="h-4 w-4 mr-2" /> Unduh Template</Button>
-                <Button variant="outline" onClick={handleImportClick} disabled={loading || !selectedClassId}><Upload className="h-4 w-4 mr-2" /> Impor Siswa</Button>
+                <Button variant="outline" onClick={() => { setPastedCsv(""); setIsImportDialogOpen(true); }} disabled={loading || !selectedClassId}><Upload className="h-4 w-4 mr-2" /> Impor Siswa</Button>
                 <Button variant="outline" onClick={handleExportCSV} disabled={loading || studentsInClass.length === 0}><Download className="h-4 w-4 mr-2" /> Ekspor Siswa</Button>
             </div>
         </div>
@@ -476,90 +511,160 @@ export default function StudentsPageComponent({
             loading={loading}
         />
 
+        {/* Import Choice Dialog */}
+        <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+            <DialogContent className="max-w-xl dialog-content-mobile mobile-safe-area rounded-3xl border-0 shadow-2xl overflow-hidden p-0">
+                <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 text-white">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3 mb-2 opacity-80">
+                            <Upload className="h-5 w-5" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Data Acquisition</span>
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-white uppercase">Impor Data Siswa</DialogTitle>
+                        <DialogDescription className="text-indigo-100 font-bold">Pilih metode impor untuk kelas {selectedClass?.name}.</DialogDescription>
+                    </DialogHeader>
+                </div>
+
+                <div className="p-8">
+                    <Tabs defaultValue="upload" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-xl h-12 mb-8">
+                            <TabsTrigger value="upload" className="rounded-lg font-bold flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                                <FileUp className="h-4 w-4" /> Unggah File
+                            </TabsTrigger>
+                            <TabsTrigger value="paste" className="rounded-lg font-bold flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                                <ClipboardPaste className="h-4 w-4" /> Tempel Teks
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="upload" className="space-y-6">
+                            <div 
+                                onClick={() => fileInputRef.current?.click()}
+                                className="border-4 border-dashed border-slate-100 rounded-[2rem] p-12 flex flex-col items-center justify-center gap-4 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all cursor-pointer group"
+                            >
+                                <div className="p-6 bg-slate-50 rounded-full group-hover:bg-white transition-colors group-hover:scale-110 duration-300">
+                                    <FileUp className="h-10 w-10 text-slate-300 group-hover:text-indigo-600" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="font-black text-slate-900 uppercase tracking-tight">Klik untuk unggah file</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Format: CSV, XLS, XLSX</p>
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="paste" className="space-y-6">
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tempel Baris CSV dari Excel</Label>
+                                <Textarea 
+                                    placeholder="nis,name,gender&#10;12345,Ahmad,L&#10;12346,Siti,P" 
+                                    className="min-h-[200px] rounded-2xl bg-slate-50 border-0 focus:ring-2 focus:ring-indigo-500/20 font-mono text-xs p-4 shadow-inner"
+                                    value={pastedCsv}
+                                    onChange={(e) => setPastedCsv(e.target.value)}
+                                />
+                                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-start gap-3">
+                                    <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-blue-900 uppercase">Format yang Diterima:</p>
+                                        <p className="text-[10px] font-bold text-blue-700 leading-relaxed uppercase opacity-80">
+                                            Baris pertama harus berisi judul kolom: <code className="bg-blue-100 px-1 rounded">nis,name,gender</code>.
+                                            Pemisah bisa koma (,) atau titik koma (;).
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <Button 
+                                onClick={handlePastedImport} 
+                                disabled={loading || !pastedCsv.trim()}
+                                className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all active:scale-95"
+                            >
+                                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Sparkles className="h-5 w-5 mr-2" />}
+                                Proses Data Tempel
+                            </Button>
+                        </TabsContent>
+                    </Tabs>
+                </div>
+            </DialogContent>
+        </Dialog>
+
         {/* Import Report Dialog */}
         <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-            <DialogContent className="max-w-2xl dialog-content-mobile mobile-safe-area">
-                <DialogHeader>
-                    <DialogTitle>Laporan Hasil Impor</DialogTitle>
-                    <DialogDescription>
-                        Berikut adalah ringkasan dari proses impor data siswa.
-                    </DialogDescription>
+            <DialogContent className="max-w-2xl dialog-content-mobile mobile-safe-area rounded-[2.5rem] border-0 shadow-2xl">
+                <DialogHeader className="p-4 text-center">
+                    <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">LAPORAN HASIL IMPOR</DialogTitle>
+                    <DialogDescription className="font-medium">Ringkasan sinkronisasi data siswa ke sistem.</DialogDescription>
                 </DialogHeader>
                 {importReport && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                            <div className="p-4 bg-blue-50 rounded-lg">
-                                <p className="text-2xl font-bold">{importReport.total}</p>
-                                <p className="text-sm text-blue-700">Total Diproses</p>
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="p-5 bg-slate-50 rounded-[2rem] text-center border border-slate-100 shadow-inner">
+                                <p className="text-2xl font-black text-slate-900">{importReport.total}</p>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Total</p>
                             </div>
-                            <div className="p-4 bg-green-50 rounded-lg">
-                                <p className="text-2xl font-bold text-green-700">{importReport.successCount}</p>
-                                <p className="text-sm text-green-700">Berhasil</p>
+                            <div className="p-5 bg-emerald-50 rounded-[2rem] text-center border border-emerald-100 shadow-inner">
+                                <p className="text-2xl font-black text-emerald-600">{importReport.successCount}</p>
+                                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mt-1">Berhasil</p>
                             </div>
-                            <div className="p-4 bg-red-50 rounded-lg">
-                                <p className="text-2xl font-bold text-red-700">{importReport.failureCount}</p>
-                                <p className="text-sm text-red-700">Gagal</p>
+                            <div className="p-5 bg-rose-50 rounded-[2rem] text-center border border-rose-100 shadow-inner">
+                                <p className="text-2xl font-black text-rose-600">{importReport.failureCount}</p>
+                                <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest mt-1">Gagal</p>
                             </div>
                         </div>
                         <Tabs defaultValue="failures">
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="failures">Gagal ({importReport.failureCount})</TabsTrigger>
-                                <TabsTrigger value="successes">Berhasil ({importReport.successCount})</TabsTrigger>
+                            <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-xl h-12">
+                                <TabsTrigger value="failures" className="rounded-lg font-bold data-[state=active]:bg-white data-[state=active]:text-rose-600">Gagal ({importReport.failureCount})</TabsTrigger>
+                                <TabsTrigger value="successes" className="rounded-lg font-bold data-[state=active]:bg-white data-[state=active]:text-emerald-600">Berhasil ({importReport.successCount})</TabsTrigger>
                             </TabsList>
                             <TabsContent value="failures" className="mt-4">
-                                <ScrollArea className="h-60">
+                                <ScrollArea className="h-60 rounded-2xl border border-slate-100 bg-white">
                                     {importReport.failureCount > 0 ? (
                                         <Table>
-                                            <TableHeader>
+                                            <TableHeader className="bg-slate-50">
                                                 <TableRow>
-                                                    <TableHead>Nama</TableHead>
-                                                    <TableHead>NIS</TableHead>
-                                                    <TableHead>Alasan</TableHead>
+                                                    <TableHead className="text-[10px] font-black uppercase">Nama</TableHead>
+                                                    <TableHead className="text-[10px] font-black uppercase text-right">Alasan</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {importReport.failures.map((f, i) => (
                                                     <TableRow key={i}>
-                                                        <TableCell>{f.name}</TableCell>
-                                                        <TableCell>{f.nis}</TableCell>
-                                                        <TableCell className="text-destructive text-xs">{f.reason}</TableCell>
+                                                        <TableCell className="text-xs font-bold text-slate-700">{f.name}</TableCell>
+                                                        <TableCell className="text-rose-600 text-[10px] font-bold text-right">{f.reason}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
                                         </Table>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
-                                            <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
-                                            <p className="font-semibold">Luar Biasa!</p>
-                                            <p className="text-sm">Semua data siswa berhasil diimpor tanpa ada yang gagal.</p>
+                                        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                            <CheckCircle className="h-10 w-10 text-emerald-500 mb-3" />
+                                            <p className="font-black text-slate-900 uppercase text-xs tracking-widest">Sempurna!</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Tidak ada data yang gagal.</p>
                                         </div>
                                     )}
                                 </ScrollArea>
                             </TabsContent>
                             <TabsContent value="successes" className="mt-4">
-                               <ScrollArea className="h-60">
+                               <ScrollArea className="h-60 rounded-2xl border border-slate-100 bg-white">
                                     {importReport.successCount > 0 ? (
                                         <Table>
-                                            <TableHeader>
+                                            <TableHeader className="bg-slate-50">
                                                 <TableRow>
-                                                    <TableHead>Nama</TableHead>
-                                                    <TableHead>NIS</TableHead>
+                                                    <TableHead className="text-[10px] font-black uppercase">Nama</TableHead>
+                                                    <TableHead className="text-[10px] font-black uppercase text-right">NIS</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {importReport.successes.map((s, i) => (
                                                     <TableRow key={i}>
-                                                        <TableCell>{s.name}</TableCell>
-                                                        <TableCell>{s.nis}</TableCell>
+                                                        <TableCell className="text-xs font-bold text-slate-700">{s.name}</TableCell>
+                                                        <TableCell className="text-xs font-mono font-bold text-right text-slate-400">{s.nis}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
                                         </Table>
                                      ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
-                                            <XCircle className="h-12 w-12 text-red-500 mb-4" />
-                                            <p className="font-semibold">Tidak Ada Data Berhasil</p>
-                                            <p className="text-sm">Tidak ada data siswa yang berhasil diimpor. Periksa tab "Gagal" untuk detail.</p>
+                                        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                            <XCircle className="h-10 w-10 text-rose-500 mb-3" />
+                                            <p className="font-black text-slate-900 uppercase text-xs tracking-widest">Kosong</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Tidak ada data yang berhasil diimpor.</p>
                                         </div>
                                     )}
                                 </ScrollArea>
@@ -567,8 +672,8 @@ export default function StudentsPageComponent({
                         </Tabs>
                     </div>
                 )}
-                 <DialogFooter>
-                    <Button onClick={() => setIsReportDialogOpen(false)}>Tutup</Button>
+                 <DialogFooter className="pt-6">
+                    <Button onClick={() => setIsReportDialogOpen(false)} className="w-full h-12 rounded-xl font-bold">Tutup Laporan</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
