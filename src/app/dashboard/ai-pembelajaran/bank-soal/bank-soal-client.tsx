@@ -67,16 +67,28 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+/**
+ * Enhanced MathText Component V138
+ * Handles LaTeX, Javanese Script, and Markdown with automatic math detection for key labels.
+ */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-  const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+
+  // Auto-wrap if it looks like raw LaTeX but missing delimiters (common in keys/short answers)
+  let processedContent = content;
+  const rawMathRegex = /[\\^_]|\{[^}]*\}|[\u2200-\u22FF]/;
+  if (rawMathRegex.test(content) && !content.includes('$') && !content.includes('\\(')) {
+    processedContent = `\\( ${content} \\)`;
+  }
+
+  const parts = processedContent.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
         if (!part) return null;
         if (part.startsWith('$$') || part.startsWith('\\[')) {
-          const math = part.slice(2, -2);
+          const math = part.startsWith('$$') ? part.slice(2, -2) : part.slice(2, -2);
           return (
             <div key={i} className="my-3 overflow-x-auto custom-scrollbar pb-2">
                 <div className="min-w-min"><BlockMath math={math} /></div>
@@ -154,7 +166,6 @@ export default function BankSoalClient({
     
     const [exporting, setExporting] = React.useState(false);
     const [countdown, setCountdown] = React.useState(30);
-    const [deletingId, setDeletingId] = React.useState<string | null>(null);
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = React.useState(false);
     
@@ -216,6 +227,15 @@ export default function BankSoalClient({
         return index !== -1 ? index + 1 : null;
     };
 
+    const toggleDiscussion = (id: string) => {
+        setExpandedQuestions(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
     const handleCreateNaskah = async () => {
         if (selectedOrderedIds.length === 0 || !naskahConfig.title || !naskahConfig.classId) {
             toast({ title: "Data Tidak Lengkap", description: "Harap isi judul dan pilih kelas.", variant: "destructive" });
@@ -227,7 +247,7 @@ export default function BankSoalClient({
             const selectedClass = teacherClasses.find(c => c.id === naskahConfig.classId);
             const metadata = {
                 jenjang: "Umum", 
-                class: selectedClass?.id || naskahConfig.classId, // Simpan ID Kelas untuk sinkronisasi siswa
+                class: selectedClass?.id || naskahConfig.classId,
                 subject: naskahConfig.subject || uniqueSubjects[0] || "Umum",
                 schoolName: naskahConfig.schoolName || "Sekolah LakuKelas",
                 examType: naskahConfig.examType,
@@ -368,7 +388,13 @@ export default function BankSoalClient({
                                         <div className="text-slate-800 font-bold text-lg leading-relaxed break-words overflow-hidden min-w-0"><MathText content={q.question_text} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} /></div>
                                         {q.visual_svg && <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center gap-3"><div className="w-full max-w-[400px] aspect-[1/1] flex items-center justify-center overflow-hidden" dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%;height:100%;max-width:400px;max-height:400px;" preserveAspectRatio="xMidYMid meet"') }} /></div>}
                                         {q.options_json && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (<div key={k} className="p-4 rounded-xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm min-w-0 overflow-hidden"><span className="text-indigo-600 font-black shrink-0">{k}.</span><div className="flex-1 min-w-0 overflow-hidden"><MathText content={v} /></div></div>))}</div>}
-                                        <div className="pt-5 flex flex-wrap justify-between items-center gap-4 border-t border-slate-100"><p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">KUNCI: {q.correct_answer}</p><Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest h-10 px-4 rounded-xl hover:bg-indigo-50">{expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}</Button></div>
+                                        <div className="pt-5 flex flex-wrap justify-between items-center gap-4 border-t border-slate-100">
+                                            <div className="flex items-center gap-2 text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                                                <span>KUNCI:</span>
+                                                <MathText content={q.correct_answer} />
+                                            </div>
+                                            <Button variant="ghost" size="sm" onClick={() => toggleDiscussion(q.id)} className="text-[10px] font-black uppercase text-indigo-600 tracking-widest h-10 px-4 rounded-xl hover:bg-indigo-50">{expandedQuestions.has(q.id) ? "Tutup Pembahasan" : "Lihat Pembahasan"}</Button>
+                                        </div>
                                         <AnimatePresence>{expandedQuestions.has(q.id) && (<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden"><div className="p-6 rounded-xl bg-slate-50 text-sm italic text-slate-600 border border-slate-100 leading-relaxed shadow-inner"><MathText content={q.explanation} /></div></motion.div>)}</AnimatePresence>
                                     </div>
                                 </div>
