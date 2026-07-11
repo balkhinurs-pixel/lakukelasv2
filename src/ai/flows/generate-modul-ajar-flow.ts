@@ -2,6 +2,7 @@
 /**
  * @fileOverview Flow Genkit untuk pembuatan Modul Ajar Terintegrasi.
  * Versi 1.x dengan Agent Awareness.
+ * Menghasilkan LKPD Prompt dalam format JSON terstruktur.
  */
 
 import { z, genkit } from 'genkit';
@@ -31,8 +32,8 @@ export type ModulAjarInput = z.infer<typeof ModulAjarInputSchema>;
 
 const ModulAjarOutputSchema = z.object({
   title: z.string(),
-  content: z.string().describe('Markdown dengan Tabel untuk Identitas & Kegiatan'),
-  lkpdPrompt: z.string(),
+  content: z.string().describe('Konten Modul Ajar dalam format Markdown yang sangat lengkap dengan tabel'),
+  lkpdPrompt: z.string().describe('JSON String untuk pembuatan Lembar Kerja Siswa yang menarik (topic, goal, tasks, visual_style)'),
 });
 
 export type ModulAjarOutput = z.infer<typeof ModulAjarOutputSchema>;
@@ -66,7 +67,16 @@ export async function generateModulAjar(input: ModulAjarInput): Promise<ModulAja
     Metode: ${input.deepLearningType} dengan praktik ${input.pedagogicalPractice}.
     ${input.atpContent ? `Referensi ATP: ${input.atpContent}` : ''}
     
-    Wajib menggunakan tabel Markdown untuk identitas dan langkah pembelajaran per pertemuan.`
+    ATURAN TAMBAHAN:
+    1. Wajib menggunakan tabel Markdown untuk identitas dan langkah pembelajaran per pertemuan.
+    2. Bagian lkpdPrompt WAJIB berupa JSON STRING yang berisi:
+       {
+         "topic": "${input.topic}",
+         "learning_goal": "deskripsi singkat tujuan",
+         "student_tasks": ["tugas 1", "tugas 2"],
+         "visual_style": "deskripsi gaya visual untuk generator gambar (misal: clean educational, colorful diagram)",
+         "instructions": "instruksi untuk AI generator gambar agar membuat layout LKPD yang rapi"
+       }`
   });
 
   const result = response.output;

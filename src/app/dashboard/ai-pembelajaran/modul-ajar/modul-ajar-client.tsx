@@ -25,7 +25,10 @@ import {
     Download,
     Copy,
     ClipboardCheck,
-    ArrowLeft
+    ArrowLeft,
+    Code2,
+    Terminal,
+    Layout
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -230,10 +233,20 @@ export default function ModulAjarClient({
 
     const handleCopyLkpdPrompt = () => {
         if (!generatedResult?.lkpdPrompt) return;
-        navigator.clipboard.writeText(generatedResult.lkpdPrompt);
+        
+        let textToCopy = generatedResult.lkpdPrompt;
+        try {
+            // Beautify if it's a valid JSON string
+            const parsed = JSON.parse(textToCopy);
+            textToCopy = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+            // Keep as is if not JSON
+        }
+
+        navigator.clipboard.writeText(textToCopy);
         toast({
-            title: "Prompt LKPD Disalin",
-            description: "Silakan tempel prompt ini pada generator gambar AI (nanobana).",
+            title: "Prompt JSON Disalin",
+            description: "Format terstruktur siap digunakan.",
             icon: <ClipboardCheck className="h-5 w-5 text-emerald-500" />
         });
     }
@@ -590,15 +603,6 @@ export default function ModulAjarClient({
                             <CardTitle className="text-xl font-black tracking-tight text-indigo-950">Pratinjau Modul</CardTitle>
                         </div>
                         <div className="flex items-center gap-2">
-                            {generatedResult?.lkpdPrompt && (
-                                <Button 
-                                    onClick={handleCopyLkpdPrompt}
-                                    variant="outline"
-                                    className="rounded-xl h-10 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold gap-2"
-                                >
-                                    <Copy className="h-4 w-4" /> Salin Prompt LKPD
-                                </Button>
-                            )}
                             {generatedResult && <Button onClick={handleSaveToDrive} disabled={saving} className="rounded-xl h-10 bg-indigo-600 text-white font-bold gap-2 shadow-lg shadow-indigo-100">{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan ke Drive</Button>}
                         </div>
                     </CardHeader>
@@ -610,12 +614,13 @@ export default function ModulAjarClient({
                                         key="result" 
                                         initial={{ opacity: 0, y: 10 }} 
                                         animate={{ opacity: 1, y: 0 }} 
-                                        className="w-full flex justify-start lg:justify-center"
+                                        className="w-full flex flex-col items-center gap-8"
                                     >
+                                        {/* DOCUMENT PREVIEW */}
                                         <div 
-                                            className="bg-white p-8 sm:p-12 shadow-sm border rounded-2xl shrink-0" 
+                                            className="bg-white p-8 sm:p-12 shadow-sm border rounded-2xl shrink-0 w-full lg:w-auto" 
                                             style={{ 
-                                                width: '210mm', 
+                                                width: isMobile ? '100%' : '210mm', 
                                                 minHeight: '297mm',
                                                 fontFamily: '"Times New Roman", Times, serif'
                                             }}
@@ -641,6 +646,53 @@ export default function ModulAjarClient({
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* MODERN JSON LKPD PROMPT PREVIEW */}
+                                        <Card className="w-full lg:w-[210mm] border-0 shadow-2xl rounded-3xl bg-slate-900 overflow-hidden">
+                                            <CardHeader className="bg-slate-800 border-b border-white/5 p-6 flex flex-row items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
+                                                        <Terminal className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <CardTitle className="text-lg font-black text-white tracking-tight uppercase">JSON Prompt LKPD</CardTitle>
+                                                        <CardDescription className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Ready for image generation</CardDescription>
+                                                    </div>
+                                                </div>
+                                                <Button 
+                                                    onClick={handleCopyLkpdPrompt}
+                                                    variant="ghost"
+                                                    className="h-10 rounded-xl border border-white/10 text-indigo-400 hover:bg-indigo-500 hover:text-white font-bold gap-2"
+                                                >
+                                                    <Copy className="h-4 w-4" /> Salin JSON
+                                                </Button>
+                                            </CardHeader>
+                                            <CardContent className="p-0">
+                                                <div className="relative group">
+                                                    <div className="absolute top-4 right-4 text-emerald-400 font-mono text-[10px] font-bold bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 flex items-center gap-1.5 animate-pulse">
+                                                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                                                        VALID JSON
+                                                    </div>
+                                                    <pre className="p-8 text-[11px] sm:text-xs font-mono text-indigo-300 leading-relaxed overflow-x-auto bg-slate-900/50 custom-scrollbar-dark">
+                                                        <code>
+                                                            {(() => {
+                                                                try {
+                                                                    const parsed = JSON.parse(generatedResult.lkpdPrompt || "{}");
+                                                                    return JSON.stringify(parsed, null, 2);
+                                                                } catch (e) {
+                                                                    return generatedResult.lkpdPrompt;
+                                                                }
+                                                            })()}
+                                                        </code>
+                                                    </pre>
+                                                </div>
+                                            </CardContent>
+                                            <CardFooter className="bg-slate-800/50 p-4 border-t border-white/5">
+                                                <div className="flex items-center gap-2 text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mx-auto">
+                                                    <Code2 className="h-3 w-3" /> Powered by LakuKelas AI Architect
+                                                </div>
+                                            </CardFooter>
+                                        </Card>
                                     </motion.div>
                                 ) : (
                                     <div className="h-full flex flex-col items-center justify-center p-12 text-center">
@@ -675,6 +727,10 @@ export default function ModulAjarClient({
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
                 
+                .custom-scrollbar-dark::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar-dark::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+                .custom-scrollbar-dark::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 10px; }
+
                 .modul-ajar-content table {
                     width: 100% !important;
                 }
