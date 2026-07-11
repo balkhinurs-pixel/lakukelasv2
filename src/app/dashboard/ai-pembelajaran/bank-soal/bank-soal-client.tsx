@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -28,7 +27,11 @@ import {
     ArrowRightLeft,
     Cpu,
     Zap,
-    TrendingUp
+    TrendingUp,
+    ImageIcon,
+    Sparkles,
+    Image as ImageIconSize,
+    Save
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +42,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { deleteQuestionsAction, createNaskahUjianAction } from "@/lib/actions/ai";
+import { deleteQuestionsAction, createNaskahUjianAction, generateQuestionImageAction, updateQuestionVisualAction } from "@/lib/actions/ai";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
@@ -67,22 +70,14 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-/**
- * Enhanced MathText Component V138
- * Handles LaTeX, Javanese Script, and Markdown with automatic math detection for key labels.
- */
 const MathText = ({ content, className }: { content: string, className?: string }) => {
   if (!content) return null;
-
-  // Auto-wrap if it looks like raw LaTeX but missing delimiters (common in keys/short answers)
   let processedContent = content;
   const rawMathRegex = /[\\^_]|\{[^}]*\}|[\u2200-\u22FF]/;
   if (rawMathRegex.test(content) && !content.includes('$') && !content.includes('\\(')) {
     processedContent = `\\( ${content} \\)`;
   }
-
   const parts = processedContent.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
-
   return (
     <div className={cn("math-text-render w-full overflow-hidden", className)}>
       {parts.map((part, i) => {
@@ -123,16 +118,7 @@ const MathText = ({ content, className }: { content: string, className?: string 
 };
 
 const ITEMS_PER_PAGE = 8; 
-
-const examTypes = [
-    "Penilaian Harian",
-    "Tugas Mandiri",
-    "Sumatif Tengah Semester (STS)",
-    "Sumatif Akhir Semester (SAS)",
-    "Ujian Sekolah",
-    "Try Out",
-    "Latihan Soal"
-];
+const examTypes = ["Penilaian Harian", "Tugas Mandiri", "Sumatif Tengah Semester (STS)", "Sumatif Akhir Semester (SAS)", "Ujian Sekolah", "Try Out", "Latihan Soal"];
 
 export default function BankSoalClient({ 
     initialQuestions,
@@ -140,7 +126,6 @@ export default function BankSoalClient({
     uniqueClasses,
     uniqueTopics,
     schoolProfile,
-    driveIntegration,
     teacherClasses = []
 }: { 
     initialQuestions: any[],
@@ -150,7 +135,6 @@ export default function BankSoalClient({
     schoolProfile: Profile | null,
     activeSchoolYearName: string,
     driveIntegration: GoogleDriveIntegration | null,
-    userProvider?: string,
     teacherClasses: Class[]
 }) {
     const { toast } = useToast();
@@ -165,10 +149,14 @@ export default function BankSoalClient({
     const [selectedOrderedIds, setSelectedOrderedIds] = React.useState<string[]>([]);
     
     const [exporting, setExporting] = React.useState(false);
-    const [countdown, setCountdown] = React.useState(30);
     const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = React.useState(false);
     
+    // Image Generation States
+    const [generatingImageId, setGeneratingImageId] = React.useState<string | null>(null);
+    const [tempImages, setTempImages] = React.useState<Record<string, string>>({});
+    const [savingVisualId, setSavingVisualId] = React.useState<string | null>(null);
+
     const [naskahConfig, setNaskahConfig] = React.useState({
         title: "",
         schoolName: schoolProfile?.school_name || "",
@@ -184,21 +172,6 @@ export default function BankSoalClient({
             setNaskahConfig(prev => ({ ...prev, classId: teacherClasses[0].id }));
         }
     }, [teacherClasses, naskahConfig.classId]);
-
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, filterClass, filterSubject, filterTopic]);
-
-    React.useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (exporting) {
-            setCountdown(30);
-            interval = setInterval(() => {
-                setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [exporting]);
 
     const filteredQuestions = React.useMemo(() => {
         return initialQuestions.filter(q => {
@@ -236,6 +209,39 @@ export default function BankSoalClient({
         });
     };
 
+    const handleGenerateImage = async (question: any) => {
+        setGeneratingImageId(question.id);
+        const result = await generateQuestionImageAction(question.id, question.question_text, question.subject);
+        
+        if (result.success && result.imageUrl) {
+            setTempImages(prev => ({ ...prev, [question.id]: result.imageUrl! }));
+            toast({ title: "Gambar Dihasilkan!", description: "Klik tombol simpan untuk memasukkannya ke database." });
+        } else {
+            toast({ title: "Gagal", description: result.error || "Gagal membuat gambar.", variant: "destructive" });
+        }
+        setGeneratingImageId(null);
+    };
+
+    const handleSaveVisual = async (questionId: string) => {
+        const visualData = tempImages[questionId];
+        if (!visualData) return;
+
+        setSavingVisualId(questionId);
+        const result = await updateQuestionVisualAction(questionId, visualData);
+        if (result.success) {
+            toast({ title: "Visual Disimpan", description: "Gambar sekarang menjadi bagian permanen dari soal ini." });
+            setTempImages(prev => {
+                const next = { ...prev };
+                delete next[questionId];
+                return next;
+            });
+            router.refresh();
+        } else {
+            toast({ title: "Gagal Menyimpan", description: result.error, variant: "destructive" });
+        }
+        setSavingVisualId(null);
+    };
+
     const handleCreateNaskah = async () => {
         if (selectedOrderedIds.length === 0 || !naskahConfig.title || !naskahConfig.classId) {
             toast({ title: "Data Tidak Lengkap", description: "Harap isi judul dan pilih kelas.", variant: "destructive" });
@@ -254,9 +260,7 @@ export default function BankSoalClient({
                 examDate: naskahConfig.examDate,
                 examTime: naskahConfig.examTime
             };
-
             const result = await createNaskahUjianAction(naskahConfig.title, selectedOrderedIds, metadata);
-
             if (result.success) {
                 setIsExportDialogOpen(false);
                 setIsSuccessDialogOpen(true);
@@ -272,21 +276,13 @@ export default function BankSoalClient({
         }
     };
 
-    const handlePageChange = (newPage: number) => {
-        setCurrentPage(newPage);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
     return (
         <div className="relative space-y-10 pb-20 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
             {exporting && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-2xl">
                     <div className="p-10 sm:p-14 rounded-[3.5rem] bg-white/80 border border-white/40 shadow-2xl flex flex-col items-center text-center gap-8">
                          <LottieAiProcess size={220} />
-                         <div className="space-y-2">
-                            <p className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Menyusun Naskah...</p>
-                            <p className="text-xl font-mono font-black text-indigo-600">{countdown}s</p>
-                         </div>
+                         <p className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Menyusun Naskah...</p>
                     </div>
                 </div>
             )}
@@ -323,44 +319,13 @@ export default function BankSoalClient({
                     </div>
                 </div>
 
-                <Card className="border-0 shadow-lg rounded-xl bg-white overflow-hidden mx-1">
-                    <CardContent className="p-4 sm:p-6">
-                        <div className="flex flex-col gap-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-indigo-600"><Filter className="h-5 w-5" /><span className="text-[10px] font-black uppercase tracking-widest">Saring Soal</span></div>
-                                <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-0 font-black text-[10px]">Total: {filteredQuestions.length} Soal</Badge>
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
-                                <Select value={filterClass} onValueChange={setFilterClass}>
-                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold text-xs"><SelectValue placeholder="Kelas" /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        <SelectItem value="all" className="font-bold">Semua Kelas</SelectItem>
-                                        {uniqueClasses.map(c => <SelectItem key={c} value={c} className="font-bold">Kelas {c}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={filterSubject} onValueChange={setFilterSubject}>
-                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold text-xs"><SelectValue placeholder="Mapel" /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        <SelectItem value="all" className="font-bold">Semua Mapel</SelectItem>
-                                        {uniqueSubjects.map(s => <SelectItem key={s} value={s} className="font-bold">{s}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={filterTopic} onValueChange={setFilterTopic}>
-                                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-0 font-bold text-xs"><Layers className="h-3 w-3 shrink-0 mr-2" /><SelectValue placeholder="Materi/Bab" /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-0 shadow-2xl">
-                                        <SelectItem value="all" className="font-bold">Semua Materi</SelectItem>
-                                        {uniqueTopics.map(t => <SelectItem key={t} value={t} className="font-bold">{t}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
                 <div className="space-y-6 px-1">
                     {paginatedQuestions.map((q) => {
                         const selectionIdx = getSelectionIndex(q.id);
                         const isSelected = selectionIdx !== null;
+                        const hasImage = q.visual_svg || tempImages[q.id];
+                        const isGenerating = generatingImageId === q.id;
+
                         return (
                             <Card key={q.id} className={cn("relative border-2 rounded-xl bg-white overflow-hidden transition-all shadow-sm", isSelected ? "border-indigo-600 bg-indigo-50/20 shadow-md" : "border-transparent")}>
                                 <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 sm:gap-8">
@@ -385,9 +350,78 @@ export default function BankSoalClient({
                                             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black text-[9px] tracking-widest px-2.5 py-1"><BookOpen className="w-3 h-3 mr-1.5 opacity-60" />{q.subject}</Badge>
                                             <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 uppercase font-black text-[9px] tracking-widest px-2.5 py-1"><Tag className="w-3 h-3 mr-1.5 opacity-60" />{q.topic}</Badge>
                                         </div>
-                                        <div className="text-slate-800 font-bold text-lg leading-relaxed break-words overflow-hidden min-w-0"><MathText content={q.question_text} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} /></div>
-                                        {q.visual_svg && <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center gap-3"><div className="w-full max-w-[400px] aspect-[1/1] flex items-center justify-center overflow-hidden" dangerouslySetInnerHTML={{ __html: q.visual_svg.replace('<svg', '<svg style="width:100%;height:100%;max-width:400px;max-height:400px;" preserveAspectRatio="xMidYMid meet"') }} /></div>}
-                                        {q.options_json && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (<div key={k} className="p-4 rounded-xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm min-w-0 overflow-hidden"><span className="text-indigo-600 font-black shrink-0">{k}.</span><div className="flex-1 min-w-0 overflow-hidden"><MathText content={v} /></div></div>))}</div>}
+                                        <div className="text-slate-800 font-bold text-lg leading-relaxed break-words overflow-hidden min-w-0">
+                                            <MathText content={q.question_text} className={cn(q.language_direction === 'rtl' ? 'text-right font-serif text-2xl' : '')} />
+                                        </div>
+
+                                        {/* Visual Section: Generate Gambar / SVG */}
+                                        <div className="visual-area mt-4">
+                                            {hasImage ? (
+                                                <div className="relative group">
+                                                    <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center gap-3 overflow-hidden shadow-inner">
+                                                        <div className="w-full max-w-[400px] flex items-center justify-center">
+                                                            { (q.visual_svg || tempImages[q.id]).startsWith('<svg') ? (
+                                                                <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: (q.visual_svg || tempImages[q.id]).replace('<svg', '<svg style="width:100%;height:auto;max-width:400px;" preserveAspectRatio="xMidYMid meet"') }} />
+                                                            ) : (
+                                                                <img src={q.visual_svg || tempImages[q.id]} alt="Visual Soal" className="w-full h-auto max-w-[400px] rounded-lg shadow-lg border border-white" />
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {tempImages[q.id] && (
+                                                            <div className="flex gap-2 mt-4 animate-in fade-in slide-in-from-bottom-2">
+                                                                <Button 
+                                                                    onClick={() => handleSaveVisual(q.id)} 
+                                                                    disabled={savingVisualId === q.id}
+                                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-10 px-6 gap-2"
+                                                                >
+                                                                    {savingVisualId === q.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                                    Simpan Visual
+                                                                </Button>
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    onClick={() => setTempImages(prev => { const n = {...prev}; delete n[q.id]; return n; })}
+                                                                    className="text-slate-400 hover:text-rose-500 rounded-xl"
+                                                                >
+                                                                    Batalkan
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-4 py-6 border-y border-slate-50">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        disabled={isGenerating}
+                                                        onClick={() => handleGenerateImage(q)}
+                                                        className="rounded-2xl border-dashed border-2 border-slate-200 h-14 px-6 flex-1 hover:border-indigo-400 hover:bg-indigo-50/30 group transition-all"
+                                                    >
+                                                        {isGenerating ? (
+                                                            <>
+                                                                <Loader2 className="h-5 w-5 animate-spin mr-3 text-indigo-600" />
+                                                                <span className="font-bold text-indigo-600 uppercase text-[10px] tracking-widest">Memvisualisasikan...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Sparkles className="h-5 w-5 mr-3 text-indigo-400 group-hover:text-indigo-600 transition-colors" />
+                                                                <span className="font-black text-slate-400 group-hover:text-indigo-700 uppercase text-[10px] tracking-widest">Generate Ilustrasi AI (Imagen)</span>
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {q.options_json && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {Object.entries(q.options_json as Record<string, string>).sort().map(([k, v]) => (
+                                                    <div key={k} className="p-4 rounded-xl border border-slate-100 bg-white text-xs font-bold flex gap-3 hover:border-indigo-200 transition-colors shadow-sm min-w-0 overflow-hidden">
+                                                        <span className="text-indigo-600 font-black shrink-0">{k}.</span>
+                                                        <div className="flex-1 min-w-0 overflow-hidden"><MathText content={v} /></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                         <div className="pt-5 flex flex-wrap justify-between items-center gap-4 border-t border-slate-100">
                                             <div className="flex items-center gap-2 text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
                                                 <span>KUNCI:</span>
@@ -429,7 +463,6 @@ export default function BankSoalClient({
                                             {teacherClasses.map(c => <SelectItem key={c.id} value={c.id} className="font-bold">{c.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-[9px] text-slate-400 font-medium italic mt-1">* QR Code akan dihasilkan otomatis untuk setiap siswa di kelas ini.</p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -476,15 +509,4 @@ export default function BankSoalClient({
             </div>
         </div>
     );
-}
-
-function getQuestionTypeLabel(type: string) {
-    switch(type) {
-        case 'multiple_choice': return 'PG';
-        case 'essay': return 'Uraian';
-        case 'short_answer': return 'Isian';
-        case 'true_false': return 'B/S';
-        case 'matching': return 'Jodohkan';
-        default: return type;
-    }
 }

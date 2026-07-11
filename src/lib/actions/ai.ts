@@ -7,6 +7,7 @@ import { generateCpAtp, type CpAtpInput, type CpAtpOutput } from '@/ai/flows/gen
 import { generateMaterial, type MaterialGenerationInput, type MaterialGenerationOutput } from '@/ai/flows/generate-material-flow';
 import { generateKisiKisi, type KisiKisiInput, type KisiKisiOutput } from '@/ai/flows/generate-kisi-kisi-flow';
 import { correctExam, type CorrectExamInput, type CorrectExamOutput } from '@/ai/flows/correct-exam-flow';
+import { generateQuestionImage, type GenerateImageInput } from '@/ai/flows/generate-image-flow';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GeneratedQuestion, QuestionGenerationInput } from '@/lib/types';
@@ -20,6 +21,37 @@ const getSubRowCount = (q: any) => {
 };
 
 /**
+ * Menghasilkan gambar ilustrasi untuk soal menggunakan Imagen.
+ */
+export async function generateQuestionImageAction(questionId: string, text: string, subject: string) {
+    try {
+        const result = await generateQuestionImage({ questionText: text, subject });
+        return { success: true, imageUrl: result.imageUrl };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Menyimpan visual (SVG/Data URI) ke database soal.
+ */
+export async function updateQuestionVisualAction(questionId: string, visualData: string) {
+    const supabase = await createClient();
+    try {
+        const { error } = await supabase
+            .from('questions')
+            .update({ visual_svg: visualData })
+            .eq('id', questionId);
+        
+        if (error) throw error;
+        revalidatePath('/dashboard/ai-pembelajaran/bank-soal');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
  * Server Action untuk Koreksi LJK V130 (QR Smart Identity).
  */
 export async function correctExamAction(
@@ -29,15 +61,6 @@ export async function correctExamAction(
 ) {
     const supabase = await createClient();
     try {
-        // 1. IDENTIFIKASI SISWA VIA AI (Membaca QR/Teks di foto)
-        // Kita butuh foto asli di sini, namun untuk optimalisasi bandwidth,
-        // Alur deteksi identitas dipisah.
-        // Di sini kita asumsikan scanRaw sudah memiliki data NIS jika dideteksi di client,
-        // namun untuk Update V130, kita panggil flow AI identitas.
-        
-        // Catatan: Dalam implementasi produksi, foto dikirim ke correctExam flow.
-        // Untuk MVP ini, kita cari siswa berdasarkan NIS yang dikirim (jika ada).
-        
         const { data: naskah } = await supabase.from('ai_documents').select('question_ids, class_level').eq('id', naskahId).single();
         if (!naskah?.question_ids) throw new Error("Naskah tidak ditemukan.");
 
@@ -46,7 +69,6 @@ export async function correctExamAction(
 
         const sortedQuestions = naskah.question_ids.map(id => rawQuestions.find(q => q.id === id)).filter(Boolean);
 
-        // REKONSTRUKSI GRID NASKAH
         const gridItems: any[] = [];
         let currentType = "";
         sortedQuestions.forEach((q: any, qIdx: number) => {
@@ -126,14 +148,11 @@ export async function correctExamAction(
         });
 
         const finalScore = maxPossibleScore > 0 ? Math.round((totalWeightedScore / maxPossibleScore) * 100) : 0;
-
-        // IDENTIFIKASI VIA DATABASE (Fallback jika flow dipanggil tanpa foto utuh)
-        // Di Update V130, identifikasi utama dilakukan oleh AI Vision di correct-exam-flow.
         
         return { 
             success: true, 
             data: {
-                detectedNis: "PENDING_AI", // Akan diisi oleh pemanggilan correctExam flow terpisah
+                detectedNis: "PENDING_AI",
                 studentName: "Siswa Terdeteksi QR",
                 studentId: null,
                 studentAnswers: studentAnalysis,
