@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -31,7 +32,9 @@ import {
     ImageIcon,
     Sparkles,
     Image as ImageIconSize,
-    Save
+    Save,
+    AlertCircle,
+    Clock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -217,7 +220,17 @@ export default function BankSoalClient({
             setTempImages(prev => ({ ...prev, [question.id]: result.imageUrl! }));
             toast({ title: "Gambar Dihasilkan!", description: "Klik tombol simpan untuk memasukkannya ke database." });
         } else {
-            toast({ title: "Gagal", description: result.error || "Gagal membuat gambar.", variant: "destructive" });
+            // Tangani error kuota (429) dengan pesan yang lebih baik
+            if (result.error?.toLowerCase().includes('quota') || result.error?.includes('429')) {
+                toast({ 
+                    variant: "destructive",
+                    title: "AI Sedang Istirahat", 
+                    description: "Batas permintaan gratis tercapai. Mohon tunggu 1 menit sebelum mencoba lagi.",
+                    icon: <Clock className="h-5 w-5" />
+                });
+            } else {
+                toast({ title: "Gagal", description: result.error || "Gagal membuat gambar.", variant: "destructive" });
+            }
         }
         setGeneratingImageId(null);
     };
@@ -404,7 +417,7 @@ export default function BankSoalClient({
                                                         ) : (
                                                             <>
                                                                 <Sparkles className="h-5 w-5 mr-3 text-indigo-400 group-hover:text-indigo-600 transition-colors" />
-                                                                <span className="font-black text-slate-400 group-hover:text-indigo-700 uppercase text-[10px] tracking-widest">Generate Ilustrasi AI (Imagen)</span>
+                                                                <span className="font-black text-slate-400 group-hover:text-indigo-700 uppercase text-[10px] tracking-widest">Generate Ilustrasi AI</span>
                                                             </>
                                                         )}
                                                     </Button>
